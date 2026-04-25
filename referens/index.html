@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dark Kanban Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="browser-frame">
+      <div class="browser-bar" aria-hidden="true">
+        <div class="traffic-lights">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="address-pill">withmast.com</div>
+      </div>
+
+      <div class="app-shell">
+        <aside class="sidebar" aria-label="Навигация">
+          <div class="brand">
+            <div class="brand-mark" aria-hidden="true"></div>
+          </div>
+
+          <nav class="nav-list" aria-label="Разделы">
+            <button class="nav-item muted" type="button">My Desk</button>
+            <button class="nav-item active" type="button">Everything</button>
+            <button class="nav-item" type="button">Track</button>
+          </nav>
+
+          <div class="project-list" aria-label="Проекты">
+            <button class="project-item" type="button"><span class="dot blue"></span>Cuebox <strong>*</strong></button>
+            <button class="project-item" type="button"><span class="dot coral"></span>Wayland <strong>*</strong></button>
+            <button class="project-item" type="button"><span class="dot royal"></span>Bluejay</button>
+            <button class="project-item" type="button"><span class="dot violet"></span>Dabble</button>
+            <button class="project-item" type="button"><span class="dot indigo"></span>Highlight</button>
+            <button class="project-item" type="button"><span class="dot slate"></span>Figmate</button>
+            <button class="project-item" type="button"><span class="dot gold"></span>GGWP</button>
+            <button class="project-item" type="button"><span class="dot red"></span>Giraffe</button>
+            <button class="project-item" type="button"><span class="dot royal"></span>Internal</button>
+            <button class="project-item" type="button"><span class="dot violet"></span>LaunchPad</button>
+            <button class="project-item" type="button"><span class="dot lavender"></span>Mast</button>
+            <button class="project-item" type="button"><span class="dot orange"></span>Rev</button>
+          </div>
+
+          <div class="sidebar-footer">
+            <button class="nav-item" type="button">Need Help</button>
+            <button class="nav-item" type="button">Settings</button>
+          </div>
+        </aside>
+
+        <main class="main">
+          <header class="topbar">
+            <div>
+              <h1>Everything</h1>
+              <div class="project-meta" aria-label="Сводка">
+                <span><strong id="totalTasks">0</strong> cards</span>
+                <span>Release board</span>
+              </div>
+            </div>
+
+            <div class="topbar-actions">
+              <label class="search">
+                <span class="search-icon" aria-hidden="true"></span>
+                <input id="searchInput" type="search" placeholder="Search" />
+              </label>
+              <div class="avatar-stack" aria-label="Участники">
+                <span>All</span>
+                <i>AS</i>
+                <i>MK</i>
+                <i>VP</i>
+                <i>ED</i>
+                <i>TB</i>
+              </div>
+              <button id="newCardButton" class="primary-button" type="button">New</button>
+            </div>
+          </header>
+
+          <section class="board-toolbar" aria-label="Фильтры доски">
+            <div class="segmented" role="group" aria-label="Фильтр по приоритету">
+              <button class="segment active" type="button" data-priority="all">All</button>
+              <button class="segment" type="button" data-priority="high">High</button>
+              <button class="segment" type="button" data-priority="medium">Medium</button>
+              <button class="segment" type="button" data-priority="low">Low</button>
+            </div>
+            <button id="compactToggle" class="ghost-button" type="button" aria-pressed="false">Compact</button>
+          </section>
+
+          <section class="kanban-board" aria-label="Канбан доска">
+            <div class="column" data-column="backlog">
+              <div class="column-header">
+                <h2>Inbox</h2>
+                <strong class="count">0</strong>
+              </div>
+              <div class="card-list" data-list="backlog"></div>
+            </div>
+
+            <div class="column" data-column="todo">
+              <div class="column-header">
+                <h2>Up Next</h2>
+                <strong class="count">0</strong>
+              </div>
+              <div class="card-list" data-list="todo"></div>
+            </div>
+
+            <div class="column" data-column="progress">
+              <div class="column-header">
+                <h2>In Progress</h2>
+                <strong class="count">0</strong>
+              </div>
+              <div class="card-list" data-list="progress"></div>
+            </div>
+
+            <div class="column" data-column="review">
+              <div class="column-header">
+                <h2>Review</h2>
+                <strong class="count">0</strong>
+              </div>
+              <div class="card-list" data-list="review"></div>
+            </div>
+
+            <div class="column" data-column="done">
+              <div class="column-header">
+                <h2>Done</h2>
+                <strong class="count">0</strong>
+              </div>
+              <div class="card-list" data-list="done"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="taskDialog">
+      <form method="dialog" class="task-form">
+        <div class="dialog-header">
+          <h3>Новая задача</h3>
+          <button class="icon-button" value="cancel" aria-label="Закрыть" type="submit">x</button>
+        </div>
+
+        <label>
+          Название
+          <input id="taskTitle" required maxlength="80" placeholder="Например, Add Search Bar" />
+        </label>
+
+        <label>
+          Комментарий
+          <textarea id="taskDescription" rows="4" maxlength="180" placeholder="Короткий контекст задачи"></textarea>
+        </label>
+
+        <div class="form-grid">
+          <label>
+            Колонка
+            <select id="taskColumn">
+              <option value="backlog">Inbox</option>
+              <option value="todo">Up Next</option>
+              <option value="progress">In Progress</option>
+              <option value="review">Review</option>
+              <option value="done">Done</option>
+            </select>
+          </label>
+
+          <label>
+            Приоритет
+            <select id="taskPriority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+        </div>
+
+        <menu class="dialog-actions">
+          <button class="ghost-button" value="cancel" type="submit">Отмена</button>
+          <button id="createTaskButton" class="primary-button" value="default" type="submit">Создать</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
