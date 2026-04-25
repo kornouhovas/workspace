@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Folder Kanban</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="browser-frame">
+      <div class="browser-bar" aria-hidden="true">
+        <div class="traffic-lights">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="address-pill">folder-kanban.local</div>
+      </div>
+
+      <div class="app-shell" id="appShell">
+        <aside class="sidebar" aria-label="Навигация">
+          <div class="brand-row">
+            <div class="brand-mark" aria-hidden="true"></div>
+            <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Скрыть меню">
+              <span></span>
+            </button>
+          </div>
+
+          <nav class="nav-list" aria-label="Разделы">
+            <button class="nav-item active" type="button">Workspace</button>
+            <button class="nav-item" type="button">Folders</button>
+            <button class="nav-item" type="button">Recent</button>
+          </nav>
+
+          <section class="workspace-panel" aria-label="Текущая папка">
+            <span class="eyebrow">Selected root</span>
+            <strong id="sidebarRootName">No folder</strong>
+            <span><b id="sidebarFolderCount">0</b> folders</span>
+          </section>
+
+          <div class="sidebar-footer">
+            <button class="nav-item" type="button">Settings</button>
+          </div>
+        </aside>
+
+        <main class="main">
+          <header class="topbar">
+            <div>
+              <h1>Workspace folders</h1>
+              <div class="project-meta" aria-label="Сводка">
+                <span><strong id="totalFolders">0</strong> folders</span>
+                <span id="rootLabel">No root selected</span>
+              </div>
+            </div>
+
+            <div class="topbar-actions">
+              <label class="search">
+                <span class="search-icon" aria-hidden="true"></span>
+                <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
+              </label>
+              <button class="ghost-button" id="refreshButton" type="button">Refresh</button>
+              <button class="primary-button" id="chooseFolderButton" type="button">Choose folder</button>
+            </div>
+          </header>
+
+          <section class="board-toolbar" aria-label="Инструменты">
+            <div class="status-line" id="statusLine" role="status">Choose a folder to build the board.</div>
+            <button class="ghost-button" id="restoreButton" type="button" hidden>Restore access</button>
+          </section>
+
+          <section class="kanban-board" aria-label="Карточки папок">
+            <div class="folder-grid" id="folderGrid"></div>
+            <div class="empty-state" id="emptyState">
+              <span class="empty-icon" aria-hidden="true"></span>
+              <h2>No folder selected</h2>
+              <p>Pick a parent folder to show its direct subfolders as cards.</p>
+              <button class="primary-button" id="emptyChooseButton" type="button">Choose folder</button>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
