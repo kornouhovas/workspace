@@ -43,3 +43,10 @@ test("collapsed sidebar keeps the toggle clickable and shows icon rail", async (
   assert.match(css, /\.sidebar-collapsed \.nav-label\s*\{[^}]*display:\s*none/s);
   assert.equal(css.includes(".sidebar-collapsed .nav-list,\n.sidebar-collapsed .workspace-panel"), false);
 });
+
+test("kanban scroll area leaves room for lifted folder-card hover", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.folder-card:hover\s*\{[^}]*transform:\s*translateY\(-1px\)/s);
+  assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*[1-9]\d*px 4px 18px 0/s);
+});

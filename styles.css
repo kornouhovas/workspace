@@ -420,7 +420,7 @@ input:focus-visible {
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 0 4px 18px 0;
+  padding: 6px 4px 18px 0;
   scrollbar-color: #3a3a38 transparent;
 }
 
