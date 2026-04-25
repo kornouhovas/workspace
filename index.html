@@ -11,15 +11,30 @@
       <aside class="sidebar" aria-label="Навигация">
         <div class="brand-row">
           <div class="brand-mark" aria-hidden="true"></div>
-          <button class="icon-button sidebar-toggle" id="sidebarToggle" type="button" aria-label="Скрыть меню">
+          <button
+            class="icon-button sidebar-toggle"
+            id="sidebarToggle"
+            type="button"
+            aria-label="Скрыть меню"
+            title="Скрыть меню"
+          >
             <span></span>
           </button>
         </div>
 
         <nav class="nav-list" aria-label="Разделы">
-          <button class="nav-item active" type="button">Workspace</button>
-          <button class="nav-item" type="button">Folders</button>
-          <button class="nav-item" type="button">Recent</button>
+          <button class="nav-item active" type="button" data-view="workspace" aria-current="page" title="Workspace">
+            <span class="nav-icon" aria-hidden="true">W</span>
+            <span class="nav-label">Workspace</span>
+          </button>
+          <button class="nav-item" type="button" data-view="folders" title="Folders">
+            <span class="nav-icon" aria-hidden="true">F</span>
+            <span class="nav-label">Folders</span>
+          </button>
+          <button class="nav-item" type="button" data-view="recent" title="Recent">
+            <span class="nav-icon" aria-hidden="true">R</span>
+            <span class="nav-label">Recent</span>
+          </button>
         </nav>
 
         <section class="workspace-panel" aria-label="Текущая папка">
@@ -29,7 +44,10 @@
         </section>
 
         <div class="sidebar-footer">
-          <button class="nav-item" type="button">Settings</button>
+          <button class="nav-item" type="button" data-view="settings" title="Settings">
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span class="nav-label">Settings</span>
+          </button>
         </div>
       </aside>
 
@@ -48,7 +66,7 @@
               <span class="search-icon" aria-hidden="true"></span>
               <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
             </label>
-            <button class="ghost-button" id="refreshButton" type="button">Refresh</button>
+            <button class="ghost-button" id="refreshButton" type="button" disabled>Refresh</button>
             <button class="primary-button" id="chooseFolderButton" type="button">Choose folder</button>
           </div>
         </header>
@@ -64,7 +82,6 @@
             <span class="empty-icon" aria-hidden="true"></span>
             <h2>No folder selected</h2>
             <p>Pick a parent folder to show its direct subfolders as cards.</p>
-            <button class="primary-button" id="emptyChooseButton" type="button">Choose folder</button>
           </div>
         </section>
       </main>

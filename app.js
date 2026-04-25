@@ -7,21 +7,48 @@ const selectedRootKey = "selected-root";
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
-const emptyChooseButton = document.querySelector("#emptyChooseButton");
 const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
 const folderGrid = document.querySelector("#folderGrid");
 const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
+const pageTitle = document.querySelector(".topbar h1");
 const totalFolders = document.querySelector("#totalFolders");
 const rootLabel = document.querySelector("#rootLabel");
 const sidebarRootName = document.querySelector("#sidebarRootName");
 const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
+const navButtons = [...document.querySelectorAll("[data-view]")];
+
+const views = {
+  workspace: {
+    title: "Workspace folders",
+    emptyTitle: "No folder selected",
+    emptyDescription: "Pick a parent folder from the top action to show its direct subfolders as cards.",
+  },
+  folders: {
+    title: "Folders",
+    emptyTitle: "No folder selected",
+    emptyDescription: "Choose a parent folder to populate this folder board.",
+  },
+  recent: {
+    title: "Recent",
+    emptyTitle: "No recent folders",
+    emptyDescription: "Recent folder activity will appear here after the workspace workflow is validated.",
+  },
+  settings: {
+    title: "Settings",
+    emptyTitle: "Settings are not configured",
+    emptyDescription: "Workspace settings will be added after the folder board MVP is validated.",
+  },
+};
+
+const folderViews = new Set(["workspace", "folders"]);
 
 let selectedHandle = null;
 let folders = [];
 let supportsDirectoryPicker = "showDirectoryPicker" in window;
+let activeView = "workspace";
 
 async function initializeApp() {
   bindEvents();
@@ -29,7 +56,7 @@ async function initializeApp() {
   if (!supportsDirectoryPicker) {
     setStatus("Folder selection requires a Chromium browser with File System Access API.", "error");
     chooseFolderButton.disabled = true;
-    emptyChooseButton.disabled = true;
+    updateActionStates();
     renderFolders();
     return;
   }
@@ -56,14 +83,18 @@ async function initializeApp() {
 function bindEvents() {
   sidebarToggle.addEventListener("click", () => {
     const collapsed = appShell.classList.toggle("sidebar-collapsed");
-    sidebarToggle.setAttribute("aria-label", collapsed ? "Показать меню" : "Скрыть меню");
+    const label = collapsed ? "Показать меню" : "Скрыть меню";
+    sidebarToggle.setAttribute("aria-label", label);
+    sidebarToggle.title = label;
   });
 
   chooseFolderButton.addEventListener("click", chooseFolder);
-  emptyChooseButton.addEventListener("click", chooseFolder);
   refreshButton.addEventListener("click", scanSelectedFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
+  navButtons.forEach((button) => {
+    button.addEventListener("click", () => setActiveView(button.dataset.view));
+  });
 }
 
 async function chooseFolder() {
@@ -76,6 +107,7 @@ async function chooseFolder() {
     selectedHandle = handle;
     folders = [];
     updateRoot(handle.name);
+    updateActionStates();
     await storeHandle(handle);
     restoreButton.hidden = true;
     await scanSelectedFolder();
@@ -128,6 +160,14 @@ async function scanSelectedFolder() {
 }
 
 function renderFolders() {
+  pageTitle.textContent = views[activeView].title;
+  updateActionStates();
+
+  if (!folderViews.has(activeView)) {
+    renderPlaceholder(views[activeView].emptyTitle, views[activeView].emptyDescription);
+    return;
+  }
+
   const visibleFolders = filterFolders(folders, searchInput.value);
   folderGrid.replaceChildren(...visibleFolders.map(createFolderCard));
 
@@ -137,7 +177,7 @@ function renderFolders() {
   if (!selectedHandle) {
     emptyState.querySelector("h2").textContent = supportsDirectoryPicker ? "No folder selected" : "Browser unsupported";
     emptyState.querySelector("p").textContent = supportsDirectoryPicker
-      ? "Pick a parent folder to show its direct subfolders as cards."
+      ? views[activeView].emptyDescription
       : "Open this app in a Chromium browser to choose local folders.";
   } else if (folders.length === 0) {
     emptyState.querySelector("h2").textContent = "No direct subfolders";
@@ -149,6 +189,40 @@ function renderFolders() {
 
   totalFolders.textContent = String(folders.length);
   sidebarFolderCount.textContent = String(folders.length);
+}
+
+function renderPlaceholder(title, description) {
+  folderGrid.replaceChildren();
+  emptyState.hidden = false;
+  emptyState.querySelector("h2").textContent = title;
+  emptyState.querySelector("p").textContent = description;
+  setStatus(`${views[activeView].title} is available as a navigation state in this MVP.`, "idle");
+}
+
+function setActiveView(view) {
+  activeView = views[view] ? view : "workspace";
+
+  navButtons.forEach((button) => {
+    const isActive = button.dataset.view === activeView;
+    button.classList.toggle("active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+
+  if (folderViews.has(activeView)) {
+    setStatus(selectedHandle ? `Showing ${folders.length} direct subfolders from ${selectedHandle.name}.` : "Choose a folder to build the board.", "idle");
+  }
+
+  renderFolders();
+}
+
+function updateActionStates() {
+  const canUseFolderBoard = supportsDirectoryPicker && folderViews.has(activeView);
+  refreshButton.disabled = !selectedHandle || !canUseFolderBoard;
+  searchInput.disabled = !canUseFolderBoard;
 }
 
 function createFolderCard(folder, index) {

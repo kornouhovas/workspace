@@ -117,20 +117,55 @@ input:focus-visible {
 }
 
 .nav-item {
+  display: flex;
+  width: 100%;
   min-width: 0;
+  min-height: 30px;
+  align-items: center;
+  gap: 10px;
   border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  padding: 0;
+  padding: 0 8px;
   text-align: left;
   font-size: 17px;
   line-height: 1.3;
   white-space: nowrap;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
 .nav-item.active,
 .nav-item:hover {
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+}
+
+.nav-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.nav-item.active .nav-icon,
+.nav-item:hover .nav-icon {
+  border-color: #343433;
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+.nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .workspace-panel {
@@ -170,11 +205,36 @@ input:focus-visible {
   padding-inline: 16px;
 }
 
-.sidebar-collapsed .nav-list,
-.sidebar-collapsed .workspace-panel,
-.sidebar-collapsed .sidebar-footer {
+.sidebar-collapsed .brand-row {
+  justify-content: center;
+}
+
+.sidebar-collapsed .brand-mark {
+  display: none;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+  width: 40px;
+}
+
+.sidebar-collapsed .workspace-panel {
   opacity: 0;
   pointer-events: none;
+}
+
+.sidebar-collapsed .nav-list,
+.sidebar-collapsed .sidebar-footer {
+  justify-items: center;
+}
+
+.sidebar-collapsed .nav-item {
+  width: 40px;
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.sidebar-collapsed .nav-label {
+  display: none;
 }
 
 .main {
@@ -274,6 +334,12 @@ input:focus-visible {
   padding: 0 12px;
   font-size: 13px;
   font-weight: 520;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease;
 }
 
 .primary-button {
@@ -285,7 +351,28 @@ input:focus-visible {
 .primary-button:hover,
 .ghost-button:hover,
 .icon-button:hover {
+  border-color: #54544f;
+  background: #30302e;
   filter: brightness(1.08);
+}
+
+.primary-button:hover {
+  background: #ffffff;
+}
+
+.primary-button:active,
+.ghost-button:active,
+.icon-button:active {
+  transform: translateY(1px);
+}
+
+.primary-button:disabled,
+.ghost-button:disabled,
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: none;
+  transform: none;
 }
 
 .icon-button {
@@ -473,50 +560,76 @@ input:focus-visible {
 @media (max-width: 760px) {
   .app-shell,
   .app-shell.sidebar-collapsed {
+    display: block;
     min-height: 100vh;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .sidebar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
     z-index: 5;
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-    min-height: 64px;
-    overflow-x: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--line-soft);
-    padding: 14px;
+    width: 224px;
+    height: 100vh;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 0;
+    padding: 24px 16px;
+    transition: width 160ms ease;
+  }
+
+  .sidebar-collapsed .sidebar {
+    width: 72px;
+    padding-inline: 16px;
   }
 
   .brand-row {
-    margin: 0;
+    margin-bottom: 34px;
   }
 
   .brand-mark {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
   }
 
   .nav-list {
-    display: flex;
-    margin: 0;
+    display: grid;
+    margin-bottom: 30px;
   }
 
-  .workspace-panel,
+  .workspace-panel {
+    display: grid;
+  }
+
   .sidebar-footer {
+    display: grid;
+  }
+
+  .sidebar-collapsed .workspace-panel {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-collapsed .brand-mark {
     display: none;
   }
 
   .sidebar-collapsed .nav-list {
-    display: none;
+    display: grid;
+  }
+
+  .sidebar-collapsed .sidebar-toggle {
+    width: 40px;
   }
 
   .main {
+    min-height: 100vh;
+    margin-left: 224px;
     padding: 18px 14px;
+    transition: margin-left 160ms ease;
+  }
+
+  .sidebar-collapsed .main {
+    margin-left: 72px;
   }
 
   .topbar,
