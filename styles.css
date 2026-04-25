@@ -1,7 +1,6 @@
 :root {
   color-scheme: dark;
   --page: #111111;
-  --chrome: #050505;
   --app: #1b1b1a;
   --sidebar: #20201f;
   --panel: #1c1c1b;
@@ -54,67 +53,9 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
-.browser-frame {
-  width: min(1580px, calc(100vw - 64px));
-  height: min(900px, calc(100vh - 72px));
-  min-height: 720px;
-  margin: 36px auto;
-  overflow: hidden;
-  border: 1px solid #343433;
-  border-radius: 16px;
-  background: var(--app);
-  box-shadow: 0 36px 120px rgba(0, 0, 0, 0.5);
-}
-
-.browser-bar {
-  display: grid;
-  height: 50px;
-  grid-template-columns: 170px minmax(240px, 560px) 170px;
-  align-items: center;
-  border-bottom: 1px solid var(--line-soft);
-  background: var(--chrome);
-  padding: 0 24px;
-}
-
-.traffic-lights {
-  display: flex;
-  gap: 10px;
-}
-
-.traffic-lights span {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-}
-
-.traffic-lights span:nth-child(1) {
-  background: #ff5f57;
-}
-
-.traffic-lights span:nth-child(2) {
-  background: #febc2e;
-}
-
-.traffic-lights span:nth-child(3) {
-  background: #28c840;
-}
-
-.address-pill {
-  justify-self: center;
-  width: min(640px, 100%);
-  height: 32px;
-  border-radius: 8px;
-  background: #1c1c1c;
-  color: #aaa9a3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-}
-
 .app-shell {
   display: grid;
-  height: calc(100% - 50px);
+  min-height: 100vh;
   grid-template-columns: 224px minmax(0, 1fr);
   background: var(--app);
   transition: grid-template-columns 160ms ease;
@@ -524,30 +465,17 @@ input:focus-visible {
 }
 
 @media (max-width: 1080px) {
-  .browser-frame {
-    width: 100vw;
-    height: 100vh;
-    min-height: 0;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-  }
-
-  .browser-bar {
-    grid-template-columns: 100px minmax(180px, 1fr) 20px;
-    padding: 0 14px;
+  .app-shell {
+    grid-template-columns: 204px minmax(0, 1fr);
   }
 }
 
 @media (max-width: 760px) {
-  .browser-bar {
-    display: none;
-  }
-
   .app-shell,
   .app-shell.sidebar-collapsed {
-    height: 100%;
+    min-height: 100vh;
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .sidebar {
