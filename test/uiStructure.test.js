@@ -195,6 +195,11 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /folderGrid\.addEventListener\("dragstart", handleBoardColumnDragStart\)/);
   assert.match(app, /folderGrid\.addEventListener\("dragover", handleBoardColumnDragOver\)/);
   assert.match(app, /folderGrid\.addEventListener\("drop", handleBoardColumnDrop\)/);
+  assert.match(app, /function getPreviewStatusOrder\(event, targetColumn\)/);
+  assert.match(app, /function applyBoardColumnTitlePreview\(previewStatuses\)/);
+  assert.match(app, /function clearBoardColumnTitlePreview\(\)/);
+  assert.match(app, /title\.style\.setProperty\("--board-title-shift"/);
+  assert.match(app, /title\.style\.removeProperty\("--board-title-shift"\)/);
   assert.match(app, /function handleBoardColumnDragStart\(event\)/);
   assert.match(app, /function handleBoardColumnDragOver\(event\)/);
   assert.match(app, /function handleBoardColumnDrop\(event\)/);
@@ -203,8 +208,12 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /function getOrderedStatuses\(visibleFolders\)/);
   assert.match(app, /saveStatusOrder\(reorderedStatuses\)/);
   assert.match(css, /\.board-column-title\s*\{[^}]*cursor:\s*grab/s);
-  assert.match(css, /\.board-column\.is-dragging\s*\{[^}]*opacity:/s);
-  assert.match(css, /\.board-column\.is-drop-target\s*\{[^}]*outline:/s);
+  assert.doesNotMatch(css, /\.board-column-title\s*\{[^}]*pointer-events:\s*none/s);
+  assert.doesNotMatch(css, /\.board-column\.is-drop-target/s);
+  assert.doesNotMatch(app, /is-drop-target/);
+  assert.match(css, /--board-title-shift:\s*0px/);
+  assert.match(css, /\.board-column-title\.is-preview-shift-left\s*\{[^}]*transform:\s*translateX\(calc\(-1 \* var\(--board-title-shift\)\)\)/s);
+  assert.match(css, /\.board-column-title\.is-preview-shift-right\s*\{[^}]*transform:\s*translateX\(var\(--board-title-shift\)\)/s);
 });
 
 test("left panel collapsed state is persisted across browser refresh", async () => {

@@ -604,15 +604,11 @@ input:focus-visible {
   opacity: 0.55;
 }
 
-.board-column.is-drop-target {
-  outline: 1px solid var(--blue);
-  outline-offset: 4px;
-}
-
 .board-column-title {
   position: absolute;
   top: 0;
   left: 0;
+  --board-title-shift: 0px;
   max-width: 100%;
   overflow: hidden;
   margin: 0;
@@ -621,13 +617,21 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 560;
   line-height: 1.2;
-  pointer-events: none;
   text-overflow: ellipsis;
+  transition: transform 140ms ease;
   white-space: nowrap;
 }
 
 .board-column-title:active {
   cursor: grabbing;
+}
+
+.board-column-title.is-preview-shift-left {
+  transform: translateX(calc(-1 * var(--board-title-shift)));
+}
+
+.board-column-title.is-preview-shift-right {
+  transform: translateX(var(--board-title-shift));
 }
 
 .board-column-cards {

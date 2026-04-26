@@ -671,50 +671,93 @@ function handleBoardColumnDragStart(event) {
 
 function handleBoardColumnDragOver(event) {
   const targetColumn = event.target.closest(".board-column");
-  if (!draggedStatus || !targetColumn || targetColumn.dataset.status === draggedStatus) {
+  if (!draggedStatus || !targetColumn) {
     return;
   }
 
   event.preventDefault();
-  targetColumn.classList.add("is-drop-target");
+  applyBoardColumnTitlePreview(getPreviewStatusOrder(event, targetColumn));
 }
 
 function handleBoardColumnDragLeave(event) {
-  const targetColumn = event.target.closest(".board-column");
-  if (targetColumn && !targetColumn.contains(event.relatedTarget)) {
-    targetColumn.classList.remove("is-drop-target");
+  if (!folderGrid.contains(event.relatedTarget)) {
+    clearBoardColumnTitlePreview();
   }
 }
 
 function handleBoardColumnDrop(event) {
   const targetColumn = event.target.closest(".board-column");
-  if (!draggedStatus || !targetColumn || targetColumn.dataset.status === draggedStatus) {
+  if (!draggedStatus || !targetColumn) {
     return;
   }
 
   event.preventDefault();
-  const targetStatus = targetColumn.dataset.status;
-  const reorderedStatuses = moveStatusBefore(getOrderedStatuses(filterFolders(folders, searchInput.value)), draggedStatus, targetStatus);
+  const reorderedStatuses = getPreviewStatusOrder(event, targetColumn);
   saveStatusOrder(reorderedStatuses);
   draggedStatus = null;
+  clearBoardColumnTitlePreview();
   renderFolders();
 }
 
 function handleBoardColumnDragEnd() {
   draggedStatus = null;
+  clearBoardColumnTitlePreview();
   folderGrid.querySelectorAll(".board-column").forEach((column) => {
-    column.classList.remove("is-dragging", "is-drop-target");
+    column.classList.remove("is-dragging");
   });
 }
 
-function moveStatusBefore(statuses, movedStatus, targetStatus) {
+function getPreviewStatusOrder(event, targetColumn) {
+  const statuses = getOrderedStatuses(filterFolders(folders, searchInput.value));
+  const targetStatus = targetColumn.dataset.status;
+  if (!draggedStatus || !targetStatus || targetStatus === draggedStatus) {
+    return statuses;
+  }
+
+  const targetRect = targetColumn.getBoundingClientRect();
+  const insertAfterTarget = event.clientX > targetRect.left + targetRect.width / 2;
+
+  return moveStatusNearTarget(statuses, draggedStatus, targetStatus, insertAfterTarget);
+}
+
+function moveStatusNearTarget(statuses, movedStatus, targetStatus, insertAfterTarget) {
   const withoutMoved = statuses.filter((status) => status !== movedStatus);
   const targetIndex = withoutMoved.indexOf(targetStatus);
   if (targetIndex < 0) {
     return statuses;
   }
 
-  return [...withoutMoved.slice(0, targetIndex), movedStatus, ...withoutMoved.slice(targetIndex)];
+  const insertIndex = targetIndex + (insertAfterTarget ? 1 : 0);
+  return [...withoutMoved.slice(0, insertIndex), movedStatus, ...withoutMoved.slice(insertIndex)];
+}
+
+function applyBoardColumnTitlePreview(previewStatuses) {
+  const columns = [...folderGrid.querySelectorAll(".board-column")];
+  const columnGap = Number.parseFloat(getComputedStyle(folderGrid).columnGap) || 0;
+  columns.forEach((column, currentIndex) => {
+    const title = column.querySelector(".board-column-title");
+    const previewIndex = previewStatuses.indexOf(column.dataset.status);
+    const shiftDistance = `${column.getBoundingClientRect().width + columnGap}px`;
+    title.classList.remove("is-preview-shift-left", "is-preview-shift-right");
+    title.style.setProperty("--board-title-shift", shiftDistance);
+
+    if (previewIndex < 0 || column.dataset.status === draggedStatus) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      title.classList.add("is-preview-shift-left");
+    } else if (previewIndex > currentIndex) {
+      title.classList.add("is-preview-shift-right");
+    }
+  });
+}
+
+function clearBoardColumnTitlePreview() {
+  folderGrid.querySelectorAll(".board-column-title").forEach((title) => {
+    title.classList.remove("is-preview-shift-left", "is-preview-shift-right");
+    title.style.removeProperty("--board-title-shift");
+  });
 }
 
 function createTableRow(folder) {
