@@ -209,6 +209,7 @@ test("table columns can be resized and reordered from the header", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
   assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /tableColumnOrder:\s*\[\.\.\.tableColumnIds\]/);
   assert.match(app, /tableNameWidth:\s*58/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
@@ -216,7 +217,14 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
   assert.match(app, /function saveTableNameWidth\(tableNameWidth\)/);
   assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnResizeStart\)/);
+  assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnPointerDragStart\)/);
+  assert.match(app, /window\.addEventListener\("pointermove", handleTableColumnPointerDragMove\)/);
+  assert.match(app, /window\.addEventListener\("pointerup", handleTableColumnPointerDragEnd\)/);
   assert.match(app, /folderGrid\.addEventListener\("dragstart", handleTableColumnDragStart\)/);
+  assert.match(app, /function handleTableColumnPointerDragStart\(event\)/);
+  assert.match(app, /function handleTableColumnPointerDragMove\(event\)/);
+  assert.match(app, /function handleTableColumnPointerDragEnd\(event\)/);
+  assert.match(app, /document\s*\.elementFromPoint\(event\.clientX, event\.clientY\)/);
   assert.match(app, /function createTableHeaderCell\(columnId\)/);
   assert.match(app, /function createTableResizeHandle\(\)/);
   assert.match(app, /function getTablePreviewColumnOrder\(event, targetCell\)/);
@@ -226,12 +234,20 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /tableElement\.style\.setProperty\("--table-name-column-width"/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
-  assert.match(app, /cell\.draggable = true/);
+  assert.match(app, /cell\.draggable = false/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
+  assert.match(css, /\.folder-table-head\s*\{[^}]*padding:\s*0 8px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*min-height:\s*36px/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*align-items:\s*center/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
   assert.match(css, /\.table-resize-handle\s*\{/);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*top:\s*0/s);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*cursor:\s*col-resize/s);
+  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*top:\s*0/s);
+  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.folder-table-head:hover \.table-resize-handle/s);
   assert.match(css, /\.folder-table-cell\.is-table-drag-source\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.folder-table-cell\.is-table-preview-left/s);

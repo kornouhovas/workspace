@@ -69,6 +69,7 @@ let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
 let draggedTableColumn = null;
+let tableColumnPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
 let workspaceSequence = 1;
@@ -167,10 +168,13 @@ function bindEvents() {
   folderGrid.addEventListener("dragend", handleBoardColumnDragEnd);
   folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
+  folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
+  window.addEventListener("pointermove", handleTableColumnPointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
+  window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
@@ -992,6 +996,79 @@ function handleTableColumnDragEnd() {
   clearTableColumnDragState();
 }
 
+function handleTableColumnPointerDragStart(event) {
+  const cell = event.target.closest(".folder-table-head .folder-table-cell");
+  if (
+    !cell ||
+    event.target.closest(".table-resize-handle") ||
+    tableResizeState ||
+    tableColumnPointerDragState ||
+    getActiveBoardView() !== "table"
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  tableColumnPointerDragState = {
+    columnId: cell.dataset.tableColumn,
+    startX: event.clientX,
+    startY: event.clientY,
+    sourceCell: cell,
+    targetCell: cell,
+    isDragging: false,
+  };
+  cell.setPointerCapture?.(event.pointerId);
+}
+
+function handleTableColumnPointerDragMove(event) {
+  if (!tableColumnPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - tableColumnPointerDragState.startX,
+    event.clientY - tableColumnPointerDragState.startY,
+  );
+  if (!tableColumnPointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  tableColumnPointerDragState.isDragging = true;
+  draggedTableColumn = tableColumnPointerDragState.columnId;
+  tableColumnPointerDragState.sourceCell.classList.add("is-table-drag-source");
+
+  const targetCell = document
+    .elementFromPoint(event.clientX, event.clientY)
+    ?.closest(".folder-table-head .folder-table-cell");
+  if (!targetCell) {
+    return;
+  }
+
+  tableColumnPointerDragState.targetCell = targetCell;
+  applyTableColumnPreview(getTablePreviewColumnOrder(event, targetCell));
+}
+
+function handleTableColumnPointerDragEnd(event) {
+  if (!tableColumnPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetCell } = tableColumnPointerDragState;
+  tableColumnPointerDragState = null;
+
+  if (!isDragging || !targetCell) {
+    return;
+  }
+
+  event.preventDefault();
+  const tableColumnOrder = getTablePreviewColumnOrder(event, targetCell);
+  saveTableColumnOrder(tableColumnOrder);
+  draggedTableColumn = null;
+  clearTableColumnDragState();
+  renderFolders();
+}
+
 function getTablePreviewColumnOrder(event, targetCell) {
   const columnOrder = getActiveTableColumnOrder();
   const targetColumn = targetCell.dataset.tableColumn;
@@ -1065,7 +1142,7 @@ function createTableHeaderCell(columnId) {
   const cell = document.createElement("button");
   cell.className = "folder-table-cell";
   cell.type = "button";
-  cell.draggable = true;
+  cell.draggable = false;
   cell.dataset.tableColumn = columnId;
   cell.textContent = tableColumnLabels[columnId];
 

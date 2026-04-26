@@ -688,6 +688,7 @@ input:focus-visible {
 .folder-table-head {
   color: var(--faint);
   font-size: 13px;
+  padding: 0 8px;
 }
 
 .folder-table-cell {
@@ -703,8 +704,11 @@ input:focus-visible {
 }
 
 .folder-table-head .folder-table-cell {
+  display: flex;
   position: relative;
   overflow: visible;
+  min-height: 36px;
+  align-items: center;
   color: var(--faint);
   cursor: grab;
   font-size: 13px;
@@ -728,9 +732,9 @@ input:focus-visible {
 
 .table-resize-handle {
   position: absolute;
-  top: -10px;
+  top: 0;
   right: -10px;
-  bottom: -10px;
+  bottom: 0;
   z-index: 2;
   display: block;
   width: 18px;
@@ -740,9 +744,9 @@ input:focus-visible {
 
 .table-resize-handle::after {
   position: absolute;
-  top: 5px;
+  top: 0;
   right: 8px;
-  bottom: 5px;
+  bottom: 0;
   width: 1px;
   background: var(--faint);
   content: "";
