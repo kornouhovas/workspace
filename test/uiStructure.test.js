@@ -137,7 +137,7 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
   assert.match(
     html,
-    /renderInitialFolders\(folderGrid, snapshot\.folders, boardView, statusOrder, tableColumnOrder, tableNameWidth\)/,
+    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*\)/,
   );
   assert.match(html, /function getStoredStatusOrder\(state\)/);
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder\)/);
@@ -209,14 +209,15 @@ test("table columns can be resized and reordered from the header", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
   assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.match(app, /const defaultTableColumnWidths = \{/);
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);
   assert.match(app, /tableColumnOrder:\s*\[\.\.\.tableColumnIds\]/);
-  assert.match(app, /tableNameWidth:\s*58/);
+  assert.match(app, /tableColumnWidths:\s*\{\s*\.\.\.defaultTableColumnWidths\s*\}/s);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
-  assert.match(app, /function normalizeTableNameWidth\(width\)/);
+  assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth\)/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
-  assert.match(app, /function saveTableNameWidth\(tableNameWidth\)/);
+  assert.match(app, /function saveTableColumnWidth\(columnId, width\)/);
   assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnResizeStart\)/);
   assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnPointerDragStart\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleTableColumnPointerDragMove\)/);
@@ -230,25 +231,29 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function removeTableColumnDragImage\(\)/);
   assert.match(app, /document\s*\.elementFromPoint\(event\.clientX, event\.clientY\)/);
   assert.match(app, /function createTableHeaderCell\(columnId\)/);
-  assert.match(app, /function createTableResizeHandle\(\)/);
+  assert.match(app, /function createTableResizeHandle\(columnId\)/);
   assert.match(app, /function getTablePreviewColumnOrder\(event, targetCell\)/);
   assert.match(app, /function applyTableColumnPreview\(previewColumnOrder\)/);
   assert.match(app, /function clearTableColumnDragState\(\)/);
   assert.match(app, /function setTableGridTemplate\(tableElement\)/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-name-column-width"/);
+  assert.match(app, /tableElement\.style\.setProperty\("--table-status-column-width"/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
   assert.match(app, /cell\.draggable = false/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
-  assert.match(css, /\.folder-table-head\s*\{[^}]*padding:\s*0 8px/s);
+  assert.match(css, /\.folder-table-head\s*\{[^}]*padding:\s*0/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*align-items:\s*center/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*padding:\s*0 12px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell::after\s*\{/);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover::after/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
+  assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*border-radius/s);
   assert.match(css, /\.table-column-drag-image\s*\{/);
+  assert.match(css, /\.table-column-drag-image\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.table-resize-handle\s*\{/);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*bottom:\s*0/s);
@@ -261,8 +266,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-left/s);
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
-  assert.match(html, /function getStoredTableNameWidth\(state\)/);
-  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableNameWidth\)/);
+  assert.match(html, /function getStoredTableColumnWidths\(state\)/);
+  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableColumnWidths\)/);
 });
 
 test("board columns can be reordered by dragging column titles", async () => {

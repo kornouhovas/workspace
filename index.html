@@ -212,7 +212,7 @@
           const boardView = getStoredBoardView();
           const statusOrder = getStoredStatusOrder(workspaceState);
           const tableColumnOrder = getStoredTableColumnOrder(workspaceState);
-          const tableNameWidth = getStoredTableNameWidth(workspaceState);
+          const tableColumnWidths = getStoredTableColumnWidths(workspaceState);
           const folderGrid = document.querySelector("#folderGrid");
           const emptyState = document.querySelector("#emptyState");
           const sidebarRootName = document.querySelector("#sidebarRootName");
@@ -225,7 +225,14 @@
             emptyState.hidden = true;
             document.querySelector(".kanban-board").classList.toggle("board-mode", boardView === "board");
             document.querySelector(".kanban-board").classList.toggle("table-mode", boardView === "table");
-            renderInitialFolders(folderGrid, snapshot.folders, boardView, statusOrder, tableColumnOrder, tableNameWidth);
+            renderInitialFolders(
+              folderGrid,
+              snapshot.folders,
+              boardView,
+              statusOrder,
+              tableColumnOrder,
+              tableColumnWidths,
+            );
           } else {
             emptyState.querySelector("h2").textContent = "No folders in statuses";
             emptyState.querySelector("p").textContent =
@@ -239,7 +246,7 @@
           boardView,
           statusOrder = [],
           tableColumnOrder = ["name", "status"],
-          tableNameWidth = 58,
+          tableColumnWidths = { name: 46, status: 22 },
         ) {
           if (boardView === "board") {
             folderGrid.className = "folder-board-view";
@@ -249,7 +256,7 @@
 
           if (boardView === "table") {
             folderGrid.className = "folder-table";
-            folderGrid.replaceChildren(createInitialTable(folders, tableColumnOrder, tableNameWidth));
+            folderGrid.replaceChildren(createInitialTable(folders, tableColumnOrder, tableColumnWidths));
             return;
           }
 
@@ -285,15 +292,16 @@
           });
         }
 
-        function createInitialTable(folders, tableColumnOrder, tableNameWidth) {
+        function createInitialTable(folders, tableColumnOrder, tableColumnWidths) {
           const table = document.createElement("div");
           table.className = "folder-table-surface";
-          table.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+          table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
+          table.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
           table.style.setProperty(
             "--table-columns",
             tableColumnOrder
               .map((columnId) =>
-                columnId === "name" ? "minmax(180px, var(--table-name-column-width))" : "minmax(140px, 1fr)",
+                `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${columnId}-column-width))`,
               )
               .join(" "),
           );
@@ -399,16 +407,26 @@
           return [...normalizedColumns, ...missingColumns];
         }
 
-        function getStoredTableNameWidth(state) {
+        function getStoredTableColumnWidths(state) {
+          const defaultWidths = { name: 46, status: 22 };
           if (!isStoredWorkspaceState(state)) {
-            return 58;
+            return defaultWidths;
           }
 
           const activeWorkspace =
             state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-          const tableNameWidth = Number(activeWorkspace.tableNameWidth);
+          const storedWidths = activeWorkspace.tableColumnWidths || {};
 
-          return Number.isFinite(tableNameWidth) ? Math.min(78, Math.max(34, Math.round(tableNameWidth))) : 58;
+          return {
+            name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeWorkspace.tableNameWidth, 24, 78, 46),
+            status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 22),
+          };
+        }
+
+        function normalizeInitialTableColumnWidth(width, min, max, fallback) {
+          const tableColumnWidth = Number(width);
+
+          return Number.isFinite(tableColumnWidth) ? Math.min(max, Math.max(min, Math.round(tableColumnWidth))) : fallback;
         }
 
         function isStoredWorkspaceState(state) {

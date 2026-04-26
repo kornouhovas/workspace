@@ -672,7 +672,7 @@ input:focus-visible {
 
 .folder-table-row {
   display: grid;
-  grid-template-columns: var(--table-columns, minmax(180px, 58%) minmax(140px, 1fr));
+  grid-template-columns: var(--table-columns, minmax(180px, 46%) minmax(110px, 22%));
   gap: 18px;
   border-bottom: 1px solid var(--line);
   padding: 10px 8px;
@@ -688,7 +688,7 @@ input:focus-visible {
 .folder-table-head {
   color: var(--faint);
   font-size: 13px;
-  padding: 0 8px;
+  padding: 0;
 }
 
 .folder-table-cell {
@@ -714,6 +714,7 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 560;
   line-height: 1.2;
+  padding: 0 12px;
   transition:
     background-color 140ms ease,
     color 140ms ease,
@@ -734,7 +735,6 @@ input:focus-visible {
 }
 
 .folder-table-head .folder-table-cell:hover {
-  border-radius: 6px;
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
 }
@@ -782,14 +782,17 @@ input:focus-visible {
 }
 
 .table-column-drag-image {
+  display: flex;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 20;
-  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 36px;
+  align-items: center;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
-  padding: 9px 12px;
+  padding: 0 12px;
   pointer-events: none;
   font-size: 13px;
   font-weight: 560;

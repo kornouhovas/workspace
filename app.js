@@ -58,9 +58,15 @@ const tableColumnLabels = {
   name: "Name",
   status: "Status",
 };
-const defaultTableNameWidth = 58;
-const minTableNameWidth = 34;
-const maxTableNameWidth = 78;
+const defaultTableColumnWidths = {
+  name: 46,
+  status: 22,
+};
+const tableColumnWidthLimits = {
+  name: { min: 24, max: 78 },
+  status: { min: 12, max: 36 },
+};
+const maxTableColumnTotalWidth = 94;
 
 let selectedHandle = null;
 let folders = [];
@@ -81,7 +87,7 @@ let workspaces = [
     boardView: "overview",
     statusOrder: [],
     tableColumnOrder: [...tableColumnIds],
-    tableNameWidth: 58,
+    tableColumnWidths: { ...defaultTableColumnWidths },
   },
 ];
 let activeWorkspaceId = "workspace-1";
@@ -243,7 +249,7 @@ function addWorkspace() {
     boardView: "overview",
     statusOrder: [],
     tableColumnOrder: [...tableColumnIds],
-    tableNameWidth: 58,
+    tableColumnWidths: { ...defaultTableColumnWidths },
   };
 
   workspaces.push(workspace);
@@ -315,7 +321,13 @@ function getActiveTableColumnOrder() {
 }
 
 function getActiveTableNameWidth() {
-  return normalizeTableNameWidth(getActiveWorkspace()?.tableNameWidth);
+  return getActiveTableColumnWidths().name;
+}
+
+function getActiveTableColumnWidths() {
+  const workspace = getActiveWorkspace();
+
+  return normalizeTableColumnWidths(workspace?.tableColumnWidths, workspace?.tableNameWidth);
 }
 
 function normalizeBoardView(boardView) {
@@ -334,12 +346,44 @@ function normalizeTableColumnOrder(columnOrder) {
 }
 
 function normalizeTableNameWidth(width) {
+  return normalizeTableColumnWidth("name", width);
+}
+
+function normalizeTableColumnWidth(columnId, width) {
   const parsedWidth = Number(width);
   if (!Number.isFinite(parsedWidth)) {
-    return defaultTableNameWidth;
+    return defaultTableColumnWidths[columnId];
   }
 
-  return Math.min(maxTableNameWidth, Math.max(minTableNameWidth, Math.round(parsedWidth)));
+  const limits = tableColumnWidthLimits[columnId];
+
+  return Math.min(limits.max, Math.max(limits.min, Math.round(parsedWidth)));
+}
+
+function normalizeTableColumnWidths(widths, legacyNameWidth) {
+  const normalizedWidths = tableColumnIds.reduce((nextWidths, columnId) => {
+    const width = widths?.[columnId] ?? (columnId === "name" ? legacyNameWidth : undefined);
+    nextWidths[columnId] = normalizeTableColumnWidth(columnId, width);
+
+    return nextWidths;
+  }, {});
+  const totalWidth = tableColumnIds.reduce((total, columnId) => total + normalizedWidths[columnId], 0);
+
+  if (totalWidth > maxTableColumnTotalWidth) {
+    const overflow = totalWidth - maxTableColumnTotalWidth;
+    normalizedWidths.name = normalizeTableColumnWidth("name", normalizedWidths.name - overflow);
+  }
+
+  return normalizedWidths;
+}
+
+function normalizeResizedTableColumnWidth(columnId, width, currentWidths) {
+  const siblingWidth = tableColumnIds
+    .filter((tableColumnId) => tableColumnId !== columnId)
+    .reduce((total, tableColumnId) => total + currentWidths[tableColumnId], 0);
+  const maxWidth = maxTableColumnTotalWidth - siblingWidth;
+
+  return Math.min(maxWidth, normalizeTableColumnWidth(columnId, width));
 }
 
 function getNextWorkspaceNumber() {
@@ -429,7 +473,7 @@ function loadWorkspaceState() {
         ? workspace.statusOrder.filter((status) => typeof status === "string")
         : [],
       tableColumnOrder: normalizeTableColumnOrder(workspace.tableColumnOrder),
-      tableNameWidth: normalizeTableNameWidth(workspace.tableNameWidth),
+      tableColumnWidths: normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
     }));
     activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
       ? storedState.activeWorkspaceId
@@ -475,9 +519,23 @@ function saveTableColumnOrder(tableColumnOrder) {
 }
 
 function saveTableNameWidth(tableNameWidth) {
+  saveTableColumnWidth("name", tableNameWidth);
+}
+
+function saveTableColumnWidth(columnId, width) {
+  if (!tableColumnIds.includes(columnId)) {
+    return;
+  }
+
   workspaces = workspaces.map((workspace) =>
     workspace.id === activeWorkspaceId
-      ? { ...workspace, tableNameWidth: normalizeTableNameWidth(tableNameWidth) }
+      ? {
+          ...workspace,
+          tableColumnWidths: {
+            ...normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
+            [columnId]: normalizeTableColumnWidth(columnId, width),
+          },
+        }
       : workspace,
   );
   saveWorkspaceState();
@@ -708,12 +766,13 @@ function renderTableView(visibleFolders) {
 
 function setTableGridTemplate(tableElement) {
   const columnOrder = getActiveTableColumnOrder();
-  const tableNameWidth = getActiveTableNameWidth();
+  const tableColumnWidths = getActiveTableColumnWidths();
   const columnTracks = columnOrder.map((columnId) =>
-    columnId === "name" ? "minmax(180px, var(--table-name-column-width))" : "minmax(140px, 1fr)",
+    `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${columnId}-column-width))`,
   );
 
-  tableElement.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+  tableElement.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
+  tableElement.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
   tableElement.style.setProperty("--table-columns", columnTracks.join(" "));
 }
 
@@ -916,9 +975,12 @@ function handleTableColumnResizeStart(event) {
 
   event.preventDefault();
   event.stopPropagation();
+  const startColumnWidths = getActiveTableColumnWidths();
   tableResizeState = {
+    columnId: handle.dataset.tableColumn,
     startX: event.clientX,
-    startWidth: getActiveTableNameWidth(),
+    startWidth: startColumnWidths[handle.dataset.tableColumn],
+    startColumnWidths,
     tableWidth: tableElement.getBoundingClientRect().width,
     tableElement,
   };
@@ -934,8 +996,15 @@ function handleTableColumnResizeMove(event) {
   }
 
   const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
-  const tableNameWidth = normalizeTableNameWidth(tableResizeState.startWidth + deltaWidth);
-  tableResizeState.tableElement.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+  const tableColumnWidth = normalizeResizedTableColumnWidth(
+    tableResizeState.columnId,
+    tableResizeState.startWidth + deltaWidth,
+    tableResizeState.startColumnWidths,
+  );
+  tableResizeState.tableElement.style.setProperty(
+    `--table-${tableResizeState.columnId}-column-width`,
+    `${tableColumnWidth}%`,
+  );
 }
 
 function handleTableColumnResizeEnd(event) {
@@ -944,10 +1013,15 @@ function handleTableColumnResizeEnd(event) {
   }
 
   const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
-  const tableNameWidth = normalizeTableNameWidth(tableResizeState.startWidth + deltaWidth);
+  const tableColumnWidth = normalizeResizedTableColumnWidth(
+    tableResizeState.columnId,
+    tableResizeState.startWidth + deltaWidth,
+    tableResizeState.startColumnWidths,
+  );
+  const { columnId } = tableResizeState;
   tableResizeState.tableElement.classList.remove("is-resizing-table");
   tableResizeState = null;
-  saveTableNameWidth(tableNameWidth);
+  saveTableColumnWidth(columnId, tableColumnWidth);
 }
 
 function handleTableColumnDragStart(event) {
@@ -1020,7 +1094,11 @@ function handleTableColumnPointerDragStart(event) {
     targetCell: cell,
     isDragging: false,
   };
-  cell.setPointerCapture?.(event.pointerId);
+  try {
+    cell.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
 }
 
 function handleTableColumnPointerDragMove(event) {
@@ -1082,9 +1160,14 @@ function handleTableColumnPointerDragEnd(event) {
 
 function createTableColumnDragImage(columnId, event) {
   removeTableColumnDragImage();
+  const sourceRect = tableColumnPointerDragState?.sourceCell.getBoundingClientRect();
   const dragImage = document.createElement("div");
   dragImage.className = "table-column-drag-image";
   dragImage.textContent = tableColumnLabels[columnId] || columnId;
+  if (sourceRect) {
+    dragImage.style.width = `${sourceRect.width}px`;
+    dragImage.style.height = `${sourceRect.height}px`;
+  }
   document.body.append(dragImage);
   tableColumnDragImage = dragImage;
   moveTableColumnDragImage(event);
@@ -1095,7 +1178,7 @@ function moveTableColumnDragImage(event) {
     return;
   }
 
-  tableColumnDragImage.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
+  tableColumnDragImage.style.transform = `translate(${event.clientX + 12}px, ${event.clientY - 18}px)`;
 }
 
 function removeTableColumnDragImage() {
@@ -1180,16 +1263,15 @@ function createTableHeaderCell(columnId) {
   cell.dataset.tableColumn = columnId;
   cell.textContent = tableColumnLabels[columnId];
 
-  if (columnId === "name") {
-    cell.append(createTableResizeHandle());
-  }
+  cell.append(createTableResizeHandle(columnId));
 
   return cell;
 }
 
-function createTableResizeHandle() {
+function createTableResizeHandle(columnId) {
   const handle = document.createElement("span");
   handle.className = "table-resize-handle";
+  handle.dataset.tableColumn = columnId;
   handle.setAttribute("aria-hidden", "true");
 
   return handle;
