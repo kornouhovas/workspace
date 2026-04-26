@@ -196,10 +196,15 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /folderGrid\.addEventListener\("dragover", handleBoardColumnDragOver\)/);
   assert.match(app, /folderGrid\.addEventListener\("drop", handleBoardColumnDrop\)/);
   assert.match(app, /function getPreviewStatusOrder\(event, targetColumn\)/);
+  assert.match(app, /function getColumnInsertAfterTarget\(event, statuses, targetColumn\)/);
   assert.match(app, /function applyBoardColumnTitlePreview\(previewStatuses\)/);
   assert.match(app, /function clearBoardColumnTitlePreview\(\)/);
   assert.match(app, /title\.style\.setProperty\("--board-title-shift"/);
   assert.match(app, /title\.style\.removeProperty\("--board-title-shift"\)/);
+  assert.match(app, /title\.classList\.add\("is-drag-source-title"\)/);
+  assert.match(app, /is-preview-shift-left", "is-preview-shift-right", "is-drag-source-title"/);
+  assert.match(app, /targetRect\.left \+ targetRect\.width \* 0\.25/);
+  assert.match(app, /targetRect\.right - targetRect\.width \* 0\.25/);
   assert.match(app, /function handleBoardColumnDragStart\(event\)/);
   assert.match(app, /function handleBoardColumnDragOver\(event\)/);
   assert.match(app, /function handleBoardColumnDrop\(event\)/);
@@ -212,6 +217,7 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.doesNotMatch(css, /\.board-column\.is-drop-target/s);
   assert.doesNotMatch(app, /is-drop-target/);
   assert.match(css, /--board-title-shift:\s*0px/);
+  assert.match(css, /\.board-column-title\.is-drag-source-title\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-left\s*\{[^}]*transform:\s*translateX\(calc\(-1 \* var\(--board-title-shift\)\)\)/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-right\s*\{[^}]*transform:\s*translateX\(var\(--board-title-shift\)\)/s);
 });

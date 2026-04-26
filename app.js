@@ -664,7 +664,7 @@ function handleBoardColumnDragStart(event) {
   }
 
   draggedStatus = column.dataset.status;
-  column.classList.add("is-dragging");
+  title.classList.add("is-drag-source-title");
   event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("text/plain", draggedStatus);
 }
@@ -702,9 +702,6 @@ function handleBoardColumnDrop(event) {
 function handleBoardColumnDragEnd() {
   draggedStatus = null;
   clearBoardColumnTitlePreview();
-  folderGrid.querySelectorAll(".board-column").forEach((column) => {
-    column.classList.remove("is-dragging");
-  });
 }
 
 function getPreviewStatusOrder(event, targetColumn) {
@@ -714,10 +711,24 @@ function getPreviewStatusOrder(event, targetColumn) {
     return statuses;
   }
 
-  const targetRect = targetColumn.getBoundingClientRect();
-  const insertAfterTarget = event.clientX > targetRect.left + targetRect.width / 2;
+  const insertAfterTarget = getColumnInsertAfterTarget(event, statuses, targetColumn);
 
   return moveStatusNearTarget(statuses, draggedStatus, targetStatus, insertAfterTarget);
+}
+
+function getColumnInsertAfterTarget(event, statuses, targetColumn) {
+  const draggedIndex = statuses.indexOf(draggedStatus);
+  const targetIndex = statuses.indexOf(targetColumn.dataset.status);
+  const targetRect = targetColumn.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return false;
+  }
+
+  if (draggedIndex < targetIndex) {
+    return event.clientX > targetRect.left + targetRect.width * 0.25;
+  }
+
+  return event.clientX > targetRect.right - targetRect.width * 0.25;
 }
 
 function moveStatusNearTarget(statuses, movedStatus, targetStatus, insertAfterTarget) {
@@ -755,7 +766,7 @@ function applyBoardColumnTitlePreview(previewStatuses) {
 
 function clearBoardColumnTitlePreview() {
   folderGrid.querySelectorAll(".board-column-title").forEach((title) => {
-    title.classList.remove("is-preview-shift-left", "is-preview-shift-right");
+    title.classList.remove("is-preview-shift-left", "is-preview-shift-right", "is-drag-source-title");
     title.style.removeProperty("--board-title-shift");
   });
 }

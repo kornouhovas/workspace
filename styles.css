@@ -600,10 +600,6 @@ input:focus-visible {
   padding-top: 22px;
 }
 
-.board-column.is-dragging {
-  opacity: 0.55;
-}
-
 .board-column-title {
   position: absolute;
   top: 0;
@@ -624,6 +620,10 @@ input:focus-visible {
 
 .board-column-title:active {
   cursor: grabbing;
+}
+
+.board-column-title.is-drag-source-title {
+  opacity: 0;
 }
 
 .board-column-title.is-preview-shift-left {
