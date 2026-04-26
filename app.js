@@ -82,6 +82,7 @@ let tableColumnDragImage = null;
 let workspacePointerDragState = null;
 let workspaceDragImage = null;
 let workspaceSuppressClick = false;
+let workspaceSuppressClickTimer = null;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -149,6 +150,8 @@ function bindEvents() {
   workspaceTabs.addEventListener("click", (event) => {
     if (workspaceSuppressClick) {
       workspaceSuppressClick = false;
+      window.clearTimeout(workspaceSuppressClickTimer);
+      workspaceSuppressClickTimer = null;
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -328,10 +331,13 @@ function handleWorkspacePointerDragStart(event) {
     return;
   }
 
+  const sourceRect = sourceTab.getBoundingClientRect();
   workspacePointerDragState = {
     workspaceId: workspaceButton.dataset.workspaceId,
     startX: event.clientX,
     startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
     sourceTab,
     targetTab: sourceTab,
     isDragging: false,
@@ -394,13 +400,22 @@ function handleWorkspacePointerDragEnd(event) {
   }
 
   event.preventDefault();
-  workspaceSuppressClick = true;
+  suppressNextWorkspaceClick();
   const workspaceIds = getWorkspacePreviewOrder(event, targetTab);
   saveWorkspaceOrder(workspaceIds);
   workspacePointerDragState = null;
   clearWorkspaceDragState();
   removeWorkspaceDragImage();
   renderWorkspaceTabs();
+}
+
+function suppressNextWorkspaceClick() {
+  workspaceSuppressClick = true;
+  window.clearTimeout(workspaceSuppressClickTimer);
+  workspaceSuppressClickTimer = window.setTimeout(() => {
+    workspaceSuppressClick = false;
+    workspaceSuppressClickTimer = null;
+  }, 0);
 }
 
 function getWorkspaceById(workspaceId) {
@@ -507,7 +522,9 @@ function moveWorkspaceDragImage(event) {
     return;
   }
 
-  workspaceDragImage.style.transform = `translate(${event.clientX + 12}px, ${event.clientY - 15}px)`;
+  const offsetX = workspacePointerDragState?.dragOffsetX ?? 0;
+  const offsetY = workspacePointerDragState?.dragOffsetY ?? 0;
+  workspaceDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
 }
 
 function removeWorkspaceDragImage() {

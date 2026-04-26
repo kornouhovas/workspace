@@ -94,12 +94,18 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
   assert.match(app, /let workspacePointerDragState = null/);
   assert.match(app, /let workspaceDragImage = null/);
+  assert.match(app, /let workspaceSuppressClickTimer = null/);
   assert.match(app, /workspaceTabs\.addEventListener\("pointerdown", handleWorkspacePointerDragStart\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleWorkspacePointerDragMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleWorkspacePointerDragEnd\)/);
   assert.match(app, /function handleWorkspacePointerDragStart\(event\)/);
   assert.match(app, /function handleWorkspacePointerDragMove\(event\)/);
   assert.match(app, /function handleWorkspacePointerDragEnd\(event\)/);
+  assert.match(app, /dragOffsetX:\s*event\.clientX - sourceRect\.left/);
+  assert.match(app, /dragOffsetY:\s*event\.clientY - sourceRect\.top/);
+  assert.match(app, /function suppressNextWorkspaceClick\(\)/);
+  assert.match(app, /window\.setTimeout\(\(\) => \{\s*workspaceSuppressClick = false/s);
+  assert.match(app, /event\.clientX - offsetX/);
   assert.match(app, /function saveWorkspaceOrder\(workspaceIds\)/);
   assert.match(app, /function applyWorkspaceOrderPreview\(previewWorkspaceIds\)/);
   assert.match(app, /function createWorkspaceDragImage\(workspace, sourceTab, event\)/);
