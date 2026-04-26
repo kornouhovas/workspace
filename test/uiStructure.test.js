@@ -138,6 +138,18 @@ test("left panel collapsed state is persisted across browser refresh", async () 
   assert.match(app, /setSidebarCollapsed\(loadSidebarState\(\), false\)/);
 });
 
+test("left panel can be toggled with command or control plus b", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(app, /window\.addEventListener\("keydown", handleSidebarShortcut\)/);
+  assert.match(app, /function handleSidebarShortcut\(event\)/);
+  assert.match(app, /event\.key\.toLowerCase\(\) !== "b"/);
+  assert.match(app, /!\(event\.metaKey \|\| event\.ctrlKey\)/);
+  assert.match(app, /event\.preventDefault\(\)/);
+  assert.match(app, /setSidebarCollapsed\(!appShell\.classList\.contains\("sidebar-collapsed"\)\)/);
+  assert.match(app, /function isEditableShortcutTarget\(target\)/);
+});
+
 test("topbar title mirrors and edits the active workspace name", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");

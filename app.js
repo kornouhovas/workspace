@@ -127,6 +127,7 @@ function bindEvents() {
   refreshButton.addEventListener("click", scanSelectedFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
+  window.addEventListener("keydown", handleSidebarShortcut);
 }
 
 function setSidebarCollapsed(collapsed, persist = true) {
@@ -137,6 +138,32 @@ function setSidebarCollapsed(collapsed, persist = true) {
   if (persist) {
     saveSidebarState(collapsed);
   }
+}
+
+function handleSidebarShortcut(event) {
+  if (isEditableShortcutTarget(event.target)) {
+    return;
+  }
+
+  if (event.key.toLowerCase() !== "b" && event.code !== "KeyB") {
+    return;
+  }
+
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) {
+    return;
+  }
+
+  event.preventDefault();
+  setSidebarCollapsed(!appShell.classList.contains("sidebar-collapsed"));
+}
+
+function isEditableShortcutTarget(target) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable
+  );
 }
 
 function addWorkspace() {
