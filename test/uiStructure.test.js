@@ -60,3 +60,11 @@ test("folder card renders only the folder name and its status tag", async () => 
   assert.equal(app.includes("<span class=\"folder-tag\">Folder</span>"), false);
   assert.match(app, /<span class="folder-tag">\$\{escapeHtml\(folder\.status\)\}<\/span>/);
 });
+
+test("folder status tag is anchored to the bottom of the card", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.folder-card\s*\{[^}]*grid-template-rows:\s*auto minmax\(0,\s*1fr\) auto/s);
+  assert.match(css, /\.card-meta\s*\{[^}]*grid-row:\s*3/s);
+  assert.match(css, /\.card-meta\s*\{[^}]*align-self:\s*end/s);
+});

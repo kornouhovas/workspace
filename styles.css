@@ -433,7 +433,7 @@ input:focus-visible {
 .folder-card {
   display: grid;
   min-height: 118px;
-  align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -463,9 +463,10 @@ input:focus-visible {
 .card-meta {
   display: flex;
   min-height: 23px;
+  grid-row: 3;
   align-items: center;
+  align-self: end;
   gap: 7px;
-  margin-top: auto;
 }
 
 .folder-tag {
