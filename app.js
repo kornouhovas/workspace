@@ -773,7 +773,12 @@ function applyBoardColumnTitlePreview(previewStatuses) {
     title.classList.remove("is-preview-shift-left", "is-preview-shift-right");
     title.style.setProperty("--board-title-shift", shiftDistance);
 
-    if (previewIndex < 0 || column.dataset.status === draggedStatus) {
+    if (column.dataset.status === draggedStatus) {
+      title.classList.add("is-drag-source-title");
+      return;
+    }
+
+    if (previewIndex < 0) {
       return;
     }
 

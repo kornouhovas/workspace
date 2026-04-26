@@ -206,6 +206,7 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /removeBoardColumnDragImage\(\);\s*renderFolders\(\);/s);
   assert.match(app, /title\.style\.setProperty\("--board-title-shift"/);
   assert.match(app, /title\.style\.removeProperty\("--board-title-shift"\)/);
+  assert.match(app, /column\.dataset\.status === draggedStatus\)[\s\S]*title\.classList\.add\("is-drag-source-title"\)/);
   assert.match(app, /dragImage\.className = "board-column-drag-image"/);
   assert.match(app, /is-preview-shift-left", "is-preview-shift-right", "is-drag-source-title"/);
   assert.match(app, /targetRect\.left \+ targetRect\.width \* 0\.25/);
@@ -225,6 +226,8 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(css, /\.board-column-title\.is-drag-source-title\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.board-column-drag-image\s*\{[^}]*position:\s*fixed/s);
   assert.match(css, /\.board-column-drag-image\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.board-column-drag-image\s*\{[^}]*background:\s*var\(--comment\)/s);
+  assert.doesNotMatch(css, /\.board-column-drag-image\s*\{[^}]*rgba\(94,\s*168,\s*239/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-left\s*\{[^}]*transform:\s*translateX\(calc\(-1 \* var\(--board-title-shift\)\)\)/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-right\s*\{[^}]*transform:\s*translateX\(var\(--board-title-shift\)\)/s);
 });
