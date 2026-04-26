@@ -189,6 +189,7 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.kanban-board\.table-mode\s*\{[^}]*margin-top:\s*-21px/s);
   assert.match(css, /\.folder-table\s*\{/);
   assert.doesNotMatch(css, /\.folder-table\s*\{[^}]*margin-top:\s*-/s);
+  assert.doesNotMatch(css, /\.folder-table-surface\s*\{[^}]*border-top:/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
   assert.match(css, /\.folder-table-head\s*\{[^}]*font-size:\s*13px/s);
