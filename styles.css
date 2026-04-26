@@ -580,22 +580,33 @@ input:focus-visible {
 
 .folder-board-view {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, 245px);
   gap: 14px;
   align-items: start;
+  overflow: visible;
 }
 
 .board-column {
   display: grid;
+  position: relative;
   min-width: 0;
-  gap: 10px;
+  width: 245px;
 }
 
-.board-column > h2 {
+.board-column-title {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  max-width: 245px;
+  overflow: hidden;
   margin: 0;
   color: var(--muted);
   font-size: 13px;
   font-weight: 560;
+  line-height: 1.2;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .board-column-cards {
@@ -617,7 +628,14 @@ input:focus-visible {
   grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
   gap: 18px;
   border-bottom: 1px solid var(--line);
-  padding: 10px 0;
+  padding: 10px 8px;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.folder-table-row:not(.folder-table-head):hover {
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .folder-table-head {
@@ -636,6 +654,11 @@ input:focus-visible {
 
 .folder-table-head .folder-table-cell {
   color: var(--faint);
+}
+
+.folder-board-view .folder-card {
+  min-height: 0;
+  grid-template-rows: auto;
 }
 
 .folder-card {

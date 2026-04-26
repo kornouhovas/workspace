@@ -6,7 +6,6 @@ const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
 const sidebarStorageKey = "sidebar-state";
 const boardSnapshotStorageKey = "folder-board-snapshot";
-const boardViewStorageKey = "board-view";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -61,7 +60,7 @@ let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let workspaceSequence = 1;
-let workspaces = [{ id: "workspace-1", name: "Workspace" }];
+let workspaces = [{ id: "workspace-1", name: "Workspace", boardView: "overview" }];
 let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
@@ -151,11 +150,12 @@ function setSidebarCollapsed(collapsed, persist = true) {
 }
 
 function setBoardView(nextBoardView) {
-  if (!boardViews.has(nextBoardView)) {
+  const normalizedBoardView = normalizeBoardView(nextBoardView);
+  if (normalizedBoardView !== nextBoardView) {
     return;
   }
 
-  boardView = nextBoardView;
+  boardView = normalizedBoardView;
   saveBoardView();
   renderBoardViewSwitcher();
   renderFolders();
@@ -199,12 +199,15 @@ function addWorkspace() {
   const workspace = {
     id: createWorkspaceId(),
     name: `Workspace ${getNextWorkspaceNumber()}`,
+    boardView: "overview",
   };
 
   workspaces.push(workspace);
   activeWorkspaceId = workspace.id;
+  boardView = workspace.boardView;
   saveWorkspaceState();
   renderWorkspaceTabs();
+  renderBoardViewSwitcher();
   renderFolders();
 }
 
@@ -221,8 +224,10 @@ function deleteWorkspace(workspaceId) {
     activeWorkspaceId = workspaces[Math.max(0, removedIndex - 1)].id;
   }
 
+  boardView = loadBoardView();
   saveWorkspaceState();
   renderWorkspaceTabs();
+  renderBoardViewSwitcher();
   renderFolders();
 }
 
@@ -232,8 +237,10 @@ function setActiveWorkspace(workspaceId) {
   }
 
   activeWorkspaceId = workspaceId;
+  boardView = loadBoardView();
   saveWorkspaceState();
   renderWorkspaceTabs();
+  renderBoardViewSwitcher();
   renderFolders();
 }
 
@@ -247,6 +254,14 @@ function renderWorkspaceTabs() {
 
 function getActiveWorkspace() {
   return workspaces.find((workspace) => workspace.id === activeWorkspaceId) || workspaces[0];
+}
+
+function getActiveBoardView() {
+  return normalizeBoardView(getActiveWorkspace()?.boardView);
+}
+
+function normalizeBoardView(boardView) {
+  return boardViews.has(boardView) ? boardView : "overview";
 }
 
 function getNextWorkspaceNumber() {
@@ -331,6 +346,7 @@ function loadWorkspaceState() {
     workspaces = storedState.workspaces.map((workspace) => ({
       id: workspace.id,
       name: workspace.name,
+      boardView: normalizeBoardView(workspace.boardView),
     }));
     activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
       ? storedState.activeWorkspaceId
@@ -349,13 +365,14 @@ function loadSidebarState() {
 }
 
 function loadBoardView() {
-  const storedBoardView = localStorage.getItem(boardViewStorageKey);
-
-  return boardViews.has(storedBoardView) ? storedBoardView : "overview";
+  return getActiveBoardView();
 }
 
 function saveBoardView() {
-  localStorage.setItem(boardViewStorageKey, boardView);
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId ? { ...workspace, boardView } : workspace,
+  );
+  saveWorkspaceState();
 }
 
 function saveSidebarState(collapsed) {
@@ -520,12 +537,14 @@ function renderFolders() {
 }
 
 function renderActiveBoardView(visibleFolders) {
-  if (boardView === "board") {
+  const activeBoardView = getActiveBoardView();
+
+  if (activeBoardView === "board") {
     renderBoardView(visibleFolders);
     return;
   }
 
-  if (boardView === "table") {
+  if (activeBoardView === "table") {
     renderTableView(visibleFolders);
     return;
   }
@@ -558,7 +577,7 @@ function renderTableView(visibleFolders) {
 
   const header = document.createElement("div");
   header.className = "folder-table-row folder-table-head";
-  header.append(createTableCell("Имя"), createTableCell("Статус"));
+  header.append(createTableCell("Name"), createTableCell("Status"));
 
   table.append(header, ...visibleFolders.map(createTableRow));
 
@@ -592,6 +611,7 @@ function createBoardColumn(status, statusFolders) {
   column.className = "board-column";
 
   const title = document.createElement("h2");
+  title.className = "board-column-title";
   title.textContent = status;
 
   const cards = document.createElement("div");

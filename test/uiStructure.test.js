@@ -102,6 +102,9 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /localStorage\.getItem\(workspaceStorageKey\)/);
   assert.match(app, /localStorage\.setItem\(workspaceStorageKey/);
   assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
+  assert.match(app, /boardView:\s*"overview"/);
+  assert.match(app, /function getActiveBoardView\(\)/);
+  assert.match(app, /function normalizeBoardView\(boardView\)/);
 });
 
 test("saved workspace chrome is bootstrapped before app module hydration", async () => {
@@ -127,21 +130,23 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /sidebarFolderCount\.textContent = String\(snapshot\.folders\.length\)/);
 });
 
-test("topbar exposes persisted board view modes instead of folder summary text", async () => {
+test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(html, /id="boardViewSwitcher"/);
-  assert.match(html, /data-board-view="overview"[^>]*>Общий вид</);
-  assert.match(html, /data-board-view="board"[^>]*>Доска</);
-  assert.match(html, /data-board-view="table"[^>]*>Таблица</);
+  assert.match(html, /data-board-view="overview"[^>]*>Overview</);
+  assert.match(html, /data-board-view="board"[^>]*>Board</);
+  assert.match(html, /data-board-view="table"[^>]*>Table</);
   assert.doesNotMatch(html, /id="totalFolders"/);
   assert.doesNotMatch(html, /id="rootLabel"/);
   assert.match(html, /function hydrateSavedBoardViewState\(\)/);
-  assert.match(app, /const boardViewStorageKey = "board-view"/);
   assert.match(app, /function loadBoardView\(\)/);
   assert.match(app, /function saveBoardView\(\)/);
-  assert.match(app, /localStorage\.setItem\(boardViewStorageKey, boardView\)/);
+  assert.doesNotMatch(app, /const boardViewStorageKey = "board-view"/);
+  assert.doesNotMatch(app, /localStorage\.setItem\(boardViewStorageKey, boardView\)/);
+  assert.match(app, /workspace\.id === activeWorkspaceId \? \{ \.\.\.workspace, boardView \}/);
+  assert.match(html, /activeWorkspace\.boardView/);
 });
 
 test("folder board supports overview board and table renderers", async () => {
@@ -154,11 +159,16 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /function createBoardColumn\(status, statusFolders\)/);
   assert.match(app, /function createTableRow\(folder\)/);
   assert.match(app, /createFolderCard\(folder, \{ showStatus: false \}\)/);
-  assert.match(app, /"Имя"/);
-  assert.match(app, /"Статус"/);
+  assert.match(app, /"Name"/);
+  assert.match(app, /"Status"/);
   assert.match(css, /\.folder-board-view\s*\{/);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*245px\)/s);
+  assert.match(css, /\.board-column\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.board-column-title\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
   assert.match(css, /\.folder-table\s*\{/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
   assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
 });

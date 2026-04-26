@@ -93,9 +93,9 @@
               />
             </div>
             <div class="board-view-switcher" id="boardViewSwitcher" aria-label="Вид доски">
-              <button class="board-view-option active" type="button" data-board-view="overview">Общий вид</button>
-              <button class="board-view-option" type="button" data-board-view="board">Доска</button>
-              <button class="board-view-option" type="button" data-board-view="table">Таблица</button>
+              <button class="board-view-option active" type="button" data-board-view="overview">Overview</button>
+              <button class="board-view-option" type="button" data-board-view="board">Board</button>
+              <button class="board-view-option" type="button" data-board-view="table">Table</button>
             </div>
           </div>
 
@@ -246,6 +246,7 @@
             column.className = "board-column";
 
             const title = document.createElement("h2");
+            title.className = "board-column-title";
             title.textContent = status;
 
             const cards = document.createElement("div");
@@ -268,7 +269,7 @@
 
           const header = document.createElement("div");
           header.className = "folder-table-row folder-table-head";
-          header.append(createInitialTableCell("Имя"), createInitialTableCell("Статус"));
+          header.append(createInitialTableCell("Name"), createInitialTableCell("Status"));
 
           table.append(header, ...folders.map(createInitialTableRow));
 
@@ -316,9 +317,16 @@
         }
 
         function getStoredBoardView() {
-          const boardView = localStorage.getItem("board-view");
+          const state = JSON.parse(localStorage.getItem("workspaces-state"));
+          if (isStoredWorkspaceState(state)) {
+            const activeWorkspace =
+              state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+            const boardView = activeWorkspace.boardView;
 
-          return ["overview", "board", "table"].includes(boardView) ? boardView : "overview";
+            return ["overview", "board", "table"].includes(boardView) ? boardView : "overview";
+          }
+
+          return "overview";
         }
 
         function isStoredWorkspaceState(state) {
