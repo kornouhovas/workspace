@@ -67,31 +67,35 @@ async function initializeApp() {
   renderWorkspaceTabs();
   bindEvents();
 
-  if (!supportsDirectoryPicker) {
-    setStatus("Folder selection requires a Chromium browser with File System Access API.", "error");
-    chooseFolderButton.disabled = true;
-    updateActionStates();
+  try {
+    if (!supportsDirectoryPicker) {
+      setStatus("Folder selection requires a Chromium browser with File System Access API.", "error");
+      chooseFolderButton.disabled = true;
+      updateActionStates();
+      renderFolders();
+      return;
+    }
+
+    const storedHandle = await getStoredHandle();
+    if (!storedHandle) {
+      renderFolders();
+      return;
+    }
+
+    selectedHandle = storedHandle;
+    updateRoot(storedHandle.name);
+
+    if (await hasPermission(storedHandle, false)) {
+      await scanSelectedFolder();
+      return;
+    }
+
+    restoreButton.hidden = false;
+    setStatus("Saved folder found. Restore access to scan it again.", "idle");
     renderFolders();
-    return;
+  } finally {
+    finishInitialLayout();
   }
-
-  const storedHandle = await getStoredHandle();
-  if (!storedHandle) {
-    renderFolders();
-    return;
-  }
-
-  selectedHandle = storedHandle;
-  updateRoot(storedHandle.name);
-
-  if (await hasPermission(storedHandle, false)) {
-    await scanSelectedFolder();
-    return;
-  }
-
-  restoreButton.hidden = false;
-  setStatus("Saved folder found. Restore access to scan it again.", "idle");
-  renderFolders();
 }
 
 function bindEvents() {
@@ -289,6 +293,10 @@ function loadSidebarState() {
 
 function saveSidebarState(collapsed) {
   localStorage.setItem(sidebarStorageKey, collapsed ? "collapsed" : "expanded");
+}
+
+function finishInitialLayout() {
+  document.documentElement.classList.remove("app-loading", "sidebar-saved-collapsed");
 }
 
 function saveWorkspaceState() {

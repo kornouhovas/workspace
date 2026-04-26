@@ -7,6 +7,9 @@ test("app shell is not wrapped in a decorative browser frame", async () => {
 
   assert.equal(html.includes("browser-frame"), false);
   assert.equal(html.includes("browser-bar"), false);
+  assert.match(html, /<html lang="ru" class="app-loading">/);
+  assert.match(html, /localStorage\.getItem\("sidebar-state"\) === "collapsed"/);
+  assert.match(html, /document\.documentElement\.classList\.add\("sidebar-saved-collapsed"\)/);
   assert.match(html, /<div class="app-shell" id="appShell">/);
 });
 
@@ -41,15 +44,34 @@ test("sidebar navigation exposes view state and mouse titles", async () => {
 test("collapsed sidebar fully hides the panel and leaves a return button", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(html, /id="sidebarReturn"/);
   assert.match(css, /\.app-shell\.sidebar-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.sidebar-saved-collapsed \.app-shell\s*\{[^}]*grid-template-columns:\s*0 minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.sidebar-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
+  assert.match(css, /\.sidebar-saved-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*left:\s*26px/s);
+  assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*top:\s*26px/s);
   assert.match(css, /\.sidebar-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.sidebar-saved-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
   assert.doesNotMatch(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top/s);
   assert.match(css, /\.sidebar-collapsed \.topbar-copy\s*\{[^}]*margin-left:\s*64px/s);
+  assert.match(css, /\.app-loading \.app-shell\s*\{[^}]*transition:\s*none/s);
+  assert.match(app, /document\.documentElement\.classList\.remove\("app-loading", "sidebar-saved-collapsed"\)/);
   assert.doesNotMatch(css, /\.sidebar-return span\s*\{[^}]*transform:\s*rotate/s);
+});
+
+test("left panel action buttons align on the same vertical rail", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.brand-row\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.brand-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.sidebar-toggle\s*\{[^}]*width:\s*30px/s);
+  assert.match(css, /\.sidebar-toggle\s*\{[^}]*min-height:\s*30px/s);
+  assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
 });
 
 test("left panel shows workspace tab controls", async () => {
@@ -110,6 +132,7 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(css, /\.workspace-title-row:focus-within \.workspace-title-button/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*padding:\s*4px 8px/s);
+  assert.match(css, /\.project-meta\s*\{[^}]*margin-left:\s*8px/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {
