@@ -572,6 +572,11 @@ input:focus-visible {
   scrollbar-color: #3a3a38 transparent;
 }
 
+.kanban-board.board-mode {
+  margin-top: -22px;
+  padding-top: 28px;
+}
+
 .folder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
@@ -580,7 +585,7 @@ input:focus-visible {
 
 .folder-board-view {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 245px);
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
   gap: 14px;
   align-items: start;
   overflow: visible;
@@ -590,14 +595,15 @@ input:focus-visible {
   display: grid;
   position: relative;
   min-width: 0;
-  width: 245px;
+  margin-top: -22px;
+  padding-top: 22px;
 }
 
 .board-column-title {
   position: absolute;
-  top: -22px;
+  top: 0;
   left: 0;
-  max-width: 245px;
+  max-width: 100%;
   overflow: hidden;
   margin: 0;
   color: var(--muted);

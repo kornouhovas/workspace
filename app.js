@@ -17,6 +17,7 @@ const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
+const boardSurface = document.querySelector(".kanban-board");
 const folderGrid = document.querySelector("#folderGrid");
 const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
@@ -538,6 +539,7 @@ function renderFolders() {
 
 function renderActiveBoardView(visibleFolders) {
   const activeBoardView = getActiveBoardView();
+  boardSurface.classList.toggle("board-mode", activeBoardView === "board");
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);

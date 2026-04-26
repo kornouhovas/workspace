@@ -215,6 +215,7 @@
 
           if (snapshot.folders.length > 0) {
             emptyState.hidden = true;
+            document.querySelector(".kanban-board").classList.toggle("board-mode", boardView === "board");
             renderInitialFolders(folderGrid, snapshot.folders, boardView);
           } else {
             emptyState.querySelector("h2").textContent = "No folders in statuses";

@@ -162,10 +162,16 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /"Name"/);
   assert.match(app, /"Status"/);
   assert.match(css, /\.folder-board-view\s*\{/);
-  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*245px\)/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
+  assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*margin-top:\s*-22px/s);
+  assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*padding-top:\s*28px/s);
   assert.match(css, /\.board-column\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.board-column\s*\{[^}]*margin-top:\s*-22px/s);
+  assert.match(css, /\.board-column\s*\{[^}]*padding-top:\s*22px/s);
   assert.match(css, /\.board-column-title\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.board-column-title\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
+  assert.match(app, /boardSurface\.classList\.toggle\("board-mode", activeBoardView === "board"\)/);
   assert.match(css, /\.folder-table\s*\{/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
