@@ -53,6 +53,14 @@ const views = {
 
 const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
+const tableColumnIds = ["name", "status"];
+const tableColumnLabels = {
+  name: "Name",
+  status: "Status",
+};
+const defaultTableNameWidth = 58;
+const minTableNameWidth = 34;
+const maxTableNameWidth = 78;
 
 let selectedHandle = null;
 let folders = [];
@@ -60,9 +68,20 @@ let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
+let draggedTableColumn = null;
+let tableResizeState = null;
 let boardColumnDragImage = null;
 let workspaceSequence = 1;
-let workspaces = [{ id: "workspace-1", name: "Workspace", boardView: "overview", statusOrder: [] }];
+let workspaces = [
+  {
+    id: "workspace-1",
+    name: "Workspace",
+    boardView: "overview",
+    statusOrder: [],
+    tableColumnOrder: [...tableColumnIds],
+    tableNameWidth: 58,
+  },
+];
 let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
@@ -138,10 +157,21 @@ function bindEvents() {
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   folderGrid.addEventListener("dragstart", handleBoardColumnDragStart);
+  folderGrid.addEventListener("dragstart", handleTableColumnDragStart);
   folderGrid.addEventListener("dragover", handleBoardColumnDragOver);
+  folderGrid.addEventListener("dragover", handleTableColumnDragOver);
   folderGrid.addEventListener("dragleave", handleBoardColumnDragLeave);
+  folderGrid.addEventListener("dragleave", handleTableColumnDragLeave);
   folderGrid.addEventListener("drop", handleBoardColumnDrop);
+  folderGrid.addEventListener("drop", handleTableColumnDrop);
   folderGrid.addEventListener("dragend", handleBoardColumnDragEnd);
+  folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
+  folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
+  folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
+  window.addEventListener("pointermove", handleTableColumnResizeMove);
+  window.addEventListener("mousemove", handleTableColumnResizeMove);
+  window.addEventListener("pointerup", handleTableColumnResizeEnd);
+  window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
 
@@ -207,6 +237,8 @@ function addWorkspace() {
     name: `Workspace ${getNextWorkspaceNumber()}`,
     boardView: "overview",
     statusOrder: [],
+    tableColumnOrder: [...tableColumnIds],
+    tableNameWidth: 58,
   };
 
   workspaces.push(workspace);
@@ -273,8 +305,36 @@ function getActiveStatusOrder() {
   return Array.isArray(statusOrder) ? statusOrder.filter((status) => typeof status === "string") : [];
 }
 
+function getActiveTableColumnOrder() {
+  return normalizeTableColumnOrder(getActiveWorkspace()?.tableColumnOrder);
+}
+
+function getActiveTableNameWidth() {
+  return normalizeTableNameWidth(getActiveWorkspace()?.tableNameWidth);
+}
+
 function normalizeBoardView(boardView) {
   return boardViews.has(boardView) ? boardView : "overview";
+}
+
+function normalizeTableColumnOrder(columnOrder) {
+  if (!Array.isArray(columnOrder)) {
+    return [...tableColumnIds];
+  }
+
+  const normalizedColumns = columnOrder.filter((columnId) => tableColumnIds.includes(columnId));
+  const missingColumns = tableColumnIds.filter((columnId) => !normalizedColumns.includes(columnId));
+
+  return [...normalizedColumns, ...missingColumns];
+}
+
+function normalizeTableNameWidth(width) {
+  const parsedWidth = Number(width);
+  if (!Number.isFinite(parsedWidth)) {
+    return defaultTableNameWidth;
+  }
+
+  return Math.min(maxTableNameWidth, Math.max(minTableNameWidth, Math.round(parsedWidth)));
 }
 
 function getNextWorkspaceNumber() {
@@ -363,6 +423,8 @@ function loadWorkspaceState() {
       statusOrder: Array.isArray(workspace.statusOrder)
         ? workspace.statusOrder.filter((status) => typeof status === "string")
         : [],
+      tableColumnOrder: normalizeTableColumnOrder(workspace.tableColumnOrder),
+      tableNameWidth: normalizeTableNameWidth(workspace.tableNameWidth),
     }));
     activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
       ? storedState.activeWorkspaceId
@@ -394,6 +456,24 @@ function saveBoardView() {
 function saveStatusOrder(statusOrder) {
   workspaces = workspaces.map((workspace) =>
     workspace.id === activeWorkspaceId ? { ...workspace, statusOrder } : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function saveTableColumnOrder(tableColumnOrder) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? { ...workspace, tableColumnOrder: normalizeTableColumnOrder(tableColumnOrder) }
+      : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function saveTableNameWidth(tableNameWidth) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? { ...workspace, tableNameWidth: normalizeTableNameWidth(tableNameWidth) }
+      : workspace,
   );
   saveWorkspaceState();
 }
@@ -606,17 +686,30 @@ function getOrderedStatuses(visibleFolders) {
 }
 
 function renderTableView(visibleFolders) {
+  const columnOrder = getActiveTableColumnOrder();
   const table = document.createElement("div");
   table.className = "folder-table-surface";
+  setTableGridTemplate(table);
 
   const header = document.createElement("div");
   header.className = "folder-table-row folder-table-head";
-  header.append(createTableCell("Name"), createTableCell("Status"));
+  header.append(...columnOrder.map(createTableHeaderCell));
 
-  table.append(header, ...visibleFolders.map(createTableRow));
+  table.append(header, ...visibleFolders.map((folder) => createTableRow(folder, columnOrder)));
 
   folderGrid.className = "folder-table";
   folderGrid.replaceChildren(table);
+}
+
+function setTableGridTemplate(tableElement) {
+  const columnOrder = getActiveTableColumnOrder();
+  const tableNameWidth = getActiveTableNameWidth();
+  const columnTracks = columnOrder.map((columnId) =>
+    columnId === "name" ? "minmax(180px, var(--table-name-column-width))" : "minmax(140px, 1fr)",
+  );
+
+  tableElement.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+  tableElement.style.setProperty("--table-columns", columnTracks.join(" "));
 }
 
 function renderPlaceholder(title, description) {
@@ -809,20 +902,199 @@ function clearBoardColumnDragState() {
   });
 }
 
-function createTableRow(folder) {
+function handleTableColumnResizeStart(event) {
+  const handle = event.target.closest(".table-resize-handle");
+  const tableElement = handle?.closest(".folder-table-surface");
+  if (!handle || !tableElement || tableResizeState || getActiveBoardView() !== "table") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  tableResizeState = {
+    startX: event.clientX,
+    startWidth: getActiveTableNameWidth(),
+    tableWidth: tableElement.getBoundingClientRect().width,
+    tableElement,
+  };
+  tableElement.classList.add("is-resizing-table");
+  if ("pointerId" in event) {
+    handle.setPointerCapture?.(event.pointerId);
+  }
+}
+
+function handleTableColumnResizeMove(event) {
+  if (!tableResizeState) {
+    return;
+  }
+
+  const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
+  const tableNameWidth = normalizeTableNameWidth(tableResizeState.startWidth + deltaWidth);
+  tableResizeState.tableElement.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+}
+
+function handleTableColumnResizeEnd(event) {
+  if (!tableResizeState) {
+    return;
+  }
+
+  const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
+  const tableNameWidth = normalizeTableNameWidth(tableResizeState.startWidth + deltaWidth);
+  tableResizeState.tableElement.classList.remove("is-resizing-table");
+  tableResizeState = null;
+  saveTableNameWidth(tableNameWidth);
+}
+
+function handleTableColumnDragStart(event) {
+  const cell = event.target.closest(".folder-table-head .folder-table-cell");
+  if (!cell || event.target.closest(".table-resize-handle") || getActiveBoardView() !== "table") {
+    return;
+  }
+
+  draggedTableColumn = cell.dataset.tableColumn;
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", draggedTableColumn);
+  requestAnimationFrame(() => cell.classList.add("is-table-drag-source"));
+}
+
+function handleTableColumnDragOver(event) {
+  const targetCell = event.target.closest(".folder-table-head .folder-table-cell");
+  if (!draggedTableColumn || !targetCell) {
+    return;
+  }
+
+  event.preventDefault();
+  applyTableColumnPreview(getTablePreviewColumnOrder(event, targetCell));
+}
+
+function handleTableColumnDragLeave(event) {
+  if (!folderGrid.contains(event.relatedTarget)) {
+    clearTableColumnShiftPreview();
+  }
+}
+
+function handleTableColumnDrop(event) {
+  const targetCell = event.target.closest(".folder-table-head .folder-table-cell");
+  if (!draggedTableColumn || !targetCell) {
+    return;
+  }
+
+  event.preventDefault();
+  const tableColumnOrder = getTablePreviewColumnOrder(event, targetCell);
+  saveTableColumnOrder(tableColumnOrder);
+  draggedTableColumn = null;
+  clearTableColumnDragState();
+  renderFolders();
+}
+
+function handleTableColumnDragEnd() {
+  draggedTableColumn = null;
+  clearTableColumnDragState();
+}
+
+function getTablePreviewColumnOrder(event, targetCell) {
+  const columnOrder = getActiveTableColumnOrder();
+  const targetColumn = targetCell.dataset.tableColumn;
+  if (!draggedTableColumn || !targetColumn || targetColumn === draggedTableColumn) {
+    return columnOrder;
+  }
+
+  const insertAfterTarget = getTableColumnInsertAfterTarget(event, columnOrder, targetCell);
+  return moveStatusNearTarget(columnOrder, draggedTableColumn, targetColumn, insertAfterTarget);
+}
+
+function getTableColumnInsertAfterTarget(event, columnOrder, targetCell) {
+  const draggedIndex = columnOrder.indexOf(draggedTableColumn);
+  const targetIndex = columnOrder.indexOf(targetCell.dataset.tableColumn);
+  const targetRect = targetCell.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return false;
+  }
+
+  if (draggedIndex < targetIndex) {
+    return event.clientX > targetRect.left + targetRect.width * 0.25;
+  }
+
+  return event.clientX > targetRect.right - targetRect.width * 0.25;
+}
+
+function applyTableColumnPreview(previewColumnOrder) {
+  const cells = [...folderGrid.querySelectorAll(".folder-table-head .folder-table-cell")];
+  cells.forEach((cell, currentIndex) => {
+    const previewIndex = previewColumnOrder.indexOf(cell.dataset.tableColumn);
+    const shiftDistance = `${cell.getBoundingClientRect().width}px`;
+    cell.classList.remove("is-table-preview-left", "is-table-preview-right");
+    cell.style.setProperty("--table-title-shift", shiftDistance);
+
+    if (cell.dataset.tableColumn === draggedTableColumn) {
+      cell.classList.add("is-table-drag-source");
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      cell.classList.add("is-table-preview-left");
+    } else if (previewIndex > currentIndex) {
+      cell.classList.add("is-table-preview-right");
+    }
+  });
+}
+
+function clearTableColumnShiftPreview() {
+  folderGrid.querySelectorAll(".folder-table-head .folder-table-cell").forEach((cell) => {
+    cell.classList.remove("is-table-preview-left", "is-table-preview-right");
+    cell.style.removeProperty("--table-title-shift");
+  });
+}
+
+function clearTableColumnDragState() {
+  clearTableColumnShiftPreview();
+  folderGrid.querySelectorAll(".folder-table-head .folder-table-cell").forEach((cell) => {
+    cell.classList.remove("is-table-drag-source");
+  });
+}
+
+function createTableRow(folder, columnOrder = getActiveTableColumnOrder()) {
   const row = document.createElement("div");
   row.className = "folder-table-row";
-  row.append(createTableCell(folder.name), createTableCell(folder.status));
+  row.append(...columnOrder.map((columnId) => createTableCell(getTableCellText(folder, columnId), columnId)));
 
   return row;
 }
 
-function createTableCell(text) {
+function createTableHeaderCell(columnId) {
+  const cell = document.createElement("button");
+  cell.className = "folder-table-cell";
+  cell.type = "button";
+  cell.draggable = true;
+  cell.dataset.tableColumn = columnId;
+  cell.textContent = tableColumnLabels[columnId];
+
+  if (columnId === "name") {
+    cell.append(createTableResizeHandle());
+  }
+
+  return cell;
+}
+
+function createTableResizeHandle() {
+  const handle = document.createElement("span");
+  handle.className = "table-resize-handle";
+  handle.setAttribute("aria-hidden", "true");
+
+  return handle;
+}
+
+function createTableCell(text, columnId) {
   const cell = document.createElement("span");
   cell.className = "folder-table-cell";
+  cell.dataset.tableColumn = columnId;
   cell.textContent = text;
 
   return cell;
+}
+
+function getTableCellText(folder, columnId) {
+  return columnId === "status" ? folder.status : folder.name;
 }
 
 function createFolderCard(folder, options = {}) {

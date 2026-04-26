@@ -672,7 +672,7 @@ input:focus-visible {
 
 .folder-table-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
+  grid-template-columns: var(--table-columns, minmax(180px, 58%) minmax(140px, 1fr));
   gap: 18px;
   border-bottom: 1px solid var(--line);
   padding: 10px 8px;
@@ -693,16 +693,76 @@ input:focus-visible {
 .folder-table-cell {
   min-width: 0;
   overflow: hidden;
+  border: 0;
+  background: transparent;
   color: var(--text);
+  padding: 0;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .folder-table-head .folder-table-cell {
+  position: relative;
+  overflow: visible;
   color: var(--faint);
+  cursor: grab;
   font-size: 13px;
   font-weight: 560;
   line-height: 1.2;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.folder-table-head .folder-table-cell:hover {
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
+.folder-table-head .folder-table-cell:active {
+  cursor: grabbing;
+}
+
+.table-resize-handle {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  bottom: -10px;
+  z-index: 2;
+  display: block;
+  width: 18px;
+  cursor: col-resize;
+  opacity: 0;
+}
+
+.table-resize-handle::after {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  bottom: 5px;
+  width: 1px;
+  background: var(--faint);
+  content: "";
+}
+
+.folder-table-head:hover .table-resize-handle,
+.folder-table-surface.is-resizing-table .table-resize-handle {
+  opacity: 1;
+}
+
+.folder-table-cell.is-table-drag-source {
+  opacity: 0;
+}
+
+.folder-table-cell.is-table-preview-left {
+  transform: translateX(calc(-1 * var(--table-title-shift)));
+}
+
+.folder-table-cell.is-table-preview-right {
+  transform: translateX(var(--table-title-shift));
 }
 
 .folder-board-view .folder-card {

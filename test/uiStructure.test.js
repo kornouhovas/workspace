@@ -135,7 +135,10 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
-  assert.match(html, /renderInitialFolders\(folderGrid, snapshot\.folders, boardView, statusOrder\)/);
+  assert.match(
+    html,
+    /renderInitialFolders\(folderGrid, snapshot\.folders, boardView, statusOrder, tableColumnOrder, tableNameWidth\)/,
+  );
   assert.match(html, /function getStoredStatusOrder\(state\)/);
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder\)/);
   assert.match(html, /sidebarFolderCount\.textContent = String\(snapshot\.folders\.length\)/);
@@ -168,7 +171,7 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /function renderBoardView\(visibleFolders\)/);
   assert.match(app, /function renderTableView\(visibleFolders\)/);
   assert.match(app, /function createBoardColumn\(status, statusFolders\)/);
-  assert.match(app, /function createTableRow\(folder\)/);
+  assert.match(app, /function createTableRow\(folder, columnOrder = getActiveTableColumnOrder\(\)\)/);
   assert.match(app, /createFolderCard\(folder, \{ showStatus: false \}\)/);
   assert.match(app, /"Name"/);
   assert.match(app, /"Status"/);
@@ -198,6 +201,44 @@ test("folder board supports overview board and table renderers", async () => {
   assert.doesNotMatch(css, /\.folder-table-head\s*\{[^}]*text-transform:\s*uppercase/s);
   assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
+});
+
+test("table columns can be resized and reordered from the header", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.match(app, /tableColumnOrder:\s*\[\.\.\.tableColumnIds\]/);
+  assert.match(app, /tableNameWidth:\s*58/);
+  assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
+  assert.match(app, /function normalizeTableNameWidth\(width\)/);
+  assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
+  assert.match(app, /function saveTableNameWidth\(tableNameWidth\)/);
+  assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnResizeStart\)/);
+  assert.match(app, /folderGrid\.addEventListener\("dragstart", handleTableColumnDragStart\)/);
+  assert.match(app, /function createTableHeaderCell\(columnId\)/);
+  assert.match(app, /function createTableResizeHandle\(\)/);
+  assert.match(app, /function getTablePreviewColumnOrder\(event, targetCell\)/);
+  assert.match(app, /function applyTableColumnPreview\(previewColumnOrder\)/);
+  assert.match(app, /function clearTableColumnDragState\(\)/);
+  assert.match(app, /function setTableGridTemplate\(tableElement\)/);
+  assert.match(app, /tableElement\.style\.setProperty\("--table-name-column-width"/);
+  assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
+  assert.match(app, /cell\.dataset\.tableColumn = columnId/);
+  assert.match(app, /cell\.draggable = true/);
+  assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
+  assert.match(css, /\.table-resize-handle\s*\{/);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*cursor:\s*col-resize/s);
+  assert.match(css, /\.folder-table-head:hover \.table-resize-handle/s);
+  assert.match(css, /\.folder-table-cell\.is-table-drag-source\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.folder-table-cell\.is-table-preview-left/s);
+  assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
+  assert.match(html, /function getStoredTableColumnOrder\(state\)/);
+  assert.match(html, /function getStoredTableNameWidth\(state\)/);
+  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableNameWidth\)/);
 });
 
 test("board columns can be reordered by dragging column titles", async () => {

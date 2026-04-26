@@ -211,6 +211,8 @@
           const workspaceState = JSON.parse(localStorage.getItem("workspaces-state"));
           const boardView = getStoredBoardView();
           const statusOrder = getStoredStatusOrder(workspaceState);
+          const tableColumnOrder = getStoredTableColumnOrder(workspaceState);
+          const tableNameWidth = getStoredTableNameWidth(workspaceState);
           const folderGrid = document.querySelector("#folderGrid");
           const emptyState = document.querySelector("#emptyState");
           const sidebarRootName = document.querySelector("#sidebarRootName");
@@ -222,7 +224,8 @@
           if (snapshot.folders.length > 0) {
             emptyState.hidden = true;
             document.querySelector(".kanban-board").classList.toggle("board-mode", boardView === "board");
-            renderInitialFolders(folderGrid, snapshot.folders, boardView, statusOrder);
+            document.querySelector(".kanban-board").classList.toggle("table-mode", boardView === "table");
+            renderInitialFolders(folderGrid, snapshot.folders, boardView, statusOrder, tableColumnOrder, tableNameWidth);
           } else {
             emptyState.querySelector("h2").textContent = "No folders in statuses";
             emptyState.querySelector("p").textContent =
@@ -230,7 +233,14 @@
           }
         }
 
-        function renderInitialFolders(folderGrid, folders, boardView, statusOrder = []) {
+        function renderInitialFolders(
+          folderGrid,
+          folders,
+          boardView,
+          statusOrder = [],
+          tableColumnOrder = ["name", "status"],
+          tableNameWidth = 58,
+        ) {
           if (boardView === "board") {
             folderGrid.className = "folder-board-view";
             folderGrid.replaceChildren(...createInitialBoardColumns(folders, statusOrder));
@@ -239,7 +249,7 @@
 
           if (boardView === "table") {
             folderGrid.className = "folder-table";
-            folderGrid.replaceChildren(createInitialTable(folders));
+            folderGrid.replaceChildren(createInitialTable(folders, tableColumnOrder, tableNameWidth));
             return;
           }
 
@@ -275,25 +285,46 @@
           });
         }
 
-        function createInitialTable(folders) {
+        function createInitialTable(folders, tableColumnOrder, tableNameWidth) {
           const table = document.createElement("div");
           table.className = "folder-table-surface";
+          table.style.setProperty("--table-name-column-width", `${tableNameWidth}%`);
+          table.style.setProperty(
+            "--table-columns",
+            tableColumnOrder
+              .map((columnId) =>
+                columnId === "name" ? "minmax(180px, var(--table-name-column-width))" : "minmax(140px, 1fr)",
+              )
+              .join(" "),
+          );
 
           const header = document.createElement("div");
           header.className = "folder-table-row folder-table-head";
-          header.append(createInitialTableCell("Name"), createInitialTableCell("Status"));
+          header.append(
+            ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(null, columnId))),
+          );
 
-          table.append(header, ...folders.map(createInitialTableRow));
+          table.append(header, ...folders.map((folder) => createInitialTableRow(folder, tableColumnOrder)));
 
           return table;
         }
 
-        function createInitialTableRow(folder) {
+        function createInitialTableRow(folder, tableColumnOrder) {
           const row = document.createElement("div");
           row.className = "folder-table-row";
-          row.append(createInitialTableCell(folder.name), createInitialTableCell(folder.status));
+          row.append(
+            ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(folder, columnId))),
+          );
 
           return row;
+        }
+
+        function getInitialTableCellText(folder, columnId) {
+          if (columnId === "status") {
+            return folder?.status || "Status";
+          }
+
+          return folder?.name || "Name";
         }
 
         function createInitialTableCell(text) {
@@ -352,6 +383,32 @@
           return Array.isArray(activeWorkspace.statusOrder)
             ? activeWorkspace.statusOrder.filter((status) => typeof status === "string")
             : [];
+        }
+
+        function getStoredTableColumnOrder(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return ["name", "status"];
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+          const columnOrder = Array.isArray(activeWorkspace.tableColumnOrder) ? activeWorkspace.tableColumnOrder : [];
+          const normalizedColumns = columnOrder.filter((columnId) => ["name", "status"].includes(columnId));
+          const missingColumns = ["name", "status"].filter((columnId) => !normalizedColumns.includes(columnId));
+
+          return [...normalizedColumns, ...missingColumns];
+        }
+
+        function getStoredTableNameWidth(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return 58;
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+          const tableNameWidth = Number(activeWorkspace.tableNameWidth);
+
+          return Number.isFinite(tableNameWidth) ? Math.min(78, Math.max(34, Math.round(tableNameWidth))) : 58;
         }
 
         function isStoredWorkspaceState(state) {
