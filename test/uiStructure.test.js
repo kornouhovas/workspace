@@ -92,6 +92,7 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /workspace\.id === "workspace-1"/);
   assert.match(app, /function getNextWorkspaceNumber\(\)/);
   assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
+  assert.match(app, /tab\.dataset\.workspaceId = workspace\.id/);
   assert.match(app, /let workspacePointerDragState = null/);
   assert.match(app, /let workspaceDragImage = null/);
   assert.match(app, /let workspaceSuppressClickTimer = null/);

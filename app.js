@@ -802,6 +802,7 @@ function isStoredWorkspaceState(state) {
 function createWorkspaceTab(workspace) {
   const tab = document.createElement("div");
   tab.className = "workspace-tab";
+  tab.dataset.workspaceId = workspace.id;
 
   const button = document.createElement("button");
   button.className = "nav-item";
