@@ -6,6 +6,9 @@ const selectedRootKey = "selected-root";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
+const sidebarReturn = document.querySelector("#sidebarReturn");
+const addWorkspaceButton = document.querySelector("#addWorkspaceButton");
+const deleteWorkspaceButton = document.querySelector("#deleteWorkspaceButton");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
@@ -82,10 +85,15 @@ async function initializeApp() {
 
 function bindEvents() {
   sidebarToggle.addEventListener("click", () => {
-    const collapsed = appShell.classList.toggle("sidebar-collapsed");
-    const label = collapsed ? "Показать меню" : "Скрыть меню";
-    sidebarToggle.setAttribute("aria-label", label);
-    sidebarToggle.title = label;
+    setSidebarCollapsed(true);
+  });
+
+  sidebarReturn.addEventListener("click", () => setSidebarCollapsed(false));
+  addWorkspaceButton.addEventListener("click", () => {
+    setStatus("Workspace creation will be added after the single-workspace flow is validated.", "idle");
+  });
+  deleteWorkspaceButton.addEventListener("click", () => {
+    setStatus("Workspace deletion will be added after workspace management is validated.", "idle");
   });
 
   chooseFolderButton.addEventListener("click", chooseFolder);
@@ -95,6 +103,13 @@ function bindEvents() {
   navButtons.forEach((button) => {
     button.addEventListener("click", () => setActiveView(button.dataset.view));
   });
+}
+
+function setSidebarCollapsed(collapsed) {
+  appShell.classList.toggle("sidebar-collapsed", collapsed);
+  const label = collapsed ? "Показать меню" : "Скрыть меню";
+  sidebarToggle.setAttribute("aria-label", label);
+  sidebarToggle.title = label;
 }
 
 async function chooseFolder() {

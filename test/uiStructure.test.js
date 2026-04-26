@@ -15,7 +15,7 @@ test("mobile layout keeps navigation as a left rail instead of a top bar", async
 
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar\s*\{[\s\S]*position:\s*fixed/s);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.main\s*\{[\s\S]*margin-left:\s*224px/s);
-  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar-collapsed \.main\s*\{[\s\S]*margin-left:\s*72px/s);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar-collapsed \.main\s*\{[\s\S]*margin-left:\s*0/s);
 });
 
 test("folder picker has one primary click target in the initial view", async () => {
@@ -28,20 +28,33 @@ test("folder picker has one primary click target in the initial view", async () 
 test("sidebar navigation exposes view state and mouse titles", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
-  for (const view of ["workspace", "folders", "recent", "settings"]) {
-    assert.match(html, new RegExp(`data-view="${view}"`));
-  }
-
+  assert.match(html, /data-view="workspace"/);
+  assert.equal(html.includes('data-view="folders"'), false);
+  assert.equal(html.includes('data-view="recent"'), false);
+  assert.equal(html.includes('data-view="settings"'), false);
   assert.match(html, /id="sidebarToggle"[^>]*title="Скрыть меню"/);
 });
 
-test("collapsed sidebar keeps the toggle clickable and shows icon rail", async () => {
+test("collapsed sidebar fully hides the panel and leaves a return button", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
-  assert.match(css, /\.sidebar-collapsed \.brand-mark\s*\{[^}]*display:\s*none/s);
-  assert.match(css, /\.sidebar-collapsed \.sidebar-toggle\s*\{[^}]*width:\s*40px/s);
-  assert.match(css, /\.sidebar-collapsed \.nav-label\s*\{[^}]*display:\s*none/s);
-  assert.equal(css.includes(".sidebar-collapsed .nav-list,\n.sidebar-collapsed .workspace-panel"), false);
+  assert.match(html, /id="sidebarReturn"/);
+  assert.match(css, /\.app-shell\.sidebar-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.sidebar-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
+  assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.sidebar-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
+});
+
+test("left panel shows workspace tab controls", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /class="workspace-tabs"/);
+  assert.match(html, /id="addWorkspaceButton"/);
+  assert.match(html, /id="deleteWorkspaceButton"/);
+  assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
 });
 
 test("kanban scroll area leaves room for lifted folder-card hover", async () => {
