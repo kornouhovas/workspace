@@ -45,7 +45,8 @@ test("collapsed sidebar fully hides the panel and leaves a return button", async
   assert.match(css, /\.sidebar-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*display:\s*none/s);
   assert.match(css, /\.sidebar-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
-  assert.match(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top:\s*72px/s);
+  assert.doesNotMatch(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top/s);
+  assert.match(css, /\.sidebar-collapsed \.topbar-copy\s*\{[^}]*margin-left:\s*64px/s);
   assert.doesNotMatch(css, /\.sidebar-return span\s*\{[^}]*transform:\s*rotate/s);
 });
 
@@ -63,6 +64,34 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
   assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+});
+
+test("workspace state is persisted across browser refresh", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(app, /const workspaceStorageKey = "workspaces-state"/);
+  assert.match(app, /function loadWorkspaceState\(\)/);
+  assert.match(app, /function saveWorkspaceState\(\)/);
+  assert.match(app, /localStorage\.getItem\(workspaceStorageKey\)/);
+  assert.match(app, /localStorage\.setItem\(workspaceStorageKey/);
+  assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
+});
+
+test("topbar title mirrors and edits the active workspace name", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(html, /class="topbar-copy"/);
+  assert.match(html, /id="workspaceTitleButton"/);
+  assert.match(html, /id="workspaceTitleEditButton"/);
+  assert.match(html, /id="workspaceTitleInput"/);
+  assert.match(app, /pageTitle\.textContent = getActiveWorkspace\(\)\.name/);
+  assert.match(app, /function renameWorkspace\(workspaceId, name\)/);
+  assert.match(app, /function startWorkspaceRename\(\)/);
+  assert.match(app, /function commitWorkspaceRename\(\)/);
+  assert.match(css, /\.workspace-title-row:hover \.title-edit-button/s);
+  assert.match(css, /\.workspace-title-button:hover/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {

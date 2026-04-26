@@ -288,10 +288,6 @@ input:focus-visible {
   padding: 26px 26px 22px;
 }
 
-.sidebar-collapsed .main {
-  padding-top: 72px;
-}
-
 .topbar {
   display: flex;
   align-items: flex-start;
@@ -300,12 +296,81 @@ input:focus-visible {
   margin-bottom: 24px;
 }
 
+.topbar-copy {
+  min-width: 0;
+  transition: margin-left 160ms ease;
+}
+
+.sidebar-collapsed .topbar-copy {
+  margin-left: 64px;
+}
+
+.workspace-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) 32px;
+  align-items: center;
+  gap: 6px;
+}
+
+.workspace-title-button {
+  min-width: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  padding: 4px 8px;
+  text-align: left;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.workspace-title-button:hover,
+.workspace-title-button:focus-visible {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
 .topbar h1 {
   margin: 0;
   color: var(--text);
   font-size: 18px;
   font-weight: 520;
   letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title-edit-button {
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.workspace-title-row:hover .title-edit-button,
+.title-edit-button:focus-visible {
+  opacity: 1;
+}
+
+.workspace-title-input {
+  width: min(320px, 60vw);
+  height: 32px;
+  grid-column: 1 / 3;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171716;
+  color: var(--text);
+  padding: 0 10px;
+  font-size: 18px;
+  font-weight: 520;
+}
+
+.workspace-title-row.is-editing .workspace-title-button,
+.workspace-title-row.is-editing .title-edit-button {
+  display: none;
 }
 
 .project-meta {
@@ -619,7 +684,10 @@ input:focus-visible {
 
   .sidebar-collapsed .main {
     margin-left: 0;
-    padding-top: 72px;
+  }
+
+  .sidebar-collapsed .topbar-copy {
+    margin-left: 64px;
   }
 
   .topbar,

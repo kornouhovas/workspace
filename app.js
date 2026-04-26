@@ -3,6 +3,7 @@ import { filterFolders, listStatusCards } from "./src/folderModel.js";
 const dbName = "folder-kanban-mvp";
 const storeName = "handles";
 const selectedRootKey = "selected-root";
+const workspaceStorageKey = "workspaces-state";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -17,6 +18,10 @@ const folderGrid = document.querySelector("#folderGrid");
 const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
 const pageTitle = document.querySelector(".topbar h1");
+const workspaceTitleRow = document.querySelector(".workspace-title-row");
+const workspaceTitleButton = document.querySelector("#workspaceTitleButton");
+const workspaceTitleEditButton = document.querySelector("#workspaceTitleEditButton");
+const workspaceTitleInput = document.querySelector("#workspaceTitleInput");
 const totalFolders = document.querySelector("#totalFolders");
 const rootLabel = document.querySelector("#rootLabel");
 const sidebarRootName = document.querySelector("#sidebarRootName");
@@ -56,6 +61,7 @@ let workspaces = [{ id: "workspace-1", name: "Workspace" }];
 let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
+  loadWorkspaceState();
   renderWorkspaceTabs();
   bindEvents();
 
@@ -93,6 +99,10 @@ function bindEvents() {
 
   sidebarReturn.addEventListener("click", () => setSidebarCollapsed(false));
   addWorkspaceButton.addEventListener("click", addWorkspace);
+  workspaceTitleButton.addEventListener("click", startWorkspaceRename);
+  workspaceTitleEditButton.addEventListener("click", startWorkspaceRename);
+  workspaceTitleInput.addEventListener("keydown", handleWorkspaceTitleKeydown);
+  workspaceTitleInput.addEventListener("blur", commitWorkspaceRename);
   workspaceTabs.addEventListener("click", (event) => {
     const deleteButton = event.target.closest(".workspace-delete");
     if (deleteButton) {
@@ -128,7 +138,9 @@ function addWorkspace() {
 
   workspaces.push(workspace);
   activeWorkspaceId = workspace.id;
+  saveWorkspaceState();
   renderWorkspaceTabs();
+  renderFolders();
 }
 
 function deleteWorkspace(workspaceId) {
@@ -144,7 +156,9 @@ function deleteWorkspace(workspaceId) {
     activeWorkspaceId = workspaces[Math.max(0, removedIndex - 1)].id;
   }
 
+  saveWorkspaceState();
   renderWorkspaceTabs();
+  renderFolders();
 }
 
 function setActiveWorkspace(workspaceId) {
@@ -153,7 +167,9 @@ function setActiveWorkspace(workspaceId) {
   }
 
   activeWorkspaceId = workspaceId;
+  saveWorkspaceState();
   renderWorkspaceTabs();
+  renderFolders();
 }
 
 function isDefaultWorkspace(workspace) {
@@ -162,6 +178,106 @@ function isDefaultWorkspace(workspace) {
 
 function renderWorkspaceTabs() {
   workspaceTabs.replaceChildren(...workspaces.map(createWorkspaceTab));
+}
+
+function getActiveWorkspace() {
+  return workspaces.find((workspace) => workspace.id === activeWorkspaceId) || workspaces[0];
+}
+
+function renameWorkspace(workspaceId, name) {
+  const nextName = name.trim();
+  if (!nextName) {
+    return;
+  }
+
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === workspaceId ? { ...workspace, name: nextName } : workspace,
+  );
+  saveWorkspaceState();
+  renderWorkspaceTabs();
+  renderFolders();
+}
+
+function startWorkspaceRename() {
+  const workspace = getActiveWorkspace();
+  workspaceTitleInput.value = workspace.name;
+  workspaceTitleInput.hidden = false;
+  workspaceTitleRow.classList.add("is-editing");
+  workspaceTitleInput.focus();
+  workspaceTitleInput.select();
+}
+
+function commitWorkspaceRename() {
+  if (workspaceTitleInput.hidden) {
+    return;
+  }
+
+  renameWorkspace(activeWorkspaceId, workspaceTitleInput.value);
+  closeWorkspaceRename();
+}
+
+function cancelWorkspaceRename() {
+  closeWorkspaceRename();
+}
+
+function closeWorkspaceRename() {
+  workspaceTitleInput.hidden = true;
+  workspaceTitleRow.classList.remove("is-editing");
+}
+
+function handleWorkspaceTitleKeydown(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    commitWorkspaceRename();
+  }
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelWorkspaceRename();
+  }
+}
+
+function loadWorkspaceState() {
+  try {
+    const storedState = JSON.parse(localStorage.getItem(workspaceStorageKey));
+    if (!isStoredWorkspaceState(storedState)) {
+      return;
+    }
+
+    workspaces = storedState.workspaces.map((workspace) => ({
+      id: workspace.id,
+      name: workspace.name,
+    }));
+    activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
+      ? storedState.activeWorkspaceId
+      : workspaces[0].id;
+    workspaceSequence = Math.max(
+      storedState.workspaceSequence,
+      ...workspaces.map((workspace) => Number(workspace.id.replace("workspace-", "")) || 1),
+    );
+  } catch (error) {
+    localStorage.removeItem(workspaceStorageKey);
+  }
+}
+
+function saveWorkspaceState() {
+  const nextState = JSON.stringify({
+    workspaces,
+    activeWorkspaceId,
+    workspaceSequence,
+  });
+  localStorage.setItem(workspaceStorageKey, nextState);
+}
+
+function isStoredWorkspaceState(state) {
+  return (
+    state &&
+    Array.isArray(state.workspaces) &&
+    state.workspaces.length > 0 &&
+    state.workspaces.every((workspace) => typeof workspace.id === "string" && typeof workspace.name === "string") &&
+    typeof state.activeWorkspaceId === "string" &&
+    Number.isInteger(state.workspaceSequence)
+  );
 }
 
 function createWorkspaceTab(workspace) {
@@ -266,7 +382,7 @@ async function scanSelectedFolder() {
 }
 
 function renderFolders() {
-  pageTitle.textContent = views[activeView].title;
+  pageTitle.textContent = getActiveWorkspace().name;
   updateActionStates();
 
   if (!folderViews.has(activeView)) {

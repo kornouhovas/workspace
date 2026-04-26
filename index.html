@@ -56,8 +56,34 @@
 
       <main class="main">
         <header class="topbar">
-          <div>
-            <h1>Workspace folders</h1>
+          <div class="topbar-copy">
+            <div class="workspace-title-row">
+              <button
+                class="workspace-title-button"
+                id="workspaceTitleButton"
+                type="button"
+                aria-label="Переименовать workspace"
+                title="Переименовать workspace"
+              >
+                <h1 id="workspaceTitle">Workspace</h1>
+              </button>
+              <button
+                class="icon-button title-edit-button"
+                id="workspaceTitleEditButton"
+                type="button"
+                aria-label="Переименовать workspace"
+                title="Переименовать workspace"
+              >
+                ✎
+              </button>
+              <input
+                class="workspace-title-input"
+                id="workspaceTitleInput"
+                type="text"
+                autocomplete="off"
+                hidden
+              />
+            </div>
             <div class="project-meta" aria-label="Сводка">
               <span><strong id="totalFolders">0</strong> folders</span>
               <span id="rootLabel">No root selected</span>
