@@ -67,35 +67,34 @@ input:focus-visible {
 
 .icon-button.sidebar-return {
   position: fixed;
-  top: 20px;
+  top: 24px;
   left: 18px;
   z-index: 10;
   display: none;
 }
 
+.sidebar-toggle span,
+.sidebar-toggle span::before,
+.sidebar-toggle span::after,
 .sidebar-return span,
 .sidebar-return span::before,
 .sidebar-return span::after {
   display: block;
-  width: 13px;
+  width: 14px;
   height: 1.5px;
   border-radius: 99px;
   background: currentColor;
   content: "";
 }
 
-.sidebar-return span {
-  transform: rotate(180deg);
-}
-
+.sidebar-toggle span::before,
 .sidebar-return span::before {
-  transform: translateY(-4px) rotate(35deg);
-  transform-origin: left center;
+  transform: translateY(-5px);
 }
 
+.sidebar-toggle span::after,
 .sidebar-return span::after {
-  transform: translateY(2.5px) rotate(-35deg);
-  transform-origin: left center;
+  transform: translateY(3.5px);
 }
 
 .sidebar-collapsed .icon-button.sidebar-return {
@@ -144,9 +143,9 @@ input:focus-visible {
 }
 
 .workspace-list-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -270,9 +269,15 @@ input:focus-visible {
     border-color 140ms ease;
 }
 
-.workspace-tab:hover .workspace-delete,
+.workspace-tab:hover .workspace-delete:not(:disabled),
 .workspace-delete:focus-visible {
   opacity: 1;
+}
+
+.icon-button.workspace-delete:disabled {
+  cursor: default;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .main {
@@ -281,6 +286,10 @@ input:focus-visible {
   min-height: 0;
   flex-direction: column;
   padding: 26px 26px 22px;
+}
+
+.sidebar-collapsed .main {
+  padding-top: 72px;
 }
 
 .topbar {
@@ -420,25 +429,6 @@ input:focus-visible {
   place-items: center;
 }
 
-.sidebar-toggle span,
-.sidebar-toggle span::before,
-.sidebar-toggle span::after {
-  display: block;
-  width: 14px;
-  height: 1.5px;
-  border-radius: 99px;
-  background: currentColor;
-  content: "";
-}
-
-.sidebar-toggle span::before {
-  transform: translateY(-5px);
-}
-
-.sidebar-toggle span::after {
-  transform: translateY(3.5px);
-}
-
 .board-toolbar {
   display: flex;
   align-items: center;
@@ -451,6 +441,10 @@ input:focus-visible {
   min-width: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.status-line[hidden] {
+  display: none;
 }
 
 .kanban-board {
@@ -625,6 +619,7 @@ input:focus-visible {
 
   .sidebar-collapsed .main {
     margin-left: 0;
+    padding-top: 72px;
   }
 
   .topbar,

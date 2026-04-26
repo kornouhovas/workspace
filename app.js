@@ -8,7 +8,7 @@ const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
 const sidebarReturn = document.querySelector("#sidebarReturn");
 const addWorkspaceButton = document.querySelector("#addWorkspaceButton");
-const deleteWorkspaceButton = document.querySelector("#deleteWorkspaceButton");
+const workspaceTabs = document.querySelector("#workspaceTabs");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
@@ -21,7 +21,6 @@ const totalFolders = document.querySelector("#totalFolders");
 const rootLabel = document.querySelector("#rootLabel");
 const sidebarRootName = document.querySelector("#sidebarRootName");
 const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
-const navButtons = [...document.querySelectorAll("[data-view]")];
 
 const views = {
   workspace: {
@@ -52,8 +51,12 @@ let selectedHandle = null;
 let folders = [];
 let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
+let workspaceSequence = 1;
+let workspaces = [{ id: "workspace-1", name: "Workspace" }];
+let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
+  renderWorkspaceTabs();
   bindEvents();
 
   if (!supportsDirectoryPicker) {
@@ -89,20 +92,24 @@ function bindEvents() {
   });
 
   sidebarReturn.addEventListener("click", () => setSidebarCollapsed(false));
-  addWorkspaceButton.addEventListener("click", () => {
-    setStatus("Workspace creation will be added after the single-workspace flow is validated.", "idle");
-  });
-  deleteWorkspaceButton.addEventListener("click", () => {
-    setStatus("Workspace deletion will be added after workspace management is validated.", "idle");
+  addWorkspaceButton.addEventListener("click", addWorkspace);
+  workspaceTabs.addEventListener("click", (event) => {
+    const deleteButton = event.target.closest(".workspace-delete");
+    if (deleteButton) {
+      deleteWorkspace(deleteButton.dataset.workspaceId);
+      return;
+    }
+
+    const workspaceButton = event.target.closest("[data-workspace-id]");
+    if (workspaceButton) {
+      setActiveWorkspace(workspaceButton.dataset.workspaceId);
+    }
   });
 
   chooseFolderButton.addEventListener("click", chooseFolder);
   refreshButton.addEventListener("click", scanSelectedFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
-  navButtons.forEach((button) => {
-    button.addEventListener("click", () => setActiveView(button.dataset.view));
-  });
 }
 
 function setSidebarCollapsed(collapsed) {
@@ -110,6 +117,90 @@ function setSidebarCollapsed(collapsed) {
   const label = collapsed ? "Показать меню" : "Скрыть меню";
   sidebarToggle.setAttribute("aria-label", label);
   sidebarToggle.title = label;
+}
+
+function addWorkspace() {
+  workspaceSequence += 1;
+  const workspace = {
+    id: `workspace-${workspaceSequence}`,
+    name: `Workspace ${workspaceSequence}`,
+  };
+
+  workspaces.push(workspace);
+  activeWorkspaceId = workspace.id;
+  renderWorkspaceTabs();
+}
+
+function deleteWorkspace(workspaceId) {
+  const workspace = workspaces.find((item) => item.id === workspaceId);
+  if (!workspace || isDefaultWorkspace(workspace)) {
+    return;
+  }
+
+  const removedIndex = workspaces.findIndex((item) => item.id === workspaceId);
+  workspaces = workspaces.filter((item) => item.id !== workspaceId);
+
+  if (activeWorkspaceId === workspaceId) {
+    activeWorkspaceId = workspaces[Math.max(0, removedIndex - 1)].id;
+  }
+
+  renderWorkspaceTabs();
+}
+
+function setActiveWorkspace(workspaceId) {
+  if (!workspaces.some((workspace) => workspace.id === workspaceId)) {
+    return;
+  }
+
+  activeWorkspaceId = workspaceId;
+  renderWorkspaceTabs();
+}
+
+function isDefaultWorkspace(workspace) {
+  return workspaces[0]?.id === workspace.id;
+}
+
+function renderWorkspaceTabs() {
+  workspaceTabs.replaceChildren(...workspaces.map(createWorkspaceTab));
+}
+
+function createWorkspaceTab(workspace) {
+  const tab = document.createElement("div");
+  tab.className = "workspace-tab";
+
+  const button = document.createElement("button");
+  button.className = "nav-item";
+  button.type = "button";
+  button.dataset.view = "workspace";
+  button.dataset.workspaceId = workspace.id;
+  button.title = workspace.name;
+  button.classList.toggle("active", workspace.id === activeWorkspaceId);
+  if (workspace.id === activeWorkspaceId) {
+    button.setAttribute("aria-current", "page");
+  }
+
+  const icon = document.createElement("span");
+  icon.className = "nav-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "W";
+
+  const label = document.createElement("span");
+  label.className = "nav-label";
+  label.textContent = workspace.name;
+
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "icon-button workspace-delete";
+  deleteButton.type = "button";
+  deleteButton.dataset.workspaceId = workspace.id;
+  deleteButton.setAttribute("aria-label", `Удалить ${workspace.name}`);
+  deleteButton.title = `Удалить ${workspace.name}`;
+  deleteButton.textContent = "×";
+  deleteButton.disabled = isDefaultWorkspace(workspace);
+
+  button.append(icon, label);
+  tab.append(button, deleteButton);
+
+  return tab;
 }
 
 async function chooseFolder() {
@@ -165,8 +256,7 @@ async function scanSelectedFolder() {
 
   try {
     folders = await listStatusCards(selectedHandle);
-    const statusCount = countStatuses(folders);
-    setStatus(`Showing ${folders.length} folders across ${statusCount} statuses from ${selectedHandle.name}.`, "success");
+    setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
     setStatus("Could not scan that folder. Refresh or choose it again.", "error");
@@ -218,20 +308,6 @@ function renderPlaceholder(title, description) {
 function setActiveView(view) {
   activeView = views[view] ? view : "workspace";
 
-  navButtons.forEach((button) => {
-    const isActive = button.dataset.view === activeView;
-    button.classList.toggle("active", isActive);
-    if (isActive) {
-      button.setAttribute("aria-current", "page");
-    } else {
-      button.removeAttribute("aria-current");
-    }
-  });
-
-  if (folderViews.has(activeView)) {
-    setStatus(selectedHandle ? `Showing ${folders.length} folders across ${countStatuses(folders)} statuses from ${selectedHandle.name}.` : "Choose a folder to build the board.", "idle");
-  }
-
   renderFolders();
 }
 
@@ -253,10 +329,6 @@ function createFolderCard(folder) {
   `;
 
   return card;
-}
-
-function countStatuses(cards) {
-  return new Set(cards.map((card) => card.status)).size;
 }
 
 function updateRoot(name) {

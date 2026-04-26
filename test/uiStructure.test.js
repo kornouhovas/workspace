@@ -27,8 +27,9 @@ test("folder picker has one primary click target in the initial view", async () 
 
 test("sidebar navigation exposes view state and mouse titles", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-  assert.match(html, /data-view="workspace"/);
+  assert.match(app, /button\.dataset\.view = "workspace"/);
   assert.equal(html.includes('data-view="folders"'), false);
   assert.equal(html.includes('data-view="recent"'), false);
   assert.equal(html.includes('data-view="settings"'), false);
@@ -44,17 +45,32 @@ test("collapsed sidebar fully hides the panel and leaves a return button", async
   assert.match(css, /\.sidebar-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*display:\s*none/s);
   assert.match(css, /\.sidebar-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top:\s*72px/s);
+  assert.doesNotMatch(css, /\.sidebar-return span\s*\{[^}]*transform:\s*rotate/s);
 });
 
 test("left panel shows workspace tab controls", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(html, /class="workspace-tabs"/);
   assert.match(html, /id="addWorkspaceButton"/);
-  assert.match(html, /id="deleteWorkspaceButton"/);
+  assert.match(app, /function addWorkspace\(\)/);
+  assert.match(app, /function deleteWorkspace\(workspaceId\)/);
+  assert.match(app, /function isDefaultWorkspace\(workspace\)/);
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
+  assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+});
+
+test("board status line is not visible in the app chrome", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(html, /id="statusLine"[^>]*hidden/);
+  assert.equal(app.includes("Showing ${folders.length} folders across"), false);
 });
 
 test("kanban scroll area leaves room for lifted folder-card hover", async () => {

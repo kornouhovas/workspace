@@ -45,23 +45,7 @@
           </button>
         </div>
 
-        <nav class="workspace-tabs" aria-label="Workspaces">
-          <div class="workspace-tab">
-            <button class="nav-item active" type="button" data-view="workspace" aria-current="page" title="Workspace">
-              <span class="nav-icon" aria-hidden="true">W</span>
-              <span class="nav-label">Workspace</span>
-            </button>
-            <button
-              class="icon-button workspace-delete"
-              id="deleteWorkspaceButton"
-              type="button"
-              aria-label="Удалить workspace"
-              title="Удалить workspace"
-            >
-              ×
-            </button>
-          </div>
-        </nav>
+        <nav class="workspace-tabs" id="workspaceTabs" aria-label="Workspaces"></nav>
 
         <section class="workspace-panel" aria-label="Текущая папка">
           <span class="eyebrow">Selected root</span>
@@ -91,7 +75,7 @@
         </header>
 
         <section class="board-toolbar" aria-label="Инструменты">
-          <div class="status-line" id="statusLine" role="status">Choose a folder to build the board.</div>
+          <div class="status-line" id="statusLine" role="status" hidden></div>
           <button class="ghost-button" id="restoreButton" type="button" hidden>Restore access</button>
         </section>
 
