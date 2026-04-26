@@ -186,7 +186,7 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
   assert.match(app, /boardSurface\.classList\.toggle\("board-mode", activeBoardView === "board"\)/);
   assert.match(css, /\.folder-table\s*\{/);
-  assert.match(css, /\.folder-table\s*\{[^}]*margin-top:\s*-8px/s);
+  assert.match(css, /\.folder-table\s*\{[^}]*margin-top:\s*-21px/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
   assert.match(css, /\.folder-table-head\s*\{[^}]*font-size:\s*13px/s);
