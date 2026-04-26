@@ -14,7 +14,9 @@ test("mobile layout keeps navigation as a left rail instead of a top bar", async
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar\s*\{[\s\S]*position:\s*fixed/s);
-  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.main\s*\{[\s\S]*margin-left:\s*224px/s);
+  assert.match(css, /\.app-shell\s*\{[^}]*grid-template-columns:\s*280px minmax\(0,\s*1fr\)/s);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar\s*\{[\s\S]*width:\s*280px/s);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.main\s*\{[\s\S]*margin-left:\s*280px/s);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar-collapsed \.main\s*\{[\s\S]*margin-left:\s*0/s);
 });
 
@@ -60,6 +62,8 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /function addWorkspace\(\)/);
   assert.match(app, /function deleteWorkspace\(workspaceId\)/);
   assert.match(app, /function isDefaultWorkspace\(workspace\)/);
+  assert.match(app, /function getNextWorkspaceNumber\(\)/);
+  assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
   assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
@@ -77,6 +81,17 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
 });
 
+test("left panel collapsed state is persisted across browser refresh", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(app, /const sidebarStorageKey = "sidebar-state"/);
+  assert.match(app, /function loadSidebarState\(\)/);
+  assert.match(app, /function saveSidebarState\(collapsed\)/);
+  assert.match(app, /localStorage\.getItem\(sidebarStorageKey\)/);
+  assert.match(app, /localStorage\.setItem\(sidebarStorageKey/);
+  assert.match(app, /setSidebarCollapsed\(loadSidebarState\(\), false\)/);
+});
+
 test("topbar title mirrors and edits the active workspace name", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
@@ -91,7 +106,10 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(app, /function startWorkspaceRename\(\)/);
   assert.match(app, /function commitWorkspaceRename\(\)/);
   assert.match(css, /\.workspace-title-row:hover \.title-edit-button/s);
-  assert.match(css, /\.workspace-title-button:hover/s);
+  assert.match(css, /\.workspace-title-row:hover \.workspace-title-button/s);
+  assert.match(css, /\.workspace-title-row:focus-within \.workspace-title-button/s);
+  assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
+  assert.match(css, /\.workspace-title-input\s*\{[^}]*padding:\s*4px 8px/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {

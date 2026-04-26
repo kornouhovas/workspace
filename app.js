@@ -4,6 +4,7 @@ const dbName = "folder-kanban-mvp";
 const storeName = "handles";
 const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
+const sidebarStorageKey = "sidebar-state";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -62,6 +63,7 @@ let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
   loadWorkspaceState();
+  setSidebarCollapsed(loadSidebarState(), false);
   renderWorkspaceTabs();
   bindEvents();
 
@@ -122,18 +124,20 @@ function bindEvents() {
   searchInput.addEventListener("input", renderFolders);
 }
 
-function setSidebarCollapsed(collapsed) {
+function setSidebarCollapsed(collapsed, persist = true) {
   appShell.classList.toggle("sidebar-collapsed", collapsed);
   const label = collapsed ? "Показать меню" : "Скрыть меню";
   sidebarToggle.setAttribute("aria-label", label);
   sidebarToggle.title = label;
+  if (persist) {
+    saveSidebarState(collapsed);
+  }
 }
 
 function addWorkspace() {
-  workspaceSequence += 1;
   const workspace = {
-    id: `workspace-${workspaceSequence}`,
-    name: `Workspace ${workspaceSequence}`,
+    id: createWorkspaceId(),
+    name: `Workspace ${getNextWorkspaceNumber()}`,
   };
 
   workspaces.push(workspace);
@@ -184,6 +188,23 @@ function getActiveWorkspace() {
   return workspaces.find((workspace) => workspace.id === activeWorkspaceId) || workspaces[0];
 }
 
+function getNextWorkspaceNumber() {
+  const numberedNames = workspaces
+    .map((workspace) => workspace.name.match(/^Workspace\s+(\d+)$/)?.[1])
+    .filter(Boolean)
+    .map(Number);
+
+  return numberedNames.length > 0 ? Math.max(...numberedNames) + 1 : 1;
+}
+
+function createWorkspaceId() {
+  do {
+    workspaceSequence += 1;
+  } while (workspaces.some((workspace) => workspace.id === `workspace-${workspaceSequence}`));
+
+  return `workspace-${workspaceSequence}`;
+}
+
 function renameWorkspace(workspaceId, name) {
   const nextName = name.trim();
   if (!nextName) {
@@ -200,7 +221,9 @@ function renameWorkspace(workspaceId, name) {
 
 function startWorkspaceRename() {
   const workspace = getActiveWorkspace();
+  const titleWidth = workspaceTitleButton.getBoundingClientRect().width;
   workspaceTitleInput.value = workspace.name;
+  workspaceTitleInput.style.width = `${titleWidth}px`;
   workspaceTitleInput.hidden = false;
   workspaceTitleRow.classList.add("is-editing");
   workspaceTitleInput.focus();
@@ -258,6 +281,14 @@ function loadWorkspaceState() {
   } catch (error) {
     localStorage.removeItem(workspaceStorageKey);
   }
+}
+
+function loadSidebarState() {
+  return localStorage.getItem(sidebarStorageKey) === "collapsed";
+}
+
+function saveSidebarState(collapsed) {
+  localStorage.setItem(sidebarStorageKey, collapsed ? "collapsed" : "expanded");
 }
 
 function saveWorkspaceState() {
