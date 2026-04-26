@@ -26,8 +26,12 @@ test("mobile layout keeps navigation as a left rail instead of a top bar", async
 
 test("folder picker has one primary click target in the initial view", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.equal(html.match(/Choose folder/g)?.length, 1);
+  assert.equal(html.includes("Refresh"), false);
+  assert.equal(html.includes("refreshButton"), false);
+  assert.equal(app.includes("refreshButton"), false);
   assert.equal(html.includes("emptyChooseButton"), false);
 });
 
@@ -89,6 +93,7 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
+  assert.match(css, /\.workspace-tabs\s*\{[^}]*gap:\s*5px/s);
   assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
 });
@@ -207,6 +212,8 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
+  assert.match(css, /--content-x:\s*26px/);
+  assert.match(css, /\.main\s*\{[^}]*padding:\s*26px var\(--content-x\) 22px/s);
   assert.match(html, /class="topbar-copy"/);
   assert.match(html, /id="boardViewSwitcher"/);
   assert.match(html, /id="workspaceTitleButton"/);
@@ -219,9 +226,12 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(css, /\.workspace-title-row:hover \.title-edit-button/s);
   assert.match(css, /\.workspace-title-row:hover \.workspace-title-button/s);
   assert.match(css, /\.workspace-title-row:focus-within \.workspace-title-button/s);
+  assert.match(css, /\.workspace-title-button\s*\{[^}]*padding:\s*4px 12px/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*padding:\s*4px 8px/s);
-  assert.match(css, /\.board-view-switcher\s*\{[^}]*margin-left:\s*8px/s);
+  assert.match(css, /\.board-view-switcher\s*\{[^}]*margin-left:\s*0/s);
+  assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*4px 12px/s);
+  assert.match(css, /\.folder-card\s*\{[^}]*padding:\s*12px/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {

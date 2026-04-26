@@ -14,7 +14,6 @@ const addWorkspaceButton = document.querySelector("#addWorkspaceButton");
 const workspaceTabs = document.querySelector("#workspaceTabs");
 const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
-const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
 const boardSurface = document.querySelector(".kanban-board");
@@ -134,7 +133,6 @@ function bindEvents() {
     }
   });
   chooseFolderButton.addEventListener("click", chooseFolder);
-  refreshButton.addEventListener("click", scanSelectedFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   window.addEventListener("keydown", handleSidebarShortcut);
@@ -499,7 +497,7 @@ async function scanSelectedFolder() {
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
-    setStatus("Could not scan that folder. Refresh or choose it again.", "error");
+    setStatus("Could not scan that folder. Choose it again.", "error");
   }
 
   renderFolders();
@@ -604,7 +602,6 @@ function setActiveView(view) {
 
 function updateActionStates() {
   const canUseFolderBoard = supportsDirectoryPicker && folderViews.has(activeView);
-  refreshButton.disabled = !selectedHandle || !canUseFolderBoard;
   searchInput.disabled = !canUseFolderBoard;
 }
 
