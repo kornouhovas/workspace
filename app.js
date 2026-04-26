@@ -5,6 +5,7 @@ const storeName = "handles";
 const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
 const sidebarStorageKey = "sidebar-state";
+const boardSnapshotStorageKey = "folder-board-snapshot";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -450,6 +451,7 @@ function renderFolders() {
 
   totalFolders.textContent = String(folders.length);
   sidebarFolderCount.textContent = String(folders.length);
+  saveBoardSnapshot();
 }
 
 function renderPlaceholder(title, description) {
@@ -490,6 +492,23 @@ function updateRoot(name) {
   const label = name || "No root selected";
   rootLabel.textContent = label;
   sidebarRootName.textContent = name || "No folder";
+}
+
+function saveBoardSnapshot() {
+  if (!selectedHandle) {
+    localStorage.removeItem(boardSnapshotStorageKey);
+    return;
+  }
+
+  const snapshot = {
+    rootName: selectedHandle.name,
+    folders: folders.map((folder) => ({
+      name: folder.name,
+      status: folder.status,
+    })),
+  };
+
+  localStorage.setItem(boardSnapshotStorageKey, JSON.stringify(snapshot));
 }
 
 async function hasPermission(handle, request) {

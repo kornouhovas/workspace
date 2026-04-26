@@ -104,6 +104,29 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
 });
 
+test("saved workspace chrome is bootstrapped before app module hydration", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(html, /function hydrateSavedWorkspaceState\(\)/);
+  assert.match(html, /localStorage\.getItem\("workspaces-state"\)/);
+  assert.match(html, /workspaceTitle\.textContent = activeWorkspace\.name/);
+  assert.match(html, /workspaceTabs\.replaceChildren\(\.\.\.state\.workspaces\.map\(createInitialWorkspaceTab\)\)/);
+  assert.match(html, /button\.dataset\.workspaceId = workspace\.id/);
+});
+
+test("folder board snapshot is persisted and bootstrapped before app module hydration", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(app, /const boardSnapshotStorageKey = "folder-board-snapshot"/);
+  assert.match(app, /function saveBoardSnapshot\(\)/);
+  assert.match(app, /localStorage\.setItem\(boardSnapshotStorageKey/);
+  assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
+  assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
+  assert.match(html, /folderGrid\.replaceChildren\(\.\.\.snapshot\.folders\.map\(createInitialFolderCard\)\)/);
+  assert.match(html, /totalFolders\.textContent = String\(snapshot\.folders\.length\)/);
+});
+
 test("left panel collapsed state is persisted across browser refresh", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 

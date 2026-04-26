@@ -124,6 +124,139 @@
       </main>
     </div>
 
+    <script>
+      (() => {
+        try {
+          hydrateSavedWorkspaceState();
+          hydrateSavedBoardSnapshot();
+        } catch (error) {}
+
+        function hydrateSavedWorkspaceState() {
+          const state = JSON.parse(localStorage.getItem("workspaces-state"));
+          if (!isStoredWorkspaceState(state)) {
+            return;
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+          const workspaceTitle = document.querySelector("#workspaceTitle");
+          const workspaceTabs = document.querySelector("#workspaceTabs");
+
+          workspaceTitle.textContent = activeWorkspace.name;
+          workspaceTabs.replaceChildren(...state.workspaces.map(createInitialWorkspaceTab));
+
+          function createInitialWorkspaceTab(workspace, index) {
+            const tab = document.createElement("div");
+            tab.className = "workspace-tab";
+
+            const button = document.createElement("button");
+            button.className = "nav-item";
+            button.type = "button";
+            button.dataset.view = "workspace";
+            button.dataset.workspaceId = workspace.id;
+            button.title = workspace.name;
+            button.classList.toggle("active", workspace.id === activeWorkspace.id);
+            if (workspace.id === activeWorkspace.id) {
+              button.setAttribute("aria-current", "page");
+            }
+
+            const icon = document.createElement("span");
+            icon.className = "nav-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = "W";
+
+            const label = document.createElement("span");
+            label.className = "nav-label";
+            label.textContent = workspace.name;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "icon-button workspace-delete";
+            deleteButton.type = "button";
+            deleteButton.dataset.workspaceId = workspace.id;
+            deleteButton.setAttribute("aria-label", `Удалить ${workspace.name}`);
+            deleteButton.title = `Удалить ${workspace.name}`;
+            deleteButton.textContent = "×";
+            deleteButton.disabled = index === 0;
+
+            button.append(icon, label);
+            tab.append(button, deleteButton);
+
+            return tab;
+          }
+        }
+
+        function hydrateSavedBoardSnapshot() {
+          const snapshot = JSON.parse(localStorage.getItem("folder-board-snapshot"));
+          if (!isStoredBoardSnapshot(snapshot)) {
+            return;
+          }
+
+          const folderGrid = document.querySelector("#folderGrid");
+          const emptyState = document.querySelector("#emptyState");
+          const totalFolders = document.querySelector("#totalFolders");
+          const rootLabel = document.querySelector("#rootLabel");
+          const sidebarRootName = document.querySelector("#sidebarRootName");
+          const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
+
+          rootLabel.textContent = snapshot.rootName;
+          sidebarRootName.textContent = snapshot.rootName;
+          totalFolders.textContent = String(snapshot.folders.length);
+          sidebarFolderCount.textContent = String(snapshot.folders.length);
+
+          if (snapshot.folders.length > 0) {
+            emptyState.hidden = true;
+            folderGrid.replaceChildren(...snapshot.folders.map(createInitialFolderCard));
+          } else {
+            emptyState.querySelector("h2").textContent = "No folders in statuses";
+            emptyState.querySelector("p").textContent =
+              "Create folders inside the root status folders to display them as cards.";
+          }
+        }
+
+        function createInitialFolderCard(folder) {
+          const card = document.createElement("article");
+          card.className = "folder-card";
+
+          const title = document.createElement("h2");
+          title.textContent = folder.name;
+
+          const meta = document.createElement("div");
+          meta.className = "card-meta";
+
+          const tag = document.createElement("span");
+          tag.className = "folder-tag";
+          tag.textContent = folder.status;
+
+          meta.append(tag);
+          card.append(title, meta);
+
+          return card;
+        }
+
+        function isStoredWorkspaceState(state) {
+          return (
+            state &&
+            Array.isArray(state.workspaces) &&
+            state.workspaces.length > 0 &&
+            state.workspaces.every(
+              (workspace) => typeof workspace.id === "string" && typeof workspace.name === "string",
+            ) &&
+            typeof state.activeWorkspaceId === "string"
+          );
+        }
+
+        function isStoredBoardSnapshot(snapshot) {
+          return (
+            snapshot &&
+            typeof snapshot.rootName === "string" &&
+            Array.isArray(snapshot.folders) &&
+            snapshot.folders.every(
+              (folder) => typeof folder.name === "string" && typeof folder.status === "string",
+            )
+          );
+        }
+      })();
+    </script>
     <script type="module" src="app.js"></script>
   </body>
 </html>
