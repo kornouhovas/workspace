@@ -283,9 +283,11 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.table-column-drag-image\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.table-resize-handle\s*\{/);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*top:\s*0/s);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*cursor:\s*col-resize/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*top:\s*0/s);
+  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*background:\s*var\(--line\)/s);
   assert.match(css, /\.folder-table-head:hover \.table-resize-handle/s);
