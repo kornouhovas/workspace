@@ -174,6 +174,8 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /"Status"/);
   assert.match(css, /\.folder-board-view\s*\{/);
   assert.match(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
+  assert.match(css, /\.folder-grid\s*\{[^}]*padding-top:\s*12px/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*padding-top:\s*12px/s);
   assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*margin-top:\s*-22px/s);
   assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*padding-top:\s*28px/s);
   assert.match(css, /\.board-column\s*\{[^}]*position:\s*relative/s);
@@ -184,8 +186,11 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
   assert.match(app, /boardSurface\.classList\.toggle\("board-mode", activeBoardView === "board"\)/);
   assert.match(css, /\.folder-table\s*\{/);
+  assert.match(css, /\.folder-table\s*\{[^}]*margin-top:\s*-8px/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
+  assert.match(css, /\.folder-table-head\s*\{[^}]*font-size:\s*13px/s);
+  assert.doesNotMatch(css, /\.folder-table-head\s*\{[^}]*text-transform:\s*uppercase/s);
   assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
 });
@@ -286,6 +291,7 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(css, /\.board-view-switcher\s*\{[^}]*margin-left:\s*0/s);
   assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*4px 12px/s);
   assert.match(css, /\.folder-card\s*\{[^}]*padding:\s*12px/s);
+  assert.match(css, /\.folder-card h2\s*\{[^}]*font-size:\s*14px/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {
