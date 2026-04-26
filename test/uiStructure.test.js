@@ -242,14 +242,15 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
   assert.match(app, /cell\.draggable = false/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
+  assert.match(css, /\.folder-table-row\s*\{[^}]*gap:\s*0/s);
   assert.match(css, /\.folder-table-head\s*\{[^}]*padding:\s*0/s);
+  assert.match(css, /\.folder-table-cell\s*\{[^}]*padding:\s*0 12px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*align-items:\s*center/s);
-  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*padding:\s*0 12px/s);
-  assert.match(css, /\.folder-table-head \.folder-table-cell::after\s*\{/);
-  assert.match(css, /\.folder-table-head \.folder-table-cell:hover::after/s);
+  assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell::after\s*\{/);
+  assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell:hover::after/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
   assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*border-radius/s);
   assert.match(css, /\.table-column-drag-image\s*\{/);

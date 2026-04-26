@@ -673,7 +673,7 @@ input:focus-visible {
 .folder-table-row {
   display: grid;
   grid-template-columns: var(--table-columns, minmax(180px, 46%) minmax(110px, 22%));
-  gap: 18px;
+  gap: 0;
   border-bottom: 1px solid var(--line);
   padding: 10px 8px;
   transition:
@@ -697,7 +697,7 @@ input:focus-visible {
   border: 0;
   background: transparent;
   color: var(--text);
-  padding: 0;
+  padding: 0 12px;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -714,36 +714,15 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 560;
   line-height: 1.2;
-  padding: 0 12px;
   transition:
     background-color 140ms ease,
     color 140ms ease,
     transform 140ms ease;
 }
 
-.folder-table-head .folder-table-cell::after {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--line);
-  content: "";
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms ease;
-}
-
 .folder-table-head .folder-table-cell:hover {
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
-}
-
-.folder-table-head .folder-table-cell:hover::after,
-.folder-table-head .folder-table-cell:focus-visible::after,
-.folder-table-head .folder-table-cell.is-table-preview-left::after,
-.folder-table-head .folder-table-cell.is-table-preview-right::after {
-  opacity: 1;
 }
 
 .folder-table-head .folder-table-cell:active {
