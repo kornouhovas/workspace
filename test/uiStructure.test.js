@@ -93,7 +93,7 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
-  assert.match(css, /\.workspace-tabs\s*\{[^}]*gap:\s*5px/s);
+  assert.match(css, /\.workspace-tabs\s*\{[^}]*gap:\s*2px/s);
   assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
 });
