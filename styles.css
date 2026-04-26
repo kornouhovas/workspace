@@ -600,6 +600,15 @@ input:focus-visible {
   padding-top: 22px;
 }
 
+.board-column.is-dragging {
+  opacity: 0.55;
+}
+
+.board-column.is-drop-target {
+  outline: 1px solid var(--blue);
+  outline-offset: 4px;
+}
+
 .board-column-title {
   position: absolute;
   top: 0;
@@ -608,12 +617,17 @@ input:focus-visible {
   overflow: hidden;
   margin: 0;
   color: var(--muted);
+  cursor: grab;
   font-size: 13px;
   font-weight: 560;
   line-height: 1.2;
   pointer-events: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.board-column-title:active {
+  cursor: grabbing;
 }
 
 .board-column-cards {

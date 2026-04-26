@@ -59,8 +59,9 @@ let folders = [];
 let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
+let draggedStatus = null;
 let workspaceSequence = 1;
-let workspaces = [{ id: "workspace-1", name: "Workspace", boardView: "overview" }];
+let workspaces = [{ id: "workspace-1", name: "Workspace", boardView: "overview", statusOrder: [] }];
 let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
@@ -135,6 +136,11 @@ function bindEvents() {
   chooseFolderButton.addEventListener("click", chooseFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
+  folderGrid.addEventListener("dragstart", handleBoardColumnDragStart);
+  folderGrid.addEventListener("dragover", handleBoardColumnDragOver);
+  folderGrid.addEventListener("dragleave", handleBoardColumnDragLeave);
+  folderGrid.addEventListener("drop", handleBoardColumnDrop);
+  folderGrid.addEventListener("dragend", handleBoardColumnDragEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
 
@@ -199,6 +205,7 @@ function addWorkspace() {
     id: createWorkspaceId(),
     name: `Workspace ${getNextWorkspaceNumber()}`,
     boardView: "overview",
+    statusOrder: [],
   };
 
   workspaces.push(workspace);
@@ -257,6 +264,12 @@ function getActiveWorkspace() {
 
 function getActiveBoardView() {
   return normalizeBoardView(getActiveWorkspace()?.boardView);
+}
+
+function getActiveStatusOrder() {
+  const statusOrder = getActiveWorkspace()?.statusOrder;
+
+  return Array.isArray(statusOrder) ? statusOrder.filter((status) => typeof status === "string") : [];
 }
 
 function normalizeBoardView(boardView) {
@@ -346,6 +359,9 @@ function loadWorkspaceState() {
       id: workspace.id,
       name: workspace.name,
       boardView: normalizeBoardView(workspace.boardView),
+      statusOrder: Array.isArray(workspace.statusOrder)
+        ? workspace.statusOrder.filter((status) => typeof status === "string")
+        : [],
     }));
     activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
       ? storedState.activeWorkspaceId
@@ -370,6 +386,13 @@ function loadBoardView() {
 function saveBoardView() {
   workspaces = workspaces.map((workspace) =>
     workspace.id === activeWorkspaceId ? { ...workspace, boardView } : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function saveStatusOrder(statusOrder) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId ? { ...workspace, statusOrder } : workspace,
   );
   saveWorkspaceState();
 }
@@ -558,7 +581,7 @@ function renderOverviewView(visibleFolders) {
 }
 
 function renderBoardView(visibleFolders) {
-  const statuses = [...new Set(visibleFolders.map((folder) => folder.status))];
+  const statuses = getOrderedStatuses(visibleFolders);
 
   folderGrid.className = "folder-board-view";
   folderGrid.replaceChildren(
@@ -569,6 +592,15 @@ function renderBoardView(visibleFolders) {
       ),
     ),
   );
+}
+
+function getOrderedStatuses(visibleFolders) {
+  const currentStatuses = [...new Set(visibleFolders.map((folder) => folder.status))];
+  const currentStatusSet = new Set(currentStatuses);
+  const savedStatuses = getActiveStatusOrder().filter((status) => currentStatusSet.has(status));
+  const newStatuses = currentStatuses.filter((status) => !savedStatuses.includes(status));
+
+  return [...savedStatuses, ...newStatuses];
 }
 
 function renderTableView(visibleFolders) {
@@ -608,9 +640,11 @@ function updateActionStates() {
 function createBoardColumn(status, statusFolders) {
   const column = document.createElement("section");
   column.className = "board-column";
+  column.dataset.status = status;
 
   const title = document.createElement("h2");
   title.className = "board-column-title";
+  title.draggable = true;
   title.textContent = status;
 
   const cards = document.createElement("div");
@@ -620,6 +654,67 @@ function createBoardColumn(status, statusFolders) {
   column.append(title, cards);
 
   return column;
+}
+
+function handleBoardColumnDragStart(event) {
+  const title = event.target.closest(".board-column-title");
+  const column = title?.closest(".board-column");
+  if (!title || !column || getActiveBoardView() !== "board") {
+    return;
+  }
+
+  draggedStatus = column.dataset.status;
+  column.classList.add("is-dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", draggedStatus);
+}
+
+function handleBoardColumnDragOver(event) {
+  const targetColumn = event.target.closest(".board-column");
+  if (!draggedStatus || !targetColumn || targetColumn.dataset.status === draggedStatus) {
+    return;
+  }
+
+  event.preventDefault();
+  targetColumn.classList.add("is-drop-target");
+}
+
+function handleBoardColumnDragLeave(event) {
+  const targetColumn = event.target.closest(".board-column");
+  if (targetColumn && !targetColumn.contains(event.relatedTarget)) {
+    targetColumn.classList.remove("is-drop-target");
+  }
+}
+
+function handleBoardColumnDrop(event) {
+  const targetColumn = event.target.closest(".board-column");
+  if (!draggedStatus || !targetColumn || targetColumn.dataset.status === draggedStatus) {
+    return;
+  }
+
+  event.preventDefault();
+  const targetStatus = targetColumn.dataset.status;
+  const reorderedStatuses = moveStatusBefore(getOrderedStatuses(filterFolders(folders, searchInput.value)), draggedStatus, targetStatus);
+  saveStatusOrder(reorderedStatuses);
+  draggedStatus = null;
+  renderFolders();
+}
+
+function handleBoardColumnDragEnd() {
+  draggedStatus = null;
+  folderGrid.querySelectorAll(".board-column").forEach((column) => {
+    column.classList.remove("is-dragging", "is-drop-target");
+  });
+}
+
+function moveStatusBefore(statuses, movedStatus, targetStatus) {
+  const withoutMoved = statuses.filter((status) => status !== movedStatus);
+  const targetIndex = withoutMoved.indexOf(targetStatus);
+  if (targetIndex < 0) {
+    return statuses;
+  }
+
+  return [...withoutMoved.slice(0, targetIndex), movedStatus, ...withoutMoved.slice(targetIndex)];
 }
 
 function createTableRow(folder) {

@@ -108,8 +108,11 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /localStorage\.setItem\(workspaceStorageKey/);
   assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
   assert.match(app, /boardView:\s*"overview"/);
+  assert.match(app, /statusOrder:\s*\[\]/);
   assert.match(app, /function getActiveBoardView\(\)/);
   assert.match(app, /function normalizeBoardView\(boardView\)/);
+  assert.match(app, /function getActiveStatusOrder\(\)/);
+  assert.match(app, /function saveStatusOrder\(statusOrder\)/);
 });
 
 test("saved workspace chrome is bootstrapped before app module hydration", async () => {
@@ -182,6 +185,26 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
   assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
+});
+
+test("board columns can be reordered by dragging column titles", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /let draggedStatus = null/);
+  assert.match(app, /folderGrid\.addEventListener\("dragstart", handleBoardColumnDragStart\)/);
+  assert.match(app, /folderGrid\.addEventListener\("dragover", handleBoardColumnDragOver\)/);
+  assert.match(app, /folderGrid\.addEventListener\("drop", handleBoardColumnDrop\)/);
+  assert.match(app, /function handleBoardColumnDragStart\(event\)/);
+  assert.match(app, /function handleBoardColumnDragOver\(event\)/);
+  assert.match(app, /function handleBoardColumnDrop\(event\)/);
+  assert.match(app, /title\.draggable = true/);
+  assert.match(app, /column\.dataset\.status = status/);
+  assert.match(app, /function getOrderedStatuses\(visibleFolders\)/);
+  assert.match(app, /saveStatusOrder\(reorderedStatuses\)/);
+  assert.match(css, /\.board-column-title\s*\{[^}]*cursor:\s*grab/s);
+  assert.match(css, /\.board-column\.is-dragging\s*\{[^}]*opacity:/s);
+  assert.match(css, /\.board-column\.is-drop-target\s*\{[^}]*outline:/s);
 });
 
 test("left panel collapsed state is persisted across browser refresh", async () => {
