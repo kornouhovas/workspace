@@ -60,6 +60,7 @@ let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
+let boardColumnDragImage = null;
 let workspaceSequence = 1;
 let workspaces = [{ id: "workspace-1", name: "Workspace", boardView: "overview", statusOrder: [] }];
 let activeWorkspaceId = "workspace-1";
@@ -664,9 +665,11 @@ function handleBoardColumnDragStart(event) {
   }
 
   draggedStatus = column.dataset.status;
-  title.classList.add("is-drag-source-title");
+  const dragImage = createBoardColumnDragImage(draggedStatus);
   event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("text/plain", draggedStatus);
+  event.dataTransfer.setDragImage(dragImage, 12, 12);
+  requestAnimationFrame(() => title.classList.add("is-drag-source-title"));
 }
 
 function handleBoardColumnDragOver(event) {
@@ -696,12 +699,30 @@ function handleBoardColumnDrop(event) {
   saveStatusOrder(reorderedStatuses);
   draggedStatus = null;
   clearBoardColumnTitlePreview();
+  removeBoardColumnDragImage();
   renderFolders();
 }
 
 function handleBoardColumnDragEnd() {
   draggedStatus = null;
   clearBoardColumnTitlePreview();
+  removeBoardColumnDragImage();
+}
+
+function createBoardColumnDragImage(status) {
+  removeBoardColumnDragImage();
+  const dragImage = document.createElement("div");
+  dragImage.className = "board-column-drag-image";
+  dragImage.textContent = status;
+  document.body.append(dragImage);
+  boardColumnDragImage = dragImage;
+
+  return dragImage;
+}
+
+function removeBoardColumnDragImage() {
+  boardColumnDragImage?.remove();
+  boardColumnDragImage = null;
 }
 
 function getPreviewStatusOrder(event, targetColumn) {

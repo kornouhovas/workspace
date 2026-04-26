@@ -626,6 +626,22 @@ input:focus-visible {
   opacity: 0;
 }
 
+.board-column-drag-image {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  z-index: -1;
+  border-radius: 999px;
+  background: rgba(94, 168, 239, 0.95);
+  color: #fff;
+  padding: 2px 8px 3px;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .board-column-title.is-preview-shift-left {
   transform: translateX(calc(-1 * var(--board-title-shift)));
 }
