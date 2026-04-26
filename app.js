@@ -79,6 +79,9 @@ let tableColumnPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
 let tableColumnDragImage = null;
+let workspacePointerDragState = null;
+let workspaceDragImage = null;
+let workspaceSuppressClick = false;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -142,7 +145,15 @@ function bindEvents() {
   workspaceTitleEditButton.addEventListener("click", startWorkspaceRename);
   workspaceTitleInput.addEventListener("keydown", handleWorkspaceTitleKeydown);
   workspaceTitleInput.addEventListener("blur", commitWorkspaceRename);
+  workspaceTabs.addEventListener("pointerdown", handleWorkspacePointerDragStart);
   workspaceTabs.addEventListener("click", (event) => {
+    if (workspaceSuppressClick) {
+      workspaceSuppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     const deleteButton = event.target.closest(".workspace-delete");
     if (deleteButton) {
       deleteWorkspace(deleteButton.dataset.workspaceId);
@@ -179,9 +190,11 @@ function bindEvents() {
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
+  window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
+  window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
@@ -295,11 +308,211 @@ function setActiveWorkspace(workspaceId) {
 }
 
 function isDefaultWorkspace(workspace) {
-  return workspaces[0]?.id === workspace.id;
+  return workspace.id === "workspace-1";
 }
 
 function renderWorkspaceTabs() {
   workspaceTabs.replaceChildren(...workspaces.map(createWorkspaceTab));
+}
+
+function handleWorkspacePointerDragStart(event) {
+  const sourceTab = event.target.closest(".workspace-tab");
+  const workspaceButton = event.target.closest("[data-workspace-id]");
+  if (
+    !sourceTab ||
+    !workspaceButton ||
+    event.target.closest(".workspace-delete") ||
+    workspacePointerDragState ||
+    workspaces.length < 2
+  ) {
+    return;
+  }
+
+  workspacePointerDragState = {
+    workspaceId: workspaceButton.dataset.workspaceId,
+    startX: event.clientX,
+    startY: event.clientY,
+    sourceTab,
+    targetTab: sourceTab,
+    isDragging: false,
+  };
+  try {
+    sourceTab.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleWorkspacePointerDragMove(event) {
+  if (!workspacePointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - workspacePointerDragState.startX,
+    event.clientY - workspacePointerDragState.startY,
+  );
+  if (!workspacePointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  const startsDragging = !workspacePointerDragState.isDragging;
+  workspacePointerDragState.isDragging = true;
+  workspacePointerDragState.sourceTab.classList.add("is-workspace-drag-source");
+  if (startsDragging) {
+    createWorkspaceDragImage(
+      getWorkspaceById(workspacePointerDragState.workspaceId),
+      workspacePointerDragState.sourceTab,
+      event,
+    );
+  } else {
+    moveWorkspaceDragImage(event);
+  }
+
+  const targetTab = document.elementFromPoint(event.clientX, event.clientY)?.closest(".workspace-tab");
+  if (!targetTab || !workspaceTabs.contains(targetTab)) {
+    return;
+  }
+
+  workspacePointerDragState.targetTab = targetTab;
+  applyWorkspaceOrderPreview(getWorkspacePreviewOrder(event, targetTab));
+}
+
+function handleWorkspacePointerDragEnd(event) {
+  if (!workspacePointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetTab } = workspacePointerDragState;
+
+  if (!isDragging || !targetTab) {
+    workspacePointerDragState = null;
+    removeWorkspaceDragImage();
+    clearWorkspaceDragState();
+    return;
+  }
+
+  event.preventDefault();
+  workspaceSuppressClick = true;
+  const workspaceIds = getWorkspacePreviewOrder(event, targetTab);
+  saveWorkspaceOrder(workspaceIds);
+  workspacePointerDragState = null;
+  clearWorkspaceDragState();
+  removeWorkspaceDragImage();
+  renderWorkspaceTabs();
+}
+
+function getWorkspaceById(workspaceId) {
+  return workspaces.find((workspace) => workspace.id === workspaceId);
+}
+
+function saveWorkspaceOrder(workspaceIds) {
+  const workspaceById = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
+  const orderedWorkspaces = workspaceIds.map((workspaceId) => workspaceById.get(workspaceId)).filter(Boolean);
+  const missingWorkspaces = workspaces.filter((workspace) => !workspaceIds.includes(workspace.id));
+  workspaces = [...orderedWorkspaces, ...missingWorkspaces];
+  saveWorkspaceState();
+}
+
+function getWorkspacePreviewOrder(event, targetTab) {
+  const workspaceIds = workspaces.map((workspace) => workspace.id);
+  const movedWorkspaceId = workspacePointerDragState?.workspaceId;
+  const targetWorkspaceId = targetTab.querySelector("[data-workspace-id]")?.dataset.workspaceId;
+  if (!movedWorkspaceId || !targetWorkspaceId || movedWorkspaceId === targetWorkspaceId) {
+    return workspaceIds;
+  }
+
+  const insertAfterTarget = getWorkspaceInsertAfterTarget(event, workspaceIds, targetWorkspaceId, targetTab);
+
+  return moveWorkspaceNearTarget(workspaceIds, movedWorkspaceId, targetWorkspaceId, insertAfterTarget);
+}
+
+function getWorkspaceInsertAfterTarget(event, workspaceIds, targetWorkspaceId, targetTab) {
+  const draggedIndex = workspaceIds.indexOf(workspacePointerDragState.workspaceId);
+  const targetIndex = workspaceIds.indexOf(targetWorkspaceId);
+  const targetRect = targetTab.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return false;
+  }
+
+  if (draggedIndex < targetIndex) {
+    return event.clientY > targetRect.top + targetRect.height * 0.25;
+  }
+
+  return event.clientY > targetRect.bottom - targetRect.height * 0.25;
+}
+
+function moveWorkspaceNearTarget(workspaceIds, movedWorkspaceId, targetWorkspaceId, insertAfterTarget) {
+  const withoutMoved = workspaceIds.filter((workspaceId) => workspaceId !== movedWorkspaceId);
+  const targetIndex = withoutMoved.indexOf(targetWorkspaceId);
+  if (targetIndex < 0) {
+    return workspaceIds;
+  }
+
+  const insertIndex = targetIndex + (insertAfterTarget ? 1 : 0);
+  return [...withoutMoved.slice(0, insertIndex), movedWorkspaceId, ...withoutMoved.slice(insertIndex)];
+}
+
+function applyWorkspaceOrderPreview(previewWorkspaceIds) {
+  const tabs = [...workspaceTabs.querySelectorAll(".workspace-tab")];
+  const rowGap = Number.parseFloat(getComputedStyle(workspaceTabs).rowGap) || 0;
+  tabs.forEach((tab, currentIndex) => {
+    const workspaceId = tab.querySelector("[data-workspace-id]")?.dataset.workspaceId;
+    const previewIndex = previewWorkspaceIds.indexOf(workspaceId);
+    const shiftDistance = `${tab.getBoundingClientRect().height + rowGap}px`;
+    tab.classList.remove("is-workspace-preview-up", "is-workspace-preview-down");
+    tab.style.setProperty("--workspace-tab-shift", shiftDistance);
+
+    if (workspaceId === workspacePointerDragState?.workspaceId) {
+      tab.classList.add("is-workspace-drag-source");
+      return;
+    }
+
+    if (previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      tab.classList.add("is-workspace-preview-up");
+    } else if (previewIndex > currentIndex) {
+      tab.classList.add("is-workspace-preview-down");
+    }
+  });
+}
+
+function clearWorkspaceDragState() {
+  workspaceTabs.querySelectorAll(".workspace-tab").forEach((tab) => {
+    tab.classList.remove("is-workspace-drag-source", "is-workspace-preview-up", "is-workspace-preview-down");
+    tab.style.removeProperty("--workspace-tab-shift");
+  });
+}
+
+function createWorkspaceDragImage(workspace, sourceTab, event) {
+  removeWorkspaceDragImage();
+  const sourceRect = sourceTab.getBoundingClientRect();
+  const dragImage = sourceTab.cloneNode(true);
+  dragImage.className = "workspace-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  dragImage.querySelector(".workspace-delete")?.remove();
+  dragImage.querySelector(".nav-item")?.classList.toggle("active", workspace?.id === activeWorkspaceId);
+  document.body.append(dragImage);
+  workspaceDragImage = dragImage;
+  moveWorkspaceDragImage(event);
+}
+
+function moveWorkspaceDragImage(event) {
+  if (!workspaceDragImage) {
+    return;
+  }
+
+  workspaceDragImage.style.transform = `translate(${event.clientX + 12}px, ${event.clientY - 15}px)`;
+}
+
+function removeWorkspaceDragImage() {
+  workspaceDragImage?.remove();
+  workspaceDragImage = null;
 }
 
 function getActiveWorkspace() {

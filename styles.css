@@ -196,9 +196,35 @@ input:focus-visible {
 
 .workspace-tab {
   display: grid;
+  --workspace-tab-shift: 0px;
   grid-template-columns: minmax(0, 1fr) 30px;
   align-items: center;
   gap: 8px;
+  transition: transform 140ms ease;
+}
+
+.workspace-tab.is-workspace-drag-source {
+  opacity: 0;
+}
+
+.workspace-tab.is-workspace-preview-up {
+  transform: translateY(calc(-1 * var(--workspace-tab-shift)));
+}
+
+.workspace-tab.is-workspace-preview-down {
+  transform: translateY(var(--workspace-tab-shift));
+}
+
+.workspace-drag-image {
+  display: grid;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  pointer-events: none;
+  will-change: transform;
 }
 
 .nav-item {

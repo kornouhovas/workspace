@@ -89,13 +89,32 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(app, /function addWorkspace\(\)/);
   assert.match(app, /function deleteWorkspace\(workspaceId\)/);
   assert.match(app, /function isDefaultWorkspace\(workspace\)/);
+  assert.match(app, /workspace\.id === "workspace-1"/);
   assert.match(app, /function getNextWorkspaceNumber\(\)/);
   assert.match(app, /name:\s*`Workspace \$\{getNextWorkspaceNumber\(\)\}`/);
+  assert.match(app, /let workspacePointerDragState = null/);
+  assert.match(app, /let workspaceDragImage = null/);
+  assert.match(app, /workspaceTabs\.addEventListener\("pointerdown", handleWorkspacePointerDragStart\)/);
+  assert.match(app, /window\.addEventListener\("pointermove", handleWorkspacePointerDragMove\)/);
+  assert.match(app, /window\.addEventListener\("pointerup", handleWorkspacePointerDragEnd\)/);
+  assert.match(app, /function handleWorkspacePointerDragStart\(event\)/);
+  assert.match(app, /function handleWorkspacePointerDragMove\(event\)/);
+  assert.match(app, /function handleWorkspacePointerDragEnd\(event\)/);
+  assert.match(app, /function saveWorkspaceOrder\(workspaceIds\)/);
+  assert.match(app, /function applyWorkspaceOrderPreview\(previewWorkspaceIds\)/);
+  assert.match(app, /function createWorkspaceDragImage\(workspace, sourceTab, event\)/);
+  assert.match(app, /function removeWorkspaceDragImage\(\)/);
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
   assert.match(css, /\.workspace-tabs\s*\{[^}]*gap:\s*2px/s);
   assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.workspace-tab\.is-workspace-drag-source\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.workspace-tab\.is-workspace-preview-up/s);
+  assert.match(css, /\.workspace-tab\.is-workspace-preview-down/s);
+  assert.match(css, /\.workspace-drag-image\s*\{/);
+  assert.match(css, /\.workspace-drag-image\s*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /\.workspace-drag-image\s*\{[^}]*pointer-events:\s*none/s);
 });
 
 test("workspace state is persisted across browser refresh", async () => {
