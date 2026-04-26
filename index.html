@@ -7,6 +7,11 @@
     <script>
       try {
         const isSidebarCollapsed = localStorage.getItem("sidebar-state") === "collapsed";
+        const hasSavedBoardState =
+          localStorage.getItem("workspaces-state") || localStorage.getItem("folder-board-snapshot");
+        if (hasSavedBoardState) {
+          document.documentElement.classList.add("app-loading");
+        }
         if (isSidebarCollapsed) {
           document.documentElement.classList.add("app-loading", "sidebar-saved-collapsed");
         }
@@ -203,7 +208,9 @@
             return;
           }
 
+          const workspaceState = JSON.parse(localStorage.getItem("workspaces-state"));
           const boardView = getStoredBoardView();
+          const statusOrder = getStoredStatusOrder(workspaceState);
           const folderGrid = document.querySelector("#folderGrid");
           const emptyState = document.querySelector("#emptyState");
           const sidebarRootName = document.querySelector("#sidebarRootName");
@@ -215,7 +222,7 @@
           if (snapshot.folders.length > 0) {
             emptyState.hidden = true;
             document.querySelector(".kanban-board").classList.toggle("board-mode", boardView === "board");
-            renderInitialFolders(folderGrid, snapshot.folders, boardView);
+            renderInitialFolders(folderGrid, snapshot.folders, boardView, statusOrder);
           } else {
             emptyState.querySelector("h2").textContent = "No folders in statuses";
             emptyState.querySelector("p").textContent =
@@ -223,10 +230,10 @@
           }
         }
 
-        function renderInitialFolders(folderGrid, folders, boardView) {
+        function renderInitialFolders(folderGrid, folders, boardView, statusOrder = []) {
           if (boardView === "board") {
             folderGrid.className = "folder-board-view";
-            folderGrid.replaceChildren(...createInitialBoardColumns(folders));
+            folderGrid.replaceChildren(...createInitialBoardColumns(folders, statusOrder));
             return;
           }
 
@@ -240,8 +247,13 @@
           folderGrid.replaceChildren(...folders.map((folder) => createInitialFolderCard(folder)));
         }
 
-        function createInitialBoardColumns(folders) {
-          return [...new Set(folders.map((folder) => folder.status))].map((status) => {
+        function createInitialBoardColumns(folders, statusOrder) {
+          const currentStatuses = [...new Set(folders.map((folder) => folder.status))];
+          const currentStatusSet = new Set(currentStatuses);
+          const savedStatuses = statusOrder.filter((status) => currentStatusSet.has(status));
+          const newStatuses = currentStatuses.filter((status) => !savedStatuses.includes(status));
+
+          return [...savedStatuses, ...newStatuses].map((status) => {
             const column = document.createElement("section");
             column.className = "board-column";
 
@@ -327,6 +339,19 @@
           }
 
           return "overview";
+        }
+
+        function getStoredStatusOrder(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return [];
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+
+          return Array.isArray(activeWorkspace.statusOrder)
+            ? activeWorkspace.statusOrder.filter((status) => typeof status === "string")
+            : [];
         }
 
         function isStoredWorkspaceState(state) {

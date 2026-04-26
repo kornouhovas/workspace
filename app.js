@@ -684,7 +684,7 @@ function handleBoardColumnDragOver(event) {
 
 function handleBoardColumnDragLeave(event) {
   if (!folderGrid.contains(event.relatedTarget)) {
-    clearBoardColumnTitlePreview();
+    clearBoardColumnShiftPreview();
   }
 }
 
@@ -698,14 +698,14 @@ function handleBoardColumnDrop(event) {
   const reorderedStatuses = getPreviewStatusOrder(event, targetColumn);
   saveStatusOrder(reorderedStatuses);
   draggedStatus = null;
-  clearBoardColumnTitlePreview();
+  clearBoardColumnDragState();
   removeBoardColumnDragImage();
   renderFolders();
 }
 
 function handleBoardColumnDragEnd() {
   draggedStatus = null;
-  clearBoardColumnTitlePreview();
+  clearBoardColumnDragState();
   removeBoardColumnDragImage();
 }
 
@@ -791,9 +791,20 @@ function applyBoardColumnTitlePreview(previewStatuses) {
 }
 
 function clearBoardColumnTitlePreview() {
+  clearBoardColumnDragState();
+}
+
+function clearBoardColumnShiftPreview() {
   folderGrid.querySelectorAll(".board-column-title").forEach((title) => {
-    title.classList.remove("is-preview-shift-left", "is-preview-shift-right", "is-drag-source-title");
+    title.classList.remove("is-preview-shift-left", "is-preview-shift-right");
     title.style.removeProperty("--board-title-shift");
+  });
+}
+
+function clearBoardColumnDragState() {
+  clearBoardColumnShiftPreview();
+  folderGrid.querySelectorAll(".board-column-title").forEach((title) => {
+    title.classList.remove("is-drag-source-title");
   });
 }
 

@@ -134,7 +134,10 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(app, /localStorage\.setItem\(boardSnapshotStorageKey/);
   assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
-  assert.match(html, /renderInitialFolders\(folderGrid, snapshot\.folders, boardView\)/);
+  assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
+  assert.match(html, /renderInitialFolders\(folderGrid, snapshot\.folders, boardView, statusOrder\)/);
+  assert.match(html, /function getStoredStatusOrder\(state\)/);
+  assert.match(html, /createInitialBoardColumns\(folders, statusOrder\)/);
   assert.match(html, /sidebarFolderCount\.textContent = String\(snapshot\.folders\.length\)/);
 });
 
@@ -199,6 +202,8 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /function getColumnInsertAfterTarget\(event, statuses, targetColumn\)/);
   assert.match(app, /function applyBoardColumnTitlePreview\(previewStatuses\)/);
   assert.match(app, /function clearBoardColumnTitlePreview\(\)/);
+  assert.match(app, /function clearBoardColumnShiftPreview\(\)/);
+  assert.match(app, /function clearBoardColumnDragState\(\)/);
   assert.match(app, /function createBoardColumnDragImage\(status\)/);
   assert.match(app, /function removeBoardColumnDragImage\(\)/);
   assert.match(app, /event\.dataTransfer\.setDragImage\(dragImage,/);
@@ -207,8 +212,9 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.match(app, /title\.style\.setProperty\("--board-title-shift"/);
   assert.match(app, /title\.style\.removeProperty\("--board-title-shift"\)/);
   assert.match(app, /column\.dataset\.status === draggedStatus\)[\s\S]*title\.classList\.add\("is-drag-source-title"\)/);
+  assert.match(app, /function handleBoardColumnDragLeave\(event\)[\s\S]*clearBoardColumnShiftPreview\(\)/);
   assert.match(app, /dragImage\.className = "board-column-drag-image"/);
-  assert.match(app, /is-preview-shift-left", "is-preview-shift-right", "is-drag-source-title"/);
+  assert.match(app, /clearBoardColumnShiftPreview\(\);[\s\S]*title\.classList\.remove\("is-drag-source-title"\)/);
   assert.match(app, /targetRect\.left \+ targetRect\.width \* 0\.25/);
   assert.match(app, /targetRect\.right - targetRect\.width \* 0\.25/);
   assert.match(app, /function handleBoardColumnDragStart\(event\)/);
