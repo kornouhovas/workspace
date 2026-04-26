@@ -562,6 +562,7 @@ function renderFolders() {
 function renderActiveBoardView(visibleFolders) {
   const activeBoardView = getActiveBoardView();
   boardSurface.classList.toggle("board-mode", activeBoardView === "board");
+  boardSurface.classList.toggle("table-mode", activeBoardView === "table");
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);

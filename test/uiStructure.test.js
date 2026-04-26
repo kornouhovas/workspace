@@ -185,11 +185,15 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.board-column-title\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
   assert.match(app, /boardSurface\.classList\.toggle\("board-mode", activeBoardView === "board"\)/);
+  assert.match(app, /boardSurface\.classList\.toggle\("table-mode", activeBoardView === "table"\)/);
+  assert.match(css, /\.kanban-board\.table-mode\s*\{[^}]*margin-top:\s*-21px/s);
   assert.match(css, /\.folder-table\s*\{/);
-  assert.match(css, /\.folder-table\s*\{[^}]*margin-top:\s*-21px/s);
+  assert.doesNotMatch(css, /\.folder-table\s*\{[^}]*margin-top:\s*-/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover\s*\{[^}]*background:/s);
   assert.match(css, /\.folder-table-head\s*\{[^}]*font-size:\s*13px/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*font-size:\s*13px/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*line-height:\s*1\.2/s);
   assert.doesNotMatch(css, /\.folder-table-head\s*\{[^}]*text-transform:\s*uppercase/s);
   assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);

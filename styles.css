@@ -578,6 +578,10 @@ input:focus-visible {
   padding-top: 28px;
 }
 
+.kanban-board.table-mode {
+  margin-top: -21px;
+}
+
 .folder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
@@ -659,7 +663,7 @@ input:focus-visible {
 
 .folder-table {
   display: block;
-  margin-top: -21px;
+  margin-top: 0;
 }
 
 .folder-table-surface {
@@ -697,6 +701,9 @@ input:focus-visible {
 
 .folder-table-head .folder-table-cell {
   color: var(--faint);
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.2;
 }
 
 .folder-board-view .folder-card {
