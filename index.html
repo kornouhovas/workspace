@@ -1,13 +1,14 @@
 <!doctype html>
-<html lang="ru" class="app-loading">
+<html lang="ru">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Folder Kanban</title>
     <script>
       try {
-        if (localStorage.getItem("sidebar-state") === "collapsed") {
-          document.documentElement.classList.add("sidebar-saved-collapsed");
+        const isSidebarCollapsed = localStorage.getItem("sidebar-state") === "collapsed";
+        if (isSidebarCollapsed) {
+          document.documentElement.classList.add("app-loading", "sidebar-saved-collapsed");
         }
       } catch (error) {}
     </script>

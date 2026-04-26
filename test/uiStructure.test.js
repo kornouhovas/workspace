@@ -7,9 +7,10 @@ test("app shell is not wrapped in a decorative browser frame", async () => {
 
   assert.equal(html.includes("browser-frame"), false);
   assert.equal(html.includes("browser-bar"), false);
-  assert.match(html, /<html lang="ru" class="app-loading">/);
+  assert.match(html, /<html lang="ru">/);
+  assert.doesNotMatch(html, /<html lang="ru" class="app-loading">/);
   assert.match(html, /localStorage\.getItem\("sidebar-state"\) === "collapsed"/);
-  assert.match(html, /document\.documentElement\.classList\.add\("sidebar-saved-collapsed"\)/);
+  assert.match(html, /document\.documentElement\.classList\.add\("app-loading", "sidebar-saved-collapsed"\)/);
   assert.match(html, /<div class="app-shell" id="appShell">/);
 });
 
