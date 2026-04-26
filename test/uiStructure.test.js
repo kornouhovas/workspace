@@ -50,3 +50,13 @@ test("kanban scroll area leaves room for lifted folder-card hover", async () => 
   assert.match(css, /\.folder-card:hover\s*\{[^}]*transform:\s*translateY\(-1px\)/s);
   assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*[1-9]\d*px 4px 18px 0/s);
 });
+
+test("folder card renders only the folder name and its status tag", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.equal(app.includes("Direct child"), false);
+  assert.equal(app.includes("Saved from the selected parent folder"), false);
+  assert.equal(app.includes("mini-folder"), false);
+  assert.equal(app.includes("<span class=\"folder-tag\">Folder</span>"), false);
+  assert.match(app, /<span class="folder-tag">\$\{escapeHtml\(folder\.status\)\}<\/span>/);
+});

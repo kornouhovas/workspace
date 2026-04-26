@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterFolders, listDirectFolders } from "../src/folderModel.js";
+import { filterFolders, listDirectFolders, listStatusCards } from "../src/folderModel.js";
 
 function fakeDirectoryHandle(entries) {
   return {
@@ -35,5 +35,50 @@ test("filterFolders matches folder names case-insensitively", () => {
 
   assert.deepEqual(filterFolders(folders, "DO"), [
     { id: "folder-docs", name: "docs", kind: "directory" },
+  ]);
+});
+
+test("listStatusCards uses root child folders as statuses and their child folders as cards", async () => {
+  const cards = await listStatusCards(
+    fakeDirectoryHandle([
+      {
+        kind: "directory",
+        name: "In Progress",
+        values: async function* values() {
+          yield { kind: "file", name: "notes.md" };
+          yield { kind: "directory", name: "Prototype" };
+          yield { kind: "directory", name: "Interview Notes" };
+        },
+      },
+      {
+        kind: "directory",
+        name: "Backlog",
+        values: async function* values() {
+          yield { kind: "directory", name: "Landing Copy" };
+        },
+      },
+      { kind: "file", name: "readme.md" },
+    ]),
+  );
+
+  assert.deepEqual(cards, [
+    {
+      id: "status-backlog-folder-landing-copy",
+      name: "Landing Copy",
+      kind: "directory",
+      status: "Backlog",
+    },
+    {
+      id: "status-in-progress-folder-interview-notes",
+      name: "Interview Notes",
+      kind: "directory",
+      status: "In Progress",
+    },
+    {
+      id: "status-in-progress-folder-prototype",
+      name: "Prototype",
+      kind: "directory",
+      status: "In Progress",
+    },
   ]);
 });

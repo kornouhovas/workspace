@@ -1,4 +1,4 @@
-import { filterFolders, listDirectFolders } from "./src/folderModel.js";
+import { filterFolders, listStatusCards } from "./src/folderModel.js";
 
 const dbName = "folder-kanban-mvp";
 const storeName = "handles";
@@ -24,12 +24,12 @@ const views = {
   workspace: {
     title: "Workspace folders",
     emptyTitle: "No folder selected",
-    emptyDescription: "Pick a parent folder from the top action to show its direct subfolders as cards.",
+    emptyDescription: "Pick a root folder from the top action to show folders grouped by status tags.",
   },
   folders: {
     title: "Folders",
     emptyTitle: "No folder selected",
-    emptyDescription: "Choose a parent folder to populate this folder board.",
+    emptyDescription: "Choose a root folder to populate this folder board.",
   },
   recent: {
     title: "Recent",
@@ -146,11 +146,12 @@ async function scanSelectedFolder() {
     return;
   }
 
-  setStatus("Scanning direct subfolders...", "idle");
+  setStatus("Scanning status folders...", "idle");
 
   try {
-    folders = await listDirectFolders(selectedHandle);
-    setStatus(`Showing ${folders.length} direct subfolders from ${selectedHandle.name}.`, "success");
+    folders = await listStatusCards(selectedHandle);
+    const statusCount = countStatuses(folders);
+    setStatus(`Showing ${folders.length} folders across ${statusCount} statuses from ${selectedHandle.name}.`, "success");
   } catch (error) {
     folders = [];
     setStatus("Could not scan that folder. Refresh or choose it again.", "error");
@@ -180,8 +181,8 @@ function renderFolders() {
       ? views[activeView].emptyDescription
       : "Open this app in a Chromium browser to choose local folders.";
   } else if (folders.length === 0) {
-    emptyState.querySelector("h2").textContent = "No direct subfolders";
-    emptyState.querySelector("p").textContent = "This parent folder has no direct child folders to display.";
+    emptyState.querySelector("h2").textContent = "No folders in statuses";
+    emptyState.querySelector("p").textContent = "Create folders inside the root status folders to display them as cards.";
   } else {
     emptyState.querySelector("h2").textContent = "No matches";
     emptyState.querySelector("p").textContent = "Clear search to show the folder cards again.";
@@ -213,7 +214,7 @@ function setActiveView(view) {
   });
 
   if (folderViews.has(activeView)) {
-    setStatus(selectedHandle ? `Showing ${folders.length} direct subfolders from ${selectedHandle.name}.` : "Choose a folder to build the board.", "idle");
+    setStatus(selectedHandle ? `Showing ${folders.length} folders across ${countStatuses(folders)} statuses from ${selectedHandle.name}.` : "Choose a folder to build the board.", "idle");
   }
 
   renderFolders();
@@ -225,21 +226,22 @@ function updateActionStates() {
   searchInput.disabled = !canUseFolderBoard;
 }
 
-function createFolderCard(folder, index) {
+function createFolderCard(folder) {
   const card = document.createElement("article");
   card.className = "folder-card";
 
   card.innerHTML = `
-    <div class="card-age">Direct child ${index + 1}</div>
     <h2>${escapeHtml(folder.name)}</h2>
-    <div class="folder-note">Saved from the selected parent folder. Nested folders are not scanned in this MVP.</div>
     <div class="card-meta">
-      <span class="mini-folder" aria-hidden="true">F</span>
-      <span class="folder-tag">Folder</span>
+      <span class="folder-tag">${escapeHtml(folder.status)}</span>
     </div>
   `;
 
   return card;
+}
+
+function countStatuses(cards) {
+  return new Set(cards.map((card) => card.status)).size;
 }
 
 function updateRoot(name) {
