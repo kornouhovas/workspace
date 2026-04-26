@@ -210,6 +210,7 @@ test("table columns can be resized and reordered from the header", async () => {
 
   assert.match(app, /const tableColumnIds = \["name", "status"\]/);
   assert.match(app, /let tableColumnPointerDragState = null/);
+  assert.match(app, /let tableColumnDragImage = null/);
   assert.match(app, /tableColumnOrder:\s*\[\.\.\.tableColumnIds\]/);
   assert.match(app, /tableNameWidth:\s*58/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
@@ -224,6 +225,9 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function handleTableColumnPointerDragStart\(event\)/);
   assert.match(app, /function handleTableColumnPointerDragMove\(event\)/);
   assert.match(app, /function handleTableColumnPointerDragEnd\(event\)/);
+  assert.match(app, /function createTableColumnDragImage\(columnId, event\)/);
+  assert.match(app, /function moveTableColumnDragImage\(event\)/);
+  assert.match(app, /function removeTableColumnDragImage\(\)/);
   assert.match(app, /document\s*\.elementFromPoint\(event\.clientX, event\.clientY\)/);
   assert.match(app, /function createTableHeaderCell\(columnId\)/);
   assert.match(app, /function createTableResizeHandle\(\)/);
@@ -241,13 +245,17 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*align-items:\s*center/s);
+  assert.match(css, /\.folder-table-head \.folder-table-cell::after\s*\{/);
+  assert.match(css, /\.folder-table-head \.folder-table-cell:hover::after/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
+  assert.match(css, /\.table-column-drag-image\s*\{/);
   assert.match(css, /\.table-resize-handle\s*\{/);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*cursor:\s*col-resize/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*bottom:\s*0/s);
+  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*background:\s*var\(--line\)/s);
   assert.match(css, /\.folder-table-head:hover \.table-resize-handle/s);
   assert.match(css, /\.folder-table-cell\.is-table-drag-source\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.folder-table-cell\.is-table-preview-left/s);

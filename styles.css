@@ -720,10 +720,30 @@ input:focus-visible {
     transform 140ms ease;
 }
 
+.folder-table-head .folder-table-cell::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
 .folder-table-head .folder-table-cell:hover {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+}
+
+.folder-table-head .folder-table-cell:hover::after,
+.folder-table-head .folder-table-cell:focus-visible::after,
+.folder-table-head .folder-table-cell.is-table-preview-left::after,
+.folder-table-head .folder-table-cell.is-table-preview-right::after {
+  opacity: 1;
 }
 
 .folder-table-head .folder-table-cell:active {
@@ -748,7 +768,7 @@ input:focus-visible {
   right: 8px;
   bottom: 0;
   width: 1px;
-  background: var(--faint);
+  background: var(--line);
   content: "";
 }
 
@@ -759,6 +779,23 @@ input:focus-visible {
 
 .folder-table-cell.is-table-drag-source {
   opacity: 0;
+}
+
+.table-column-drag-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  padding: 9px 12px;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.2;
+  white-space: nowrap;
+  will-change: transform;
 }
 
 .folder-table-cell.is-table-preview-left {

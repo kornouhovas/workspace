@@ -72,6 +72,7 @@ let draggedTableColumn = null;
 let tableColumnPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
+let tableColumnDragImage = null;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -988,12 +989,14 @@ function handleTableColumnDrop(event) {
   saveTableColumnOrder(tableColumnOrder);
   draggedTableColumn = null;
   clearTableColumnDragState();
+  removeTableColumnDragImage();
   renderFolders();
 }
 
 function handleTableColumnDragEnd() {
   draggedTableColumn = null;
   clearTableColumnDragState();
+  removeTableColumnDragImage();
 }
 
 function handleTableColumnPointerDragStart(event) {
@@ -1034,9 +1037,15 @@ function handleTableColumnPointerDragMove(event) {
   }
 
   event.preventDefault();
+  const startsDragging = !tableColumnPointerDragState.isDragging;
   tableColumnPointerDragState.isDragging = true;
   draggedTableColumn = tableColumnPointerDragState.columnId;
   tableColumnPointerDragState.sourceCell.classList.add("is-table-drag-source");
+  if (startsDragging) {
+    createTableColumnDragImage(tableColumnPointerDragState.columnId, event);
+  } else {
+    moveTableColumnDragImage(event);
+  }
 
   const targetCell = document
     .elementFromPoint(event.clientX, event.clientY)
@@ -1058,6 +1067,7 @@ function handleTableColumnPointerDragEnd(event) {
   tableColumnPointerDragState = null;
 
   if (!isDragging || !targetCell) {
+    removeTableColumnDragImage();
     return;
   }
 
@@ -1066,7 +1076,31 @@ function handleTableColumnPointerDragEnd(event) {
   saveTableColumnOrder(tableColumnOrder);
   draggedTableColumn = null;
   clearTableColumnDragState();
+  removeTableColumnDragImage();
   renderFolders();
+}
+
+function createTableColumnDragImage(columnId, event) {
+  removeTableColumnDragImage();
+  const dragImage = document.createElement("div");
+  dragImage.className = "table-column-drag-image";
+  dragImage.textContent = tableColumnLabels[columnId] || columnId;
+  document.body.append(dragImage);
+  tableColumnDragImage = dragImage;
+  moveTableColumnDragImage(event);
+}
+
+function moveTableColumnDragImage(event) {
+  if (!tableColumnDragImage) {
+    return;
+  }
+
+  tableColumnDragImage.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`;
+}
+
+function removeTableColumnDragImage() {
+  tableColumnDragImage?.remove();
+  tableColumnDragImage = null;
 }
 
 function getTablePreviewColumnOrder(event, targetCell) {
