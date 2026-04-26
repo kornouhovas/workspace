@@ -6,12 +6,14 @@ const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
 const sidebarStorageKey = "sidebar-state";
 const boardSnapshotStorageKey = "folder-board-snapshot";
+const boardViewStorageKey = "board-view";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
 const sidebarReturn = document.querySelector("#sidebarReturn");
 const addWorkspaceButton = document.querySelector("#addWorkspaceButton");
 const workspaceTabs = document.querySelector("#workspaceTabs");
+const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const refreshButton = document.querySelector("#refreshButton");
 const restoreButton = document.querySelector("#restoreButton");
@@ -24,8 +26,6 @@ const workspaceTitleRow = document.querySelector(".workspace-title-row");
 const workspaceTitleButton = document.querySelector("#workspaceTitleButton");
 const workspaceTitleEditButton = document.querySelector("#workspaceTitleEditButton");
 const workspaceTitleInput = document.querySelector("#workspaceTitleInput");
-const totalFolders = document.querySelector("#totalFolders");
-const rootLabel = document.querySelector("#rootLabel");
 const sidebarRootName = document.querySelector("#sidebarRootName");
 const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
 
@@ -53,19 +53,23 @@ const views = {
 };
 
 const folderViews = new Set(["workspace", "folders"]);
+const boardViews = new Set(["overview", "board", "table"]);
 
 let selectedHandle = null;
 let folders = [];
 let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
+let boardView = "overview";
 let workspaceSequence = 1;
 let workspaces = [{ id: "workspace-1", name: "Workspace" }];
 let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
   loadWorkspaceState();
+  boardView = loadBoardView();
   setSidebarCollapsed(loadSidebarState(), false);
   renderWorkspaceTabs();
+  renderBoardViewSwitcher();
   bindEvents();
 
   try {
@@ -123,6 +127,12 @@ function bindEvents() {
     }
   });
 
+  boardViewSwitcher.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-board-view]");
+    if (button) {
+      setBoardView(button.dataset.boardView);
+    }
+  });
   chooseFolderButton.addEventListener("click", chooseFolder);
   refreshButton.addEventListener("click", scanSelectedFolder);
   restoreButton.addEventListener("click", restoreAccess);
@@ -138,6 +148,25 @@ function setSidebarCollapsed(collapsed, persist = true) {
   if (persist) {
     saveSidebarState(collapsed);
   }
+}
+
+function setBoardView(nextBoardView) {
+  if (!boardViews.has(nextBoardView)) {
+    return;
+  }
+
+  boardView = nextBoardView;
+  saveBoardView();
+  renderBoardViewSwitcher();
+  renderFolders();
+}
+
+function renderBoardViewSwitcher() {
+  boardViewSwitcher.querySelectorAll("[data-board-view]").forEach((button) => {
+    const isActive = button.dataset.boardView === boardView;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
 }
 
 function handleSidebarShortcut(event) {
@@ -319,6 +348,16 @@ function loadSidebarState() {
   return localStorage.getItem(sidebarStorageKey) === "collapsed";
 }
 
+function loadBoardView() {
+  const storedBoardView = localStorage.getItem(boardViewStorageKey);
+
+  return boardViews.has(storedBoardView) ? storedBoardView : "overview";
+}
+
+function saveBoardView() {
+  localStorage.setItem(boardViewStorageKey, boardView);
+}
+
 function saveSidebarState(collapsed) {
   localStorage.setItem(sidebarStorageKey, collapsed ? "collapsed" : "expanded");
 }
@@ -458,7 +497,7 @@ function renderFolders() {
   }
 
   const visibleFolders = filterFolders(folders, searchInput.value);
-  folderGrid.replaceChildren(...visibleFolders.map(createFolderCard));
+  renderActiveBoardView(visibleFolders);
 
   const hasCards = visibleFolders.length > 0;
   emptyState.hidden = hasCards;
@@ -476,12 +515,59 @@ function renderFolders() {
     emptyState.querySelector("p").textContent = "Clear search to show the folder cards again.";
   }
 
-  totalFolders.textContent = String(folders.length);
   sidebarFolderCount.textContent = String(folders.length);
   saveBoardSnapshot();
 }
 
+function renderActiveBoardView(visibleFolders) {
+  if (boardView === "board") {
+    renderBoardView(visibleFolders);
+    return;
+  }
+
+  if (boardView === "table") {
+    renderTableView(visibleFolders);
+    return;
+  }
+
+  renderOverviewView(visibleFolders);
+}
+
+function renderOverviewView(visibleFolders) {
+  folderGrid.className = "folder-grid";
+  folderGrid.replaceChildren(...visibleFolders.map((folder) => createFolderCard(folder)));
+}
+
+function renderBoardView(visibleFolders) {
+  const statuses = [...new Set(visibleFolders.map((folder) => folder.status))];
+
+  folderGrid.className = "folder-board-view";
+  folderGrid.replaceChildren(
+    ...statuses.map((status) =>
+      createBoardColumn(
+        status,
+        visibleFolders.filter((folder) => folder.status === status),
+      ),
+    ),
+  );
+}
+
+function renderTableView(visibleFolders) {
+  const table = document.createElement("div");
+  table.className = "folder-table-surface";
+
+  const header = document.createElement("div");
+  header.className = "folder-table-row folder-table-head";
+  header.append(createTableCell("Имя"), createTableCell("Статус"));
+
+  table.append(header, ...visibleFolders.map(createTableRow));
+
+  folderGrid.className = "folder-table";
+  folderGrid.replaceChildren(table);
+}
+
 function renderPlaceholder(title, description) {
+  folderGrid.className = "folder-grid";
   folderGrid.replaceChildren();
   emptyState.hidden = false;
   emptyState.querySelector("h2").textContent = title;
@@ -501,23 +587,64 @@ function updateActionStates() {
   searchInput.disabled = !canUseFolderBoard;
 }
 
-function createFolderCard(folder) {
+function createBoardColumn(status, statusFolders) {
+  const column = document.createElement("section");
+  column.className = "board-column";
+
+  const title = document.createElement("h2");
+  title.textContent = status;
+
+  const cards = document.createElement("div");
+  cards.className = "board-column-cards";
+  cards.replaceChildren(...statusFolders.map((folder) => createFolderCard(folder, { showStatus: false })));
+
+  column.append(title, cards);
+
+  return column;
+}
+
+function createTableRow(folder) {
+  const row = document.createElement("div");
+  row.className = "folder-table-row";
+  row.append(createTableCell(folder.name), createTableCell(folder.status));
+
+  return row;
+}
+
+function createTableCell(text) {
+  const cell = document.createElement("span");
+  cell.className = "folder-table-cell";
+  cell.textContent = text;
+
+  return cell;
+}
+
+function createFolderCard(folder, options = {}) {
   const card = document.createElement("article");
   card.className = "folder-card";
 
-  card.innerHTML = `
-    <h2>${escapeHtml(folder.name)}</h2>
-    <div class="card-meta">
-      <span class="folder-tag">${escapeHtml(folder.status)}</span>
-    </div>
-  `;
+  const title = document.createElement("h2");
+  title.textContent = folder.name;
+  card.append(title);
+
+  if (options.showStatus === false) {
+    return card;
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "card-meta";
+
+  const tag = document.createElement("span");
+  tag.className = "folder-tag";
+  tag.textContent = folder.status;
+
+  meta.append(tag);
+  card.append(meta);
 
   return card;
 }
 
 function updateRoot(name) {
-  const label = name || "No root selected";
-  rootLabel.textContent = label;
   sidebarRootName.textContent = name || "No folder";
 }
 
@@ -594,15 +721,6 @@ function openDatabase() {
 function setStatus(message, tone) {
   statusLine.textContent = message;
   statusLine.dataset.tone = tone;
-}
-
-function escapeHtml(value) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 initializeApp();

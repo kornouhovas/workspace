@@ -92,9 +92,10 @@
                 hidden
               />
             </div>
-            <div class="project-meta" aria-label="Сводка">
-              <span><strong id="totalFolders">0</strong> folders</span>
-              <span id="rootLabel">No root selected</span>
+            <div class="board-view-switcher" id="boardViewSwitcher" aria-label="Вид доски">
+              <button class="board-view-option active" type="button" data-board-view="overview">Общий вид</button>
+              <button class="board-view-option" type="button" data-board-view="board">Доска</button>
+              <button class="board-view-option" type="button" data-board-view="table">Таблица</button>
             </div>
           </div>
 
@@ -128,6 +129,7 @@
       (() => {
         try {
           hydrateSavedWorkspaceState();
+          hydrateSavedBoardViewState();
           hydrateSavedBoardSnapshot();
         } catch (error) {}
 
@@ -185,27 +187,35 @@
           }
         }
 
+        function hydrateSavedBoardViewState() {
+          const boardView = getStoredBoardView();
+          const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
+
+          boardViewSwitcher.querySelectorAll("[data-board-view]").forEach((button) => {
+            const isActive = button.dataset.boardView === boardView;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+          });
+        }
+
         function hydrateSavedBoardSnapshot() {
           const snapshot = JSON.parse(localStorage.getItem("folder-board-snapshot"));
           if (!isStoredBoardSnapshot(snapshot)) {
             return;
           }
 
+          const boardView = getStoredBoardView();
           const folderGrid = document.querySelector("#folderGrid");
           const emptyState = document.querySelector("#emptyState");
-          const totalFolders = document.querySelector("#totalFolders");
-          const rootLabel = document.querySelector("#rootLabel");
           const sidebarRootName = document.querySelector("#sidebarRootName");
           const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
 
-          rootLabel.textContent = snapshot.rootName;
           sidebarRootName.textContent = snapshot.rootName;
-          totalFolders.textContent = String(snapshot.folders.length);
           sidebarFolderCount.textContent = String(snapshot.folders.length);
 
           if (snapshot.folders.length > 0) {
             emptyState.hidden = true;
-            folderGrid.replaceChildren(...snapshot.folders.map(createInitialFolderCard));
+            renderInitialFolders(folderGrid, snapshot.folders, boardView);
           } else {
             emptyState.querySelector("h2").textContent = "No folders in statuses";
             emptyState.querySelector("p").textContent =
@@ -213,24 +223,102 @@
           }
         }
 
-        function createInitialFolderCard(folder) {
+        function renderInitialFolders(folderGrid, folders, boardView) {
+          if (boardView === "board") {
+            folderGrid.className = "folder-board-view";
+            folderGrid.replaceChildren(...createInitialBoardColumns(folders));
+            return;
+          }
+
+          if (boardView === "table") {
+            folderGrid.className = "folder-table";
+            folderGrid.replaceChildren(createInitialTable(folders));
+            return;
+          }
+
+          folderGrid.className = "folder-grid";
+          folderGrid.replaceChildren(...folders.map((folder) => createInitialFolderCard(folder)));
+        }
+
+        function createInitialBoardColumns(folders) {
+          return [...new Set(folders.map((folder) => folder.status))].map((status) => {
+            const column = document.createElement("section");
+            column.className = "board-column";
+
+            const title = document.createElement("h2");
+            title.textContent = status;
+
+            const cards = document.createElement("div");
+            cards.className = "board-column-cards";
+            cards.replaceChildren(
+              ...folders
+                .filter((folder) => folder.status === status)
+                .map((folder) => createInitialFolderCard(folder, { showStatus: false })),
+            );
+
+            column.append(title, cards);
+
+            return column;
+          });
+        }
+
+        function createInitialTable(folders) {
+          const table = document.createElement("div");
+          table.className = "folder-table-surface";
+
+          const header = document.createElement("div");
+          header.className = "folder-table-row folder-table-head";
+          header.append(createInitialTableCell("Имя"), createInitialTableCell("Статус"));
+
+          table.append(header, ...folders.map(createInitialTableRow));
+
+          return table;
+        }
+
+        function createInitialTableRow(folder) {
+          const row = document.createElement("div");
+          row.className = "folder-table-row";
+          row.append(createInitialTableCell(folder.name), createInitialTableCell(folder.status));
+
+          return row;
+        }
+
+        function createInitialTableCell(text) {
+          const cell = document.createElement("span");
+          cell.className = "folder-table-cell";
+          cell.textContent = text;
+
+          return cell;
+        }
+
+        function createInitialFolderCard(folder, options = {}) {
           const card = document.createElement("article");
           card.className = "folder-card";
 
           const title = document.createElement("h2");
           title.textContent = folder.name;
 
+          card.append(title);
+
+          if (options.showStatus === false) {
+            return card;
+          }
+
           const meta = document.createElement("div");
           meta.className = "card-meta";
-
           const tag = document.createElement("span");
           tag.className = "folder-tag";
           tag.textContent = folder.status;
-
           meta.append(tag);
-          card.append(title, meta);
+          card.append(meta);
 
           return card;
+        }
+
+        function getStoredBoardView() {
+          const boardView = localStorage.getItem("board-view");
+
+          return ["overview", "board", "table"].includes(boardView) ? boardView : "overview";
         }
 
         function isStoredWorkspaceState(state) {

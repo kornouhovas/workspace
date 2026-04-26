@@ -123,8 +123,44 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(app, /localStorage\.setItem\(boardSnapshotStorageKey/);
   assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
-  assert.match(html, /folderGrid\.replaceChildren\(\.\.\.snapshot\.folders\.map\(createInitialFolderCard\)\)/);
-  assert.match(html, /totalFolders\.textContent = String\(snapshot\.folders\.length\)/);
+  assert.match(html, /renderInitialFolders\(folderGrid, snapshot\.folders, boardView\)/);
+  assert.match(html, /sidebarFolderCount\.textContent = String\(snapshot\.folders\.length\)/);
+});
+
+test("topbar exposes persisted board view modes instead of folder summary text", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.match(html, /id="boardViewSwitcher"/);
+  assert.match(html, /data-board-view="overview"[^>]*>Общий вид</);
+  assert.match(html, /data-board-view="board"[^>]*>Доска</);
+  assert.match(html, /data-board-view="table"[^>]*>Таблица</);
+  assert.doesNotMatch(html, /id="totalFolders"/);
+  assert.doesNotMatch(html, /id="rootLabel"/);
+  assert.match(html, /function hydrateSavedBoardViewState\(\)/);
+  assert.match(app, /const boardViewStorageKey = "board-view"/);
+  assert.match(app, /function loadBoardView\(\)/);
+  assert.match(app, /function saveBoardView\(\)/);
+  assert.match(app, /localStorage\.setItem\(boardViewStorageKey, boardView\)/);
+});
+
+test("folder board supports overview board and table renderers", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /function renderOverviewView\(visibleFolders\)/);
+  assert.match(app, /function renderBoardView\(visibleFolders\)/);
+  assert.match(app, /function renderTableView\(visibleFolders\)/);
+  assert.match(app, /function createBoardColumn\(status, statusFolders\)/);
+  assert.match(app, /function createTableRow\(folder\)/);
+  assert.match(app, /createFolderCard\(folder, \{ showStatus: false \}\)/);
+  assert.match(app, /"Имя"/);
+  assert.match(app, /"Статус"/);
+  assert.match(css, /\.folder-board-view\s*\{/);
+  assert.match(css, /\.folder-table\s*\{/);
+  assert.match(css, /\.folder-table-row\s*\{[^}]*border-bottom:/s);
+  assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*border-left:/s);
+  assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
 });
 
 test("left panel collapsed state is persisted across browser refresh", async () => {
@@ -156,6 +192,7 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(html, /class="topbar-copy"/);
+  assert.match(html, /id="boardViewSwitcher"/);
   assert.match(html, /id="workspaceTitleButton"/);
   assert.match(html, /id="workspaceTitleEditButton"/);
   assert.match(html, /id="workspaceTitleInput"/);
@@ -168,7 +205,7 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(css, /\.workspace-title-row:focus-within \.workspace-title-button/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*padding:\s*4px 8px/s);
-  assert.match(css, /\.project-meta\s*\{[^}]*margin-left:\s*8px/s);
+  assert.match(css, /\.board-view-switcher\s*\{[^}]*margin-left:\s*8px/s);
 });
 
 test("board status line is not visible in the app chrome", async () => {
@@ -193,7 +230,9 @@ test("folder card renders only the folder name and its status tag", async () => 
   assert.equal(app.includes("Saved from the selected parent folder"), false);
   assert.equal(app.includes("mini-folder"), false);
   assert.equal(app.includes("<span class=\"folder-tag\">Folder</span>"), false);
-  assert.match(app, /<span class="folder-tag">\$\{escapeHtml\(folder\.status\)\}<\/span>/);
+  assert.match(app, /function createFolderCard\(folder, options = \{\}\)/);
+  assert.match(app, /if \(options\.showStatus === false\)/);
+  assert.match(app, /tag\.textContent = folder\.status/);
 });
 
 test("folder status tag is anchored to the bottom of the card", async () => {

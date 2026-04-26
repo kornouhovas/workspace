@@ -411,18 +411,30 @@ input:focus-visible {
   display: none;
 }
 
-.project-meta {
+.board-view-switcher {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 8px;
   margin-left: 8px;
-  color: var(--faint);
   font-size: 13px;
 }
 
-.project-meta strong {
+.board-view-option {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--faint);
+  padding: 4px 8px;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.board-view-option:hover,
+.board-view-option.active {
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text);
-  font-weight: 560;
 }
 
 .topbar-actions {
@@ -564,6 +576,66 @@ input:focus-visible {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
   gap: 14px;
+}
+
+.folder-board-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.board-column {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.board-column > h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.board-column-cards {
+  display: grid;
+  gap: 10px;
+}
+
+.folder-table {
+  display: block;
+}
+
+.folder-table-surface {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.folder-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px);
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.folder-table-head {
+  color: var(--faint);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.folder-table-cell {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-table-head .folder-table-cell {
+  color: var(--faint);
 }
 
 .folder-card {
