@@ -253,7 +253,11 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /"Name"/);
   assert.match(app, /"Status"/);
   assert.match(css, /\.folder-board-view\s*\{/);
-  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-auto-flow:\s*column/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*grid-auto-columns:\s*245px/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*width:\s*max-content/s);
+  assert.match(css, /\.folder-board-view\s*\{[^}]*min-width:\s*100%/s);
+  assert.doesNotMatch(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
   assert.match(css, /\.folder-grid\s*\{[^}]*padding-top:\s*12px/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*padding-top:\s*12px/s);
   assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*margin-top:\s*-22px/s);

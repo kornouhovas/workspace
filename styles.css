@@ -605,7 +605,10 @@ input:focus-visible {
 
 .folder-board-view {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  width: max-content;
+  min-width: 100%;
+  grid-auto-columns: 245px;
+  grid-auto-flow: column;
   gap: 14px;
   align-items: start;
   overflow: visible;
