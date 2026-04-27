@@ -108,6 +108,24 @@
               <button class="board-view-option active" type="button" data-board-view="overview">Overview</button>
               <button class="board-view-option" type="button" data-board-view="board">Board</button>
               <button class="board-view-option" type="button" data-board-view="table">Table</button>
+              <div class="board-view-settings">
+                <button
+                  class="board-view-settings-button"
+                  id="boardColumnMenuButton"
+                  type="button"
+                  aria-label="Column visibility"
+                  aria-haspopup="menu"
+                  aria-expanded="false"
+                  title="Column visibility"
+                >
+                  <span class="settings-gear" aria-hidden="true"></span>
+                </button>
+                <div class="board-column-menu-popover" id="boardColumnMenuPopover" role="menu" hidden>
+                  <button class="board-column-menu-option" id="toggleHiddenColumnsButton" type="button" role="menuitem">
+                    Show hidden columns
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="board-view-switcher settings-view-switcher" id="settingsViewSwitcher" aria-label="Раздел настроек" hidden>
               <button class="board-view-option active" type="button">Access</button>
@@ -223,6 +241,8 @@
           const workspaceState = JSON.parse(localStorage.getItem("workspaces-state"));
           const boardView = getStoredBoardView();
           const statusOrder = getStoredStatusOrder(workspaceState);
+          const hiddenStatuses = getStoredHiddenStatuses(workspaceState);
+          const showHiddenStatuses = getStoredShowHiddenStatuses(workspaceState);
           const tableColumnOrder = getStoredTableColumnOrder(workspaceState);
           const tableColumnWidths = getStoredTableColumnWidths(workspaceState);
           const folderGrid = document.querySelector("#folderGrid");
@@ -236,6 +256,8 @@
               snapshot.folders,
               boardView,
               statusOrder,
+              hiddenStatuses,
+              showHiddenStatuses,
               tableColumnOrder,
               tableColumnWidths,
             );
@@ -251,12 +273,16 @@
           folders,
           boardView,
           statusOrder = [],
+          hiddenStatuses = [],
+          showHiddenStatuses = false,
           tableColumnOrder = ["name", "status"],
           tableColumnWidths = { name: 46, status: 22 },
         ) {
           if (boardView === "board") {
             folderGrid.className = "folder-board-view";
-            folderGrid.replaceChildren(...createInitialBoardColumns(folders, statusOrder));
+            folderGrid.replaceChildren(
+              ...createInitialBoardColumns(folders, statusOrder, hiddenStatuses, showHiddenStatuses),
+            );
             return;
           }
 
@@ -270,32 +296,36 @@
           folderGrid.replaceChildren(...folders.map((folder) => createInitialFolderCard(folder)));
         }
 
-        function createInitialBoardColumns(folders, statusOrder) {
+        function createInitialBoardColumns(folders, statusOrder, hiddenStatuses, showHiddenStatuses) {
           const currentStatuses = [...new Set(folders.map((folder) => folder.status))];
           const currentStatusSet = new Set(currentStatuses);
           const savedStatuses = statusOrder.filter((status) => currentStatusSet.has(status));
           const newStatuses = currentStatuses.filter((status) => !savedStatuses.includes(status));
 
-          return [...savedStatuses, ...newStatuses].map((status) => {
-            const column = document.createElement("section");
-            column.className = "board-column";
+          const statuses = [...savedStatuses, ...newStatuses];
+          return statuses
+            .filter((status) => showHiddenStatuses || !hiddenStatuses.includes(status))
+            .map((status) => {
+              const column = document.createElement("section");
+              column.className = "board-column";
+              column.classList.toggle("is-hidden-column", hiddenStatuses.includes(status));
 
-            const title = document.createElement("h2");
-            title.className = "board-column-title";
-            title.textContent = status;
+              const title = document.createElement("h2");
+              title.className = "board-column-title";
+              title.textContent = status;
 
-            const cards = document.createElement("div");
-            cards.className = "board-column-cards";
-            cards.replaceChildren(
-              ...folders
-                .filter((folder) => folder.status === status)
-                .map((folder) => createInitialFolderCard(folder, { showStatus: false })),
-            );
+              const cards = document.createElement("div");
+              cards.className = "board-column-cards";
+              cards.replaceChildren(
+                ...folders
+                  .filter((folder) => folder.status === status)
+                  .map((folder) => createInitialFolderCard(folder, { showStatus: false })),
+              );
 
-            column.append(title, cards);
+              column.append(title, cards);
 
-            return column;
-          });
+              return column;
+            });
         }
 
         function createInitialTable(folders, tableColumnOrder, tableColumnWidths) {
@@ -397,6 +427,30 @@
           return Array.isArray(activeWorkspace.statusOrder)
             ? activeWorkspace.statusOrder.filter((status) => typeof status === "string")
             : [];
+        }
+
+        function getStoredHiddenStatuses(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return [];
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+
+          return Array.isArray(activeWorkspace.hiddenStatuses)
+            ? activeWorkspace.hiddenStatuses.filter((status) => typeof status === "string")
+            : [];
+        }
+
+        function getStoredShowHiddenStatuses(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return false;
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+
+          return activeWorkspace.showHiddenStatuses === true;
         }
 
         function getStoredTableColumnOrder(state) {

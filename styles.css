@@ -346,6 +346,7 @@ input:focus-visible {
 
 .topbar-copy {
   min-width: 0;
+  flex: 1;
   transition: margin-left 160ms ease;
 }
 
@@ -428,6 +429,8 @@ input:focus-visible {
 .board-view-switcher {
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
+  align-items: center;
   gap: 6px;
   margin-top: 8px;
   margin-left: 0;
@@ -453,6 +456,82 @@ input:focus-visible {
 .board-view-option.active {
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+}
+
+.board-view-settings {
+  position: relative;
+  margin-left: auto;
+}
+
+.board-view-settings-button {
+  display: grid;
+  width: 28px;
+  min-height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--faint);
+  padding: 0;
+}
+
+.board-view-settings-button:hover,
+.board-view-settings-button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
+.settings-gear {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.settings-gear::before,
+.settings-gear::after {
+  position: absolute;
+  inset: 5px -3px;
+  border-top: 1.5px solid currentColor;
+  content: "";
+}
+
+.settings-gear::after {
+  transform: rotate(90deg);
+}
+
+.board-column-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 176px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.board-column-menu-popover[hidden] {
+  display: none;
+}
+
+.board-column-menu-option {
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 0 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.board-column-menu-option:hover {
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .topbar-actions {
@@ -668,7 +747,7 @@ input:focus-visible {
   top: 0;
   left: 0;
   --board-title-shift: 0px;
-  max-width: 100%;
+  max-width: calc(100% - 30px);
   overflow: hidden;
   margin: 0;
   color: var(--muted);
@@ -687,6 +766,72 @@ input:focus-visible {
 
 .board-column-title.is-drag-source-title {
   opacity: 0;
+}
+
+.board-column-visibility {
+  display: grid;
+  position: absolute;
+  top: -5px;
+  right: 0;
+  width: 24px;
+  min-height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+  opacity: 0;
+  padding: 0;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.board-column:hover .board-column-visibility,
+.board-column:focus-within .board-column-visibility,
+.board-column.is-hidden-column .board-column-visibility {
+  opacity: 1;
+}
+
+.board-column-visibility:hover {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
+.eye-icon {
+  position: relative;
+  width: 15px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.eye-icon::before {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.eye-icon.is-hidden-status::after {
+  position: absolute;
+  top: 3px;
+  left: -3px;
+  width: 19px;
+  height: 1.5px;
+  border-radius: 99px;
+  background: currentColor;
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.board-column.is-hidden-column {
+  opacity: 0.46;
 }
 
 .board-column-drag-image {

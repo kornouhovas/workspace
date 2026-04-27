@@ -214,10 +214,10 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
   assert.match(
     html,
-    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*\)/,
+    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*\)/,
   );
   assert.match(html, /function getStoredStatusOrder\(state\)/);
-  assert.match(html, /createInitialBoardColumns\(folders, statusOrder\)/);
+  assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
   assert.equal(html.includes("sidebarFolderCount"), false);
 });
 
@@ -253,7 +253,7 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /function renderOverviewView\(visibleFolders\)/);
   assert.match(app, /function renderBoardView\(visibleFolders\)/);
   assert.match(app, /function renderTableView\(visibleFolders\)/);
-  assert.match(app, /function createBoardColumn\(status, statusFolders\)/);
+  assert.match(app, /function createBoardColumn\(status, statusFolders, options = \{\}\)/);
   assert.match(app, /function createTableRow\(folder, columnOrder = getActiveTableColumnOrder\(\)\)/);
   assert.match(app, /createFolderCard\(folder, \{ showStatus: false \}\)/);
   assert.match(app, /"Name"/);
@@ -426,6 +426,52 @@ test("board columns can be reordered by dragging column titles", async () => {
   assert.doesNotMatch(css, /\.board-column-drag-image\s*\{[^}]*rgba\(94,\s*168,\s*239/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-left\s*\{[^}]*transform:\s*translateX\(calc\(-1 \* var\(--board-title-shift\)\)\)/s);
   assert.match(css, /\.board-column-title\.is-preview-shift-right\s*\{[^}]*transform:\s*translateX\(var\(--board-title-shift\)\)/s);
+});
+
+test("board columns can be hidden and revealed per workspace", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /id="boardColumnMenuButton"/);
+  assert.match(html, /id="toggleHiddenColumnsButton"[\s\S]*Show hidden columns/);
+  assert.match(html, /function getStoredHiddenStatuses\(state\)/);
+  assert.match(html, /function getStoredShowHiddenStatuses\(state\)/);
+  assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
+  assert.match(html, /column\.classList\.toggle\("is-hidden-column", hiddenStatuses\.includes\(status\)\)/);
+  assert.match(html, /statuses[\s\S]*\.filter\(\(status\) => showHiddenStatuses \|\| !hiddenStatuses\.includes\(status\)\)/);
+  assert.match(app, /hiddenStatuses:\s*\[\]/);
+  assert.match(app, /showHiddenStatuses:\s*false/);
+  assert.match(app, /hiddenStatuses:\s*Array\.isArray\(workspace\.hiddenStatuses\)/);
+  assert.match(app, /showHiddenStatuses:\s*workspace\.showHiddenStatuses === true/);
+  assert.match(app, /function getActiveHiddenStatuses\(\)/);
+  assert.match(app, /function getActiveShowHiddenStatuses\(\)/);
+  assert.match(app, /function saveHiddenStatuses\(hiddenStatuses\)/);
+  assert.match(app, /function setShowHiddenStatuses\(showHiddenStatuses\)/);
+  assert.match(app, /function toggleStatusVisibility\(status\)/);
+  assert.match(app, /function getBoardStatuses\(visibleFolders\)/);
+  assert.match(app, /getOrderedStatuses\(visibleFolders\)\.filter\(\(status\) => showHiddenStatuses \|\| !hiddenStatuses\.has\(status\)\)/);
+  assert.match(app, /folderGrid\.addEventListener\("click", handleBoardColumnVisibilityClick\)/);
+  assert.match(app, /boardColumnMenuButton\.addEventListener\("click", handleBoardColumnMenuToggle\)/);
+  assert.match(app, /toggleHiddenColumnsButton\.addEventListener\("click", handleToggleHiddenColumns\)/);
+  assert.match(app, /document\.addEventListener\("click", handleBoardColumnMenuOutsideClick\)/);
+  assert.match(app, /document\.addEventListener\("keydown", handleBoardColumnMenuKeydown\)/);
+  assert.match(app, /const statuses = getBoardStatuses\(visibleFolders\)/);
+  assert.match(app, /createBoardColumn\(\s*status,\s*visibleFolders\.filter\(\(folder\) => folder\.status === status\),\s*\{ hidden: hiddenStatuses\.has\(status\) \}/s);
+  assert.match(app, /column\.classList\.toggle\("is-hidden-column", Boolean\(options\.hidden\)\)/);
+  assert.match(app, /button\.className = "board-column-visibility"/);
+  assert.match(app, /button\.dataset\.status = status/);
+  assert.match(app, /button\.classList\.toggle\("is-hidden-status", Boolean\(options\.hidden\)\)/);
+  assert.match(app, /button\.setAttribute\("aria-label", `Hide \$\{status\} column`\)/);
+  assert.match(app, /button\.setAttribute\("aria-pressed", String\(Boolean\(options\.hidden\)\)\)/);
+  assert.match(app, /toggleHiddenColumnsButton\.textContent = getActiveShowHiddenStatuses\(\)\s*\?\s*"Hide hidden columns"\s*:\s*"Show hidden columns"/);
+  assert.match(css, /\.board-view-settings\s*\{[^}]*margin-left:\s*auto/s);
+  assert.match(css, /\.board-column-menu-popover\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.board-column-visibility\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.board-column:hover \.board-column-visibility/s);
+  assert.match(css, /\.board-column\.is-hidden-column\s*\{[^}]*opacity:\s*0\.46/s);
+  assert.match(css, /\.eye-icon\.is-hidden-status::after\s*\{[^}]*transform:\s*rotate\(-45deg\)/s);
+  assert.match(css, /\.settings-gear::before/s);
 });
 
 test("left panel collapsed state is persisted across browser refresh", async () => {

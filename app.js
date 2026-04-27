@@ -22,6 +22,9 @@ const settingsNavButton = document.querySelector("#settingsNavButton");
 const workspaceTabs = document.querySelector("#workspaceTabs");
 const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
 const settingsViewSwitcher = document.querySelector("#settingsViewSwitcher");
+const boardColumnMenuButton = document.querySelector("#boardColumnMenuButton");
+const boardColumnMenuPopover = document.querySelector("#boardColumnMenuPopover");
+const toggleHiddenColumnsButton = document.querySelector("#toggleHiddenColumnsButton");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
@@ -108,6 +111,8 @@ let workspaces = [
     name: "Workspace",
     boardView: "overview",
     statusOrder: [],
+    hiddenStatuses: [],
+    showHiddenStatuses: false,
     tableColumnOrder: [...tableColumnIds],
     tableColumnWidths: { ...defaultTableColumnWidths },
   },
@@ -196,6 +201,10 @@ function bindEvents() {
       setBoardView(button.dataset.boardView);
     }
   });
+  boardColumnMenuButton.addEventListener("click", handleBoardColumnMenuToggle);
+  toggleHiddenColumnsButton.addEventListener("click", handleToggleHiddenColumns);
+  document.addEventListener("click", handleBoardColumnMenuOutsideClick);
+  document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   chooseFolderButton.addEventListener("click", chooseFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
@@ -212,6 +221,7 @@ function bindEvents() {
   folderGrid.addEventListener("drop", handleTableColumnDrop);
   folderGrid.addEventListener("dragend", handleBoardColumnDragEnd);
   folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
+  folderGrid.addEventListener("click", handleBoardColumnVisibilityClick);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
   folderGrid.addEventListener("click", handleSettingsTreeClick);
@@ -255,6 +265,43 @@ function renderBoardViewSwitcher() {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+  renderBoardColumnMenu();
+}
+
+function renderBoardColumnMenu() {
+  toggleHiddenColumnsButton.textContent = getActiveShowHiddenStatuses()
+    ? "Hide hidden columns"
+    : "Show hidden columns";
+}
+
+function handleBoardColumnMenuToggle(event) {
+  event.stopPropagation();
+  setBoardColumnMenuOpen(boardColumnMenuPopover.hidden);
+}
+
+function handleToggleHiddenColumns(event) {
+  event.stopPropagation();
+  setShowHiddenStatuses(!getActiveShowHiddenStatuses());
+  setBoardColumnMenuOpen(false);
+}
+
+function handleBoardColumnMenuOutsideClick(event) {
+  if (event.target.closest(".board-view-settings")) {
+    return;
+  }
+
+  setBoardColumnMenuOpen(false);
+}
+
+function handleBoardColumnMenuKeydown(event) {
+  if (event.key === "Escape") {
+    setBoardColumnMenuOpen(false);
+  }
+}
+
+function setBoardColumnMenuOpen(open) {
+  boardColumnMenuPopover.hidden = !open;
+  boardColumnMenuButton.setAttribute("aria-expanded", String(open));
 }
 
 function handleSidebarShortcut(event) {
@@ -289,6 +336,8 @@ function addWorkspace() {
     name: `Workspace ${getNextWorkspaceNumber()}`,
     boardView: "overview",
     statusOrder: [],
+    hiddenStatuses: [],
+    showHiddenStatuses: false,
     tableColumnOrder: [...tableColumnIds],
     tableColumnWidths: { ...defaultTableColumnWidths },
   };
@@ -571,6 +620,16 @@ function getActiveStatusOrder() {
   return Array.isArray(statusOrder) ? statusOrder.filter((status) => typeof status === "string") : [];
 }
 
+function getActiveHiddenStatuses() {
+  const hiddenStatuses = getActiveWorkspace()?.hiddenStatuses;
+
+  return Array.isArray(hiddenStatuses) ? hiddenStatuses.filter((status) => typeof status === "string") : [];
+}
+
+function getActiveShowHiddenStatuses() {
+  return getActiveWorkspace()?.showHiddenStatuses === true;
+}
+
 function getActiveTableColumnOrder() {
   return normalizeTableColumnOrder(getActiveWorkspace()?.tableColumnOrder);
 }
@@ -747,6 +806,10 @@ function loadWorkspaceState() {
       statusOrder: Array.isArray(workspace.statusOrder)
         ? workspace.statusOrder.filter((status) => typeof status === "string")
         : [],
+      hiddenStatuses: Array.isArray(workspace.hiddenStatuses)
+        ? workspace.hiddenStatuses.filter((status) => typeof status === "string")
+        : [],
+      showHiddenStatuses: workspace.showHiddenStatuses === true,
       tableColumnOrder: normalizeTableColumnOrder(workspace.tableColumnOrder),
       tableColumnWidths: normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
     }));
@@ -782,6 +845,36 @@ function saveStatusOrder(statusOrder) {
     workspace.id === activeWorkspaceId ? { ...workspace, statusOrder } : workspace,
   );
   saveWorkspaceState();
+}
+
+function saveHiddenStatuses(hiddenStatuses) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? { ...workspace, hiddenStatuses: hiddenStatuses.filter((status) => typeof status === "string") }
+      : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function setShowHiddenStatuses(showHiddenStatuses) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId ? { ...workspace, showHiddenStatuses } : workspace,
+  );
+  saveWorkspaceState();
+  renderBoardColumnMenu();
+  renderFolders();
+}
+
+function toggleStatusVisibility(status) {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  if (hiddenStatuses.has(status)) {
+    hiddenStatuses.delete(status);
+  } else {
+    hiddenStatuses.add(status);
+  }
+
+  saveHiddenStatuses([...hiddenStatuses]);
+  renderFolders();
 }
 
 function saveTableColumnOrder(tableColumnOrder) {
@@ -1043,7 +1136,8 @@ function renderOverviewView(visibleFolders) {
 }
 
 function renderBoardView(visibleFolders) {
-  const statuses = getOrderedStatuses(visibleFolders);
+  const statuses = getBoardStatuses(visibleFolders);
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
 
   folderGrid.className = "folder-board-view";
   folderGrid.replaceChildren(
@@ -1051,9 +1145,17 @@ function renderBoardView(visibleFolders) {
       createBoardColumn(
         status,
         visibleFolders.filter((folder) => folder.status === status),
+        { hidden: hiddenStatuses.has(status) },
       ),
     ),
   );
+}
+
+function getBoardStatuses(visibleFolders) {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const showHiddenStatuses = getActiveShowHiddenStatuses();
+
+  return getOrderedStatuses(visibleFolders).filter((status) => showHiddenStatuses || !hiddenStatuses.has(status));
 }
 
 function getOrderedStatuses(visibleFolders) {
@@ -1610,23 +1712,50 @@ function filterSettingsNode(node, query) {
   return null;
 }
 
-function createBoardColumn(status, statusFolders) {
+function createBoardColumn(status, statusFolders, options = {}) {
   const column = document.createElement("section");
   column.className = "board-column";
   column.dataset.status = status;
+  column.classList.toggle("is-hidden-column", Boolean(options.hidden));
 
   const title = document.createElement("h2");
   title.className = "board-column-title";
   title.draggable = true;
   title.textContent = status;
 
+  const button = document.createElement("button");
+  button.className = "board-column-visibility";
+  button.classList.toggle("is-hidden-status", Boolean(options.hidden));
+  button.type = "button";
+  button.dataset.status = status;
+  button.setAttribute("aria-label", `Hide ${status} column`);
+  button.setAttribute("aria-pressed", String(Boolean(options.hidden)));
+  button.title = options.hidden ? `Show ${status} column` : `Hide ${status} column`;
+
+  const icon = document.createElement("span");
+  icon.className = "eye-icon";
+  icon.classList.toggle("is-hidden-status", Boolean(options.hidden));
+  icon.setAttribute("aria-hidden", "true");
+  button.append(icon);
+
   const cards = document.createElement("div");
   cards.className = "board-column-cards";
   cards.replaceChildren(...statusFolders.map((folder) => createFolderCard(folder, { showStatus: false })));
 
-  column.append(title, cards);
+  column.append(title, button, cards);
 
   return column;
+}
+
+function handleBoardColumnVisibilityClick(event) {
+  const button = event.target.closest(".board-column-visibility");
+  if (!button || getActiveBoardView() !== "board") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  toggleStatusVisibility(button.dataset.status);
 }
 
 function handleBoardColumnDragStart(event) {
@@ -1698,7 +1827,7 @@ function removeBoardColumnDragImage() {
 }
 
 function getPreviewStatusOrder(event, targetColumn) {
-  const statuses = getOrderedStatuses(filterFolders(folders, searchInput.value));
+  const statuses = getBoardStatuses(filterFolders(folders, searchInput.value));
   const targetStatus = targetColumn.dataset.status;
   if (!draggedStatus || !targetStatus || targetStatus === draggedStatus) {
     return statuses;
