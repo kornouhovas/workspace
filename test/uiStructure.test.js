@@ -462,16 +462,25 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(app, /button\.className = "board-column-visibility"/);
   assert.match(app, /button\.dataset\.status = status/);
   assert.match(app, /button\.classList\.toggle\("is-hidden-status", Boolean\(options\.hidden\)\)/);
-  assert.match(app, /button\.setAttribute\("aria-label", `Hide \$\{status\} column`\)/);
+  assert.match(app, /button\.setAttribute\("aria-label", options\.hidden \? `Show \$\{status\} column` : `Hide \$\{status\} column`\)/);
   assert.match(app, /button\.setAttribute\("aria-pressed", String\(Boolean\(options\.hidden\)\)\)/);
+  assert.match(app, /function createEyeIcon\(hidden\)/);
+  assert.match(app, /document\.createElementNS\("http:\/\/www\.w3\.org\/2000\/svg", "svg"\)/);
+  assert.match(app, /icon\.setAttribute\("viewBox", "0 0 24 24"\)/);
+  assert.match(app, /slash\.classList\.add\("eye-slash"\)/);
   assert.match(app, /toggleHiddenColumnsButton\.textContent = getActiveShowHiddenStatuses\(\)\s*\?\s*"Hide hidden columns"\s*:\s*"Show hidden columns"/);
-  assert.match(css, /\.board-view-settings\s*\{[^}]*margin-left:\s*auto/s);
+  assert.match(html, /class="settings-gear"[\s\S]*viewBox="0 0 24 24"/);
+  assert.match(css, /\.topbar\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.board-view-switcher\s*\{[^}]*padding-right:\s*36px/s);
+  assert.match(css, /\.board-view-settings\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.board-view-settings\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.board-column-menu-popover\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-column-visibility\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.board-column:hover \.board-column-visibility/s);
   assert.match(css, /\.board-column\.is-hidden-column\s*\{[^}]*opacity:\s*0\.46/s);
-  assert.match(css, /\.eye-icon\.is-hidden-status::after\s*\{[^}]*transform:\s*rotate\(-45deg\)/s);
-  assert.match(css, /\.settings-gear::before/s);
+  assert.match(css, /\.eye-icon\s*\{[^}]*stroke-linecap:\s*round/s);
+  assert.match(css, /\.eye-slash\s*\{[^}]*stroke-width:\s*2\.2/s);
+  assert.match(css, /\.settings-gear\s*\{[^}]*stroke-linejoin:\s*round/s);
 });
 
 test("left panel collapsed state is persisted across browser refresh", async () => {

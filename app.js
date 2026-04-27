@@ -1728,15 +1728,11 @@ function createBoardColumn(status, statusFolders, options = {}) {
   button.classList.toggle("is-hidden-status", Boolean(options.hidden));
   button.type = "button";
   button.dataset.status = status;
-  button.setAttribute("aria-label", `Hide ${status} column`);
+  button.setAttribute("aria-label", options.hidden ? `Show ${status} column` : `Hide ${status} column`);
   button.setAttribute("aria-pressed", String(Boolean(options.hidden)));
   button.title = options.hidden ? `Show ${status} column` : `Hide ${status} column`;
 
-  const icon = document.createElement("span");
-  icon.className = "eye-icon";
-  icon.classList.toggle("is-hidden-status", Boolean(options.hidden));
-  icon.setAttribute("aria-hidden", "true");
-  button.append(icon);
+  button.append(createEyeIcon(Boolean(options.hidden)));
 
   const cards = document.createElement("div");
   cards.className = "board-column-cards";
@@ -1745,6 +1741,36 @@ function createBoardColumn(status, statusFolders, options = {}) {
   column.append(title, button, cards);
 
   return column;
+}
+
+function createEyeIcon(hidden) {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.classList.add("eye-icon");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+
+  const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  outline.setAttribute(
+    "d",
+    "M2.2 12s3.6-6.3 9.8-6.3S21.8 12 21.8 12 18.2 18.3 12 18.3 2.2 12 2.2 12Z",
+  );
+
+  const pupil = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  pupil.setAttribute("cx", "12");
+  pupil.setAttribute("cy", "12");
+  pupil.setAttribute("r", "3.2");
+
+  icon.append(outline, pupil);
+
+  if (hidden) {
+    icon.classList.add("is-hidden-status");
+    const slash = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    slash.classList.add("eye-slash");
+    slash.setAttribute("d", "M4.5 4.5 19.5 19.5");
+    icon.append(slash);
+  }
+
+  return icon;
 }
 
 function handleBoardColumnVisibilityClick(event) {
