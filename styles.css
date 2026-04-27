@@ -191,7 +191,7 @@ input:focus-visible {
 }
 
 .workspace-tabs {
-  margin-bottom: 30px;
+  margin-bottom: 12px;
 }
 
 .workspace-tab {
@@ -279,27 +279,15 @@ input:focus-visible {
   text-overflow: ellipsis;
 }
 
-.workspace-panel {
+.workspace-tools {
   display: grid;
-  gap: 8px;
+  gap: 2px;
   border-top: 1px solid var(--line-soft);
   padding-top: 20px;
-  color: var(--muted);
-  font-size: 13px;
 }
 
-.workspace-panel strong {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 16px;
-  font-weight: 520;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-panel b {
-  color: var(--text);
-  font-weight: 560;
+.settings-nav-button {
+  padding: 0 8px;
 }
 
 .eyebrow {
@@ -445,6 +433,10 @@ input:focus-visible {
   margin-top: 8px;
   margin-left: 0;
   font-size: 13px;
+}
+
+.board-view-switcher[hidden] {
+  display: none;
 }
 
 .board-view-option {
@@ -867,6 +859,348 @@ input:focus-visible {
   line-height: 1.2;
 }
 
+.kanban-board.settings-mode {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.settings-view {
+  display: grid;
+  gap: 18px;
+  padding-top: 0;
+}
+
+.settings-root-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 20px;
+}
+
+.settings-root-card h2 {
+  margin: 8px 0 4px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 560;
+  line-height: 1.2;
+}
+
+.settings-root-card p {
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-root-actions {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: end;
+  gap: 10px;
+}
+
+.settings-root-summary {
+  grid-column: 1 / -1;
+  justify-self: end;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings-access-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-access-toolbar h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 520;
+}
+
+.settings-access-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-access-actions button {
+  min-height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.settings-access-actions button:hover {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
+.settings-access-tree {
+  display: grid;
+  gap: 18px;
+}
+
+.settings-tree-legend {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 28px;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: #181817;
+  color: var(--muted);
+  padding: 0 20px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.settings-legend-item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-legend-role {
+  margin-left: auto;
+}
+
+.settings-tree-table {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.settings-tree-head,
+.settings-tree-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(210px, auto) 150px;
+  align-items: center;
+}
+
+.settings-tree-head {
+  min-height: 38px;
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.settings-tree-head span {
+  padding: 0 12px;
+}
+
+.settings-tree-rows {
+  display: grid;
+  padding: 12px;
+}
+
+.settings-tree-row {
+  min-height: 42px;
+  border-radius: 8px;
+  color: var(--text);
+  transition:
+    background-color 140ms ease,
+    opacity 140ms ease;
+}
+
+.settings-tree-row:hover,
+.settings-tree-row:first-child {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.settings-tree-row.is-hidden {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--muted);
+}
+
+.settings-tree-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding-left: calc(12px + var(--tree-depth) * 28px);
+}
+
+.settings-tree-chevron {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
+
+.settings-tree-chevron::before {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
+  transition: transform 140ms ease;
+}
+
+.settings-tree-chevron.is-expanded::before {
+  transform: rotate(45deg);
+}
+
+.settings-tree-chevron:disabled {
+  opacity: 0.25;
+}
+
+.settings-tree-checkbox {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  accent-color: #eeeeea;
+}
+
+.settings-tree-checkbox.is-checked {
+  border-radius: 4px;
+  background: #eeeeea;
+}
+
+.settings-tree-folder-icon {
+  position: relative;
+  width: 28px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 1px solid var(--faint);
+  border-radius: 5px;
+  background: var(--panel-soft);
+}
+
+.settings-tree-folder-icon::before {
+  position: absolute;
+  top: -1px;
+  left: 5px;
+  width: 11px;
+  height: 5px;
+  border: 1px solid var(--faint);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  content: "";
+}
+
+.settings-tree-label {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-tree-role-options {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 3px;
+}
+
+.settings-tree-role-legend-options {
+  border-color: var(--line-soft);
+}
+
+.settings-tree-role-option {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+button.settings-tree-role-option {
+  cursor: pointer;
+}
+
+.settings-tree-role-option.is-status {
+  background: var(--comment);
+  color: var(--gold);
+}
+
+.settings-tree-role-option.is-card {
+  background: #24364a;
+  color: var(--blue);
+}
+
+.settings-tree-role-option.is-group {
+  background: #252524;
+  color: var(--muted);
+}
+
+.settings-tree-role-option:disabled,
+.settings-tree-checkbox:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.settings-tree-access {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.settings-tree-row.is-hidden .settings-tree-access {
+  color: var(--muted);
+}
+
+.settings-empty-tree {
+  display: grid;
+  min-height: 360px;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--muted);
+  text-align: center;
+  padding: 28px;
+}
+
+.settings-empty-tree h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 520;
+}
+
+.settings-empty-tree p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .empty-state {
   position: absolute;
   inset: 0;
@@ -968,7 +1302,7 @@ input:focus-visible {
     margin-bottom: 30px;
   }
 
-  .workspace-panel {
+  .workspace-tools {
     display: grid;
   }
 
@@ -1000,5 +1334,44 @@ input:focus-visible {
 
   .folder-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-root-card,
+  .settings-tree-head,
+  .settings-tree-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-root-actions {
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
+  }
+
+  .settings-root-summary {
+    justify-self: start;
+  }
+
+  .settings-tree-legend,
+  .settings-access-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-legend-role {
+    margin-left: 0;
+  }
+
+  .settings-tree-head {
+    display: none;
+  }
+
+  .settings-tree-row {
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .settings-tree-role-options,
+  .settings-tree-access {
+    margin-left: calc(72px + var(--tree-depth) * 28px);
   }
 }

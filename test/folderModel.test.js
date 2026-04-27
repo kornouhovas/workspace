@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterFolders, listDirectFolders, listStatusCards } from "../src/folderModel.js";
+import {
+  filterFolders,
+  flattenAccessTreeCards,
+  listDirectFolders,
+  listFolderAccessTree,
+  listStatusCards,
+} from "../src/folderModel.js";
 
 function fakeDirectoryHandle(entries) {
   return {
@@ -79,6 +85,189 @@ test("listStatusCards uses root child folders as statuses and their child folder
       name: "Prototype",
       kind: "directory",
       status: "In Progress",
+    },
+  ]);
+});
+
+test("listFolderAccessTree recursively builds access rules for nested folders", async () => {
+  const tree = await listFolderAccessTree(
+    fakeDirectoryHandle([
+      {
+        kind: "directory",
+        name: "Archive",
+        values: async function* values() {
+          yield {
+            kind: "directory",
+            name: "Completed",
+            values: async function* values() {
+              yield { kind: "directory", name: "Acme redesign", values: fakeDirectoryHandle([]).values };
+              yield { kind: "file", name: "notes.md" };
+            },
+          };
+        },
+      },
+      { kind: "directory", name: "Active", values: fakeDirectoryHandle([]).values },
+    ]),
+    {
+      rules: {
+        Archive: { role: "group", expanded: true },
+        "Archive/Completed": { role: "status", expanded: true },
+        "Archive/Completed/Acme redesign": { access: false },
+      },
+    },
+  );
+
+  assert.deepEqual(tree, [
+    {
+      id: "folder-active",
+      name: "Active",
+      kind: "directory",
+      path: "Active",
+      access: true,
+      role: "card",
+      expanded: false,
+      children: [],
+    },
+    {
+      id: "folder-archive",
+      name: "Archive",
+      kind: "directory",
+      path: "Archive",
+      access: true,
+      role: "group",
+      expanded: true,
+      children: [
+        {
+          id: "folder-archive-completed",
+          name: "Completed",
+          kind: "directory",
+          path: "Archive/Completed",
+          access: true,
+          role: "status",
+          expanded: true,
+          children: [
+            {
+              id: "folder-archive-completed-acme-redesign",
+              name: "Acme redesign",
+              kind: "directory",
+              path: "Archive/Completed/Acme redesign",
+              access: false,
+              role: "card",
+              expanded: false,
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+});
+
+test("flattenAccessTreeCards uses status folders as statuses and skips status containers", () => {
+  const cards = flattenAccessTreeCards([
+    {
+      name: "Archive",
+      path: "Archive",
+      access: true,
+      role: "group",
+      children: [
+        {
+          name: "Completed",
+          path: "Archive/Completed",
+          access: true,
+          role: "status",
+          children: [
+            { name: "Acme redesign", path: "Archive/Completed/Acme redesign", access: true, role: "card", children: [] },
+            { name: "Old concepts", path: "Archive/Completed/Old concepts", access: false, role: "card", children: [] },
+          ],
+        },
+      ],
+    },
+    { name: "Internal", path: "Internal", access: true, role: "card", children: [] },
+  ]);
+
+  assert.deepEqual(cards, [
+    {
+      id: "folder-archive-completed-acme-redesign",
+      name: "Acme redesign",
+      kind: "directory",
+      status: "Completed",
+      path: "Archive/Completed/Acme redesign",
+    },
+    {
+      id: "folder-internal",
+      name: "Internal",
+      kind: "directory",
+      status: "Client Projects",
+      path: "Internal",
+    },
+  ]);
+});
+
+test("flattenAccessTreeCards treats group folders as transparent storage containers", () => {
+  const cards = flattenAccessTreeCards([
+    {
+      name: "Archive",
+      path: "Archive",
+      access: true,
+      role: "group",
+      children: [
+        {
+          name: "Finished",
+          path: "Archive/Finished",
+          access: true,
+          role: "group",
+          children: [
+            {
+              name: "Acme redesign",
+              path: "Archive/Finished/Acme redesign",
+              access: true,
+              role: "card",
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(cards, [
+    {
+      id: "folder-archive-finished-acme-redesign",
+      name: "Acme redesign",
+      kind: "directory",
+      status: "Client Projects",
+      path: "Archive/Finished/Acme redesign",
+    },
+  ]);
+});
+
+test("flattenAccessTreeCards treats a card folder as a leaf even when it has child folders", () => {
+  const cards = flattenAccessTreeCards([
+    {
+      name: "Client app",
+      path: "Client app",
+      access: true,
+      role: "card",
+      children: [
+        {
+          name: "Nested project",
+          path: "Client app/Nested project",
+          access: true,
+          role: "card",
+          children: [],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(cards, [
+    {
+      id: "folder-client-app",
+      name: "Client app",
+      kind: "directory",
+      status: "Client Projects",
+      path: "Client app",
     },
   ]);
 });

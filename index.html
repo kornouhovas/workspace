@@ -60,11 +60,18 @@
 
         <nav class="workspace-tabs" id="workspaceTabs" aria-label="Workspaces"></nav>
 
-        <section class="workspace-panel" aria-label="Текущая папка">
-          <span class="eyebrow">Selected root</span>
-          <strong id="sidebarRootName">No folder</strong>
-          <span><b id="sidebarFolderCount">0</b> folders</span>
-        </section>
+        <nav class="workspace-tools" aria-label="Workspace tools">
+          <button
+            class="nav-item settings-nav-button"
+            id="settingsNavButton"
+            type="button"
+            data-view="settings"
+            title="Settings"
+          >
+            <span class="nav-icon" aria-hidden="true">S</span>
+            <span class="nav-label">Settings</span>
+          </button>
+        </nav>
       </aside>
 
       <main class="main">
@@ -101,6 +108,11 @@
               <button class="board-view-option active" type="button" data-board-view="overview">Overview</button>
               <button class="board-view-option" type="button" data-board-view="board">Board</button>
               <button class="board-view-option" type="button" data-board-view="table">Table</button>
+            </div>
+            <div class="board-view-switcher settings-view-switcher" id="settingsViewSwitcher" aria-label="Раздел настроек" hidden>
+              <button class="board-view-option active" type="button">Access</button>
+              <button class="board-view-option" type="button" disabled>Rules</button>
+              <button class="board-view-option" type="button" disabled>Storage</button>
             </div>
           </div>
 
@@ -215,12 +227,6 @@
           const tableColumnWidths = getStoredTableColumnWidths(workspaceState);
           const folderGrid = document.querySelector("#folderGrid");
           const emptyState = document.querySelector("#emptyState");
-          const sidebarRootName = document.querySelector("#sidebarRootName");
-          const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
-
-          sidebarRootName.textContent = snapshot.rootName;
-          sidebarFolderCount.textContent = String(snapshot.folders.length);
-
           if (snapshot.folders.length > 0) {
             emptyState.hidden = true;
             document.querySelector(".kanban-board").classList.toggle("board-mode", boardView === "board");

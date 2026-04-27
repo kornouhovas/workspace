@@ -1,4 +1,8 @@
-import { filterFolders, listStatusCards } from "./src/folderModel.js";
+import {
+  filterFolders,
+  listFolderAccessTree,
+  flattenAccessTreeCards,
+} from "./src/folderModel.js";
 
 const dbName = "folder-kanban-mvp";
 const storeName = "handles";
@@ -6,13 +10,18 @@ const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
 const sidebarStorageKey = "sidebar-state";
 const boardSnapshotStorageKey = "folder-board-snapshot";
+const folderAccessRulesStorageKey = "folder-access-rules";
+const folderAccessRulesVersionStorageKey = "folder-access-rules-version";
+const folderAccessRulesVersion = "2";
 
 const appShell = document.querySelector("#appShell");
 const sidebarToggle = document.querySelector("#sidebarToggle");
 const sidebarReturn = document.querySelector("#sidebarReturn");
 const addWorkspaceButton = document.querySelector("#addWorkspaceButton");
+const settingsNavButton = document.querySelector("#settingsNavButton");
 const workspaceTabs = document.querySelector("#workspaceTabs");
 const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
+const settingsViewSwitcher = document.querySelector("#settingsViewSwitcher");
 const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
@@ -25,8 +34,6 @@ const workspaceTitleRow = document.querySelector(".workspace-title-row");
 const workspaceTitleButton = document.querySelector("#workspaceTitleButton");
 const workspaceTitleEditButton = document.querySelector("#workspaceTitleEditButton");
 const workspaceTitleInput = document.querySelector("#workspaceTitleInput");
-const sidebarRootName = document.querySelector("#sidebarRootName");
-const sidebarFolderCount = document.querySelector("#sidebarFolderCount");
 
 const views = {
   workspace: {
@@ -58,6 +65,12 @@ const tableColumnLabels = {
   name: "Name",
   status: "Status",
 };
+const folderRoleIds = ["status", "card", "group"];
+const folderRoleLabels = {
+  status: "STATUS",
+  card: "CARD",
+  group: "GROUP",
+};
 const defaultTableColumnWidths = {
   name: 46,
   status: 22,
@@ -70,6 +83,8 @@ const maxTableColumnTotalWidth = 94;
 
 let selectedHandle = null;
 let folders = [];
+let folderAccessTree = [];
+let folderAccessRules = {};
 let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
@@ -98,6 +113,7 @@ let activeWorkspaceId = "workspace-1";
 
 async function initializeApp() {
   loadWorkspaceState();
+  loadFolderAccessRules();
   boardView = loadBoardView();
   setSidebarCollapsed(loadSidebarState(), false);
   renderWorkspaceTabs();
@@ -142,6 +158,7 @@ function bindEvents() {
 
   sidebarReturn.addEventListener("click", () => setSidebarCollapsed(false));
   addWorkspaceButton.addEventListener("click", addWorkspace);
+  settingsNavButton.addEventListener("click", () => setActiveView("settings"));
   workspaceTitleButton.addEventListener("click", startWorkspaceRename);
   workspaceTitleEditButton.addEventListener("click", startWorkspaceRename);
   workspaceTitleInput.addEventListener("keydown", handleWorkspaceTitleKeydown);
@@ -165,6 +182,7 @@ function bindEvents() {
 
     const workspaceButton = event.target.closest("[data-workspace-id]");
     if (workspaceButton) {
+      activeView = "workspace";
       setActiveWorkspace(workspaceButton.dataset.workspaceId);
     }
   });
@@ -190,6 +208,7 @@ function bindEvents() {
   folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
+  folderGrid.addEventListener("click", handleSettingsTreeClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
@@ -564,6 +583,26 @@ function normalizeBoardView(boardView) {
   return boardViews.has(boardView) ? boardView : "overview";
 }
 
+function normalizeFolderAccessRules(rules, options = {}) {
+  return Object.fromEntries(
+    Object.entries(rules)
+      .filter(([path, rule]) => typeof path === "string" && rule && typeof rule === "object")
+      .map(([path, rule]) => [
+        path,
+        {
+          ...rule,
+          role: normalizeFolderRole(
+            options.migrateLegacyGroups && rule.role === "group" ? "status" : rule.role,
+          ),
+        },
+      ]),
+  );
+}
+
+function normalizeFolderRole(role) {
+  return folderRoleIds.includes(role) ? role : "card";
+}
+
 function normalizeTableColumnOrder(columnOrder) {
   if (!Array.isArray(columnOrder)) {
     return [...tableColumnIds];
@@ -788,6 +827,30 @@ function saveWorkspaceState() {
   localStorage.setItem(workspaceStorageKey, nextState);
 }
 
+function loadFolderAccessRules() {
+  try {
+    const storedRules = JSON.parse(localStorage.getItem(folderAccessRulesStorageKey));
+    if (!storedRules || typeof storedRules !== "object") {
+      folderAccessRules = {};
+      return;
+    }
+
+    const shouldMigrateLegacyGroups =
+      localStorage.getItem(folderAccessRulesVersionStorageKey) !== folderAccessRulesVersion;
+    folderAccessRules = normalizeFolderAccessRules(storedRules, { migrateLegacyGroups: shouldMigrateLegacyGroups });
+    localStorage.setItem(folderAccessRulesVersionStorageKey, folderAccessRulesVersion);
+  } catch (error) {
+    folderAccessRules = {};
+    localStorage.removeItem(folderAccessRulesStorageKey);
+    localStorage.removeItem(folderAccessRulesVersionStorageKey);
+  }
+}
+
+function saveFolderAccessRules() {
+  localStorage.setItem(folderAccessRulesStorageKey, JSON.stringify(folderAccessRules));
+  localStorage.setItem(folderAccessRulesVersionStorageKey, folderAccessRulesVersion);
+}
+
 function isStoredWorkspaceState(state) {
   return (
     state &&
@@ -810,8 +873,8 @@ function createWorkspaceTab(workspace) {
   button.dataset.view = "workspace";
   button.dataset.workspaceId = workspace.id;
   button.title = workspace.name;
-  button.classList.toggle("active", workspace.id === activeWorkspaceId);
-  if (workspace.id === activeWorkspaceId) {
+  button.classList.toggle("active", activeView !== "settings" && workspace.id === activeWorkspaceId);
+  if (activeView !== "settings" && workspace.id === activeWorkspaceId) {
     button.setAttribute("aria-current", "page");
   }
 
@@ -891,10 +954,12 @@ async function scanSelectedFolder() {
   setStatus("Scanning status folders...", "idle");
 
   try {
-    folders = await listStatusCards(selectedHandle);
+    folderAccessTree = await listFolderAccessTree(selectedHandle, { rules: folderAccessRules });
+    folders = flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedHandle.name });
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
+    folderAccessTree = [];
     setStatus("Could not scan that folder. Choose it again.", "error");
   }
 
@@ -903,7 +968,15 @@ async function scanSelectedFolder() {
 
 function renderFolders() {
   pageTitle.textContent = getActiveWorkspace().name;
+  renderActiveNavigation();
+  workspaceTitleButton.disabled = activeView === "settings";
+  workspaceTitleEditButton.hidden = activeView === "settings";
   updateActionStates();
+
+  if (activeView === "settings") {
+    renderSettingsView();
+    return;
+  }
 
   if (!folderViews.has(activeView)) {
     renderPlaceholder(views[activeView].emptyTitle, views[activeView].emptyDescription);
@@ -929,14 +1002,16 @@ function renderFolders() {
     emptyState.querySelector("p").textContent = "Clear search to show the folder cards again.";
   }
 
-  sidebarFolderCount.textContent = String(folders.length);
   saveBoardSnapshot();
 }
 
 function renderActiveBoardView(visibleFolders) {
   const activeBoardView = getActiveBoardView();
+  boardViewSwitcher.hidden = false;
+  settingsViewSwitcher.hidden = true;
   boardSurface.classList.toggle("board-mode", activeBoardView === "board");
   boardSurface.classList.toggle("table-mode", activeBoardView === "table");
+  boardSurface.classList.remove("settings-mode");
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);
@@ -1008,6 +1083,9 @@ function setTableGridTemplate(tableElement) {
 }
 
 function renderPlaceholder(title, description) {
+  boardViewSwitcher.hidden = false;
+  settingsViewSwitcher.hidden = true;
+  boardSurface.classList.remove("settings-mode");
   folderGrid.className = "folder-grid";
   folderGrid.replaceChildren();
   emptyState.hidden = false;
@@ -1019,12 +1097,455 @@ function renderPlaceholder(title, description) {
 function setActiveView(view) {
   activeView = views[view] ? view : "workspace";
 
+  renderWorkspaceTabs();
   renderFolders();
 }
 
 function updateActionStates() {
-  const canUseFolderBoard = supportsDirectoryPicker && folderViews.has(activeView);
+  const canUseFolderBoard = supportsDirectoryPicker && (folderViews.has(activeView) || activeView === "settings");
   searchInput.disabled = !canUseFolderBoard;
+}
+
+function renderActiveNavigation() {
+  settingsNavButton.classList.toggle("active", activeView === "settings");
+  if (activeView === "settings") {
+    settingsNavButton.setAttribute("aria-current", "page");
+  } else {
+    settingsNavButton.removeAttribute("aria-current");
+  }
+}
+
+function renderSettingsView() {
+  pageTitle.textContent = "Settings";
+  boardViewSwitcher.hidden = true;
+  settingsViewSwitcher.hidden = false;
+  boardSurface.classList.remove("board-mode", "table-mode");
+  boardSurface.classList.add("settings-mode");
+  folderGrid.className = "settings-view";
+  emptyState.hidden = true;
+
+  const rootCard = createSettingsRootCard();
+  const toolbar = createSettingsToolbar();
+
+  if (!selectedHandle) {
+    folderGrid.replaceChildren(rootCard, createSettingsEmptyTree());
+    return;
+  }
+
+  folderGrid.replaceChildren(rootCard, toolbar, createSettingsAccessTree(folderAccessTree));
+}
+
+function createSettingsRootCard() {
+  const rootCard = document.createElement("section");
+  rootCard.className = "settings-root-card";
+
+  const copy = document.createElement("div");
+  const eyebrow = document.createElement("span");
+  eyebrow.className = "eyebrow";
+  eyebrow.textContent = "Workspace root";
+  const title = document.createElement("h2");
+  title.textContent = selectedHandle?.name || "No folder selected";
+  const path = document.createElement("p");
+  path.textContent = selectedHandle
+    ? `Browser folder handle: ${selectedHandle.name}`
+    : "Choose a folder to configure workspace access.";
+
+  copy.append(eyebrow, title, path);
+
+  const actions = document.createElement("div");
+  actions.className = "settings-root-actions";
+  const rescanButton = document.createElement("button");
+  rescanButton.className = "ghost-button";
+  rescanButton.type = "button";
+  rescanButton.textContent = "Refresh";
+  rescanButton.disabled = !selectedHandle;
+  rescanButton.addEventListener("click", scanSelectedFolder);
+
+  const changeButton = document.createElement("button");
+  changeButton.className = "primary-button";
+  changeButton.type = "button";
+  changeButton.textContent = selectedHandle ? "Change" : "Choose folder";
+  changeButton.addEventListener("click", chooseFolder);
+
+  const summary = document.createElement("span");
+  summary.className = "settings-root-summary";
+  summary.textContent = `${folders.length} visible folders · ${countAccessGroups(folderAccessTree)} groups`;
+
+  actions.append(rescanButton, changeButton, summary);
+  rootCard.append(copy, actions);
+
+  return rootCard;
+}
+
+function createSettingsToolbar() {
+  const toolbar = document.createElement("section");
+  toolbar.className = "settings-access-toolbar";
+
+  const title = document.createElement("h2");
+  title.textContent = "Folder access tree";
+
+  const actions = document.createElement("div");
+  actions.className = "settings-access-actions";
+  const includeAllButton = document.createElement("button");
+  includeAllButton.type = "button";
+  includeAllButton.textContent = "All on";
+  includeAllButton.addEventListener("click", () => setAllFolderAccess(true));
+
+  const hideAllButton = document.createElement("button");
+  hideAllButton.type = "button";
+  hideAllButton.textContent = "All off";
+  hideAllButton.addEventListener("click", () => setAllFolderAccess(false));
+
+  actions.append(includeAllButton, hideAllButton);
+  toolbar.append(title, actions);
+
+  return toolbar;
+}
+
+function createSettingsEmptyTree() {
+  const empty = document.createElement("section");
+  empty.className = "settings-empty-tree";
+
+  const icon = document.createElement("span");
+  icon.className = "empty-icon";
+  icon.setAttribute("aria-hidden", "true");
+  const title = document.createElement("h2");
+  title.textContent = supportsDirectoryPicker ? "No folder selected" : "Browser unsupported";
+  const description = document.createElement("p");
+  description.textContent = supportsDirectoryPicker
+    ? "Choose a workspace root to review folder access."
+    : "Open this app in a Chromium browser to choose local folders.";
+
+  empty.append(icon, title, description);
+
+  return empty;
+}
+
+function createSettingsAccessTree(tree) {
+  const section = document.createElement("section");
+  section.className = "settings-access-tree";
+
+  const legend = document.createElement("div");
+  legend.className = "settings-tree-legend";
+  legend.append(
+    createSettingsLegendItem("settings-tree-checkbox is-checked", "visible in workspace"),
+    createSettingsLegendItem("settings-tree-checkbox", "hidden"),
+    createSettingsRoleLegend(),
+  );
+
+  const table = document.createElement("div");
+  table.className = "settings-tree-table";
+
+  const head = document.createElement("div");
+  head.className = "settings-tree-head";
+  head.append(
+    createSettingsHeadCell("Folder"),
+    createSettingsHeadCell("Type"),
+    createSettingsHeadCell("Access"),
+  );
+
+  const rows = document.createElement("div");
+  rows.className = "settings-tree-rows";
+  const filteredTree = filterSettingsTree(tree, searchInput.value);
+  rows.replaceChildren(...filteredTree.flatMap((node) => createSettingsTreeRows(node, 0)));
+
+  table.append(head, rows);
+  section.append(legend, table);
+
+  return section;
+}
+
+function createSettingsLegendItem(boxClassName, labelText) {
+  const item = document.createElement("span");
+  item.className = "settings-legend-item";
+
+  const box = document.createElement("span");
+  box.className = boxClassName;
+  box.setAttribute("aria-hidden", "true");
+
+  const label = document.createElement("span");
+  label.textContent = labelText;
+
+  item.append(box, label);
+
+  return item;
+}
+
+function createSettingsRoleLegend() {
+  const item = document.createElement("span");
+  item.className = "settings-legend-item settings-legend-role";
+
+  const tags = document.createElement("span");
+  tags.className = "settings-tree-role-options settings-tree-role-legend-options";
+  for (const role of folderRoleIds) {
+    const tag = document.createElement("span");
+    tag.className = `settings-tree-role-option is-${role}`;
+    tag.textContent = folderRoleLabels[role];
+    tags.append(tag);
+  }
+
+  const copy = document.createElement("span");
+  copy.textContent = "status, project card, or storage group";
+
+  item.append(tags, copy);
+
+  return item;
+}
+
+function createSettingsHeadCell(text) {
+  const cell = document.createElement("span");
+  cell.textContent = text;
+
+  return cell;
+}
+
+function createSettingsTreeRows(node, depth) {
+  const rows = [createSettingsTreeRow(node, depth)];
+  if (node.expanded) {
+    rows.push(...(node.children || []).flatMap((child) => createSettingsTreeRows(child, depth + 1)));
+  }
+
+  return rows;
+}
+
+function createSettingsTreeRow(node, depth) {
+  const row = document.createElement("div");
+  row.className = "settings-tree-row";
+  row.dataset.path = node.path;
+  row.style.setProperty("--tree-depth", String(depth));
+  row.classList.toggle("is-hidden", !node.access);
+
+  const nameCell = document.createElement("div");
+  nameCell.className = "settings-tree-name";
+
+  const button = document.createElement("button");
+  button.className = "settings-tree-chevron";
+  button.type = "button";
+  button.dataset.action = "toggle-expanded";
+  button.disabled = (node.children || []).length === 0;
+  button.setAttribute("aria-label", `${node.expanded ? "Collapse" : "Expand"} ${node.name}`);
+  button.classList.toggle("is-expanded", node.expanded);
+
+  const input = document.createElement("input");
+  const isLockedInsideCard = isAccessNodeInsideCard(node.path);
+  input.className = "settings-tree-checkbox";
+  input.type = "checkbox";
+  input.dataset.action = "toggle-access";
+  input.checked = node.access;
+  input.disabled = isLockedInsideCard;
+  input.setAttribute("aria-label", `Show ${node.name} in workspace`);
+
+  const icon = document.createElement("span");
+  icon.className = "settings-tree-folder-icon";
+  icon.setAttribute("aria-hidden", "true");
+
+  const name = document.createElement("span");
+  name.className = "settings-tree-label";
+  name.textContent = node.name;
+
+  nameCell.append(button, input, icon, name);
+
+  const roleOptions = createSettingsRoleOptions(node, isLockedInsideCard);
+
+  const access = document.createElement("span");
+  access.className = "settings-tree-access";
+  access.textContent = node.access ? "Included" : "Hidden";
+
+  row.append(nameCell, roleOptions, access);
+
+  return row;
+}
+
+function createSettingsRoleOptions(node, isLockedInsideCard) {
+  const roleOptions = document.createElement("div");
+  const selectedRole = normalizeFolderRole(node.role);
+  roleOptions.className = "settings-tree-role-options";
+  roleOptions.setAttribute("role", "group");
+  roleOptions.setAttribute("aria-label", `Type for ${node.name}`);
+
+  for (const role of folderRoleIds) {
+    const roleButton = document.createElement("button");
+    const isSelected = selectedRole === role;
+    roleButton.className = "settings-tree-role-option";
+    roleButton.type = "button";
+    roleButton.dataset.action = "set-role";
+    roleButton.dataset.role = role;
+    roleButton.disabled = isLockedInsideCard;
+    roleButton.textContent = folderRoleLabels[role];
+    roleButton.classList.toggle(`is-${role}`, isSelected);
+    roleButton.setAttribute("aria-pressed", String(isSelected));
+    roleButton.setAttribute("aria-label", `Mark ${node.name} as ${folderRoleLabels[role].toLowerCase()}`);
+    roleOptions.append(roleButton);
+  }
+
+  return roleOptions;
+}
+
+function handleSettingsTreeClick(event) {
+  if (activeView !== "settings") {
+    return;
+  }
+
+  const row = event.target.closest(".settings-tree-row");
+  if (!row) {
+    return;
+  }
+
+  const node = findAccessNode(row.dataset.path);
+  if (!node) {
+    return;
+  }
+
+  const action = event.target.dataset.action;
+  if ((action === "toggle-access" || action === "set-role") && isAccessNodeInsideCard(node.path)) {
+    return;
+  }
+
+  if (action === "toggle-expanded") {
+    setFolderAccessRule(node.path, { expanded: !node.expanded });
+    return;
+  }
+
+  if (action === "toggle-access") {
+    setFolderAccessRule(node.path, { access: event.target.checked });
+    return;
+  }
+
+  if (action === "set-role") {
+    setFolderAccessRule(node.path, { role: normalizeFolderRole(event.target.dataset.role) });
+  }
+}
+
+function setFolderAccessRule(path, rule) {
+  const nextRules = { ...folderAccessRules };
+  const currentRule = folderAccessRules[path] || {};
+  nextRules[path] = {
+    ...currentRule,
+    ...rule,
+  };
+
+  if (typeof rule.access === "boolean") {
+    const node = findAccessNode(path);
+    walkAccessTree(node?.children || [], (child) => {
+      nextRules[child.path] = {
+        ...(nextRules[child.path] || {}),
+        access: rule.access,
+      };
+    });
+  }
+
+  folderAccessRules = nextRules;
+  saveFolderAccessRules();
+  applyFolderAccessRules();
+  renderFolders();
+}
+
+function setAllFolderAccess(access) {
+  const nextRules = { ...folderAccessRules };
+  walkAccessTree(folderAccessTree, (node) => {
+    nextRules[node.path] = {
+      ...(nextRules[node.path] || {}),
+      access,
+    };
+  });
+  folderAccessRules = nextRules;
+  saveFolderAccessRules();
+  applyFolderAccessRules();
+  renderFolders();
+}
+
+function applyFolderAccessRules() {
+  applyRulesToAccessTree(folderAccessTree);
+  folders = flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedHandle?.name || "Client Projects" });
+  saveBoardSnapshot();
+}
+
+function applyRulesToAccessTree(nodes) {
+  nodes.forEach((node) => {
+    const rule = folderAccessRules[node.path] || {};
+    node.access = rule.access !== false;
+    node.role = normalizeFolderRole(rule.role);
+    node.expanded = rule.expanded === true;
+    applyRulesToAccessTree(node.children || []);
+  });
+}
+
+function findAccessNode(path) {
+  let foundNode = null;
+  walkAccessTree(folderAccessTree, (node) => {
+    if (node.path === path) {
+      foundNode = node;
+    }
+  });
+
+  return foundNode;
+}
+
+function isAccessNodeInsideCard(path) {
+  const pathParts = path.split("/");
+  if (pathParts.length < 2) {
+    return false;
+  }
+
+  let nodes = folderAccessTree;
+  let currentPath = "";
+  for (const pathPart of pathParts.slice(0, -1)) {
+    currentPath = currentPath ? `${currentPath}/${pathPart}` : pathPart;
+    const ancestor = nodes.find((node) => node.path === currentPath);
+    if (!ancestor) {
+      return false;
+    }
+
+    if (normalizeFolderRole(ancestor.role) === "card") {
+      return true;
+    }
+
+    nodes = ancestor.children || [];
+  }
+
+  return false;
+}
+
+function walkAccessTree(nodes, callback) {
+  nodes.forEach((node) => {
+    callback(node);
+    walkAccessTree(node.children || [], callback);
+  });
+}
+
+function countAccessGroups(tree) {
+  let count = 0;
+  walkAccessTree(tree, (node) => {
+    if (node.role === "group") {
+      count += 1;
+    }
+  });
+
+  return count;
+}
+
+function filterSettingsTree(tree, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return tree;
+  }
+
+  return tree
+    .map((node) => filterSettingsNode(node, normalizedQuery))
+    .filter(Boolean);
+}
+
+function filterSettingsNode(node, query) {
+  const children = (node.children || []).map((child) => filterSettingsNode(child, query)).filter(Boolean);
+  if (node.name.toLowerCase().includes(query) || children.length > 0) {
+    return {
+      ...node,
+      expanded: children.length > 0 ? true : node.expanded,
+      children,
+    };
+  }
+
+  return null;
 }
 
 function createBoardColumn(status, statusFolders) {
@@ -1547,7 +2068,6 @@ function createFolderCard(folder, options = {}) {
 }
 
 function updateRoot(name) {
-  sidebarRootName.textContent = name || "No folder";
 }
 
 function saveBoardSnapshot() {

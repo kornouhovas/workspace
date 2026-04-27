@@ -35,6 +35,56 @@ test("folder picker has one primary click target in the initial view", async () 
   assert.equal(html.includes("emptyChooseButton"), false);
 });
 
+test("settings access view exposes folder picker and recursive access tree controls", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /id="settingsNavButton"/);
+  assert.match(html, /data-view="settings"/);
+  assert.match(html, /id="workspaceTabs"[\s\S]*id="settingsNavButton"/);
+  assert.equal(html.includes("Selected root"), false);
+  assert.equal(html.includes("sidebarRootName"), false);
+  assert.doesNotMatch(html, /sidebar-footer-nav/);
+  assert.match(css, /\.workspace-tools\s*\{[^}]*border-top:\s*1px solid var\(--line-soft\)[^}]*padding-top:\s*20px/s);
+  assert.doesNotMatch(css, /\.workspace-tools\s*\{[^}]*border-bottom/s);
+  assert.match(html, /id="settingsViewSwitcher"/);
+  assert.match(html, />Access</);
+  assert.match(app, /settingsViewSwitcher\.hidden = false/);
+  assert.match(app, /import \{[^}]*listFolderAccessTree[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
+  assert.match(app, /const folderAccessRulesStorageKey = "folder-access-rules"/);
+  assert.match(app, /let folderAccessTree = \[\]/);
+  assert.match(app, /settingsNavButton\.addEventListener\("click",/);
+  assert.match(app, /function renderSettingsView\(\)/);
+  assert.match(app, /function createSettingsAccessTree\(tree\)/);
+  assert.match(app, /function createSettingsTreeRow\(node, depth\)/);
+  assert.match(app, /function isAccessNodeInsideCard\(path\)/);
+  assert.match(app, /function handleSettingsTreeClick\(event\)/);
+  assert.match(app, /function setFolderAccessRule\(path, rule\)/);
+  assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
+  assert.match(app, /listFolderAccessTree\(selectedHandle,/);
+  assert.match(app, /const folderRoleLabels = \{/);
+  assert.match(app, /status:\s*"STATUS"/);
+  assert.match(app, /card:\s*"CARD"/);
+  assert.match(app, /group:\s*"GROUP"/);
+  assert.match(app, /input\.type = "checkbox"/);
+  assert.match(app, /button\.className = "settings-tree-chevron"/);
+  assert.match(app, /function createSettingsRoleOptions\(node, isLockedInsideCard\)/);
+  assert.match(app, /roleButton\.className = "settings-tree-role-option"/);
+  assert.match(app, /roleButton\.dataset\.role = role/);
+  assert.match(app, /roleButton\.disabled = isLockedInsideCard/);
+  assert.match(app, /action === "set-role"/);
+  assert.match(css, /\.settings-view\s*\{/);
+  assert.match(css, /\.settings-root-card\s*\{/);
+  assert.match(css, /\.settings-tree-row\s*\{/);
+  assert.match(css, /\.settings-tree-checkbox\s*\{/);
+  assert.match(css, /\.settings-tree-role-options\s*\{/);
+  assert.match(css, /\.settings-tree-role-option\.is-status\s*\{/);
+  assert.match(css, /\.settings-tree-role-option\.is-card\s*\{/);
+  assert.match(css, /\.settings-tree-role-option\.is-group\s*\{/);
+  assert.match(css, /\.board-view-switcher\[hidden\]\s*\{[^}]*display:\s*none/s);
+});
+
 test("sidebar navigation exposes view state and mouse titles", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
@@ -42,7 +92,7 @@ test("sidebar navigation exposes view state and mouse titles", async () => {
   assert.match(app, /button\.dataset\.view = "workspace"/);
   assert.equal(html.includes('data-view="folders"'), false);
   assert.equal(html.includes('data-view="recent"'), false);
-  assert.equal(html.includes('data-view="settings"'), false);
+  assert.match(html, /data-view="settings"/);
   assert.match(html, /id="sidebarToggle"[^>]*title="Скрыть меню"/);
 });
 
@@ -167,7 +217,7 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   );
   assert.match(html, /function getStoredStatusOrder\(state\)/);
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder\)/);
-  assert.match(html, /sidebarFolderCount\.textContent = String\(snapshot\.folders\.length\)/);
+  assert.equal(html.includes("sidebarFolderCount"), false);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
