@@ -93,7 +93,8 @@ async function listDirectoryTree(directoryHandle, parentPath, rules) {
     const pathParts = [...parentPath, directory.name];
     const path = pathParts.join("/");
     const rule = rules[path] || {};
-    const children = await listDirectoryTree(directory, pathParts, rules);
+    const role = normalizeFolderRole(rule.role);
+    const children = rule.role === "card" ? [] : await listDirectoryTree(directory, pathParts, rules);
 
     nodes.push({
       id: createFolderIdFromPath(path),
@@ -101,7 +102,7 @@ async function listDirectoryTree(directoryHandle, parentPath, rules) {
       kind: "directory",
       path,
       access: rule.access !== false,
-      role: normalizeFolderRole(rule.role),
+      role,
       expanded: rule.expanded === true,
       children,
     });

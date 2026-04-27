@@ -114,6 +114,7 @@ test("collapsed sidebar fully hides the panel and leaves a return button", async
   assert.doesNotMatch(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top/s);
   assert.match(css, /\.sidebar-collapsed \.topbar-copy\s*\{[^}]*margin-left:\s*64px/s);
   assert.match(css, /\.app-loading \.app-shell\s*\{[^}]*transition:\s*none/s);
+  assert.doesNotMatch(css, /\.app-loading \.main\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(app, /document\.documentElement\.classList\.remove\("app-loading", "sidebar-saved-collapsed"\)/);
   assert.doesNotMatch(css, /\.sidebar-return span\s*\{[^}]*transform:\s*rotate/s);
 });

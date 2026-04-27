@@ -80,10 +80,6 @@ input:focus-visible {
   transition: none;
 }
 
-.app-loading .main {
-  visibility: hidden;
-}
-
 .icon-button.sidebar-return {
   position: fixed;
   top: 26px;

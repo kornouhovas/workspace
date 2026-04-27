@@ -163,6 +163,38 @@ test("listFolderAccessTree recursively builds access rules for nested folders", 
   ]);
 });
 
+test("listFolderAccessTree treats explicitly configured card folders as scan leaves", async () => {
+  const tree = await listFolderAccessTree(
+    fakeDirectoryHandle([
+      {
+        kind: "directory",
+        name: "Client app",
+        values: async function* values() {
+          throw new Error("Card folder descendants should not be scanned");
+        },
+      },
+    ]),
+    {
+      rules: {
+        "Client app": { role: "card" },
+      },
+    },
+  );
+
+  assert.deepEqual(tree, [
+    {
+      id: "folder-client-app",
+      name: "Client app",
+      kind: "directory",
+      path: "Client app",
+      access: true,
+      role: "card",
+      expanded: false,
+      children: [],
+    },
+  ]);
+});
+
 test("flattenAccessTreeCards uses status folders as statuses and skips status containers", () => {
   const cards = flattenAccessTreeCards([
     {
