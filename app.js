@@ -80,6 +80,8 @@ const tableColumnWidthLimits = {
   status: { min: 12, max: 36 },
 };
 const maxTableColumnTotalWidth = 94;
+const boardScrollbarHotZoneSize = 56;
+const boardScrollbarIdleDelay = 900;
 
 let selectedHandle = null;
 let folders = [];
@@ -98,6 +100,7 @@ let workspacePointerDragState = null;
 let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
+let boardScrollbarHideTimer = null;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -196,6 +199,9 @@ function bindEvents() {
   chooseFolderButton.addEventListener("click", chooseFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
+  boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
+  boardSurface.addEventListener("pointerleave", hideBoardScrollbar);
+  boardSurface.addEventListener("scroll", handleBoardSurfaceScroll);
   folderGrid.addEventListener("dragstart", handleBoardColumnDragStart);
   folderGrid.addEventListener("dragstart", handleTableColumnDragStart);
   folderGrid.addEventListener("dragover", handleBoardColumnDragOver);
@@ -1007,11 +1013,16 @@ function renderFolders() {
 
 function renderActiveBoardView(visibleFolders) {
   const activeBoardView = getActiveBoardView();
+  const usesHorizontalScroll = activeBoardView === "board";
   boardViewSwitcher.hidden = false;
   settingsViewSwitcher.hidden = true;
   boardSurface.classList.toggle("board-mode", activeBoardView === "board");
   boardSurface.classList.toggle("table-mode", activeBoardView === "table");
+  boardSurface.classList.toggle("horizontal-scroll-mode", usesHorizontalScroll);
   boardSurface.classList.remove("settings-mode");
+  if (!usesHorizontalScroll) {
+    hideBoardScrollbar();
+  }
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);
@@ -1054,6 +1065,57 @@ function getOrderedStatuses(visibleFolders) {
   return [...savedStatuses, ...newStatuses];
 }
 
+function handleBoardSurfacePointerMove(event) {
+  if (!canShowBoardScrollbar()) {
+    hideBoardScrollbar();
+    return;
+  }
+
+  const boardRect = boardSurface.getBoundingClientRect();
+  if (boardRect.bottom - event.clientY <= boardScrollbarHotZoneSize) {
+    showBoardScrollbar();
+    return;
+  }
+
+  scheduleHideBoardScrollbar();
+}
+
+function handleBoardSurfaceScroll() {
+  if (!canShowBoardScrollbar()) {
+    hideBoardScrollbar();
+    return;
+  }
+
+  showBoardScrollbar();
+  scheduleHideBoardScrollbar();
+}
+
+function showBoardScrollbar() {
+  if (!canShowBoardScrollbar()) {
+    hideBoardScrollbar();
+    return;
+  }
+
+  window.clearTimeout(boardScrollbarHideTimer);
+  boardScrollbarHideTimer = null;
+  boardSurface.classList.add("is-board-scrollbar-visible");
+}
+
+function scheduleHideBoardScrollbar() {
+  window.clearTimeout(boardScrollbarHideTimer);
+  boardScrollbarHideTimer = window.setTimeout(hideBoardScrollbar, boardScrollbarIdleDelay);
+}
+
+function hideBoardScrollbar() {
+  window.clearTimeout(boardScrollbarHideTimer);
+  boardScrollbarHideTimer = null;
+  boardSurface.classList.remove("is-board-scrollbar-visible");
+}
+
+function canShowBoardScrollbar() {
+  return boardSurface.classList.contains("horizontal-scroll-mode") && boardSurface.scrollWidth > boardSurface.clientWidth;
+}
+
 function renderTableView(visibleFolders) {
   const columnOrder = getActiveTableColumnOrder();
   const table = document.createElement("div");
@@ -1085,7 +1147,7 @@ function setTableGridTemplate(tableElement) {
 function renderPlaceholder(title, description) {
   boardViewSwitcher.hidden = false;
   settingsViewSwitcher.hidden = true;
-  boardSurface.classList.remove("settings-mode");
+  boardSurface.classList.remove("settings-mode", "horizontal-scroll-mode");
   folderGrid.className = "folder-grid";
   folderGrid.replaceChildren();
   emptyState.hidden = false;
@@ -1119,7 +1181,7 @@ function renderSettingsView() {
   pageTitle.textContent = "Settings";
   boardViewSwitcher.hidden = true;
   settingsViewSwitcher.hidden = false;
-  boardSurface.classList.remove("board-mode", "table-mode");
+  boardSurface.classList.remove("board-mode", "table-mode", "horizontal-scroll-mode");
   boardSurface.classList.add("settings-mode");
   folderGrid.className = "settings-view";
   emptyState.hidden = true;

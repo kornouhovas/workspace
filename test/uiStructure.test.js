@@ -244,6 +244,12 @@ test("folder board supports overview board and table renderers", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
+  assert.match(css, /\.app-shell\s*\{[^}]*height:\s*100vh/s);
+  assert.match(css, /\.app-shell\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.main\s*\{[^}]*overflow:\s*hidden/s);
+  assert.doesNotMatch(app, /document\.querySelector\("#boardScrollbar/);
+  assert.doesNotMatch(app, /handleBoardScrollbarPointer/);
+  assert.doesNotMatch(app, /boardScrollbarDragState/);
   assert.match(app, /function renderOverviewView\(visibleFolders\)/);
   assert.match(app, /function renderBoardView\(visibleFolders\)/);
   assert.match(app, /function renderTableView\(visibleFolders\)/);
@@ -253,11 +259,28 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /"Name"/);
   assert.match(app, /"Status"/);
   assert.match(css, /\.folder-board-view\s*\{/);
+  assert.match(css, /\.folder-grid\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(245px,\s*100%\),\s*245px\)\)/s);
+  assert.doesNotMatch(css, /\.folder-grid\s*\{[^}]*grid-auto-flow:\s*column/s);
+  assert.doesNotMatch(css, /\.folder-grid\s*\{[^}]*grid-auto-columns:\s*245px/s);
+  assert.doesNotMatch(css, /\.folder-grid\s*\{[^}]*width:\s*max-content/s);
+  assert.doesNotMatch(css, /\.folder-grid\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*grid-auto-flow:\s*column/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*grid-auto-columns:\s*245px/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*width:\s*max-content/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*min-width:\s*100%/s);
   assert.doesNotMatch(css, /\.folder-board-view\s*\{[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(245px,\s*1fr\)\)/s);
+  assert.match(app, /boardSurface\.addEventListener\("pointermove", handleBoardSurfacePointerMove\)/);
+  assert.match(app, /boardSurface\.addEventListener\("pointerleave", hideBoardScrollbar\)/);
+  assert.match(app, /boardSurface\.addEventListener\("scroll", handleBoardSurfaceScroll\)/);
+  assert.match(app, /function handleBoardSurfacePointerMove\(event\)/);
+  assert.match(app, /function handleBoardSurfaceScroll\(\)/);
+  assert.match(app, /function showBoardScrollbar\(\)/);
+  assert.match(app, /function hideBoardScrollbar\(\)/);
+  assert.doesNotMatch(css, /\.board-scrollbar\s*\{/);
+  assert.doesNotMatch(css, /\.board-scrollbar-thumb\s*\{/);
+  assert.match(css, /\.kanban-board\.horizontal-scroll-mode\.is-board-scrollbar-visible/s);
+  assert.match(css, /\.kanban-board::-webkit-scrollbar-thumb/s);
+  assert.match(css, /\.kanban-board\.horizontal-scroll-mode\.is-board-scrollbar-visible::-webkit-scrollbar-thumb\s*\{[^}]*border-radius:\s*999px/s);
   assert.match(css, /\.folder-grid\s*\{[^}]*padding-top:\s*12px/s);
   assert.match(css, /\.folder-board-view\s*\{[^}]*padding-top:\s*12px/s);
   assert.match(css, /\.kanban-board\.board-mode\s*\{[^}]*margin-top:\s*-22px/s);
@@ -268,8 +291,11 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(css, /\.board-column-title\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-column-title\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.folder-board-view \.folder-card\s*\{[^}]*min-height:\s*0/s);
+  assert.match(app, /const usesHorizontalScroll = activeBoardView === "board"/);
   assert.match(app, /boardSurface\.classList\.toggle\("board-mode", activeBoardView === "board"\)/);
   assert.match(app, /boardSurface\.classList\.toggle\("table-mode", activeBoardView === "table"\)/);
+  assert.match(app, /boardSurface\.classList\.toggle\("horizontal-scroll-mode", usesHorizontalScroll\)/);
+  assert.match(app, /boardSurface\.classList\.contains\("horizontal-scroll-mode"\)/);
   assert.match(css, /\.kanban-board\.table-mode\s*\{[^}]*margin-top:\s*-21px/s);
   assert.match(css, /\.folder-table\s*\{/);
   assert.doesNotMatch(css, /\.folder-table\s*\{[^}]*margin-top:\s*-/s);
@@ -430,8 +456,10 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-  assert.match(css, /--content-x:\s*26px/);
-  assert.match(css, /\.main\s*\{[^}]*padding:\s*26px var\(--content-x\) 22px/s);
+  assert.match(css, /--content-x:\s*9px/);
+  assert.match(css, /\.main\s*\{[^}]*padding:\s*0/s);
+  assert.match(css, /\.topbar\s*\{[^}]*margin:\s*9px var\(--content-x\) 24px/s);
+  assert.match(css, /\.board-toolbar\s*\{[^}]*margin:\s*0 var\(--content-x\) 18px/s);
   assert.match(html, /class="topbar-copy"/);
   assert.match(html, /id="boardViewSwitcher"/);
   assert.match(html, /id="workspaceTitleButton"/);
@@ -465,7 +493,7 @@ test("kanban scroll area leaves room for lifted folder-card hover", async () => 
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
   assert.match(css, /\.folder-card:hover\s*\{[^}]*transform:\s*translateY\(-1px\)/s);
-  assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*[1-9]\d*px 4px 18px 0/s);
+  assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*6px 4px 18px var\(--content-x\)/s);
 });
 
 test("folder card renders only the folder name and its status tag", async () => {

@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  --content-x: 26px;
+  --content-x: 9px;
   --page: #111111;
   --app: #1b1b1a;
   --sidebar: #20201f;
@@ -56,9 +56,11 @@ input:focus-visible {
 
 .app-shell {
   display: grid;
+  height: 100vh;
   min-height: 100vh;
   grid-template-columns: 280px minmax(0, 1fr);
   background: var(--app);
+  overflow: hidden;
   transition: grid-template-columns 160ms ease;
 }
 
@@ -330,7 +332,8 @@ input:focus-visible {
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  padding: 26px var(--content-x) 22px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .topbar {
@@ -338,7 +341,7 @@ input:focus-visible {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
+  margin: 9px var(--content-x) 24px;
 }
 
 .topbar-copy {
@@ -565,7 +568,7 @@ input:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin: 0 var(--content-x) 18px;
 }
 
 .status-line {
@@ -583,8 +586,44 @@ input:focus-visible {
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 6px 4px 18px 0;
+  padding: 6px 4px 18px var(--content-x);
   scrollbar-color: #3a3a38 transparent;
+  scrollbar-width: thin;
+}
+
+.kanban-board.horizontal-scroll-mode {
+  scrollbar-color: transparent transparent;
+}
+
+.kanban-board.horizontal-scroll-mode.is-board-scrollbar-visible {
+  scrollbar-color: #5f5e59 transparent;
+}
+
+.kanban-board::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.kanban-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-board::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #3a3a38;
+  background-clip: content-box;
+}
+
+.kanban-board.horizontal-scroll-mode::-webkit-scrollbar-thumb {
+  background: transparent;
+  background-clip: content-box;
+}
+
+.kanban-board.horizontal-scroll-mode.is-board-scrollbar-visible::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #5f5e59;
+  background-clip: content-box;
 }
 
 .kanban-board.board-mode {
@@ -598,8 +637,9 @@ input:focus-visible {
 
 .folder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(245px, 100%), 245px));
   gap: 14px;
+  align-items: start;
   padding-top: 12px;
 }
 
@@ -1259,7 +1299,9 @@ button.settings-tree-role-option {
   .app-shell,
   .app-shell.sidebar-collapsed {
     display: block;
+    height: auto;
     min-height: 100vh;
+    overflow: visible;
   }
 
   .sidebar {
@@ -1308,6 +1350,7 @@ button.settings-tree-role-option {
   .main {
     min-height: 100vh;
     margin-left: 280px;
+    overflow: visible;
     padding: 18px 14px;
     transition: margin-left 160ms ease;
   }
@@ -1329,10 +1372,6 @@ button.settings-tree-role-option {
 
   .search {
     width: 100%;
-  }
-
-  .folder-grid {
-    grid-template-columns: 1fr;
   }
 
   .settings-root-card,
