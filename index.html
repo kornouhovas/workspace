@@ -290,7 +290,14 @@
           if (boardView === "table") {
             folderGrid.className = "folder-table";
             folderGrid.replaceChildren(
-              createInitialTable(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses),
+              createInitialTable(
+                folders,
+                statusOrder,
+                tableColumnOrder,
+                tableColumnWidths,
+                hiddenStatuses,
+                showHiddenStatuses,
+              ),
             );
             return;
           }
@@ -331,7 +338,14 @@
             });
         }
 
-        function createInitialTable(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses) {
+        function createInitialTable(
+          folders,
+          statusOrder,
+          tableColumnOrder,
+          tableColumnWidths,
+          hiddenStatuses,
+          showHiddenStatuses,
+        ) {
           const table = document.createElement("div");
           table.className = "folder-table-surface";
           table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
@@ -348,17 +362,171 @@
           const header = document.createElement("div");
           header.className = "folder-table-row folder-table-head";
           header.append(
-            ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(null, columnId))),
+            ...tableColumnOrder.map((columnId) =>
+              createInitialTableHeaderCell(columnId, folders, statusOrder, hiddenStatuses),
+            ),
           );
 
           table.append(
             header,
-            ...folders
-              .filter((folder) => showHiddenStatuses || !hiddenStatuses.includes(folder.status))
-              .map((folder) => createInitialTableRow(folder, tableColumnOrder, hiddenStatuses)),
+            ...getInitialTableFolders(folders, statusOrder, hiddenStatuses, showHiddenStatuses).map((folder) =>
+              createInitialTableRow(folder, tableColumnOrder, hiddenStatuses),
+            ),
           );
 
           return table;
+        }
+
+        function getInitialTableFolders(folders, statusOrder, hiddenStatuses, showHiddenStatuses) {
+          const orderedStatuses = createInitialOrderedStatuses(folders, statusOrder);
+
+          return folders
+            .filter((folder) => showHiddenStatuses || !hiddenStatuses.includes(folder.status))
+            .map((folder, index) => ({ folder, index }))
+            .sort((left, right) => compareInitialFoldersByStatusOrder(left, right, orderedStatuses))
+            .map(({ folder }) => folder);
+        }
+
+        function compareInitialFoldersByStatusOrder(left, right, orderedStatuses) {
+          const leftStatusIndex = orderedStatuses.indexOf(left.folder.status);
+          const rightStatusIndex = orderedStatuses.indexOf(right.folder.status);
+
+          if (leftStatusIndex !== rightStatusIndex) {
+            return leftStatusIndex - rightStatusIndex;
+          }
+
+          return left.index - right.index;
+        }
+
+        function createInitialTableHeaderCell(columnId, folders, statusOrder, hiddenStatuses) {
+          const cell = document.createElement("div");
+          cell.className = "folder-table-cell";
+          cell.setAttribute("role", "button");
+          cell.tabIndex = 0;
+          cell.draggable = false;
+          cell.dataset.tableColumn = columnId;
+
+          const label = document.createElement("span");
+          label.className = "table-header-label";
+          label.textContent = columnId === "status" ? "Status" : "Name";
+          cell.append(label);
+
+          if (columnId === "status") {
+            cell.classList.add("has-table-status-menu");
+            cell.setAttribute("aria-haspopup", "menu");
+            cell.setAttribute("aria-expanded", "false");
+            cell.append(createInitialTableStatusMenu(createInitialOrderedStatuses(folders, statusOrder), hiddenStatuses));
+          }
+
+          cell.append(createInitialTableResizeHandle(columnId));
+
+          return cell;
+        }
+
+        function createInitialTableStatusMenu(statuses, hiddenStatuses) {
+          const menu = document.createElement("div");
+          menu.className = "table-status-menu";
+          menu.setAttribute("role", "menu");
+          menu.hidden = true;
+          menu.replaceChildren(
+            ...statuses.map((status) => {
+              const item = document.createElement("span");
+              item.className = "table-status-menu-item";
+              item.dataset.status = status;
+              item.setAttribute("role", "menuitem");
+              item.tabIndex = 0;
+              item.draggable = false;
+
+              const label = document.createElement("span");
+              label.className = "table-status-menu-label";
+              label.textContent = status;
+
+              item.append(
+                createInitialTableStatusDragHandle(),
+                label,
+                createInitialTableStatusVisibilityButton(status, hiddenStatuses.includes(status)),
+              );
+
+              return item;
+            }),
+          );
+
+          return menu;
+        }
+
+        function createInitialTableStatusVisibilityButton(status, hidden) {
+          const button = document.createElement("button");
+          button.className = "table-status-visibility";
+          button.type = "button";
+          button.dataset.status = status;
+          button.setAttribute("aria-label", hidden ? `Show ${status} section` : `Hide ${status} section`);
+          button.setAttribute("aria-pressed", String(hidden));
+          button.append(createInitialEyeIcon(hidden));
+
+          return button;
+        }
+
+        function createInitialTableStatusDragHandle() {
+          const handle = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          handle.setAttribute("class", "table-status-drag-handle");
+          handle.setAttribute("viewBox", "0 0 24 24");
+          handle.setAttribute("aria-hidden", "true");
+
+          ["M8 7h8", "M8 12h8", "M8 17h8"].forEach((pathData) => {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            line.setAttribute("d", pathData);
+            handle.append(line);
+          });
+
+          return handle;
+        }
+
+        function createInitialTableResizeHandle(columnId) {
+          const handle = document.createElement("span");
+          handle.className = "table-resize-handle";
+          handle.dataset.tableColumn = columnId;
+          handle.setAttribute("aria-hidden", "true");
+
+          return handle;
+        }
+
+        function createInitialOrderedStatuses(folders, statusOrder) {
+          const currentStatuses = [...new Set(folders.map((folder) => folder.status))];
+          const currentStatusSet = new Set(currentStatuses);
+          const savedStatuses = statusOrder.filter((status) => currentStatusSet.has(status));
+          const newStatuses = currentStatuses.filter((status) => !savedStatuses.includes(status));
+
+          return [...savedStatuses, ...newStatuses];
+        }
+
+        function createInitialEyeIcon(hidden) {
+          const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          icon.classList.add("eye-icon");
+          icon.classList.toggle("is-hidden-status", hidden);
+          icon.setAttribute("viewBox", "0 0 24 24");
+          icon.setAttribute("aria-hidden", "true");
+
+          const outline = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          outline.setAttribute(
+            "d",
+            "M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z",
+          );
+
+          const pupil = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          pupil.setAttribute("cx", "12");
+          pupil.setAttribute("cy", "12");
+          pupil.setAttribute("r", "3.2");
+
+          icon.append(outline, pupil);
+
+          if (hidden) {
+            const slash = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            slash.classList.add("eye-slash");
+            slash.setAttribute("d", "M4.5 4.5 19.5 19.5");
+            icon.append(slash);
+          }
+
+          return icon;
         }
 
         function createInitialTableRow(folder, tableColumnOrder, hiddenStatuses = []) {

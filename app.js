@@ -93,16 +93,22 @@ let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
+let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
+let tableStatusMenuPointerDragState = null;
 let tableColumnPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
 let tableColumnDragImage = null;
+let tableStatusDragImage = null;
 let workspacePointerDragState = null;
 let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
+let tableStatusSuppressClick = false;
+let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
+let tableStatusMenuOpen = false;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -121,6 +127,7 @@ let activeWorkspaceId = "workspace-1";
 async function initializeApp() {
   loadWorkspaceState();
   loadFolderAccessRules();
+  loadBoardSnapshot();
   boardView = loadBoardView();
   setSidebarCollapsed(loadSidebarState(), false);
   renderWorkspaceTabs();
@@ -223,14 +230,17 @@ function bindEvents() {
   folderGrid.addEventListener("click", handleBoardColumnVisibilityClick);
   folderGrid.addEventListener("click", handleTableStatusMenuClick);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
+  folderGrid.addEventListener("pointerdown", handleTableStatusMenuPointerDragStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
   folderGrid.addEventListener("click", handleSettingsTreeClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
+  window.addEventListener("pointermove", handleTableStatusMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
+  window.addEventListener("pointerup", handleTableStatusMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
   window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
@@ -945,6 +955,34 @@ function loadFolderAccessRules() {
   }
 }
 
+function loadBoardSnapshot() {
+  try {
+    const snapshot = JSON.parse(localStorage.getItem(boardSnapshotStorageKey));
+    if (!isStoredBoardSnapshot(snapshot)) {
+      return;
+    }
+
+    folders = snapshot.folders.map((folder) => ({
+      id: typeof folder.id === "string" ? folder.id : folder.name,
+      name: folder.name,
+      kind: "directory",
+      status: folder.status,
+      path: typeof folder.path === "string" ? folder.path : folder.name,
+    }));
+  } catch (error) {
+    localStorage.removeItem(boardSnapshotStorageKey);
+  }
+}
+
+function isStoredBoardSnapshot(snapshot) {
+  return (
+    snapshot &&
+    typeof snapshot.rootName === "string" &&
+    Array.isArray(snapshot.folders) &&
+    snapshot.folders.every((folder) => typeof folder.name === "string" && typeof folder.status === "string")
+  );
+}
+
 function saveFolderAccessRules() {
   localStorage.setItem(folderAccessRulesStorageKey, JSON.stringify(folderAccessRules));
   localStorage.setItem(folderAccessRulesVersionStorageKey, folderAccessRulesVersion);
@@ -1237,13 +1275,30 @@ function renderTableView(visibleFolders) {
 
   folderGrid.className = "folder-table";
   folderGrid.replaceChildren(table);
+  restoreTableStatusMenuOpenState();
 }
 
 function getTableFolders(visibleFolders) {
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
   const showHiddenStatuses = getActiveShowHiddenStatuses();
+  const statusOrder = getOrderedStatuses(visibleFolders);
 
-  return visibleFolders.filter((folder) => showHiddenStatuses || !hiddenStatuses.has(folder.status));
+  return visibleFolders
+    .filter((folder) => showHiddenStatuses || !hiddenStatuses.has(folder.status))
+    .map((folder, index) => ({ folder, index }))
+    .sort((left, right) => compareFoldersByStatusOrder(left, right, statusOrder))
+    .map(({ folder }) => folder);
+}
+
+function compareFoldersByStatusOrder(left, right, statusOrder) {
+  const leftStatusIndex = statusOrder.indexOf(left.folder.status);
+  const rightStatusIndex = statusOrder.indexOf(right.folder.status);
+
+  if (leftStatusIndex !== rightStatusIndex) {
+    return leftStatusIndex - rightStatusIndex;
+  }
+
+  return left.index - right.index;
 }
 
 function setTableGridTemplate(tableElement) {
@@ -2007,7 +2062,12 @@ function handleTableColumnResizeEnd(event) {
 
 function handleTableColumnDragStart(event) {
   const cell = event.target.closest(".folder-table-head .folder-table-cell");
-  if (!cell || event.target.closest(".table-resize-handle") || getActiveBoardView() !== "table") {
+  if (
+    !cell ||
+    event.target.closest(".table-resize-handle") ||
+    event.target.closest(".table-status-menu") ||
+    getActiveBoardView() !== "table"
+  ) {
     return;
   }
 
@@ -2059,6 +2119,7 @@ function handleTableColumnPointerDragStart(event) {
   if (
     !cell ||
     event.target.closest(".table-resize-handle") ||
+    event.target.closest(".table-status-menu") ||
     tableResizeState ||
     tableColumnPointerDragState ||
     getActiveBoardView() !== "table"
@@ -2276,12 +2337,13 @@ function createTableStatusMenu(statuses, hiddenStatuses) {
       item.dataset.status = status;
       item.setAttribute("role", "menuitem");
       item.tabIndex = 0;
+      item.draggable = false;
 
       const label = document.createElement("span");
       label.className = "table-status-menu-label";
       label.textContent = status;
 
-      item.append(label, createEyeIcon(hiddenStatusSet.has(status)));
+      item.append(createTableStatusDragHandle(), label, createTableStatusVisibilityButton(status, hiddenStatusSet.has(status)));
 
       return item;
     }),
@@ -2290,12 +2352,237 @@ function createTableStatusMenu(statuses, hiddenStatuses) {
   return menu;
 }
 
-function handleTableStatusMenuClick(event) {
+function createTableStatusVisibilityButton(status, hidden) {
+  const button = document.createElement("button");
+  button.className = "table-status-visibility";
+  button.type = "button";
+  button.dataset.status = status;
+  button.setAttribute("aria-label", hidden ? `Show ${status} section` : `Hide ${status} section`);
+  button.setAttribute("aria-pressed", String(hidden));
+  button.append(createEyeIcon(hidden));
+
+  return button;
+}
+
+function createTableStatusDragHandle() {
+  const handle = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  handle.setAttribute("class", "table-status-drag-handle");
+  handle.setAttribute("viewBox", "0 0 24 24");
+  handle.setAttribute("aria-hidden", "true");
+
+  ["M8 7h8", "M8 12h8", "M8 17h8"].forEach((pathData) => {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    line.setAttribute("d", pathData);
+    handle.append(line);
+  });
+
+  return handle;
+}
+
+function handleTableStatusMenuPointerDragStart(event) {
+  if (event.target.closest(".table-status-visibility")) {
+    return;
+  }
+
   const item = event.target.closest(".table-status-menu-item");
-  if (item) {
+  if (!item || getActiveBoardView() !== "table") {
+    return;
+  }
+
+  const sourceRect = item.getBoundingClientRect();
+  tableStatusMenuPointerDragState = {
+    status: item.dataset.status,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
+    sourceItem: item,
+    targetItem: item,
+    isDragging: false,
+  };
+  draggedTableMenuStatus = item.dataset.status;
+  try {
+    item.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleTableStatusMenuPointerDragMove(event) {
+  if (!tableStatusMenuPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - tableStatusMenuPointerDragState.startX,
+    event.clientY - tableStatusMenuPointerDragState.startY,
+  );
+  if (!tableStatusMenuPointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  const startsDragging = !tableStatusMenuPointerDragState.isDragging;
+  tableStatusMenuPointerDragState.isDragging = true;
+  tableStatusMenuPointerDragState.sourceItem.classList.add("is-table-status-drag-source");
+  if (startsDragging) {
+    createTableStatusDragImage(tableStatusMenuPointerDragState.sourceItem, event);
+  } else {
+    moveTableStatusDragImage(event);
+  }
+
+  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(".table-status-menu-item");
+  const menu = tableStatusMenuPointerDragState.sourceItem.closest(".table-status-menu");
+  if (!targetItem || !menu?.contains(targetItem)) {
+    return;
+  }
+
+  tableStatusMenuPointerDragState.targetItem = targetItem;
+  applyTableStatusMenuPreview(getTableStatusMenuPreviewOrder(event, targetItem));
+}
+
+function handleTableStatusMenuPointerDragEnd(event) {
+  if (!tableStatusMenuPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetItem } = tableStatusMenuPointerDragState;
+  if (!isDragging || !targetItem) {
+    tableStatusMenuPointerDragState = null;
+    draggedTableMenuStatus = null;
+    clearTableStatusMenuDragState();
+    removeTableStatusDragImage();
+    return;
+  }
+
+  event.preventDefault();
+  suppressNextTableStatusMenuClick();
+  const reorderedStatuses = getTableStatusMenuPreviewOrder(event, targetItem);
+  saveStatusOrder(reorderedStatuses);
+  tableStatusMenuPointerDragState = null;
+  draggedTableMenuStatus = null;
+  clearTableStatusMenuDragState();
+  removeTableStatusDragImage();
+  tableStatusMenuOpen = true;
+  renderFolders();
+}
+
+function suppressNextTableStatusMenuClick() {
+  tableStatusSuppressClick = true;
+  window.clearTimeout(tableStatusSuppressClickTimer);
+  tableStatusSuppressClickTimer = window.setTimeout(() => {
+    tableStatusSuppressClick = false;
+    tableStatusSuppressClickTimer = null;
+  }, 0);
+}
+
+function createTableStatusDragImage(sourceItem, event) {
+  removeTableStatusDragImage();
+  const sourceRect = sourceItem.getBoundingClientRect();
+  const dragImage = sourceItem.cloneNode(true);
+  dragImage.className = "table-status-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  document.body.append(dragImage);
+  tableStatusDragImage = dragImage;
+  moveTableStatusDragImage(event);
+}
+
+function moveTableStatusDragImage(event) {
+  if (!tableStatusDragImage) {
+    return;
+  }
+
+  const offsetX = tableStatusMenuPointerDragState?.dragOffsetX ?? 0;
+  const offsetY = tableStatusMenuPointerDragState?.dragOffsetY ?? 0;
+  tableStatusDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+}
+
+function removeTableStatusDragImage() {
+  tableStatusDragImage?.remove();
+  tableStatusDragImage = null;
+}
+
+function getTableStatusMenuPreviewOrder(event, targetItem) {
+  const statusOrder = getOrderedStatuses(folders);
+  const targetStatus = targetItem.dataset.status;
+  if (!draggedTableMenuStatus || !targetStatus || targetStatus === draggedTableMenuStatus) {
+    return statusOrder;
+  }
+
+  const draggedIndex = statusOrder.indexOf(draggedTableMenuStatus);
+  const targetIndex = statusOrder.indexOf(targetStatus);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return statusOrder;
+  }
+
+  const insertAfterTarget =
+    draggedIndex < targetIndex
+      ? event.clientY > targetRect.top + targetRect.height * 0.25
+      : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+
+  return moveStatusNearTarget(statusOrder, draggedTableMenuStatus, targetStatus, insertAfterTarget);
+}
+
+function applyTableStatusMenuPreview(previewStatuses) {
+  const items = [...folderGrid.querySelectorAll(".table-status-menu-item")];
+  const menuGap = Number.parseFloat(getComputedStyle(items[0]?.closest(".table-status-menu")).rowGap) || 0;
+  items.forEach((item, currentIndex) => {
+    const previewIndex = previewStatuses.indexOf(item.dataset.status);
+    const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
+    item.classList.remove("is-table-status-preview-up", "is-table-status-preview-down");
+    item.style.setProperty("--table-status-menu-item-shift", shiftDistance);
+
+    if (item.dataset.status === draggedTableMenuStatus) {
+      item.classList.add("is-table-status-drag-source");
+      return;
+    }
+
+    if (previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      item.classList.add("is-table-status-preview-up");
+    } else if (previewIndex > currentIndex) {
+      item.classList.add("is-table-status-preview-down");
+    }
+  });
+}
+
+function clearTableStatusMenuDragState() {
+  folderGrid.querySelectorAll(".table-status-menu-item").forEach((item) => {
+    item.classList.remove(
+      "is-table-status-drag-source",
+      "is-table-status-preview-up",
+      "is-table-status-preview-down",
+    );
+    item.style.removeProperty("--table-status-menu-item-shift");
+  });
+}
+
+function handleTableStatusMenuClick(event) {
+  if (tableStatusSuppressClick) {
+    tableStatusSuppressClick = false;
+    window.clearTimeout(tableStatusSuppressClickTimer);
+    tableStatusSuppressClickTimer = null;
     event.preventDefault();
     event.stopPropagation();
-    toggleTableStatusVisibility(item.dataset.status);
+    return;
+  }
+
+  const visibilityButton = event.target.closest(".table-status-visibility");
+  if (visibilityButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleTableStatusVisibility(visibilityButton.dataset.status);
+    return;
+  }
+
+  if (event.target.closest(".table-status-menu-item, .table-status-menu")) {
+    event.preventDefault();
+    event.stopPropagation();
     return;
   }
 
@@ -2316,9 +2603,27 @@ function toggleTableStatusMenu(statusHeader) {
     return;
   }
 
+  tableStatusMenuOpen = true;
   statusHeader.classList.add("is-table-status-menu-open");
   statusHeader.setAttribute("aria-expanded", "true");
   statusHeader.querySelector(".table-status-menu").hidden = false;
+}
+
+function restoreTableStatusMenuOpenState() {
+  if (!tableStatusMenuOpen) {
+    return;
+  }
+
+  const statusHeader = folderGrid.querySelector('.folder-table-head .folder-table-cell[data-table-column="status"]');
+  const menu = statusHeader?.querySelector(".table-status-menu");
+  if (!statusHeader || !menu) {
+    tableStatusMenuOpen = false;
+    return;
+  }
+
+  statusHeader.classList.add("is-table-status-menu-open");
+  statusHeader.setAttribute("aria-expanded", "true");
+  menu.hidden = false;
 }
 
 function toggleTableStatusVisibility(status) {
@@ -2354,12 +2659,16 @@ function refreshCurrentTableRows() {
 function updateTableStatusMenuItems() {
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
   folderGrid.querySelectorAll(".table-status-menu-item").forEach((item) => {
-    const currentIcon = item.querySelector(".eye-icon");
-    currentIcon?.replaceWith(createEyeIcon(hiddenStatuses.has(item.dataset.status)));
+    const visibilityButton = item.querySelector(".table-status-visibility");
+    const hidden = hiddenStatuses.has(item.dataset.status);
+    visibilityButton?.setAttribute("aria-label", hidden ? `Show ${item.dataset.status} section` : `Hide ${item.dataset.status} section`);
+    visibilityButton?.setAttribute("aria-pressed", String(hidden));
+    visibilityButton?.replaceChildren(createEyeIcon(hidden));
   });
 }
 
 function closeTableStatusMenus() {
+  tableStatusMenuOpen = false;
   folderGrid.querySelectorAll(".has-table-status-menu").forEach((cell) => {
     cell.classList.remove("is-table-status-menu-open");
     cell.setAttribute("aria-expanded", "false");
