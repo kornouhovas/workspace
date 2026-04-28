@@ -605,6 +605,7 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(css, /\.board-view-settings\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.board-column-menu-popover\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.board-column-menu-popover\s*\{[^}]*min-width:\s*264px/s);
   assert.match(css, /\.board-column-menu-section-title\s*\{/);
   assert.match(css, /\.board-column-menu-status-item\s*\{[^}]*grid-template-columns:\s*14px minmax\(0,\s*1fr\) 20px/s);
   assert.match(css, /\.board-column-menu-status-item\s*\{[^}]*--board-column-menu-status-shift:\s*0px/s);

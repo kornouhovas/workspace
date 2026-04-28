@@ -499,7 +499,7 @@ input:focus-visible {
   top: calc(100% + 6px);
   right: 0;
   z-index: 30;
-  min-width: 176px;
+  min-width: 264px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #181817;
