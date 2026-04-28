@@ -62,6 +62,7 @@ const views = {
 
 const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
+const boardViewIds = ["overview", "board", "table"];
 const tableColumnIds = ["name", "status"];
 const tableColumnLabels = {
   name: "Name",
@@ -123,6 +124,7 @@ let workspaces = [
     statusOrder: [],
     hiddenStatuses: [],
     showHiddenStatuses: false,
+    viewScrollPositions: createDefaultViewScrollPositions(),
     tableColumnOrder: [...tableColumnIds],
     tableColumnWidths: { ...defaultTableColumnWidths },
   },
@@ -271,6 +273,7 @@ function setBoardView(nextBoardView) {
     return;
   }
 
+  saveBoardViewScrollPosition(boardView);
   boardView = normalizedBoardView;
   saveBoardView();
   renderBoardViewSwitcher();
@@ -586,6 +589,7 @@ function addWorkspace() {
     statusOrder: [],
     hiddenStatuses: [],
     showHiddenStatuses: false,
+    viewScrollPositions: createDefaultViewScrollPositions(),
     tableColumnOrder: [...tableColumnIds],
     tableColumnWidths: { ...defaultTableColumnWidths },
   };
@@ -624,6 +628,7 @@ function setActiveWorkspace(workspaceId) {
     return;
   }
 
+  saveBoardViewScrollPosition();
   activeWorkspaceId = workspaceId;
   boardView = loadBoardView();
   saveWorkspaceState();
@@ -1058,6 +1063,7 @@ function loadWorkspaceState() {
         ? workspace.hiddenStatuses.filter((status) => typeof status === "string")
         : [],
       showHiddenStatuses: workspace.showHiddenStatuses === true,
+      viewScrollPositions: normalizeViewScrollPositions(workspace.viewScrollPositions),
       tableColumnOrder: normalizeTableColumnOrder(workspace.tableColumnOrder),
       tableColumnWidths: normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
     }));
@@ -1093,6 +1099,71 @@ function saveStatusOrder(statusOrder) {
     workspace.id === activeWorkspaceId ? { ...workspace, statusOrder } : workspace,
   );
   saveWorkspaceState();
+}
+
+function createDefaultViewScrollPositions() {
+  return boardViewIds.reduce((positions, view) => {
+    positions[view] = { top: 0, left: 0 };
+    return positions;
+  }, {});
+}
+
+function normalizeViewScrollPositions(viewScrollPositions) {
+  const defaultPositions = createDefaultViewScrollPositions();
+  if (!viewScrollPositions || typeof viewScrollPositions !== "object") {
+    return defaultPositions;
+  }
+
+  boardViewIds.forEach((view) => {
+    const position = viewScrollPositions[view];
+    defaultPositions[view] = {
+      top: Number.isFinite(position?.top) ? Math.max(0, position.top) : 0,
+      left: Number.isFinite(position?.left) ? Math.max(0, position.left) : 0,
+    };
+  });
+
+  return defaultPositions;
+}
+
+function getActiveViewScrollPosition(view = getActiveBoardView()) {
+  const positions = normalizeViewScrollPositions(getActiveWorkspace()?.viewScrollPositions);
+  return positions[normalizeBoardView(view)];
+}
+
+function saveBoardViewScrollPosition(view = getActiveBoardView()) {
+  if (!boardViews.has(view)) {
+    return;
+  }
+
+  const nextPosition = {
+    top: boardSurface.scrollTop,
+    left: boardSurface.scrollLeft,
+  };
+
+  workspaces = workspaces.map((workspace) => {
+    if (workspace.id !== activeWorkspaceId) {
+      return workspace;
+    }
+
+    const viewScrollPositions = normalizeViewScrollPositions(workspace.viewScrollPositions);
+    return {
+      ...workspace,
+      viewScrollPositions: {
+        ...viewScrollPositions,
+        [view]: nextPosition,
+      },
+    };
+  });
+  saveWorkspaceState();
+}
+
+function restoreBoardViewScrollPosition(view = getActiveBoardView()) {
+  const position = getActiveViewScrollPosition(view);
+  boardSurface.scrollTo({
+    top: position.top,
+    left: position.left,
+    behavior: "instant",
+  });
 }
 
 function saveHiddenStatuses(hiddenStatuses) {
@@ -1396,15 +1467,18 @@ function renderActiveBoardView(visibleFolders) {
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);
+    restoreBoardViewScrollPosition(activeBoardView);
     return;
   }
 
   if (activeBoardView === "table") {
     renderTableView(visibleFolders);
+    restoreBoardViewScrollPosition(activeBoardView);
     return;
   }
 
   renderOverviewView(visibleFolders);
+  restoreBoardViewScrollPosition(activeBoardView);
 }
 
 function renderOverviewView(visibleFolders) {
@@ -1460,6 +1534,7 @@ function handleBoardSurfacePointerMove(event) {
 }
 
 function handleBoardSurfaceScroll() {
+  saveBoardViewScrollPosition();
   if (!canShowBoardScrollbar()) {
     hideBoardScrollbar();
     return;

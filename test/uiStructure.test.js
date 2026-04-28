@@ -193,6 +193,15 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /function normalizeBoardView\(boardView\)/);
   assert.match(app, /function getActiveStatusOrder\(\)/);
   assert.match(app, /function saveStatusOrder\(statusOrder\)/);
+  assert.match(app, /viewScrollPositions:\s*createDefaultViewScrollPositions\(\)/);
+  assert.match(app, /function createDefaultViewScrollPositions\(\)/);
+  assert.match(app, /function normalizeViewScrollPositions\(viewScrollPositions\)/);
+  assert.match(app, /function getActiveViewScrollPosition\(view = getActiveBoardView\(\)\)/);
+  assert.match(app, /function saveBoardViewScrollPosition\(view = getActiveBoardView\(\)\)/);
+  assert.match(app, /function restoreBoardViewScrollPosition\(view = getActiveBoardView\(\)\)/);
+  assert.match(app, /saveBoardViewScrollPosition\(boardView\);\s*boardView = normalizedBoardView/s);
+  assert.match(app, /function handleBoardSurfaceScroll\(\)[\s\S]*saveBoardViewScrollPosition\(\);[\s\S]*showBoardScrollbar\(\);/);
+  assert.match(app, /restoreBoardViewScrollPosition\(activeBoardView\)/);
 });
 
 test("saved workspace chrome is bootstrapped before app module hydration", async () => {
