@@ -399,6 +399,11 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /function createTableStatusMenu\(statuses, hiddenStatuses\)/);
   assert.match(app, /function handleTableStatusMenuClick\(event\)/);
   assert.match(app, /function closeTableStatusMenus\(\)/);
+  assert.match(app, /let reopenTableStatusMenuAfterRender = false/);
+  assert.match(app, /reopenTableStatusMenuAfterRender = true/);
+  assert.match(app, /function reopenTableStatusMenuIfNeeded\(\)/);
+  assert.match(app, /reopenTableStatusMenuIfNeeded\(\)/);
+  assert.match(app, /toggleTableStatusMenu\(statusHeader\)/);
   assert.match(app, /item\.dataset\.status/);
   assert.match(app, /toggleStatusVisibility\(item\.dataset\.status\)/);
   assert.match(app, /columnId === "status"/);

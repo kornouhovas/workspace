@@ -103,6 +103,7 @@ let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
+let reopenTableStatusMenuAfterRender = false;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -1237,6 +1238,7 @@ function renderTableView(visibleFolders) {
 
   folderGrid.className = "folder-table";
   folderGrid.replaceChildren(table);
+  reopenTableStatusMenuIfNeeded();
 }
 
 function getTableFolders(visibleFolders) {
@@ -2294,6 +2296,7 @@ function handleTableStatusMenuClick(event) {
   if (item) {
     event.preventDefault();
     event.stopPropagation();
+    reopenTableStatusMenuAfterRender = true;
     toggleStatusVisibility(item.dataset.status);
     return;
   }
@@ -2306,6 +2309,19 @@ function handleTableStatusMenuClick(event) {
   event.preventDefault();
   event.stopPropagation();
   toggleTableStatusMenu(statusHeader);
+}
+
+function reopenTableStatusMenuIfNeeded() {
+  if (!reopenTableStatusMenuAfterRender || getActiveBoardView() !== "table") {
+    reopenTableStatusMenuAfterRender = false;
+    return;
+  }
+
+  reopenTableStatusMenuAfterRender = false;
+  const statusHeader = folderGrid.querySelector('.folder-table-head .folder-table-cell[data-table-column="status"]');
+  if (statusHeader) {
+    toggleTableStatusMenu(statusHeader);
+  }
 }
 
 function toggleTableStatusMenu(statusHeader) {
