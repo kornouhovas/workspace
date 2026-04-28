@@ -861,6 +861,10 @@ input:focus-visible {
   background: rgba(255, 255, 255, 0.045);
 }
 
+.folder-table-row.is-hidden-status-row {
+  opacity: 0.46;
+}
+
 .folder-table-head {
   color: var(--faint);
   font-size: 13px;
@@ -903,6 +907,61 @@ input:focus-visible {
 
 .folder-table-head .folder-table-cell:active {
   cursor: grabbing;
+}
+
+.table-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.has-table-status-menu.is-table-status-menu-open {
+  color: var(--text);
+}
+
+.has-table-status-menu.is-table-status-menu-open .table-status-menu {
+  display: grid;
+}
+
+.table-status-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 35;
+  display: none;
+  min-width: 190px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.table-status-menu[hidden] {
+  display: none;
+}
+
+.table-status-menu-item {
+  display: grid;
+  min-height: 30px;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.table-status-menu-item:hover,
+.table-status-menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.045);
+  outline: 0;
+}
+
+.table-status-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-resize-handle {

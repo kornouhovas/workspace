@@ -289,7 +289,9 @@
 
           if (boardView === "table") {
             folderGrid.className = "folder-table";
-            folderGrid.replaceChildren(createInitialTable(folders, tableColumnOrder, tableColumnWidths));
+            folderGrid.replaceChildren(
+              createInitialTable(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses),
+            );
             return;
           }
 
@@ -329,7 +331,7 @@
             });
         }
 
-        function createInitialTable(folders, tableColumnOrder, tableColumnWidths) {
+        function createInitialTable(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses) {
           const table = document.createElement("div");
           table.className = "folder-table-surface";
           table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
@@ -349,14 +351,20 @@
             ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(null, columnId))),
           );
 
-          table.append(header, ...folders.map((folder) => createInitialTableRow(folder, tableColumnOrder)));
+          table.append(
+            header,
+            ...folders
+              .filter((folder) => showHiddenStatuses || !hiddenStatuses.includes(folder.status))
+              .map((folder) => createInitialTableRow(folder, tableColumnOrder, hiddenStatuses)),
+          );
 
           return table;
         }
 
-        function createInitialTableRow(folder, tableColumnOrder) {
+        function createInitialTableRow(folder, tableColumnOrder, hiddenStatuses = []) {
           const row = document.createElement("div");
           row.className = "folder-table-row";
+          row.classList.toggle("is-hidden-status-row", hiddenStatuses.includes(folder.status));
           row.append(
             ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(folder, columnId))),
           );

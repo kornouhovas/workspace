@@ -258,7 +258,7 @@ test("folder board supports overview board and table renderers", async () => {
   assert.match(app, /function renderBoardView\(visibleFolders\)/);
   assert.match(app, /function renderTableView\(visibleFolders\)/);
   assert.match(app, /function createBoardColumn\(status, statusFolders, options = \{\}\)/);
-  assert.match(app, /function createTableRow\(folder, columnOrder = getActiveTableColumnOrder\(\)\)/);
+  assert.match(app, /function createTableRow\(folder, columnOrder = getActiveTableColumnOrder\(\), options = \{\}\)/);
   assert.match(app, /createFolderCard\(folder, \{ showStatus: false \}\)/);
   assert.match(app, /"Name"/);
   assert.match(app, /"Status"/);
@@ -381,7 +381,39 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
   assert.match(html, /function getStoredTableColumnWidths\(state\)/);
-  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableColumnWidths\)/);
+  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses\)/);
+});
+
+test("table view can hide and unhide status sections", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.match(app, /folderGrid\.addEventListener\("click", handleTableStatusMenuClick\)/);
+  assert.match(app, /document\.addEventListener\("click", handleTableStatusMenuOutsideClick\)/);
+  assert.match(app, /document\.addEventListener\("keydown", handleTableStatusMenuKeydown\)/);
+  assert.match(app, /function getTableFolders\(visibleFolders\)/);
+  assert.match(app, /return visibleFolders\.filter\(\(folder\) => showHiddenStatuses \|\| !hiddenStatuses\.has\(folder\.status\)\)/);
+  assert.match(app, /const tableFolders = getTableFolders\(visibleFolders\)/);
+  assert.match(app, /tableFolders\.map\(\(folder\) => createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\) \}\)\)/);
+  assert.match(app, /function createTableStatusMenu\(statuses, hiddenStatuses\)/);
+  assert.match(app, /function handleTableStatusMenuClick\(event\)/);
+  assert.match(app, /function closeTableStatusMenus\(\)/);
+  assert.match(app, /item\.dataset\.status/);
+  assert.match(app, /toggleStatusVisibility\(item\.dataset\.status\)/);
+  assert.match(app, /columnId === "status"/);
+  assert.match(app, /cell\.classList\.add\("has-table-status-menu"\)/);
+  assert.match(app, /cell\.setAttribute\("aria-haspopup", "menu"\)/);
+  assert.match(app, /cell\.setAttribute\("aria-expanded", "false"\)/);
+  assert.match(app, /createTableStatusMenu\(getOrderedStatuses\(folders\), getActiveHiddenStatuses\(\)\)/);
+  assert.match(app, /row\.classList\.toggle\("is-hidden-status-row", Boolean\(options\.hidden\)\)/);
+  assert.match(html, /createInitialTable\(folders, tableColumnOrder, tableColumnWidths, hiddenStatuses, showHiddenStatuses\)/);
+  assert.match(html, /folders[\s\S]*\.filter\(\(folder\) => showHiddenStatuses \|\| !hiddenStatuses\.includes\(folder\.status\)\)/);
+  assert.match(html, /row\.classList\.toggle\("is-hidden-status-row", hiddenStatuses\.includes\(folder\.status\)\)/);
+  assert.match(css, /\.has-table-status-menu\.is-table-status-menu-open \.table-status-menu\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.table-status-menu\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.table-status-menu-item\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 20px/s);
+  assert.match(css, /\.folder-table-row\.is-hidden-status-row\s*\{[^}]*opacity:\s*0\.46/s);
 });
 
 test("board columns can be reordered by dragging column titles", async () => {

@@ -202,7 +202,9 @@ function bindEvents() {
   boardColumnMenuButton.addEventListener("click", handleBoardColumnMenuToggle);
   toggleHiddenColumnsButton.addEventListener("click", handleToggleHiddenColumns);
   document.addEventListener("click", handleBoardColumnMenuOutsideClick);
+  document.addEventListener("click", handleTableStatusMenuOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
+  document.addEventListener("keydown", handleTableStatusMenuKeydown);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
@@ -219,6 +221,7 @@ function bindEvents() {
   folderGrid.addEventListener("dragend", handleBoardColumnDragEnd);
   folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
   folderGrid.addEventListener("click", handleBoardColumnVisibilityClick);
+  folderGrid.addEventListener("click", handleTableStatusMenuClick);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
   folderGrid.addEventListener("click", handleSettingsTreeClick);
@@ -1217,6 +1220,8 @@ function canShowBoardScrollbar() {
 
 function renderTableView(visibleFolders) {
   const columnOrder = getActiveTableColumnOrder();
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const tableFolders = getTableFolders(visibleFolders);
   const table = document.createElement("div");
   table.className = "folder-table-surface";
   setTableGridTemplate(table);
@@ -1225,10 +1230,20 @@ function renderTableView(visibleFolders) {
   header.className = "folder-table-row folder-table-head";
   header.append(...columnOrder.map(createTableHeaderCell));
 
-  table.append(header, ...visibleFolders.map((folder) => createTableRow(folder, columnOrder)));
+  table.append(
+    header,
+    ...tableFolders.map((folder) => createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status) })),
+  );
 
   folderGrid.className = "folder-table";
   folderGrid.replaceChildren(table);
+}
+
+function getTableFolders(visibleFolders) {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const showHiddenStatuses = getActiveShowHiddenStatuses();
+
+  return visibleFolders.filter((folder) => showHiddenStatuses || !hiddenStatuses.has(folder.status));
 }
 
 function setTableGridTemplate(tableElement) {
@@ -2213,9 +2228,10 @@ function clearTableColumnDragState() {
   });
 }
 
-function createTableRow(folder, columnOrder = getActiveTableColumnOrder()) {
+function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), options = {}) {
   const row = document.createElement("div");
   row.className = "folder-table-row";
+  row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
   row.append(...columnOrder.map((columnId) => createTableCell(getTableCellText(folder, columnId), columnId)));
 
   return row;
@@ -2227,11 +2243,108 @@ function createTableHeaderCell(columnId) {
   cell.type = "button";
   cell.draggable = false;
   cell.dataset.tableColumn = columnId;
-  cell.textContent = tableColumnLabels[columnId];
+
+  const label = document.createElement("span");
+  label.className = "table-header-label";
+  label.textContent = tableColumnLabels[columnId];
+  cell.append(label);
+
+  if (columnId === "status") {
+    cell.classList.add("has-table-status-menu");
+    cell.setAttribute("aria-haspopup", "menu");
+    cell.setAttribute("aria-expanded", "false");
+    cell.append(createTableStatusMenu(getOrderedStatuses(folders), getActiveHiddenStatuses()));
+  }
 
   cell.append(createTableResizeHandle(columnId));
 
   return cell;
+}
+
+function createTableStatusMenu(statuses, hiddenStatuses) {
+  const hiddenStatusSet = new Set(hiddenStatuses);
+  const menu = document.createElement("div");
+  menu.className = "table-status-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  menu.replaceChildren(
+    ...statuses.map((status) => {
+      const item = document.createElement("span");
+      item.className = "table-status-menu-item";
+      item.dataset.status = status;
+      item.setAttribute("role", "menuitem");
+      item.tabIndex = 0;
+
+      const label = document.createElement("span");
+      label.className = "table-status-menu-label";
+      label.textContent = status;
+
+      item.append(label, createEyeIcon(hiddenStatusSet.has(status)));
+
+      return item;
+    }),
+  );
+
+  return menu;
+}
+
+function handleTableStatusMenuClick(event) {
+  const item = event.target.closest(".table-status-menu-item");
+  if (item) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleStatusVisibility(item.dataset.status);
+    return;
+  }
+
+  const statusHeader = event.target.closest('.folder-table-head .folder-table-cell[data-table-column="status"]');
+  if (!statusHeader || event.target.closest(".table-resize-handle") || getActiveBoardView() !== "table") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  toggleTableStatusMenu(statusHeader);
+}
+
+function toggleTableStatusMenu(statusHeader) {
+  const isOpen = statusHeader.classList.contains("is-table-status-menu-open");
+  closeTableStatusMenus();
+  if (isOpen) {
+    return;
+  }
+
+  statusHeader.classList.add("is-table-status-menu-open");
+  statusHeader.setAttribute("aria-expanded", "true");
+  statusHeader.querySelector(".table-status-menu").hidden = false;
+}
+
+function closeTableStatusMenus() {
+  folderGrid.querySelectorAll(".has-table-status-menu").forEach((cell) => {
+    cell.classList.remove("is-table-status-menu-open");
+    cell.setAttribute("aria-expanded", "false");
+    const menu = cell.querySelector(".table-status-menu");
+    if (menu) {
+      menu.hidden = true;
+    }
+  });
+}
+
+function handleTableStatusMenuOutsideClick(event) {
+  if (event.target.closest(".has-table-status-menu")) {
+    return;
+  }
+
+  closeTableStatusMenus();
+}
+
+function handleTableStatusMenuKeydown(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  closeTableStatusMenus();
 }
 
 function createTableResizeHandle(columnId) {
