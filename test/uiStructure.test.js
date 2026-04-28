@@ -299,6 +299,7 @@ test("board views can be added and managed from the active view menu", async () 
   assert.match(css, /\.board-view-option\.is-board-view-preview-left/s);
   assert.match(css, /\.board-view-option\.is-board-view-preview-right/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /\.board-view-drag-image\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*box-shadow:\s*none/s);
   assert.match(app, /dragImage\.className = `\$\{sourceButton\.className\} board-view-drag-image`/);
   assert.match(css, /\.board-add-view-menu\s*,\s*\.board-view-menu-popover\s*\{/);
