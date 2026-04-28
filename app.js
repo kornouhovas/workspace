@@ -24,7 +24,7 @@ const boardViewSwitcher = document.querySelector("#boardViewSwitcher");
 const settingsViewSwitcher = document.querySelector("#settingsViewSwitcher");
 const boardColumnMenuButton = document.querySelector("#boardColumnMenuButton");
 const boardColumnMenuPopover = document.querySelector("#boardColumnMenuPopover");
-const toggleHiddenColumnsButton = document.querySelector("#toggleHiddenColumnsButton");
+const boardColumnMenuStatuses = document.querySelector("#boardColumnMenuStatuses");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
 const boardSurface = document.querySelector(".kanban-board");
@@ -93,18 +93,23 @@ let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
+let draggedBoardColumnMenuStatus = null;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
+let boardColumnMenuPointerDragState = null;
 let tableStatusMenuPointerDragState = null;
 let tableColumnPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
+let boardColumnMenuDragImage = null;
 let tableColumnDragImage = null;
 let tableStatusDragImage = null;
 let workspacePointerDragState = null;
 let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
+let boardColumnMenuSuppressClick = false;
+let boardColumnMenuSuppressClickTimer = null;
 let tableStatusSuppressClick = false;
 let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
@@ -207,7 +212,8 @@ function bindEvents() {
     }
   });
   boardColumnMenuButton.addEventListener("click", handleBoardColumnMenuToggle);
-  toggleHiddenColumnsButton.addEventListener("click", handleToggleHiddenColumns);
+  boardColumnMenuPopover.addEventListener("click", handleBoardColumnMenuClick);
+  boardColumnMenuPopover.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
   document.addEventListener("click", handleBoardColumnMenuOutsideClick);
   document.addEventListener("click", handleTableStatusMenuOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
@@ -235,11 +241,13 @@ function bindEvents() {
   folderGrid.addEventListener("click", handleSettingsTreeClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
+  window.addEventListener("pointermove", handleBoardColumnMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableStatusMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
+  window.addEventListener("pointerup", handleBoardColumnMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableStatusMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
   window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
@@ -279,9 +287,36 @@ function renderBoardViewSwitcher() {
 }
 
 function renderBoardColumnMenu() {
-  toggleHiddenColumnsButton.textContent = getActiveShowHiddenStatuses()
-    ? "Hide hidden columns"
-    : "Show hidden columns";
+  const visibleFolders = filterFolders(folders, searchInput.value);
+  const statuses = getOrderedStatuses(visibleFolders);
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+
+  boardColumnMenuStatuses.replaceChildren(
+    ...statuses.map((status) => createBoardColumnMenuStatusItem(status, hiddenStatuses.has(status))),
+  );
+}
+
+function createBoardColumnMenuStatusItem(status, hidden) {
+  const item = document.createElement("div");
+  item.className = "board-column-menu-status-item";
+  item.dataset.status = status;
+  item.setAttribute("role", "menuitem");
+
+  const label = document.createElement("span");
+  label.className = "board-column-menu-status-label";
+  label.textContent = status;
+
+  const button = document.createElement("button");
+  button.className = "board-column-menu-status-visibility";
+  button.type = "button";
+  button.dataset.status = status;
+  button.setAttribute("aria-label", hidden ? `Show ${status} column` : `Hide ${status} column`);
+  button.setAttribute("aria-pressed", String(hidden));
+  button.append(createEyeIcon(hidden));
+
+  item.append(createTableStatusDragHandle(), label, button);
+
+  return item;
 }
 
 function handleBoardColumnMenuToggle(event) {
@@ -289,10 +324,209 @@ function handleBoardColumnMenuToggle(event) {
   setBoardColumnMenuOpen(boardColumnMenuPopover.hidden);
 }
 
-function handleToggleHiddenColumns(event) {
+function handleBoardColumnMenuClick(event) {
+  if (boardColumnMenuSuppressClick) {
+    boardColumnMenuSuppressClick = false;
+    window.clearTimeout(boardColumnMenuSuppressClickTimer);
+    boardColumnMenuSuppressClickTimer = null;
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  const button = event.target.closest(".board-column-menu-status-visibility");
+  if (!button) {
+    return;
+  }
+
+  event.preventDefault();
   event.stopPropagation();
-  setShowHiddenStatuses(!getActiveShowHiddenStatuses());
-  setBoardColumnMenuOpen(false);
+  toggleStatusVisibility(button.dataset.status);
+  renderBoardColumnMenu();
+}
+
+function handleBoardColumnMenuPointerDragStart(event) {
+  if (event.target.closest(".board-column-menu-status-visibility")) {
+    return;
+  }
+
+  const item = event.target.closest(".board-column-menu-status-item");
+  if (!item) {
+    return;
+  }
+
+  const sourceRect = item.getBoundingClientRect();
+  boardColumnMenuPointerDragState = {
+    status: item.dataset.status,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
+    sourceItem: item,
+    targetItem: item,
+    isDragging: false,
+  };
+  draggedBoardColumnMenuStatus = item.dataset.status;
+  try {
+    item.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleBoardColumnMenuPointerDragMove(event) {
+  if (!boardColumnMenuPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - boardColumnMenuPointerDragState.startX,
+    event.clientY - boardColumnMenuPointerDragState.startY,
+  );
+  if (!boardColumnMenuPointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  const startsDragging = !boardColumnMenuPointerDragState.isDragging;
+  boardColumnMenuPointerDragState.isDragging = true;
+  boardColumnMenuPointerDragState.sourceItem.classList.add("is-board-column-menu-drag-source");
+  if (startsDragging) {
+    createBoardColumnMenuDragImage(boardColumnMenuPointerDragState.sourceItem, event);
+  } else {
+    moveBoardColumnMenuDragImage(event);
+  }
+
+  const targetItem = document
+    .elementFromPoint(event.clientX, event.clientY)
+    ?.closest(".board-column-menu-status-item");
+  if (!targetItem || !boardColumnMenuPopover.contains(targetItem)) {
+    return;
+  }
+
+  boardColumnMenuPointerDragState.targetItem = targetItem;
+  applyBoardColumnMenuPreview(getBoardColumnMenuPreviewOrder(event, targetItem));
+}
+
+function handleBoardColumnMenuPointerDragEnd(event) {
+  if (!boardColumnMenuPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetItem } = boardColumnMenuPointerDragState;
+  if (!isDragging || !targetItem) {
+    boardColumnMenuPointerDragState = null;
+    draggedBoardColumnMenuStatus = null;
+    clearBoardColumnMenuDragState();
+    removeBoardColumnMenuDragImage();
+    return;
+  }
+
+  event.preventDefault();
+  suppressNextBoardColumnMenuClick();
+  const reorderedStatuses = getBoardColumnMenuPreviewOrder(event, targetItem);
+  saveStatusOrder(reorderedStatuses);
+  boardColumnMenuPointerDragState = null;
+  draggedBoardColumnMenuStatus = null;
+  clearBoardColumnMenuDragState();
+  removeBoardColumnMenuDragImage();
+  renderFolders();
+}
+
+function suppressNextBoardColumnMenuClick() {
+  boardColumnMenuSuppressClick = true;
+  window.clearTimeout(boardColumnMenuSuppressClickTimer);
+  boardColumnMenuSuppressClickTimer = window.setTimeout(() => {
+    boardColumnMenuSuppressClick = false;
+    boardColumnMenuSuppressClickTimer = null;
+  }, 0);
+}
+
+function createBoardColumnMenuDragImage(sourceItem, event) {
+  removeBoardColumnMenuDragImage();
+  const sourceRect = sourceItem.getBoundingClientRect();
+  const dragImage = sourceItem.cloneNode(true);
+  dragImage.className = "board-column-menu-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  document.body.append(dragImage);
+  boardColumnMenuDragImage = dragImage;
+  moveBoardColumnMenuDragImage(event);
+}
+
+function moveBoardColumnMenuDragImage(event) {
+  if (!boardColumnMenuDragImage) {
+    return;
+  }
+
+  const offsetX = boardColumnMenuPointerDragState?.dragOffsetX ?? 0;
+  const offsetY = boardColumnMenuPointerDragState?.dragOffsetY ?? 0;
+  boardColumnMenuDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+}
+
+function removeBoardColumnMenuDragImage() {
+  boardColumnMenuDragImage?.remove();
+  boardColumnMenuDragImage = null;
+}
+
+function getBoardColumnMenuPreviewOrder(event, targetItem) {
+  const visibleFolders = filterFolders(folders, searchInput.value);
+  const statusOrder = getOrderedStatuses(visibleFolders);
+  const targetStatus = targetItem.dataset.status;
+  if (!draggedBoardColumnMenuStatus || !targetStatus || targetStatus === draggedBoardColumnMenuStatus) {
+    return statusOrder;
+  }
+
+  const draggedIndex = statusOrder.indexOf(draggedBoardColumnMenuStatus);
+  const targetIndex = statusOrder.indexOf(targetStatus);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return statusOrder;
+  }
+
+  const insertAfterTarget =
+    draggedIndex < targetIndex
+      ? event.clientY > targetRect.top + targetRect.height * 0.25
+      : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+
+  return moveStatusNearTarget(statusOrder, draggedBoardColumnMenuStatus, targetStatus, insertAfterTarget);
+}
+
+function applyBoardColumnMenuPreview(previewStatuses) {
+  const items = [...boardColumnMenuPopover.querySelectorAll(".board-column-menu-status-item")];
+  const menuGap = Number.parseFloat(getComputedStyle(boardColumnMenuStatuses).rowGap) || 0;
+  items.forEach((item, currentIndex) => {
+    const previewIndex = previewStatuses.indexOf(item.dataset.status);
+    const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
+    item.classList.remove("is-board-column-menu-preview-up", "is-board-column-menu-preview-down");
+    item.style.setProperty("--board-column-menu-status-shift", shiftDistance);
+
+    if (item.dataset.status === draggedBoardColumnMenuStatus) {
+      item.classList.add("is-board-column-menu-drag-source");
+      return;
+    }
+
+    if (previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      item.classList.add("is-board-column-menu-preview-up");
+    } else if (previewIndex > currentIndex) {
+      item.classList.add("is-board-column-menu-preview-down");
+    }
+  });
+}
+
+function clearBoardColumnMenuDragState() {
+  boardColumnMenuPopover.querySelectorAll(".board-column-menu-status-item").forEach((item) => {
+    item.classList.remove(
+      "is-board-column-menu-drag-source",
+      "is-board-column-menu-preview-up",
+      "is-board-column-menu-preview-down",
+    );
+    item.style.removeProperty("--board-column-menu-status-shift");
+  });
 }
 
 function handleBoardColumnMenuOutsideClick(event) {
@@ -310,6 +544,10 @@ function handleBoardColumnMenuKeydown(event) {
 }
 
 function setBoardColumnMenuOpen(open) {
+  if (open) {
+    renderBoardColumnMenu();
+  }
+
   boardColumnMenuPopover.hidden = !open;
   boardColumnMenuButton.setAttribute("aria-expanded", String(open));
 }
@@ -1109,6 +1347,7 @@ function renderFolders() {
   workspaceTitleButton.disabled = activeView === "settings";
   workspaceTitleEditButton.hidden = activeView === "settings";
   updateActionStates();
+  renderBoardColumnMenu();
 
   if (activeView === "settings") {
     renderSettingsView();

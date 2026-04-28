@@ -511,20 +511,97 @@ input:focus-visible {
   display: none;
 }
 
-.board-column-menu-option {
+.board-column-menu-section-title {
+  padding: 4px 8px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.board-column-menu-status-list {
+  display: grid;
+  gap: 2px;
+}
+
+.board-column-menu-status-item {
+  display: grid;
+  --board-column-menu-status-shift: 0px;
   width: 100%;
-  min-height: 30px;
+  height: 30px;
+  grid-template-columns: 14px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: grab;
+  padding: 0 8px;
+  transition: transform 140ms ease;
+  user-select: none;
+}
+
+.board-column-menu-status-item:hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.board-column-menu-status-item:active {
+  cursor: grabbing;
+}
+
+.board-column-menu-status-item.is-board-column-menu-drag-source {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.board-column-menu-status-item.is-board-column-menu-preview-up {
+  transform: translateY(calc(-1 * var(--board-column-menu-status-shift)));
+}
+
+.board-column-menu-status-item.is-board-column-menu-preview-down {
+  transform: translateY(var(--board-column-menu-status-shift));
+}
+
+.board-column-menu-status-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-column-menu-drag-image {
+  display: grid;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  height: 30px;
+  grid-template-columns: 14px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1e1e1c;
+  color: var(--text);
+  overflow: hidden;
+  padding: 0 8px;
+  pointer-events: none;
+  user-select: none;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+}
+
+.board-column-menu-status-visibility {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--text);
-  padding: 0 10px;
-  text-align: left;
-  font-size: 13px;
-}
-
-.board-column-menu-option:hover {
-  background: rgba(255, 255, 255, 0.045);
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
 }
 
 .search {
