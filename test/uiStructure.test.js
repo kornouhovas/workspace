@@ -407,6 +407,10 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /item\.dataset\.status/);
   assert.match(app, /toggleStatusVisibility\(item\.dataset\.status\)/);
   assert.match(app, /columnId === "status"/);
+  assert.match(app, /const cell = document\.createElement\("div"\)/);
+  assert.doesNotMatch(app, /const cell = document\.createElement\("button"\)/);
+  assert.match(app, /cell\.setAttribute\("role", "button"\)/);
+  assert.match(app, /cell\.tabIndex = 0/);
   assert.match(app, /cell\.classList\.add\("has-table-status-menu"\)/);
   assert.match(app, /cell\.setAttribute\("aria-haspopup", "menu"\)/);
   assert.match(app, /cell\.setAttribute\("aria-expanded", "false"\)/);

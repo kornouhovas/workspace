@@ -2240,9 +2240,10 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
 }
 
 function createTableHeaderCell(columnId) {
-  const cell = document.createElement("button");
+  const cell = document.createElement("div");
   cell.className = "folder-table-cell";
-  cell.type = "button";
+  cell.setAttribute("role", "button");
+  cell.tabIndex = 0;
   cell.draggable = false;
   cell.dataset.tableColumn = columnId;
 
