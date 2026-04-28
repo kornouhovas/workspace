@@ -103,7 +103,6 @@ let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
-let reopenTableStatusMenuAfterRender = false;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -1238,7 +1237,6 @@ function renderTableView(visibleFolders) {
 
   folderGrid.className = "folder-table";
   folderGrid.replaceChildren(table);
-  reopenTableStatusMenuIfNeeded();
 }
 
 function getTableFolders(visibleFolders) {
@@ -2297,8 +2295,7 @@ function handleTableStatusMenuClick(event) {
   if (item) {
     event.preventDefault();
     event.stopPropagation();
-    reopenTableStatusMenuAfterRender = true;
-    toggleStatusVisibility(item.dataset.status);
+    toggleTableStatusVisibility(item.dataset.status);
     return;
   }
 
@@ -2312,19 +2309,6 @@ function handleTableStatusMenuClick(event) {
   toggleTableStatusMenu(statusHeader);
 }
 
-function reopenTableStatusMenuIfNeeded() {
-  if (!reopenTableStatusMenuAfterRender || getActiveBoardView() !== "table") {
-    reopenTableStatusMenuAfterRender = false;
-    return;
-  }
-
-  reopenTableStatusMenuAfterRender = false;
-  const statusHeader = folderGrid.querySelector('.folder-table-head .folder-table-cell[data-table-column="status"]');
-  if (statusHeader) {
-    toggleTableStatusMenu(statusHeader);
-  }
-}
-
 function toggleTableStatusMenu(statusHeader) {
   const isOpen = statusHeader.classList.contains("is-table-status-menu-open");
   closeTableStatusMenus();
@@ -2335,6 +2319,44 @@ function toggleTableStatusMenu(statusHeader) {
   statusHeader.classList.add("is-table-status-menu-open");
   statusHeader.setAttribute("aria-expanded", "true");
   statusHeader.querySelector(".table-status-menu").hidden = false;
+}
+
+function toggleTableStatusVisibility(status) {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  if (hiddenStatuses.has(status)) {
+    hiddenStatuses.delete(status);
+  } else {
+    hiddenStatuses.add(status);
+  }
+
+  saveHiddenStatuses([...hiddenStatuses]);
+  refreshCurrentTableRows();
+  updateTableStatusMenuItems();
+}
+
+function refreshCurrentTableRows() {
+  const table = folderGrid.querySelector(".folder-table-surface");
+  const header = table?.querySelector(".folder-table-head");
+  if (!table || !header) {
+    renderFolders();
+    return;
+  }
+
+  const columnOrder = getActiveTableColumnOrder();
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const tableFolders = getTableFolders(filterFolders(folders, searchInput.value));
+  table.replaceChildren(
+    header,
+    ...tableFolders.map((folder) => createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status) })),
+  );
+}
+
+function updateTableStatusMenuItems() {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  folderGrid.querySelectorAll(".table-status-menu-item").forEach((item) => {
+    const currentIcon = item.querySelector(".eye-icon");
+    currentIcon?.replaceWith(createEyeIcon(hiddenStatuses.has(item.dataset.status)));
+  });
 }
 
 function closeTableStatusMenus() {
