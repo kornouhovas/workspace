@@ -482,7 +482,12 @@ function createBoardViewDragImage(sourceButton, event) {
   removeBoardViewDragImage();
   const sourceRect = sourceButton.getBoundingClientRect();
   const dragImage = sourceButton.cloneNode(true);
-  dragImage.className = "board-view-drag-image";
+  dragImage.className = `${sourceButton.className} board-view-drag-image`;
+  dragImage.classList.remove(
+    "is-board-view-drag-source",
+    "is-board-view-preview-left",
+    "is-board-view-preview-right",
+  );
   dragImage.style.width = `${sourceRect.width}px`;
   dragImage.style.height = `${sourceRect.height}px`;
   document.body.append(dragImage);

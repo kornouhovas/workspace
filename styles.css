@@ -454,6 +454,7 @@ input:focus-visible {
   padding: 4px 8px;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 16px;
   transition:
     background-color 140ms ease,
     color 140ms ease,
@@ -488,8 +489,8 @@ input:focus-visible {
 
 .board-view-add-button {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   place-items: center;
   border: 0;
   border-radius: 8px;
@@ -517,20 +518,14 @@ input:focus-visible {
 }
 
 .board-view-drag-image {
-  display: grid;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 70;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
-  color: var(--text);
-  padding: 4px 8px;
+  margin: 0;
+  outline: 0;
   pointer-events: none;
-  font-size: 13px;
-  white-space: nowrap;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+  box-shadow: none;
 }
 
 .board-add-view-menu,

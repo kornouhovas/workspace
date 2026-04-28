@@ -292,13 +292,15 @@ test("board views can be added and managed from the active view menu", async () 
   assert.match(app, /createBoardViewMenuAction\("delete", "Delete view"/);
   assert.match(css, /\.board-view-switcher\s*\{[^}]*gap:\s*0/s);
   assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*4px 8px/s);
-  assert.match(css, /\.board-view-add-button\s*\{[^}]*width:\s*30px/s);
-  assert.match(css, /\.board-view-add-button\s*\{[^}]*height:\s*30px/s);
+  assert.match(css, /\.board-view-add-button\s*\{[^}]*width:\s*24px/s);
+  assert.match(css, /\.board-view-add-button\s*\{[^}]*height:\s*24px/s);
   assert.match(css, /\.board-view-add-button\s*\{[^}]*font-size:\s*18px/s);
   assert.match(css, /\.board-view-option\.is-board-view-drag-source\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.board-view-option\.is-board-view-preview-left/s);
   assert.match(css, /\.board-view-option\.is-board-view-preview-right/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /\.board-view-drag-image\s*\{[^}]*box-shadow:\s*none/s);
+  assert.match(app, /dragImage\.className = `\$\{sourceButton\.className\} board-view-drag-image`/);
   assert.match(css, /\.board-add-view-menu\s*,\s*\.board-view-menu-popover\s*\{/);
   assert.match(css, /\.board-view-menu-action\s*\{[^}]*grid-template-columns:\s*16px minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.view-menu-icon\s*\{[^}]*stroke-linejoin:\s*round/s);
