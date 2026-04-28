@@ -63,6 +63,7 @@ const views = {
 const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
 const boardViewIds = ["overview", "board", "table"];
+const addableBoardViewTypes = ["board", "table"];
 const tableColumnIds = ["name", "status"];
 const tableColumnLabels = {
   name: "Name",
@@ -121,12 +122,7 @@ let workspaces = [
     id: "workspace-1",
     name: "Workspace",
     boardView: "overview",
-    statusOrder: [],
-    hiddenStatuses: [],
-    showHiddenStatuses: false,
-    viewScrollPositions: createDefaultViewScrollPositions(),
-    tableColumnOrder: [...tableColumnIds],
-    tableColumnWidths: { ...defaultTableColumnWidths },
+    boardViews: createDefaultBoardViews(),
   },
 ];
 let activeWorkspaceId = "workspace-1";
@@ -208,11 +204,41 @@ function bindEvents() {
   });
 
   boardViewSwitcher.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-board-view]");
+    const statusVisibilityButton = event.target.closest(".board-column-menu-status-visibility");
+    if (statusVisibilityButton) {
+      handleBoardColumnMenuClick(event);
+      return;
+    }
+
+    const addOption = event.target.closest("[data-add-board-view-type]");
+    if (addOption) {
+      addBoardView(addOption.dataset.addBoardViewType);
+      return;
+    }
+
+    const addButton = event.target.closest("#boardAddViewButton");
+    if (addButton) {
+      toggleAddBoardViewMenu();
+      return;
+    }
+
+    const menuAction = event.target.closest("[data-board-view-action]");
+    if (menuAction) {
+      handleBoardViewMenuAction(menuAction.dataset.boardViewAction);
+      return;
+    }
+
+    const button = event.target.closest("[data-board-view-id]");
     if (button) {
-      setBoardView(button.dataset.boardView);
+      if (button.dataset.boardViewId === getActiveBoardViewId()) {
+        toggleBoardViewMenu(button);
+        return;
+      }
+
+      setBoardView(button.dataset.boardViewId);
     }
   });
+  boardViewSwitcher.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
   boardColumnMenuButton.addEventListener("click", handleBoardColumnMenuToggle);
   boardColumnMenuPopover.addEventListener("click", handleBoardColumnMenuClick);
   boardColumnMenuPopover.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
@@ -268,35 +294,389 @@ function setSidebarCollapsed(collapsed, persist = true) {
 }
 
 function setBoardView(nextBoardView) {
-  const normalizedBoardView = normalizeBoardView(nextBoardView);
-  if (normalizedBoardView !== nextBoardView) {
+  const nextView = getBoardViewById(nextBoardView);
+  if (!nextView) {
     return;
   }
 
   saveBoardViewScrollPosition(boardView);
-  boardView = normalizedBoardView;
+  boardView = nextView.id;
+  closeAddBoardViewMenu();
+  closeBoardViewMenu();
   saveBoardView();
   renderBoardViewSwitcher();
   renderFolders();
 }
 
 function renderBoardViewSwitcher() {
-  boardViewSwitcher.querySelectorAll("[data-board-view]").forEach((button) => {
-    const isActive = button.dataset.boardView === boardView;
+  const searchControl = boardViewSwitcher.querySelector(".board-view-search");
+  const settingsControl = boardViewSwitcher.querySelector(".board-view-settings");
+  boardViewSwitcher
+    .querySelectorAll(".board-view-option, .board-view-add-button, .board-add-view-menu, .board-view-menu-popover")
+    .forEach((element) => element.remove());
+
+  getActiveBoardViews().forEach((view) => {
+    const button = document.createElement("button");
+    button.className = "board-view-option";
+    button.type = "button";
+    button.dataset.boardViewId = view.id;
+    button.dataset.boardViewType = view.type;
+    button.textContent = view.name;
+    const isActive = view.id === getActiveBoardViewId();
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+    boardViewSwitcher.insertBefore(button, searchControl);
+  });
+
+  const addButton = document.createElement("button");
+  addButton.className = "board-view-add-button";
+  addButton.id = "boardAddViewButton";
+  addButton.type = "button";
+  addButton.setAttribute("aria-label", "Add view");
+  addButton.textContent = "+";
+  boardViewSwitcher.insertBefore(addButton, searchControl);
+
+  const addMenu = document.createElement("div");
+  addMenu.className = "board-add-view-menu";
+  addMenu.id = "boardAddViewMenu";
+  addMenu.hidden = true;
+  addMenu.replaceChildren(
+    ...addableBoardViewTypes.map((type) => {
+      const option = document.createElement("button");
+      option.className = "board-add-view-option";
+      option.type = "button";
+      option.dataset.addBoardViewType = type;
+      option.textContent = getBoardViewTypeLabel(type);
+      return option;
+    }),
+  );
+  boardViewSwitcher.insertBefore(addMenu, searchControl);
+
+  const viewMenu = createBoardViewMenu();
+  boardViewSwitcher.insertBefore(viewMenu, searchControl);
+
+  if (settingsControl) {
+    settingsControl.hidden = true;
+  }
+
+  boardViewSwitcher.querySelectorAll(".board-view-option").forEach((button) => {
+    const isActive = button.dataset.boardViewId === getActiveBoardViewId();
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
   renderBoardColumnMenu();
 }
 
+function createBoardViewMenu() {
+  const activeViewConfig = getActiveBoardViewConfig();
+  const canDuplicate = activeViewConfig?.type !== "overview";
+  const canDelete = activeViewConfig?.type !== "overview" && getActiveBoardViews().length > 1;
+  const menu = document.createElement("div");
+  menu.className = "board-view-menu-popover";
+  menu.id = "boardViewMenu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  menu.append(
+    createBoardViewMenuAction("rename", "Rename", createMenuIcon("rename"), true),
+    createBoardViewMenuAction("duplicate", "Duplicate view", createMenuIcon("duplicate"), canDuplicate),
+    createBoardViewMenuAction("delete", "Delete view", createMenuIcon("delete"), canDelete),
+    createBoardViewMenuSeparator(),
+    createBoardViewMenuStatusSection(),
+  );
+
+  return menu;
+}
+
+function createBoardViewMenuAction(action, label, icon, enabled) {
+  const button = document.createElement("button");
+  button.className = "board-view-menu-action";
+  button.type = "button";
+  button.dataset.boardViewAction = action;
+  button.disabled = !enabled;
+  button.append(icon, document.createTextNode(label));
+
+  return button;
+}
+
+function createBoardViewMenuSeparator() {
+  const separator = document.createElement("div");
+  separator.className = "board-view-menu-separator";
+  separator.setAttribute("role", "separator");
+
+  return separator;
+}
+
+function createBoardViewMenuStatusSection() {
+  const section = document.createElement("div");
+  section.className = "board-view-menu-status-section";
+
+  const title = document.createElement("div");
+  title.className = "board-column-menu-section-title";
+  title.textContent = "Status";
+
+  const list = document.createElement("div");
+  list.className = "board-column-menu-status-list";
+  list.id = "boardViewMenuStatuses";
+
+  section.append(title, list);
+
+  return section;
+}
+
+function createMenuIcon(type) {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.classList.add("view-menu-icon");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+
+  const paths = {
+    rename: ["M4 20h4l10.5-10.5a2.8 2.8 0 0 0-4-4L4 16v4Z", "M13.5 6.5l4 4"],
+    duplicate: ["M8 8h10v10H8z", "M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"],
+    delete: ["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 14h10l1-14", "M9 7V4h6v3"],
+  };
+
+  (paths[type] || []).forEach((pathData) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  });
+
+  return icon;
+}
+
+function getBoardViewTypeLabel(type) {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function toggleAddBoardViewMenu() {
+  const menu = boardViewSwitcher.querySelector("#boardAddViewMenu");
+  if (!menu) {
+    return;
+  }
+
+  closeBoardViewMenu();
+  const shouldOpen = menu.hidden;
+  menu.hidden = !shouldOpen;
+  if (shouldOpen) {
+    const button = boardViewSwitcher.querySelector("#boardAddViewButton");
+    if (button) {
+      positionBoardViewMenu(button, menu);
+    }
+  }
+}
+
+function closeAddBoardViewMenu() {
+  const menu = boardViewSwitcher.querySelector("#boardAddViewMenu");
+  if (menu) {
+    menu.hidden = true;
+  }
+}
+
+function addBoardView(type) {
+  if (!addableBoardViewTypes.includes(type)) {
+    return;
+  }
+
+  const view = createBoardViewConfig(type, createBoardViewId(), getNextBoardViewName(type));
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          boardView: view.id,
+          boardViews: [...getActiveBoardViews(), view],
+        }
+      : workspace,
+  );
+  boardView = view.id;
+  saveWorkspaceState();
+  renderBoardViewSwitcher();
+  renderFolders();
+}
+
+function createBoardViewId() {
+  let index = 1;
+  let viewId = `view-${index}`;
+  const existingIds = new Set(getActiveBoardViews().map((view) => view.id));
+  while (existingIds.has(viewId)) {
+    index += 1;
+    viewId = `view-${index}`;
+  }
+
+  return viewId;
+}
+
+function getNextBoardViewName(type) {
+  const baseName = getBoardViewTypeLabel(type);
+  const names = new Set(getActiveBoardViews().map((view) => view.name));
+  if (!names.has(baseName)) {
+    return baseName;
+  }
+
+  let index = 2;
+  while (names.has(`${baseName} ${index}`)) {
+    index += 1;
+  }
+
+  return `${baseName} ${index}`;
+}
+
+function toggleBoardViewMenu(button) {
+  const menu = boardViewSwitcher.querySelector("#boardViewMenu");
+  if (!menu) {
+    return;
+  }
+
+  closeAddBoardViewMenu();
+  const shouldOpen = menu.hidden;
+  menu.hidden = !shouldOpen;
+  if (shouldOpen) {
+    renderBoardColumnMenu();
+    positionBoardViewMenu(button, menu);
+  }
+}
+
+function closeBoardViewMenu() {
+  const menu = boardViewSwitcher.querySelector("#boardViewMenu");
+  if (menu) {
+    menu.hidden = true;
+  }
+}
+
+function positionBoardViewMenu(button, menu) {
+  const switcherRect = boardViewSwitcher.getBoundingClientRect();
+  const buttonRect = button.getBoundingClientRect();
+  menu.style.left = `${Math.max(0, buttonRect.left - switcherRect.left)}px`;
+  menu.style.top = `${buttonRect.bottom - switcherRect.top + 6}px`;
+}
+
+function handleBoardViewMenuAction(action) {
+  if (action === "rename") {
+    renameActiveBoardView();
+    return;
+  }
+
+  if (action === "duplicate") {
+    duplicateActiveBoardView();
+    return;
+  }
+
+  if (action === "delete") {
+    deleteActiveBoardView();
+  }
+}
+
+function renameActiveBoardView() {
+  const activeViewConfig = getActiveBoardViewConfig();
+  if (!activeViewConfig) {
+    return;
+  }
+
+  const nextName = window.prompt("Rename view", activeViewConfig.name)?.trim();
+  if (!nextName) {
+    return;
+  }
+
+  updateActiveBoardViewConfig((view) => ({ ...view, name: nextName }));
+  renderBoardViewSwitcher();
+  renderFolders();
+}
+
+function duplicateActiveBoardView() {
+  const activeViewConfig = getActiveBoardViewConfig();
+  if (!activeViewConfig || activeViewConfig.type === "overview") {
+    return;
+  }
+
+  const duplicatedView = {
+    ...structuredCloneBoardView(activeViewConfig),
+    id: createBoardViewId(),
+    name: getDuplicateBoardViewName(activeViewConfig.name),
+  };
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          boardView: duplicatedView.id,
+          boardViews: [...getActiveBoardViews(), duplicatedView],
+        }
+      : workspace,
+  );
+  boardView = duplicatedView.id;
+  saveWorkspaceState();
+  renderBoardViewSwitcher();
+  renderFolders();
+}
+
+function deleteActiveBoardView() {
+  const activeViewConfig = getActiveBoardViewConfig();
+  if (!activeViewConfig || activeViewConfig.type === "overview" || getActiveBoardViews().length <= 1) {
+    return;
+  }
+
+  const nextViews = getActiveBoardViews().filter((view) => view.id !== activeViewConfig.id);
+  const nextActiveView = nextViews[0];
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          boardView: nextActiveView.id,
+          boardViews: nextViews,
+        }
+      : workspace,
+  );
+  boardView = nextActiveView.id;
+  saveWorkspaceState();
+  renderBoardViewSwitcher();
+  renderFolders();
+}
+
+function structuredCloneBoardView(view) {
+  return {
+    ...view,
+    statusOrder: [...view.statusOrder],
+    hiddenStatuses: [...view.hiddenStatuses],
+    scrollPosition: { ...view.scrollPosition },
+    tableColumnOrder: [...view.tableColumnOrder],
+    tableColumnWidths: { ...view.tableColumnWidths },
+  };
+}
+
+function getDuplicateBoardViewName(name) {
+  const baseName = `${name} copy`;
+  const names = new Set(getActiveBoardViews().map((view) => view.name));
+  if (!names.has(baseName)) {
+    return baseName;
+  }
+
+  let index = 2;
+  while (names.has(`${baseName} ${index}`)) {
+    index += 1;
+  }
+
+  return `${baseName} ${index}`;
+}
+
 function renderBoardColumnMenu() {
   const visibleFolders = filterFolders(folders, searchInput.value);
   const statuses = getOrderedStatuses(visibleFolders);
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const statusList = getBoardColumnMenuStatusList();
+  if (!statusList) {
+    return;
+  }
 
-  boardColumnMenuStatuses.replaceChildren(
+  statusList.replaceChildren(
     ...statuses.map((status) => createBoardColumnMenuStatusItem(status, hiddenStatuses.has(status))),
   );
+}
+
+function getBoardColumnMenuStatusList() {
+  return boardViewSwitcher.querySelector("#boardViewMenuStatuses") || boardColumnMenuStatuses;
+}
+
+function getActiveBoardColumnMenu() {
+  return boardViewSwitcher.querySelector("#boardViewMenu") || boardColumnMenuPopover;
 }
 
 function createBoardColumnMenuStatusItem(status, hidden) {
@@ -403,7 +783,8 @@ function handleBoardColumnMenuPointerDragMove(event) {
   const targetItem = document
     .elementFromPoint(event.clientX, event.clientY)
     ?.closest(".board-column-menu-status-item");
-  if (!targetItem || !boardColumnMenuPopover.contains(targetItem)) {
+  const menu = boardColumnMenuPointerDragState.sourceItem.closest(".board-view-menu-popover, .board-column-menu-popover");
+  if (!targetItem || !menu?.contains(targetItem)) {
     return;
   }
 
@@ -496,8 +877,10 @@ function getBoardColumnMenuPreviewOrder(event, targetItem) {
 }
 
 function applyBoardColumnMenuPreview(previewStatuses) {
-  const items = [...boardColumnMenuPopover.querySelectorAll(".board-column-menu-status-item")];
-  const menuGap = Number.parseFloat(getComputedStyle(boardColumnMenuStatuses).rowGap) || 0;
+  const menu = getActiveBoardColumnMenu();
+  const statusList = getBoardColumnMenuStatusList();
+  const items = [...(menu?.querySelectorAll(".board-column-menu-status-item") || [])];
+  const menuGap = Number.parseFloat(getComputedStyle(statusList).rowGap) || 0;
   items.forEach((item, currentIndex) => {
     const previewIndex = previewStatuses.indexOf(item.dataset.status);
     const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
@@ -522,7 +905,7 @@ function applyBoardColumnMenuPreview(previewStatuses) {
 }
 
 function clearBoardColumnMenuDragState() {
-  boardColumnMenuPopover.querySelectorAll(".board-column-menu-status-item").forEach((item) => {
+  getActiveBoardColumnMenu()?.querySelectorAll(".board-column-menu-status-item").forEach((item) => {
     item.classList.remove(
       "is-board-column-menu-drag-source",
       "is-board-column-menu-preview-up",
@@ -533,16 +916,20 @@ function clearBoardColumnMenuDragState() {
 }
 
 function handleBoardColumnMenuOutsideClick(event) {
-  if (event.target.closest(".board-view-settings")) {
+  if (event.target.closest("#boardViewSwitcher")) {
     return;
   }
 
   setBoardColumnMenuOpen(false);
+  closeAddBoardViewMenu();
+  closeBoardViewMenu();
 }
 
 function handleBoardColumnMenuKeydown(event) {
   if (event.key === "Escape") {
     setBoardColumnMenuOpen(false);
+    closeAddBoardViewMenu();
+    closeBoardViewMenu();
   }
 }
 
@@ -586,12 +973,7 @@ function addWorkspace() {
     id: createWorkspaceId(),
     name: `Workspace ${getNextWorkspaceNumber()}`,
     boardView: "overview",
-    statusOrder: [],
-    hiddenStatuses: [],
-    showHiddenStatuses: false,
-    viewScrollPositions: createDefaultViewScrollPositions(),
-    tableColumnOrder: [...tableColumnIds],
-    tableColumnWidths: { ...defaultTableColumnWidths },
+    boardViews: createDefaultBoardViews(),
   };
 
   workspaces.push(workspace);
@@ -863,28 +1245,128 @@ function getActiveWorkspace() {
   return workspaces.find((workspace) => workspace.id === activeWorkspaceId) || workspaces[0];
 }
 
+function createDefaultBoardViews(legacyWorkspace = {}) {
+  const viewScrollPositions = normalizeViewScrollPositions(legacyWorkspace.viewScrollPositions);
+  const baseViewSettings = {
+    statusOrder: legacyWorkspace.statusOrder,
+    hiddenStatuses: legacyWorkspace.hiddenStatuses,
+    showHiddenStatuses: legacyWorkspace.showHiddenStatuses,
+  };
+
+  return boardViewIds.map((type) =>
+    createBoardViewConfig(type, type, getBoardViewTypeLabel(type), {
+      ...baseViewSettings,
+      scrollPosition: viewScrollPositions[type],
+      tableColumnOrder: legacyWorkspace.tableColumnOrder,
+      tableColumnWidths: normalizeTableColumnWidths(legacyWorkspace.tableColumnWidths, legacyWorkspace.tableNameWidth),
+    }),
+  );
+}
+
+function createBoardViewConfig(type, id = type, name = getBoardViewTypeLabel(type), settings = {}) {
+  const normalizedType = normalizeBoardView(type);
+
+  return {
+    id: typeof id === "string" && id.trim() ? id : createBoardViewId(),
+    type: normalizedType,
+    name: typeof name === "string" && name.trim() ? name.trim() : getBoardViewTypeLabel(normalizedType),
+    statusOrder: normalizeStatusList(settings.statusOrder),
+    hiddenStatuses: normalizeStatusList(settings.hiddenStatuses),
+    showHiddenStatuses: settings.showHiddenStatuses === true,
+    scrollPosition: normalizeScrollPosition(settings.scrollPosition),
+    tableColumnOrder: normalizeTableColumnOrder(settings.tableColumnOrder),
+    tableColumnWidths: normalizeTableColumnWidths(settings.tableColumnWidths),
+  };
+}
+
+function normalizeBoardViews(workspace) {
+  const sourceViews = Array.isArray(workspace?.boardViews) ? workspace.boardViews : null;
+  const normalizedViews = [];
+  const usedIds = new Set();
+
+  if (sourceViews) {
+    sourceViews.forEach((view) => {
+      const normalizedView = normalizeBoardViewConfig(view);
+      if (usedIds.has(normalizedView.id)) {
+        normalizedView.id = createUniqueBoardViewId(usedIds);
+      }
+      usedIds.add(normalizedView.id);
+      normalizedViews.push(normalizedView);
+    });
+  } else {
+    createDefaultBoardViews(workspace).forEach((view) => {
+      usedIds.add(view.id);
+      normalizedViews.push(view);
+    });
+  }
+
+  if (!normalizedViews.some((view) => view.type === "overview")) {
+    const overviewView = createBoardViewConfig("overview", "overview", "Overview", workspace);
+    overviewView.id = usedIds.has(overviewView.id) ? createUniqueBoardViewId(usedIds) : overviewView.id;
+    normalizedViews.unshift(overviewView);
+  }
+
+  return normalizedViews;
+}
+
+function normalizeBoardViewConfig(view) {
+  const fallbackType = normalizeBoardView(view?.type || view?.id);
+
+  return createBoardViewConfig(fallbackType, view?.id || fallbackType, view?.name || getBoardViewTypeLabel(fallbackType), view);
+}
+
+function createUniqueBoardViewId(usedIds) {
+  let index = 1;
+  let viewId = `view-${index}`;
+  while (usedIds.has(viewId)) {
+    index += 1;
+    viewId = `view-${index}`;
+  }
+
+  return viewId;
+}
+
+function getActiveBoardViews() {
+  return normalizeBoardViews(getActiveWorkspace());
+}
+
+function getActiveBoardViewConfig() {
+  return getBoardViewById(getActiveBoardViewId()) || getActiveBoardViews()[0];
+}
+
+function getActiveBoardViewId() {
+  const workspace = getActiveWorkspace();
+  const views = normalizeBoardViews(workspace);
+
+  return normalizeActiveBoardViewId(boardView || workspace?.boardView, views);
+}
+
+function getBoardViewById(viewId) {
+  return getActiveBoardViews().find((view) => view.id === viewId);
+}
+
 function getActiveBoardView() {
-  return normalizeBoardView(getActiveWorkspace()?.boardView);
+  return getActiveBoardViewConfig()?.type || "overview";
 }
 
 function getActiveStatusOrder() {
-  const statusOrder = getActiveWorkspace()?.statusOrder;
+  const statusOrder = getActiveBoardViewConfig()?.statusOrder;
 
   return Array.isArray(statusOrder) ? statusOrder.filter((status) => typeof status === "string") : [];
 }
 
 function getActiveHiddenStatuses() {
-  const hiddenStatuses = getActiveWorkspace()?.hiddenStatuses;
+  const hiddenStatuses = getActiveBoardViewConfig()?.hiddenStatuses;
 
   return Array.isArray(hiddenStatuses) ? hiddenStatuses.filter((status) => typeof status === "string") : [];
 }
 
 function getActiveShowHiddenStatuses() {
-  return getActiveWorkspace()?.showHiddenStatuses === true;
+  return getActiveBoardViewConfig()?.showHiddenStatuses === true;
 }
 
 function getActiveTableColumnOrder() {
-  return normalizeTableColumnOrder(getActiveWorkspace()?.tableColumnOrder);
+  return normalizeTableColumnOrder(getActiveBoardViewConfig()?.tableColumnOrder);
 }
 
 function getActiveTableNameWidth() {
@@ -892,13 +1374,30 @@ function getActiveTableNameWidth() {
 }
 
 function getActiveTableColumnWidths() {
-  const workspace = getActiveWorkspace();
+  const activeViewConfig = getActiveBoardViewConfig();
 
-  return normalizeTableColumnWidths(workspace?.tableColumnWidths, workspace?.tableNameWidth);
+  return normalizeTableColumnWidths(activeViewConfig?.tableColumnWidths, activeViewConfig?.tableNameWidth);
 }
 
 function normalizeBoardView(boardView) {
   return boardViews.has(boardView) ? boardView : "overview";
+}
+
+function normalizeActiveBoardViewId(viewId, views = getActiveBoardViews()) {
+  if (views.some((view) => view.id === viewId)) {
+    return viewId;
+  }
+
+  const legacyTypeMatch = views.find((view) => view.type === viewId);
+  if (legacyTypeMatch) {
+    return legacyTypeMatch.id;
+  }
+
+  return views.find((view) => view.type === "overview")?.id || views[0]?.id || "overview";
+}
+
+function normalizeStatusList(statuses) {
+  return Array.isArray(statuses) ? statuses.filter((status) => typeof status === "string") : [];
 }
 
 function normalizeFolderAccessRules(rules, options = {}) {
@@ -1055,17 +1554,11 @@ function loadWorkspaceState() {
     workspaces = storedState.workspaces.map((workspace) => ({
       id: workspace.id,
       name: workspace.name,
-      boardView: normalizeBoardView(workspace.boardView),
-      statusOrder: Array.isArray(workspace.statusOrder)
-        ? workspace.statusOrder.filter((status) => typeof status === "string")
-        : [],
-      hiddenStatuses: Array.isArray(workspace.hiddenStatuses)
-        ? workspace.hiddenStatuses.filter((status) => typeof status === "string")
-        : [],
-      showHiddenStatuses: workspace.showHiddenStatuses === true,
-      viewScrollPositions: normalizeViewScrollPositions(workspace.viewScrollPositions),
-      tableColumnOrder: normalizeTableColumnOrder(workspace.tableColumnOrder),
-      tableColumnWidths: normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
+      boardViews: normalizeBoardViews(workspace),
+    }));
+    workspaces = workspaces.map((workspace, index) => ({
+      ...workspace,
+      boardView: normalizeActiveBoardViewId(storedState.workspaces[index]?.boardView, workspace.boardViews),
     }));
     activeWorkspaceId = workspaces.some((workspace) => workspace.id === storedState.activeWorkspaceId)
       ? storedState.activeWorkspaceId
@@ -1084,7 +1577,7 @@ function loadSidebarState() {
 }
 
 function loadBoardView() {
-  return getActiveBoardView();
+  return normalizeActiveBoardViewId(getActiveWorkspace()?.boardView, getActiveBoardViews());
 }
 
 function saveBoardView() {
@@ -1095,10 +1588,7 @@ function saveBoardView() {
 }
 
 function saveStatusOrder(statusOrder) {
-  workspaces = workspaces.map((workspace) =>
-    workspace.id === activeWorkspaceId ? { ...workspace, statusOrder } : workspace,
-  );
-  saveWorkspaceState();
+  updateActiveBoardViewConfig((view) => ({ ...view, statusOrder: normalizeStatusList(statusOrder) }));
 }
 
 function createDefaultViewScrollPositions() {
@@ -1125,13 +1615,20 @@ function normalizeViewScrollPositions(viewScrollPositions) {
   return defaultPositions;
 }
 
-function getActiveViewScrollPosition(view = getActiveBoardView()) {
-  const positions = normalizeViewScrollPositions(getActiveWorkspace()?.viewScrollPositions);
-  return positions[normalizeBoardView(view)];
+function normalizeScrollPosition(position) {
+  return {
+    top: Number.isFinite(position?.top) ? Math.max(0, position.top) : 0,
+    left: Number.isFinite(position?.left) ? Math.max(0, position.left) : 0,
+  };
 }
 
-function saveBoardViewScrollPosition(view = getActiveBoardView()) {
-  if (!boardViews.has(view)) {
+function getActiveViewScrollPosition(viewId = getActiveBoardViewId()) {
+  const view = getBoardViewById(viewId);
+  return normalizeScrollPosition(view?.scrollPosition);
+}
+
+function saveBoardViewScrollPosition(viewId = getActiveBoardViewId()) {
+  if (!getBoardViewById(viewId)) {
     return;
   }
 
@@ -1140,25 +1637,11 @@ function saveBoardViewScrollPosition(view = getActiveBoardView()) {
     left: boardSurface.scrollLeft,
   };
 
-  workspaces = workspaces.map((workspace) => {
-    if (workspace.id !== activeWorkspaceId) {
-      return workspace;
-    }
-
-    const viewScrollPositions = normalizeViewScrollPositions(workspace.viewScrollPositions);
-    return {
-      ...workspace,
-      viewScrollPositions: {
-        ...viewScrollPositions,
-        [view]: nextPosition,
-      },
-    };
-  });
-  saveWorkspaceState();
+  updateBoardViewConfig(viewId, (view) => ({ ...view, scrollPosition: nextPosition }));
 }
 
-function restoreBoardViewScrollPosition(view = getActiveBoardView()) {
-  const position = getActiveViewScrollPosition(view);
+function restoreBoardViewScrollPosition(viewId = getActiveBoardViewId()) {
+  const position = getActiveViewScrollPosition(viewId);
   boardSurface.scrollTo({
     top: position.top,
     left: position.left,
@@ -1167,19 +1650,11 @@ function restoreBoardViewScrollPosition(view = getActiveBoardView()) {
 }
 
 function saveHiddenStatuses(hiddenStatuses) {
-  workspaces = workspaces.map((workspace) =>
-    workspace.id === activeWorkspaceId
-      ? { ...workspace, hiddenStatuses: hiddenStatuses.filter((status) => typeof status === "string") }
-      : workspace,
-  );
-  saveWorkspaceState();
+  updateActiveBoardViewConfig((view) => ({ ...view, hiddenStatuses: normalizeStatusList(hiddenStatuses) }));
 }
 
 function setShowHiddenStatuses(showHiddenStatuses) {
-  workspaces = workspaces.map((workspace) =>
-    workspace.id === activeWorkspaceId ? { ...workspace, showHiddenStatuses } : workspace,
-  );
-  saveWorkspaceState();
+  updateActiveBoardViewConfig((view) => ({ ...view, showHiddenStatuses }));
   renderBoardColumnMenu();
   renderFolders();
 }
@@ -1197,12 +1672,7 @@ function toggleStatusVisibility(status) {
 }
 
 function saveTableColumnOrder(tableColumnOrder) {
-  workspaces = workspaces.map((workspace) =>
-    workspace.id === activeWorkspaceId
-      ? { ...workspace, tableColumnOrder: normalizeTableColumnOrder(tableColumnOrder) }
-      : workspace,
-  );
-  saveWorkspaceState();
+  updateActiveBoardViewConfig((view) => ({ ...view, tableColumnOrder: normalizeTableColumnOrder(tableColumnOrder) }));
 }
 
 function saveTableNameWidth(tableNameWidth) {
@@ -1214,17 +1684,31 @@ function saveTableColumnWidth(columnId, width) {
     return;
   }
 
-  workspaces = workspaces.map((workspace) =>
-    workspace.id === activeWorkspaceId
-      ? {
-          ...workspace,
-          tableColumnWidths: {
-            ...normalizeTableColumnWidths(workspace.tableColumnWidths, workspace.tableNameWidth),
-            [columnId]: normalizeTableColumnWidth(columnId, width),
-          },
-        }
-      : workspace,
-  );
+  updateActiveBoardViewConfig((view) => ({
+    ...view,
+    tableColumnWidths: {
+      ...normalizeTableColumnWidths(view.tableColumnWidths, view.tableNameWidth),
+      [columnId]: normalizeTableColumnWidth(columnId, width),
+    },
+  }));
+}
+
+function updateActiveBoardViewConfig(updater) {
+  updateBoardViewConfig(getActiveBoardViewId(), updater);
+}
+
+function updateBoardViewConfig(viewId, updater) {
+  workspaces = workspaces.map((workspace) => {
+    if (workspace.id !== activeWorkspaceId) {
+      return workspace;
+    }
+
+    const boardViews = normalizeBoardViews(workspace).map((view) => (view.id === viewId ? updater(view) : view));
+    return {
+      ...workspace,
+      boardViews,
+    };
+  });
   saveWorkspaceState();
 }
 
@@ -1454,6 +1938,7 @@ function renderFolders() {
 
 function renderActiveBoardView(visibleFolders) {
   const activeBoardView = getActiveBoardView();
+  const activeBoardViewId = getActiveBoardViewId();
   const usesHorizontalScroll = activeBoardView === "board";
   boardViewSwitcher.hidden = false;
   settingsViewSwitcher.hidden = true;
@@ -1467,23 +1952,35 @@ function renderActiveBoardView(visibleFolders) {
 
   if (activeBoardView === "board") {
     renderBoardView(visibleFolders);
-    restoreBoardViewScrollPosition(activeBoardView);
+    restoreBoardViewScrollPosition(activeBoardViewId);
     return;
   }
 
   if (activeBoardView === "table") {
     renderTableView(visibleFolders);
-    restoreBoardViewScrollPosition(activeBoardView);
+    restoreBoardViewScrollPosition(activeBoardViewId);
     return;
   }
 
   renderOverviewView(visibleFolders);
-  restoreBoardViewScrollPosition(activeBoardView);
+  restoreBoardViewScrollPosition(activeBoardViewId);
 }
 
 function renderOverviewView(visibleFolders) {
   folderGrid.className = "folder-grid";
-  folderGrid.replaceChildren(...visibleFolders.map((folder) => createFolderCard(folder)));
+  folderGrid.replaceChildren(...getOverviewFolders(visibleFolders).map((folder) => createFolderCard(folder)));
+}
+
+function getOverviewFolders(visibleFolders) {
+  const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const showHiddenStatuses = getActiveShowHiddenStatuses();
+  const statusOrder = getOrderedStatuses(visibleFolders);
+
+  return visibleFolders
+    .filter((folder) => showHiddenStatuses || !hiddenStatuses.has(folder.status))
+    .map((folder, index) => ({ folder, index }))
+    .sort((left, right) => compareFoldersByStatusOrder(left, right, statusOrder))
+    .map(({ folder }) => folder);
 }
 
 function renderBoardView(visibleFolders) {

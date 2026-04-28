@@ -581,62 +581,32 @@
 
         function getStoredBoardView() {
           const state = JSON.parse(localStorage.getItem("workspaces-state"));
-          if (isStoredWorkspaceState(state)) {
-            const activeWorkspace =
-              state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-            const boardView = activeWorkspace.boardView;
-
-            return ["overview", "board", "table"].includes(boardView) ? boardView : "overview";
-          }
-
-          return "overview";
+          return getStoredActiveBoardViewConfig(state).type;
         }
 
         function getStoredStatusOrder(state) {
-          if (!isStoredWorkspaceState(state)) {
-            return [];
-          }
+          const activeView = getStoredActiveBoardViewConfig(state);
 
-          const activeWorkspace =
-            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-
-          return Array.isArray(activeWorkspace.statusOrder)
-            ? activeWorkspace.statusOrder.filter((status) => typeof status === "string")
+          return Array.isArray(activeView.statusOrder)
+            ? activeView.statusOrder.filter((status) => typeof status === "string")
             : [];
         }
 
         function getStoredHiddenStatuses(state) {
-          if (!isStoredWorkspaceState(state)) {
-            return [];
-          }
+          const activeView = getStoredActiveBoardViewConfig(state);
 
-          const activeWorkspace =
-            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-
-          return Array.isArray(activeWorkspace.hiddenStatuses)
-            ? activeWorkspace.hiddenStatuses.filter((status) => typeof status === "string")
+          return Array.isArray(activeView.hiddenStatuses)
+            ? activeView.hiddenStatuses.filter((status) => typeof status === "string")
             : [];
         }
 
         function getStoredShowHiddenStatuses(state) {
-          if (!isStoredWorkspaceState(state)) {
-            return false;
-          }
-
-          const activeWorkspace =
-            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-
-          return activeWorkspace.showHiddenStatuses === true;
+          return getStoredActiveBoardViewConfig(state).showHiddenStatuses === true;
         }
 
         function getStoredTableColumnOrder(state) {
-          if (!isStoredWorkspaceState(state)) {
-            return ["name", "status"];
-          }
-
-          const activeWorkspace =
-            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-          const columnOrder = Array.isArray(activeWorkspace.tableColumnOrder) ? activeWorkspace.tableColumnOrder : [];
+          const activeView = getStoredActiveBoardViewConfig(state);
+          const columnOrder = Array.isArray(activeView.tableColumnOrder) ? activeView.tableColumnOrder : [];
           const normalizedColumns = columnOrder.filter((columnId) => ["name", "status"].includes(columnId));
           const missingColumns = ["name", "status"].filter((columnId) => !normalizedColumns.includes(columnId));
 
@@ -645,17 +615,60 @@
 
         function getStoredTableColumnWidths(state) {
           const defaultWidths = { name: 46, status: 22 };
+          const activeView = getStoredActiveBoardViewConfig(state);
+          const storedWidths = activeView.tableColumnWidths || {};
+
           if (!isStoredWorkspaceState(state)) {
             return defaultWidths;
           }
 
+          return {
+            name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeView.tableNameWidth, 24, 78, 46),
+            status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 22),
+          };
+        }
+
+        function getStoredActiveBoardViewConfig(state) {
+          const fallbackView = {
+            type: "overview",
+            statusOrder: [],
+            hiddenStatuses: [],
+            showHiddenStatuses: false,
+            tableColumnOrder: ["name", "status"],
+            tableColumnWidths: { name: 46, status: 22 },
+          };
+          if (!isStoredWorkspaceState(state)) {
+            return fallbackView;
+          }
+
           const activeWorkspace =
             state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
-          const storedWidths = activeWorkspace.tableColumnWidths || {};
+          const boardViews = Array.isArray(activeWorkspace.boardViews) ? activeWorkspace.boardViews : [];
+          const activeView =
+            boardViews.find((view) => view.id === activeWorkspace.boardView) ||
+            boardViews.find((view) => view.type === activeWorkspace.boardView);
+
+          if (activeView) {
+            return {
+              ...fallbackView,
+              ...activeView,
+              type: ["overview", "board", "table"].includes(activeView.type) ? activeView.type : "overview",
+            };
+          }
+
+          const legacyBoardView = ["overview", "board", "table"].includes(activeWorkspace.boardView)
+            ? activeWorkspace.boardView
+            : "overview";
 
           return {
-            name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeWorkspace.tableNameWidth, 24, 78, 46),
-            status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 22),
+            ...fallbackView,
+            type: legacyBoardView,
+            statusOrder: activeWorkspace.statusOrder,
+            hiddenStatuses: activeWorkspace.hiddenStatuses,
+            showHiddenStatuses: activeWorkspace.showHiddenStatuses,
+            tableColumnOrder: activeWorkspace.tableColumnOrder,
+            tableColumnWidths: activeWorkspace.tableColumnWidths,
+            tableNameWidth: activeWorkspace.tableNameWidth,
           };
         }
 

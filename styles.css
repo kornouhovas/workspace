@@ -429,10 +429,11 @@ input:focus-visible {
 
 .board-view-switcher {
   display: flex;
+  position: relative;
   flex-wrap: wrap;
   width: 100%;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   margin-top: 8px;
   margin-left: 0;
   padding-right: 36px;
@@ -444,11 +445,15 @@ input:focus-visible {
 }
 
 .board-view-option {
+  max-width: 150px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--faint);
   padding: 4px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition:
     background-color 140ms ease,
     color 140ms ease;
@@ -464,6 +469,102 @@ input:focus-visible {
   position: absolute;
   top: 40px;
   right: 0;
+  display: none;
+}
+
+.board-view-add-button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--faint);
+  opacity: 0;
+  padding: 0;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.board-view-switcher:hover .board-view-add-button,
+.board-view-add-button:focus-visible,
+.board-view-add-button[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.board-view-add-button:hover {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+}
+
+.board-add-view-menu,
+.board-view-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 35;
+  min-width: 264px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.board-add-view-menu {
+  left: 0;
+}
+
+.board-add-view-menu[hidden],
+.board-view-menu-popover[hidden] {
+  display: none;
+}
+
+.board-add-view-option,
+.board-view-menu-action {
+  display: grid;
+  width: 100%;
+  min-height: 30px;
+  align-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 0 8px;
+  text-align: left;
+}
+
+.board-add-view-option:hover,
+.board-view-menu-action:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.board-view-menu-action {
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.board-view-menu-action:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.view-menu-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.board-view-menu-separator {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line-soft);
 }
 
 .board-view-settings-button {

@@ -188,20 +188,25 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /localStorage\.setItem\(workspaceStorageKey/);
   assert.match(app, /saveWorkspaceState\(\);\s*renderWorkspaceTabs\(\);/s);
   assert.match(app, /boardView:\s*"overview"/);
-  assert.match(app, /statusOrder:\s*\[\]/);
+  assert.match(app, /boardViews:\s*createDefaultBoardViews\(\)/);
+  assert.match(app, /function createDefaultBoardViews\(legacyWorkspace = \{\}\)/);
+  assert.match(app, /function createBoardViewConfig\(type, id = type, name = getBoardViewTypeLabel\(type\), settings = \{\}\)/);
+  assert.match(app, /function normalizeBoardViews\(workspace\)/);
+  assert.match(app, /function getActiveBoardViews\(\)/);
+  assert.match(app, /function getActiveBoardViewConfig\(\)/);
   assert.match(app, /function getActiveBoardView\(\)/);
   assert.match(app, /function normalizeBoardView\(boardView\)/);
   assert.match(app, /function getActiveStatusOrder\(\)/);
   assert.match(app, /function saveStatusOrder\(statusOrder\)/);
-  assert.match(app, /viewScrollPositions:\s*createDefaultViewScrollPositions\(\)/);
   assert.match(app, /function createDefaultViewScrollPositions\(\)/);
   assert.match(app, /function normalizeViewScrollPositions\(viewScrollPositions\)/);
-  assert.match(app, /function getActiveViewScrollPosition\(view = getActiveBoardView\(\)\)/);
-  assert.match(app, /function saveBoardViewScrollPosition\(view = getActiveBoardView\(\)\)/);
-  assert.match(app, /function restoreBoardViewScrollPosition\(view = getActiveBoardView\(\)\)/);
-  assert.match(app, /saveBoardViewScrollPosition\(boardView\);\s*boardView = normalizedBoardView/s);
+  assert.match(app, /function normalizeScrollPosition\(position\)/);
+  assert.match(app, /function getActiveViewScrollPosition\(viewId = getActiveBoardViewId\(\)\)/);
+  assert.match(app, /function saveBoardViewScrollPosition\(viewId = getActiveBoardViewId\(\)\)/);
+  assert.match(app, /function restoreBoardViewScrollPosition\(viewId = getActiveBoardViewId\(\)\)/);
+  assert.match(app, /saveBoardViewScrollPosition\(boardView\);\s*boardView = nextView\.id/s);
   assert.match(app, /function handleBoardSurfaceScroll\(\)[\s\S]*saveBoardViewScrollPosition\(\);[\s\S]*showBoardScrollbar\(\);/);
-  assert.match(app, /restoreBoardViewScrollPosition\(activeBoardView\)/);
+  assert.match(app, /restoreBoardViewScrollPosition\(activeBoardViewId\)/);
 });
 
 test("saved workspace chrome is bootstrapped before app module hydration", async () => {
@@ -251,6 +256,33 @@ test("topbar exposes per-workspace board view modes instead of folder summary te
   assert.doesNotMatch(app, /localStorage\.setItem\(boardViewStorageKey, boardView\)/);
   assert.match(app, /workspace\.id === activeWorkspaceId \? \{ \.\.\.workspace, boardView \}/);
   assert.match(html, /activeWorkspace\.boardView/);
+});
+
+test("board views can be added and managed from the active view menu", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /const addableBoardViewTypes = \["board", "table"\]/);
+  assert.match(app, /button\.dataset\.boardViewId = view\.id/);
+  assert.match(app, /button\.dataset\.boardViewType = view\.type/);
+  assert.match(app, /addButton\.id = "boardAddViewButton"/);
+  assert.match(app, /option\.dataset\.addBoardViewType = type/);
+  assert.match(app, /function addBoardView\(type\)/);
+  assert.match(app, /function createBoardViewId\(\)/);
+  assert.match(app, /function getNextBoardViewName\(type\)/);
+  assert.match(app, /function toggleBoardViewMenu\(button\)/);
+  assert.match(app, /function handleBoardViewMenuAction\(action\)/);
+  assert.match(app, /function renameActiveBoardView\(\)/);
+  assert.match(app, /function duplicateActiveBoardView\(\)/);
+  assert.match(app, /function deleteActiveBoardView\(\)/);
+  assert.match(app, /data-board-view-action/);
+  assert.match(app, /createBoardViewMenuAction\("rename", "Rename"/);
+  assert.match(app, /createBoardViewMenuAction\("duplicate", "Duplicate view"/);
+  assert.match(app, /createBoardViewMenuAction\("delete", "Delete view"/);
+  assert.match(css, /\.board-view-switcher\s*\{[^}]*gap:\s*2px/s);
+  assert.match(css, /\.board-add-view-menu\s*,\s*\.board-view-menu-popover\s*\{/);
+  assert.match(css, /\.board-view-menu-action\s*\{[^}]*grid-template-columns:\s*16px minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.view-menu-icon\s*\{[^}]*stroke-linejoin:\s*round/s);
 });
 
 test("folder board supports overview board and table renderers", async () => {
@@ -332,8 +364,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /const defaultTableColumnWidths = \{/);
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);
-  assert.match(app, /tableColumnOrder:\s*\[\.\.\.tableColumnIds\]/);
-  assert.match(app, /tableColumnWidths:\s*\{\s*\.\.\.defaultTableColumnWidths\s*\}/s);
+  assert.match(app, /tableColumnOrder:\s*normalizeTableColumnOrder\(settings\.tableColumnOrder\)/);
+  assert.match(app, /tableColumnWidths:\s*normalizeTableColumnWidths\(settings\.tableColumnWidths\)/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
   assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth\)/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
@@ -553,10 +585,10 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
   assert.match(html, /column\.classList\.toggle\("is-hidden-column", hiddenStatuses\.includes\(status\)\)/);
   assert.match(html, /statuses[\s\S]*\.filter\(\(status\) => showHiddenStatuses \|\| !hiddenStatuses\.includes\(status\)\)/);
-  assert.match(app, /hiddenStatuses:\s*\[\]/);
-  assert.match(app, /showHiddenStatuses:\s*false/);
-  assert.match(app, /hiddenStatuses:\s*Array\.isArray\(workspace\.hiddenStatuses\)/);
-  assert.match(app, /showHiddenStatuses:\s*workspace\.showHiddenStatuses === true/);
+  assert.match(app, /hiddenStatuses:\s*normalizeStatusList\(settings\.hiddenStatuses\)/);
+  assert.match(app, /showHiddenStatuses:\s*settings\.showHiddenStatuses === true/);
+  assert.match(app, /function updateActiveBoardViewConfig\(updater\)/);
+  assert.match(app, /function updateBoardViewConfig\(viewId, updater\)/);
   assert.match(app, /function getActiveHiddenStatuses\(\)/);
   assert.match(app, /function getActiveShowHiddenStatuses\(\)/);
   assert.match(app, /function saveHiddenStatuses\(hiddenStatuses\)/);
@@ -567,10 +599,14 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(app, /folderGrid\.addEventListener\("click", handleBoardColumnVisibilityClick\)/);
   assert.match(app, /boardColumnMenuButton\.addEventListener\("click", handleBoardColumnMenuToggle\)/);
   assert.match(app, /boardColumnMenuPopover\.addEventListener\("click", handleBoardColumnMenuClick\)/);
+  assert.match(app, /boardViewSwitcher\.addEventListener\("pointerdown", handleBoardColumnMenuPointerDragStart\)/);
   assert.match(app, /document\.addEventListener\("click", handleBoardColumnMenuOutsideClick\)/);
   assert.match(app, /document\.addEventListener\("keydown", handleBoardColumnMenuKeydown\)/);
   assert.match(app, /function renderBoardColumnMenu\(\)/);
   assert.match(app, /const statuses = getOrderedStatuses\(visibleFolders\)/);
+  assert.match(app, /function createBoardViewMenu\(\)/);
+  assert.match(app, /function createBoardViewMenuStatusSection\(\)/);
+  assert.match(app, /id = "boardViewMenuStatuses"/);
   assert.match(app, /function createBoardColumnMenuStatusItem\(status, hidden\)/);
   assert.match(app, /let boardColumnMenuPointerDragState = null/);
   assert.match(app, /let boardColumnMenuDragImage = null/);
@@ -613,6 +649,10 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(css, /\.search\s*\{[^}]*border-radius:\s*14px/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*right:\s*0/s);
+  assert.match(css, /\.board-view-settings\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.board-view-add-button\s*\{/);
+  assert.match(css, /\.board-view-switcher:hover \.board-view-add-button/s);
+  assert.match(css, /\.board-view-menu-popover\s*\{[^}]*min-width:\s*264px/s);
   assert.match(css, /\.board-column-menu-popover\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-column-menu-popover\s*\{[^}]*min-width:\s*264px/s);
   assert.match(css, /\.board-column-menu-section-title\s*\{/);
