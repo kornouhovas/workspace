@@ -433,7 +433,7 @@ input:focus-visible {
   flex-wrap: wrap;
   width: 100%;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   margin-top: 8px;
   margin-left: 0;
   padding-right: 36px;
@@ -445,24 +445,38 @@ input:focus-visible {
 }
 
 .board-view-option {
+  --board-view-shift: 0px;
   max-width: 150px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--faint);
-  padding: 4px 12px;
+  padding: 4px 8px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   transition:
     background-color 140ms ease,
-    color 140ms ease;
+    color 140ms ease,
+    transform 140ms ease;
+  white-space: nowrap;
 }
 
 .board-view-option:hover,
 .board-view-option.active {
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+}
+
+.board-view-option.is-board-view-drag-source {
+  opacity: 0;
+}
+
+.board-view-option.is-board-view-preview-left {
+  transform: translateX(calc(-1 * var(--board-view-shift)));
+}
+
+.board-view-option.is-board-view-preview-right {
+  transform: translateX(var(--board-view-shift));
 }
 
 .board-view-settings {
@@ -474,13 +488,15 @@ input:focus-visible {
 
 .board-view-add-button {
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--faint);
+  font-size: 18px;
+  line-height: 1;
   opacity: 0;
   padding: 0;
   transition:
@@ -498,6 +514,23 @@ input:focus-visible {
 .board-view-add-button:hover {
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+}
+
+.board-view-drag-image {
+  display: grid;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  padding: 4px 8px;
+  pointer-events: none;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
 }
 
 .board-add-view-menu,

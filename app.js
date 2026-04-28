@@ -101,17 +101,21 @@ let draggedTableColumn = null;
 let boardColumnMenuPointerDragState = null;
 let tableStatusMenuPointerDragState = null;
 let tableColumnPointerDragState = null;
+let boardViewPointerDragState = null;
 let tableResizeState = null;
 let boardColumnDragImage = null;
 let boardColumnMenuDragImage = null;
 let tableColumnDragImage = null;
 let tableStatusDragImage = null;
+let boardViewDragImage = null;
 let workspacePointerDragState = null;
 let workspaceDragImage = null;
 let workspaceSuppressClick = false;
 let workspaceSuppressClickTimer = null;
 let boardColumnMenuSuppressClick = false;
 let boardColumnMenuSuppressClickTimer = null;
+let boardViewSuppressClick = false;
+let boardViewSuppressClickTimer = null;
 let tableStatusSuppressClick = false;
 let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
@@ -204,6 +208,15 @@ function bindEvents() {
   });
 
   boardViewSwitcher.addEventListener("click", (event) => {
+    if (boardViewSuppressClick) {
+      boardViewSuppressClick = false;
+      window.clearTimeout(boardViewSuppressClickTimer);
+      boardViewSuppressClickTimer = null;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     const statusVisibilityButton = event.target.closest(".board-column-menu-status-visibility");
     if (statusVisibilityButton) {
       handleBoardColumnMenuClick(event);
@@ -238,6 +251,7 @@ function bindEvents() {
       setBoardView(button.dataset.boardViewId);
     }
   });
+  boardViewSwitcher.addEventListener("pointerdown", handleBoardViewPointerDragStart);
   boardViewSwitcher.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
   boardColumnMenuButton.addEventListener("click", handleBoardColumnMenuToggle);
   boardColumnMenuPopover.addEventListener("click", handleBoardColumnMenuClick);
@@ -272,12 +286,14 @@ function bindEvents() {
   window.addEventListener("pointermove", handleBoardColumnMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableStatusMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
+  window.addEventListener("pointermove", handleBoardViewPointerDragMove);
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
   window.addEventListener("pointerup", handleBoardColumnMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableStatusMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
+  window.addEventListener("pointerup", handleBoardViewPointerDragEnd);
   window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
@@ -365,6 +381,216 @@ function renderBoardViewSwitcher() {
     button.setAttribute("aria-pressed", String(isActive));
   });
   renderBoardColumnMenu();
+}
+
+function handleBoardViewPointerDragStart(event) {
+  const button = event.target.closest(".board-view-option");
+  if (
+    !button ||
+    button.dataset.boardViewType === "overview" ||
+    event.target.closest(".board-view-menu-popover, .board-add-view-menu, .board-view-search") ||
+    boardViewPointerDragState
+  ) {
+    return;
+  }
+
+  const sourceRect = button.getBoundingClientRect();
+  boardViewPointerDragState = {
+    viewId: button.dataset.boardViewId,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
+    sourceButton: button,
+    targetButton: button,
+    isDragging: false,
+  };
+  try {
+    button.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleBoardViewPointerDragMove(event) {
+  if (!boardViewPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - boardViewPointerDragState.startX,
+    event.clientY - boardViewPointerDragState.startY,
+  );
+  if (!boardViewPointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  const startsDragging = !boardViewPointerDragState.isDragging;
+  boardViewPointerDragState.isDragging = true;
+  boardViewPointerDragState.sourceButton.classList.add("is-board-view-drag-source");
+  closeAddBoardViewMenu();
+  closeBoardViewMenu();
+  if (startsDragging) {
+    createBoardViewDragImage(boardViewPointerDragState.sourceButton, event);
+  } else {
+    moveBoardViewDragImage(event);
+  }
+
+  const targetButton = document.elementFromPoint(event.clientX, event.clientY)?.closest(".board-view-option");
+  if (!targetButton || !boardViewSwitcher.contains(targetButton) || targetButton.dataset.boardViewType === "overview") {
+    return;
+  }
+
+  boardViewPointerDragState.targetButton = targetButton;
+  applyBoardViewOrderPreview(getBoardViewPreviewOrder(event, targetButton));
+}
+
+function handleBoardViewPointerDragEnd(event) {
+  if (!boardViewPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetButton } = boardViewPointerDragState;
+  if (!isDragging || !targetButton) {
+    boardViewPointerDragState = null;
+    clearBoardViewDragState();
+    removeBoardViewDragImage();
+    return;
+  }
+
+  event.preventDefault();
+  suppressNextBoardViewClick();
+  const boardViewIds = getBoardViewPreviewOrder(event, targetButton);
+  saveBoardViewOrder(boardViewIds);
+  boardViewPointerDragState = null;
+  clearBoardViewDragState();
+  removeBoardViewDragImage();
+  renderBoardViewSwitcher();
+}
+
+function suppressNextBoardViewClick() {
+  boardViewSuppressClick = true;
+  window.clearTimeout(boardViewSuppressClickTimer);
+  boardViewSuppressClickTimer = window.setTimeout(() => {
+    boardViewSuppressClick = false;
+    boardViewSuppressClickTimer = null;
+  }, 0);
+}
+
+function createBoardViewDragImage(sourceButton, event) {
+  removeBoardViewDragImage();
+  const sourceRect = sourceButton.getBoundingClientRect();
+  const dragImage = sourceButton.cloneNode(true);
+  dragImage.className = "board-view-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  document.body.append(dragImage);
+  boardViewDragImage = dragImage;
+  moveBoardViewDragImage(event);
+}
+
+function moveBoardViewDragImage(event) {
+  if (!boardViewDragImage) {
+    return;
+  }
+
+  const offsetX = boardViewPointerDragState?.dragOffsetX ?? 0;
+  const offsetY = boardViewPointerDragState?.dragOffsetY ?? 0;
+  boardViewDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+}
+
+function removeBoardViewDragImage() {
+  boardViewDragImage?.remove();
+  boardViewDragImage = null;
+}
+
+function getBoardViewPreviewOrder(event, targetButton) {
+  const viewIds = getActiveBoardViews().map((view) => view.id);
+  const movedViewId = boardViewPointerDragState?.viewId;
+  const targetViewId = targetButton.dataset.boardViewId;
+  const targetView = getBoardViewById(targetViewId);
+  if (!movedViewId || !targetViewId || movedViewId === targetViewId || targetView?.type === "overview") {
+    return viewIds;
+  }
+
+  const draggedIndex = viewIds.indexOf(movedViewId);
+  const targetIndex = viewIds.indexOf(targetViewId);
+  const targetRect = targetButton.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return viewIds;
+  }
+
+  const insertAfterTarget =
+    draggedIndex < targetIndex
+      ? event.clientX > targetRect.left + targetRect.width * 0.25
+      : event.clientX > targetRect.right - targetRect.width * 0.25;
+
+  const reorderedIds = moveStatusNearTarget(viewIds, movedViewId, targetViewId, insertAfterTarget);
+  const overviewId = getActiveBoardViews().find((view) => view.type === "overview")?.id;
+  if (!overviewId) {
+    return reorderedIds;
+  }
+
+  return [overviewId, ...reorderedIds.filter((viewId) => viewId !== overviewId)];
+}
+
+function applyBoardViewOrderPreview(previewViewIds) {
+  const buttons = [...boardViewSwitcher.querySelectorAll(".board-view-option")];
+  const switcherGap = Number.parseFloat(getComputedStyle(boardViewSwitcher).columnGap) || 0;
+  buttons.forEach((button, currentIndex) => {
+    const previewIndex = previewViewIds.indexOf(button.dataset.boardViewId);
+    const shiftDistance = `${button.getBoundingClientRect().width + switcherGap}px`;
+    button.classList.remove("is-board-view-preview-left", "is-board-view-preview-right");
+    button.style.setProperty("--board-view-shift", shiftDistance);
+
+    if (button.dataset.boardViewId === boardViewPointerDragState?.viewId) {
+      button.classList.add("is-board-view-drag-source");
+      return;
+    }
+
+    if (button.dataset.boardViewType === "overview" || previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      button.classList.add("is-board-view-preview-left");
+    } else if (previewIndex > currentIndex) {
+      button.classList.add("is-board-view-preview-right");
+    }
+  });
+}
+
+function clearBoardViewDragState() {
+  boardViewSwitcher.querySelectorAll(".board-view-option").forEach((button) => {
+    button.classList.remove(
+      "is-board-view-drag-source",
+      "is-board-view-preview-left",
+      "is-board-view-preview-right",
+    );
+    button.style.removeProperty("--board-view-shift");
+  });
+}
+
+function saveBoardViewOrder(viewIds) {
+  workspaces = workspaces.map((workspace) => {
+    if (workspace.id !== activeWorkspaceId) {
+      return workspace;
+    }
+
+    const views = normalizeBoardViews(workspace);
+    const viewById = new Map(views.map((view) => [view.id, view]));
+    const overview = views.find((view) => view.type === "overview");
+    const orderedViews = viewIds.map((viewId) => viewById.get(viewId)).filter(Boolean);
+    const missingViews = views.filter((view) => !viewIds.includes(view.id));
+    const nextViews = [...orderedViews, ...missingViews];
+
+    return {
+      ...workspace,
+      boardViews: overview ? [overview, ...nextViews.filter((view) => view.id !== overview.id)] : nextViews,
+    };
+  });
+  saveWorkspaceState();
 }
 
 function createBoardViewMenu() {
