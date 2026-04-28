@@ -108,6 +108,10 @@
               <button class="board-view-option active" type="button" data-board-view="overview">Overview</button>
               <button class="board-view-option" type="button" data-board-view="board">Board</button>
               <button class="board-view-option" type="button" data-board-view="table">Table</button>
+              <label class="search board-view-search">
+                <span class="search-icon" aria-hidden="true"></span>
+                <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
+              </label>
               <div class="board-view-settings">
                 <button
                   class="board-view-settings-button"
@@ -137,14 +141,6 @@
               <button class="board-view-option" type="button" disabled>Rules</button>
               <button class="board-view-option" type="button" disabled>Storage</button>
             </div>
-          </div>
-
-          <div class="topbar-actions">
-            <label class="search">
-              <span class="search-icon" aria-hidden="true"></span>
-              <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
-            </label>
-            <button class="primary-button" id="chooseFolderButton" type="button">Choose folder</button>
           </div>
         </header>
 

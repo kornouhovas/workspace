@@ -25,7 +25,6 @@ const settingsViewSwitcher = document.querySelector("#settingsViewSwitcher");
 const boardColumnMenuButton = document.querySelector("#boardColumnMenuButton");
 const boardColumnMenuPopover = document.querySelector("#boardColumnMenuPopover");
 const toggleHiddenColumnsButton = document.querySelector("#toggleHiddenColumnsButton");
-const chooseFolderButton = document.querySelector("#chooseFolderButton");
 const restoreButton = document.querySelector("#restoreButton");
 const searchInput = document.querySelector("#searchInput");
 const boardSurface = document.querySelector(".kanban-board");
@@ -131,7 +130,6 @@ async function initializeApp() {
   try {
     if (!supportsDirectoryPicker) {
       setStatus("Folder selection requires a Chromium browser with File System Access API.", "error");
-      chooseFolderButton.disabled = true;
       updateActionStates();
       renderFolders();
       return;
@@ -205,7 +203,6 @@ function bindEvents() {
   toggleHiddenColumnsButton.addEventListener("click", handleToggleHiddenColumns);
   document.addEventListener("click", handleBoardColumnMenuOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
-  chooseFolderButton.addEventListener("click", chooseFolder);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);

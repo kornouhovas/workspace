@@ -24,11 +24,14 @@ test("mobile layout keeps navigation as a left rail instead of a top bar", async
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.sidebar-collapsed \.main\s*\{[\s\S]*margin-left:\s*0/s);
 });
 
-test("folder picker has one primary click target in the initial view", async () => {
+test("folder picker is only exposed from settings", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-  assert.equal(html.match(/Choose folder/g)?.length, 1);
+  assert.equal(html.includes("id=\"chooseFolderButton\""), false);
+  assert.equal(html.includes("Choose folder"), false);
+  assert.equal(app.includes("chooseFolderButton"), false);
+  assert.match(app, /changeButton\.textContent = selectedHandle \? "Change" : "Choose folder"/);
   assert.equal(html.includes("Refresh"), false);
   assert.equal(html.includes("refreshButton"), false);
   assert.equal(app.includes("refreshButton"), false);
@@ -229,6 +232,7 @@ test("topbar exposes per-workspace board view modes instead of folder summary te
   assert.match(html, /data-board-view="overview"[^>]*>Overview</);
   assert.match(html, /data-board-view="board"[^>]*>Board</);
   assert.match(html, /data-board-view="table"[^>]*>Table</);
+  assert.match(html, /data-board-view="table"[\s\S]*class="search board-view-search"[\s\S]*id="boardColumnMenuButton"/);
   assert.doesNotMatch(html, /id="totalFolders"/);
   assert.doesNotMatch(html, /id="rootLabel"/);
   assert.match(html, /function hydrateSavedBoardViewState\(\)/);
@@ -472,6 +476,9 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(html, /class="settings-gear"[\s\S]*viewBox="0 0 24 24"/);
   assert.match(css, /\.topbar\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.board-view-switcher\s*\{[^}]*padding-right:\s*36px/s);
+  assert.match(css, /\.board-view-search\s*\{[^}]*margin-left:\s*auto/s);
+  assert.match(css, /\.search\s*\{[^}]*height:\s*28px/s);
+  assert.match(css, /\.search\s*\{[^}]*border-radius:\s*14px/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.board-column-menu-popover\s*\{[^}]*position:\s*absolute/s);

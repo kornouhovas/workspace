@@ -527,23 +527,21 @@ input:focus-visible {
   background: rgba(255, 255, 255, 0.045);
 }
 
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .search {
   display: flex;
-  width: 240px;
-  height: 32px;
+  width: 220px;
+  height: 28px;
   align-items: center;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 14px;
   background: #171716;
   color: var(--faint);
   padding: 0 11px;
+}
+
+.board-view-search {
+  margin-left: auto;
 }
 
 .search-icon {
@@ -1485,7 +1483,6 @@ button.settings-tree-role-option {
   }
 
   .topbar,
-  .topbar-actions,
   .board-toolbar {
     align-items: stretch;
     flex-direction: column;
