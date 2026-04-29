@@ -3903,7 +3903,7 @@ function handleTableColumnDragStart(event) {
   if (
     !cell ||
     event.target.closest(".table-resize-handle") ||
-    event.target.closest(".table-status-menu") ||
+    event.target.closest(".table-status-menu, .table-text-menu") ||
     getActiveBoardView() !== "table"
   ) {
     return;
@@ -3957,7 +3957,7 @@ function handleTableColumnPointerDragStart(event) {
   if (
     !cell ||
     event.target.closest(".table-resize-handle") ||
-    event.target.closest(".table-status-menu") ||
+    event.target.closest(".table-status-menu, .table-text-menu") ||
     tableResizeState ||
     tableColumnPointerDragState ||
     getActiveBoardView() !== "table"

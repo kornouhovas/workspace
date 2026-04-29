@@ -1149,6 +1149,30 @@ textarea.table-text-input {
   white-space: normal;
 }
 
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"] {
+  position: relative;
+  overflow: visible;
+}
+
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::before,
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::after {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 1px;
+  background: var(--line);
+  content: "";
+  pointer-events: none;
+}
+
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::before {
+  left: 0;
+}
+
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::after {
+  right: 0;
+}
+
 .folder-table-head .folder-table-cell {
   display: flex;
   position: relative;
@@ -1533,6 +1557,11 @@ textarea.table-text-input {
   padding: 22px 24px;
 }
 
+.card-place-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .card-place-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 32px;
@@ -1602,33 +1631,36 @@ textarea.table-text-input {
 }
 
 .card-place-text-section {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
   gap: 10px;
+  width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .card-place-text {
   box-sizing: border-box;
   width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
-  max-width: 100%;
-  min-height: 42px;
+  max-width: max(120px, calc(var(--card-place-width, 50vw) - 88px));
+  justify-self: start;
+  min-height: 20px;
   overflow: hidden;
   resize: none;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #171716;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
-  padding: 10px 11px;
+  padding: 0;
   font: inherit;
   line-height: 1.35;
   outline: 0;
 }
 
 .card-place-text:focus {
-  border-color: color-mix(in srgb, var(--text) 34%, var(--line));
+  border-color: transparent;
 }
 
 .card-place-text::placeholder {
@@ -1649,6 +1681,7 @@ textarea.table-text-input {
 
 .card-place-folder-list {
   display: grid;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
