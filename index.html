@@ -559,9 +559,12 @@
         function createInitialTableRow(folder, tableColumnOrder, hiddenStatuses = []) {
           const row = document.createElement("div");
           row.className = "folder-table-row";
+          row.dataset.folderPath = folder.path || folder.name;
           row.classList.toggle("is-hidden-status-row", hiddenStatuses.includes(folder.status));
           row.append(
-            ...tableColumnOrder.map((columnId) => createInitialTableCell(getInitialTableCellText(folder, columnId))),
+            ...tableColumnOrder.map((columnId) =>
+              createInitialTableCell(getInitialTableCellText(folder, columnId), columnId),
+            ),
           );
 
           return row;
@@ -575,9 +578,10 @@
           return folder?.name || "Name";
         }
 
-        function createInitialTableCell(text) {
+        function createInitialTableCell(text, columnId) {
           const cell = document.createElement("span");
           cell.className = "folder-table-cell";
+          cell.dataset.tableColumn = columnId;
           cell.textContent = text;
 
           return cell;
@@ -586,6 +590,7 @@
         function createInitialFolderCard(folder, options = {}) {
           const card = document.createElement("article");
           card.className = "folder-card";
+          card.dataset.folderPath = folder.path || folder.name;
 
           const title = document.createElement("h2");
           title.textContent = folder.name;

@@ -89,6 +89,7 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(css, /\.settings-tree-role-option\.is-card\s*\{/);
   assert.match(css, /\.settings-tree-role-option\.is-group\s*\{/);
   assert.match(css, /\.board-view-switcher\[hidden\]\s*\{[^}]*display:\s*none/s);
+  assert.doesNotMatch(css, /\.board-column-menu-section-title\s*\{[^}]*text-transform:\s*uppercase/s);
 });
 
 test("sidebar navigation exposes view state and mouse titles", async () => {
@@ -229,6 +230,7 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(app, /const boardSnapshotStorageKey = "folder-board-snapshot"/);
   assert.match(app, /function saveBoardSnapshot\(\)/);
   assert.match(app, /localStorage\.setItem\(boardSnapshotStorageKey/);
+  assert.match(app, /path:\s*folder\.path/);
   assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
@@ -236,6 +238,10 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
     html,
     /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*\)/,
   );
+  assert.match(html, /card\.dataset\.folderPath = folder\.path \|\| folder\.name/);
+  assert.match(html, /row\.dataset\.folderPath = folder\.path \|\| folder\.name/);
+  assert.match(html, /createInitialTableCell\(getInitialTableCellText\(folder, columnId\), columnId\)/);
+  assert.match(html, /cell\.dataset\.tableColumn = columnId/);
   assert.match(html, /function getStoredStatusOrder\(state\)/);
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
   assert.equal(html.includes("sidebarFolderCount"), false);
@@ -428,8 +434,11 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
   assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
-  assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\)/s);
-  assert.match(css, /\.card-place-field p\s*\{[^}]*text-align:\s*right/s);
+  assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto auto/s);
+  assert.match(css, /\.card-place-field\s*\{[^}]*justify-content:\s*start/s);
+  assert.match(css, /\.card-place-field\s*\{[^}]*gap:\s*6px/s);
+  assert.match(css, /\.card-place-field \.eyebrow\s*\{[^}]*text-transform:\s*none/s);
+  assert.doesNotMatch(css, /\.card-place-field p\s*\{[^}]*text-align:\s*right/s);
   assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);
 });

@@ -3955,6 +3955,7 @@ function saveBoardSnapshot() {
     rootName: selectedHandle.name,
     folders: folders.map((folder) => ({
       name: folder.name,
+      path: folder.path,
       status: folder.status,
     })),
   };
