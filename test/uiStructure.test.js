@@ -272,6 +272,7 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /const cardPlaceTextLabel = document\.querySelector\('\[for="cardPlaceText"\]'\)/);
   assert.match(app, /function getTextPropertyLabel\(\)/);
   assert.match(app, /cardPlaceTextLabel\.textContent = getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceTextLabel\.title = getTextPropertyLabel\(\)/);
   assert.match(app, /cardPlaceText\.placeholder = getTextPropertyLabel\(\)/);
   assert.match(app, /hidden \? `Show \$\{getTableColumnLabel\(columnId\)\} property` : `Hide \$\{getTableColumnLabel\(columnId\)\} property`/);
   assert.match(app, /control\.spellcheck = false/);
@@ -293,6 +294,10 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.card-place-text-section\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*hidden/s);
   assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.35/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*max-width:\s*15ch/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*text-overflow:\s*clip/s);
   assert.match(css, /\.card-place-content\s*\{[^}]*min-width:\s*0/s);
   assert.match(css, /\.card-place-content\s*\{[^}]*overflow-x:\s*hidden/s);
   assert.match(css, /\.card-place-content > \*\s*\{[^}]*max-width:\s*100%/s);

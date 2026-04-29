@@ -1714,6 +1714,13 @@ textarea.table-text-input {
   line-height: 1.35;
 }
 
+.card-place-text-section .card-place-section-title {
+  max-width: 15ch;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
 .card-place-folder-list {
   display: grid;
   min-width: 0;

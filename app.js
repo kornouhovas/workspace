@@ -2594,6 +2594,7 @@ function renderCardPlacePanel() {
   cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
   cardPlaceTextLabel.textContent = getTextPropertyLabel();
+  cardPlaceTextLabel.title = getTextPropertyLabel();
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
   cardPlaceText.value = "";
