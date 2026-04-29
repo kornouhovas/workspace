@@ -240,7 +240,7 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
   assert.match(
     html,
-    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*\)/,
+    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*\)/,
   );
   assert.match(html, /card\.dataset\.folderPath = folder\.path \|\| folder\.name/);
   assert.match(html, /row\.dataset\.folderPath = folder\.path \|\| folder\.name/);
@@ -257,14 +257,26 @@ test("table and card place expose editable text property UI", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
   assert.match(html, /id="cardPlaceText"/);
+  assert.match(html, /rows="1"/);
   assert.match(html, /aria-label="Text"/);
   assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
   assert.match(app, /text:\s*"Text"/);
+  assert.match(app, /text:\s*21/);
   assert.match(app, /Property visibility in table/);
   assert.match(app, /function createTablePropertyMenu/);
   assert.match(app, /function saveTableHiddenColumns/);
+  assert.match(app, /function createTableTextMenu/);
+  assert.match(app, /function startTableColumnRename/);
+  assert.match(app, /function toggleTableTextWrap/);
+  assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
   assert.match(app, /postJson\("\/api\/properties"/);
   assert.match(css, /\.card-place-text/);
+  assert.match(css, /\.card-place-text\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-content\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.card-place-content\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(css, /\.table-text-menu/);
+  assert.match(css, /\.folder-table-row\.is-text-wrapped/);
   assert.match(css, /\.table-property-menu-section-title/);
 });
 
@@ -528,7 +540,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);
   assert.match(app, /tableColumnOrder:\s*normalizeTableColumnOrder\(settings\.tableColumnOrder\)/);
-  assert.match(app, /tableColumnWidths:\s*normalizeTableColumnWidths\(settings\.tableColumnWidths\)/);
+  assert.match(app, /tableColumnWidths:\s*normalizeBoardViewTableColumnWidths\(settings\)/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
   assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth\)/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
@@ -584,7 +596,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
   assert.match(html, /function getStoredTableColumnWidths\(state\)/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
+  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
 });
 
 test("table view can hide and unhide status sections", async () => {
@@ -605,7 +617,7 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /compareFoldersByStatusOrder\(left, right, statusOrder\)/);
   assert.match(app, /function compareFoldersByStatusOrder\(left, right, statusOrder\)/);
   assert.match(app, /const tableFolders = getTableFolders\(visibleFolders\)/);
-  assert.match(app, /tableFolders\.map\(\(folder\) => createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\) \}\)\)/);
+  assert.match(app, /tableFolders\.map\(\(folder\) =>\s*createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\), textWrapped \}\),\s*\)/);
   assert.match(app, /function createTableStatusMenu\(statuses, hiddenStatuses\)/);
   assert.match(app, /let draggedTableMenuStatus = null/);
   assert.match(app, /function createTableStatusDragHandle\(\)/);
@@ -648,8 +660,8 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /cell\.setAttribute\("aria-expanded", "false"\)/);
   assert.match(app, /createTableStatusMenu\(getOrderedStatuses\(folders\), getActiveHiddenStatuses\(\)\)/);
   assert.match(app, /row\.classList\.toggle\("is-hidden-status-row", Boolean\(options\.hidden\)\)/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
-  assert.match(html, /function createInitialTableHeaderCell\(columnId, folders, statusOrder, hiddenStatuses\)/);
+  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
+  assert.match(html, /function createInitialTableHeaderCell\(columnId, folders, statusOrder, hiddenStatuses, tableColumnLabels = \{\}\)/);
   assert.match(html, /cell\.dataset\.tableColumn = columnId/);
   assert.match(html, /cell\.classList\.add\("has-table-status-menu"\)/);
   assert.match(html, /function createInitialTableStatusMenu\(statuses, hiddenStatuses\)/);
