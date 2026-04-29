@@ -2515,12 +2515,50 @@ async function openCardPlaceFile(path) {
   try {
     const fileHandle = await getFileHandleByPath(selectedHandle, path);
     const file = await fileHandle.getFile();
-    const fileUrl = URL.createObjectURL(file);
+    const fileUrl = URL.createObjectURL(createPreviewFileBlob(file));
     window.open(fileUrl, "_blank", "noopener");
     window.setTimeout(() => URL.revokeObjectURL(fileUrl), 30000);
   } catch (error) {
     setStatus("Could not open file.", "error");
   }
+}
+
+function createPreviewFileBlob(file) {
+  const previewType = file.type || getPreviewMimeType(file.name);
+  if (!previewType || previewType === file.type) {
+    return file;
+  }
+
+  return new Blob([file], { type: previewType });
+}
+
+function getPreviewMimeType(fileName) {
+  const extension = fileName.toLowerCase().split(".").pop();
+  const mimeTypes = {
+    avif: "image/avif",
+    css: "text/css",
+    csv: "text/csv",
+    gif: "image/gif",
+    htm: "text/html",
+    html: "text/html",
+    jpeg: "image/jpeg",
+    jpg: "image/jpeg",
+    js: "text/javascript",
+    json: "application/json",
+    md: "text/markdown",
+    mov: "video/quicktime",
+    mp3: "audio/mpeg",
+    mp4: "video/mp4",
+    pdf: "application/pdf",
+    png: "image/png",
+    svg: "image/svg+xml",
+    txt: "text/plain",
+    webm: "video/webm",
+    webp: "image/webp",
+    xml: "application/xml",
+  };
+
+  return mimeTypes[extension] || "";
 }
 
 function findCardPlaceEntryByPath(path) {

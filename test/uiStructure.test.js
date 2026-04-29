@@ -436,7 +436,10 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function handleCardPlaceEntryClick\(event\)/);
   assert.match(app, /function toggleCardPlaceDirectory\(path\)/);
   assert.match(app, /function openCardPlaceFile\(path\)/);
-  assert.match(app, /URL\.createObjectURL\(file\)/);
+  assert.match(app, /function createPreviewFileBlob\(file\)/);
+  assert.match(app, /function getPreviewMimeType\(fileName\)/);
+  assert.match(app, /new Blob\(\[file\], \{ type: previewType \}\)/);
+  assert.match(app, /URL\.createObjectURL\(createPreviewFileBlob\(file\)\)/);
   assert.match(app, /window\.open\(fileUrl, "_blank", "noopener"\)/);
   assert.match(app, /function normalizeCardPlaceWidth\(width\)/);
   assert.match(app, /function getActiveCardPlaceWidth\(\)/);
@@ -467,6 +470,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.doesNotMatch(css, /\.card-place-entry\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.card-place-entry-chevron\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
+  assert.match(css, /\.card-place-entry-icon\.is-directory::after\s*\{/);
+  assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*linear-gradient/s);
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
