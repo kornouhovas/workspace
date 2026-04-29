@@ -472,6 +472,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory::after\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*linear-gradient/s);
+  assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory::before\s*\{[^}]*z-index:\s*-1/s);
+  assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*box-shadow:/s);
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
