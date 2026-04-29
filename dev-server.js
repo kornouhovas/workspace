@@ -2,10 +2,18 @@ import { createReadStream, existsSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { createRevealResponse } from "./src/localOpen.js";
+import {
+  createFileResponse,
+  createListEntriesResponse,
+  createRootResponse,
+  createScanResponse,
+  createSelectRootResponse,
+  defaultWorkspaceSettingsPath,
+  readWorkspaceSettings,
+} from "./src/workspaceBackend.js";
 
 const port = Number(process.env.PORT || 4173);
 const root = process.cwd();
-const workspaceRoot = process.env.FOLDER_KANBAN_ROOT || root;
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -16,8 +24,8 @@ const contentTypes = {
 
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host}`);
-  if (url.pathname === "/api/reveal") {
-    handleRevealRequest(request, response);
+  if (url.pathname.startsWith("/api/")) {
+    handleApiRequest(request, response, url);
     return;
   }
 
@@ -36,19 +44,54 @@ const server = createServer((request, response) => {
   createReadStream(filePath).pipe(response);
 });
 
-async function handleRevealRequest(request, response) {
-  if (request.method !== "POST") {
-    sendJson(response, 405, { error: "Method not allowed." });
-    return;
-  }
-
+async function handleApiRequest(request, response, url) {
   try {
-    const body = await readJsonBody(request);
-    const result = await createRevealResponse({ body, root: workspaceRoot });
-    sendJson(response, result.status, result.payload);
+    if (url.pathname === "/api/root" && request.method === "GET") {
+      sendApiResponse(response, await createRootResponse());
+      return;
+    }
+
+    if (url.pathname === "/api/select-root" && request.method === "POST") {
+      sendApiResponse(response, await createSelectRootResponse());
+      return;
+    }
+
+    if (url.pathname === "/api/scan" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const workspaceRoot = await getStoredWorkspaceRoot();
+      sendApiResponse(response, await createScanResponse({ root: workspaceRoot, rules: body.rules }));
+      return;
+    }
+
+    if (url.pathname === "/api/list-entries" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const workspaceRoot = await getStoredWorkspaceRoot();
+      sendApiResponse(response, await createListEntriesResponse({ root: workspaceRoot, body }));
+      return;
+    }
+
+    if (url.pathname === "/api/file" && request.method === "GET") {
+      const workspaceRoot = await getStoredWorkspaceRoot();
+      sendFileResponse(response, await createFileResponse({ root: workspaceRoot, path: url.searchParams.get("path") }));
+      return;
+    }
+
+    if (url.pathname === "/api/reveal" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const workspaceRoot = await getStoredWorkspaceRoot();
+      sendApiResponse(response, await createRevealResponse({ body, root: workspaceRoot }));
+      return;
+    }
+
+    sendJson(response, 404, { error: "Not found." });
   } catch (error) {
     sendJson(response, 400, { error: "Invalid request body." });
   }
+}
+
+async function getStoredWorkspaceRoot() {
+  const settings = await readWorkspaceSettings(defaultWorkspaceSettingsPath);
+  return settings.rootPath || null;
 }
 
 function readJsonBody(request) {
@@ -76,6 +119,23 @@ function readJsonBody(request) {
 function sendJson(response, status, payload) {
   response.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(payload));
+}
+
+function sendApiResponse(response, result) {
+  sendJson(response, result.status, result.payload);
+}
+
+function sendFileResponse(response, result) {
+  if (result.stream) {
+    response.writeHead(result.status, {
+      "content-disposition": "inline",
+      "content-type": result.contentType,
+    });
+    result.stream.pipe(response);
+    return;
+  }
+
+  sendApiResponse(response, result);
 }
 
 server.listen(port, "127.0.0.1", () => {

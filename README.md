@@ -7,7 +7,7 @@
 Нет. Команда `npm run dev` поднимает один локальный Node-сервер:
 
 - отдает frontend по адресу `http://127.0.0.1:4173/`;
-- обслуживает backend endpoint `/api/reveal` для открытия папок и файлов в Finder на macOS.
+- обслуживает backend endpoints для выбора workspace root, сканирования папок, просмотра preview-файлов и открытия папок/файлов в Finder на macOS.
 
 Отдельный backend-процесс запускать не нужно.
 
@@ -24,24 +24,17 @@ npm run dev
 http://127.0.0.1:4173/
 ```
 
-## Запуск с доступом к Finder
+## Выбор workspace-папки
 
-Чтобы клики по папкам и непредпросматриваемым файлам открывались в Finder, сервер должен знать абсолютный путь к выбранной workspace-папке.
+Путь к workspace root больше не нужно передавать через переменную окружения.
 
-Запускай сервер так:
+1. Запусти приложение командой `npm run dev`.
+2. Открой `http://127.0.0.1:4173/`.
+3. Перейди в `Settings`.
+4. Нажми `Choose folder` и выбери папку в системном macOS-диалоге.
 
-```bash
-cd /Users/aleksandersk/Documents/programming/node/project_folder
-FOLDER_KANBAN_ROOT="/absolute/path/to/workspace-root" npm run dev
-```
-
-Пример:
-
-```bash
-FOLDER_KANBAN_ROOT="/Users/aleksandersk/Documents/Projects" npm run dev
-```
-
-В Settings внутри приложения выбери эту же папку как root.
+Выбранный абсолютный путь сохраняется локально в `.folder-kanban/settings.json`.
+Эта папка добавлена в `.gitignore`, потому что в ней хранится путь, специфичный для твоей машины.
 
 ## Как работает открытие файлов и папок
 
@@ -52,7 +45,7 @@ FOLDER_KANBAN_ROOT="/Users/aleksandersk/Documents/Projects" npm run dev
 
 ## Безопасность локального endpoint
 
-Endpoint `/api/reveal` принимает только относительный путь внутри `FOLDER_KANBAN_ROOT`.
+Backend endpoints принимают только относительные пути внутри выбранной workspace-папки.
 
 Запросы с абсолютным путем или `../` отклоняются. Это нужно, чтобы браузер не мог открыть произвольный файл вне выбранной workspace-папки.
 
@@ -63,7 +56,7 @@ Endpoint `/api/reveal` принимает только относительны�
 Можно запустить на другом порту:
 
 ```bash
-PORT=4174 FOLDER_KANBAN_ROOT="/absolute/path/to/workspace-root" npm run dev
+PORT=4174 npm run dev
 ```
 
 Тогда открой:
@@ -78,6 +71,6 @@ http://127.0.0.1:4174/
 npm test
 ```
 
-## Важное ограничение браузера
+## Как это устроено
 
-Браузерный `showDirectoryPicker()` дает приложению доступ к файлам, но не раскрывает абсолютный путь выбранной папки. Поэтому для открытия в Finder нужен локальный Node endpoint и переменная `FOLDER_KANBAN_ROOT`.
+Выбор папки теперь делает backend через системный macOS-диалог. Поэтому frontend получает root, дерево папок и содержимое `card place` через локальные API, а запуск остается простым: `npm run dev`.

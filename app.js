@@ -1,14 +1,5 @@
-import {
-  filterFolders,
-  getFileHandleByPath,
-  listFolderAccessTree,
-  listFolderEntries,
-  flattenAccessTreeCards,
-} from "./src/folderModel.js";
+import { filterFolders, flattenAccessTreeCards } from "./src/folderModel.js";
 
-const dbName = "folder-kanban-mvp";
-const storeName = "handles";
-const selectedRootKey = "selected-root";
 const workspaceStorageKey = "workspaces-state";
 const sidebarStorageKey = "sidebar-state";
 const boardSnapshotStorageKey = "folder-board-snapshot";
@@ -97,11 +88,10 @@ const boardScrollbarIdleDelay = 900;
 const minCardPlaceWidth = 320;
 const maxCardPlaceWidthRatio = 0.82;
 
-let selectedHandle = null;
+let selectedRoot = null;
 let folders = [];
 let folderAccessTree = [];
 let folderAccessRules = {};
-let supportsDirectoryPicker = "showDirectoryPicker" in window;
 let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
@@ -162,33 +152,21 @@ async function initializeApp() {
   bindEvents();
 
   try {
-    if (!supportsDirectoryPicker) {
-      setStatus("Folder selection requires a Chromium browser with File System Access API.", "error");
-      updateActionStates();
+    const root = await fetchWorkspaceRoot();
+    if (!root) {
+      restoreButton.hidden = true;
       renderFolders();
       return;
     }
 
-    const storedHandle = await getStoredHandle();
-    if (!storedHandle) {
-      renderFolders();
-      return;
-    }
-
-    selectedHandle = storedHandle;
-    updateRoot(storedHandle.name);
+    selectedRoot = root;
+    updateRoot(root.name);
     if (selectedCardPath) {
       loadCardPlaceEntries(findFolderByPath(selectedCardPath));
     }
 
-    if (await hasPermission(storedHandle, false)) {
-      await scanSelectedFolder();
-      return;
-    }
-
-    restoreButton.hidden = false;
-    setStatus("Saved folder found. Restore access to scan it again.", "idle");
-    renderFolders();
+    restoreButton.hidden = true;
+    await scanSelectedFolder();
   } finally {
     finishInitialLayout();
   }
@@ -2107,50 +2085,29 @@ function createWorkspaceTab(workspace) {
 }
 
 async function chooseFolder() {
-  if (!supportsDirectoryPicker) {
-    return;
-  }
-
   try {
-    const handle = await window.showDirectoryPicker({ mode: "read" });
-    selectedHandle = handle;
+    setStatus("Choosing workspace root...", "idle");
+    const data = await postJson("/api/select-root", {});
+    selectedRoot = data.root;
     folders = [];
-    updateRoot(handle.name);
+    folderAccessTree = [];
+    updateRoot(selectedRoot.name);
     updateActionStates();
-    await storeHandle(handle);
     restoreButton.hidden = true;
     await scanSelectedFolder();
   } catch (error) {
-    if (error.name !== "AbortError") {
-      setStatus("Could not open that folder. Try choosing it again.", "error");
-    }
+    setStatus("Could not choose that folder. Try choosing it again.", "error");
   }
 }
 
 async function restoreAccess() {
-  if (!selectedHandle) {
-    return;
-  }
-
-  if (await hasPermission(selectedHandle, true)) {
-    restoreButton.hidden = true;
-    await scanSelectedFolder();
-    return;
-  }
-
-  setStatus("Access was not granted. Choose the folder again.", "error");
+  restoreButton.hidden = true;
+  await scanSelectedFolder();
 }
 
 async function scanSelectedFolder() {
-  if (!selectedHandle) {
+  if (!selectedRoot) {
     setStatus("Choose a folder to build the board.", "idle");
-    renderFolders();
-    return;
-  }
-
-  if (!(await hasPermission(selectedHandle, true))) {
-    restoreButton.hidden = false;
-    setStatus("Folder permission is missing. Restore access or choose the folder again.", "error");
     renderFolders();
     return;
   }
@@ -2158,8 +2115,10 @@ async function scanSelectedFolder() {
   setStatus("Scanning status folders...", "idle");
 
   try {
-    folderAccessTree = await listFolderAccessTree(selectedHandle, { rules: folderAccessRules });
-    folders = flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedHandle.name });
+    const data = await postJson("/api/scan", { rules: folderAccessRules });
+    selectedRoot = data.root;
+    folderAccessTree = data.tree;
+    folders = data.folders;
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
@@ -2199,11 +2158,9 @@ function renderFolders() {
   const hasCards = visibleFolders.length > 0;
   emptyState.hidden = hasCards;
 
-  if (!selectedHandle) {
-    emptyState.querySelector("h2").textContent = supportsDirectoryPicker ? "No folder selected" : "Browser unsupported";
-    emptyState.querySelector("p").textContent = supportsDirectoryPicker
-      ? views[activeView].emptyDescription
-      : "Open this app in a Chromium browser to choose local folders.";
+  if (!selectedRoot) {
+    emptyState.querySelector("h2").textContent = "No folder selected";
+    emptyState.querySelector("p").textContent = views[activeView].emptyDescription;
   } else if (folders.length === 0) {
     emptyState.querySelector("h2").textContent = "No folders in statuses";
     emptyState.querySelector("p").textContent = "Create folders inside the root status folders to display them as cards.";
@@ -2329,7 +2286,7 @@ async function loadCardPlaceEntries(folder) {
   cardPlaceLoadingPaths = new Set();
   cardPlaceFailedPaths = new Set();
 
-  if (!folder || !selectedHandle) {
+  if (!folder || !selectedRoot) {
     cardPlaceEntriesState = "access";
     renderCardPlaceEntries();
     return;
@@ -2339,17 +2296,7 @@ async function loadCardPlaceEntries(folder) {
   renderCardPlaceEntries();
 
   try {
-    if (!(await hasPermission(selectedHandle, false))) {
-      if (requestId !== cardPlaceEntriesRequest) {
-        return;
-      }
-
-      cardPlaceEntriesState = "access";
-      renderCardPlaceEntries();
-      return;
-    }
-
-    const entries = await listFolderEntries(selectedHandle, getFolderPath(folder));
+    const { entries } = await postJson("/api/list-entries", { path: getFolderPath(folder) });
     if (requestId !== cardPlaceEntriesRequest) {
       return;
     }
@@ -2369,7 +2316,7 @@ async function loadCardPlaceEntries(folder) {
 }
 
 async function loadCardPlaceChildEntries(entry) {
-  if (!selectedHandle || entry.kind !== "directory" || cardPlaceChildrenByPath.has(entry.path)) {
+  if (!selectedRoot || entry.kind !== "directory" || cardPlaceChildrenByPath.has(entry.path)) {
     return;
   }
 
@@ -2378,7 +2325,7 @@ async function loadCardPlaceChildEntries(entry) {
   renderCardPlaceEntries();
 
   try {
-    const entries = await listFolderEntries(selectedHandle, entry.path);
+    const { entries } = await postJson("/api/list-entries", { path: entry.path });
     cardPlaceChildrenByPath.set(entry.path, entries);
   } catch (error) {
     cardPlaceFailedPaths.add(entry.path);
@@ -2513,21 +2460,17 @@ function toggleCardPlaceDirectory(path) {
 }
 
 async function openCardPlaceFile(path) {
-  if (!selectedHandle || !path || !(await hasPermission(selectedHandle, false))) {
+  if (!selectedRoot || !path) {
     return;
   }
 
   try {
-    const fileHandle = await getFileHandleByPath(selectedHandle, path);
-    const file = await fileHandle.getFile();
-    if (!isPreviewableFile(file)) {
+    if (!isPreviewableFilePath(path)) {
       revealCardPlaceEntry(path, "file");
       return;
     }
 
-    const fileUrl = URL.createObjectURL(createPreviewFileBlob(file));
-    window.open(fileUrl, "_blank", "noopener");
-    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 30000);
+    window.open(`/api/file?path=${encodeURIComponent(path)}`, "_blank", "noopener");
   } catch (error) {
     setStatus("Could not open file.", "error");
   }
@@ -2553,8 +2496,8 @@ async function revealCardPlaceEntry(path, kind) {
   }
 }
 
-function isPreviewableFile(file) {
-  const previewType = file.type || getPreviewMimeType(file.name);
+function isPreviewableFilePath(path) {
+  const previewType = getPreviewMimeType(path);
   return (
     previewType.startsWith("image/") ||
     previewType.startsWith("text/") ||
@@ -2564,15 +2507,6 @@ function isPreviewableFile(file) {
     previewType === "application/json" ||
     previewType === "application/xml"
   );
-}
-
-function createPreviewFileBlob(file) {
-  const previewType = file.type || getPreviewMimeType(file.name);
-  if (!previewType || previewType === file.type) {
-    return file;
-  }
-
-  return new Blob([file], { type: previewType });
 }
 
 function getPreviewMimeType(fileName) {
@@ -2869,7 +2803,7 @@ function setActiveView(view) {
 }
 
 function updateActionStates() {
-  const canUseFolderBoard = supportsDirectoryPicker && (folderViews.has(activeView) || activeView === "settings");
+  const canUseFolderBoard = folderViews.has(activeView) || activeView === "settings";
   searchInput.disabled = !canUseFolderBoard;
 }
 
@@ -2894,7 +2828,7 @@ function renderSettingsView() {
   const rootCard = createSettingsRootCard();
   const toolbar = createSettingsToolbar();
 
-  if (!selectedHandle) {
+  if (!selectedRoot) {
     folderGrid.replaceChildren(rootCard, createSettingsEmptyTree());
     return;
   }
@@ -2911,10 +2845,10 @@ function createSettingsRootCard() {
   eyebrow.className = "eyebrow";
   eyebrow.textContent = "Workspace root";
   const title = document.createElement("h2");
-  title.textContent = selectedHandle?.name || "No folder selected";
+  title.textContent = selectedRoot?.name || "No folder selected";
   const path = document.createElement("p");
-  path.textContent = selectedHandle
-    ? `Browser folder handle: ${selectedHandle.name}`
+  path.textContent = selectedRoot
+    ? `Backend workspace root: ${selectedRoot.name}`
     : "Choose a folder to configure workspace access.";
 
   copy.append(eyebrow, title, path);
@@ -2925,13 +2859,13 @@ function createSettingsRootCard() {
   rescanButton.className = "ghost-button";
   rescanButton.type = "button";
   rescanButton.textContent = "Refresh";
-  rescanButton.disabled = !selectedHandle;
+  rescanButton.disabled = !selectedRoot;
   rescanButton.addEventListener("click", scanSelectedFolder);
 
   const changeButton = document.createElement("button");
   changeButton.className = "primary-button";
   changeButton.type = "button";
-  changeButton.textContent = selectedHandle ? "Change" : "Choose folder";
+  changeButton.textContent = selectedRoot ? "Change" : "Choose folder";
   changeButton.addEventListener("click", chooseFolder);
 
   const summary = document.createElement("span");
@@ -2977,11 +2911,9 @@ function createSettingsEmptyTree() {
   icon.className = "empty-icon";
   icon.setAttribute("aria-hidden", "true");
   const title = document.createElement("h2");
-  title.textContent = supportsDirectoryPicker ? "No folder selected" : "Browser unsupported";
+  title.textContent = "No folder selected";
   const description = document.createElement("p");
-  description.textContent = supportsDirectoryPicker
-    ? "Choose a workspace root to review folder access."
-    : "Open this app in a Chromium browser to choose local folders.";
+  description.textContent = "Choose a workspace root to review folder access.";
 
   empty.append(icon, title, description);
 
@@ -3223,7 +3155,7 @@ function setAllFolderAccess(access) {
 
 function applyFolderAccessRules() {
   applyRulesToAccessTree(folderAccessTree);
-  folders = flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedHandle?.name || "Client Projects" });
+  folders = flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedRoot?.name || "Client Projects" });
   saveBoardSnapshot();
 }
 
@@ -4284,13 +4216,13 @@ function updateRoot(name) {
 }
 
 function saveBoardSnapshot() {
-  if (!selectedHandle) {
+  if (!selectedRoot) {
     localStorage.removeItem(boardSnapshotStorageKey);
     return;
   }
 
   const snapshot = {
-    rootName: selectedHandle.name,
+    rootName: selectedRoot.name,
     folders: folders.map((folder) => ({
       name: folder.name,
       path: folder.path,
@@ -4301,56 +4233,26 @@ function saveBoardSnapshot() {
   localStorage.setItem(boardSnapshotStorageKey, JSON.stringify(snapshot));
 }
 
-async function hasPermission(handle, request) {
-  const options = { mode: "read" };
-  if ((await handle.queryPermission(options)) === "granted") {
-    return true;
-  }
-
-  if (request && (await handle.requestPermission(options)) === "granted") {
-    return true;
-  }
-
-  return false;
+async function fetchWorkspaceRoot() {
+  const data = await fetchJson("/api/root");
+  return data.root || null;
 }
 
-async function getStoredHandle() {
-  try {
-    const db = await openDatabase();
-    return await new Promise((resolve, reject) => {
-      const request = db.transaction(storeName, "readonly").objectStore(storeName).get(selectedRootKey);
-      request.addEventListener("success", () => resolve(request.result?.handle || null));
-      request.addEventListener("error", () => reject(request.error));
-    });
-  } catch (error) {
-    return null;
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Request failed.");
   }
+
+  return data;
 }
 
-async function storeHandle(handle) {
-  try {
-    const db = await openDatabase();
-    await new Promise((resolve, reject) => {
-      const request = db
-        .transaction(storeName, "readwrite")
-        .objectStore(storeName)
-        .put({ id: selectedRootKey, handle });
-      request.addEventListener("success", () => resolve());
-      request.addEventListener("error", () => reject(request.error));
-    });
-  } catch (error) {
-    setStatus("Folder selected. This browser did not save it for reload.", "idle");
-  }
-}
-
-function openDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(dbName, 1);
-    request.addEventListener("upgradeneeded", () => {
-      request.result.createObjectStore(storeName, { keyPath: "id" });
-    });
-    request.addEventListener("success", () => resolve(request.result));
-    request.addEventListener("error", () => reject(request.error));
+function postJson(url, body) {
+  return fetchJson(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body || {}),
   });
 }
 

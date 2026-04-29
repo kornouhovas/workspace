@@ -31,7 +31,7 @@ test("folder picker is only exposed from settings", async () => {
   assert.equal(html.includes("id=\"chooseFolderButton\""), false);
   assert.equal(html.includes("Choose folder"), false);
   assert.equal(app.includes("chooseFolderButton"), false);
-  assert.match(app, /changeButton\.textContent = selectedHandle \? "Change" : "Choose folder"/);
+  assert.match(app, /changeButton\.textContent = selectedRoot \? "Change" : "Choose folder"/);
   assert.equal(html.includes("Refresh"), false);
   assert.equal(html.includes("refreshButton"), false);
   assert.equal(app.includes("refreshButton"), false);
@@ -54,8 +54,9 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(html, /id="settingsViewSwitcher"/);
   assert.match(html, />Access</);
   assert.match(app, /settingsViewSwitcher\.hidden = false/);
-  assert.match(app, /import \{[^}]*listFolderAccessTree[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
+  assert.match(app, /import \{[^}]*filterFolders[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
   assert.match(app, /const folderAccessRulesStorageKey = "folder-access-rules"/);
+  assert.match(app, /let selectedRoot = null/);
   assert.match(app, /let folderAccessTree = \[\]/);
   assert.match(app, /settingsNavButton\.addEventListener\("click",/);
   assert.match(app, /function renderSettingsView\(\)/);
@@ -65,7 +66,8 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(app, /function handleSettingsTreeClick\(event\)/);
   assert.match(app, /function setFolderAccessRule\(path, rule\)/);
   assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
-  assert.match(app, /listFolderAccessTree\(selectedHandle,/);
+  assert.match(app, /postJson\("\/api\/scan", \{ rules: folderAccessRules \}\)/);
+  assert.match(app, /postJson\("\/api\/select-root", \{\}\)/);
   assert.match(app, /const folderRoleLabels = \{/);
   assert.match(app, /status:\s*"Status"/);
   assert.match(app, /card:\s*"Card"/);
@@ -400,7 +402,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(html, /id="cardPlaceFolderList"/);
   assert.match(html, /id="cardPlaceCloseButton"/);
   assert.match(html, />Status</);
-  assert.match(app, /import \{[^}]*listFolderEntries[^}]*\} from "\.\/src\/folderModel\.js"/s);
+  assert.match(app, /import \{[^}]*filterFolders[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
   assert.match(app, /const cardPlacePanel = document\.querySelector\("#cardPlacePanel"\)/);
   assert.match(app, /const cardPlaceFolderList = document\.querySelector\("#cardPlaceFolderList"\)/);
   assert.match(app, /let selectedCardPath = null/);
@@ -427,8 +429,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function closeCardPlace\(\)/);
   assert.match(app, /function renderCardPlacePanel\(\)/);
   assert.match(app, /function loadCardPlaceEntries\(folder\)/);
-  assert.match(app, /hasPermission\(selectedHandle, false\)/);
-  assert.match(app, /listFolderEntries\(selectedHandle, getFolderPath\(folder\)\)/);
+  assert.match(app, /postJson\("\/api\/list-entries", \{ path: getFolderPath\(folder\) \}\)/);
   assert.match(app, /function loadCardPlaceChildEntries\(entry\)/);
   assert.match(app, /function renderCardPlaceEntries\(\)/);
   assert.match(app, /function createCardPlaceEntryRows\(entries, depth = 0\)/);
@@ -440,12 +441,9 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /revealCardPlaceEntry\(row\.dataset\.path, "directory"\)/);
   assert.match(app, /function revealCardPlaceEntry\(path, kind\)/);
   assert.match(app, /fetch\("\/api\/reveal"/);
-  assert.match(app, /function isPreviewableFile\(file\)/);
-  assert.match(app, /function createPreviewFileBlob\(file\)/);
+  assert.match(app, /function isPreviewableFilePath\(path\)/);
   assert.match(app, /function getPreviewMimeType\(fileName\)/);
-  assert.match(app, /new Blob\(\[file\], \{ type: previewType \}\)/);
-  assert.match(app, /URL\.createObjectURL\(createPreviewFileBlob\(file\)\)/);
-  assert.match(app, /window\.open\(fileUrl, "_blank", "noopener"\)/);
+  assert.match(app, /window\.open\(`\/api\/file\?path=\$\{encodeURIComponent\(path\)\}`/);
   assert.match(app, /function normalizeCardPlaceWidth\(width\)/);
   assert.match(app, /function getActiveCardPlaceWidth\(\)/);
   assert.match(app, /function saveCardPlaceWidth\(width\)/);
