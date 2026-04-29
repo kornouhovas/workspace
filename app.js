@@ -2483,6 +2483,11 @@ function handleCardPlaceEntryClick(event) {
   event.preventDefault();
   event.stopPropagation();
   if (row.dataset.kind === "directory") {
+    if (!event.target.closest(".card-place-entry-chevron")) {
+      revealCardPlaceEntry(row.dataset.path, "directory");
+      return;
+    }
+
     toggleCardPlaceDirectory(row.dataset.path);
     return;
   }
@@ -2515,12 +2520,50 @@ async function openCardPlaceFile(path) {
   try {
     const fileHandle = await getFileHandleByPath(selectedHandle, path);
     const file = await fileHandle.getFile();
+    if (!isPreviewableFile(file)) {
+      revealCardPlaceEntry(path, "file");
+      return;
+    }
+
     const fileUrl = URL.createObjectURL(createPreviewFileBlob(file));
     window.open(fileUrl, "_blank", "noopener");
     window.setTimeout(() => URL.revokeObjectURL(fileUrl), 30000);
   } catch (error) {
     setStatus("Could not open file.", "error");
   }
+}
+
+async function revealCardPlaceEntry(path, kind) {
+  if (!path || (kind !== "directory" && kind !== "file")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/reveal", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ path, kind }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Reveal request failed.");
+    }
+  } catch (error) {
+    setStatus("Could not open item in Finder. Check local workspace root.", "error");
+  }
+}
+
+function isPreviewableFile(file) {
+  const previewType = file.type || getPreviewMimeType(file.name);
+  return (
+    previewType.startsWith("image/") ||
+    previewType.startsWith("text/") ||
+    previewType.startsWith("audio/") ||
+    previewType.startsWith("video/") ||
+    previewType === "application/pdf" ||
+    previewType === "application/json" ||
+    previewType === "application/xml"
+  );
 }
 
 function createPreviewFileBlob(file) {

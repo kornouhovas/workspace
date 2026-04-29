@@ -436,6 +436,11 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function handleCardPlaceEntryClick\(event\)/);
   assert.match(app, /function toggleCardPlaceDirectory\(path\)/);
   assert.match(app, /function openCardPlaceFile\(path\)/);
+  assert.match(app, /event\.target\.closest\("\.card-place-entry-chevron"\)/);
+  assert.match(app, /revealCardPlaceEntry\(row\.dataset\.path, "directory"\)/);
+  assert.match(app, /function revealCardPlaceEntry\(path, kind\)/);
+  assert.match(app, /fetch\("\/api\/reveal"/);
+  assert.match(app, /function isPreviewableFile\(file\)/);
   assert.match(app, /function createPreviewFileBlob\(file\)/);
   assert.match(app, /function getPreviewMimeType\(fileName\)/);
   assert.match(app, /new Blob\(\[file\], \{ type: previewType \}\)/);
