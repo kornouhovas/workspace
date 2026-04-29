@@ -400,6 +400,9 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(html, /id="cardPlacePanel"/);
   assert.match(html, /id="cardPlaceResizeHandle"/);
   assert.match(html, /id="cardPlaceFolderOpenButton"/);
+  assert.doesNotMatch(html, /class="icon-button card-place-folder-open"/);
+  assert.match(html, /class="card-place-entry-icon is-directory card-place-folder-open"/);
+  assert.match(html, /role="button"/);
   assert.match(html, /id="cardPlaceTitle"/);
   assert.match(html, /id="cardPlaceStatus"/);
   assert.match(html, /id="cardPlaceFolderList"/);
@@ -420,6 +423,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /folderGrid\.addEventListener\("click", handleCardPlaceClick\)/);
   assert.match(app, /cardPlaceFolderList\.addEventListener\("click", handleCardPlaceEntryClick\)/);
   assert.match(app, /cardPlaceFolderOpenButton\.addEventListener\("click", handleCardPlaceFolderOpen\)/);
+  assert.match(app, /cardPlaceFolderOpenButton\.addEventListener\("keydown", handleCardPlaceFolderOpenKeydown\)/);
   assert.match(app, /cardPlaceResizeHandle\.addEventListener\("pointerdown", handleCardPlaceResizeStart\)/);
   assert.match(app, /document\.addEventListener\("click", handleCardPlaceOutsideClick\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlaceResizeMove\)/);
@@ -433,6 +437,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function openCardPlace\(folder\)/);
   assert.match(app, /function closeCardPlace\(\)/);
   assert.match(app, /function handleCardPlaceFolderOpen\(\)/);
+  assert.match(app, /function handleCardPlaceFolderOpenKeydown\(event\)/);
   assert.match(app, /revealCardPlaceEntry\(selectedCardPath, "directory"\)/);
   assert.match(app, /function renderCardPlacePanel\(\)/);
   assert.match(app, /function loadCardPlaceEntries\(folder\)/);
@@ -472,6 +477,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
   assert.match(css, /\.card-place-title-row\s*\{/);
   assert.match(css, /\.card-place-folder-open\s*\{/);
+  assert.doesNotMatch(css, /\.card-place-folder-open-icon/);
   assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto auto/s);
   assert.match(css, /\.card-place-field\s*\{[^}]*justify-content:\s*start/s);
   assert.match(css, /\.card-place-field\s*\{[^}]*gap:\s*6px/s);

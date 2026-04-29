@@ -1426,7 +1426,7 @@ input:focus-visible {
 
 .card-place-title-row {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: start;
   gap: 10px;
   min-width: 0;
@@ -1444,38 +1444,15 @@ input:focus-visible {
 }
 
 .card-place-folder-open {
-  width: 32px;
-  min-height: 32px;
   color: var(--muted);
+  cursor: pointer;
+  margin-top: 5px;
 }
 
-.card-place-folder-open:hover {
-  color: var(--text);
-}
-
-.card-place-folder-open-icon {
-  display: block;
-  position: relative;
-  width: 20px;
-  height: 15px;
-  border: 1px solid color-mix(in srgb, currentColor 72%, transparent);
-  border-radius: 3px 4px 4px 4px;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 5%), transparent 65%),
-    color-mix(in srgb, var(--panel-soft) 92%, currentColor 8%);
-}
-
-.card-place-folder-open-icon::before {
-  position: absolute;
-  top: -5px;
-  left: -1px;
-  width: 11px;
-  height: 6px;
-  border: 1px solid color-mix(in srgb, currentColor 72%, transparent);
-  border-bottom: 0;
-  border-radius: 3px 4px 0 0;
-  background: color-mix(in srgb, var(--panel-soft) 92%, currentColor 8%);
-  content: "";
+.card-place-folder-open:hover,
+.card-place-folder-open:focus-visible {
+  filter: brightness(1.16);
+  outline: 0;
 }
 
 .card-place-close {

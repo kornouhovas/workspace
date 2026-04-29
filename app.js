@@ -288,6 +288,7 @@ function bindEvents() {
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
+  cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -2278,6 +2279,15 @@ function handleCardPlaceFolderOpen() {
   revealCardPlaceEntry(selectedCardPath, "directory");
 }
 
+function handleCardPlaceFolderOpenKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  handleCardPlaceFolderOpen();
+}
+
 function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
@@ -2287,7 +2297,8 @@ function renderCardPlacePanel() {
   cardPlacePanel.style.setProperty("--card-place-width", `${getActiveCardPlaceWidth()}px`);
   cardPlacePanel.classList.toggle("is-open", Boolean(selectedCard));
   cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
-  cardPlaceFolderOpenButton.disabled = !selectedCard;
+  cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
+  cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
   if (selectedCard) {
