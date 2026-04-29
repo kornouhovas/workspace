@@ -1465,6 +1465,85 @@ input:focus-visible {
   line-height: 1.35;
 }
 
+.card-place-folder-section {
+  display: grid;
+  gap: 10px;
+}
+
+.card-place-section-title {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.card-place-folder-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.card-place-entry {
+  display: grid;
+  min-height: 34px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text);
+  padding: 0 10px;
+}
+
+.card-place-entry:last-child {
+  border-bottom: 0;
+}
+
+.card-place-entry-icon {
+  display: block;
+  position: relative;
+  width: 18px;
+  height: 16px;
+  border: 1px solid var(--faint);
+  border-radius: 4px;
+}
+
+.card-place-entry-icon.is-directory {
+  background: var(--panel-soft);
+}
+
+.card-place-entry-icon.is-directory::before {
+  position: absolute;
+  top: -4px;
+  left: 3px;
+  width: 8px;
+  height: 4px;
+  border: 1px solid var(--faint);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--panel-soft);
+  content: "";
+}
+
+.card-place-entry-icon.is-file {
+  border-radius: 3px;
+  background: transparent;
+}
+
+.card-place-entry-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-place-entry-message {
+  min-height: 34px;
+  color: var(--muted);
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
 .kanban-board.settings-mode {
   margin-top: 0;
   padding-top: 0;

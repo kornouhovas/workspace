@@ -1,6 +1,7 @@
 import {
   filterFolders,
   listFolderAccessTree,
+  listFolderEntries,
   flattenAccessTreeCards,
 } from "./src/folderModel.js";
 
@@ -35,6 +36,7 @@ const cardPlacePanel = document.querySelector("#cardPlacePanel");
 const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
+const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
 const pageTitle = document.querySelector(".topbar h1");
 const workspaceTitleRow = document.querySelector(".workspace-title-row");
@@ -129,6 +131,9 @@ let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
 let tableStatusMenuOpen = false;
 let selectedCardPath = null;
+let cardPlaceEntries = [];
+let cardPlaceEntriesState = "idle";
+let cardPlaceEntriesRequest = 0;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -167,6 +172,9 @@ async function initializeApp() {
 
     selectedHandle = storedHandle;
     updateRoot(storedHandle.name);
+    if (selectedCardPath) {
+      loadCardPlaceEntries(findFolderByPath(selectedCardPath));
+    }
 
     if (await hasPermission(storedHandle, false)) {
       await scanSelectedFolder();
@@ -2279,10 +2287,14 @@ function handleCardPlaceOutsideClick(event) {
 function openCardPlace(folder) {
   selectedCardPath = getFolderPath(folder);
   renderCardPlacePanel();
+  loadCardPlaceEntries(folder);
 }
 
 function closeCardPlace() {
   selectedCardPath = null;
+  cardPlaceEntries = [];
+  cardPlaceEntriesState = "idle";
+  cardPlaceEntriesRequest += 1;
   renderCardPlacePanel();
 }
 
@@ -2301,6 +2313,98 @@ function renderCardPlacePanel() {
     cardPlaceTitle.textContent = selectedCard.name;
     cardPlaceStatus.textContent = selectedCard.status;
   }
+  renderCardPlaceEntries();
+}
+
+async function loadCardPlaceEntries(folder) {
+  const requestId = cardPlaceEntriesRequest + 1;
+  cardPlaceEntriesRequest = requestId;
+  cardPlaceEntries = [];
+
+  if (!folder || !selectedHandle) {
+    cardPlaceEntriesState = "access";
+    renderCardPlaceEntries();
+    return;
+  }
+
+  cardPlaceEntriesState = "loading";
+  renderCardPlaceEntries();
+
+  try {
+    if (!(await hasPermission(selectedHandle, false))) {
+      if (requestId !== cardPlaceEntriesRequest) {
+        return;
+      }
+
+      cardPlaceEntriesState = "access";
+      renderCardPlaceEntries();
+      return;
+    }
+
+    const entries = await listFolderEntries(selectedHandle, getFolderPath(folder));
+    if (requestId !== cardPlaceEntriesRequest) {
+      return;
+    }
+
+    cardPlaceEntries = entries;
+    cardPlaceEntriesState = entries.length > 0 ? "ready" : "empty";
+  } catch (error) {
+    if (requestId !== cardPlaceEntriesRequest) {
+      return;
+    }
+
+    cardPlaceEntries = [];
+    cardPlaceEntriesState = "error";
+  }
+
+  renderCardPlaceEntries();
+}
+
+function renderCardPlaceEntries() {
+  cardPlaceFolderList.replaceChildren();
+
+  if (!selectedCardPath) {
+    return;
+  }
+
+  if (cardPlaceEntriesState === "ready") {
+    cardPlaceFolderList.replaceChildren(...cardPlaceEntries.map(createCardPlaceEntryRow));
+    return;
+  }
+
+  const messages = {
+    access: "Restore folder access",
+    empty: "No files or folders",
+    error: "Could not load folder contents",
+    idle: "",
+    loading: "Loading...",
+  };
+  const message = messages[cardPlaceEntriesState] || "";
+  if (message) {
+    const row = document.createElement("div");
+    row.className = "card-place-entry-message";
+    row.textContent = message;
+    cardPlaceFolderList.append(row);
+  }
+}
+
+function createCardPlaceEntryRow(entry) {
+  const row = document.createElement("div");
+  row.className = "card-place-entry";
+  row.dataset.kind = entry.kind;
+  row.dataset.path = entry.path;
+
+  const icon = document.createElement("span");
+  icon.className = `card-place-entry-icon is-${entry.kind}`;
+  icon.setAttribute("aria-hidden", "true");
+
+  const name = document.createElement("span");
+  name.className = "card-place-entry-name";
+  name.textContent = entry.name;
+
+  row.append(icon, name);
+
+  return row;
 }
 
 function handleCardPlaceResizeStart(event) {

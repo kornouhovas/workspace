@@ -55,6 +55,25 @@ export async function listFolderAccessTree(directoryHandle, options = {}) {
   return listDirectoryTree(directoryHandle, [], normalizeFolderAccessRules(options.rules));
 }
 
+export async function listFolderEntries(directoryHandle, folderPath) {
+  const targetDirectory = await findDirectoryHandle(directoryHandle, folderPath);
+  const entries = [];
+
+  for await (const entry of targetDirectory.values()) {
+    if (entry.kind === "directory" || entry.kind === "file") {
+      const path = [...splitFolderPath(folderPath), entry.name].join("/");
+      entries.push({
+        id: createEntryId(entry.kind, path),
+        name: entry.name,
+        kind: entry.kind,
+        path,
+      });
+    }
+  }
+
+  return entries.sort(compareFolderEntries);
+}
+
 export function flattenAccessTreeCards(tree, options = {}) {
   const cards = [];
   const rootStatus = options.rootStatus || "Client Projects";
@@ -75,6 +94,26 @@ export function filterFolders(folders, query) {
   }
 
   return folders.filter((folder) => folder.name.toLowerCase().includes(normalizedQuery));
+}
+
+async function findDirectoryHandle(directoryHandle, folderPath) {
+  let currentHandle = directoryHandle;
+
+  for (const pathPart of splitFolderPath(folderPath)) {
+    currentHandle = await findChildDirectoryHandle(currentHandle, pathPart);
+  }
+
+  return currentHandle;
+}
+
+async function findChildDirectoryHandle(directoryHandle, folderName) {
+  for await (const entry of directoryHandle.values()) {
+    if (entry.kind === "directory" && entry.name === folderName) {
+      return entry;
+    }
+  }
+
+  throw new Error(`Folder not found: ${folderName}`);
 }
 
 async function listDirectoryTree(directoryHandle, parentPath, rules) {
@@ -137,6 +176,14 @@ function collectAccessTreeCards(nodes, context) {
   }
 }
 
+function compareFolderEntries(left, right) {
+  if (left.kind !== right.kind) {
+    return left.kind === "directory" ? -1 : 1;
+  }
+
+  return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+}
+
 function normalizeFolderAccessRules(rules) {
   return rules && typeof rules === "object" ? rules : {};
 }
@@ -151,6 +198,14 @@ function createStatusId(name) {
 
 function createFolderIdFromPath(path) {
   return createFolderId(path.replace(/\//g, "-"));
+}
+
+function createEntryId(kind, path) {
+  return `${kind}-${createFolderId(path.replace(/\//g, "-")).replace(/^folder-/, "")}`;
+}
+
+function splitFolderPath(path) {
+  return typeof path === "string" && path ? path.split("/").filter(Boolean) : [];
 }
 
 function createFolderId(name) {

@@ -4,6 +4,7 @@ import {
   filterFolders,
   flattenAccessTreeCards,
   listDirectFolders,
+  listFolderEntries,
   listFolderAccessTree,
   listStatusCards,
 } from "../src/folderModel.js";
@@ -41,6 +42,50 @@ test("filterFolders matches folder names case-insensitively", () => {
 
   assert.deepEqual(filterFolders(folders, "DO"), [
     { id: "folder-docs", name: "docs", kind: "directory" },
+  ]);
+});
+
+test("listFolderEntries returns folders first then files for a nested folder path", async () => {
+  const entries = await listFolderEntries(
+    fakeDirectoryHandle([
+      {
+        kind: "directory",
+        name: "Archive",
+        values: async function* values() {
+          yield {
+            kind: "directory",
+            name: "Completed",
+            values: async function* values() {
+              yield { kind: "file", name: "brief.txt" };
+              yield { kind: "directory", name: "Assets", values: fakeDirectoryHandle([]).values };
+              yield { kind: "file", name: "README.md" };
+            },
+          };
+        },
+      },
+    ]),
+    "Archive/Completed",
+  );
+
+  assert.deepEqual(entries, [
+    {
+      id: "directory-archive-completed-assets",
+      name: "Assets",
+      kind: "directory",
+      path: "Archive/Completed/Assets",
+    },
+    {
+      id: "file-archive-completed-brief-txt",
+      name: "brief.txt",
+      kind: "file",
+      path: "Archive/Completed/brief.txt",
+    },
+    {
+      id: "file-archive-completed-readme-md",
+      name: "README.md",
+      kind: "file",
+      path: "Archive/Completed/README.md",
+    },
   ]);
 });
 
