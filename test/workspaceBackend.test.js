@@ -1,14 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createFileResponse,
   createListEntriesResponse,
+  createPropertiesResponse,
   createRootResponse,
   createScanResponse,
   createSelectRootResponse,
+  readWorkspaceProperties,
   readWorkspaceSettings,
 } from "../src/workspaceBackend.js";
 
@@ -72,6 +75,70 @@ test("createScanResponse builds access tree and cards from saved root", async ()
   assert.equal(response.payload.tree.some((node) => node.name === ".hidden"), false);
 });
 
+test("createScanResponse attaches stored text properties to card folders", async () => {
+  const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+  const rootKey = createRootPropertiesKey(root);
+  await writeFile(
+    propertiesPath,
+    JSON.stringify({
+      roots: {
+        [rootKey]: {
+          "Active/Project Alpha": { text: "Meeting notes and project context" },
+        },
+      },
+    }),
+  );
+
+  const response = await createScanResponse({
+    root,
+    propertiesPath,
+    rules: {
+      Active: { role: "status" },
+      "Active/Project Alpha": { role: "card" },
+    },
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.payload.folders[0].text, "Meeting notes and project context");
+});
+
+test("createPropertiesResponse saves text properties for a card folder", async () => {
+  const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+
+  const response = await createPropertiesResponse({
+    root,
+    propertiesPath,
+    body: {
+      path: "Active/Project Alpha",
+      text: "Inline table note",
+    },
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.payload.properties, { text: "Inline table note" });
+
+  const properties = await readWorkspaceProperties(propertiesPath);
+  assert.equal(properties.roots[createRootPropertiesKey(root)]["Active/Project Alpha"].text, "Inline table note");
+});
+
+test("createPropertiesResponse rejects properties outside workspace root", async () => {
+  const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+
+  const response = await createPropertiesResponse({
+    root,
+    propertiesPath,
+    body: {
+      path: "../Project Alpha",
+      text: "Outside",
+    },
+  });
+
+  assert.equal(response.status, 400);
+});
+
 test("createListEntriesResponse returns visible folders first then files", async () => {
   const root = await createWorkspaceFixture();
   const response = await createListEntriesResponse({ root, body: { path: "Archive/Completed" } });
@@ -118,3 +185,7 @@ test("workspace backend rejects paths outside root", async () => {
 
   assert.equal(response.status, 400);
 });
+
+function createRootPropertiesKey(root) {
+  return createHash("sha256").update(root).digest("hex").slice(0, 16);
+}

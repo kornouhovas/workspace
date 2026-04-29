@@ -29,6 +29,7 @@ const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
+const cardPlaceText = document.querySelector("#cardPlaceText");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
 const pageTitle = document.querySelector(".topbar h1");
@@ -64,10 +65,11 @@ const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
 const boardViewIds = ["overview", "board", "table"];
 const addableBoardViewTypes = ["board", "table"];
-const tableColumnIds = ["name", "status"];
+const tableColumnIds = ["name", "status", "text"];
 const tableColumnLabels = {
   name: "Name",
   status: "Status",
+  text: "Text",
 };
 const folderRoleIds = ["status", "card", "group"];
 const folderRoleLabels = {
@@ -76,12 +78,14 @@ const folderRoleLabels = {
   group: "Group",
 };
 const defaultTableColumnWidths = {
-  name: 46,
-  status: 22,
+  name: 34,
+  status: 18,
+  text: 42,
 };
 const tableColumnWidthLimits = {
   name: { min: 24, max: 78 },
   status: { min: 12, max: 36 },
+  text: { min: 18, max: 60 },
 };
 const maxTableColumnTotalWidth = 94;
 const boardScrollbarHotZoneSize = 56;
@@ -97,6 +101,7 @@ let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
 let draggedBoardColumnMenuStatus = null;
+let draggedBoardColumnMenuProperty = null;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
 let boardColumnMenuPointerDragState = null;
@@ -130,6 +135,7 @@ let cardPlaceChildrenByPath = new Map();
 let cardPlaceLoadingPaths = new Set();
 let cardPlaceFailedPaths = new Set();
 let cardPlaceEntriesRequest = 0;
+let folderPropertySaveTimers = new Map();
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -225,6 +231,12 @@ function bindEvents() {
       return;
     }
 
+    const tablePropertyVisibilityButton = event.target.closest(".table-property-visibility");
+    if (tablePropertyVisibilityButton) {
+      handleTablePropertyMenuClick(event);
+      return;
+    }
+
     const addOption = event.target.closest("[data-add-board-view-type]");
     if (addOption) {
       addBoardView(addOption.dataset.addBoardViewType);
@@ -289,6 +301,7 @@ function bindEvents() {
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
+  cardPlaceText.addEventListener("input", handleCardPlaceTextInput);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -624,10 +637,73 @@ function createBoardViewMenu() {
     createBoardViewMenuAction("duplicate", "Duplicate view", createMenuIcon("duplicate"), canDuplicate),
     createBoardViewMenuAction("delete", "Delete view", createMenuIcon("delete"), canDelete),
     createBoardViewMenuSeparator(),
+    ...(activeViewConfig?.type === "table" ? [createTablePropertyMenuSection(), createBoardViewMenuSeparator()] : []),
     createBoardViewMenuStatusSection(),
   );
 
   return menu;
+}
+
+function createTablePropertyMenuSection() {
+  const section = document.createElement("div");
+  section.className = "table-property-menu-section";
+
+  const title = document.createElement("div");
+  title.className = "table-property-menu-section-title board-column-menu-section-title";
+  title.textContent = "Property visibility in table";
+
+  const list = document.createElement("div");
+  list.className = "table-property-menu-list";
+  list.id = "tablePropertyMenuList";
+
+  section.append(title, list);
+  renderTablePropertyMenu(list);
+
+  return section;
+}
+
+function renderTablePropertyMenu(list = boardViewSwitcher.querySelector("#tablePropertyMenuList")) {
+  if (!list) {
+    return;
+  }
+
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  list.replaceChildren(
+    ...getActiveTableColumnOrder().map((columnId) =>
+      createTablePropertyMenuItem(columnId, hiddenColumns.has(columnId)),
+    ),
+  );
+}
+
+function createTablePropertyMenuItem(columnId, hidden) {
+  const item = document.createElement("div");
+  item.className = "table-property-menu-item";
+  item.dataset.tableColumn = columnId;
+  item.setAttribute("role", "menuitem");
+
+  const label = document.createElement("span");
+  label.className = "board-column-menu-status-label";
+  label.textContent = tableColumnLabels[columnId] || columnId;
+
+  item.append(createTableStatusDragHandle(), label);
+
+  if (columnId === "name") {
+    const spacer = document.createElement("span");
+    spacer.setAttribute("aria-hidden", "true");
+    item.append(spacer);
+    return item;
+  }
+
+  const button = document.createElement("button");
+  button.className = "table-property-visibility";
+  button.type = "button";
+  button.dataset.tableColumn = columnId;
+  button.setAttribute("aria-label", hidden ? `Show ${tableColumnLabels[columnId]} property` : `Hide ${tableColumnLabels[columnId]} property`);
+  button.setAttribute("aria-pressed", String(hidden));
+  button.append(createEyeIcon(hidden));
+  item.append(button);
+
+  return item;
 }
 
 function createBoardViewMenuAction(action, label, icon, enabled) {
@@ -880,6 +956,7 @@ function structuredCloneBoardView(view) {
     hiddenStatuses: [...view.hiddenStatuses],
     scrollPosition: { ...view.scrollPosition },
     tableColumnOrder: [...view.tableColumnOrder],
+    tableHiddenColumns: [...view.tableHiddenColumns],
     tableColumnWidths: { ...view.tableColumnWidths },
   };
 }
@@ -911,6 +988,7 @@ function renderBoardColumnMenu() {
   statusList.replaceChildren(
     ...statuses.map((status) => createBoardColumnMenuStatusItem(status, hiddenStatuses.has(status))),
   );
+  renderTablePropertyMenu();
 }
 
 function getBoardColumnMenuStatusList() {
@@ -970,19 +1048,34 @@ function handleBoardColumnMenuClick(event) {
   renderBoardColumnMenu();
 }
 
-function handleBoardColumnMenuPointerDragStart(event) {
-  if (event.target.closest(".board-column-menu-status-visibility")) {
+function handleTablePropertyMenuClick(event) {
+  const button = event.target.closest(".table-property-visibility");
+  if (!button) {
     return;
   }
 
-  const item = event.target.closest(".board-column-menu-status-item");
+  event.preventDefault();
+  event.stopPropagation();
+  toggleTableColumnVisibility(button.dataset.tableColumn);
+  renderTablePropertyMenu();
+}
+
+function handleBoardColumnMenuPointerDragStart(event) {
+  if (event.target.closest(".board-column-menu-status-visibility, .table-property-visibility")) {
+    return;
+  }
+
+  const item = event.target.closest(".board-column-menu-status-item, .table-property-menu-item");
   if (!item) {
     return;
   }
+  const isPropertyItem = item.classList.contains("table-property-menu-item");
 
   const sourceRect = item.getBoundingClientRect();
   boardColumnMenuPointerDragState = {
+    type: isPropertyItem ? "property" : "status",
     status: item.dataset.status,
+    property: item.dataset.tableColumn,
     startX: event.clientX,
     startY: event.clientY,
     dragOffsetX: event.clientX - sourceRect.left,
@@ -991,7 +1084,8 @@ function handleBoardColumnMenuPointerDragStart(event) {
     targetItem: item,
     isDragging: false,
   };
-  draggedBoardColumnMenuStatus = item.dataset.status;
+  draggedBoardColumnMenuStatus = isPropertyItem ? null : item.dataset.status;
+  draggedBoardColumnMenuProperty = isPropertyItem ? item.dataset.tableColumn : null;
   try {
     item.setPointerCapture?.(event.pointerId);
   } catch (error) {
@@ -1022,9 +1116,9 @@ function handleBoardColumnMenuPointerDragMove(event) {
     moveBoardColumnMenuDragImage(event);
   }
 
-  const targetItem = document
-    .elementFromPoint(event.clientX, event.clientY)
-    ?.closest(".board-column-menu-status-item");
+  const targetSelector =
+    boardColumnMenuPointerDragState.type === "property" ? ".table-property-menu-item" : ".board-column-menu-status-item";
+  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(targetSelector);
   const menu = boardColumnMenuPointerDragState.sourceItem.closest(".board-view-menu-popover, .board-column-menu-popover");
   if (!targetItem || !menu?.contains(targetItem)) {
     return;
@@ -1043,6 +1137,7 @@ function handleBoardColumnMenuPointerDragEnd(event) {
   if (!isDragging || !targetItem) {
     boardColumnMenuPointerDragState = null;
     draggedBoardColumnMenuStatus = null;
+    draggedBoardColumnMenuProperty = null;
     clearBoardColumnMenuDragState();
     removeBoardColumnMenuDragImage();
     return;
@@ -1050,10 +1145,17 @@ function handleBoardColumnMenuPointerDragEnd(event) {
 
   event.preventDefault();
   suppressNextBoardColumnMenuClick();
-  const reorderedStatuses = getBoardColumnMenuPreviewOrder(event, targetItem);
-  saveStatusOrder(reorderedStatuses);
+  const reorderedItems = getBoardColumnMenuPreviewOrder(event, targetItem);
+  if (boardColumnMenuPointerDragState.type === "property") {
+    saveTableColumnOrder(reorderedItems);
+    renderTablePropertyMenu();
+  } else {
+    const reorderedStatuses = reorderedItems;
+    saveStatusOrder(reorderedStatuses);
+  }
   boardColumnMenuPointerDragState = null;
   draggedBoardColumnMenuStatus = null;
+  draggedBoardColumnMenuProperty = null;
   clearBoardColumnMenuDragState();
   removeBoardColumnMenuDragImage();
   renderFolders();
@@ -1096,6 +1198,10 @@ function removeBoardColumnMenuDragImage() {
 }
 
 function getBoardColumnMenuPreviewOrder(event, targetItem) {
+  if (boardColumnMenuPointerDragState?.type === "property") {
+    return getTablePropertyMenuPreviewOrder(event, targetItem);
+  }
+
   const visibleFolders = filterFolders(folders, searchInput.value);
   const statusOrder = getOrderedStatuses(visibleFolders);
   const targetStatus = targetItem.dataset.status;
@@ -1118,18 +1224,43 @@ function getBoardColumnMenuPreviewOrder(event, targetItem) {
   return moveStatusNearTarget(statusOrder, draggedBoardColumnMenuStatus, targetStatus, insertAfterTarget);
 }
 
+function getTablePropertyMenuPreviewOrder(event, targetItem) {
+  const columnOrder = getActiveVisibleTableColumnOrder();
+  const targetColumn = targetItem.dataset.tableColumn;
+  if (!draggedBoardColumnMenuProperty || !targetColumn || targetColumn === draggedBoardColumnMenuProperty) {
+    return columnOrder;
+  }
+
+  const draggedIndex = columnOrder.indexOf(draggedBoardColumnMenuProperty);
+  const targetIndex = columnOrder.indexOf(targetColumn);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return columnOrder;
+  }
+
+  const insertAfterTarget =
+    draggedIndex < targetIndex
+      ? event.clientY > targetRect.top + targetRect.height * 0.25
+      : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+
+  return moveStatusNearTarget(columnOrder, draggedBoardColumnMenuProperty, targetColumn, insertAfterTarget);
+}
+
 function applyBoardColumnMenuPreview(previewStatuses) {
   const menu = getActiveBoardColumnMenu();
-  const statusList = getBoardColumnMenuStatusList();
-  const items = [...(menu?.querySelectorAll(".board-column-menu-status-item") || [])];
-  const menuGap = Number.parseFloat(getComputedStyle(statusList).rowGap) || 0;
+  const isPropertyDrag = boardColumnMenuPointerDragState?.type === "property";
+  const list = isPropertyDrag ? menu?.querySelector("#tablePropertyMenuList") : getBoardColumnMenuStatusList();
+  const itemSelector = isPropertyDrag ? ".table-property-menu-item" : ".board-column-menu-status-item";
+  const items = [...(menu?.querySelectorAll(itemSelector) || [])];
+  const menuGap = Number.parseFloat(getComputedStyle(list).rowGap) || 0;
   items.forEach((item, currentIndex) => {
-    const previewIndex = previewStatuses.indexOf(item.dataset.status);
+    const itemId = isPropertyDrag ? item.dataset.tableColumn : item.dataset.status;
+    const previewIndex = previewStatuses.indexOf(itemId);
     const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
     item.classList.remove("is-board-column-menu-preview-up", "is-board-column-menu-preview-down");
     item.style.setProperty("--board-column-menu-status-shift", shiftDistance);
 
-    if (item.dataset.status === draggedBoardColumnMenuStatus) {
+    if (itemId === (isPropertyDrag ? draggedBoardColumnMenuProperty : draggedBoardColumnMenuStatus)) {
       item.classList.add("is-board-column-menu-drag-source");
       return;
     }
@@ -1147,7 +1278,7 @@ function applyBoardColumnMenuPreview(previewStatuses) {
 }
 
 function clearBoardColumnMenuDragState() {
-  getActiveBoardColumnMenu()?.querySelectorAll(".board-column-menu-status-item").forEach((item) => {
+  getActiveBoardColumnMenu()?.querySelectorAll(".board-column-menu-status-item, .table-property-menu-item").forEach((item) => {
     item.classList.remove(
       "is-board-column-menu-drag-source",
       "is-board-column-menu-preview-up",
@@ -1503,6 +1634,7 @@ function createDefaultBoardViews(legacyWorkspace = {}) {
       ...baseViewSettings,
       scrollPosition: viewScrollPositions[type],
       tableColumnOrder: legacyWorkspace.tableColumnOrder,
+      tableHiddenColumns: legacyWorkspace.tableHiddenColumns,
       tableColumnWidths: normalizeTableColumnWidths(legacyWorkspace.tableColumnWidths, legacyWorkspace.tableNameWidth),
     }),
   );
@@ -1520,6 +1652,7 @@ function createBoardViewConfig(type, id = type, name = getBoardViewTypeLabel(typ
     showHiddenStatuses: settings.showHiddenStatuses === true,
     scrollPosition: normalizeScrollPosition(settings.scrollPosition),
     tableColumnOrder: normalizeTableColumnOrder(settings.tableColumnOrder),
+    tableHiddenColumns: normalizeTableHiddenColumns(settings.tableHiddenColumns),
     tableColumnWidths: normalizeTableColumnWidths(settings.tableColumnWidths),
   };
 }
@@ -1614,6 +1747,17 @@ function getActiveTableColumnOrder() {
   return normalizeTableColumnOrder(getActiveBoardViewConfig()?.tableColumnOrder);
 }
 
+function getActiveVisibleTableColumnOrder() {
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  const visibleColumns = getActiveTableColumnOrder().filter((columnId) => !hiddenColumns.has(columnId));
+
+  return visibleColumns.length > 0 ? visibleColumns : ["name"];
+}
+
+function getActiveTableHiddenColumns() {
+  return normalizeTableHiddenColumns(getActiveBoardViewConfig()?.tableHiddenColumns);
+}
+
 function getActiveTableNameWidth() {
   return getActiveTableColumnWidths().name;
 }
@@ -1685,6 +1829,14 @@ function normalizeTableColumnOrder(columnOrder) {
   return [...normalizedColumns, ...missingColumns];
 }
 
+function normalizeTableHiddenColumns(hiddenColumns) {
+  if (!Array.isArray(hiddenColumns)) {
+    return [];
+  }
+
+  return hiddenColumns.filter((columnId) => tableColumnIds.includes(columnId) && columnId !== "name");
+}
+
 function normalizeTableNameWidth(width) {
   return normalizeTableColumnWidth("name", width);
 }
@@ -1718,7 +1870,7 @@ function normalizeTableColumnWidths(widths, legacyNameWidth) {
 }
 
 function normalizeResizedTableColumnWidth(columnId, width, currentWidths) {
-  const siblingWidth = tableColumnIds
+  const siblingWidth = getActiveVisibleTableColumnOrder()
     .filter((tableColumnId) => tableColumnId !== columnId)
     .reduce((total, tableColumnId) => total + currentWidths[tableColumnId], 0);
   const maxWidth = maxTableColumnTotalWidth - siblingWidth;
@@ -1930,6 +2082,26 @@ function saveTableColumnOrder(tableColumnOrder) {
   updateActiveBoardViewConfig((view) => ({ ...view, tableColumnOrder: normalizeTableColumnOrder(tableColumnOrder) }));
 }
 
+function saveTableHiddenColumns(tableHiddenColumns) {
+  updateActiveBoardViewConfig((view) => ({ ...view, tableHiddenColumns: normalizeTableHiddenColumns(tableHiddenColumns) }));
+}
+
+function toggleTableColumnVisibility(columnId) {
+  if (!tableColumnIds.includes(columnId) || columnId === "name") {
+    return;
+  }
+
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  if (hiddenColumns.has(columnId)) {
+    hiddenColumns.delete(columnId);
+  } else {
+    hiddenColumns.add(columnId);
+  }
+
+  saveTableHiddenColumns([...hiddenColumns]);
+  renderFolders();
+}
+
 function saveTableNameWidth(tableNameWidth) {
   saveTableColumnWidth("name", tableNameWidth);
 }
@@ -2016,6 +2188,7 @@ function loadBoardSnapshot() {
       kind: "directory",
       status: folder.status,
       path: typeof folder.path === "string" ? folder.path : folder.name,
+      text: typeof folder.text === "string" ? folder.text : "",
     }));
   } catch (error) {
     localStorage.removeItem(boardSnapshotStorageKey);
@@ -2288,6 +2461,14 @@ function handleCardPlaceFolderOpenKeydown(event) {
   handleCardPlaceFolderOpen();
 }
 
+function handleCardPlaceTextInput() {
+  if (!selectedCardPath) {
+    return;
+  }
+
+  updateFolderText(selectedCardPath, cardPlaceText.value);
+}
+
 function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
@@ -2301,11 +2482,49 @@ function renderCardPlacePanel() {
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
+  cardPlaceText.value = "";
+  cardPlaceText.disabled = !selectedCard;
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
     cardPlaceStatus.textContent = selectedCard.status;
+    cardPlaceText.value = getFolderText(selectedCard);
   }
   renderCardPlaceEntries();
+}
+
+function getFolderText(folder) {
+  return typeof folder?.text === "string" ? folder.text : "";
+}
+
+function updateFolderText(path, text) {
+  const normalizedText = typeof text === "string" ? text : "";
+  folders = folders.map((folder) => (
+    getFolderPath(folder) === path ? { ...folder, text: normalizedText } : folder
+  ));
+
+  if (selectedCardPath === path && cardPlaceText.value !== normalizedText) {
+    cardPlaceText.value = normalizedText;
+  }
+
+  saveBoardSnapshot();
+  scheduleFolderTextSave(path, normalizedText);
+}
+
+function scheduleFolderTextSave(path, text) {
+  window.clearTimeout(folderPropertySaveTimers.get(path));
+  const timer = window.setTimeout(() => {
+    folderPropertySaveTimers.delete(path);
+    saveFolderText(path, text);
+  }, 350);
+  folderPropertySaveTimers.set(path, timer);
+}
+
+async function saveFolderText(path, text) {
+  try {
+    await postJson("/api/properties", { path, text });
+  } catch (error) {
+    setStatus("Could not save text property.", "error");
+  }
 }
 
 async function loadCardPlaceEntries(folder) {
@@ -2755,7 +2974,7 @@ function canShowBoardScrollbar() {
 }
 
 function renderTableView(visibleFolders) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
   const tableFolders = getTableFolders(visibleFolders);
   const table = document.createElement("div");
@@ -2800,14 +3019,15 @@ function compareFoldersByStatusOrder(left, right, statusOrder) {
 }
 
 function setTableGridTemplate(tableElement) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const tableColumnWidths = getActiveTableColumnWidths();
   const columnTracks = columnOrder.map((columnId) =>
     `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${columnId}-column-width))`,
   );
 
-  tableElement.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
-  tableElement.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
+  tableColumnIds.forEach((columnId) => {
+    tableElement.style.setProperty(`--table-${columnId}-column-width`, `${tableColumnWidths[columnId]}%`);
+  });
   tableElement.style.setProperty("--table-columns", columnTracks.join(" "));
 }
 
@@ -3725,7 +3945,7 @@ function removeTableColumnDragImage() {
 }
 
 function getTablePreviewColumnOrder(event, targetCell) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const targetColumn = targetCell.dataset.tableColumn;
   if (!draggedTableColumn || !targetColumn || targetColumn === draggedTableColumn) {
     return columnOrder;
@@ -3790,7 +4010,7 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
   row.className = "folder-table-row";
   row.dataset.folderPath = folder.path || folder.name;
   row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
-  row.append(...columnOrder.map((columnId) => createTableCell(getTableCellText(folder, columnId), columnId)));
+  row.append(...columnOrder.map((columnId) => createTableCell(folder, columnId)));
 
   return row;
 }
@@ -4201,17 +4421,38 @@ function createTableResizeHandle(columnId) {
   return handle;
 }
 
-function createTableCell(text, columnId) {
+function createTableCell(folder, columnId) {
   const cell = document.createElement("span");
   cell.className = "folder-table-cell";
   cell.dataset.tableColumn = columnId;
-  cell.textContent = text;
+
+  if (columnId === "text") {
+    const input = document.createElement("input");
+    input.className = "table-text-input";
+    input.type = "text";
+    input.value = getTableCellText(folder, columnId);
+    input.placeholder = "Text";
+    input.addEventListener("click", (event) => event.stopPropagation());
+    input.addEventListener("input", () => updateFolderText(folder.path || folder.name, input.value));
+    cell.append(input);
+    return cell;
+  }
+
+  cell.textContent = getTableCellText(folder, columnId);
 
   return cell;
 }
 
 function getTableCellText(folder, columnId) {
-  return columnId === "status" ? folder.status : folder.name;
+  if (columnId === "status") {
+    return folder.status;
+  }
+
+  if (columnId === "text") {
+    return getFolderText(folder);
+  }
+
+  return folder.name;
 }
 
 function createFolderCard(folder, options = {}) {
@@ -4255,6 +4496,7 @@ function saveBoardSnapshot() {
       name: folder.name,
       path: folder.path,
       status: folder.status,
+      text: getFolderText(folder),
     })),
   };
 

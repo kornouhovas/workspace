@@ -651,12 +651,18 @@ input:focus-visible {
   letter-spacing: 0;
 }
 
-.board-column-menu-status-list {
+.table-property-menu-section-title {
+  padding-top: 2px;
+}
+
+.board-column-menu-status-list,
+.table-property-menu-list {
   display: grid;
   gap: 2px;
 }
 
-.board-column-menu-status-item {
+.board-column-menu-status-item,
+.table-property-menu-item {
   display: grid;
   --board-column-menu-status-shift: 0px;
   width: 100%;
@@ -672,25 +678,40 @@ input:focus-visible {
   user-select: none;
 }
 
-.board-column-menu-status-item:hover {
+.board-column-menu-status-item {
+  --board-column-menu-status-shift: 0px;
+  grid-template-columns: 14px minmax(0, 1fr) 20px;
+  transition: transform 140ms ease;
+}
+
+.board-column-menu-status-item:hover,
+.table-property-menu-item:hover {
   background: rgba(255, 255, 255, 0.045);
 }
 
-.board-column-menu-status-item:active {
+.board-column-menu-status-item:active,
+.table-property-menu-item:active {
   cursor: grabbing;
 }
 
-.board-column-menu-status-item.is-board-column-menu-drag-source {
+.board-column-menu-status-item.is-board-column-menu-drag-source,
+.table-property-menu-item.is-board-column-menu-drag-source {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-.board-column-menu-status-item.is-board-column-menu-preview-up {
+.board-column-menu-status-item.is-board-column-menu-drag-source {
+  visibility: hidden;
+}
+
+.board-column-menu-status-item.is-board-column-menu-preview-up,
+.table-property-menu-item.is-board-column-menu-preview-up {
   transform: translateY(calc(-1 * var(--board-column-menu-status-shift)));
 }
 
-.board-column-menu-status-item.is-board-column-menu-preview-down {
+.board-column-menu-status-item.is-board-column-menu-preview-down,
+.table-property-menu-item.is-board-column-menu-preview-down {
   transform: translateY(var(--board-column-menu-status-shift));
 }
 
@@ -722,7 +743,8 @@ input:focus-visible {
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
 }
 
-.board-column-menu-status-visibility {
+.board-column-menu-status-visibility,
+.table-property-visibility {
   display: grid;
   width: 20px;
   height: 20px;
@@ -733,6 +755,10 @@ input:focus-visible {
   color: inherit;
   cursor: pointer;
   padding: 0;
+}
+
+.board-column-menu-status-visibility {
+  cursor: pointer;
 }
 
 .search {
@@ -1093,6 +1119,21 @@ input:focus-visible {
 
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"] {
   cursor: pointer;
+}
+
+.table-text-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  font: inherit;
+  outline: 0;
+}
+
+.table-text-input::placeholder {
+  color: var(--faint);
 }
 
 .folder-table-head .folder-table-cell {
@@ -1483,6 +1524,32 @@ input:focus-visible {
   color: var(--text);
   font-size: 15px;
   line-height: 1.35;
+}
+
+.card-place-text-section {
+  display: grid;
+  gap: 9px;
+}
+
+.card-place-text {
+  min-height: 96px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171716;
+  color: var(--text);
+  padding: 10px 11px;
+  font: inherit;
+  line-height: 1.35;
+  outline: 0;
+}
+
+.card-place-text:focus {
+  border-color: color-mix(in srgb, var(--text) 34%, var(--line));
+}
+
+.card-place-text::placeholder {
+  color: var(--faint);
 }
 
 .card-place-folder-section {
