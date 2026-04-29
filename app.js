@@ -2033,6 +2033,14 @@ function saveFolderAccessRules() {
   localStorage.setItem(folderAccessRulesVersionStorageKey, folderAccessRulesVersion);
 }
 
+function clearFolderAccessState() {
+  folderAccessRules = {};
+  searchInput.value = "";
+  localStorage.removeItem(folderAccessRulesStorageKey);
+  localStorage.removeItem(folderAccessRulesVersionStorageKey);
+  localStorage.removeItem(boardSnapshotStorageKey);
+}
+
 function isStoredWorkspaceState(state) {
   return (
     state &&
@@ -2089,6 +2097,7 @@ async function chooseFolder() {
     setStatus("Choosing workspace root...", "idle");
     const data = await postJson("/api/select-root", {});
     selectedRoot = data.root;
+    clearFolderAccessState();
     folders = [];
     folderAccessTree = [];
     updateRoot(selectedRoot.name);

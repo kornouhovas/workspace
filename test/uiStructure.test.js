@@ -66,6 +66,8 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(app, /function handleSettingsTreeClick\(event\)/);
   assert.match(app, /function setFolderAccessRule\(path, rule\)/);
   assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
+  assert.match(app, /function clearFolderAccessState\(\)/);
+  assert.match(app, /clearFolderAccessState\(\);/);
   assert.match(app, /postJson\("\/api\/scan", \{ rules: folderAccessRules \}\)/);
   assert.match(app, /postJson\("\/api\/select-root", \{\}\)/);
   assert.match(app, /const folderRoleLabels = \{/);
