@@ -87,6 +87,22 @@ test("createListEntriesResponse returns visible folders first then files", async
   );
 });
 
+test("createListEntriesResponse can list the selected root folder", async () => {
+  const root = await createWorkspaceFixture();
+  await writeFile(join(root, "Readme.txt"), "root file");
+  const response = await createListEntriesResponse({ root, body: { path: "" } });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    response.payload.entries.map((entry) => [entry.kind, entry.name, entry.path]),
+    [
+      ["directory", "Active", "Active"],
+      ["directory", "Archive", "Archive"],
+      ["file", "Readme.txt", "Readme.txt"],
+    ],
+  );
+});
+
 test("createFileResponse streams previewable files inside root", async () => {
   const root = await createWorkspaceFixture();
   const response = await createFileResponse({ root, path: "Archive/Completed/Brief.pdf" });

@@ -78,7 +78,7 @@ export async function createListEntriesResponse({ root, body }) {
       return createJsonResponse(404, { error: "Workspace root was not selected." });
     }
 
-    const targetPath = resolveWorkspacePath(root, body?.path || "");
+    const targetPath = resolveWorkspaceEntryPath(root, body?.path || "");
     if (!existsSync(targetPath) || !statSync(targetPath).isDirectory()) {
       return createJsonResponse(404, { error: "Folder was not found." });
     }
@@ -163,7 +163,7 @@ async function listWorkspaceAccessTree(root, rules, parentPath = []) {
 }
 
 async function listWorkspaceEntries(root, folderPath) {
-  const targetPath = folderPath ? resolveWorkspacePath(root, folderPath) : root;
+  const targetPath = resolveWorkspaceEntryPath(root, folderPath);
   const entries = await readVisibleDirectoryEntries(targetPath);
 
   return entries
@@ -186,6 +186,10 @@ async function readVisibleDirectoryEntries(directoryPath) {
   return entries
     .filter((entry) => !entry.name.startsWith("."))
     .sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: "base" }));
+}
+
+function resolveWorkspaceEntryPath(root, relativePath) {
+  return relativePath ? resolveWorkspacePath(root, relativePath) : root;
 }
 
 function createRootPayload(rootPath) {
