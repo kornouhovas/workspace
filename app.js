@@ -171,6 +171,7 @@ async function initializeApp() {
 
     selectedRoot = root;
     updateRoot(root.name);
+    renderFolders();
     if (selectedCardPath) {
       loadCardPlaceEntries(findFolderByPath(selectedCardPath));
     }
@@ -2401,7 +2402,7 @@ async function scanSelectedFolder() {
     const data = await postJson("/api/scan", { rules: folderAccessRules });
     selectedRoot = data.root;
     folderAccessTree = data.tree;
-    folders = data.folders;
+    folders = mergeScannedFoldersWithLocalText(data.folders);
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
@@ -2578,7 +2579,7 @@ function clearCardPlaceTextPlaceholder() {
 
 function handleCardPlaceTextBlur() {
   if (!cardPlaceText.value) {
-    cardPlaceText.placeholder = getTextPropertyLabel();
+    cardPlaceText.placeholder = "Text";
   }
 }
 
@@ -2598,7 +2599,7 @@ function renderCardPlacePanel() {
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
   cardPlaceText.value = "";
-  cardPlaceText.placeholder = getTextPropertyLabel();
+  cardPlaceText.placeholder = "Text";
   cardPlaceText.disabled = !selectedCard;
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
@@ -2625,6 +2626,18 @@ function getTextareaSingleLineHeight(textarea) {
 
 function getFolderText(folder) {
   return typeof folder?.text === "string" ? folder.text : "";
+}
+
+function mergeScannedFoldersWithLocalText(scannedFolders) {
+  const localTextsByPath = new Map(
+    folders.map((folder) => [getFolderPath(folder), getFolderText(folder)]),
+  );
+
+  return scannedFolders.map((folder) => (
+    localTextsByPath.has(getFolderPath(folder))
+      ? { ...folder, text: localTextsByPath.get(getFolderPath(folder)) }
+      : folder
+  ));
 }
 
 function updateFolderText(path, text) {

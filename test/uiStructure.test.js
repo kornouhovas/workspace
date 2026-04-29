@@ -273,7 +273,11 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /function getTextPropertyLabel\(\)/);
   assert.match(app, /cardPlaceTextLabel\.textContent = getTextPropertyLabel\(\)/);
   assert.match(app, /cardPlaceTextLabel\.title = getTextPropertyLabel\(\)/);
-  assert.match(app, /cardPlaceText\.placeholder = getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceText\.placeholder = "Text"/);
+  assert.match(app, /renderFolders\(\);[\s\S]*await scanSelectedFolder\(\)/);
+  assert.match(app, /folders = mergeScannedFoldersWithLocalText\(data\.folders\)/);
+  assert.match(app, /function mergeScannedFoldersWithLocalText\(scannedFolders\)/);
+  assert.match(app, /const localTextsByPath = new Map\(\s*folders\.map\(\(folder\) => \[getFolderPath\(folder\), getFolderText\(folder\)\]\),\s*\)/);
   assert.match(app, /hidden \? `Show \$\{getTableColumnLabel\(columnId\)\} property` : `Hide \$\{getTableColumnLabel\(columnId\)\} property`/);
   assert.match(app, /control\.spellcheck = false/);
   assert.match(app, /input\.spellcheck = false/);
