@@ -26,6 +26,7 @@ const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
 const cardPlacePanel = document.querySelector("#cardPlacePanel");
 const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
+const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
@@ -286,6 +287,7 @@ function bindEvents() {
   folderGrid.addEventListener("click", handleCardPlaceClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
+  cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -2268,6 +2270,14 @@ function closeCardPlace() {
   renderCardPlacePanel();
 }
 
+function handleCardPlaceFolderOpen() {
+  if (!selectedCardPath) {
+    return;
+  }
+
+  revealCardPlaceEntry(selectedCardPath, "directory");
+}
+
 function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
@@ -2277,6 +2287,7 @@ function renderCardPlacePanel() {
   cardPlacePanel.style.setProperty("--card-place-width", `${getActiveCardPlaceWidth()}px`);
   cardPlacePanel.classList.toggle("is-open", Boolean(selectedCard));
   cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
+  cardPlaceFolderOpenButton.disabled = !selectedCard;
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
   if (selectedCard) {
@@ -2397,19 +2408,16 @@ function createCardPlaceEntryRow(entry, depth) {
   row.dataset.path = entry.path;
   row.style.setProperty("--entry-depth", String(depth));
 
-  const chevron = document.createElement("span");
-  chevron.className = "card-place-entry-chevron";
-  chevron.setAttribute("aria-hidden", "true");
+  const rowItems = [];
   if (entry.kind === "directory") {
+    const chevron = document.createElement("span");
+    chevron.className = "card-place-entry-chevron";
+    chevron.setAttribute("aria-hidden", "true");
     row.setAttribute("aria-expanded", String(cardPlaceExpandedPaths.has(entry.path)));
-  }
-
-  const rowItems = [chevron];
-  if (entry.kind === "directory") {
     const icon = document.createElement("span");
     icon.className = "card-place-entry-icon is-directory";
     icon.setAttribute("aria-hidden", "true");
-    rowItems.push(icon);
+    rowItems.push(chevron, icon);
   }
 
   const name = document.createElement("span");

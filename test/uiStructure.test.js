@@ -399,6 +399,7 @@ test("card place opens from cards and stores its width per workspace", async () 
 
   assert.match(html, /id="cardPlacePanel"/);
   assert.match(html, /id="cardPlaceResizeHandle"/);
+  assert.match(html, /id="cardPlaceFolderOpenButton"/);
   assert.match(html, /id="cardPlaceTitle"/);
   assert.match(html, /id="cardPlaceStatus"/);
   assert.match(html, /id="cardPlaceFolderList"/);
@@ -406,6 +407,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(html, />Status</);
   assert.match(app, /import \{[^}]*filterFolders[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
   assert.match(app, /const cardPlacePanel = document\.querySelector\("#cardPlacePanel"\)/);
+  assert.match(app, /const cardPlaceFolderOpenButton = document\.querySelector\("#cardPlaceFolderOpenButton"\)/);
   assert.match(app, /const cardPlaceFolderList = document\.querySelector\("#cardPlaceFolderList"\)/);
   assert.match(app, /let selectedCardPath = null/);
   assert.match(app, /let cardPlaceEntries = \[\]/);
@@ -417,6 +419,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /let cardPlaceResizeState = null/);
   assert.match(app, /folderGrid\.addEventListener\("click", handleCardPlaceClick\)/);
   assert.match(app, /cardPlaceFolderList\.addEventListener\("click", handleCardPlaceEntryClick\)/);
+  assert.match(app, /cardPlaceFolderOpenButton\.addEventListener\("click", handleCardPlaceFolderOpen\)/);
   assert.match(app, /cardPlaceResizeHandle\.addEventListener\("pointerdown", handleCardPlaceResizeStart\)/);
   assert.match(app, /document\.addEventListener\("click", handleCardPlaceOutsideClick\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlaceResizeMove\)/);
@@ -429,6 +432,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /event\.target\.closest\('\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]'\)/);
   assert.match(app, /function openCardPlace\(folder\)/);
   assert.match(app, /function closeCardPlace\(\)/);
+  assert.match(app, /function handleCardPlaceFolderOpen\(\)/);
+  assert.match(app, /revealCardPlaceEntry\(selectedCardPath, "directory"\)/);
   assert.match(app, /function renderCardPlacePanel\(\)/);
   assert.match(app, /function loadCardPlaceEntries\(folder\)/);
   assert.match(app, /postJson\("\/api\/list-entries", \{ path: getFolderPath\(folder\) \}\)/);
@@ -465,6 +470,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
   assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
+  assert.match(css, /\.card-place-title-row\s*\{/);
+  assert.match(css, /\.card-place-folder-open\s*\{/);
   assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto auto/s);
   assert.match(css, /\.card-place-field\s*\{[^}]*justify-content:\s*start/s);
   assert.match(css, /\.card-place-field\s*\{[^}]*gap:\s*6px/s);
@@ -481,6 +488,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*box-shadow:/s);
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{/);
+  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
+  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*padding-left:\s*calc\(10px \+ var\(--entry-depth, 0\) \* 18px\)/s);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
   assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);
