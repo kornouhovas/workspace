@@ -18,14 +18,14 @@ test("resolveWorkspacePath only allows relative paths inside the workspace root"
   assert.throws(() => resolveWorkspacePath(root, "/Users/example/Secrets/Brief.pdf"), /relative path/);
 });
 
-test("getMacOpenCommand opens folders and reveals files in Finder", () => {
+test("getMacOpenCommand opens folders and files in macOS", () => {
   assert.deepEqual(getMacOpenCommand("/tmp/Workspace/Card", "directory"), {
     command: "open",
     args: ["/tmp/Workspace/Card"],
   });
   assert.deepEqual(getMacOpenCommand("/tmp/Workspace/Card/Brief.pdf", "file"), {
     command: "open",
-    args: ["-R", "/tmp/Workspace/Card/Brief.pdf"],
+    args: ["/tmp/Workspace/Card/Brief.pdf"],
   });
 });
 
@@ -52,7 +52,7 @@ test("createRevealResponse validates path, kind, and existing item before spawni
   });
 
   assert.equal(fileResponse.status, 200);
-  assert.deepEqual(calls, [{ command: "open", args: ["-R", join(root, "Card", "Brief.pdf")] }]);
+  assert.deepEqual(calls, [{ command: "open", args: [join(root, "Card", "Brief.pdf")] }]);
 
   const traversalResponse = await createRevealResponse({
     body: { path: "../Brief.pdf", kind: "file" },

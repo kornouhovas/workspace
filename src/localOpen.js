@@ -46,9 +46,7 @@ export function resolveWorkspacePath(root, relativePath) {
 }
 
 export function getMacOpenCommand(targetPath, kind) {
-  return kind === "directory"
-    ? { command: "open", args: [targetPath] }
-    : { command: "open", args: ["-R", targetPath] };
+  return { command: "open", args: [targetPath] };
 }
 
 export function isPreviewablePath(path) {

@@ -2492,7 +2492,7 @@ async function revealCardPlaceEntry(path, kind) {
       throw new Error("Reveal request failed.");
     }
   } catch (error) {
-    setStatus("Could not open item in Finder. Check local workspace root.", "error");
+    setStatus("Could not open local item. Check local workspace root.", "error");
   }
 }
 
