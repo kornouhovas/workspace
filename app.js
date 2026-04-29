@@ -1,5 +1,6 @@
 import {
   filterFolders,
+  getFileHandleByPath,
   listFolderAccessTree,
   listFolderEntries,
   flattenAccessTreeCards,
@@ -133,6 +134,10 @@ let tableStatusMenuOpen = false;
 let selectedCardPath = null;
 let cardPlaceEntries = [];
 let cardPlaceEntriesState = "idle";
+let cardPlaceExpandedPaths = new Set();
+let cardPlaceChildrenByPath = new Map();
+let cardPlaceLoadingPaths = new Set();
+let cardPlaceFailedPaths = new Set();
 let cardPlaceEntriesRequest = 0;
 let workspaceSequence = 1;
 let workspaces = [
@@ -302,6 +307,7 @@ function bindEvents() {
   folderGrid.addEventListener("click", handleSettingsTreeClick);
   folderGrid.addEventListener("click", handleCardPlaceClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
+  cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -2292,9 +2298,7 @@ function openCardPlace(folder) {
 
 function closeCardPlace() {
   selectedCardPath = null;
-  cardPlaceEntries = [];
-  cardPlaceEntriesState = "idle";
-  cardPlaceEntriesRequest += 1;
+  resetCardPlaceEntries("idle", true);
   renderCardPlacePanel();
 }
 
@@ -2320,6 +2324,10 @@ async function loadCardPlaceEntries(folder) {
   const requestId = cardPlaceEntriesRequest + 1;
   cardPlaceEntriesRequest = requestId;
   cardPlaceEntries = [];
+  cardPlaceExpandedPaths = new Set();
+  cardPlaceChildrenByPath = new Map();
+  cardPlaceLoadingPaths = new Set();
+  cardPlaceFailedPaths = new Set();
 
   if (!folder || !selectedHandle) {
     cardPlaceEntriesState = "access";
@@ -2360,6 +2368,26 @@ async function loadCardPlaceEntries(folder) {
   renderCardPlaceEntries();
 }
 
+async function loadCardPlaceChildEntries(entry) {
+  if (!selectedHandle || entry.kind !== "directory" || cardPlaceChildrenByPath.has(entry.path)) {
+    return;
+  }
+
+  cardPlaceLoadingPaths.add(entry.path);
+  cardPlaceFailedPaths.delete(entry.path);
+  renderCardPlaceEntries();
+
+  try {
+    const entries = await listFolderEntries(selectedHandle, entry.path);
+    cardPlaceChildrenByPath.set(entry.path, entries);
+  } catch (error) {
+    cardPlaceFailedPaths.add(entry.path);
+  }
+
+  cardPlaceLoadingPaths.delete(entry.path);
+  renderCardPlaceEntries();
+}
+
 function renderCardPlaceEntries() {
   cardPlaceFolderList.replaceChildren();
 
@@ -2368,7 +2396,7 @@ function renderCardPlaceEntries() {
   }
 
   if (cardPlaceEntriesState === "ready") {
-    cardPlaceFolderList.replaceChildren(...cardPlaceEntries.map(createCardPlaceEntryRow));
+    cardPlaceFolderList.replaceChildren(...createCardPlaceEntryRows(cardPlaceEntries));
     return;
   }
 
@@ -2388,23 +2416,148 @@ function renderCardPlaceEntries() {
   }
 }
 
-function createCardPlaceEntryRow(entry) {
-  const row = document.createElement("div");
+function createCardPlaceEntryRows(entries, depth = 0) {
+  return entries.flatMap((entry) => {
+    const rows = [createCardPlaceEntryRow(entry, depth)];
+    if (entry.kind === "directory" && cardPlaceExpandedPaths.has(entry.path)) {
+      if (cardPlaceLoadingPaths.has(entry.path)) {
+        rows.push(createCardPlaceEntryMessage("Loading...", depth + 1));
+      } else if (cardPlaceFailedPaths.has(entry.path)) {
+        rows.push(createCardPlaceEntryMessage("Could not load folder contents", depth + 1));
+      } else {
+        rows.push(...createCardPlaceEntryRows(cardPlaceChildrenByPath.get(entry.path) || [], depth + 1));
+      }
+    }
+
+    return rows;
+  });
+}
+
+function createCardPlaceEntryRow(entry, depth) {
+  const row = document.createElement("button");
   row.className = "card-place-entry";
+  row.type = "button";
   row.dataset.kind = entry.kind;
   row.dataset.path = entry.path;
+  row.style.setProperty("--entry-depth", String(depth));
 
-  const icon = document.createElement("span");
-  icon.className = `card-place-entry-icon is-${entry.kind}`;
-  icon.setAttribute("aria-hidden", "true");
+  const chevron = document.createElement("span");
+  chevron.className = "card-place-entry-chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  if (entry.kind === "directory") {
+    row.setAttribute("aria-expanded", String(cardPlaceExpandedPaths.has(entry.path)));
+  }
+
+  const rowItems = [chevron];
+  if (entry.kind === "directory") {
+    const icon = document.createElement("span");
+    icon.className = "card-place-entry-icon is-directory";
+    icon.setAttribute("aria-hidden", "true");
+    rowItems.push(icon);
+  }
 
   const name = document.createElement("span");
   name.className = "card-place-entry-name";
   name.textContent = entry.name;
 
-  row.append(icon, name);
+  row.append(...rowItems, name);
 
   return row;
+}
+
+function createCardPlaceEntryMessage(message, depth) {
+  const row = document.createElement("div");
+  row.className = "card-place-entry-message";
+  row.style.setProperty("--entry-depth", String(depth));
+  row.textContent = message;
+
+  return row;
+}
+
+function handleCardPlaceEntryClick(event) {
+  const row = event.target.closest(".card-place-entry");
+  if (!row || !cardPlaceFolderList.contains(row)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  if (row.dataset.kind === "directory") {
+    toggleCardPlaceDirectory(row.dataset.path);
+    return;
+  }
+
+  openCardPlaceFile(row.dataset.path);
+}
+
+function toggleCardPlaceDirectory(path) {
+  const entry = findCardPlaceEntryByPath(path);
+  if (!entry || entry.kind !== "directory") {
+    return;
+  }
+
+  if (cardPlaceExpandedPaths.has(path)) {
+    cardPlaceExpandedPaths.delete(path);
+    renderCardPlaceEntries();
+    return;
+  }
+
+  cardPlaceExpandedPaths.add(path);
+  renderCardPlaceEntries();
+  loadCardPlaceChildEntries(entry);
+}
+
+async function openCardPlaceFile(path) {
+  if (!selectedHandle || !path || !(await hasPermission(selectedHandle, false))) {
+    return;
+  }
+
+  try {
+    const fileHandle = await getFileHandleByPath(selectedHandle, path);
+    const file = await fileHandle.getFile();
+    const fileUrl = URL.createObjectURL(file);
+    window.open(fileUrl, "_blank", "noopener");
+    window.setTimeout(() => URL.revokeObjectURL(fileUrl), 30000);
+  } catch (error) {
+    setStatus("Could not open file.", "error");
+  }
+}
+
+function findCardPlaceEntryByPath(path) {
+  if (!path) {
+    return null;
+  }
+
+  const searchEntries = (entries) => {
+    for (const entry of entries) {
+      if (entry.path === path) {
+        return entry;
+      }
+
+      if (entry.kind === "directory") {
+        const childEntry = searchEntries(cardPlaceChildrenByPath.get(entry.path) || []);
+        if (childEntry) {
+          return childEntry;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  return searchEntries(cardPlaceEntries);
+}
+
+function resetCardPlaceEntries(state = "idle", invalidateRequests = false) {
+  cardPlaceEntries = [];
+  cardPlaceEntriesState = state;
+  cardPlaceExpandedPaths = new Set();
+  cardPlaceChildrenByPath = new Map();
+  cardPlaceLoadingPaths = new Set();
+  cardPlaceFailedPaths = new Set();
+  if (invalidateRequests) {
+    cardPlaceEntriesRequest += 1;
+  }
 }
 
 function handleCardPlaceResizeStart(event) {

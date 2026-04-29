@@ -45,7 +45,7 @@ test("filterFolders matches folder names case-insensitively", () => {
   ]);
 });
 
-test("listFolderEntries returns folders first then files for a nested folder path", async () => {
+test("listFolderEntries returns visible folders first then visible files for a nested folder path", async () => {
   const entries = await listFolderEntries(
     fakeDirectoryHandle([
       {
@@ -59,6 +59,8 @@ test("listFolderEntries returns folders first then files for a nested folder pat
               yield { kind: "file", name: "brief.txt" };
               yield { kind: "directory", name: "Assets", values: fakeDirectoryHandle([]).values };
               yield { kind: "file", name: "README.md" };
+              yield { kind: "directory", name: ".cache", values: fakeDirectoryHandle([]).values };
+              yield { kind: "file", name: ".env" };
             },
           };
         },

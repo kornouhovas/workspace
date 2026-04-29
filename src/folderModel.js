@@ -60,7 +60,7 @@ export async function listFolderEntries(directoryHandle, folderPath) {
   const entries = [];
 
   for await (const entry of targetDirectory.values()) {
-    if (entry.kind === "directory" || entry.kind === "file") {
+    if ((entry.kind === "directory" || entry.kind === "file") && !isHiddenEntryName(entry.name)) {
       const path = [...splitFolderPath(folderPath), entry.name].join("/");
       entries.push({
         id: createEntryId(entry.kind, path),
@@ -72,6 +72,23 @@ export async function listFolderEntries(directoryHandle, folderPath) {
   }
 
   return entries.sort(compareFolderEntries);
+}
+
+export async function getFileHandleByPath(directoryHandle, filePath) {
+  const pathParts = splitFolderPath(filePath);
+  const fileName = pathParts.pop();
+  if (!fileName || isHiddenEntryName(fileName)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+
+  const parentHandle = await findDirectoryHandle(directoryHandle, pathParts.join("/"));
+  for await (const entry of parentHandle.values()) {
+    if (entry.kind === "file" && entry.name === fileName && !isHiddenEntryName(entry.name)) {
+      return entry;
+    }
+  }
+
+  throw new Error(`File not found: ${filePath}`);
 }
 
 export function flattenAccessTreeCards(tree, options = {}) {
@@ -206,6 +223,10 @@ function createEntryId(kind, path) {
 
 function splitFolderPath(path) {
   return typeof path === "string" && path ? path.split("/").filter(Boolean) : [];
+}
+
+function isHiddenEntryName(name) {
+  return typeof name === "string" && name.startsWith(".");
 }
 
 function createFolderId(name) {
