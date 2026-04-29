@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -7,6 +8,7 @@ import { flattenAccessTreeCards } from "./folderModel.js";
 import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
 
 export const defaultWorkspaceSettingsPath = join(process.cwd(), ".folder-kanban", "settings.json");
+export const defaultWorkspacePropertiesPath = join(process.cwd(), ".folder-kanban", "properties.json");
 
 const fileContentTypes = {
   ".avif": "image/avif",
@@ -54,14 +56,19 @@ export async function createSelectRootResponse({
   return createJsonResponse(200, { root: createRootPayload(rootPath) });
 }
 
-export async function createScanResponse({ root, rules = {} }) {
+export async function createScanResponse({ root, rules = {}, propertiesPath = defaultWorkspacePropertiesPath }) {
   try {
     if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
       return createJsonResponse(404, { error: "Workspace root was not found." });
     }
 
     const tree = await listWorkspaceAccessTree(root, rules);
-    const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) });
+    const properties = await readWorkspaceProperties(propertiesPath);
+    const folderProperties = getRootFolderProperties(properties, root);
+    const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) }).map((folder) => ({
+      ...folder,
+      text: normalizeTextProperty(folderProperties[folder.path]?.text),
+    }));
     return createJsonResponse(200, {
       root: createRootPayload(root),
       tree,
@@ -69,6 +76,48 @@ export async function createScanResponse({ root, rules = {} }) {
     });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not scan workspace root." });
+  }
+}
+
+export async function createPropertiesResponse({ root, body, propertiesPath = defaultWorkspacePropertiesPath }) {
+  try {
+    if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
+      return createJsonResponse(404, { error: "Workspace root was not selected." });
+    }
+
+    const folderPath = body?.path;
+    if (typeof folderPath !== "string" || !folderPath.trim()) {
+      return createJsonResponse(400, { error: "Folder path is required." });
+    }
+
+    const targetPath = resolveWorkspaceEntryPath(root, folderPath);
+    if (!existsSync(targetPath) || !statSync(targetPath).isDirectory()) {
+      return createJsonResponse(404, { error: "Folder was not found." });
+    }
+
+    const properties = await readWorkspaceProperties(propertiesPath);
+    const rootKey = createRootPropertiesKey(root);
+    const rootProperties = properties.roots[rootKey] || {};
+    const folderProperties = {
+      ...(rootProperties[folderPath] || {}),
+      text: normalizeTextProperty(body?.text),
+    };
+
+    const nextProperties = {
+      ...properties,
+      roots: {
+        ...properties.roots,
+        [rootKey]: {
+          ...rootProperties,
+          [folderPath]: folderProperties,
+        },
+      },
+    };
+
+    await writeWorkspaceProperties(propertiesPath, nextProperties);
+    return createJsonResponse(200, { properties: folderProperties });
+  } catch (error) {
+    return createJsonResponse(400, { error: error.message || "Could not save folder properties." });
   }
 }
 
@@ -122,6 +171,19 @@ export async function readWorkspaceSettings(configPath = defaultWorkspaceSetting
   } catch (error) {
     return {};
   }
+}
+
+export async function readWorkspaceProperties(propertiesPath = defaultWorkspacePropertiesPath) {
+  try {
+    return normalizeWorkspaceProperties(JSON.parse(await readFile(propertiesPath, "utf8")));
+  } catch (error) {
+    return { roots: {} };
+  }
+}
+
+export async function writeWorkspaceProperties(propertiesPath, properties) {
+  await mkdir(dirname(propertiesPath), { recursive: true });
+  await writeFile(propertiesPath, `${JSON.stringify(normalizeWorkspaceProperties(properties), null, 2)}\n`);
 }
 
 export async function writeWorkspaceSettings(configPath, settings) {
@@ -190,6 +252,44 @@ async function readVisibleDirectoryEntries(directoryPath) {
 
 function resolveWorkspaceEntryPath(root, relativePath) {
   return relativePath ? resolveWorkspacePath(root, relativePath) : root;
+}
+
+function getRootFolderProperties(properties, root) {
+  return properties.roots[createRootPropertiesKey(root)] || {};
+}
+
+function normalizeWorkspaceProperties(properties) {
+  const roots = properties?.roots && typeof properties.roots === "object" ? properties.roots : {};
+
+  return {
+    roots: Object.fromEntries(
+      Object.entries(roots)
+        .filter(([rootKey, folders]) => typeof rootKey === "string" && folders && typeof folders === "object")
+        .map(([rootKey, folders]) => [
+          rootKey,
+          Object.fromEntries(
+            Object.entries(folders)
+              .filter(([folderPath, folderProperties]) => (
+                typeof folderPath === "string" &&
+                folderProperties &&
+                typeof folderProperties === "object"
+              ))
+              .map(([folderPath, folderProperties]) => [
+                folderPath,
+                { text: normalizeTextProperty(folderProperties.text) },
+              ]),
+          ),
+        ]),
+    ),
+  };
+}
+
+function normalizeTextProperty(text) {
+  return typeof text === "string" ? text : "";
+}
+
+function createRootPropertiesKey(root) {
+  return createHash("sha256").update(root).digest("hex").slice(0, 16);
 }
 
 function createRootPayload(rootPath) {

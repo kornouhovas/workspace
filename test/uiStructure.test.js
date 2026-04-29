@@ -240,7 +240,7 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
   assert.match(
     html,
-    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*\)/,
+    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*\)/,
   );
   assert.match(html, /card\.dataset\.folderPath = folder\.path \|\| folder\.name/);
   assert.match(html, /row\.dataset\.folderPath = folder\.path \|\| folder\.name/);
@@ -249,6 +249,94 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(html, /function getStoredStatusOrder\(state\)/);
   assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
   assert.equal(html.includes("sidebarFolderCount"), false);
+});
+
+test("table and card place expose editable text property UI", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /id="cardPlaceText"/);
+  assert.match(html, /rows="1"/);
+  assert.match(html, /id="cardPlaceText"[\s\S]*spellcheck="false"/);
+  assert.match(html, /aria-label="Text"/);
+  assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
+  assert.match(app, /text:\s*"Text"/);
+  assert.match(app, /text:\s*21/);
+  assert.match(app, /Property visibility in table/);
+  assert.match(app, /function createTablePropertyMenu/);
+  assert.match(app, /function saveTableHiddenColumns/);
+  assert.match(app, /function createTableTextMenu/);
+  assert.match(app, /function startTableColumnRename/);
+  assert.match(app, /function toggleTableTextWrap/);
+  assert.match(app, /const cardPlaceTextLabel = document\.querySelector\('\[for="cardPlaceText"\]'\)/);
+  assert.match(app, /function getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceTextLabel\.textContent = getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceTextLabel\.title = getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceText\.placeholder = "Text"/);
+  assert.match(app, /renderFolders\(\);[\s\S]*await scanSelectedFolder\(\)/);
+  assert.match(app, /folders = mergeScannedFoldersWithLocalText\(data\.folders\)/);
+  assert.match(app, /function mergeScannedFoldersWithLocalText\(scannedFolders\)/);
+  assert.match(app, /const localTextsByPath = new Map\(\s*folders\.map\(\(folder\) => \[getFolderPath\(folder\), getFolderText\(folder\)\]\),\s*\)/);
+  assert.match(app, /hidden \? `Show \$\{getTableColumnLabel\(columnId\)\} property` : `Hide \$\{getTableColumnLabel\(columnId\)\} property`/);
+  assert.match(app, /control\.spellcheck = false/);
+  assert.match(app, /input\.spellcheck = false/);
+  assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
+  assert.match(app, /event\.target\.closest\("\.table-status-menu, \.table-text-menu"\)/);
+  assert.match(app, /postJson\("\/api\/properties"/);
+  assert.match(css, /\.card-place-text/);
+  assert.match(css, /\.card-place-text\s*\{[^}]*border:\s*0/s);
+  assert.match(css, /\.card-place-text\s*\{[^}]*background:\s*transparent/s);
+  assert.match(css, /\.card-place-text:focus\s*\{[^}]*border-color:\s*transparent/s);
+  assert.match(css, /\.card-place-text:focus-visible\s*\{[^}]*outline:\s*0/s);
+  assert.match(css, /\.card-place-text\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.card-place-text\s*\{[^}]*max-width:\s*max\(120px,\s*calc\(var\(--card-place-width,\s*50vw\) - 88px\)\)/s);
+  assert.match(css, /\.card-place-text\s*\{[^}]*justify-self:\s*start/s);
+  assert.match(css, /\.card-place-text\s*\{[^}]*flex:\s*1 1 auto/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*baseline/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*width:\s*100%/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.35/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*max-width:\s*15ch/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*white-space:\s*nowrap/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*text-overflow:\s*clip/s);
+  assert.match(css, /\.card-place-content\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.card-place-content\s*\{[^}]*overflow-x:\s*hidden/s);
+  assert.match(css, /\.card-place-content > \*\s*\{[^}]*max-width:\s*100%/s);
+  assert.match(css, /\.card-place-folder-list\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.table-text-menu/);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*top:\s*-10px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*bottom:\s*-10px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.folder-table-cell\[data-table-column="text"\]::before/);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):focus-within \.folder-table-cell\[data-table-column="text"\]::after/);
+  assert.match(css, /\.folder-table-row\.is-text-wrapped/);
+  assert.match(css, /\.table-text-input\s*\{[^}]*appearance:\s*none/s);
+  assert.match(css, /\.table-text-input:focus-visible\s*\{[^}]*outline:\s*0/s);
+  assert.match(css, /\.table-header-rename-input\s*\{[^}]*appearance:\s*none/s);
+  assert.match(css, /\.table-header-rename-input:focus-visible\s*\{[^}]*outline:\s*0/s);
+  assert.match(css, /\.table-property-menu-section-title/);
+  assert.match(app, /function hasMultilineTableText\(folder\)/);
+  assert.match(app, /row\.classList\.toggle\("is-text-wrapped", Boolean\(options\.textWrapped\) && hasMultilineTableText\(folder\)\)/);
+  assert.match(app, /function syncVisibleTableText\(path, text\)/);
+  assert.match(app, /syncVisibleTableText\(path, normalizedText\)/);
+  assert.match(app, /function getActiveTextEditState\(\)/);
+  assert.match(app, /function restoreActiveTextEditState\(editState\)/);
+  assert.match(app, /const activeTextEditState = getActiveTextEditState\(\)/);
+  assert.match(app, /restoreActiveTextEditState\(activeTextEditState\)/);
+  assert.match(app, /updateFolderText\(folder\.path \|\| folder\.name, control\.value, \{ syncTable: false \}\)/);
+  assert.match(app, /function syncTableTextRowState\(control, text\)/);
+  assert.match(app, /cell\.replaceChildren\(createTableTextControl\(\{ path, text \}, isTableTextWrapped\(\)\)\)/);
+  assert.match(app, /function formatTableTextValue\(folder, wrapped\)/);
+  assert.match(app, /return wrapped \? text : text\.replace\(\/\\s\*\\n\\s\*\/g, " "\)/);
+  assert.match(app, /const hasWrappedText = wrapped && hasMultilineTableText\(folder\)/);
+  assert.match(app, /document\.createElement\(hasWrappedText \? "textarea" : "input"\)/);
+  assert.match(app, /function getTextareaSingleLineHeight\(textarea\)/);
+  assert.match(app, /textarea\.style\.height = `\$\{getTextareaSingleLineHeight\(textarea\)\}px`/);
+  assert.match(html, /function hasInitialMultilineTableText\(folder\)/);
+  assert.match(html, /row\.classList\.toggle\("is-text-wrapped", textWrapped && hasInitialMultilineTableText\(folder\)\)/);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
@@ -506,12 +594,12 @@ test("table columns can be resized and reordered from the header", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
-  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
   assert.match(app, /const defaultTableColumnWidths = \{/);
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);
   assert.match(app, /tableColumnOrder:\s*normalizeTableColumnOrder\(settings\.tableColumnOrder\)/);
-  assert.match(app, /tableColumnWidths:\s*normalizeTableColumnWidths\(settings\.tableColumnWidths\)/);
+  assert.match(app, /tableColumnWidths:\s*normalizeBoardViewTableColumnWidths\(settings\)/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder\)/);
   assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth\)/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
@@ -534,8 +622,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function applyTableColumnPreview\(previewColumnOrder\)/);
   assert.match(app, /function clearTableColumnDragState\(\)/);
   assert.match(app, /function setTableGridTemplate\(tableElement\)/);
-  assert.match(app, /tableElement\.style\.setProperty\("--table-name-column-width"/);
-  assert.match(app, /tableElement\.style\.setProperty\("--table-status-column-width"/);
+  assert.match(app, /tableElement\.style\.setProperty\(`--table-\$\{columnId\}-column-width`/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
   assert.match(app, /cell\.draggable = false/);
@@ -568,7 +655,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
   assert.match(html, /function getStoredTableColumnWidths\(state\)/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
+  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
 });
 
 test("table view can hide and unhide status sections", async () => {
@@ -589,7 +676,7 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /compareFoldersByStatusOrder\(left, right, statusOrder\)/);
   assert.match(app, /function compareFoldersByStatusOrder\(left, right, statusOrder\)/);
   assert.match(app, /const tableFolders = getTableFolders\(visibleFolders\)/);
-  assert.match(app, /tableFolders\.map\(\(folder\) => createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\) \}\)\)/);
+  assert.match(app, /tableFolders\.map\(\(folder\) =>\s*createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\), textWrapped \}\),\s*\)/);
   assert.match(app, /function createTableStatusMenu\(statuses, hiddenStatuses\)/);
   assert.match(app, /let draggedTableMenuStatus = null/);
   assert.match(app, /function createTableStatusDragHandle\(\)/);
@@ -632,8 +719,8 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /cell\.setAttribute\("aria-expanded", "false"\)/);
   assert.match(app, /createTableStatusMenu\(getOrderedStatuses\(folders\), getActiveHiddenStatuses\(\)\)/);
   assert.match(app, /row\.classList\.toggle\("is-hidden-status-row", Boolean\(options\.hidden\)\)/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
-  assert.match(html, /function createInitialTableHeaderCell\(columnId, folders, statusOrder, hiddenStatuses\)/);
+  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
+  assert.match(html, /function createInitialTableHeaderCell\(columnId, folders, statusOrder, hiddenStatuses, tableColumnLabels = \{\}\)/);
   assert.match(html, /cell\.dataset\.tableColumn = columnId/);
   assert.match(html, /cell\.classList\.add\("has-table-status-menu"\)/);
   assert.match(html, /function createInitialTableStatusMenu\(statuses, hiddenStatuses\)/);

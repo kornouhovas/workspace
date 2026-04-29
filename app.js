@@ -29,6 +29,8 @@ const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
+const cardPlaceTextLabel = document.querySelector('[for="cardPlaceText"]');
+const cardPlaceText = document.querySelector("#cardPlaceText");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
 const pageTitle = document.querySelector(".topbar h1");
@@ -64,10 +66,11 @@ const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
 const boardViewIds = ["overview", "board", "table"];
 const addableBoardViewTypes = ["board", "table"];
-const tableColumnIds = ["name", "status"];
+const tableColumnIds = ["name", "status", "text"];
 const tableColumnLabels = {
   name: "Name",
   status: "Status",
+  text: "Text",
 };
 const folderRoleIds = ["status", "card", "group"];
 const folderRoleLabels = {
@@ -76,12 +79,15 @@ const folderRoleLabels = {
   group: "Group",
 };
 const defaultTableColumnWidths = {
-  name: 46,
-  status: 22,
+  name: 34,
+  status: 18,
+  text: 21,
 };
+const tableColumnWidthVersion = 2;
 const tableColumnWidthLimits = {
   name: { min: 24, max: 78 },
   status: { min: 12, max: 36 },
+  text: { min: 12, max: 42 },
 };
 const maxTableColumnTotalWidth = 94;
 const boardScrollbarHotZoneSize = 56;
@@ -97,6 +103,7 @@ let activeView = "workspace";
 let boardView = "overview";
 let draggedStatus = null;
 let draggedBoardColumnMenuStatus = null;
+let draggedBoardColumnMenuProperty = null;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
 let boardColumnMenuPointerDragState = null;
@@ -122,6 +129,7 @@ let tableStatusSuppressClick = false;
 let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
 let tableStatusMenuOpen = false;
+let tableTextMenuOpen = false;
 let selectedCardPath = null;
 let cardPlaceEntries = [];
 let cardPlaceEntriesState = "idle";
@@ -130,6 +138,7 @@ let cardPlaceChildrenByPath = new Map();
 let cardPlaceLoadingPaths = new Set();
 let cardPlaceFailedPaths = new Set();
 let cardPlaceEntriesRequest = 0;
+let folderPropertySaveTimers = new Map();
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -162,6 +171,7 @@ async function initializeApp() {
 
     selectedRoot = root;
     updateRoot(root.name);
+    renderFolders();
     if (selectedCardPath) {
       loadCardPlaceEntries(findFolderByPath(selectedCardPath));
     }
@@ -225,6 +235,12 @@ function bindEvents() {
       return;
     }
 
+    const tablePropertyVisibilityButton = event.target.closest(".table-property-visibility");
+    if (tablePropertyVisibilityButton) {
+      handleTablePropertyMenuClick(event);
+      return;
+    }
+
     const addOption = event.target.closest("[data-add-board-view-type]");
     if (addOption) {
       addBoardView(addOption.dataset.addBoardViewType);
@@ -260,9 +276,11 @@ function bindEvents() {
   boardColumnMenuPopover.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
   document.addEventListener("click", handleBoardColumnMenuOutsideClick);
   document.addEventListener("click", handleTableStatusMenuOutsideClick);
+  document.addEventListener("click", handleTableTextMenuOutsideClick);
   document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
+  document.addEventListener("keydown", handleTableTextMenuKeydown);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
@@ -280,6 +298,7 @@ function bindEvents() {
   folderGrid.addEventListener("dragend", handleTableColumnDragEnd);
   folderGrid.addEventListener("click", handleBoardColumnVisibilityClick);
   folderGrid.addEventListener("click", handleTableStatusMenuClick);
+  folderGrid.addEventListener("click", handleTableTextMenuClick);
   folderGrid.addEventListener("pointerdown", handleTableColumnResizeStart);
   folderGrid.addEventListener("pointerdown", handleTableStatusMenuPointerDragStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
@@ -289,6 +308,11 @@ function bindEvents() {
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
+  cardPlaceText.addEventListener("input", handleCardPlaceTextInput);
+  cardPlaceText.addEventListener("pointerdown", clearCardPlaceTextPlaceholder);
+  cardPlaceText.addEventListener("click", clearCardPlaceTextPlaceholder);
+  cardPlaceText.addEventListener("focus", handleCardPlaceTextFocus);
+  cardPlaceText.addEventListener("blur", handleCardPlaceTextBlur);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -624,10 +648,73 @@ function createBoardViewMenu() {
     createBoardViewMenuAction("duplicate", "Duplicate view", createMenuIcon("duplicate"), canDuplicate),
     createBoardViewMenuAction("delete", "Delete view", createMenuIcon("delete"), canDelete),
     createBoardViewMenuSeparator(),
+    ...(activeViewConfig?.type === "table" ? [createTablePropertyMenuSection(), createBoardViewMenuSeparator()] : []),
     createBoardViewMenuStatusSection(),
   );
 
   return menu;
+}
+
+function createTablePropertyMenuSection() {
+  const section = document.createElement("div");
+  section.className = "table-property-menu-section";
+
+  const title = document.createElement("div");
+  title.className = "table-property-menu-section-title board-column-menu-section-title";
+  title.textContent = "Property visibility in table";
+
+  const list = document.createElement("div");
+  list.className = "table-property-menu-list";
+  list.id = "tablePropertyMenuList";
+
+  section.append(title, list);
+  renderTablePropertyMenu(list);
+
+  return section;
+}
+
+function renderTablePropertyMenu(list = boardViewSwitcher.querySelector("#tablePropertyMenuList")) {
+  if (!list) {
+    return;
+  }
+
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  list.replaceChildren(
+    ...getActiveTableColumnOrder().map((columnId) =>
+      createTablePropertyMenuItem(columnId, hiddenColumns.has(columnId)),
+    ),
+  );
+}
+
+function createTablePropertyMenuItem(columnId, hidden) {
+  const item = document.createElement("div");
+  item.className = "table-property-menu-item";
+  item.dataset.tableColumn = columnId;
+  item.setAttribute("role", "menuitem");
+
+  const label = document.createElement("span");
+  label.className = "board-column-menu-status-label";
+  label.textContent = getTableColumnLabel(columnId);
+
+  item.append(createTableStatusDragHandle(), label);
+
+  if (columnId === "name") {
+    const spacer = document.createElement("span");
+    spacer.setAttribute("aria-hidden", "true");
+    item.append(spacer);
+    return item;
+  }
+
+  const button = document.createElement("button");
+  button.className = "table-property-visibility";
+  button.type = "button";
+  button.dataset.tableColumn = columnId;
+  button.setAttribute("aria-label", hidden ? `Show ${getTableColumnLabel(columnId)} property` : `Hide ${getTableColumnLabel(columnId)} property`);
+  button.setAttribute("aria-pressed", String(hidden));
+  button.append(createEyeIcon(hidden));
+  item.append(button);
+
+  return item;
 }
 
 function createBoardViewMenuAction(action, label, icon, enabled) {
@@ -676,6 +763,7 @@ function createMenuIcon(type) {
     rename: ["M4 20h4l10.5-10.5a2.8 2.8 0 0 0-4-4L4 16v4Z", "M13.5 6.5l4 4"],
     duplicate: ["M8 8h10v10H8z", "M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"],
     delete: ["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 14h10l1-14", "M9 7V4h6v3"],
+    wrap: ["M4 7h16", "M4 12h10", "M4 17h12", "M16 12h2a2 2 0 0 1 0 4h-2", "M17 14l-2 2 2 2"],
   };
 
   (paths[type] || []).forEach((pathData) => {
@@ -880,6 +968,10 @@ function structuredCloneBoardView(view) {
     hiddenStatuses: [...view.hiddenStatuses],
     scrollPosition: { ...view.scrollPosition },
     tableColumnOrder: [...view.tableColumnOrder],
+    tableHiddenColumns: [...view.tableHiddenColumns],
+    tableColumnLabels: { ...view.tableColumnLabels },
+    tableWrappedColumns: [...view.tableWrappedColumns],
+    tableColumnWidthVersion: view.tableColumnWidthVersion,
     tableColumnWidths: { ...view.tableColumnWidths },
   };
 }
@@ -911,6 +1003,7 @@ function renderBoardColumnMenu() {
   statusList.replaceChildren(
     ...statuses.map((status) => createBoardColumnMenuStatusItem(status, hiddenStatuses.has(status))),
   );
+  renderTablePropertyMenu();
 }
 
 function getBoardColumnMenuStatusList() {
@@ -970,19 +1063,34 @@ function handleBoardColumnMenuClick(event) {
   renderBoardColumnMenu();
 }
 
-function handleBoardColumnMenuPointerDragStart(event) {
-  if (event.target.closest(".board-column-menu-status-visibility")) {
+function handleTablePropertyMenuClick(event) {
+  const button = event.target.closest(".table-property-visibility");
+  if (!button) {
     return;
   }
 
-  const item = event.target.closest(".board-column-menu-status-item");
+  event.preventDefault();
+  event.stopPropagation();
+  toggleTableColumnVisibility(button.dataset.tableColumn);
+  renderTablePropertyMenu();
+}
+
+function handleBoardColumnMenuPointerDragStart(event) {
+  if (event.target.closest(".board-column-menu-status-visibility, .table-property-visibility")) {
+    return;
+  }
+
+  const item = event.target.closest(".board-column-menu-status-item, .table-property-menu-item");
   if (!item) {
     return;
   }
+  const isPropertyItem = item.classList.contains("table-property-menu-item");
 
   const sourceRect = item.getBoundingClientRect();
   boardColumnMenuPointerDragState = {
+    type: isPropertyItem ? "property" : "status",
     status: item.dataset.status,
+    property: item.dataset.tableColumn,
     startX: event.clientX,
     startY: event.clientY,
     dragOffsetX: event.clientX - sourceRect.left,
@@ -991,7 +1099,8 @@ function handleBoardColumnMenuPointerDragStart(event) {
     targetItem: item,
     isDragging: false,
   };
-  draggedBoardColumnMenuStatus = item.dataset.status;
+  draggedBoardColumnMenuStatus = isPropertyItem ? null : item.dataset.status;
+  draggedBoardColumnMenuProperty = isPropertyItem ? item.dataset.tableColumn : null;
   try {
     item.setPointerCapture?.(event.pointerId);
   } catch (error) {
@@ -1022,9 +1131,9 @@ function handleBoardColumnMenuPointerDragMove(event) {
     moveBoardColumnMenuDragImage(event);
   }
 
-  const targetItem = document
-    .elementFromPoint(event.clientX, event.clientY)
-    ?.closest(".board-column-menu-status-item");
+  const targetSelector =
+    boardColumnMenuPointerDragState.type === "property" ? ".table-property-menu-item" : ".board-column-menu-status-item";
+  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(targetSelector);
   const menu = boardColumnMenuPointerDragState.sourceItem.closest(".board-view-menu-popover, .board-column-menu-popover");
   if (!targetItem || !menu?.contains(targetItem)) {
     return;
@@ -1043,6 +1152,7 @@ function handleBoardColumnMenuPointerDragEnd(event) {
   if (!isDragging || !targetItem) {
     boardColumnMenuPointerDragState = null;
     draggedBoardColumnMenuStatus = null;
+    draggedBoardColumnMenuProperty = null;
     clearBoardColumnMenuDragState();
     removeBoardColumnMenuDragImage();
     return;
@@ -1050,10 +1160,17 @@ function handleBoardColumnMenuPointerDragEnd(event) {
 
   event.preventDefault();
   suppressNextBoardColumnMenuClick();
-  const reorderedStatuses = getBoardColumnMenuPreviewOrder(event, targetItem);
-  saveStatusOrder(reorderedStatuses);
+  const reorderedItems = getBoardColumnMenuPreviewOrder(event, targetItem);
+  if (boardColumnMenuPointerDragState.type === "property") {
+    saveTableColumnOrder(reorderedItems);
+    renderTablePropertyMenu();
+  } else {
+    const reorderedStatuses = reorderedItems;
+    saveStatusOrder(reorderedStatuses);
+  }
   boardColumnMenuPointerDragState = null;
   draggedBoardColumnMenuStatus = null;
+  draggedBoardColumnMenuProperty = null;
   clearBoardColumnMenuDragState();
   removeBoardColumnMenuDragImage();
   renderFolders();
@@ -1096,6 +1213,10 @@ function removeBoardColumnMenuDragImage() {
 }
 
 function getBoardColumnMenuPreviewOrder(event, targetItem) {
+  if (boardColumnMenuPointerDragState?.type === "property") {
+    return getTablePropertyMenuPreviewOrder(event, targetItem);
+  }
+
   const visibleFolders = filterFolders(folders, searchInput.value);
   const statusOrder = getOrderedStatuses(visibleFolders);
   const targetStatus = targetItem.dataset.status;
@@ -1118,18 +1239,43 @@ function getBoardColumnMenuPreviewOrder(event, targetItem) {
   return moveStatusNearTarget(statusOrder, draggedBoardColumnMenuStatus, targetStatus, insertAfterTarget);
 }
 
+function getTablePropertyMenuPreviewOrder(event, targetItem) {
+  const columnOrder = getActiveVisibleTableColumnOrder();
+  const targetColumn = targetItem.dataset.tableColumn;
+  if (!draggedBoardColumnMenuProperty || !targetColumn || targetColumn === draggedBoardColumnMenuProperty) {
+    return columnOrder;
+  }
+
+  const draggedIndex = columnOrder.indexOf(draggedBoardColumnMenuProperty);
+  const targetIndex = columnOrder.indexOf(targetColumn);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return columnOrder;
+  }
+
+  const insertAfterTarget =
+    draggedIndex < targetIndex
+      ? event.clientY > targetRect.top + targetRect.height * 0.25
+      : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+
+  return moveStatusNearTarget(columnOrder, draggedBoardColumnMenuProperty, targetColumn, insertAfterTarget);
+}
+
 function applyBoardColumnMenuPreview(previewStatuses) {
   const menu = getActiveBoardColumnMenu();
-  const statusList = getBoardColumnMenuStatusList();
-  const items = [...(menu?.querySelectorAll(".board-column-menu-status-item") || [])];
-  const menuGap = Number.parseFloat(getComputedStyle(statusList).rowGap) || 0;
+  const isPropertyDrag = boardColumnMenuPointerDragState?.type === "property";
+  const list = isPropertyDrag ? menu?.querySelector("#tablePropertyMenuList") : getBoardColumnMenuStatusList();
+  const itemSelector = isPropertyDrag ? ".table-property-menu-item" : ".board-column-menu-status-item";
+  const items = [...(menu?.querySelectorAll(itemSelector) || [])];
+  const menuGap = Number.parseFloat(getComputedStyle(list).rowGap) || 0;
   items.forEach((item, currentIndex) => {
-    const previewIndex = previewStatuses.indexOf(item.dataset.status);
+    const itemId = isPropertyDrag ? item.dataset.tableColumn : item.dataset.status;
+    const previewIndex = previewStatuses.indexOf(itemId);
     const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
     item.classList.remove("is-board-column-menu-preview-up", "is-board-column-menu-preview-down");
     item.style.setProperty("--board-column-menu-status-shift", shiftDistance);
 
-    if (item.dataset.status === draggedBoardColumnMenuStatus) {
+    if (itemId === (isPropertyDrag ? draggedBoardColumnMenuProperty : draggedBoardColumnMenuStatus)) {
       item.classList.add("is-board-column-menu-drag-source");
       return;
     }
@@ -1147,7 +1293,7 @@ function applyBoardColumnMenuPreview(previewStatuses) {
 }
 
 function clearBoardColumnMenuDragState() {
-  getActiveBoardColumnMenu()?.querySelectorAll(".board-column-menu-status-item").forEach((item) => {
+  getActiveBoardColumnMenu()?.querySelectorAll(".board-column-menu-status-item, .table-property-menu-item").forEach((item) => {
     item.classList.remove(
       "is-board-column-menu-drag-source",
       "is-board-column-menu-preview-up",
@@ -1503,6 +1649,9 @@ function createDefaultBoardViews(legacyWorkspace = {}) {
       ...baseViewSettings,
       scrollPosition: viewScrollPositions[type],
       tableColumnOrder: legacyWorkspace.tableColumnOrder,
+      tableHiddenColumns: legacyWorkspace.tableHiddenColumns,
+      tableColumnLabels: legacyWorkspace.tableColumnLabels,
+      tableWrappedColumns: legacyWorkspace.tableWrappedColumns,
       tableColumnWidths: normalizeTableColumnWidths(legacyWorkspace.tableColumnWidths, legacyWorkspace.tableNameWidth),
     }),
   );
@@ -1520,7 +1669,11 @@ function createBoardViewConfig(type, id = type, name = getBoardViewTypeLabel(typ
     showHiddenStatuses: settings.showHiddenStatuses === true,
     scrollPosition: normalizeScrollPosition(settings.scrollPosition),
     tableColumnOrder: normalizeTableColumnOrder(settings.tableColumnOrder),
-    tableColumnWidths: normalizeTableColumnWidths(settings.tableColumnWidths),
+    tableHiddenColumns: normalizeTableHiddenColumns(settings.tableHiddenColumns),
+    tableColumnLabels: normalizeTableColumnLabels(settings.tableColumnLabels),
+    tableWrappedColumns: normalizeTableWrappedColumns(settings.tableWrappedColumns),
+    tableColumnWidthVersion,
+    tableColumnWidths: normalizeBoardViewTableColumnWidths(settings),
   };
 }
 
@@ -1614,6 +1767,37 @@ function getActiveTableColumnOrder() {
   return normalizeTableColumnOrder(getActiveBoardViewConfig()?.tableColumnOrder);
 }
 
+function getActiveVisibleTableColumnOrder() {
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  const visibleColumns = getActiveTableColumnOrder().filter((columnId) => !hiddenColumns.has(columnId));
+
+  return visibleColumns.length > 0 ? visibleColumns : ["name"];
+}
+
+function getActiveTableHiddenColumns() {
+  return normalizeTableHiddenColumns(getActiveBoardViewConfig()?.tableHiddenColumns);
+}
+
+function getActiveTableColumnLabels() {
+  return normalizeTableColumnLabels(getActiveBoardViewConfig()?.tableColumnLabels);
+}
+
+function getTableColumnLabel(columnId) {
+  return getActiveTableColumnLabels()[columnId] || tableColumnLabels[columnId] || columnId;
+}
+
+function getTextPropertyLabel() {
+  return getTableColumnLabel("text");
+}
+
+function getActiveTableWrappedColumns() {
+  return normalizeTableWrappedColumns(getActiveBoardViewConfig()?.tableWrappedColumns);
+}
+
+function isTableTextWrapped() {
+  return getActiveTableWrappedColumns().includes("text");
+}
+
 function getActiveTableNameWidth() {
   return getActiveTableColumnWidths().name;
 }
@@ -1685,6 +1869,28 @@ function normalizeTableColumnOrder(columnOrder) {
   return [...normalizedColumns, ...missingColumns];
 }
 
+function normalizeTableHiddenColumns(hiddenColumns) {
+  if (!Array.isArray(hiddenColumns)) {
+    return [];
+  }
+
+  return hiddenColumns.filter((columnId) => tableColumnIds.includes(columnId) && columnId !== "name");
+}
+
+function normalizeTableColumnLabels(labels) {
+  const textLabel = typeof labels?.text === "string" ? labels.text.trim() : "";
+
+  return textLabel ? { text: textLabel } : {};
+}
+
+function normalizeTableWrappedColumns(wrappedColumns) {
+  if (!Array.isArray(wrappedColumns)) {
+    return [];
+  }
+
+  return wrappedColumns.filter((columnId) => columnId === "text");
+}
+
 function normalizeTableNameWidth(width) {
   return normalizeTableColumnWidth("name", width);
 }
@@ -1717,8 +1923,17 @@ function normalizeTableColumnWidths(widths, legacyNameWidth) {
   return normalizedWidths;
 }
 
+function normalizeBoardViewTableColumnWidths(settings = {}) {
+  const normalizedWidths = normalizeTableColumnWidths(settings.tableColumnWidths, settings.tableNameWidth);
+  if (settings.tableColumnWidthVersion !== tableColumnWidthVersion && Number(settings.tableColumnWidths?.text) === 42) {
+    normalizedWidths.text = defaultTableColumnWidths.text;
+  }
+
+  return normalizedWidths;
+}
+
 function normalizeResizedTableColumnWidth(columnId, width, currentWidths) {
-  const siblingWidth = tableColumnIds
+  const siblingWidth = getActiveVisibleTableColumnOrder()
     .filter((tableColumnId) => tableColumnId !== columnId)
     .reduce((total, tableColumnId) => total + currentWidths[tableColumnId], 0);
   const maxWidth = maxTableColumnTotalWidth - siblingWidth;
@@ -1930,6 +2145,61 @@ function saveTableColumnOrder(tableColumnOrder) {
   updateActiveBoardViewConfig((view) => ({ ...view, tableColumnOrder: normalizeTableColumnOrder(tableColumnOrder) }));
 }
 
+function saveTableHiddenColumns(tableHiddenColumns) {
+  updateActiveBoardViewConfig((view) => ({ ...view, tableHiddenColumns: normalizeTableHiddenColumns(tableHiddenColumns) }));
+}
+
+function saveTableColumnLabel(columnId, label) {
+  if (columnId !== "text") {
+    return;
+  }
+
+  const normalizedLabel = typeof label === "string" ? label.trim() : "";
+  updateActiveBoardViewConfig((view) => ({
+    ...view,
+    tableColumnLabels: normalizeTableColumnLabels({
+      ...view.tableColumnLabels,
+      [columnId]: normalizedLabel || tableColumnLabels[columnId],
+    }),
+  }));
+}
+
+function saveTableWrappedColumns(tableWrappedColumns) {
+  updateActiveBoardViewConfig((view) => ({
+    ...view,
+    tableWrappedColumns: normalizeTableWrappedColumns(tableWrappedColumns),
+  }));
+}
+
+function toggleTableColumnVisibility(columnId) {
+  if (!tableColumnIds.includes(columnId) || columnId === "name") {
+    return;
+  }
+
+  const hiddenColumns = new Set(getActiveTableHiddenColumns());
+  if (hiddenColumns.has(columnId)) {
+    hiddenColumns.delete(columnId);
+  } else {
+    hiddenColumns.add(columnId);
+  }
+
+  saveTableHiddenColumns([...hiddenColumns]);
+  renderFolders();
+}
+
+function toggleTableTextWrap() {
+  const wrappedColumns = new Set(getActiveTableWrappedColumns());
+  if (wrappedColumns.has("text")) {
+    wrappedColumns.delete("text");
+  } else {
+    wrappedColumns.add("text");
+  }
+
+  saveTableWrappedColumns([...wrappedColumns]);
+  refreshCurrentTableRows();
+  updateTableTextMenuItems();
+}
+
 function saveTableNameWidth(tableNameWidth) {
   saveTableColumnWidth("name", tableNameWidth);
 }
@@ -1941,6 +2211,7 @@ function saveTableColumnWidth(columnId, width) {
 
   updateActiveBoardViewConfig((view) => ({
     ...view,
+    tableColumnWidthVersion,
     tableColumnWidths: {
       ...normalizeTableColumnWidths(view.tableColumnWidths, view.tableNameWidth),
       [columnId]: normalizeTableColumnWidth(columnId, width),
@@ -2016,6 +2287,7 @@ function loadBoardSnapshot() {
       kind: "directory",
       status: folder.status,
       path: typeof folder.path === "string" ? folder.path : folder.name,
+      text: typeof folder.text === "string" ? folder.text : "",
     }));
   } catch (error) {
     localStorage.removeItem(boardSnapshotStorageKey);
@@ -2130,7 +2402,7 @@ async function scanSelectedFolder() {
     const data = await postJson("/api/scan", { rules: folderAccessRules });
     selectedRoot = data.root;
     folderAccessTree = data.tree;
-    folders = data.folders;
+    folders = mergeScannedFoldersWithLocalText(data.folders);
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
@@ -2142,6 +2414,8 @@ async function scanSelectedFolder() {
 }
 
 function renderFolders() {
+  const activeTextEditState = getActiveTextEditState();
+
   pageTitle.textContent = getActiveWorkspace().name;
   renderActiveNavigation();
   workspaceTitleButton.disabled = activeView === "settings";
@@ -2166,6 +2440,7 @@ function renderFolders() {
   const visibleFolders = filterFolders(folders, searchInput.value);
   renderActiveBoardView(visibleFolders);
   renderCardPlacePanel();
+  restoreActiveTextEditState(activeTextEditState);
 
   const hasCards = visibleFolders.length > 0;
   emptyState.hidden = hasCards;
@@ -2288,6 +2563,29 @@ function handleCardPlaceFolderOpenKeydown(event) {
   handleCardPlaceFolderOpen();
 }
 
+function handleCardPlaceTextInput() {
+  if (!selectedCardPath) {
+    return;
+  }
+
+  resizeTextareaToContent(cardPlaceText);
+  updateFolderText(selectedCardPath, cardPlaceText.value);
+}
+
+function handleCardPlaceTextFocus() {
+  clearCardPlaceTextPlaceholder();
+}
+
+function clearCardPlaceTextPlaceholder() {
+  cardPlaceText.placeholder = "";
+}
+
+function handleCardPlaceTextBlur() {
+  if (!cardPlaceText.value) {
+    cardPlaceText.placeholder = "Text";
+  }
+}
+
 function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
@@ -2299,13 +2597,167 @@ function renderCardPlacePanel() {
   cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
   cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
+  cardPlaceTextLabel.textContent = getTextPropertyLabel();
+  cardPlaceTextLabel.title = getTextPropertyLabel();
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
+  cardPlaceText.value = "";
+  cardPlaceText.placeholder = "Text";
+  cardPlaceText.disabled = !selectedCard;
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
     cardPlaceStatus.textContent = selectedCard.status;
+    cardPlaceText.value = getFolderText(selectedCard);
   }
+  resizeTextareaToContent(cardPlaceText);
   renderCardPlaceEntries();
+}
+
+function resizeTextareaToContent(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) {
+    return;
+  }
+
+  textarea.style.height = `${getTextareaSingleLineHeight(textarea)}px`;
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function getTextareaSingleLineHeight(textarea) {
+  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
+  return Number.isFinite(lineHeight) ? Math.ceil(lineHeight) : 20;
+}
+
+function getFolderText(folder) {
+  return typeof folder?.text === "string" ? folder.text : "";
+}
+
+function getActiveTextEditState() {
+  const activeElement = document.activeElement;
+  if (activeElement === cardPlaceText && selectedCardPath) {
+    return createTextEditState("card-place", selectedCardPath, cardPlaceText);
+  }
+
+  if (!activeElement?.classList?.contains("table-text-input")) {
+    return null;
+  }
+
+  const row = activeElement.closest(".folder-table-row[data-folder-path]");
+  if (!row || !folderGrid.contains(row)) {
+    return null;
+  }
+
+  return createTextEditState("table", row.dataset.folderPath, activeElement);
+}
+
+function createTextEditState(kind, path, control) {
+  return {
+    kind,
+    path,
+    selectionStart: typeof control.selectionStart === "number" ? control.selectionStart : null,
+    selectionEnd: typeof control.selectionEnd === "number" ? control.selectionEnd : null,
+  };
+}
+
+function restoreActiveTextEditState(editState) {
+  if (!editState) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    const control = getTextEditControl(editState);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    control.focus({ preventScroll: true });
+    restoreTextSelection(control, editState);
+    if (control instanceof HTMLTextAreaElement) {
+      resizeTextareaToContent(control);
+    }
+  });
+}
+
+function getTextEditControl(editState) {
+  if (editState.kind === "card-place") {
+    return selectedCardPath === editState.path ? cardPlaceText : null;
+  }
+
+  const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
+    .find((tableRow) => tableRow.dataset.folderPath === editState.path);
+  return row?.querySelector(".table-text-input") || null;
+}
+
+function restoreTextSelection(control, editState) {
+  if (typeof editState.selectionStart !== "number" || typeof editState.selectionEnd !== "number") {
+    return;
+  }
+
+  const selectionStart = Math.min(editState.selectionStart, control.value.length);
+  const selectionEnd = Math.min(editState.selectionEnd, control.value.length);
+  control.setSelectionRange(selectionStart, selectionEnd);
+}
+
+function mergeScannedFoldersWithLocalText(scannedFolders) {
+  const localTextsByPath = new Map(
+    folders.map((folder) => [getFolderPath(folder), getFolderText(folder)]),
+  );
+
+  return scannedFolders.map((folder) => (
+    localTextsByPath.has(getFolderPath(folder))
+      ? { ...folder, text: localTextsByPath.get(getFolderPath(folder)) }
+      : folder
+  ));
+}
+
+function updateFolderText(path, text, options = {}) {
+  const normalizedText = typeof text === "string" ? text : "";
+  folders = folders.map((folder) => (
+    getFolderPath(folder) === path ? { ...folder, text: normalizedText } : folder
+  ));
+
+  if (selectedCardPath === path && cardPlaceText.value !== normalizedText && document.activeElement !== cardPlaceText) {
+    cardPlaceText.value = normalizedText;
+    resizeTextareaToContent(cardPlaceText);
+  }
+
+  if (options.syncTable !== false) {
+    syncVisibleTableText(path, normalizedText);
+  }
+  saveBoardSnapshot();
+  scheduleFolderTextSave(path, normalizedText);
+}
+
+function syncVisibleTableText(path, text) {
+  if (getActiveBoardView() !== "table") {
+    return;
+  }
+
+  const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
+    .find((tableRow) => tableRow.dataset.folderPath === path);
+  const cell = row?.querySelector('.folder-table-cell[data-table-column="text"]');
+  if (!row || !cell) {
+    return;
+  }
+
+  row.classList.toggle("is-text-wrapped", isTableTextWrapped() && text.includes("\n"));
+  cell.replaceChildren(createTableTextControl({ path, text }, isTableTextWrapped()));
+}
+
+function scheduleFolderTextSave(path, text) {
+  window.clearTimeout(folderPropertySaveTimers.get(path));
+  const timer = window.setTimeout(() => {
+    folderPropertySaveTimers.delete(path);
+    saveFolderText(path, text);
+  }, 350);
+  folderPropertySaveTimers.set(path, timer);
+}
+
+async function saveFolderText(path, text) {
+  try {
+    await postJson("/api/properties", { path, text });
+  } catch (error) {
+    setStatus("Could not save text property.", "error");
+  }
 }
 
 async function loadCardPlaceEntries(folder) {
@@ -2755,8 +3207,9 @@ function canShowBoardScrollbar() {
 }
 
 function renderTableView(visibleFolders) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const textWrapped = isTableTextWrapped();
   const tableFolders = getTableFolders(visibleFolders);
   const table = document.createElement("div");
   table.className = "folder-table-surface";
@@ -2768,7 +3221,9 @@ function renderTableView(visibleFolders) {
 
   table.append(
     header,
-    ...tableFolders.map((folder) => createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status) })),
+    ...tableFolders.map((folder) =>
+      createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status), textWrapped }),
+    ),
   );
 
   folderGrid.className = "folder-table";
@@ -2800,14 +3255,15 @@ function compareFoldersByStatusOrder(left, right, statusOrder) {
 }
 
 function setTableGridTemplate(tableElement) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const tableColumnWidths = getActiveTableColumnWidths();
   const columnTracks = columnOrder.map((columnId) =>
     `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${columnId}-column-width))`,
   );
 
-  tableElement.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
-  tableElement.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
+  tableColumnIds.forEach((columnId) => {
+    tableElement.style.setProperty(`--table-${columnId}-column-width`, `${tableColumnWidths[columnId]}%`);
+  });
   tableElement.style.setProperty("--table-columns", columnTracks.join(" "));
 }
 
@@ -3561,7 +4017,7 @@ function handleTableColumnDragStart(event) {
   if (
     !cell ||
     event.target.closest(".table-resize-handle") ||
-    event.target.closest(".table-status-menu") ||
+    event.target.closest(".table-status-menu, .table-text-menu") ||
     getActiveBoardView() !== "table"
   ) {
     return;
@@ -3615,7 +4071,7 @@ function handleTableColumnPointerDragStart(event) {
   if (
     !cell ||
     event.target.closest(".table-resize-handle") ||
-    event.target.closest(".table-status-menu") ||
+    event.target.closest(".table-status-menu, .table-text-menu") ||
     tableResizeState ||
     tableColumnPointerDragState ||
     getActiveBoardView() !== "table"
@@ -3725,7 +4181,7 @@ function removeTableColumnDragImage() {
 }
 
 function getTablePreviewColumnOrder(event, targetCell) {
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const targetColumn = targetCell.dataset.tableColumn;
   if (!draggedTableColumn || !targetColumn || targetColumn === draggedTableColumn) {
     return columnOrder;
@@ -3790,9 +4246,14 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
   row.className = "folder-table-row";
   row.dataset.folderPath = folder.path || folder.name;
   row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
-  row.append(...columnOrder.map((columnId) => createTableCell(getTableCellText(folder, columnId), columnId)));
+  row.classList.toggle("is-text-wrapped", Boolean(options.textWrapped) && hasMultilineTableText(folder));
+  row.append(...columnOrder.map((columnId) => createTableCell(folder, columnId, options)));
 
   return row;
+}
+
+function hasMultilineTableText(folder) {
+  return getFolderText(folder).includes("\n");
 }
 
 function createTableHeaderCell(columnId) {
@@ -3805,7 +4266,7 @@ function createTableHeaderCell(columnId) {
 
   const label = document.createElement("span");
   label.className = "table-header-label";
-  label.textContent = tableColumnLabels[columnId];
+  label.textContent = getTableColumnLabel(columnId);
   cell.append(label);
 
   if (columnId === "status") {
@@ -3813,6 +4274,13 @@ function createTableHeaderCell(columnId) {
     cell.setAttribute("aria-haspopup", "menu");
     cell.setAttribute("aria-expanded", "false");
     cell.append(createTableStatusMenu(getOrderedStatuses(folders), getActiveHiddenStatuses()));
+  }
+
+  if (columnId === "text") {
+    cell.classList.add("has-table-text-menu");
+    cell.setAttribute("aria-haspopup", "menu");
+    cell.setAttribute("aria-expanded", "false");
+    cell.append(createTableTextMenu());
   }
 
   cell.append(createTableResizeHandle(columnId));
@@ -3847,6 +4315,32 @@ function createTableStatusMenu(statuses, hiddenStatuses) {
   );
 
   return menu;
+}
+
+function createTableTextMenu() {
+  const menu = document.createElement("div");
+  menu.className = "table-text-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  menu.replaceChildren(
+    createTableTextMenuAction("rename", "Rename", createMenuIcon("rename")),
+    createTableTextMenuAction("hide", "Hide", createEyeIcon(true)),
+    createTableTextMenuAction("wrap", isTableTextWrapped() ? "Unwrap text" : "Wrap text", createMenuIcon("wrap")),
+  );
+
+  return menu;
+}
+
+function createTableTextMenuAction(action, label, icon) {
+  const button = document.createElement("button");
+  button.className = "table-text-menu-action";
+  button.type = "button";
+  button.dataset.tableTextAction = action;
+  button.setAttribute("role", "menuitem");
+  button.append(icon, document.createTextNode(label));
+
+  return button;
 }
 
 function createTableStatusVisibilityButton(status, hidden) {
@@ -4093,9 +4587,54 @@ function handleTableStatusMenuClick(event) {
   toggleTableStatusMenu(statusHeader);
 }
 
+function handleTableTextMenuClick(event) {
+  const actionButton = event.target.closest("[data-table-text-action]");
+  if (actionButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const headerCell = actionButton.closest('.folder-table-head .folder-table-cell[data-table-column="text"]');
+    handleTableTextMenuAction(actionButton.dataset.tableTextAction, headerCell);
+    return;
+  }
+
+  if (event.target.closest(".table-text-menu")) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  const textHeader = event.target.closest('.folder-table-head .folder-table-cell[data-table-column="text"]');
+  if (!textHeader || event.target.closest(".table-resize-handle") || getActiveBoardView() !== "table") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  toggleTableTextMenu(textHeader);
+}
+
+function handleTableTextMenuAction(action, headerCell) {
+  if (action === "rename") {
+    closeTableTextMenus();
+    startTableColumnRename("text", headerCell);
+    return;
+  }
+
+  if (action === "hide") {
+    closeTableTextMenus();
+    toggleTableColumnVisibility("text");
+    return;
+  }
+
+  if (action === "wrap") {
+    toggleTableTextWrap();
+  }
+}
+
 function toggleTableStatusMenu(statusHeader) {
   const isOpen = statusHeader.classList.contains("is-table-status-menu-open");
   closeTableStatusMenus();
+  closeTableTextMenus();
   if (isOpen) {
     return;
   }
@@ -4104,6 +4643,68 @@ function toggleTableStatusMenu(statusHeader) {
   statusHeader.classList.add("is-table-status-menu-open");
   statusHeader.setAttribute("aria-expanded", "true");
   statusHeader.querySelector(".table-status-menu").hidden = false;
+}
+
+function toggleTableTextMenu(textHeader) {
+  const isOpen = textHeader.classList.contains("is-table-text-menu-open");
+  closeTableStatusMenus();
+  closeTableTextMenus();
+  if (isOpen) {
+    return;
+  }
+
+  tableTextMenuOpen = true;
+  textHeader.classList.add("is-table-text-menu-open");
+  textHeader.setAttribute("aria-expanded", "true");
+  textHeader.querySelector(".table-text-menu").hidden = false;
+}
+
+function startTableColumnRename(columnId, headerCell) {
+  if (columnId !== "text" || !headerCell) {
+    return;
+  }
+
+  const label = headerCell.querySelector(".table-header-label");
+  if (!label) {
+    return;
+  }
+
+  const input = document.createElement("input");
+  input.className = "table-header-rename-input";
+  input.type = "text";
+  input.autocomplete = "off";
+  input.spellcheck = false;
+  input.value = getTableColumnLabel(columnId);
+  label.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let finished = false;
+  const finish = (save) => {
+    if (finished) {
+      return;
+    }
+
+    finished = true;
+    const nextLabel = input.value.trim() || tableColumnLabels[columnId];
+    if (save) {
+      saveTableColumnLabel(columnId, nextLabel);
+    }
+    renderBoardViewSwitcher();
+    renderFolders();
+  };
+
+  input.addEventListener("click", (event) => event.stopPropagation());
+  input.addEventListener("blur", () => finish(true), { once: true });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      finish(false);
+    }
+  });
 }
 
 function restoreTableStatusMenuOpenState() {
@@ -4121,6 +4722,13 @@ function restoreTableStatusMenuOpenState() {
   statusHeader.classList.add("is-table-status-menu-open");
   statusHeader.setAttribute("aria-expanded", "true");
   menu.hidden = false;
+}
+
+function updateTableTextMenuItems() {
+  const action = folderGrid.querySelector('[data-table-text-action="wrap"]');
+  if (action) {
+    action.replaceChildren(createMenuIcon("wrap"), document.createTextNode(isTableTextWrapped() ? "Unwrap text" : "Wrap text"));
+  }
 }
 
 function toggleTableStatusVisibility(status) {
@@ -4144,12 +4752,13 @@ function refreshCurrentTableRows() {
     return;
   }
 
-  const columnOrder = getActiveTableColumnOrder();
+  const columnOrder = getActiveVisibleTableColumnOrder();
   const hiddenStatuses = new Set(getActiveHiddenStatuses());
+  const textWrapped = isTableTextWrapped();
   const tableFolders = getTableFolders(filterFolders(folders, searchInput.value));
   table.replaceChildren(
     header,
-    ...tableFolders.map((folder) => createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status) })),
+    ...tableFolders.map((folder) => createTableRow(folder, columnOrder, { hidden: hiddenStatuses.has(folder.status), textWrapped })),
   );
 }
 
@@ -4176,6 +4785,18 @@ function closeTableStatusMenus() {
   });
 }
 
+function closeTableTextMenus() {
+  tableTextMenuOpen = false;
+  folderGrid.querySelectorAll(".has-table-text-menu").forEach((cell) => {
+    cell.classList.remove("is-table-text-menu-open");
+    cell.setAttribute("aria-expanded", "false");
+    const menu = cell.querySelector(".table-text-menu");
+    if (menu) {
+      menu.hidden = true;
+    }
+  });
+}
+
 function handleTableStatusMenuOutsideClick(event) {
   if (event.target.closest(".has-table-status-menu")) {
     return;
@@ -4184,12 +4805,28 @@ function handleTableStatusMenuOutsideClick(event) {
   closeTableStatusMenus();
 }
 
+function handleTableTextMenuOutsideClick(event) {
+  if (event.target.closest(".has-table-text-menu")) {
+    return;
+  }
+
+  closeTableTextMenus();
+}
+
 function handleTableStatusMenuKeydown(event) {
   if (event.key !== "Escape") {
     return;
   }
 
   closeTableStatusMenus();
+}
+
+function handleTableTextMenuKeydown(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  closeTableTextMenus();
 }
 
 function createTableResizeHandle(columnId) {
@@ -4201,17 +4838,68 @@ function createTableResizeHandle(columnId) {
   return handle;
 }
 
-function createTableCell(text, columnId) {
+function createTableCell(folder, columnId, options = {}) {
   const cell = document.createElement("span");
   cell.className = "folder-table-cell";
   cell.dataset.tableColumn = columnId;
-  cell.textContent = text;
+
+  if (columnId === "text") {
+    cell.append(createTableTextControl(folder, Boolean(options.textWrapped)));
+    return cell;
+  }
+
+  cell.textContent = getTableCellText(folder, columnId);
 
   return cell;
 }
 
+function createTableTextControl(folder, wrapped) {
+  const hasWrappedText = wrapped && hasMultilineTableText(folder);
+  const control = document.createElement(hasWrappedText ? "textarea" : "input");
+  control.className = "table-text-input";
+  control.autocomplete = "off";
+  control.spellcheck = false;
+  control.value = formatTableTextValue(folder, hasWrappedText);
+  control.addEventListener("click", (event) => event.stopPropagation());
+  control.addEventListener("input", () => {
+    updateFolderText(folder.path || folder.name, control.value, { syncTable: false });
+    syncTableTextRowState(control, control.value);
+    if (hasWrappedText) {
+      resizeTextareaToContent(control);
+    }
+  });
+
+  if (hasWrappedText) {
+    control.rows = 1;
+    control.classList.add("is-wrapped");
+    requestAnimationFrame(() => resizeTextareaToContent(control));
+    return control;
+  }
+
+  control.type = "text";
+  return control;
+}
+
+function syncTableTextRowState(control, text) {
+  const row = control.closest(".folder-table-row");
+  row?.classList.toggle("is-text-wrapped", isTableTextWrapped() && text.includes("\n"));
+}
+
+function formatTableTextValue(folder, wrapped) {
+  const text = getFolderText(folder);
+  return wrapped ? text : text.replace(/\s*\n\s*/g, " ");
+}
+
 function getTableCellText(folder, columnId) {
-  return columnId === "status" ? folder.status : folder.name;
+  if (columnId === "status") {
+    return folder.status;
+  }
+
+  if (columnId === "text") {
+    return getFolderText(folder);
+  }
+
+  return folder.name;
 }
 
 function createFolderCard(folder, options = {}) {
@@ -4255,6 +4943,7 @@ function saveBoardSnapshot() {
       name: folder.name,
       path: folder.path,
       status: folder.status,
+      text: getFolderText(folder),
     })),
   };
 

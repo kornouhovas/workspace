@@ -5,6 +5,7 @@ import { createRevealResponse } from "./src/localOpen.js";
 import {
   createFileResponse,
   createListEntriesResponse,
+  createPropertiesResponse,
   createRootResponse,
   createScanResponse,
   createSelectRootResponse,
@@ -70,6 +71,13 @@ async function handleApiRequest(request, response, url) {
       return;
     }
 
+    if (url.pathname === "/api/properties" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const workspaceRoot = await getStoredWorkspaceRoot();
+      sendApiResponse(response, await createPropertiesResponse({ root: workspaceRoot, body }));
+      return;
+    }
+
     if (url.pathname === "/api/file" && request.method === "GET") {
       const workspaceRoot = await getStoredWorkspaceRoot();
       sendFileResponse(response, await createFileResponse({ root: workspaceRoot, path: url.searchParams.get("path") }));
@@ -100,7 +108,7 @@ function readJsonBody(request) {
     request.setEncoding("utf8");
     request.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 4096) {
+      if (body.length > 65536) {
         reject(new Error("Request body is too large."));
         request.destroy();
       }
