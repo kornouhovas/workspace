@@ -2650,8 +2650,25 @@ function updateFolderText(path, text) {
     cardPlaceText.value = normalizedText;
   }
 
+  syncVisibleTableText(path, normalizedText);
   saveBoardSnapshot();
   scheduleFolderTextSave(path, normalizedText);
+}
+
+function syncVisibleTableText(path, text) {
+  if (getActiveBoardView() !== "table") {
+    return;
+  }
+
+  const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
+    .find((tableRow) => tableRow.dataset.folderPath === path);
+  const cell = row?.querySelector('.folder-table-cell[data-table-column="text"]');
+  if (!row || !cell) {
+    return;
+  }
+
+  row.classList.toggle("is-text-wrapped", isTableTextWrapped() && text.includes("\n"));
+  cell.replaceChildren(createTableTextControl({ path, text }, isTableTextWrapped()));
 }
 
 function scheduleFolderTextSave(path, text) {
@@ -4765,20 +4782,21 @@ function createTableCell(folder, columnId, options = {}) {
 }
 
 function createTableTextControl(folder, wrapped) {
-  const control = document.createElement(wrapped ? "textarea" : "input");
+  const hasWrappedText = wrapped && hasMultilineTableText(folder);
+  const control = document.createElement(hasWrappedText ? "textarea" : "input");
   control.className = "table-text-input";
   control.autocomplete = "off";
   control.spellcheck = false;
-  control.value = getTableCellText(folder, "text");
+  control.value = formatTableTextValue(folder, hasWrappedText);
   control.addEventListener("click", (event) => event.stopPropagation());
   control.addEventListener("input", () => {
     updateFolderText(folder.path || folder.name, control.value);
-    if (wrapped) {
+    if (hasWrappedText) {
       resizeTextareaToContent(control);
     }
   });
 
-  if (wrapped) {
+  if (hasWrappedText) {
     control.rows = 1;
     control.classList.add("is-wrapped");
     requestAnimationFrame(() => resizeTextareaToContent(control));
@@ -4787,6 +4805,11 @@ function createTableTextControl(folder, wrapped) {
 
   control.type = "text";
   return control;
+}
+
+function formatTableTextValue(folder, wrapped) {
+  const text = getFolderText(folder);
+  return wrapped ? text : text.replace(/\s*\n\s*/g, " ");
 }
 
 function getTableCellText(folder, columnId) {

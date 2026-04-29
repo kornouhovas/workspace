@@ -320,6 +320,13 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.table-property-menu-section-title/);
   assert.match(app, /function hasMultilineTableText\(folder\)/);
   assert.match(app, /row\.classList\.toggle\("is-text-wrapped", Boolean\(options\.textWrapped\) && hasMultilineTableText\(folder\)\)/);
+  assert.match(app, /function syncVisibleTableText\(path, text\)/);
+  assert.match(app, /syncVisibleTableText\(path, normalizedText\)/);
+  assert.match(app, /cell\.replaceChildren\(createTableTextControl\(\{ path, text \}, isTableTextWrapped\(\)\)\)/);
+  assert.match(app, /function formatTableTextValue\(folder, wrapped\)/);
+  assert.match(app, /return wrapped \? text : text\.replace\(\/\\s\*\\n\\s\*\/g, " "\)/);
+  assert.match(app, /const hasWrappedText = wrapped && hasMultilineTableText\(folder\)/);
+  assert.match(app, /document\.createElement\(hasWrappedText \? "textarea" : "input"\)/);
   assert.match(app, /function getTextareaSingleLineHeight\(textarea\)/);
   assert.match(app, /textarea\.style\.height = `\$\{getTextareaSingleLineHeight\(textarea\)\}px`/);
   assert.match(html, /function hasInitialMultilineTableText\(folder\)/);
