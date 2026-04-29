@@ -1124,12 +1124,21 @@ input:focus-visible {
 .table-text-input {
   width: 100%;
   min-width: 0;
+  appearance: none;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   padding: 0;
   font: inherit;
   outline: 0;
+  box-shadow: none;
+}
+
+.table-text-input:focus,
+.table-text-input:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 
 textarea.table-text-input {
@@ -1162,7 +1171,9 @@ textarea.table-text-input {
   width: 1px;
   background: var(--line);
   content: "";
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 140ms ease;
 }
 
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::before {
@@ -1171,6 +1182,13 @@ textarea.table-text-input {
 
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::after {
   right: 0;
+}
+
+.folder-table-row:not(.folder-table-head):hover .folder-table-cell[data-table-column="text"]::before,
+.folder-table-row:not(.folder-table-head):hover .folder-table-cell[data-table-column="text"]::after,
+.folder-table-row:not(.folder-table-head):focus-within .folder-table-cell[data-table-column="text"]::before,
+.folder-table-row:not(.folder-table-head):focus-within .folder-table-cell[data-table-column="text"]::after {
+  opacity: 1;
 }
 
 .folder-table-head .folder-table-cell {
@@ -1283,12 +1301,21 @@ textarea.table-text-input {
 .table-header-rename-input {
   min-width: 0;
   width: 100%;
+  appearance: none;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   padding: 0;
   font: inherit;
   outline: 0;
+  box-shadow: none;
+}
+
+.table-header-rename-input:focus,
+.table-header-rename-input:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 
 .table-status-menu-item {
@@ -1632,7 +1659,7 @@ textarea.table-text-input {
 
 .card-place-text-section {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   gap: 10px;
   width: 100%;
   min-width: 0;
@@ -1644,6 +1671,7 @@ textarea.table-text-input {
   width: 100%;
   flex: 1 1 auto;
   min-width: 0;
+  appearance: none;
   max-width: max(120px, calc(var(--card-place-width, 50vw) - 88px));
   justify-self: start;
   min-height: 20px;
@@ -1661,6 +1689,12 @@ textarea.table-text-input {
 
 .card-place-text:focus {
   border-color: transparent;
+  outline: 0;
+}
+
+.card-place-text:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 
 .card-place-text::placeholder {
@@ -1677,6 +1711,7 @@ textarea.table-text-input {
   color: var(--muted);
   font-size: 13px;
   font-weight: 560;
+  line-height: 1.35;
 }
 
 .card-place-folder-list {

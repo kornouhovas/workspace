@@ -258,6 +258,7 @@ test("table and card place expose editable text property UI", async () => {
 
   assert.match(html, /id="cardPlaceText"/);
   assert.match(html, /rows="1"/);
+  assert.match(html, /id="cardPlaceText"[\s\S]*spellcheck="false"/);
   assert.match(html, /aria-label="Text"/);
   assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
   assert.match(app, /text:\s*"Text"/);
@@ -268,6 +269,8 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /function createTableTextMenu/);
   assert.match(app, /function startTableColumnRename/);
   assert.match(app, /function toggleTableTextWrap/);
+  assert.match(app, /control\.spellcheck = false/);
+  assert.match(app, /input\.spellcheck = false/);
   assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
   assert.match(app, /event\.target\.closest\("\.table-status-menu, \.table-text-menu"\)/);
   assert.match(app, /postJson\("\/api\/properties"/);
@@ -275,13 +278,16 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.card-place-text\s*\{[^}]*border:\s*0/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*background:\s*transparent/s);
   assert.match(css, /\.card-place-text:focus\s*\{[^}]*border-color:\s*transparent/s);
+  assert.match(css, /\.card-place-text:focus-visible\s*\{[^}]*outline:\s*0/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*min-width:\s*0/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*max-width:\s*max\(120px,\s*calc\(var\(--card-place-width,\s*50vw\) - 88px\)\)/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*justify-self:\s*start/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*flex:\s*1 1 auto/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*baseline/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.35/s);
   assert.match(css, /\.card-place-content\s*\{[^}]*min-width:\s*0/s);
   assert.match(css, /\.card-place-content\s*\{[^}]*overflow-x:\s*hidden/s);
   assert.match(css, /\.card-place-content > \*\s*\{[^}]*max-width:\s*100%/s);
@@ -289,7 +295,14 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.table-text-menu/);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*top:\s*-10px/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*bottom:\s*-10px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.folder-table-cell\[data-table-column="text"\]::before/);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):focus-within \.folder-table-cell\[data-table-column="text"\]::after/);
   assert.match(css, /\.folder-table-row\.is-text-wrapped/);
+  assert.match(css, /\.table-text-input\s*\{[^}]*appearance:\s*none/s);
+  assert.match(css, /\.table-text-input:focus-visible\s*\{[^}]*outline:\s*0/s);
+  assert.match(css, /\.table-header-rename-input\s*\{[^}]*appearance:\s*none/s);
+  assert.match(css, /\.table-header-rename-input:focus-visible\s*\{[^}]*outline:\s*0/s);
   assert.match(css, /\.table-property-menu-section-title/);
 });
 

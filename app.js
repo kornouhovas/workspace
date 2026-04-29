@@ -4554,6 +4554,8 @@ function startTableColumnRename(columnId, headerCell) {
   const input = document.createElement("input");
   input.className = "table-header-rename-input";
   input.type = "text";
+  input.autocomplete = "off";
+  input.spellcheck = false;
   input.value = getTableColumnLabel(columnId);
   label.replaceWith(input);
   input.focus();
@@ -4736,6 +4738,8 @@ function createTableCell(folder, columnId, options = {}) {
 function createTableTextControl(folder, wrapped) {
   const control = document.createElement(wrapped ? "textarea" : "input");
   control.className = "table-text-input";
+  control.autocomplete = "off";
+  control.spellcheck = false;
   control.value = getTableCellText(folder, "text");
   control.addEventListener("click", (event) => event.stopPropagation());
   control.addEventListener("input", () => {
