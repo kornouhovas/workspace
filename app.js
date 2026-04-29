@@ -76,9 +76,9 @@ const tableColumnLabels = {
 };
 const folderRoleIds = ["status", "card", "group"];
 const folderRoleLabels = {
-  status: "STATUS",
-  card: "CARD",
-  group: "GROUP",
+  status: "Status",
+  card: "Card",
+  group: "Group",
 };
 const defaultTableColumnWidths = {
   name: 46,
@@ -268,6 +268,7 @@ function bindEvents() {
   boardColumnMenuPopover.addEventListener("pointerdown", handleBoardColumnMenuPointerDragStart);
   document.addEventListener("click", handleBoardColumnMenuOutsideClick);
   document.addEventListener("click", handleTableStatusMenuOutsideClick);
+  document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
   restoreButton.addEventListener("click", restoreAccess);
@@ -2249,6 +2250,7 @@ function handleCardPlaceClick(event) {
     const row = nameCell.closest(".folder-table-row");
     const folder = findFolderByPath(row?.dataset.folderPath);
     if (folder) {
+      event.stopPropagation();
       openCardPlace(folder);
     }
     return;
@@ -2261,8 +2263,17 @@ function handleCardPlaceClick(event) {
 
   const folder = findFolderByPath(card.dataset.folderPath);
   if (folder) {
+    event.stopPropagation();
     openCardPlace(folder);
   }
+}
+
+function handleCardPlaceOutsideClick(event) {
+  if (!selectedCardPath || event.target.closest(".card-place-panel")) {
+    return;
+  }
+
+  closeCardPlace();
 }
 
 function openCardPlace(folder) {

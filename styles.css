@@ -1450,6 +1450,8 @@ input:focus-visible {
 
 .card-place-field {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
 }
 
@@ -1458,6 +1460,7 @@ input:focus-visible {
   color: var(--text);
   font-size: 15px;
   line-height: 1.35;
+  text-align: right;
 }
 
 .kanban-board.settings-mode {

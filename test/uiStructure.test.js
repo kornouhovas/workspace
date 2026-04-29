@@ -67,9 +67,12 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
   assert.match(app, /listFolderAccessTree\(selectedHandle,/);
   assert.match(app, /const folderRoleLabels = \{/);
-  assert.match(app, /status:\s*"STATUS"/);
-  assert.match(app, /card:\s*"CARD"/);
-  assert.match(app, /group:\s*"GROUP"/);
+  assert.match(app, /status:\s*"Status"/);
+  assert.match(app, /card:\s*"Card"/);
+  assert.match(app, /group:\s*"Group"/);
+  assert.doesNotMatch(app, /"STATUS"/);
+  assert.doesNotMatch(app, /"CARD"/);
+  assert.doesNotMatch(app, /"GROUP"/);
   assert.match(app, /input\.type = "checkbox"/);
   assert.match(app, /button\.className = "settings-tree-chevron"/);
   assert.match(app, /function createSettingsRoleOptions\(node, isLockedInsideCard\)/);
@@ -395,9 +398,13 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /let cardPlaceResizeState = null/);
   assert.match(app, /folderGrid\.addEventListener\("click", handleCardPlaceClick\)/);
   assert.match(app, /cardPlaceResizeHandle\.addEventListener\("pointerdown", handleCardPlaceResizeStart\)/);
+  assert.match(app, /document\.addEventListener\("click", handleCardPlaceOutsideClick\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlaceResizeMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleCardPlaceResizeEnd\)/);
   assert.match(app, /function handleCardPlaceClick\(event\)/);
+  assert.match(app, /function handleCardPlaceOutsideClick\(event\)/);
+  assert.match(app, /event\.target\.closest\("\.card-place-panel"\)/);
+  assert.match(app, /closeCardPlace\(\)/);
   assert.match(app, /event\.target\.closest\("\.folder-card"\)/);
   assert.match(app, /event\.target\.closest\('\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]'\)/);
   assert.match(app, /function openCardPlace\(folder\)/);
@@ -421,6 +428,8 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
   assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
+  assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-field p\s*\{[^}]*text-align:\s*right/s);
   assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);
 });
