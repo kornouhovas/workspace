@@ -2414,6 +2414,8 @@ async function scanSelectedFolder() {
 }
 
 function renderFolders() {
+  const activeTextEditState = getActiveTextEditState();
+
   pageTitle.textContent = getActiveWorkspace().name;
   renderActiveNavigation();
   workspaceTitleButton.disabled = activeView === "settings";
@@ -2438,6 +2440,7 @@ function renderFolders() {
   const visibleFolders = filterFolders(folders, searchInput.value);
   renderActiveBoardView(visibleFolders);
   renderCardPlacePanel();
+  restoreActiveTextEditState(activeTextEditState);
 
   const hasCards = visibleFolders.length > 0;
   emptyState.hidden = hasCards;
@@ -2628,6 +2631,72 @@ function getFolderText(folder) {
   return typeof folder?.text === "string" ? folder.text : "";
 }
 
+function getActiveTextEditState() {
+  const activeElement = document.activeElement;
+  if (activeElement === cardPlaceText && selectedCardPath) {
+    return createTextEditState("card-place", selectedCardPath, cardPlaceText);
+  }
+
+  if (!activeElement?.classList?.contains("table-text-input")) {
+    return null;
+  }
+
+  const row = activeElement.closest(".folder-table-row[data-folder-path]");
+  if (!row || !folderGrid.contains(row)) {
+    return null;
+  }
+
+  return createTextEditState("table", row.dataset.folderPath, activeElement);
+}
+
+function createTextEditState(kind, path, control) {
+  return {
+    kind,
+    path,
+    selectionStart: typeof control.selectionStart === "number" ? control.selectionStart : null,
+    selectionEnd: typeof control.selectionEnd === "number" ? control.selectionEnd : null,
+  };
+}
+
+function restoreActiveTextEditState(editState) {
+  if (!editState) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    const control = getTextEditControl(editState);
+    if (!control || control.disabled) {
+      return;
+    }
+
+    control.focus({ preventScroll: true });
+    restoreTextSelection(control, editState);
+    if (control instanceof HTMLTextAreaElement) {
+      resizeTextareaToContent(control);
+    }
+  });
+}
+
+function getTextEditControl(editState) {
+  if (editState.kind === "card-place") {
+    return selectedCardPath === editState.path ? cardPlaceText : null;
+  }
+
+  const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
+    .find((tableRow) => tableRow.dataset.folderPath === editState.path);
+  return row?.querySelector(".table-text-input") || null;
+}
+
+function restoreTextSelection(control, editState) {
+  if (typeof editState.selectionStart !== "number" || typeof editState.selectionEnd !== "number") {
+    return;
+  }
+
+  const selectionStart = Math.min(editState.selectionStart, control.value.length);
+  const selectionEnd = Math.min(editState.selectionEnd, control.value.length);
+  control.setSelectionRange(selectionStart, selectionEnd);
+}
+
 function mergeScannedFoldersWithLocalText(scannedFolders) {
   const localTextsByPath = new Map(
     folders.map((folder) => [getFolderPath(folder), getFolderText(folder)]),
@@ -2640,17 +2709,20 @@ function mergeScannedFoldersWithLocalText(scannedFolders) {
   ));
 }
 
-function updateFolderText(path, text) {
+function updateFolderText(path, text, options = {}) {
   const normalizedText = typeof text === "string" ? text : "";
   folders = folders.map((folder) => (
     getFolderPath(folder) === path ? { ...folder, text: normalizedText } : folder
   ));
 
-  if (selectedCardPath === path && cardPlaceText.value !== normalizedText) {
+  if (selectedCardPath === path && cardPlaceText.value !== normalizedText && document.activeElement !== cardPlaceText) {
     cardPlaceText.value = normalizedText;
+    resizeTextareaToContent(cardPlaceText);
   }
 
-  syncVisibleTableText(path, normalizedText);
+  if (options.syncTable !== false) {
+    syncVisibleTableText(path, normalizedText);
+  }
   saveBoardSnapshot();
   scheduleFolderTextSave(path, normalizedText);
 }
@@ -4790,7 +4862,8 @@ function createTableTextControl(folder, wrapped) {
   control.value = formatTableTextValue(folder, hasWrappedText);
   control.addEventListener("click", (event) => event.stopPropagation());
   control.addEventListener("input", () => {
-    updateFolderText(folder.path || folder.name, control.value);
+    updateFolderText(folder.path || folder.name, control.value, { syncTable: false });
+    syncTableTextRowState(control, control.value);
     if (hasWrappedText) {
       resizeTextareaToContent(control);
     }
@@ -4805,6 +4878,11 @@ function createTableTextControl(folder, wrapped) {
 
   control.type = "text";
   return control;
+}
+
+function syncTableTextRowState(control, text) {
+  const row = control.closest(".folder-table-row");
+  row?.classList.toggle("is-text-wrapped", isTableTextWrapped() && text.includes("\n"));
 }
 
 function formatTableTextValue(folder, wrapped) {

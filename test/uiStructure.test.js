@@ -322,6 +322,12 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /row\.classList\.toggle\("is-text-wrapped", Boolean\(options\.textWrapped\) && hasMultilineTableText\(folder\)\)/);
   assert.match(app, /function syncVisibleTableText\(path, text\)/);
   assert.match(app, /syncVisibleTableText\(path, normalizedText\)/);
+  assert.match(app, /function getActiveTextEditState\(\)/);
+  assert.match(app, /function restoreActiveTextEditState\(editState\)/);
+  assert.match(app, /const activeTextEditState = getActiveTextEditState\(\)/);
+  assert.match(app, /restoreActiveTextEditState\(activeTextEditState\)/);
+  assert.match(app, /updateFolderText\(folder\.path \|\| folder\.name, control\.value, \{ syncTable: false \}\)/);
+  assert.match(app, /function syncTableTextRowState\(control, text\)/);
   assert.match(app, /cell\.replaceChildren\(createTableTextControl\(\{ path, text \}, isTableTextWrapped\(\)\)\)/);
   assert.match(app, /function formatTableTextValue\(folder, wrapped\)/);
   assert.match(app, /return wrapped \? text : text\.replace\(\/\\s\*\\n\\s\*\/g, " "\)/);
