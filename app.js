@@ -31,6 +31,11 @@ const boardSurface = document.querySelector(".kanban-board");
 const folderGrid = document.querySelector("#folderGrid");
 const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
+const cardPlacePanel = document.querySelector("#cardPlacePanel");
+const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
+const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
+const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
+const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
 const pageTitle = document.querySelector(".topbar h1");
 const workspaceTitleRow = document.querySelector(".workspace-title-row");
 const workspaceTitleButton = document.querySelector("#workspaceTitleButton");
@@ -86,6 +91,8 @@ const tableColumnWidthLimits = {
 const maxTableColumnTotalWidth = 94;
 const boardScrollbarHotZoneSize = 56;
 const boardScrollbarIdleDelay = 900;
+const minCardPlaceWidth = 320;
+const maxCardPlaceWidthRatio = 0.82;
 
 let selectedHandle = null;
 let folders = [];
@@ -103,6 +110,7 @@ let tableStatusMenuPointerDragState = null;
 let tableColumnPointerDragState = null;
 let boardViewPointerDragState = null;
 let tableResizeState = null;
+let cardPlaceResizeState = null;
 let boardColumnDragImage = null;
 let boardColumnMenuDragImage = null;
 let tableColumnDragImage = null;
@@ -120,6 +128,7 @@ let tableStatusSuppressClick = false;
 let tableStatusSuppressClickTimer = null;
 let boardScrollbarHideTimer = null;
 let tableStatusMenuOpen = false;
+let selectedCardPath = null;
 let workspaceSequence = 1;
 let workspaces = [
   {
@@ -127,6 +136,7 @@ let workspaces = [
     name: "Workspace",
     boardView: "overview",
     boardViews: createDefaultBoardViews(),
+    cardPlaceWidth: normalizeCardPlaceWidth(),
   },
 ];
 let activeWorkspaceId = "workspace-1";
@@ -281,8 +291,12 @@ function bindEvents() {
   folderGrid.addEventListener("pointerdown", handleTableStatusMenuPointerDragStart);
   folderGrid.addEventListener("pointerdown", handleTableColumnPointerDragStart);
   folderGrid.addEventListener("click", handleSettingsTreeClick);
+  folderGrid.addEventListener("click", handleCardPlaceClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
+  cardPlaceCloseButton.addEventListener("click", closeCardPlace);
+  cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
+  window.addEventListener("pointermove", handleCardPlaceResizeMove);
   window.addEventListener("pointermove", handleBoardColumnMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableStatusMenuPointerDragMove);
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
@@ -290,6 +304,7 @@ function bindEvents() {
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
+  window.addEventListener("pointerup", handleCardPlaceResizeEnd);
   window.addEventListener("pointerup", handleBoardColumnMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableStatusMenuPointerDragEnd);
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
@@ -1205,6 +1220,7 @@ function addWorkspace() {
     name: `Workspace ${getNextWorkspaceNumber()}`,
     boardView: "overview",
     boardViews: createDefaultBoardViews(),
+    cardPlaceWidth: normalizeCardPlaceWidth(),
   };
 
   workspaces.push(workspace);
@@ -1244,6 +1260,8 @@ function setActiveWorkspace(workspaceId) {
   saveBoardViewScrollPosition();
   activeWorkspaceId = workspaceId;
   boardView = loadBoardView();
+  selectedCardPath = null;
+  renderCardPlacePanel();
   saveWorkspaceState();
   renderWorkspaceTabs();
   renderBoardViewSwitcher();
@@ -1631,6 +1649,15 @@ function normalizeStatusList(statuses) {
   return Array.isArray(statuses) ? statuses.filter((status) => typeof status === "string") : [];
 }
 
+function normalizeCardPlaceWidth(width) {
+  const parsedWidth = Number(width);
+  const fallbackWidth = Math.round(window.innerWidth / 2);
+  const maxWidth = Math.max(minCardPlaceWidth, Math.round(window.innerWidth * maxCardPlaceWidthRatio));
+  const nextWidth = Number.isFinite(parsedWidth) ? parsedWidth : fallbackWidth;
+
+  return Math.min(maxWidth, Math.max(minCardPlaceWidth, Math.round(nextWidth)));
+}
+
 function normalizeFolderAccessRules(rules, options = {}) {
   return Object.fromEntries(
     Object.entries(rules)
@@ -1786,6 +1813,7 @@ function loadWorkspaceState() {
       id: workspace.id,
       name: workspace.name,
       boardViews: normalizeBoardViews(workspace),
+      cardPlaceWidth: normalizeCardPlaceWidth(workspace.cardPlaceWidth),
     }));
     workspaces = workspaces.map((workspace, index) => ({
       ...workspace,
@@ -2136,17 +2164,22 @@ function renderFolders() {
   renderBoardColumnMenu();
 
   if (activeView === "settings") {
+    selectedCardPath = null;
+    renderCardPlacePanel();
     renderSettingsView();
     return;
   }
 
   if (!folderViews.has(activeView)) {
+    selectedCardPath = null;
+    renderCardPlacePanel();
     renderPlaceholder(views[activeView].emptyTitle, views[activeView].emptyDescription);
     return;
   }
 
   const visibleFolders = filterFolders(folders, searchInput.value);
   renderActiveBoardView(visibleFolders);
+  renderCardPlacePanel();
 
   const hasCards = visibleFolders.length > 0;
   emptyState.hidden = hasCards;
@@ -2200,6 +2233,118 @@ function renderActiveBoardView(visibleFolders) {
 function renderOverviewView(visibleFolders) {
   folderGrid.className = "folder-grid";
   folderGrid.replaceChildren(...getOverviewFolders(visibleFolders).map((folder) => createFolderCard(folder)));
+}
+
+function handleCardPlaceClick(event) {
+  if (activeView === "settings") {
+    return;
+  }
+
+  if (getActiveBoardView() === "table") {
+    const nameCell = event.target.closest('.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"]');
+    if (!nameCell || !folderGrid.contains(nameCell)) {
+      return;
+    }
+
+    const row = nameCell.closest(".folder-table-row");
+    const folder = findFolderByPath(row?.dataset.folderPath);
+    if (folder) {
+      openCardPlace(folder);
+    }
+    return;
+  }
+
+  const card = event.target.closest(".folder-card");
+  if (!card || !folderGrid.contains(card)) {
+    return;
+  }
+
+  const folder = findFolderByPath(card.dataset.folderPath);
+  if (folder) {
+    openCardPlace(folder);
+  }
+}
+
+function openCardPlace(folder) {
+  selectedCardPath = getFolderPath(folder);
+  renderCardPlacePanel();
+}
+
+function closeCardPlace() {
+  selectedCardPath = null;
+  renderCardPlacePanel();
+}
+
+function renderCardPlacePanel() {
+  const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
+  if (selectedCardPath && !selectedCard) {
+    selectedCardPath = null;
+  }
+
+  cardPlacePanel.style.setProperty("--card-place-width", `${getActiveCardPlaceWidth()}px`);
+  cardPlacePanel.classList.toggle("is-open", Boolean(selectedCard));
+  cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
+  cardPlaceTitle.textContent = "";
+  cardPlaceStatus.textContent = "";
+  if (selectedCard) {
+    cardPlaceTitle.textContent = selectedCard.name;
+    cardPlaceStatus.textContent = selectedCard.status;
+  }
+}
+
+function handleCardPlaceResizeStart(event) {
+  event.preventDefault();
+  cardPlaceResizeState = {
+    startX: event.clientX,
+    startWidth: getActiveCardPlaceWidth(),
+  };
+
+  cardPlacePanel.classList.add("is-resizing");
+  try {
+    cardPlaceResizeHandle.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleCardPlaceResizeMove(event) {
+  if (!cardPlaceResizeState) {
+    return;
+  }
+
+  const nextWidth = normalizeCardPlaceWidth(cardPlaceResizeState.startWidth + cardPlaceResizeState.startX - event.clientX);
+  cardPlacePanel.style.setProperty("--card-place-width", `${nextWidth}px`);
+}
+
+function handleCardPlaceResizeEnd() {
+  if (!cardPlaceResizeState) {
+    return;
+  }
+
+  const panelWidth = Number.parseFloat(cardPlacePanel.style.getPropertyValue("--card-place-width"));
+  saveCardPlaceWidth(panelWidth);
+  cardPlaceResizeState = null;
+  cardPlacePanel.classList.remove("is-resizing");
+}
+
+function getActiveCardPlaceWidth() {
+  return normalizeCardPlaceWidth(getActiveWorkspace()?.cardPlaceWidth);
+}
+
+function saveCardPlaceWidth(width) {
+  const cardPlaceWidth = normalizeCardPlaceWidth(width);
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId ? { ...workspace, cardPlaceWidth } : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function findFolderByPath(folderPath) {
+  return folders.find((folder) => getFolderPath(folder) === folderPath) || null;
+}
+
+function getFolderPath(folder) {
+  return folder?.path || folder?.id || folder?.name || "";
 }
 
 function getOverviewFolders(visibleFolders) {
@@ -3334,6 +3479,7 @@ function clearTableColumnDragState() {
 function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), options = {}) {
   const row = document.createElement("div");
   row.className = "folder-table-row";
+  row.dataset.folderPath = folder.path || folder.name;
   row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
   row.append(...columnOrder.map((columnId) => createTableCell(getTableCellText(folder, columnId), columnId)));
 
@@ -3762,6 +3908,7 @@ function getTableCellText(folder, columnId) {
 function createFolderCard(folder, options = {}) {
   const card = document.createElement("article");
   card.className = "folder-card";
+  card.dataset.folderPath = folder.path || folder.name;
 
   const title = document.createElement("h2");
   title.textContent = folder.name;

@@ -156,6 +156,34 @@
             <p>Pick a parent folder to show its direct subfolders as cards.</p>
           </div>
         </section>
+
+        <aside class="card-place-panel" id="cardPlacePanel" aria-label="Card place" aria-hidden="true">
+          <button
+            class="card-place-resize-handle"
+            id="cardPlaceResizeHandle"
+            type="button"
+            aria-label="Resize card place"
+            title="Resize card place"
+          ></button>
+          <div class="card-place-content">
+            <header class="card-place-header">
+              <h2 id="cardPlaceTitle"></h2>
+              <button
+                class="icon-button card-place-close"
+                id="cardPlaceCloseButton"
+                type="button"
+                aria-label="Close card place"
+                title="Close"
+              >
+                ×
+              </button>
+            </header>
+            <section class="card-place-field" aria-label="Status">
+              <span class="eyebrow">Status</span>
+              <p id="cardPlaceStatus"></p>
+            </section>
+          </div>
+        </aside>
       </main>
     </div>
 

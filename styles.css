@@ -1092,6 +1092,10 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"] {
+  cursor: pointer;
+}
+
 .folder-table-head .folder-table-cell {
   display: flex;
   position: relative;
@@ -1314,6 +1318,7 @@ input:focus-visible {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card);
+  cursor: pointer;
   padding: 12px;
   transition:
     border-color 140ms ease,
@@ -1352,6 +1357,107 @@ input:focus-visible {
   padding: 2px 8px 3px;
   font-size: 12px;
   line-height: 1.2;
+}
+
+.card-place-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: var(--card-place-width, 50vw);
+  max-width: calc(100vw - 48px);
+  border-left: 1px solid var(--line);
+  background: #1b1b1a;
+  box-shadow: -18px 0 42px rgba(0, 0, 0, 0.34);
+  transform: translateX(100%);
+  transition: transform 180ms ease;
+}
+
+.card-place-panel.is-open {
+  transform: translateX(0);
+}
+
+.card-place-panel.is-resizing {
+  transition: none;
+}
+
+.card-place-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  width: 10px;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize;
+  padding: 0;
+}
+
+.card-place-resize-handle::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: transparent;
+  content: "";
+  transition: background-color 140ms ease;
+}
+
+.card-place-resize-handle:hover::after,
+.card-place-panel.is-resizing .card-place-resize-handle::after {
+  background: #5f5e59;
+}
+
+.card-place-content {
+  display: grid;
+  align-content: start;
+  gap: 26px;
+  height: 100%;
+  overflow: auto;
+  padding: 22px 24px;
+}
+
+.card-place-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: start;
+  gap: 14px;
+}
+
+.card-place-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 560;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.card-place-close {
+  width: 32px;
+  min-height: 32px;
+  color: var(--muted);
+  font-size: 19px;
+}
+
+.card-place-close:hover {
+  color: var(--text);
+}
+
+.card-place-field {
+  display: grid;
+  gap: 8px;
+}
+
+.card-place-field p {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .kanban-board.settings-mode {

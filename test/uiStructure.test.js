@@ -379,6 +379,52 @@ test("folder board supports overview board and table renderers", async () => {
   assert.doesNotMatch(css, /\.folder-table-cell\s*\{[^}]*border-left:/s);
 });
 
+test("card place opens from cards and stores its width per workspace", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(html, /id="cardPlacePanel"/);
+  assert.match(html, /id="cardPlaceResizeHandle"/);
+  assert.match(html, /id="cardPlaceTitle"/);
+  assert.match(html, /id="cardPlaceStatus"/);
+  assert.match(html, /id="cardPlaceCloseButton"/);
+  assert.match(html, />Status</);
+  assert.match(app, /const cardPlacePanel = document\.querySelector\("#cardPlacePanel"\)/);
+  assert.match(app, /let selectedCardPath = null/);
+  assert.match(app, /let cardPlaceResizeState = null/);
+  assert.match(app, /folderGrid\.addEventListener\("click", handleCardPlaceClick\)/);
+  assert.match(app, /cardPlaceResizeHandle\.addEventListener\("pointerdown", handleCardPlaceResizeStart\)/);
+  assert.match(app, /window\.addEventListener\("pointermove", handleCardPlaceResizeMove\)/);
+  assert.match(app, /window\.addEventListener\("pointerup", handleCardPlaceResizeEnd\)/);
+  assert.match(app, /function handleCardPlaceClick\(event\)/);
+  assert.match(app, /event\.target\.closest\("\.folder-card"\)/);
+  assert.match(app, /event\.target\.closest\('\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]'\)/);
+  assert.match(app, /function openCardPlace\(folder\)/);
+  assert.match(app, /function closeCardPlace\(\)/);
+  assert.match(app, /function renderCardPlacePanel\(\)/);
+  assert.match(app, /function normalizeCardPlaceWidth\(width\)/);
+  assert.match(app, /function getActiveCardPlaceWidth\(\)/);
+  assert.match(app, /function saveCardPlaceWidth\(width\)/);
+  assert.match(app, /cardPlaceWidth:\s*normalizeCardPlaceWidth\(workspace\.cardPlaceWidth\)/);
+  assert.match(app, /card\.dataset\.folderPath = folder\.path/);
+  assert.match(app, /row\.dataset\.folderPath = folder\.path/);
+  assert.match(app, /cardPlacePanel\.style\.setProperty\("--card-place-width"/);
+  assert.match(app, /cardPlacePanel\.classList\.toggle\("is-open", Boolean\(selectedCard\)\)/);
+  assert.match(app, /cardPlaceStatus\.textContent = selectedCard\.status/);
+  assert.match(app, /selectedCardPath = null;\s*renderCardPlacePanel\(\)/);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*top:\s*0/s);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*right:\s*0/s);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*bottom:\s*0/s);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*width:\s*var\(--card-place-width/s);
+  assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
+  assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
+  assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
+  assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);
+});
+
 test("table columns can be resized and reordered from the header", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
