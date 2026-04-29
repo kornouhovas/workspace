@@ -431,6 +431,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-panel\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.card-place-panel\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.card-place-panel\s*\{[^}]*width:\s*var\(--card-place-width/s);
+  assert.doesNotMatch(css, /\.card-place-panel\s*\{[^}]*box-shadow:/s);
   assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
   assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
