@@ -604,7 +604,7 @@
           row.className = "folder-table-row";
           row.dataset.folderPath = folder.path || folder.name;
           row.classList.toggle("is-hidden-status-row", hiddenStatuses.includes(folder.status));
-          row.classList.toggle("is-text-wrapped", textWrapped);
+          row.classList.toggle("is-text-wrapped", textWrapped && hasInitialMultilineTableText(folder));
           row.append(
             ...tableColumnOrder.map((columnId) =>
               createInitialTableCell(getInitialTableCellText(folder, columnId), columnId),
@@ -612,6 +612,10 @@
           );
 
           return row;
+        }
+
+        function hasInitialMultilineTableText(folder) {
+          return typeof folder?.text === "string" && folder.text.includes("\n");
         }
 
         function getInitialTableCellText(folder, columnId) {

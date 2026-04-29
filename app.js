@@ -29,6 +29,7 @@ const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
+const cardPlaceTextLabel = document.querySelector('[for="cardPlaceText"]');
 const cardPlaceText = document.querySelector("#cardPlaceText");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
@@ -707,7 +708,7 @@ function createTablePropertyMenuItem(columnId, hidden) {
   button.className = "table-property-visibility";
   button.type = "button";
   button.dataset.tableColumn = columnId;
-  button.setAttribute("aria-label", hidden ? `Show ${tableColumnLabels[columnId]} property` : `Hide ${tableColumnLabels[columnId]} property`);
+  button.setAttribute("aria-label", hidden ? `Show ${getTableColumnLabel(columnId)} property` : `Hide ${getTableColumnLabel(columnId)} property`);
   button.setAttribute("aria-pressed", String(hidden));
   button.append(createEyeIcon(hidden));
   item.append(button);
@@ -1784,6 +1785,10 @@ function getTableColumnLabel(columnId) {
   return getActiveTableColumnLabels()[columnId] || tableColumnLabels[columnId] || columnId;
 }
 
+function getTextPropertyLabel() {
+  return getTableColumnLabel("text");
+}
+
 function getActiveTableWrappedColumns() {
   return normalizeTableWrappedColumns(getActiveBoardViewConfig()?.tableWrappedColumns);
 }
@@ -2573,7 +2578,7 @@ function clearCardPlaceTextPlaceholder() {
 
 function handleCardPlaceTextBlur() {
   if (!cardPlaceText.value) {
-    cardPlaceText.placeholder = "Text";
+    cardPlaceText.placeholder = getTextPropertyLabel();
   }
 }
 
@@ -2588,10 +2593,11 @@ function renderCardPlacePanel() {
   cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
   cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
+  cardPlaceTextLabel.textContent = getTextPropertyLabel();
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
   cardPlaceText.value = "";
-  cardPlaceText.placeholder = "Text";
+  cardPlaceText.placeholder = getTextPropertyLabel();
   cardPlaceText.disabled = !selectedCard;
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
@@ -2607,8 +2613,13 @@ function resizeTextareaToContent(textarea) {
     return;
   }
 
-  textarea.style.height = "auto";
+  textarea.style.height = `${getTextareaSingleLineHeight(textarea)}px`;
   textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function getTextareaSingleLineHeight(textarea) {
+  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
+  return Number.isFinite(lineHeight) ? Math.ceil(lineHeight) : 20;
 }
 
 function getFolderText(folder) {
@@ -4132,10 +4143,14 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
   row.className = "folder-table-row";
   row.dataset.folderPath = folder.path || folder.name;
   row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
-  row.classList.toggle("is-text-wrapped", Boolean(options.textWrapped));
+  row.classList.toggle("is-text-wrapped", Boolean(options.textWrapped) && hasMultilineTableText(folder));
   row.append(...columnOrder.map((columnId) => createTableCell(folder, columnId, options)));
 
   return row;
+}
+
+function hasMultilineTableText(folder) {
+  return getFolderText(folder).includes("\n");
 }
 
 function createTableHeaderCell(columnId) {

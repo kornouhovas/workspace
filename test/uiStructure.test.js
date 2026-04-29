@@ -269,6 +269,11 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /function createTableTextMenu/);
   assert.match(app, /function startTableColumnRename/);
   assert.match(app, /function toggleTableTextWrap/);
+  assert.match(app, /const cardPlaceTextLabel = document\.querySelector\('\[for="cardPlaceText"\]'\)/);
+  assert.match(app, /function getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceTextLabel\.textContent = getTextPropertyLabel\(\)/);
+  assert.match(app, /cardPlaceText\.placeholder = getTextPropertyLabel\(\)/);
+  assert.match(app, /hidden \? `Show \$\{getTableColumnLabel\(columnId\)\} property` : `Hide \$\{getTableColumnLabel\(columnId\)\} property`/);
   assert.match(app, /control\.spellcheck = false/);
   assert.match(app, /input\.spellcheck = false/);
   assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
@@ -304,6 +309,12 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.table-header-rename-input\s*\{[^}]*appearance:\s*none/s);
   assert.match(css, /\.table-header-rename-input:focus-visible\s*\{[^}]*outline:\s*0/s);
   assert.match(css, /\.table-property-menu-section-title/);
+  assert.match(app, /function hasMultilineTableText\(folder\)/);
+  assert.match(app, /row\.classList\.toggle\("is-text-wrapped", Boolean\(options\.textWrapped\) && hasMultilineTableText\(folder\)\)/);
+  assert.match(app, /function getTextareaSingleLineHeight\(textarea\)/);
+  assert.match(app, /textarea\.style\.height = `\$\{getTextareaSingleLineHeight\(textarea\)\}px`/);
+  assert.match(html, /function hasInitialMultilineTableText\(folder\)/);
+  assert.match(html, /row\.classList\.toggle\("is-text-wrapped", textWrapped && hasInitialMultilineTableText\(folder\)\)/);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
