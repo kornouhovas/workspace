@@ -21,7 +21,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: join(__dirname, "preload.js"),
+      preload: join(__dirname, "preload.cjs"),
     },
   });
 
@@ -32,17 +32,24 @@ function registerWorkspaceHandlers() {
   ipcMain.handle("workspace:getRoot", () => createRootResponse());
   ipcMain.handle("workspace:selectRoot", () => createSelectRootResponse());
   ipcMain.handle("workspace:scan", async (_event, payload = {}) => {
+    const body = normalizePayload(payload);
     const settings = await readWorkspaceSettings();
-    return createScanResponse({ root: settings.rootPath, rules: payload.rules });
+    return createScanResponse({ root: settings.rootPath, rules: body.rules });
   });
   ipcMain.handle("workspace:listEntries", async (_event, payload = {}) => {
+    const body = normalizePayload(payload);
     const settings = await readWorkspaceSettings();
-    return createListEntriesResponse({ root: settings.rootPath, body: payload });
+    return createListEntriesResponse({ root: settings.rootPath, body });
   });
   ipcMain.handle("workspace:reveal", async (_event, payload = {}) => {
+    const body = normalizePayload(payload);
     const settings = await readWorkspaceSettings();
-    return createRevealResponse({ root: settings.rootPath, body: payload });
+    return createRevealResponse({ root: settings.rootPath, body });
   });
+}
+
+function normalizePayload(payload) {
+  return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
 }
 
 app.whenReady().then(() => {

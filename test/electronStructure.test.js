@@ -8,13 +8,15 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /new BrowserWindow\(/);
   assert.match(mainSource, /contextIsolation:\s*true/);
   assert.match(mainSource, /nodeIntegration:\s*false/);
-  assert.match(mainSource, /preload:\s*join\(__dirname,\s*"preload\.js"\)/);
+  assert.match(mainSource, /preload:\s*join\(__dirname,\s*"preload\.cjs"\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:getRoot"/);
+  assert.match(mainSource, /function normalizePayload\(payload\)/);
 });
 
 test("electron preload exposes only the narrow workspace API", async () => {
-  const preloadSource = await readFile(new URL("../electron/preload.js", import.meta.url), "utf8");
+  const preloadSource = await readFile(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 
+  assert.match(preloadSource, /require\("electron"\)/);
   assert.match(preloadSource, /contextBridge\.exposeInMainWorld\("workspace"/);
   assert.match(preloadSource, /getRoot:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("workspace:getRoot"\)/);
   assert.match(preloadSource, /selectRoot:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("workspace:selectRoot"\)/);
@@ -22,5 +24,6 @@ test("electron preload exposes only the narrow workspace API", async () => {
   assert.match(preloadSource, /listEntries:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:listEntries",\s*payload\)/);
   assert.match(preloadSource, /reveal:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:reveal",\s*payload\)/);
   assert.doesNotMatch(preloadSource, /require\("fs"\)/);
+  assert.doesNotMatch(preloadSource, /from\s+["']electron["']/);
   assert.doesNotMatch(preloadSource, /from\s+["']node:fs["']/);
 });
