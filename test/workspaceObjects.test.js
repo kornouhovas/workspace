@@ -74,6 +74,7 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
   assert.deepEqual(projection.propertyValues, [
     {
       id: "value:object:workspace-main:active-project-alpha:property:text",
+      workspaceId: "workspace:main",
       objectId: "object:workspace-main:active-project-alpha",
       propertyId: "property:text",
       type: "text",

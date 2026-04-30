@@ -25,6 +25,7 @@ export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folder
     if (textValue.trim() !== "") {
       propertyValues.push({
         id: createPropertyValueId(objectId, "property:text"),
+        workspaceId,
         objectId,
         propertyId: "property:text",
         type: "text",
