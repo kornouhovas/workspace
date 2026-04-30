@@ -64,6 +64,7 @@ test("normalizePropertyValue normalizes number values", () => {
 
 test("normalizePropertyValue normalizes date values", () => {
   assert.equal(normalizePropertyValue("date", "2026-04-30"), "2026-04-30");
+  assert.equal(normalizePropertyValue("date", "0001-01-01"), "0001-01-01");
   assert.equal(normalizePropertyValue("date", "2026-4-30"), null);
   assert.equal(normalizePropertyValue("date", "2026-02-30"), null);
   assert.equal(normalizePropertyValue("date", ""), null);
@@ -118,6 +119,37 @@ test("normalizePropertySchema preserves select config and normalizes options", (
       },
     },
   );
+});
+
+test("normalizePropertySchema filters invalid select options", () => {
+  assert.deepEqual(
+    normalizePropertySchema({
+      id: "property:priority",
+      name: "Priority",
+      type: "multi-select",
+      config: {
+        options: [
+          null,
+          {},
+          { id: "x" },
+          { name: "X" },
+          { id: "", name: "Empty id" },
+          { id: "empty-name", name: "" },
+          { id: "high", name: "High" },
+        ],
+      },
+    }).config.options,
+    [{ id: "high", name: "High", color: "", order: 70 }],
+  );
+});
+
+test("normalizePropertySchema clones nested non-select config objects", () => {
+  const config = { display: { width: 200 } };
+  const schema = normalizePropertySchema({ id: "property:text", type: "text", config });
+
+  config.display.width = 300;
+
+  assert.deepEqual(schema.config, { display: { width: 200 } });
 });
 
 test("normalizePropertySchema falls back unknown types to text", () => {

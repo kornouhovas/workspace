@@ -55,7 +55,7 @@ function normalizePropertyType(type) {
 }
 
 function normalizePropertyConfig(type, config) {
-  const normalizedConfig = isPlainObject(config) ? { ...config } : {};
+  const normalizedConfig = clonePlainObject(config);
 
   if (type !== "select" && type !== "multi-select") {
     return normalizedConfig;
@@ -64,19 +64,28 @@ function normalizePropertyConfig(type, config) {
   return {
     ...normalizedConfig,
     options: Array.isArray(normalizedConfig.options)
-      ? normalizedConfig.options.map(normalizePropertyOption)
+      ? normalizedConfig.options.map(normalizePropertyOption).filter(Boolean)
       : [],
   };
 }
 
 function normalizePropertyOption(option, index) {
-  const source = isPlainObject(option) ? option : {};
+  if (!isPlainObject(option)) {
+    return null;
+  }
+
+  const id = normalizeRequiredOptionString(option.id);
+  const name = normalizeRequiredOptionString(option.name);
+
+  if (id === null || name === null) {
+    return null;
+  }
 
   return {
-    id: normalizeString(source.id),
-    name: normalizeString(source.name),
-    color: normalizeString(source.color),
-    order: normalizeOrder(source.order, (index + 1) * 10),
+    id,
+    name,
+    color: normalizeString(option.color),
+    order: normalizeOrder(option.order, (index + 1) * 10),
   };
 }
 
@@ -107,7 +116,8 @@ function normalizeDateValue(value) {
   const year = Number(yearText);
   const month = Number(monthText);
   const day = Number(dayText);
-  const date = new Date(Date.UTC(year, month - 1, day));
+  const date = new Date(Date.UTC(0, month - 1, day));
+  date.setUTCFullYear(year);
 
   if (
     date.getUTCFullYear() !== year ||
@@ -149,6 +159,10 @@ function normalizeString(value) {
   return value == null ? "" : String(value);
 }
 
+function normalizeRequiredOptionString(value) {
+  return typeof value === "string" && value !== "" ? value : null;
+}
+
 function normalizeOrder(value, fallback = 0) {
   const order = Number(value);
   return Number.isFinite(order) ? order : fallback;
@@ -156,4 +170,20 @@ function normalizeOrder(value, fallback = 0) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function clonePlainObject(value) {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      return JSON.parse(JSON.stringify(value));
+    }
+  }
+
+  return JSON.parse(JSON.stringify(value));
 }
