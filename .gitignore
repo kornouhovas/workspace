@@ -4,5 +4,6 @@
 /workspace-sidecar
 /workspace-sidecar.exe
 node_modules/
+build/
 dist/
 .DS_Store

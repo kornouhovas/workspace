@@ -19,7 +19,16 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /let\s+sidecarProcess\s*=\s*null/);
   assert.match(mainSource, /const\s+sidecarStartupTimeoutMs\s*=\s*5000/);
   assert.match(mainSource, /async\s+function\s+startWorkspaceSidecar\(\)/);
+  assert.match(mainSource, /function\s+resolveWorkspaceSidecarPath\(repoRoot\)/);
+  assert.match(mainSource, /app\.isPackaged/);
+  assert.match(mainSource, /process\.resourcesPath,\s*"sidecar"/);
+  assert.match(mainSource, /function\s+getSidecarPlatformDirectory\(platform = process\.platform, arch = process\.arch\)/);
+  assert.match(mainSource, /return "darwin-arm64"/);
+  assert.match(mainSource, /return "win32-x64"/);
+  assert.match(mainSource, /function\s+getSidecarExecutableName\(platform = process\.platform\)/);
+  assert.match(mainSource, /"workspace-sidecar\.exe"/);
   assert.match(mainSource, /function\s+stopWorkspaceSidecar\(\)/);
+  assert.match(mainSource, /const\s+sidecarPath\s*=\s*resolveWorkspaceSidecarPath\(repoRoot\)/);
   assert.match(mainSource, /spawn\(sidecarPath,\s*\["-db",\s*join\(app\.getPath\("userData"\),\s*"workspace\.db"\)\]/);
   assert.match(mainSource, /childProcess\.stderr\.on\("data",\s*handleData\)/);
   assert.match(mainSource, /chunks\.join\(""\)\.match\(/);

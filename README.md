@@ -55,6 +55,28 @@ npm run electron
 
 This command builds the local `workspace-sidecar` binary first, then opens the Electron app. The generated binary is ignored by git.
 
+## Сборка приложения
+
+Сборка macOS-приложения для Apple Silicon:
+
+```bash
+npm run dist:mac
+```
+
+Сборка Windows-приложения:
+
+```bash
+npm run dist:win
+```
+
+Сборка обеих платформ одной командой:
+
+```bash
+npm run dist:all
+```
+
+Перед упаковкой команды собирают sidecar для `darwin-arm64` и `win32-x64`. Готовые приложения появляются в папке `dist/`.
+
 ## Безопасность локального endpoint
 
 Backend endpoints принимают только относительные пути внутри выбранной workspace-папки.

@@ -44,7 +44,7 @@ function createWindow() {
 
 async function startWorkspaceSidecar() {
   const repoRoot = join(__dirname, "..");
-  const sidecarPath = join(repoRoot, "workspace-sidecar");
+  const sidecarPath = resolveWorkspaceSidecarPath(repoRoot);
   sidecarProcess = spawn(sidecarPath, ["-db", join(app.getPath("userData"), "workspace.db")], {
     cwd: repoRoot,
     stdio: ["ignore", "pipe", "pipe"],
@@ -61,6 +61,30 @@ async function startWorkspaceSidecar() {
 
   const address = await waitForSidecarAddress(sidecarProcess);
   workspaceClient = new WorkspaceServiceClient(createSidecarHttpTransport(`http://${address}`));
+}
+
+function resolveWorkspaceSidecarPath(repoRoot) {
+  if (!app.isPackaged) {
+    return join(repoRoot, "workspace-sidecar");
+  }
+
+  return join(process.resourcesPath, "sidecar", getSidecarPlatformDirectory(), getSidecarExecutableName());
+}
+
+function getSidecarPlatformDirectory(platform = process.platform, arch = process.arch) {
+  if (platform === "darwin" && arch === "arm64") {
+    return "darwin-arm64";
+  }
+
+  if (platform === "win32" && arch === "x64") {
+    return "win32-x64";
+  }
+
+  throw new Error(`Unsupported packaged sidecar platform: ${platform}-${arch}`);
+}
+
+function getSidecarExecutableName(platform = process.platform) {
+  return platform === "win32" ? "workspace-sidecar.exe" : "workspace-sidecar";
 }
 
 function stopWorkspaceSidecar() {
