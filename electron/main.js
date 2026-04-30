@@ -2,10 +2,9 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import {
   createListEntriesResponse,
-  createRootResponse,
   createScanResponse,
   createSelectRootResponse,
   readWorkspaceSettings,
@@ -16,6 +15,7 @@ import { createSidecarHttpTransport } from "./sidecarClient.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const sidecarStartupTimeoutMs = 5000;
 
 let workspaceClient = null;
 let sidecarProcess = null;
@@ -56,9 +56,21 @@ async function startWorkspaceSidecar() {
   workspaceClient = new WorkspaceServiceClient(createSidecarHttpTransport(`http://${address}`));
 }
 
+function stopWorkspaceSidecar() {
+  if (sidecarProcess) {
+    sidecarProcess.kill();
+    sidecarProcess = null;
+  }
+}
+
 async function waitForSidecarAddress(childProcess) {
   return Promise.race([
     readSidecarAddress(childProcess),
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error("Workspace sidecar startup timed out."));
+      }, sidecarStartupTimeoutMs);
+    }),
     once(childProcess, "error").then(([error]) => {
       throw error;
     }),
@@ -100,29 +112,66 @@ function readSidecarAddress(childProcess) {
 
 function registerWorkspaceHandlers() {
   ipcMain.handle("workspace:getRoot", async () => {
-    if (!workspaceClient) {
-      return createRootResponse();
-    }
-
-    const root = await workspaceClient.getRoot();
-    return { status: 200, payload: { root: root.rootPath ? { name: root.name } : null } };
+    const rootPath = await readSelectedWorkspaceRootPath();
+    return { status: 200, payload: { root: rootPath ? { name: basename(rootPath) } : null } };
   });
-  ipcMain.handle("workspace:selectRoot", () => createSelectRootResponse());
+  ipcMain.handle("workspace:selectRoot", async () => {
+    const response = await createSelectRootResponse();
+    if (response.status < 400) {
+      const settings = await readWorkspaceSettings();
+      await persistWorkspaceRoot(settings.rootPath);
+    }
+    return response;
+  });
   ipcMain.handle("workspace:scan", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
-    const settings = await readWorkspaceSettings();
-    return createScanResponse({ root: settings.rootPath, rules: body.rules });
+    const rootPath = await readSelectedWorkspaceRootPath();
+    return createScanResponse({ root: rootPath, rules: body.rules });
   });
   ipcMain.handle("workspace:listEntries", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
-    const settings = await readWorkspaceSettings();
-    return createListEntriesResponse({ root: settings.rootPath, body });
+    const rootPath = await readSelectedWorkspaceRootPath();
+    return createListEntriesResponse({ root: rootPath, body });
   });
   ipcMain.handle("workspace:reveal", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
-    const settings = await readWorkspaceSettings();
-    return createRevealResponse({ root: settings.rootPath, body });
+    const rootPath = await readSelectedWorkspaceRootPath();
+    return createRevealResponse({ root: rootPath, body });
   });
+}
+
+async function readSelectedWorkspaceRootPath() {
+  if (workspaceClient) {
+    try {
+      const root = await workspaceClient.getRoot();
+      if (root.rootPath) {
+        return root.rootPath;
+      }
+    } catch (error) {
+      console.error(`Could not read workspace root from sidecar: ${error.message}`);
+    }
+  }
+
+  const settings = await readWorkspaceSettings();
+  if (settings.rootPath) {
+    await persistWorkspaceRoot(settings.rootPath);
+  }
+  return settings.rootPath;
+}
+
+async function persistWorkspaceRoot(rootPath) {
+  if (!workspaceClient || !rootPath) {
+    return;
+  }
+
+  try {
+    await workspaceClient.setRoot({
+      rootPath,
+      name: basename(rootPath),
+    });
+  } catch (error) {
+    console.error(`Could not persist workspace root to sidecar: ${error.message}`);
+  }
 }
 
 function normalizePayload(payload) {
@@ -135,6 +184,7 @@ app.whenReady().then(async () => {
   } catch (error) {
     console.error(`Workspace sidecar unavailable: ${error.message}`);
     workspaceClient = null;
+    stopWorkspaceSidecar();
   }
 
   registerWorkspaceHandlers();
@@ -148,10 +198,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("before-quit", () => {
-  if (sidecarProcess) {
-    sidecarProcess.kill();
-    sidecarProcess = null;
-  }
+  stopWorkspaceSidecar();
 });
 
 app.on("window-all-closed", () => {
