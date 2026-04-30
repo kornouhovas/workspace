@@ -27,6 +27,10 @@ export class WorkspaceServiceClient {
     return this.request("workspace.saveProperty", payload);
   }
 
+  listPropertyValues(payload) {
+    return this.request("workspace.listPropertyValues", payload);
+  }
+
   reveal(payload) {
     return this.request("workspace.reveal", payload);
   }

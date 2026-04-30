@@ -44,6 +44,20 @@ func main() {
 		}
 	})
 	mux.HandleFunc("/workspace/property-values", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			workspaceID := r.URL.Query().Get("workspaceId")
+			if workspaceID == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is required"})
+				return
+			}
+			values, err := store.ListPropertyValues(r.Context(), workspaceID)
+			if values == nil {
+				values = []workspacestore.PropertyValueDocument{}
+			}
+			writeResult(w, map[string]any{"values": values}, err)
+			return
+		}
+
 		if r.Method != http.MethodPut {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 			return

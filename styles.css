@@ -1276,6 +1276,91 @@ textarea.table-text-input {
   display: none;
 }
 
+.table-add-property {
+  position: relative;
+  margin-left: auto;
+}
+
+.property-add-button {
+  display: grid;
+  min-width: 24px;
+  min-height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+  padding: 0 6px;
+  font: inherit;
+  font-weight: 560;
+}
+
+.property-add-button:hover,
+.property-add-button:focus-visible,
+.property-add-button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  outline: 0;
+}
+
+.property-type-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 36;
+  display: grid;
+  min-width: 176px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.card-place-add-property .property-type-menu {
+  right: auto;
+  left: 0;
+}
+
+.property-type-menu[hidden] {
+  display: none;
+}
+
+.property-type-menu-option {
+  display: grid;
+  width: 100%;
+  min-height: 30px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 0 8px;
+  font: inherit;
+  text-align: left;
+}
+
+.property-type-menu-option:hover,
+.property-type-menu-option:focus-visible {
+  background: rgba(255, 255, 255, 0.045);
+  outline: 0;
+}
+
+.property-type-icon {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .table-text-menu-action {
   display: grid;
   width: 100%;
@@ -1664,6 +1749,35 @@ textarea.table-text-input {
   width: 100%;
   min-width: 0;
   overflow: hidden;
+}
+
+.card-place-property-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-place-property-row {
+  margin: 0;
+}
+
+.card-place-add-property {
+  position: relative;
+  justify-self: start;
+}
+
+.card-place-add-property .property-add-button {
+  min-height: 24px;
+  justify-content: start;
+  padding: 0;
+  color: var(--muted);
+}
+
+.card-place-add-property .property-add-button:hover,
+.card-place-add-property .property-add-button:focus-visible,
+.card-place-add-property .property-add-button[aria-expanded="true"] {
+  background: transparent;
+  color: var(--text);
 }
 
 .card-place-text {

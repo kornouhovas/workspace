@@ -165,7 +165,11 @@ function registerWorkspaceHandlers() {
   ipcMain.handle("workspace:scan", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
     const rootPath = await readSelectedWorkspaceRootPath();
-    return createScanResponse({ root: rootPath, rules: body.rules, propertiesPath: getWorkspacePropertiesPath() });
+    const response = await createScanResponse({ root: rootPath, rules: body.rules, propertiesPath: getWorkspacePropertiesPath() });
+    if (response.status < 400) {
+      await attachStoredWorkspaceProperties(rootPath, response.payload);
+    }
+    return response;
   });
   ipcMain.handle("workspace:listEntries", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
@@ -180,7 +184,8 @@ function registerWorkspaceHandlers() {
       propertiesPath: getWorkspacePropertiesPath(),
       body: {
         path: body.path,
-        text: body.value ?? body.text,
+        propertyId: body.propertyId,
+        text: body.propertyId && body.propertyId !== "property:text" ? undefined : body.value ?? body.text,
       },
     });
     if (response.status < 400) {
@@ -268,6 +273,46 @@ async function persistWorkspaceRoot(rootPath) {
     });
   } catch (error) {
     console.error(`Could not persist workspace root to sidecar: ${error.message}`);
+  }
+}
+
+async function attachStoredWorkspaceProperties(rootPath, payload) {
+  if (!workspaceClient || !rootPath || !payload?.workspace || !Array.isArray(payload.folders)) {
+    return;
+  }
+
+  const workspaceId = createWorkspaceId(rootPath);
+  try {
+    const { values = [] } = await workspaceClient.listPropertyValues({ workspaceId });
+    const storedValues = Array.isArray(values) ? values : [];
+    const valuesByObjectId = new Map();
+    storedValues.forEach((value) => {
+      if (!value || value.workspaceId !== workspaceId || typeof value.objectId !== "string") {
+        return;
+      }
+
+      const objectValues = valuesByObjectId.get(value.objectId) || {};
+      objectValues[value.propertyId] = value.value;
+      valuesByObjectId.set(value.objectId, objectValues);
+    });
+
+    payload.folders = payload.folders.map((folder) => {
+      const objectId = createFolderObjectId(workspaceId, folder.path);
+      const storedProperties = valuesByObjectId.get(objectId) || {};
+      const properties = {
+        ...(folder.properties || {}),
+        ...storedProperties,
+      };
+
+      return {
+        ...folder,
+        properties,
+        text: typeof properties["property:text"] === "string" ? properties["property:text"] : folder.text,
+      };
+    });
+    payload.workspace.propertyValues = storedValues;
+  } catch (error) {
+    console.error(`Could not attach stored workspace properties: ${error.message}`);
   }
 }
 

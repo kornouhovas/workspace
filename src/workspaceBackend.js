@@ -104,8 +104,13 @@ export async function createPropertiesResponse({ root, body, propertiesPath = de
     const properties = await readWorkspaceProperties(propertiesPath);
     const rootKey = createRootPropertiesKey(root);
     const rootProperties = properties.roots[rootKey] || {};
-    const folderProperties = {
-      ...(rootProperties[folderPath] || {}),
+    const folderProperties = rootProperties[folderPath] || {};
+    if (body?.propertyId && body.propertyId !== "property:text") {
+      return createJsonResponse(200, { properties: folderProperties });
+    }
+
+    const nextFolderProperties = {
+      ...folderProperties,
       text: normalizeTextProperty(body?.text),
     };
 
@@ -115,13 +120,13 @@ export async function createPropertiesResponse({ root, body, propertiesPath = de
         ...properties.roots,
         [rootKey]: {
           ...rootProperties,
-          [folderPath]: folderProperties,
+          [folderPath]: nextFolderProperties,
         },
       },
     };
 
     await writeWorkspaceProperties(propertiesPath, nextProperties);
-    return createJsonResponse(200, { properties: folderProperties });
+    return createJsonResponse(200, { properties: nextFolderProperties });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not save folder properties." });
   }

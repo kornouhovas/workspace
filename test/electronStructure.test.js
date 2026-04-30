@@ -51,8 +51,10 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /ipcMain\.handle\("workspace:previewFile",\s*async/);
   assert.match(mainSource, /await\s+workspaceClient\.getRoot\(\)/);
   assert.match(mainSource, /await\s+workspaceClient\.setRoot\(/);
+  assert.match(mainSource, /await\s+workspaceClient\.listPropertyValues\(/);
   assert.match(mainSource, /await\s+workspaceClient\.saveProperty\(/);
   assert.match(mainSource, /pathToFileURL\(response\.filePath\)\.href/);
+  assert.match(mainSource, /function\s+attachStoredWorkspaceProperties\(rootPath,\s*payload\)/);
   assert.match(mainSource, /function\s+readSelectedWorkspaceRootPath\(\)/);
   assert.match(mainSource, /function\s+persistWorkspaceRoot\(rootPath\)/);
   assert.match(mainSource, /function\s+persistWorkspacePropertyValue\(rootPath,\s*body\)/);

@@ -305,6 +305,39 @@ test("createPropertiesResponse saves text properties for a card folder", async (
   assert.equal(properties.roots[createRootPropertiesKey(root)]["Active/Project Alpha"].text, "Inline table note");
 });
 
+test("createPropertiesResponse validates custom properties without overwriting text json", async () => {
+  const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
+  const rootKey = createRootPropertiesKey(root);
+  await writeFile(
+    propertiesPath,
+    JSON.stringify({
+      roots: {
+        [rootKey]: {
+          "Active/Project Alpha": { text: "Existing note" },
+        },
+      },
+    }),
+  );
+
+  const response = await createPropertiesResponse({
+    root,
+    propertiesPath,
+    body: {
+      path: "Active/Project Alpha",
+      propertyId: "property:number-1",
+      type: "number",
+      value: 42,
+    },
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.payload.properties, { text: "Existing note" });
+
+  const properties = await readWorkspaceProperties(propertiesPath);
+  assert.equal(properties.roots[rootKey]["Active/Project Alpha"].text, "Existing note");
+});
+
 test("createPropertiesResponse rejects properties outside workspace root", async () => {
   const root = await createWorkspaceFixture();
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");

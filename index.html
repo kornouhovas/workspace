@@ -203,6 +203,7 @@
                 disabled
               ></textarea>
             </section>
+            <div class="card-place-property-list" id="cardPlacePropertyList"></div>
             <section class="card-place-folder-section" aria-label="Folder contents">
               <div class="card-place-section-title">Folder</div>
               <div class="card-place-folder-list" id="cardPlaceFolderList"></div>
@@ -420,11 +421,14 @@
           table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
           table.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
           table.style.setProperty("--table-text-column-width", `${tableColumnWidths.text}%`);
+          Object.entries(tableColumnWidths).forEach(([columnId, width]) => {
+            table.style.setProperty(`--table-${getInitialTableColumnCssKey(columnId)}-column-width`, `${width}%`);
+          });
           table.style.setProperty(
             "--table-columns",
             visibleTableColumnOrder
               .map((columnId) =>
-                `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${columnId}-column-width))`,
+                `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${getInitialTableColumnCssKey(columnId)}-column-width))`,
               )
               .join(" "),
           );
@@ -624,7 +628,12 @@
           }
 
           if (columnId === "text") {
-            return folder?.text || "";
+            return folder?.properties?.["property:text"] || folder?.text || "";
+          }
+
+          if (columnId.startsWith("property:")) {
+            const value = folder?.properties?.[columnId];
+            return Array.isArray(value) ? value.join(", ") : value ?? "";
           }
 
           return folder?.name || "Name";
@@ -644,7 +653,15 @@
             return tableColumnLabels.text || "Text";
           }
 
+          if (columnId.startsWith("property:")) {
+            return tableColumnLabels[columnId] || columnId.replace(/^property:/, "");
+          }
+
           return columnId === "status" ? "Status" : "Name";
+        }
+
+        function getInitialTableColumnCssKey(columnId) {
+          return columnId.replace(/[^a-z0-9-]/gi, "-");
         }
 
         function createInitialFolderCard(folder, options = {}) {
@@ -701,7 +718,8 @@
           const activeView = getStoredActiveBoardViewConfig(state);
           const columnOrder = Array.isArray(activeView.tableColumnOrder) ? activeView.tableColumnOrder : [];
           const tableColumnIds = ["name", "status", "text"];
-          const normalizedColumns = columnOrder.filter((columnId) => tableColumnIds.includes(columnId));
+          const knownColumnIds = [...tableColumnIds, ...getStoredCustomProperties(state).map((property) => property.id)];
+          const normalizedColumns = columnOrder.filter((columnId) => knownColumnIds.includes(columnId));
           const missingColumns = tableColumnIds.filter((columnId) => !normalizedColumns.includes(columnId));
 
           return [...normalizedColumns, ...missingColumns];
@@ -722,6 +740,9 @@
             status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 18),
             text: normalizeInitialTableColumnWidth(storedWidths.text, 12, 42, 21),
           };
+          getStoredCustomProperties(state).forEach((property) => {
+            widths[property.id] = normalizeInitialTableColumnWidth(storedWidths[property.id], 10, 42, 16);
+          });
 
           if (activeView.tableColumnWidthVersion !== tableColumnWidthVersion && Number(storedWidths.text) === 42) {
             widths.text = 21;
@@ -733,22 +754,55 @@
         function getStoredTableColumnLabels(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const textLabel = typeof activeView.tableColumnLabels?.text === "string" ? activeView.tableColumnLabels.text.trim() : "";
+          const customLabels = Object.fromEntries(
+            getStoredCustomProperties(state).map((property) => [
+              property.id,
+              typeof activeView.tableColumnLabels?.[property.id] === "string" && activeView.tableColumnLabels[property.id].trim()
+                ? activeView.tableColumnLabels[property.id].trim()
+                : property.name,
+            ]),
+          );
 
-          return textLabel ? { text: textLabel } : {};
+          return textLabel ? { text: textLabel, ...customLabels } : customLabels;
         }
 
         function getStoredTableWrappedColumns(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const wrappedColumns = Array.isArray(activeView.tableWrappedColumns) ? activeView.tableWrappedColumns : [];
+          const textColumnIds = new Set([
+            "text",
+            ...getStoredCustomProperties(state)
+              .filter((property) => property.type === "text")
+              .map((property) => property.id),
+          ]);
 
-          return wrappedColumns.filter((columnId) => columnId === "text");
+          return wrappedColumns.filter((columnId) => textColumnIds.has(columnId));
         }
 
         function getStoredTableHiddenColumns(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const hiddenColumns = Array.isArray(activeView.tableHiddenColumns) ? activeView.tableHiddenColumns : [];
+          const knownColumnIds = ["status", "text", ...getStoredCustomProperties(state).map((property) => property.id)];
 
-          return hiddenColumns.filter((columnId) => ["status", "text"].includes(columnId));
+          return hiddenColumns.filter((columnId) => knownColumnIds.includes(columnId));
+        }
+
+        function getStoredCustomProperties(state) {
+          if (!isStoredWorkspaceState(state)) {
+            return [];
+          }
+
+          const activeWorkspace =
+            state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) || state.workspaces[0];
+          return Array.isArray(activeWorkspace.customProperties)
+            ? activeWorkspace.customProperties.filter((property) => (
+                property &&
+                typeof property.id === "string" &&
+                property.id.startsWith("property:") &&
+                typeof property.name === "string" &&
+                typeof property.type === "string"
+              ))
+            : [];
         }
 
         function getStoredActiveBoardViewConfig(state) {

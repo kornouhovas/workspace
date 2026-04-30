@@ -50,6 +50,10 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
       },
     },
   );
+  assert.deepEqual(await client.listPropertyValues({ workspaceId: "workspace:root" }), {
+    method: "workspace.listPropertyValues",
+    payload: { workspaceId: "workspace:root" },
+  });
   assert.deepEqual(await client.reveal({ path: "Active/Project Alpha/Brief.pdf", kind: "file" }), {
     method: "workspace.reveal",
     payload: { path: "Active/Project Alpha/Brief.pdf", kind: "file" },
@@ -73,6 +77,7 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
         value: "note",
       },
     },
+    { method: "workspace.listPropertyValues", payload: { workspaceId: "workspace:root" } },
     { method: "workspace.reveal", payload: { path: "Active/Project Alpha/Brief.pdf", kind: "file" } },
     { method: "workspace.previewFile", payload: { path: "Active/Project Alpha/Brief.pdf" } },
   ]);

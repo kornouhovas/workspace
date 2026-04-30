@@ -29,6 +29,7 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     type: "text",
     value: "note",
   });
+  await transport.request("workspace.listPropertyValues", { workspaceId: "workspace:root" });
 
   assert.deepEqual(calls, [
     {
@@ -55,6 +56,12 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
         type: "text",
         value: "note",
       },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/property-values?workspaceId=workspace%3Aroot",
+      method: "GET",
+      headers: undefined,
+      body: null,
     },
   ]);
 });

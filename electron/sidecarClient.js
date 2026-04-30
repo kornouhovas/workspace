@@ -1,14 +1,14 @@
 export function createSidecarHttpTransport(baseUrl, fetchImpl = fetch) {
   return {
     async request(method, payload = {}) {
-      const route = getSidecarRoute(method);
+      const route = getSidecarRoute(method, payload);
       const options = { method: route.httpMethod };
       if (route.httpMethod !== "GET") {
         options.headers = { "content-type": "application/json" };
         options.body = JSON.stringify(payload);
       }
 
-      const response = await fetchImpl(`${baseUrl}${route.path}`, options);
+      const response = await fetchImpl(`${baseUrl}${route.path}${route.query || ""}`, options);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(data.error || `Sidecar request failed: ${method}`);
@@ -18,7 +18,7 @@ export function createSidecarHttpTransport(baseUrl, fetchImpl = fetch) {
   };
 }
 
-function getSidecarRoute(method) {
+function getSidecarRoute(method, payload = {}) {
   if (method === "workspace.getRoot") {
     return { httpMethod: "GET", path: "/workspace/root" };
   }
@@ -27,6 +27,14 @@ function getSidecarRoute(method) {
   }
   if (method === "workspace.saveProperty") {
     return { httpMethod: "PUT", path: "/workspace/property-values" };
+  }
+  if (method === "workspace.listPropertyValues") {
+    const workspaceId = typeof payload.workspaceId === "string" ? payload.workspaceId : "";
+    return {
+      httpMethod: "GET",
+      path: "/workspace/property-values",
+      query: `?workspaceId=${encodeURIComponent(workspaceId)}`,
+    };
   }
   throw new Error(`Unsupported sidecar method: ${method}`);
 }
