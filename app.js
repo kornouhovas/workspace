@@ -2370,7 +2370,7 @@ function createWorkspaceTab(workspace) {
 async function chooseFolder() {
   try {
     setStatus("Choosing workspace root...", "idle");
-    const data = await postJson("/api/select-root", {});
+    const data = await workspaceRequest("selectRoot");
     selectedRoot = data.root;
     clearFolderAccessState();
     folders = [];
@@ -2399,7 +2399,7 @@ async function scanSelectedFolder() {
   setStatus("Scanning status folders...", "idle");
 
   try {
-    const data = await postJson("/api/scan", { rules: folderAccessRules });
+    const data = await workspaceRequest("scan", { rules: folderAccessRules });
     selectedRoot = data.root;
     folderAccessTree = data.tree;
     folders = mergeScannedFoldersWithLocalText(data.folders);
@@ -2754,7 +2754,12 @@ function scheduleFolderTextSave(path, text) {
 
 async function saveFolderText(path, text) {
   try {
-    await postJson("/api/properties", { path, text });
+    await workspaceRequest("saveProperty", {
+      path,
+      propertyId: "property:text",
+      type: "text",
+      value: text,
+    });
   } catch (error) {
     setStatus("Could not save text property.", "error");
   }
@@ -2779,7 +2784,8 @@ async function loadCardPlaceEntries(folder) {
   renderCardPlaceEntries();
 
   try {
-    const { entries } = await postJson("/api/list-entries", { path: getFolderPath(folder) });
+    const folderPath = getFolderPath(folder);
+    const { entries } = await workspaceRequest("listEntries", { path: folderPath });
     if (requestId !== cardPlaceEntriesRequest) {
       return;
     }
@@ -2808,7 +2814,7 @@ async function loadCardPlaceChildEntries(entry) {
   renderCardPlaceEntries();
 
   try {
-    const { entries } = await postJson("/api/list-entries", { path: entry.path });
+    const { entries } = await workspaceRequest("listEntries", { path: entry.path });
     cardPlaceChildrenByPath.set(entry.path, entries);
   } catch (error) {
     cardPlaceFailedPaths.add(entry.path);
@@ -2950,7 +2956,8 @@ async function openCardPlaceFile(path) {
       return;
     }
 
-    window.open(`/api/file?path=${encodeURIComponent(path)}`, "_blank", "noopener");
+    const preview = await workspaceRequest("previewFile", { path });
+    window.open(preview.url, "_blank", "noopener");
   } catch (error) {
     setStatus("Could not open file.", "error");
   }
@@ -2962,15 +2969,7 @@ async function revealCardPlaceEntry(path, kind) {
   }
 
   try {
-    const response = await fetch("/api/reveal", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path, kind }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Reveal request failed.");
-    }
+    await workspaceRequest("reveal", { path, kind });
   } catch (error) {
     setStatus("Could not open local item. Check local workspace root.", "error");
   }
@@ -4951,26 +4950,21 @@ function saveBoardSnapshot() {
 }
 
 async function fetchWorkspaceRoot() {
-  const data = await fetchJson("/api/root");
+  const data = await workspaceRequest("getRoot");
   return data.root || null;
 }
 
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Request failed.");
+async function workspaceRequest(action, payload = {}) {
+  if (!window.workspace || typeof window.workspace[action] !== "function") {
+    throw new Error("Workspace Electron API is unavailable.");
   }
 
-  return data;
-}
+  const response = await window.workspace[action](payload);
+  if (response?.status >= 400) {
+    throw new Error(response.payload?.error || "Workspace request failed.");
+  }
 
-function postJson(url, body) {
-  return fetchJson(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body || {}),
-  });
+  return response?.payload || response;
 }
 
 function setStatus(message, tone) {

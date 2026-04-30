@@ -1,10 +1,57 @@
 {
-  "name": "folder-kanban-mvp",
+  "name": "workspace",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "test": "node --test",
-    "dev": "node dev-server.js"
+    "build:sidecar": "go build -o workspace-sidecar ./cmd/workspace-sidecar",
+    "build:sidecar:mac": "mkdir -p build/sidecar/darwin-arm64 && GOOS=darwin GOARCH=arm64 go build -o build/sidecar/darwin-arm64/workspace-sidecar ./cmd/workspace-sidecar",
+    "build:sidecar:win": "mkdir -p build/sidecar/win32-x64 && GOOS=windows GOARCH=amd64 go build -o build/sidecar/win32-x64/workspace-sidecar.exe ./cmd/workspace-sidecar",
+    "build:sidecars": "npm run build:sidecar:mac && npm run build:sidecar:win",
+    "prepare:electron:mac": "xattr -cr node_modules/electron/dist 2>/dev/null || true",
+    "electron": "npm run build:sidecar && electron electron/main.js",
+    "dist:mac": "npm run build:sidecars && npm run prepare:electron:mac && electron-builder --mac dmg --arm64",
+    "dist:win": "npm run build:sidecars && electron-builder --win portable --x64",
+    "dist:all": "npm run build:sidecars && npm run prepare:electron:mac && electron-builder --mac dmg --arm64 && electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "app.workspace.desktop",
+    "productName": "Workspace",
+    "asar": true,
+    "files": [
+      "app.js",
+      "electron/**/*",
+      "index.html",
+      "src/**/*",
+      "styles.css",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "extraResources": [
+      {
+        "from": "build/sidecar/darwin-arm64/workspace-sidecar",
+        "to": "sidecar/darwin-arm64/workspace-sidecar"
+      },
+      {
+        "from": "build/sidecar/win32-x64/workspace-sidecar.exe",
+        "to": "sidecar/win32-x64/workspace-sidecar.exe"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
   }
 }

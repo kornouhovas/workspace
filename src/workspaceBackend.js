@@ -6,9 +6,14 @@ import { basename, dirname, extname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { flattenAccessTreeCards } from "./folderModel.js";
 import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
+import { projectFoldersToWorkspaceObjects } from "./workspaceObjects.js";
 
-export const defaultWorkspaceSettingsPath = join(process.cwd(), ".folder-kanban", "settings.json");
-export const defaultWorkspacePropertiesPath = join(process.cwd(), ".folder-kanban", "properties.json");
+export const defaultWorkspaceDataDirectory = join(process.cwd(), ".workspace");
+export const defaultLegacyWorkspaceDataDirectory = join(process.cwd(), ".folder-kanban");
+export const defaultWorkspaceSettingsPath = join(defaultWorkspaceDataDirectory, "settings.json");
+export const defaultWorkspacePropertiesPath = join(defaultWorkspaceDataDirectory, "properties.json");
+export const defaultLegacyWorkspaceSettingsPath = join(defaultLegacyWorkspaceDataDirectory, "settings.json");
+export const defaultLegacyWorkspacePropertiesPath = join(defaultLegacyWorkspaceDataDirectory, "properties.json");
 
 const fileContentTypes = {
   ".avif": "image/avif",
@@ -33,15 +38,6 @@ const fileContentTypes = {
   ".webp": "image/webp",
   ".xml": "application/xml; charset=utf-8",
 };
-
-export async function createRootResponse({ configPath = defaultWorkspaceSettingsPath } = {}) {
-  const settings = await readWorkspaceSettings(configPath);
-  if (!settings.rootPath || !existsSync(settings.rootPath)) {
-    return createJsonResponse(200, { root: null });
-  }
-
-  return createJsonResponse(200, { root: createRootPayload(settings.rootPath) });
-}
 
 export async function createSelectRootResponse({
   configPath = defaultWorkspaceSettingsPath,
@@ -69,10 +65,20 @@ export async function createScanResponse({ root, rules = {}, propertiesPath = de
       ...folder,
       text: normalizeTextProperty(folderProperties[folder.path]?.text),
     }));
+    const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
+    const workspace = {
+      id: workspaceId,
+      ...projectFoldersToWorkspaceObjects({
+        workspaceId,
+        rootPath: root,
+        folders,
+      }),
+    };
     return createJsonResponse(200, {
       root: createRootPayload(root),
       tree,
       folders,
+      workspace,
     });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not scan workspace root." });
@@ -165,20 +171,59 @@ export async function createFileResponse({ root, path }) {
   }
 }
 
-export async function readWorkspaceSettings(configPath = defaultWorkspaceSettingsPath) {
-  try {
-    return JSON.parse(await readFile(configPath, "utf8"));
-  } catch (error) {
+export async function readWorkspaceSettings(configPath = defaultWorkspaceSettingsPath, legacyConfigPath) {
+  const settings = await readJsonFile(configPath);
+  if (settings.ok) {
+    return settings.value;
+  }
+
+  if (!settings.missing) {
     return {};
   }
+
+  const resolvedLegacyConfigPath =
+    legacyConfigPath ?? resolveLegacyWorkspacePath(configPath, defaultWorkspaceSettingsPath, defaultLegacyWorkspaceSettingsPath);
+  if (!resolvedLegacyConfigPath) {
+    return {};
+  }
+
+  const legacySettings = await readJsonFile(resolvedLegacyConfigPath);
+  if (!legacySettings.ok) {
+    return {};
+  }
+
+  await writeWorkspaceSettings(configPath, legacySettings.value);
+  return legacySettings.value;
 }
 
-export async function readWorkspaceProperties(propertiesPath = defaultWorkspacePropertiesPath) {
-  try {
-    return normalizeWorkspaceProperties(JSON.parse(await readFile(propertiesPath, "utf8")));
-  } catch (error) {
+export async function readWorkspaceProperties(
+  propertiesPath = defaultWorkspacePropertiesPath,
+  legacyPropertiesPath,
+) {
+  const properties = await readJsonFile(propertiesPath);
+  if (properties.ok) {
+    return normalizeWorkspaceProperties(properties.value);
+  }
+
+  if (!properties.missing) {
     return { roots: {} };
   }
+
+  const resolvedLegacyPropertiesPath =
+    legacyPropertiesPath ??
+    resolveLegacyWorkspacePath(propertiesPath, defaultWorkspacePropertiesPath, defaultLegacyWorkspacePropertiesPath);
+  if (!resolvedLegacyPropertiesPath) {
+    return { roots: {} };
+  }
+
+  const legacyProperties = await readJsonFile(resolvedLegacyPropertiesPath);
+  if (!legacyProperties.ok) {
+    return { roots: {} };
+  }
+
+  const normalizedProperties = normalizeWorkspaceProperties(legacyProperties.value);
+  await writeWorkspaceProperties(propertiesPath, normalizedProperties);
+  return normalizedProperties;
 }
 
 export async function writeWorkspaceProperties(propertiesPath, properties) {
@@ -195,6 +240,33 @@ export async function chooseMacWorkspaceRoot() {
   const script = 'POSIX path of (choose folder with prompt "Choose workspace root")';
   const output = await runCommand("osascript", ["-e", script]);
   return output.trim();
+}
+
+async function readJsonFile(filePath) {
+  try {
+    return { ok: true, value: JSON.parse(await readFile(filePath, "utf8")) };
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { missing: true };
+    }
+
+    return { ok: false, error };
+  }
+}
+
+function resolveLegacyWorkspacePath(filePath, defaultPath, legacyDefaultPath) {
+  if (filePath === defaultPath) {
+    return legacyDefaultPath;
+  }
+
+  const pathParts = filePath.split("/");
+  const workspaceIndex = pathParts.lastIndexOf(".workspace");
+  if (workspaceIndex === -1) {
+    return null;
+  }
+
+  pathParts[workspaceIndex] = ".folder-kanban";
+  return pathParts.join("/");
 }
 
 async function listWorkspaceAccessTree(root, rules, parentPath = []) {
