@@ -11,6 +11,10 @@ import {
   createRootResponse,
   createScanResponse,
   createSelectRootResponse,
+  defaultLegacyWorkspacePropertiesPath,
+  defaultLegacyWorkspaceSettingsPath,
+  defaultWorkspacePropertiesPath,
+  defaultWorkspaceSettingsPath,
   readWorkspaceProperties,
   readWorkspaceSettings,
 } from "../src/workspaceBackend.js";
@@ -26,6 +30,45 @@ async function createWorkspaceFixture() {
 
   return root;
 }
+
+test("workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths", () => {
+  assert.equal(defaultWorkspaceSettingsPath, join(process.cwd(), ".workspace", "settings.json"));
+  assert.equal(defaultWorkspacePropertiesPath, join(process.cwd(), ".workspace", "properties.json"));
+  assert.equal(defaultLegacyWorkspaceSettingsPath, join(process.cwd(), ".folder-kanban", "settings.json"));
+  assert.equal(defaultLegacyWorkspacePropertiesPath, join(process.cwd(), ".folder-kanban", "properties.json"));
+});
+
+test("readWorkspaceSettings migrates legacy settings when the workspace settings file is missing", async () => {
+  const configPath = join(await mkdtemp(join(tmpdir(), "workspace-config-")), ".workspace", "settings.json");
+  const legacyConfigPath = join(await mkdtemp(join(tmpdir(), "workspace-legacy-config-")), ".folder-kanban", "settings.json");
+  const settings = { rootPath: "/Users/example/Documents/Workspace" };
+  await mkdir(join(legacyConfigPath, ".."), { recursive: true });
+  await writeFile(legacyConfigPath, JSON.stringify(settings));
+
+  assert.deepEqual(await readWorkspaceSettings(configPath, legacyConfigPath), settings);
+  assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")), settings);
+});
+
+test("readWorkspaceProperties migrates legacy properties when the workspace properties file is missing", async () => {
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), ".workspace", "properties.json");
+  const legacyPropertiesPath = join(
+    await mkdtemp(join(tmpdir(), "workspace-legacy-properties-")),
+    ".folder-kanban",
+    "properties.json",
+  );
+  const properties = {
+    roots: {
+      abc123: {
+        "Active/Project Alpha": { text: "Legacy note" },
+      },
+    },
+  };
+  await mkdir(join(legacyPropertiesPath, ".."), { recursive: true });
+  await writeFile(legacyPropertiesPath, JSON.stringify(properties));
+
+  assert.deepEqual(await readWorkspaceProperties(propertiesPath, legacyPropertiesPath), properties);
+  assert.deepEqual(JSON.parse(await readFile(propertiesPath, "utf8")), properties);
+});
 
 test("createSelectRootResponse saves the selected backend root", async () => {
   const root = await createWorkspaceFixture();

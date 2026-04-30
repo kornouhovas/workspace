@@ -7,8 +7,12 @@ import { spawn } from "node:child_process";
 import { flattenAccessTreeCards } from "./folderModel.js";
 import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
 
-export const defaultWorkspaceSettingsPath = join(process.cwd(), ".folder-kanban", "settings.json");
-export const defaultWorkspacePropertiesPath = join(process.cwd(), ".folder-kanban", "properties.json");
+export const defaultWorkspaceDataDirectory = join(process.cwd(), ".workspace");
+export const defaultLegacyWorkspaceDataDirectory = join(process.cwd(), ".folder-kanban");
+export const defaultWorkspaceSettingsPath = join(defaultWorkspaceDataDirectory, "settings.json");
+export const defaultWorkspacePropertiesPath = join(defaultWorkspaceDataDirectory, "properties.json");
+export const defaultLegacyWorkspaceSettingsPath = join(defaultLegacyWorkspaceDataDirectory, "settings.json");
+export const defaultLegacyWorkspacePropertiesPath = join(defaultLegacyWorkspaceDataDirectory, "properties.json");
 
 const fileContentTypes = {
   ".avif": "image/avif",
@@ -165,19 +169,37 @@ export async function createFileResponse({ root, path }) {
   }
 }
 
-export async function readWorkspaceSettings(configPath = defaultWorkspaceSettingsPath) {
+export async function readWorkspaceSettings(
+  configPath = defaultWorkspaceSettingsPath,
+  legacyConfigPath = defaultLegacyWorkspaceSettingsPath,
+) {
   try {
     return JSON.parse(await readFile(configPath, "utf8"));
   } catch (error) {
-    return {};
+    try {
+      const settings = JSON.parse(await readFile(legacyConfigPath, "utf8"));
+      await writeWorkspaceSettings(configPath, settings);
+      return settings;
+    } catch (legacyError) {
+      return {};
+    }
   }
 }
 
-export async function readWorkspaceProperties(propertiesPath = defaultWorkspacePropertiesPath) {
+export async function readWorkspaceProperties(
+  propertiesPath = defaultWorkspacePropertiesPath,
+  legacyPropertiesPath = defaultLegacyWorkspacePropertiesPath,
+) {
   try {
     return normalizeWorkspaceProperties(JSON.parse(await readFile(propertiesPath, "utf8")));
   } catch (error) {
-    return { roots: {} };
+    try {
+      const properties = normalizeWorkspaceProperties(JSON.parse(await readFile(legacyPropertiesPath, "utf8")));
+      await writeWorkspaceProperties(propertiesPath, properties);
+      return properties;
+    } catch (legacyError) {
+      return { roots: {} };
+    }
   }
 }
 
