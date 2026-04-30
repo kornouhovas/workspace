@@ -21,6 +21,14 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
 
   await transport.request("workspace.getRoot", {});
   await transport.request("workspace.setRoot", { rootPath: "/tmp/workspace" });
+  await transport.request("workspace.saveProperty", {
+    id: "value:object-1:property:text",
+    workspaceId: "workspace:root",
+    objectId: "object-1",
+    propertyId: "property:text",
+    type: "text",
+    value: "note",
+  });
 
   assert.deepEqual(calls, [
     {
@@ -34,6 +42,19 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: { rootPath: "/tmp/workspace" },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/property-values",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        id: "value:object-1:property:text",
+        workspaceId: "workspace:root",
+        objectId: "object-1",
+        propertyId: "property:text",
+        type: "text",
+        value: "note",
+      },
     },
   ]);
 });

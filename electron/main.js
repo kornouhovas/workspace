@@ -1,15 +1,19 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { basename, dirname, join } from "node:path";
 import {
+  createFileResponse,
   createListEntriesResponse,
+  createPropertiesResponse,
   createScanResponse,
   createSelectRootResponse,
   readWorkspaceSettings,
 } from "../src/workspaceBackend.js";
 import { createRevealResponse } from "../src/localOpen.js";
+import { createFolderObjectId, createPropertyValueId } from "../src/workspaceObjects.js";
 import { WorkspaceServiceClient } from "../src/workspaceServiceClient.js";
 import { createSidecarHttpTransport } from "./sidecarClient.js";
 
@@ -133,6 +137,38 @@ function registerWorkspaceHandlers() {
     const rootPath = await readSelectedWorkspaceRootPath();
     return createListEntriesResponse({ root: rootPath, body });
   });
+  ipcMain.handle("workspace:saveProperty", async (_event, payload = {}) => {
+    const body = normalizePayload(payload);
+    const rootPath = await readSelectedWorkspaceRootPath();
+    const response = await createPropertiesResponse({
+      root: rootPath,
+      body: {
+        path: body.path,
+        text: body.value ?? body.text,
+      },
+    });
+    if (response.status < 400) {
+      await persistWorkspacePropertyValue(rootPath, body);
+    }
+    return response;
+  });
+  ipcMain.handle("workspace:previewFile", async (_event, payload = {}) => {
+    const body = normalizePayload(payload);
+    const rootPath = await readSelectedWorkspaceRootPath();
+    const response = await createFileResponse({ root: rootPath, path: body.path });
+    if (!response.filePath) {
+      return response;
+    }
+
+    response.stream?.destroy();
+    return {
+      status: 200,
+      payload: {
+        contentType: response.contentType,
+        url: pathToFileURL(response.filePath).href,
+      },
+    };
+  });
   ipcMain.handle("workspace:reveal", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
     const rootPath = await readSelectedWorkspaceRootPath();
@@ -172,6 +208,34 @@ async function persistWorkspaceRoot(rootPath) {
   } catch (error) {
     console.error(`Could not persist workspace root to sidecar: ${error.message}`);
   }
+}
+
+async function persistWorkspacePropertyValue(rootPath, body) {
+  if (!workspaceClient || !rootPath || typeof body.path !== "string") {
+    return;
+  }
+
+  const propertyId = typeof body.propertyId === "string" && body.propertyId ? body.propertyId : "property:text";
+  const type = typeof body.type === "string" && body.type ? body.type : "text";
+  const workspaceId = createWorkspaceId(rootPath);
+  const objectId = createFolderObjectId(workspaceId, body.path);
+
+  try {
+    await workspaceClient.saveProperty({
+      id: createPropertyValueId(objectId, propertyId),
+      workspaceId,
+      objectId,
+      propertyId,
+      type,
+      value: body.value ?? body.text ?? "",
+    });
+  } catch (error) {
+    console.error(`Could not persist property value to sidecar: ${error.message}`);
+  }
+}
+
+function createWorkspaceId(rootPath) {
+  return `workspace:${createHash("sha256").update(rootPath).digest("hex").slice(0, 16)}`;
 }
 
 function normalizePayload(payload) {

@@ -25,5 +25,8 @@ function getSidecarRoute(method) {
   if (method === "workspace.setRoot") {
     return { httpMethod: "PUT", path: "/workspace/root" };
   }
+  if (method === "workspace.saveProperty") {
+    return { httpMethod: "PUT", path: "/workspace/property-values" };
+  }
   throw new Error(`Unsupported sidecar method: ${method}`);
 }

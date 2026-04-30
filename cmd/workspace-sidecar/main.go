@@ -43,6 +43,19 @@ func main() {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		}
 	})
+	mux.HandleFunc("/workspace/property-values", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+			return
+		}
+
+		var value workspacestore.PropertyValueDocument
+		if err := json.NewDecoder(r.Body).Decode(&value); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		writeResult(w, map[string]any{"ok": true}, store.UpsertPropertyValue(r.Context(), value))
+	})
 
 	listener, err := net.Listen("tcp", *addr)
 	if err != nil {

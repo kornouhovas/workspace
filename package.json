@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "dev": "node dev-server.js",
-    "electron": "electron electron/main.js"
+    "build:sidecar": "go build -o workspace-sidecar ./cmd/workspace-sidecar",
+    "electron": "npm run build:sidecar && electron electron/main.js"
   },
   "devDependencies": {
     "electron": "^41.3.0"

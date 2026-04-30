@@ -286,7 +286,7 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /input\.spellcheck = false/);
   assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
   assert.match(app, /event\.target\.closest\("\.table-status-menu, \.table-text-menu"\)/);
-  assert.match(app, /postJson\("\/api\/properties"/);
+  assert.match(app, /workspaceRequest\("saveProperty", \{/);
   assert.match(css, /\.card-place-text/);
   assert.match(css, /\.card-place-text\s*\{[^}]*border:\s*0/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*background:\s*transparent/s);
@@ -540,13 +540,14 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function handleCardPlaceEntryClick\(event\)/);
   assert.match(app, /function toggleCardPlaceDirectory\(path\)/);
   assert.match(app, /function openCardPlaceFile\(path\)/);
+  assert.match(app, /workspaceRequest\("previewFile", \{ path \}\)/);
   assert.match(app, /event\.target\.closest\("\.card-place-entry-chevron"\)/);
   assert.match(app, /revealCardPlaceEntry\(row\.dataset\.path, "directory"\)/);
   assert.match(app, /function revealCardPlaceEntry\(path, kind\)/);
   assert.match(app, /workspaceRequest\("reveal", \{ path, kind \}\)/);
   assert.match(app, /function isPreviewableFilePath\(path\)/);
   assert.match(app, /function getPreviewMimeType\(fileName\)/);
-  assert.match(app, /window\.open\(`\/api\/file\?path=\$\{encodeURIComponent\(path\)\}`/);
+  assert.match(app, /window\.open\(preview\.url, "_blank", "noopener"\)/);
   assert.match(app, /function normalizeCardPlaceWidth\(width\)/);
   assert.match(app, /function getActiveCardPlaceWidth\(\)/);
   assert.match(app, /function saveCardPlaceWidth\(width\)/);

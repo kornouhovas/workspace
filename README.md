@@ -53,6 +53,14 @@ The Electron app includes the UI and backend in one application. The renderer ta
 
 `any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
 
+## Electron
+
+```bash
+npm run electron
+```
+
+This command builds the local `workspace-sidecar` binary first, then opens the Electron app. The generated binary is ignored by git.
+
 ## Безопасность локального endpoint
 
 Backend endpoints принимают только относительные пути внутри выбранной workspace-папки.

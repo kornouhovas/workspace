@@ -5,5 +5,7 @@ contextBridge.exposeInMainWorld("workspace", {
   selectRoot: () => ipcRenderer.invoke("workspace:selectRoot"),
   scan: (payload) => ipcRenderer.invoke("workspace:scan", payload),
   listEntries: (payload) => ipcRenderer.invoke("workspace:listEntries", payload),
+  saveProperty: (payload) => ipcRenderer.invoke("workspace:saveProperty", payload),
+  previewFile: (payload) => ipcRenderer.invoke("workspace:previewFile", payload),
   reveal: (payload) => ipcRenderer.invoke("workspace:reveal", payload),
 });

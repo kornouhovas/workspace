@@ -25,10 +25,15 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /new\s+WorkspaceServiceClient\(createSidecarHttpTransport\(`http:\/\/\$\{address\}`\)\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:getRoot"/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:selectRoot",\s*async/);
+  assert.match(mainSource, /ipcMain\.handle\("workspace:saveProperty",\s*async/);
+  assert.match(mainSource, /ipcMain\.handle\("workspace:previewFile",\s*async/);
   assert.match(mainSource, /await\s+workspaceClient\.getRoot\(\)/);
   assert.match(mainSource, /await\s+workspaceClient\.setRoot\(/);
+  assert.match(mainSource, /await\s+workspaceClient\.saveProperty\(/);
+  assert.match(mainSource, /pathToFileURL\(response\.filePath\)\.href/);
   assert.match(mainSource, /function\s+readSelectedWorkspaceRootPath\(\)/);
   assert.match(mainSource, /function\s+persistWorkspaceRoot\(rootPath\)/);
+  assert.match(mainSource, /function\s+persistWorkspacePropertyValue\(rootPath,\s*body\)/);
   assert.match(mainSource, /function normalizePayload\(payload\)/);
   assert.match(mainSource, /app\.whenReady\(\)\.then\(async\s*\(\)\s*=>\s*\{/);
   assert.match(mainSource, /await\s+startWorkspaceSidecar\(\)/);
@@ -45,6 +50,8 @@ test("electron preload exposes only the narrow workspace API", async () => {
   assert.match(preloadSource, /selectRoot:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("workspace:selectRoot"\)/);
   assert.match(preloadSource, /scan:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:scan",\s*payload\)/);
   assert.match(preloadSource, /listEntries:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:listEntries",\s*payload\)/);
+  assert.match(preloadSource, /saveProperty:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:saveProperty",\s*payload\)/);
+  assert.match(preloadSource, /previewFile:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:previewFile",\s*payload\)/);
   assert.match(preloadSource, /reveal:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:reveal",\s*payload\)/);
   assert.doesNotMatch(preloadSource, /require\("fs"\)/);
   assert.doesNotMatch(preloadSource, /from\s+["']electron["']/);
