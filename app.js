@@ -2370,7 +2370,7 @@ function createWorkspaceTab(workspace) {
 async function chooseFolder() {
   try {
     setStatus("Choosing workspace root...", "idle");
-    const data = await postJson("/api/select-root", {});
+    const data = await workspaceRequest("selectRoot");
     selectedRoot = data.root;
     clearFolderAccessState();
     folders = [];
@@ -2399,7 +2399,7 @@ async function scanSelectedFolder() {
   setStatus("Scanning status folders...", "idle");
 
   try {
-    const data = await postJson("/api/scan", { rules: folderAccessRules });
+    const data = await workspaceRequest("scan", { rules: folderAccessRules });
     selectedRoot = data.root;
     folderAccessTree = data.tree;
     folders = mergeScannedFoldersWithLocalText(data.folders);
@@ -2779,7 +2779,8 @@ async function loadCardPlaceEntries(folder) {
   renderCardPlaceEntries();
 
   try {
-    const { entries } = await postJson("/api/list-entries", { path: getFolderPath(folder) });
+    const folderPath = getFolderPath(folder);
+    const { entries } = await workspaceRequest("listEntries", { path: folderPath });
     if (requestId !== cardPlaceEntriesRequest) {
       return;
     }
@@ -2808,7 +2809,7 @@ async function loadCardPlaceChildEntries(entry) {
   renderCardPlaceEntries();
 
   try {
-    const { entries } = await postJson("/api/list-entries", { path: entry.path });
+    const { entries } = await workspaceRequest("listEntries", { path: entry.path });
     cardPlaceChildrenByPath.set(entry.path, entries);
   } catch (error) {
     cardPlaceFailedPaths.add(entry.path);
@@ -2962,15 +2963,7 @@ async function revealCardPlaceEntry(path, kind) {
   }
 
   try {
-    const response = await fetch("/api/reveal", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path, kind }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Reveal request failed.");
-    }
+    await workspaceRequest("reveal", { path, kind });
   } catch (error) {
     setStatus("Could not open local item. Check local workspace root.", "error");
   }
@@ -4951,8 +4944,47 @@ function saveBoardSnapshot() {
 }
 
 async function fetchWorkspaceRoot() {
-  const data = await fetchJson("/api/root");
+  const data = await workspaceRequest("getRoot");
   return data.root || null;
+}
+
+function hasElectronWorkspaceApi() {
+  return Boolean(window.workspace && typeof window.workspace.getRoot === "function");
+}
+
+async function workspaceRequest(action, payload = {}) {
+  if (hasElectronWorkspaceApi() && typeof window.workspace[action] === "function") {
+    const response = await window.workspace[action](payload);
+    if (response?.status >= 400) {
+      throw new Error(response.payload?.error || "Workspace request failed.");
+    }
+
+    return response?.payload || response;
+  }
+
+  const route = getWorkspaceHttpRoute(action, payload);
+  if (route.method === "GET") {
+    return fetchJson(route.url);
+  }
+
+  return postJson(route.url, route.body);
+}
+
+function getWorkspaceHttpRoute(action, payload) {
+  switch (action) {
+    case "getRoot":
+      return { method: "GET", url: "/api/root" };
+    case "selectRoot":
+      return { method: "POST", url: "/api/select-root", body: payload };
+    case "scan":
+      return { method: "POST", url: "/api/scan", body: payload };
+    case "listEntries":
+      return { method: "POST", url: "/api/list-entries", body: payload };
+    case "reveal":
+      return { method: "POST", url: "/api/reveal", body: payload };
+    default:
+      throw new Error(`Unknown workspace action: ${action}`);
+  }
 }
 
 async function fetchJson(url, options = {}) {

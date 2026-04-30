@@ -68,8 +68,11 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
   assert.match(app, /function clearFolderAccessState\(\)/);
   assert.match(app, /clearFolderAccessState\(\);/);
-  assert.match(app, /postJson\("\/api\/scan", \{ rules: folderAccessRules \}\)/);
-  assert.match(app, /postJson\("\/api\/select-root", \{\}\)/);
+  assert.match(app, /function hasElectronWorkspaceApi\(\)/);
+  assert.match(app, /window\.workspace/);
+  assert.match(app, /workspaceRequest\("getRoot"\)/);
+  assert.match(app, /workspaceRequest\("scan", \{ rules: folderAccessRules \}\)/);
+  assert.match(app, /workspaceRequest\("selectRoot"\)/);
   assert.match(app, /const folderRoleLabels = \{/);
   assert.match(app, /status:\s*"Status"/);
   assert.match(app, /card:\s*"Card"/);
@@ -529,7 +532,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /revealCardPlaceEntry\(selectedCardPath, "directory"\)/);
   assert.match(app, /function renderCardPlacePanel\(\)/);
   assert.match(app, /function loadCardPlaceEntries\(folder\)/);
-  assert.match(app, /postJson\("\/api\/list-entries", \{ path: getFolderPath\(folder\) \}\)/);
+  assert.match(app, /workspaceRequest\("listEntries", \{ path: folderPath \}\)/);
   assert.match(app, /function loadCardPlaceChildEntries\(entry\)/);
   assert.match(app, /function renderCardPlaceEntries\(\)/);
   assert.match(app, /function createCardPlaceEntryRows\(entries, depth = 0\)/);
@@ -540,7 +543,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /event\.target\.closest\("\.card-place-entry-chevron"\)/);
   assert.match(app, /revealCardPlaceEntry\(row\.dataset\.path, "directory"\)/);
   assert.match(app, /function revealCardPlaceEntry\(path, kind\)/);
-  assert.match(app, /fetch\("\/api\/reveal"/);
+  assert.match(app, /workspaceRequest\("reveal", \{ path, kind \}\)/);
   assert.match(app, /function isPreviewableFilePath\(path\)/);
   assert.match(app, /function getPreviewMimeType\(fileName\)/);
   assert.match(app, /window\.open\(`\/api\/file\?path=\$\{encodeURIComponent\(path\)\}`/);
