@@ -45,6 +45,14 @@ http://127.0.0.1:4173/
 - PDF, изображения, текстовые файлы, видео, аудио, JSON, HTML, CSS, Markdown и похожие preview-типы открываются в браузере.
 - Остальные файлы открываются в macOS через `open`.
 
+## Storage
+
+Workspace stores local object and property data through `any-store`, a Go document database on top of SQLite.
+
+The Electron app includes the UI and backend in one application. The renderer talks to Electron main through preload IPC. Electron main owns OS access and starts the local Workspace storage sidecar.
+
+`any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
+
 ## Безопасность локального endpoint
 
 Backend endpoints принимают только относительные пути внутри выбранной workspace-папки.
