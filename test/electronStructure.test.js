@@ -17,6 +17,10 @@ test("electron preload exposes only the narrow workspace API", async () => {
 
   assert.match(preloadSource, /contextBridge\.exposeInMainWorld\("workspace"/);
   assert.match(preloadSource, /getRoot:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("workspace:getRoot"\)/);
+  assert.match(preloadSource, /selectRoot:\s*\(\)\s*=>\s*ipcRenderer\.invoke\("workspace:selectRoot"\)/);
   assert.match(preloadSource, /scan:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:scan",\s*payload\)/);
+  assert.match(preloadSource, /listEntries:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:listEntries",\s*payload\)/);
+  assert.match(preloadSource, /reveal:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:reveal",\s*payload\)/);
   assert.doesNotMatch(preloadSource, /require\("fs"\)/);
+  assert.doesNotMatch(preloadSource, /from\s+["']node:fs["']/);
 });
