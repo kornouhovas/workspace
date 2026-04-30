@@ -68,8 +68,8 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.match(app, /flattenAccessTreeCards\(folderAccessTree/);
   assert.match(app, /function clearFolderAccessState\(\)/);
   assert.match(app, /clearFolderAccessState\(\);/);
-  assert.match(app, /function hasElectronWorkspaceApi\(\)/);
   assert.match(app, /window\.workspace/);
+  assert.match(app, /Workspace Electron API is unavailable\./);
   assert.match(app, /workspaceRequest\("getRoot"\)/);
   assert.match(app, /workspaceRequest\("scan", \{ rules: folderAccessRules \}\)/);
   assert.match(app, /workspaceRequest\("selectRoot"\)/);

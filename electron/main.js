@@ -24,8 +24,11 @@ const sidecarStartupTimeoutMs = 5000;
 let workspaceClient = null;
 let sidecarProcess = null;
 
+app.setName("Workspace");
+
 function createWindow() {
   const window = new BrowserWindow({
+    title: "Workspace",
     width: 1440,
     height: 960,
     backgroundColor: "#181818",

@@ -8,7 +8,6 @@ import {
   createFileResponse,
   createListEntriesResponse,
   createPropertiesResponse,
-  createRootResponse,
   createScanResponse,
   createSelectRootResponse,
   defaultLegacyWorkspacePropertiesPath,
@@ -21,7 +20,7 @@ import {
 import { createFolderObjectId } from "../src/workspaceObjects.js";
 
 async function createWorkspaceFixture() {
-  const root = await mkdtemp(join(tmpdir(), "folder-kanban-workspace-"));
+  const root = await mkdtemp(join(tmpdir(), "workspace-root-"));
   await mkdir(join(root, "Archive", "Completed", "Assets"), { recursive: true });
   await mkdir(join(root, "Active", "Project Alpha"), { recursive: true });
   await mkdir(join(root, ".hidden"), { recursive: true });
@@ -184,7 +183,7 @@ test("readWorkspaceProperties custom path without .workspace does not read defau
 
 test("createSelectRootResponse saves the selected backend root", async () => {
   const root = await createWorkspaceFixture();
-  const configPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-config-")), "settings.json");
+  const configPath = join(await mkdtemp(join(tmpdir(), "workspace-config-")), "settings.json");
 
   const response = await createSelectRootResponse({
     configPath,
@@ -194,17 +193,6 @@ test("createSelectRootResponse saves the selected backend root", async () => {
   assert.equal(response.status, 200);
   assert.equal(response.payload.root.name, root.split("/").pop());
   assert.deepEqual(await readWorkspaceSettings(configPath), { rootPath: root });
-});
-
-test("createRootResponse reads the saved backend root", async () => {
-  const root = await createWorkspaceFixture();
-  const configPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-config-")), "settings.json");
-  await createSelectRootResponse({ configPath, chooseRoot: async () => root });
-
-  const response = await createRootResponse({ configPath });
-
-  assert.equal(response.status, 200);
-  assert.equal(response.payload.root.name, root.split("/").pop());
 });
 
 test("createScanResponse builds access tree and cards from saved root", async () => {
@@ -271,7 +259,7 @@ test("createScanResponse builds access tree and cards from saved root", async ()
 
 test("createScanResponse attaches stored text properties to card folders", async () => {
   const root = await createWorkspaceFixture();
-  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
   const rootKey = createRootPropertiesKey(root);
   await writeFile(
     propertiesPath,
@@ -299,7 +287,7 @@ test("createScanResponse attaches stored text properties to card folders", async
 
 test("createPropertiesResponse saves text properties for a card folder", async () => {
   const root = await createWorkspaceFixture();
-  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
 
   const response = await createPropertiesResponse({
     root,
@@ -319,7 +307,7 @@ test("createPropertiesResponse saves text properties for a card folder", async (
 
 test("createPropertiesResponse rejects properties outside workspace root", async () => {
   const root = await createWorkspaceFixture();
-  const propertiesPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-properties-")), "properties.json");
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
 
   const response = await createPropertiesResponse({
     root,

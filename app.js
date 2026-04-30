@@ -4954,78 +4954,17 @@ async function fetchWorkspaceRoot() {
   return data.root || null;
 }
 
-function hasElectronWorkspaceApi() {
-  return Boolean(window.workspace && typeof window.workspace.getRoot === "function");
-}
-
 async function workspaceRequest(action, payload = {}) {
-  if (hasElectronWorkspaceApi() && typeof window.workspace[action] === "function") {
-    const response = await window.workspace[action](payload);
-    if (response?.status >= 400) {
-      throw new Error(response.payload?.error || "Workspace request failed.");
-    }
-
-    return response?.payload || response;
+  if (!window.workspace || typeof window.workspace[action] !== "function") {
+    throw new Error("Workspace Electron API is unavailable.");
   }
 
-  const route = getWorkspaceHttpRoute(action, payload);
-  if (action === "previewFile") {
-    return { url: route.url };
-  }
-  if (route.method === "GET") {
-    return fetchJson(route.url);
+  const response = await window.workspace[action](payload);
+  if (response?.status >= 400) {
+    throw new Error(response.payload?.error || "Workspace request failed.");
   }
 
-  return postJson(route.url, route.body);
-}
-
-function getWorkspaceHttpRoute(action, payload) {
-  switch (action) {
-    case "getRoot":
-      return { method: "GET", url: "/api/root" };
-    case "selectRoot":
-      return { method: "POST", url: "/api/select-root", body: payload };
-    case "scan":
-      return { method: "POST", url: "/api/scan", body: payload };
-    case "listEntries":
-      return { method: "POST", url: "/api/list-entries", body: payload };
-    case "saveProperty":
-      return {
-        method: "POST",
-        url: "/api/properties",
-        body: {
-          path: payload?.path,
-          text: payload?.value ?? payload?.text,
-        },
-      };
-    case "previewFile":
-      return {
-        method: "GET",
-        url: `/api/file?path=${encodeURIComponent(payload?.path || "")}`,
-      };
-    case "reveal":
-      return { method: "POST", url: "/api/reveal", body: payload };
-    default:
-      throw new Error(`Unknown workspace action: ${action}`);
-  }
-}
-
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Request failed.");
-  }
-
-  return data;
-}
-
-function postJson(url, body) {
-  return fetchJson(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body || {}),
-  });
+  return response?.payload || response;
 }
 
 function setStatus(message, tone) {

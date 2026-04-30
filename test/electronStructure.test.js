@@ -5,7 +5,9 @@ import { readFile } from "node:fs/promises";
 test("electron main process uses an isolated preload shell with workspace IPC handlers", async () => {
   const mainSource = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
 
+  assert.match(mainSource, /app\.setName\("Workspace"\)/);
   assert.match(mainSource, /new BrowserWindow\(/);
+  assert.match(mainSource, /title:\s*"Workspace"/);
   assert.match(mainSource, /contextIsolation:\s*true/);
   assert.match(mainSource, /nodeIntegration:\s*false/);
   assert.match(mainSource, /preload:\s*join\(__dirname,\s*"preload\.cjs"\)/);

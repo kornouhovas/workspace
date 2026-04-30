@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "dev": "node dev-server.js",
     "build:sidecar": "go build -o workspace-sidecar ./cmd/workspace-sidecar",
     "electron": "npm run build:sidecar && electron electron/main.js"
   },

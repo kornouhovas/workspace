@@ -37,7 +37,7 @@ test("isPreviewablePath recognizes browser preview file types", () => {
 });
 
 test("createRevealResponse validates path, kind, and existing item before spawning", async () => {
-  const root = await mkdtemp(join(tmpdir(), "folder-kanban-"));
+  const root = await mkdtemp(join(tmpdir(), "workspace-"));
   await mkdir(join(root, "Card"));
   await writeFile(join(root, "Card", "Brief.pdf"), "pdf");
   const calls = [];

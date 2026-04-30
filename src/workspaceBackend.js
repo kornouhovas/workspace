@@ -39,15 +39,6 @@ const fileContentTypes = {
   ".xml": "application/xml; charset=utf-8",
 };
 
-export async function createRootResponse({ configPath = defaultWorkspaceSettingsPath } = {}) {
-  const settings = await readWorkspaceSettings(configPath);
-  if (!settings.rootPath || !existsSync(settings.rootPath)) {
-    return createJsonResponse(200, { root: null });
-  }
-
-  return createJsonResponse(200, { root: createRootPayload(settings.rootPath) });
-}
-
 export async function createSelectRootResponse({
   configPath = defaultWorkspaceSettingsPath,
   chooseRoot = chooseMacWorkspaceRoot,
