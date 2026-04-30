@@ -10,18 +10,28 @@ import {
 test("createFolderObjectId creates stable workspace-scoped slugs from folder paths", () => {
   assert.equal(
     createFolderObjectId("workspace:main", "Active/Project Alpha"),
-    "object:workspace-main:active-project-alpha",
+    "object:workspace-main:active-project-alpha-1v09uq",
   );
   assert.equal(
     createFolderObjectId("workspace:main", "  Roadmap 2026 / Q2 Review! "),
-    "object:workspace-main:roadmap-2026-q2-review",
+    "object:workspace-main:roadmap-2026-q2-review-mzxrrv",
   );
+});
+
+test("createFolderObjectId keeps distinct paths with the same readable slug unique", () => {
+  const ids = [
+    createFolderObjectId("workspace:main", "Active/A-B"),
+    createFolderObjectId("workspace:main", "Active/A B"),
+    createFolderObjectId("workspace:main", "Active/A/B"),
+  ];
+
+  assert.equal(new Set(ids).size, ids.length);
 });
 
 test("createPropertyValueId combines object and property identifiers", () => {
   assert.equal(
-    createPropertyValueId("object:workspace-main:active-project-alpha", "property:text"),
-    "value:object:workspace-main:active-project-alpha:property:text",
+    createPropertyValueId("object:workspace-main:active-project-alpha-1v09uq", "property:text"),
+    "value:object:workspace-main:active-project-alpha-1v09uq:property:text",
   );
 });
 
@@ -47,7 +57,7 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
 
   assert.deepEqual(projection.objects, [
     {
-      id: "object:workspace-main:active-project-alpha",
+      id: "object:workspace-main:active-project-alpha-1v09uq",
       workspaceId: "workspace:main",
       type: "project",
       source: {
@@ -59,7 +69,7 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
       folderStatus: "Active",
     },
     {
-      id: "object:workspace-main:archive-completed",
+      id: "object:workspace-main:archive-completed-1w286l",
       workspaceId: "workspace:main",
       type: "project",
       source: {
@@ -73,9 +83,9 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
   ]);
   assert.deepEqual(projection.propertyValues, [
     {
-      id: "value:object:workspace-main:active-project-alpha:property:text",
+      id: "value:object:workspace-main:active-project-alpha-1v09uq:property:text",
       workspaceId: "workspace:main",
-      objectId: "object:workspace-main:active-project-alpha",
+      objectId: "object:workspace-main:active-project-alpha-1v09uq",
       propertyId: "property:text",
       type: "text",
       value: " Project context ",

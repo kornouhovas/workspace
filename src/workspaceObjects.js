@@ -38,7 +38,7 @@ export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folder
 }
 
 export function createFolderObjectId(workspaceId, folderPath) {
-  return `object:${createSlug(workspaceId)}:${createSlug(folderPath)}`;
+  return `object:${createSlug(workspaceId)}:${createSlug(folderPath)}-${createHashSuffix(folderPath)}`;
 }
 
 export function createPropertyValueId(objectId, propertyId) {
@@ -64,4 +64,14 @@ function createSlug(value) {
     .replace(/^-|-$/g, "");
 
   return slug || "untitled";
+}
+
+function createHashSuffix(value) {
+  let hash = 0;
+  const text = String(value ?? "");
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), 16777619) >>> 0;
+  }
+
+  return hash.toString(36).padStart(6, "0").slice(0, 6);
 }

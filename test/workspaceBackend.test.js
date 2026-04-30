@@ -18,6 +18,7 @@ import {
   readWorkspaceProperties,
   readWorkspaceSettings,
 } from "../src/workspaceBackend.js";
+import { createFolderObjectId } from "../src/workspaceObjects.js";
 
 async function createWorkspaceFixture() {
   const root = await mkdtemp(join(tmpdir(), "folder-kanban-workspace-"));
@@ -243,7 +244,7 @@ test("createScanResponse builds access tree and cards from saved root", async ()
     ]),
     [
       [
-        `object:${workspaceId.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}:active-project-alpha`,
+        createFolderObjectId(workspaceId, "Active/Project Alpha"),
         workspaceId,
         "project",
         "folder",
@@ -253,7 +254,7 @@ test("createScanResponse builds access tree and cards from saved root", async ()
         "Active",
       ],
       [
-        `object:${workspaceId.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}:archive-completed`,
+        createFolderObjectId(workspaceId, "Archive/Completed"),
         workspaceId,
         "project",
         "folder",
