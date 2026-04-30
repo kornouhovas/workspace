@@ -228,6 +228,43 @@ test("createScanResponse builds access tree and cards from saved root", async ()
       ["Completed", "Archive", "Archive/Completed"],
     ],
   );
+  const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
+  assert.equal(response.payload.workspace.id, workspaceId);
+  assert.deepEqual(
+    response.payload.workspace.objects.map((object) => [
+      object.id,
+      object.workspaceId,
+      object.type,
+      object.source.kind,
+      object.source.path,
+      object.source.absoluteRoot,
+      object.folderName,
+      object.folderStatus,
+    ]),
+    [
+      [
+        `object:${workspaceId.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}:active-project-alpha`,
+        workspaceId,
+        "project",
+        "folder",
+        "Active/Project Alpha",
+        root,
+        "Project Alpha",
+        "Active",
+      ],
+      [
+        `object:${workspaceId.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}:archive-completed`,
+        workspaceId,
+        "project",
+        "folder",
+        "Archive/Completed",
+        root,
+        "Completed",
+        "Archive",
+      ],
+    ],
+  );
+  assert.deepEqual(response.payload.workspace.propertyValues, []);
   assert.equal(response.payload.tree.some((node) => node.name === ".hidden"), false);
 });
 

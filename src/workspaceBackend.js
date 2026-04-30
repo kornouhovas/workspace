@@ -6,6 +6,7 @@ import { basename, dirname, extname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { flattenAccessTreeCards } from "./folderModel.js";
 import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
+import { projectFoldersToWorkspaceObjects } from "./workspaceObjects.js";
 
 export const defaultWorkspaceDataDirectory = join(process.cwd(), ".workspace");
 export const defaultLegacyWorkspaceDataDirectory = join(process.cwd(), ".folder-kanban");
@@ -73,10 +74,20 @@ export async function createScanResponse({ root, rules = {}, propertiesPath = de
       ...folder,
       text: normalizeTextProperty(folderProperties[folder.path]?.text),
     }));
+    const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
+    const workspace = {
+      id: workspaceId,
+      ...projectFoldersToWorkspaceObjects({
+        workspaceId,
+        rootPath: root,
+        folders,
+      }),
+    };
     return createJsonResponse(200, {
       root: createRootPayload(root),
       tree,
       folders,
+      workspace,
     });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not scan workspace root." });
