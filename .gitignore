@@ -1,8 +1,8 @@
 .superpowers/
 .workspace/
 .folder-kanban/
-workspace-sidecar
-workspace-sidecar.exe
+/workspace-sidecar
+/workspace-sidecar.exe
 node_modules/
 dist/
 .DS_Store
