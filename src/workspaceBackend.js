@@ -169,38 +169,59 @@ export async function createFileResponse({ root, path }) {
   }
 }
 
-export async function readWorkspaceSettings(
-  configPath = defaultWorkspaceSettingsPath,
-  legacyConfigPath = defaultLegacyWorkspaceSettingsPath,
-) {
-  try {
-    return JSON.parse(await readFile(configPath, "utf8"));
-  } catch (error) {
-    try {
-      const settings = JSON.parse(await readFile(legacyConfigPath, "utf8"));
-      await writeWorkspaceSettings(configPath, settings);
-      return settings;
-    } catch (legacyError) {
-      return {};
-    }
+export async function readWorkspaceSettings(configPath = defaultWorkspaceSettingsPath, legacyConfigPath) {
+  const settings = await readJsonFile(configPath);
+  if (settings.ok) {
+    return settings.value;
   }
+
+  if (!settings.missing) {
+    return {};
+  }
+
+  const resolvedLegacyConfigPath =
+    legacyConfigPath ?? resolveLegacyWorkspacePath(configPath, defaultWorkspaceSettingsPath, defaultLegacyWorkspaceSettingsPath);
+  if (!resolvedLegacyConfigPath) {
+    return {};
+  }
+
+  const legacySettings = await readJsonFile(resolvedLegacyConfigPath);
+  if (!legacySettings.ok) {
+    return {};
+  }
+
+  await writeWorkspaceSettings(configPath, legacySettings.value);
+  return legacySettings.value;
 }
 
 export async function readWorkspaceProperties(
   propertiesPath = defaultWorkspacePropertiesPath,
-  legacyPropertiesPath = defaultLegacyWorkspacePropertiesPath,
+  legacyPropertiesPath,
 ) {
-  try {
-    return normalizeWorkspaceProperties(JSON.parse(await readFile(propertiesPath, "utf8")));
-  } catch (error) {
-    try {
-      const properties = normalizeWorkspaceProperties(JSON.parse(await readFile(legacyPropertiesPath, "utf8")));
-      await writeWorkspaceProperties(propertiesPath, properties);
-      return properties;
-    } catch (legacyError) {
-      return { roots: {} };
-    }
+  const properties = await readJsonFile(propertiesPath);
+  if (properties.ok) {
+    return normalizeWorkspaceProperties(properties.value);
   }
+
+  if (!properties.missing) {
+    return { roots: {} };
+  }
+
+  const resolvedLegacyPropertiesPath =
+    legacyPropertiesPath ??
+    resolveLegacyWorkspacePath(propertiesPath, defaultWorkspacePropertiesPath, defaultLegacyWorkspacePropertiesPath);
+  if (!resolvedLegacyPropertiesPath) {
+    return { roots: {} };
+  }
+
+  const legacyProperties = await readJsonFile(resolvedLegacyPropertiesPath);
+  if (!legacyProperties.ok) {
+    return { roots: {} };
+  }
+
+  const normalizedProperties = normalizeWorkspaceProperties(legacyProperties.value);
+  await writeWorkspaceProperties(propertiesPath, normalizedProperties);
+  return normalizedProperties;
 }
 
 export async function writeWorkspaceProperties(propertiesPath, properties) {
@@ -217,6 +238,33 @@ export async function chooseMacWorkspaceRoot() {
   const script = 'POSIX path of (choose folder with prompt "Choose workspace root")';
   const output = await runCommand("osascript", ["-e", script]);
   return output.trim();
+}
+
+async function readJsonFile(filePath) {
+  try {
+    return { ok: true, value: JSON.parse(await readFile(filePath, "utf8")) };
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { missing: true };
+    }
+
+    return { ok: false, error };
+  }
+}
+
+function resolveLegacyWorkspacePath(filePath, defaultPath, legacyDefaultPath) {
+  if (filePath === defaultPath) {
+    return legacyDefaultPath;
+  }
+
+  const pathParts = filePath.split("/");
+  const workspaceIndex = pathParts.lastIndexOf(".workspace");
+  if (workspaceIndex === -1) {
+    return null;
+  }
+
+  pathParts[workspaceIndex] = ".folder-kanban";
+  return pathParts.join("/");
 }
 
 async function listWorkspaceAccessTree(root, rules, parentPath = []) {

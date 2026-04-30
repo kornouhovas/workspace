@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   createFileResponse,
   createListEntriesResponse,
@@ -49,6 +49,54 @@ test("readWorkspaceSettings migrates legacy settings when the workspace settings
   assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")), settings);
 });
 
+test("workspace backend uses existing .workspace settings over legacy settings without overwriting it", async () => {
+  const configPath = join(await mkdtemp(join(tmpdir(), "workspace-config-")), ".workspace", "settings.json");
+  const legacyConfigPath = join(await mkdtemp(join(tmpdir(), "workspace-legacy-config-")), ".folder-kanban", "settings.json");
+  const settings = { rootPath: "/Users/example/Documents/New Workspace" };
+  const legacySettings = { rootPath: "/Users/example/Documents/Legacy Workspace" };
+  const originalSettingsJson = `${JSON.stringify(settings, null, 2)}\n`;
+  await mkdir(dirname(configPath), { recursive: true });
+  await mkdir(dirname(legacyConfigPath), { recursive: true });
+  await writeFile(configPath, originalSettingsJson);
+  await writeFile(legacyConfigPath, JSON.stringify(legacySettings));
+
+  assert.deepEqual(await readWorkspaceSettings(configPath, legacyConfigPath), settings);
+  assert.equal(await readFile(configPath, "utf8"), originalSettingsJson);
+});
+
+test("readWorkspaceSettings returns empty settings for corrupt .workspace settings without legacy migration", async () => {
+  const configPath = join(await mkdtemp(join(tmpdir(), "workspace-config-")), ".workspace", "settings.json");
+  const legacyConfigPath = join(await mkdtemp(join(tmpdir(), "workspace-legacy-config-")), ".folder-kanban", "settings.json");
+  const legacySettings = { rootPath: "/Users/example/Documents/Legacy Workspace" };
+  await mkdir(dirname(configPath), { recursive: true });
+  await mkdir(dirname(legacyConfigPath), { recursive: true });
+  await writeFile(configPath, "{not json");
+  await writeFile(legacyConfigPath, JSON.stringify(legacySettings));
+
+  assert.deepEqual(await readWorkspaceSettings(configPath, legacyConfigPath), {});
+  assert.equal(await readFile(configPath, "utf8"), "{not json");
+});
+
+test("readWorkspaceSettings migrates legacy settings from custom .workspace companion path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-custom-config-"));
+  const configPath = join(root, ".workspace", "settings.json");
+  const legacyConfigPath = join(root, ".folder-kanban", "settings.json");
+  const settings = { rootPath: "/Users/example/Documents/Custom Workspace" };
+  await mkdir(dirname(legacyConfigPath), { recursive: true });
+  await writeFile(legacyConfigPath, JSON.stringify(settings));
+
+  assert.deepEqual(await readWorkspaceSettings(configPath), settings);
+  assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")), settings);
+});
+
+test("readWorkspaceSettings custom path without .workspace does not read default legacy settings", async () => {
+  const configPath = join(await mkdtemp(join(tmpdir(), "workspace-custom-config-")), "settings.json");
+
+  await withDefaultLegacySettings({ rootPath: "/Users/example/Documents/Default Legacy Workspace" }, async () => {
+    assert.deepEqual(await readWorkspaceSettings(configPath), {});
+  });
+});
+
 test("readWorkspaceProperties migrates legacy properties when the workspace properties file is missing", async () => {
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), ".workspace", "properties.json");
   const legacyPropertiesPath = join(
@@ -67,6 +115,47 @@ test("readWorkspaceProperties migrates legacy properties when the workspace prop
   await writeFile(legacyPropertiesPath, JSON.stringify(properties));
 
   assert.deepEqual(await readWorkspaceProperties(propertiesPath, legacyPropertiesPath), properties);
+  assert.deepEqual(JSON.parse(await readFile(propertiesPath, "utf8")), properties);
+});
+
+test("readWorkspaceProperties returns empty properties for corrupt .workspace properties without legacy migration", async () => {
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), ".workspace", "properties.json");
+  const legacyPropertiesPath = join(
+    await mkdtemp(join(tmpdir(), "workspace-legacy-properties-")),
+    ".folder-kanban",
+    "properties.json",
+  );
+  const legacyProperties = {
+    roots: {
+      abc123: {
+        "Active/Project Alpha": { text: "Legacy note" },
+      },
+    },
+  };
+  await mkdir(dirname(propertiesPath), { recursive: true });
+  await mkdir(dirname(legacyPropertiesPath), { recursive: true });
+  await writeFile(propertiesPath, "{not json");
+  await writeFile(legacyPropertiesPath, JSON.stringify(legacyProperties));
+
+  assert.deepEqual(await readWorkspaceProperties(propertiesPath, legacyPropertiesPath), { roots: {} });
+  assert.equal(await readFile(propertiesPath, "utf8"), "{not json");
+});
+
+test("readWorkspaceProperties migrates legacy properties from custom .workspace companion path", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-custom-properties-"));
+  const propertiesPath = join(root, ".workspace", "properties.json");
+  const legacyPropertiesPath = join(root, ".folder-kanban", "properties.json");
+  const properties = {
+    roots: {
+      abc123: {
+        "Active/Project Alpha": { text: "Custom legacy note" },
+      },
+    },
+  };
+  await mkdir(dirname(legacyPropertiesPath), { recursive: true });
+  await writeFile(legacyPropertiesPath, JSON.stringify(properties));
+
+  assert.deepEqual(await readWorkspaceProperties(propertiesPath), properties);
   assert.deepEqual(JSON.parse(await readFile(propertiesPath, "utf8")), properties);
 });
 
@@ -231,4 +320,31 @@ test("workspace backend rejects paths outside root", async () => {
 
 function createRootPropertiesKey(root) {
   return createHash("sha256").update(root).digest("hex").slice(0, 16);
+}
+
+async function withDefaultLegacySettings(settings, callback) {
+  const original = await readOptionalFile(defaultLegacyWorkspaceSettingsPath);
+  await mkdir(dirname(defaultLegacyWorkspaceSettingsPath), { recursive: true });
+  await writeFile(defaultLegacyWorkspaceSettingsPath, JSON.stringify(settings));
+
+  try {
+    await callback();
+  } finally {
+    if (original.missing) {
+      await rm(defaultLegacyWorkspaceSettingsPath, { force: true });
+    } else {
+      await writeFile(defaultLegacyWorkspaceSettingsPath, original.value);
+    }
+  }
+}
+
+async function readOptionalFile(filePath) {
+  try {
+    return { value: await readFile(filePath, "utf8") };
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { missing: true };
+    }
+    throw error;
+  }
 }
