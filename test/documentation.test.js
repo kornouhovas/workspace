@@ -9,4 +9,5 @@ test("third party notices document any-store MIT license", async () => {
   assert.match(notices, /MIT License/);
   assert.match(notices, /Copyright \(c\) 2023 Any Association/);
   assert.match(notices, /https:\/\/github\.com\/anyproto\/any-store/);
+  assert.match(notices, /https:\/\/raw\.githubusercontent\.com\/anyproto\/any-store\/main\/LICENSE\.md/);
 });
