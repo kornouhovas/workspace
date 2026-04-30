@@ -74,7 +74,7 @@ function readSidecarAddress(childProcess) {
     const handleData = (chunk) => {
       const text = String(chunk);
       chunks.push(text);
-      const match = text.match(/listening on (127\.0\.0\.1:\d+)/);
+      const match = chunks.join("").match(/listening on (127\.0\.0\.1:\d+)/);
       if (match) {
         cleanup();
         resolve(match[1]);
@@ -130,7 +130,13 @@ function normalizePayload(payload) {
 }
 
 app.whenReady().then(async () => {
-  await startWorkspaceSidecar();
+  try {
+    await startWorkspaceSidecar();
+  } catch (error) {
+    console.error(`Workspace sidecar unavailable: ${error.message}`);
+    workspaceClient = null;
+  }
+
   registerWorkspaceHandlers();
   createWindow();
 

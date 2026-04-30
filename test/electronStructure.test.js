@@ -18,12 +18,15 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /async\s+function\s+startWorkspaceSidecar\(\)/);
   assert.match(mainSource, /spawn\(sidecarPath,\s*\["-db",\s*join\(app\.getPath\("userData"\),\s*"workspace\.db"\)\]/);
   assert.match(mainSource, /childProcess\.stderr\.on\("data",\s*handleData\)/);
+  assert.match(mainSource, /chunks\.join\(""\)\.match\(/);
   assert.match(mainSource, /new\s+WorkspaceServiceClient\(createSidecarHttpTransport\(`http:\/\/\$\{address\}`\)\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:getRoot"/);
   assert.match(mainSource, /await\s+workspaceClient\.getRoot\(\)/);
   assert.match(mainSource, /function normalizePayload\(payload\)/);
   assert.match(mainSource, /app\.whenReady\(\)\.then\(async\s*\(\)\s*=>\s*\{/);
   assert.match(mainSource, /await\s+startWorkspaceSidecar\(\)/);
+  assert.match(mainSource, /Workspace sidecar unavailable:/);
+  assert.match(mainSource, /workspaceClient\s*=\s*null/);
 });
 
 test("electron preload exposes only the narrow workspace API", async () => {
