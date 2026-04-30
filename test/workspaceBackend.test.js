@@ -159,6 +159,21 @@ test("readWorkspaceProperties migrates legacy properties from custom .workspace 
   assert.deepEqual(JSON.parse(await readFile(propertiesPath, "utf8")), properties);
 });
 
+test("readWorkspaceProperties custom path without .workspace does not read default legacy properties", async () => {
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-custom-properties-")), "properties.json");
+  const legacyProperties = {
+    roots: {
+      abc123: {
+        "Active/Project Alpha": { text: "Default legacy note" },
+      },
+    },
+  };
+
+  await withDefaultLegacyProperties(legacyProperties, async () => {
+    assert.deepEqual(await readWorkspaceProperties(propertiesPath), { roots: {} });
+  });
+});
+
 test("createSelectRootResponse saves the selected backend root", async () => {
   const root = await createWorkspaceFixture();
   const configPath = join(await mkdtemp(join(tmpdir(), "folder-kanban-config-")), "settings.json");
@@ -334,6 +349,22 @@ async function withDefaultLegacySettings(settings, callback) {
       await rm(defaultLegacyWorkspaceSettingsPath, { force: true });
     } else {
       await writeFile(defaultLegacyWorkspaceSettingsPath, original.value);
+    }
+  }
+}
+
+async function withDefaultLegacyProperties(properties, callback) {
+  const original = await readOptionalFile(defaultLegacyWorkspacePropertiesPath);
+  await mkdir(dirname(defaultLegacyWorkspacePropertiesPath), { recursive: true });
+  await writeFile(defaultLegacyWorkspacePropertiesPath, JSON.stringify(properties));
+
+  try {
+    await callback();
+  } finally {
+    if (original.missing) {
+      await rm(defaultLegacyWorkspacePropertiesPath, { force: true });
+    } else {
+      await writeFile(defaultLegacyWorkspacePropertiesPath, original.value);
     }
   }
 }
