@@ -73,7 +73,7 @@ func TestStorePersistsWorkspaceRootAndPropertyValue(t *testing.T) {
 	}
 }
 
-func TestSetRootDefaultsMissingID(t *testing.T) {
+func TestSetRootStoresRootAtFixedDocumentID(t *testing.T) {
 	ctx := context.Background()
 	store, err := Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))
 	if err != nil {
@@ -82,6 +82,7 @@ func TestSetRootDefaultsMissingID(t *testing.T) {
 	defer store.Close()
 
 	if err := store.SetRoot(ctx, RootDocument{
+		ID:       "workspace:other",
 		RootPath: "/tmp/workspace-root",
 		Name:     "workspace-root",
 	}); err != nil {
@@ -94,5 +95,8 @@ func TestSetRootDefaultsMissingID(t *testing.T) {
 	}
 	if root.ID != "workspace:root" {
 		t.Fatalf("expected default root id, got %q", root.ID)
+	}
+	if root.RootPath != "/tmp/workspace-root" {
+		t.Fatalf("expected root path to persist, got %q", root.RootPath)
 	}
 }

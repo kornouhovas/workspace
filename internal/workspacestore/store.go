@@ -43,9 +43,7 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) SetRoot(ctx context.Context, root RootDocument) error {
-	if root.ID == "" {
-		root.ID = rootDocumentID
-	}
+	root.ID = rootDocumentID
 	return s.upsertJSON(ctx, "workspaces", root)
 }
 
