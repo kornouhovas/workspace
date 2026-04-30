@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -90,11 +90,16 @@ test("readWorkspaceSettings migrates legacy settings from custom .workspace comp
 });
 
 test("readWorkspaceSettings custom path without .workspace does not read default legacy settings", async () => {
+  const isolatedWorkspaceBackend = await importWorkspaceBackendFromTempCwd();
   const configPath = join(await mkdtemp(join(tmpdir(), "workspace-custom-config-")), "settings.json");
+  const defaultLegacySettingsPath = join(isolatedWorkspaceBackend.defaultLegacyWorkspaceSettingsPath);
+  await mkdir(dirname(defaultLegacySettingsPath), { recursive: true });
+  await writeFile(
+    defaultLegacySettingsPath,
+    JSON.stringify({ rootPath: "/Users/example/Documents/Default Legacy Workspace" }),
+  );
 
-  await withDefaultLegacySettings({ rootPath: "/Users/example/Documents/Default Legacy Workspace" }, async () => {
-    assert.deepEqual(await readWorkspaceSettings(configPath), {});
-  });
+  assert.deepEqual(await isolatedWorkspaceBackend.readWorkspaceSettings(configPath), {});
 });
 
 test("readWorkspaceProperties migrates legacy properties when the workspace properties file is missing", async () => {
@@ -160,6 +165,7 @@ test("readWorkspaceProperties migrates legacy properties from custom .workspace 
 });
 
 test("readWorkspaceProperties custom path without .workspace does not read default legacy properties", async () => {
+  const isolatedWorkspaceBackend = await importWorkspaceBackendFromTempCwd();
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-custom-properties-")), "properties.json");
   const legacyProperties = {
     roots: {
@@ -168,10 +174,11 @@ test("readWorkspaceProperties custom path without .workspace does not read defau
       },
     },
   };
+  const defaultLegacyPropertiesPath = join(isolatedWorkspaceBackend.defaultLegacyWorkspacePropertiesPath);
+  await mkdir(dirname(defaultLegacyPropertiesPath), { recursive: true });
+  await writeFile(defaultLegacyPropertiesPath, JSON.stringify(legacyProperties));
 
-  await withDefaultLegacyProperties(legacyProperties, async () => {
-    assert.deepEqual(await readWorkspaceProperties(propertiesPath), { roots: {} });
-  });
+  assert.deepEqual(await isolatedWorkspaceBackend.readWorkspaceProperties(propertiesPath), { roots: {} });
 });
 
 test("createSelectRootResponse saves the selected backend root", async () => {
@@ -337,45 +344,13 @@ function createRootPropertiesKey(root) {
   return createHash("sha256").update(root).digest("hex").slice(0, 16);
 }
 
-async function withDefaultLegacySettings(settings, callback) {
-  const original = await readOptionalFile(defaultLegacyWorkspaceSettingsPath);
-  await mkdir(dirname(defaultLegacyWorkspaceSettingsPath), { recursive: true });
-  await writeFile(defaultLegacyWorkspaceSettingsPath, JSON.stringify(settings));
-
+async function importWorkspaceBackendFromTempCwd() {
+  const originalCwd = process.cwd();
+  const cwd = await mkdtemp(join(tmpdir(), "workspace-isolated-cwd-"));
+  process.chdir(cwd);
   try {
-    await callback();
+    return await import(`../src/workspaceBackend.js?cwd=${encodeURIComponent(cwd)}`);
   } finally {
-    if (original.missing) {
-      await rm(defaultLegacyWorkspaceSettingsPath, { force: true });
-    } else {
-      await writeFile(defaultLegacyWorkspaceSettingsPath, original.value);
-    }
-  }
-}
-
-async function withDefaultLegacyProperties(properties, callback) {
-  const original = await readOptionalFile(defaultLegacyWorkspacePropertiesPath);
-  await mkdir(dirname(defaultLegacyWorkspacePropertiesPath), { recursive: true });
-  await writeFile(defaultLegacyWorkspacePropertiesPath, JSON.stringify(properties));
-
-  try {
-    await callback();
-  } finally {
-    if (original.missing) {
-      await rm(defaultLegacyWorkspacePropertiesPath, { force: true });
-    } else {
-      await writeFile(defaultLegacyWorkspacePropertiesPath, original.value);
-    }
-  }
-}
-
-async function readOptionalFile(filePath) {
-  try {
-    return { value: await readFile(filePath, "utf8") };
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      return { missing: true };
-    }
-    throw error;
+    process.chdir(originalCwd);
   }
 }
