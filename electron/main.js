@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -45,8 +45,9 @@ function createWindow() {
 async function startWorkspaceSidecar() {
   const repoRoot = join(__dirname, "..");
   const sidecarPath = resolveWorkspaceSidecarPath(repoRoot);
+  const sidecarCwd = resolveWorkspaceSidecarCwd(repoRoot);
   sidecarProcess = spawn(sidecarPath, ["-db", join(app.getPath("userData"), "workspace.db")], {
-    cwd: repoRoot,
+    cwd: sidecarCwd,
     stdio: ["ignore", "pipe", "pipe"],
   });
 
@@ -85,6 +86,10 @@ function getSidecarPlatformDirectory(platform = process.platform, arch = process
 
 function getSidecarExecutableName(platform = process.platform) {
   return platform === "win32" ? "workspace-sidecar.exe" : "workspace-sidecar";
+}
+
+function resolveWorkspaceSidecarCwd(repoRoot) {
+  return app.isPackaged ? process.resourcesPath : repoRoot;
 }
 
 function stopWorkspaceSidecar() {
@@ -147,9 +152,12 @@ function registerWorkspaceHandlers() {
     return { status: 200, payload: { root: rootPath ? { name: basename(rootPath) } : null } };
   });
   ipcMain.handle("workspace:selectRoot", async () => {
-    const response = await createSelectRootResponse();
+    const response = await createSelectRootResponse({
+      configPath: getWorkspaceSettingsPath(),
+      chooseRoot: chooseElectronWorkspaceRoot,
+    });
     if (response.status < 400) {
-      const settings = await readWorkspaceSettings();
+      const settings = await readWorkspaceSettings(getWorkspaceSettingsPath());
       await persistWorkspaceRoot(settings.rootPath);
     }
     return response;
@@ -157,7 +165,7 @@ function registerWorkspaceHandlers() {
   ipcMain.handle("workspace:scan", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
     const rootPath = await readSelectedWorkspaceRootPath();
-    return createScanResponse({ root: rootPath, rules: body.rules });
+    return createScanResponse({ root: rootPath, rules: body.rules, propertiesPath: getWorkspacePropertiesPath() });
   });
   ipcMain.handle("workspace:listEntries", async (_event, payload = {}) => {
     const body = normalizePayload(payload);
@@ -169,6 +177,7 @@ function registerWorkspaceHandlers() {
     const rootPath = await readSelectedWorkspaceRootPath();
     const response = await createPropertiesResponse({
       root: rootPath,
+      propertiesPath: getWorkspacePropertiesPath(),
       body: {
         path: body.path,
         text: body.value ?? body.text,
@@ -215,11 +224,36 @@ async function readSelectedWorkspaceRootPath() {
     }
   }
 
-  const settings = await readWorkspaceSettings();
+  const settings = await readWorkspaceSettings(getWorkspaceSettingsPath());
   if (settings.rootPath) {
     await persistWorkspaceRoot(settings.rootPath);
   }
   return settings.rootPath;
+}
+
+async function chooseElectronWorkspaceRoot() {
+  const result = await dialog.showOpenDialog({
+    title: "Choose workspace root",
+    properties: ["openDirectory"],
+  });
+
+  if (result.canceled || !result.filePaths[0]) {
+    return "";
+  }
+
+  return result.filePaths[0];
+}
+
+function getWorkspaceDataDirectory() {
+  return join(app.getPath("userData"), ".workspace");
+}
+
+function getWorkspaceSettingsPath() {
+  return join(getWorkspaceDataDirectory(), "settings.json");
+}
+
+function getWorkspacePropertiesPath() {
+  return join(getWorkspaceDataDirectory(), "properties.json");
 }
 
 async function persistWorkspaceRoot(rootPath) {

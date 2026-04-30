@@ -30,6 +30,7 @@ npm run electron
 
 Выбранный абсолютный путь сохраняется локально в `.workspace/settings.json`.
 Свойства папок сохраняются рядом в `.workspace/properties.json`.
+В Electron-сборке эти файлы находятся внутри системной папки данных приложения, например `~/Library/Application Support/Workspace/.workspace/` на macOS.
 При первом чтении приложение мигрирует legacy-данные из `.folder-kanban/settings.json` и `.folder-kanban/properties.json`, если новые файлы еще не созданы.
 Обе локальные папки добавлены в `.gitignore`, потому что в них хранятся данные, специфичные для твоей машины.
 

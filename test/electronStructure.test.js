@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 test("electron main process uses an isolated preload shell with workspace IPC handlers", async () => {
   const mainSource = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
 
+  assert.match(mainSource, /import \{ app, BrowserWindow, dialog, ipcMain \} from "electron"/);
   assert.match(mainSource, /app\.setName\("Workspace"\)/);
   assert.match(mainSource, /new BrowserWindow\(/);
   assert.match(mainSource, /title:\s*"Workspace"/);
@@ -27,15 +28,25 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /return "win32-x64"/);
   assert.match(mainSource, /function\s+getSidecarExecutableName\(platform = process\.platform\)/);
   assert.match(mainSource, /"workspace-sidecar\.exe"/);
+  assert.match(mainSource, /function\s+resolveWorkspaceSidecarCwd\(repoRoot\)/);
   assert.match(mainSource, /function\s+stopWorkspaceSidecar\(\)/);
   assert.match(mainSource, /const\s+sidecarPath\s*=\s*resolveWorkspaceSidecarPath\(repoRoot\)/);
+  assert.match(mainSource, /const\s+sidecarCwd\s*=\s*resolveWorkspaceSidecarCwd\(repoRoot\)/);
   assert.match(mainSource, /spawn\(sidecarPath,\s*\["-db",\s*join\(app\.getPath\("userData"\),\s*"workspace\.db"\)\]/);
+  assert.match(mainSource, /cwd:\s*sidecarCwd/);
   assert.match(mainSource, /childProcess\.stderr\.on\("data",\s*handleData\)/);
   assert.match(mainSource, /chunks\.join\(""\)\.match\(/);
   assert.match(mainSource, /Workspace sidecar startup timed out\./);
   assert.match(mainSource, /new\s+WorkspaceServiceClient\(createSidecarHttpTransport\(`http:\/\/\$\{address\}`\)\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:getRoot"/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:selectRoot",\s*async/);
+  assert.match(mainSource, /createSelectRootResponse\(\{\s*configPath:\s*getWorkspaceSettingsPath\(\),\s*chooseRoot:\s*chooseElectronWorkspaceRoot/s);
+  assert.match(mainSource, /dialog\.showOpenDialog\(\{/);
+  assert.match(mainSource, /properties:\s*\["openDirectory"\]/);
+  assert.match(mainSource, /function\s+getWorkspaceDataDirectory\(\)/);
+  assert.match(mainSource, /app\.getPath\("userData"\),\s*"\.workspace"/);
+  assert.match(mainSource, /function\s+getWorkspaceSettingsPath\(\)/);
+  assert.match(mainSource, /function\s+getWorkspacePropertiesPath\(\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:saveProperty",\s*async/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:previewFile",\s*async/);
   assert.match(mainSource, /await\s+workspaceClient\.getRoot\(\)/);

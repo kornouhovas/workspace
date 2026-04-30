@@ -13,7 +13,11 @@ test("workspace runs through Electron only", async () => {
   assert.equal(packageJson.scripts.electron, "npm run build:sidecar && electron electron/main.js");
   assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOOS=darwin GOARCH=arm64"), true);
   assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOOS=windows GOARCH=amd64"), true);
-  assert.equal(packageJson.scripts["dist:mac"], "npm run build:sidecars && electron-builder --mac dmg --arm64");
+  assert.equal(packageJson.scripts["prepare:electron:mac"], "xattr -cr node_modules/electron/dist 2>/dev/null || true");
+  assert.equal(
+    packageJson.scripts["dist:mac"],
+    "npm run build:sidecars && npm run prepare:electron:mac && electron-builder --mac dmg --arm64",
+  );
   assert.equal(packageJson.scripts["dist:win"], "npm run build:sidecars && electron-builder --win portable --x64");
   assert.equal(packageJson.build.productName, "Workspace");
   assert.deepEqual(packageJson.build.mac.target, ["dmg"]);
