@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "dev": "node dev-server.js"
+    "dev": "node dev-server.js",
+    "electron": "electron electron/main.js"
+  },
+  "devDependencies": {
+    "electron": "^41.3.0"
   }
 }
