@@ -208,8 +208,10 @@ test("createRootResponse reads the saved backend root", async () => {
 
 test("createScanResponse builds access tree and cards from saved root", async () => {
   const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), ".workspace", "properties.json");
   const response = await createScanResponse({
     root,
+    propertiesPath,
     rules: {
       Archive: { role: "status", expanded: true },
       "Archive/Completed": { role: "card" },
