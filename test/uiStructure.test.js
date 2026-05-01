@@ -254,37 +254,30 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.equal(html.includes("sidebarFolderCount"), false);
 });
 
-test("table and card place expose editable text property UI", async () => {
+test("table and card place expose editable custom text property UI", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
-  assert.match(html, /id="cardPlaceText"/);
-  assert.match(html, /rows="1"/);
-  assert.match(html, /id="cardPlaceText"[\s\S]*spellcheck="false"/);
-  assert.match(html, /aria-label="Text"/);
-  assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
+  assert.doesNotMatch(html, /id="cardPlaceText"/);
+  assert.doesNotMatch(app, /const cardPlaceText\b/);
+  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
   assert.match(app, /text:\s*"Text"/);
-  assert.match(app, /text:\s*21/);
+  assert.doesNotMatch(app, /text:\s*21/);
   assert.match(app, /Property visibility in table/);
   assert.match(app, /function createTablePropertyMenu/);
   assert.match(app, /function saveTableHiddenColumns/);
   assert.match(app, /function createTableTextMenu/);
   assert.match(app, /function startTableColumnRename/);
   assert.match(app, /function toggleTableTextWrap/);
-  assert.match(app, /const cardPlaceTextLabel = document\.querySelector\('\[for="cardPlaceText"\]'\)/);
-  assert.match(app, /function getTextPropertyLabel\(\)/);
-  assert.match(app, /cardPlaceTextLabel\.textContent = getTextPropertyLabel\(\)/);
-  assert.match(app, /cardPlaceTextLabel\.title = getTextPropertyLabel\(\)/);
-  assert.match(app, /cardPlaceText\.placeholder = "Text"/);
+  assert.doesNotMatch(app, /function getTextPropertyLabel\(\)/);
   assert.match(app, /renderFolders\(\);[\s\S]*await scanSelectedFolder\(\)/);
-  assert.match(app, /folders = mergeScannedFoldersWithLocalText\(data\.folders\)/);
-  assert.match(app, /function mergeScannedFoldersWithLocalText\(scannedFolders\)/);
-  assert.match(app, /const localTextsByPath = new Map\(\s*folders\.map\(\(folder\) => \[getFolderPath\(folder\), getFolderText\(folder\)\]\),\s*\)/);
+  assert.match(app, /folders = mergeScannedFoldersWithLocalProperties\(data\.folders\)/);
+  assert.match(app, /function mergeScannedFoldersWithLocalProperties\(scannedFolders\)/);
+  assert.match(app, /const localPropertiesByPath = new Map\(\s*folders\.map\(\(folder\) => \[getFolderPath\(folder\), getFolderProperties\(folder\)\]\),\s*\)/);
   assert.match(app, /hidden \? `Show \$\{getTableColumnLabel\(columnId\)\} property` : `Hide \$\{getTableColumnLabel\(columnId\)\} property`/);
   assert.match(app, /control\.spellcheck = false/);
   assert.match(app, /input\.spellcheck = false/);
-  assert.match(app, /cardPlaceText\.addEventListener\("pointerdown", clearCardPlaceTextPlaceholder\)/);
   assert.match(app, /event\.target\.closest\("\.table-status-menu, \.table-text-menu, \.table-add-property, \.property-type-menu"\)/);
   assert.match(app, /workspaceRequest\("saveProperty", \{/);
   assert.match(css, /\.card-place-text/);
@@ -310,20 +303,20 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.card-place-content > \*\s*\{[^}]*max-width:\s*100%/s);
   assert.match(css, /\.card-place-folder-list\s*\{[^}]*min-width:\s*0/s);
   assert.match(css, /\.table-text-menu/);
-  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*top:\s*-10px/s);
-  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*bottom:\s*-10px/s);
-  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="text"\]::after\s*\{[^}]*opacity:\s*0/s);
-  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.folder-table-cell\[data-table-column="text"\]::before/);
-  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):focus-within \.folder-table-cell\[data-table-column="text"\]::after/);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::after\s*\{[^}]*top:\s*-10px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::after\s*\{[^}]*bottom:\s*-10px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::before,\s*\.folder-table-row:not\(\.folder-table-head\) \.is-editable-property-cell::after\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.is-editable-property-cell::before/);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):focus-within \.is-editable-property-cell::after/);
   assert.match(css, /\.folder-table-row\.is-text-wrapped/);
   assert.match(css, /\.table-text-input\s*\{[^}]*appearance:\s*none/s);
   assert.match(css, /\.table-text-input:focus-visible\s*\{[^}]*outline:\s*0/s);
   assert.match(css, /\.table-header-rename-input\s*\{[^}]*appearance:\s*none/s);
   assert.match(css, /\.table-header-rename-input:focus-visible\s*\{[^}]*outline:\s*0/s);
   assert.match(css, /\.table-property-menu-section-title/);
-  assert.match(app, /function hasMultilineTableText\(folder, columnId = "text"\)/);
+  assert.match(app, /function hasMultilineTableText\(folder, columnId\)/);
   assert.match(app, /wrappedColumns\.some\(\(columnId\) => hasMultilineTableText\(folder, columnId\)\)/);
-  assert.match(app, /function syncVisibleTableText\(path, columnIdOrText, value\)/);
+  assert.match(app, /function syncVisibleTableText\(path, columnId, nextValue\)/);
   assert.match(app, /syncVisibleTableText\(path, columnId, normalizedValue\)/);
   assert.match(app, /function getActiveTextEditState\(\)/);
   assert.match(app, /function restoreActiveTextEditState\(editState\)/);
@@ -332,16 +325,14 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(app, /updateFolderProperty\(path, columnId, value, \{ syncTable: context !== "card-place" \? false : true \}\)/);
   assert.match(app, /function syncTableTextRowState\(control, columnId, text\)/);
   assert.match(app, /cell\.replaceChildren\(\s*createTableTextControl\(\{ path, properties: \{ \[getColumnPropertyId\(columnId\)\]: nextValue \} \}, isTableTextWrapped\(columnId\), columnId\),\s*\)/);
-  assert.match(app, /function formatTableTextValue\(folder, wrapped\)/);
-  assert.match(app, /return wrapped \? text : text\.replace\(\/\\s\*\\n\\s\*\/g, " "\)/);
   assert.match(app, /const hasWrappedText = type === "text" && \(/);
   assert.match(app, /context === "card-place"/);
   assert.match(app, /wrapped && hasMultilineTableText\(folder, columnId\)/);
   assert.match(app, /document\.createElement\(hasWrappedText \? "textarea" : "input"\)/);
   assert.match(app, /function getTextareaSingleLineHeight\(textarea\)/);
   assert.match(app, /textarea\.style\.height = `\$\{getTextareaSingleLineHeight\(textarea\)\}px`/);
-  assert.match(html, /function hasInitialMultilineTableText\(folder\)/);
-  assert.match(html, /row\.classList\.toggle\("is-text-wrapped", textWrapped && hasInitialMultilineTableText\(folder\)\)/);
+  assert.match(html, /function hasInitialMultilineTableText\(folder, wrappedColumns = \[\]\)/);
+  assert.match(html, /row\.classList\.toggle\("is-text-wrapped", hasInitialMultilineTableText\(folder, wrappedColumns\)\)/);
 });
 
 test("table and card place expose typed custom property creation UI", async () => {
@@ -373,6 +364,21 @@ test("table and card place expose typed custom property creation UI", async () =
   assert.match(css, /\.card-place-property-row/);
 });
 
+test("Text is treated as a user-created property instead of a default system field", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const properties = await readFile(new URL("../src/workspaceProperties.js", import.meta.url), "utf8");
+
+  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.doesNotMatch(app, /const tableColumnIds = \["name", "status", "text"\]/);
+  assert.doesNotMatch(app, /if \(columnId === "text"\)/);
+  assert.doesNotMatch(app, /const cardPlaceText\b/);
+  assert.doesNotMatch(html, /id="cardPlaceText"/);
+  assert.match(html, /tableColumnOrder = \["name", "status"\]/);
+  assert.doesNotMatch(html, /tableColumnOrder = \["name", "status", "text"\]/);
+  assert.doesNotMatch(properties, /\["property:text", "Text", "text", false/);
+});
+
 test("typed property UI keeps date and number fields visually plain and supports delete", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
@@ -381,17 +387,22 @@ test("typed property UI keeps date and number fields visually plain and supports
   assert.match(app, /display\.type = "text"/);
   assert.match(app, /display\.readOnly = true/);
   assert.match(app, /function openDatePropertyMenu\(/);
-  assert.match(app, /className = "property-date-menu"/);
+  assert.doesNotMatch(app, /className = "property-date-menu"/);
+  assert.match(app, /picker\.className = "property-date-native-picker"/);
   assert.match(app, /picker\.type = "date"/);
+  assert.match(app, /picker\.showPicker\(\)/);
   assert.doesNotMatch(app, /control\.type = type === "number" \|\| type === "date" \? type : "text"/);
-  assert.match(app, /if \(type === "number"\)[\s\S]*control\.type = "text"[\s\S]*control\.inputMode = "decimal"/);
+  assert.match(app, /function sanitizeNumberInputValue\(value\)/);
+  assert.match(app, /control\.value = sanitizeNumberInputValue\(control\.value\)/);
+  assert.match(app, /if \(type === "number"\)[\s\S]*control\.type = "text"[\s\S]*control\.inputMode = "numeric"/);
   assert.match(app, /createTableTextMenuAction\("delete", "Delete", createMenuIcon\("delete"\)\)/);
   assert.match(app, /function deleteCustomProperty\(propertyId\)/);
   assert.match(app, /if \(action === "delete"\)[\s\S]*deleteCustomProperty\(columnId\)/);
   assert.match(app, /name:\s*getDefaultCustomPropertyName\(normalizedType\)/);
   assert.doesNotMatch(app, /name:\s*getNextCustomPropertyName\(normalizedType\)/);
   assert.match(css, /\.property-date-editor/);
-  assert.match(css, /\.property-date-menu/);
+  assert.match(css, /\.property-date-native-picker/);
+  assert.doesNotMatch(css, /\.property-date-menu/);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*flex-start/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*visible/s);
 });
@@ -652,7 +663,7 @@ test("table columns can be resized and reordered from the header", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
-  assert.match(app, /const tableColumnIds = \["name", "status", "text"\]/);
+  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
   assert.match(app, /const defaultTableColumnWidths = \{/);
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);

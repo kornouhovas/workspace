@@ -3,7 +3,6 @@ export const propertyTypeIds = ["text", "number", "date", "select", "multi-selec
 const defaultPropertyDefinitions = [
   ["property:name", "Name", "text", true, 10],
   ["property:status", "Status", "select", true, 20],
-  ["property:text", "Text", "text", false, 30],
 ];
 
 export function createDefaultPropertySchemas(workspaceId) {

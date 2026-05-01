@@ -59,12 +59,7 @@ export async function createScanResponse({ root, rules = {}, propertiesPath = de
     }
 
     const tree = await listWorkspaceAccessTree(root, rules);
-    const properties = await readWorkspaceProperties(propertiesPath);
-    const folderProperties = getRootFolderProperties(properties, root);
-    const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) }).map((folder) => ({
-      ...folder,
-      text: normalizeTextProperty(folderProperties[folder.path]?.text),
-    }));
+    const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) });
     const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
     const workspace = {
       id: workspaceId,
@@ -101,32 +96,16 @@ export async function createPropertiesResponse({ root, body, propertiesPath = de
       return createJsonResponse(404, { error: "Folder was not found." });
     }
 
+    const propertyId = typeof body?.propertyId === "string" ? body.propertyId.trim() : "";
+    if (!propertyId) {
+      return createJsonResponse(400, { error: "Property id is required." });
+    }
+
     const properties = await readWorkspaceProperties(propertiesPath);
     const rootKey = createRootPropertiesKey(root);
     const rootProperties = properties.roots[rootKey] || {};
     const folderProperties = rootProperties[folderPath] || {};
-    if (body?.propertyId && body.propertyId !== "property:text") {
-      return createJsonResponse(200, { properties: folderProperties });
-    }
-
-    const nextFolderProperties = {
-      ...folderProperties,
-      text: normalizeTextProperty(body?.text),
-    };
-
-    const nextProperties = {
-      ...properties,
-      roots: {
-        ...properties.roots,
-        [rootKey]: {
-          ...rootProperties,
-          [folderPath]: nextFolderProperties,
-        },
-      },
-    };
-
-    await writeWorkspaceProperties(propertiesPath, nextProperties);
-    return createJsonResponse(200, { properties: nextFolderProperties });
+    return createJsonResponse(200, { properties: folderProperties });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not save folder properties." });
   }

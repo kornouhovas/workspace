@@ -257,7 +257,7 @@ test("createScanResponse builds access tree and cards from saved root", async ()
   assert.equal(response.payload.tree.some((node) => node.name === ".hidden"), false);
 });
 
-test("createScanResponse attaches stored text properties to card folders", async () => {
+test("createScanResponse does not expose legacy text as a default card property", async () => {
   const root = await createWorkspaceFixture();
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
   const rootKey = createRootPropertiesKey(root);
@@ -282,10 +282,10 @@ test("createScanResponse attaches stored text properties to card folders", async
   });
 
   assert.equal(response.status, 200);
-  assert.equal(response.payload.folders[0].text, "Meeting notes and project context");
+  assert.equal(response.payload.folders[0].text, undefined);
 });
 
-test("createPropertiesResponse saves text properties for a card folder", async () => {
+test("createPropertiesResponse requires an explicit user property id", async () => {
   const root = await createWorkspaceFixture();
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");
 
@@ -298,11 +298,9 @@ test("createPropertiesResponse saves text properties for a card folder", async (
     },
   });
 
-  assert.equal(response.status, 200);
-  assert.deepEqual(response.payload.properties, { text: "Inline table note" });
-
-  const properties = await readWorkspaceProperties(propertiesPath);
-  assert.equal(properties.roots[createRootPropertiesKey(root)]["Active/Project Alpha"].text, "Inline table note");
+  assert.equal(response.status, 400);
+  assert.match(response.payload.error, /Property id is required/);
+  assert.deepEqual(await readWorkspaceProperties(propertiesPath), { roots: {} });
 });
 
 test("createPropertiesResponse validates custom properties without overwriting text json", async () => {

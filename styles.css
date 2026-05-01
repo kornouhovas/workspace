@@ -1154,17 +1154,17 @@ textarea.table-text-input {
   align-items: start;
 }
 
-.folder-table-row.is-text-wrapped .folder-table-cell[data-table-column="text"] {
+.folder-table-row.is-text-wrapped .is-editable-property-cell {
   white-space: normal;
 }
 
-.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"] {
+.folder-table-row:not(.folder-table-head) .is-editable-property-cell {
   position: relative;
   overflow: visible;
 }
 
-.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::before,
-.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::after {
+.folder-table-row:not(.folder-table-head) .is-editable-property-cell::before,
+.folder-table-row:not(.folder-table-head) .is-editable-property-cell::after {
   position: absolute;
   top: -10px;
   bottom: -10px;
@@ -1176,18 +1176,18 @@ textarea.table-text-input {
   transition: opacity 140ms ease;
 }
 
-.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::before {
+.folder-table-row:not(.folder-table-head) .is-editable-property-cell::before {
   left: 0;
 }
 
-.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="text"]::after {
+.folder-table-row:not(.folder-table-head) .is-editable-property-cell::after {
   right: 0;
 }
 
-.folder-table-row:not(.folder-table-head):hover .folder-table-cell[data-table-column="text"]::before,
-.folder-table-row:not(.folder-table-head):hover .folder-table-cell[data-table-column="text"]::after,
-.folder-table-row:not(.folder-table-head):focus-within .folder-table-cell[data-table-column="text"]::before,
-.folder-table-row:not(.folder-table-head):focus-within .folder-table-cell[data-table-column="text"]::after {
+.folder-table-row:not(.folder-table-head):hover .is-editable-property-cell::before,
+.folder-table-row:not(.folder-table-head):hover .is-editable-property-cell::after,
+.folder-table-row:not(.folder-table-head):focus-within .is-editable-property-cell::before,
+.folder-table-row:not(.folder-table-head):focus-within .is-editable-property-cell::after {
   opacity: 1;
 }
 
@@ -1394,33 +1394,16 @@ textarea.table-text-input {
   flex: 1 1 auto;
 }
 
-.property-date-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 36;
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #181817;
-  padding: 6px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
-}
-
-.property-date-menu[hidden] {
-  display: none;
-}
-
-.property-date-picker {
+.property-date-native-picker {
   box-sizing: border-box;
-  min-height: 30px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 0 8px;
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
   color-scheme: dark;
-  font: inherit;
 }
 
 .table-header-rename-input {

@@ -30,8 +30,6 @@ const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
 const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
-const cardPlaceTextLabel = document.querySelector('[for="cardPlaceText"]');
-const cardPlaceText = document.querySelector("#cardPlaceText");
 const cardPlacePropertyList = document.querySelector("#cardPlacePropertyList");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
@@ -68,12 +66,11 @@ const folderViews = new Set(["workspace", "folders"]);
 const boardViews = new Set(["overview", "board", "table"]);
 const boardViewIds = ["overview", "board", "table"];
 const addableBoardViewTypes = ["board", "table"];
-const tableColumnIds = ["name", "status", "text"];
+const tableColumnIds = ["name", "status"];
 const customPropertyTypes = propertyTypeIds;
 const tableColumnLabels = {
   name: "Name",
   status: "Status",
-  text: "Text",
 };
 const customPropertyTypeLabels = {
   text: "Text",
@@ -91,13 +88,11 @@ const folderRoleLabels = {
 const defaultTableColumnWidths = {
   name: 34,
   status: 18,
-  text: 21,
 };
 const tableColumnWidthVersion = 2;
 const tableColumnWidthLimits = {
   name: { min: 24, max: 78 },
   status: { min: 12, max: 36 },
-  text: { min: 12, max: 42 },
 };
 const maxTableColumnTotalWidth = 94;
 const boardScrollbarHotZoneSize = 56;
@@ -289,12 +284,10 @@ function bindEvents() {
   document.addEventListener("click", handleTableStatusMenuOutsideClick);
   document.addEventListener("click", handleTableTextMenuOutsideClick);
   document.addEventListener("click", handlePropertyTypeMenuOutsideClick);
-  document.addEventListener("click", handleDatePropertyMenuOutsideClick);
   document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
   document.addEventListener("keydown", handleTableTextMenuKeydown);
-  document.addEventListener("keydown", handleDatePropertyKeydown);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
@@ -323,11 +316,6 @@ function bindEvents() {
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
-  cardPlaceText.addEventListener("input", handleCardPlaceTextInput);
-  cardPlaceText.addEventListener("pointerdown", clearCardPlaceTextPlaceholder);
-  cardPlaceText.addEventListener("click", clearCardPlaceTextPlaceholder);
-  cardPlaceText.addEventListener("focus", handleCardPlaceTextFocus);
-  cardPlaceText.addEventListener("blur", handleCardPlaceTextBlur);
   cardPlacePanel.addEventListener("click", handlePropertyTypeMenuClick);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
@@ -1820,10 +1808,6 @@ function getTableColumnLabel(columnId) {
   return getActiveTableColumnLabels()[columnId] || tableColumnLabels[columnId] || getPropertySchema(columnId)?.name || columnId;
 }
 
-function getTextPropertyLabel() {
-  return getTableColumnLabel("text");
-}
-
 function getPropertySchema(columnId) {
   if (columnId === "name") {
     return { id: "property:name", name: "Name", type: "text", system: true };
@@ -1831,10 +1815,6 @@ function getPropertySchema(columnId) {
 
   if (columnId === "status") {
     return { id: "property:status", name: "Status", type: "select", system: true };
-  }
-
-  if (columnId === "text") {
-    return { id: "property:text", name: getActiveTableColumnLabels().text || "Text", type: "text", system: false };
   }
 
   return getActiveCustomProperties().find((property) => property.id === columnId) || null;
@@ -1845,7 +1825,7 @@ function getPropertyType(columnId) {
 }
 
 function getColumnPropertyId(columnId) {
-  return columnId === "text" ? "property:text" : columnId;
+  return columnId;
 }
 
 function getTableColumnCssKey(columnId) {
@@ -1860,7 +1840,7 @@ function getActiveTableWrappedColumns() {
   return normalizeTableWrappedColumns(getActiveBoardViewConfig()?.tableWrappedColumns, getActiveCustomProperties());
 }
 
-function isTableTextWrapped(columnId = "text") {
+function isTableTextWrapped(columnId) {
   return getActiveTableWrappedColumns().includes(columnId);
 }
 
@@ -1997,7 +1977,6 @@ function normalizeTableHiddenColumns(hiddenColumns, customProperties = []) {
 }
 
 function normalizeTableColumnLabels(labels, customProperties = []) {
-  const textLabel = typeof labels?.text === "string" ? labels.text.trim() : "";
   const customLabels = Object.fromEntries(
     getKnownTableColumnIds(customProperties)
       .filter((columnId) => !tableColumnIds.includes(columnId))
@@ -2005,7 +1984,7 @@ function normalizeTableColumnLabels(labels, customProperties = []) {
       .filter(([, label]) => label),
   );
 
-  return textLabel ? { text: textLabel, ...customLabels } : customLabels;
+  return customLabels;
 }
 
 function normalizeTableWrappedColumns(wrappedColumns, customProperties = []) {
@@ -2047,10 +2026,6 @@ function getTableColumnWidthLimits(columnId) {
 }
 
 function isTextLikeColumn(columnId, customProperties = getActiveCustomProperties()) {
-  if (columnId === "text") {
-    return true;
-  }
-
   return customProperties.some((property) => property.id === columnId && property.type === "text");
 }
 
@@ -2084,16 +2059,11 @@ function normalizeTableColumnWidths(widths, legacyNameWidth, customProperties = 
 }
 
 function normalizeBoardViewTableColumnWidths(settings = {}) {
-  const normalizedWidths = normalizeTableColumnWidths(
+  return normalizeTableColumnWidths(
     settings.tableColumnWidths,
     settings.tableNameWidth,
     settings.customProperties,
   );
-  if (settings.tableColumnWidthVersion !== tableColumnWidthVersion && Number(settings.tableColumnWidths?.text) === 42) {
-    normalizedWidths.text = defaultTableColumnWidths.text;
-  }
-
-  return normalizedWidths;
 }
 
 function normalizeResizedTableColumnWidth(columnId, width, currentWidths) {
@@ -2324,23 +2294,12 @@ function saveTableHiddenColumns(tableHiddenColumns) {
 }
 
 function saveTableColumnLabel(columnId, label) {
-  if (columnId !== "text" && !getActiveCustomProperties().some((property) => property.id === columnId)) {
+  if (!getActiveCustomProperties().some((property) => property.id === columnId)) {
     return;
   }
 
   const normalizedLabel = typeof label === "string" ? label.trim() : "";
-  if (!tableColumnIds.includes(columnId)) {
-    renameCustomProperty(columnId, normalizedLabel || getDefaultCustomPropertyName(getPropertyType(columnId)));
-    return;
-  }
-
-  updateActiveBoardViewConfig((view) => ({
-    ...view,
-    tableColumnLabels: normalizeTableColumnLabels({
-      ...view.tableColumnLabels,
-      [columnId]: normalizedLabel || tableColumnLabels[columnId],
-    }, getActiveCustomProperties()),
-  }));
+  renameCustomProperty(columnId, normalizedLabel || getDefaultCustomPropertyName(getPropertyType(columnId)));
 }
 
 function saveTableWrappedColumns(tableWrappedColumns) {
@@ -2366,7 +2325,7 @@ function toggleTableColumnVisibility(columnId) {
   renderFolders();
 }
 
-function toggleTableTextWrap(columnId = "text") {
+function toggleTableTextWrap(columnId) {
   if (!isTextLikeColumn(columnId)) {
     return;
   }
@@ -2600,7 +2559,6 @@ function loadBoardSnapshot() {
       kind: "directory",
       status: folder.status,
       path: typeof folder.path === "string" ? folder.path : folder.name,
-      text: typeof folder.text === "string" ? folder.text : "",
       properties: folder.properties && typeof folder.properties === "object" && !Array.isArray(folder.properties)
         ? folder.properties
         : {},
@@ -2718,7 +2676,7 @@ async function scanSelectedFolder() {
     const data = await workspaceRequest("scan", { rules: folderAccessRules });
     selectedRoot = data.root;
     folderAccessTree = data.tree;
-    folders = mergeScannedFoldersWithLocalText(data.folders);
+    folders = mergeScannedFoldersWithLocalProperties(data.folders);
     setStatus("Folder board updated.", "success");
   } catch (error) {
     folders = [];
@@ -2879,29 +2837,6 @@ function handleCardPlaceFolderOpenKeydown(event) {
   handleCardPlaceFolderOpen();
 }
 
-function handleCardPlaceTextInput() {
-  if (!selectedCardPath) {
-    return;
-  }
-
-  resizeTextareaToContent(cardPlaceText);
-  updateFolderText(selectedCardPath, cardPlaceText.value);
-}
-
-function handleCardPlaceTextFocus() {
-  clearCardPlaceTextPlaceholder();
-}
-
-function clearCardPlaceTextPlaceholder() {
-  cardPlaceText.placeholder = "";
-}
-
-function handleCardPlaceTextBlur() {
-  if (!cardPlaceText.value) {
-    cardPlaceText.placeholder = "Text";
-  }
-}
-
 function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
@@ -2913,19 +2848,12 @@ function renderCardPlacePanel() {
   cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
   cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
-  cardPlaceTextLabel.textContent = getTextPropertyLabel();
-  cardPlaceTextLabel.title = getTextPropertyLabel();
   cardPlaceTitle.textContent = "";
   cardPlaceStatus.textContent = "";
-  cardPlaceText.value = "";
-  cardPlaceText.placeholder = "Text";
-  cardPlaceText.disabled = !selectedCard;
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
     cardPlaceStatus.textContent = selectedCard.status;
-    cardPlaceText.value = getFolderText(selectedCard);
   }
-  resizeTextareaToContent(cardPlaceText);
   renderCardPlaceProperties(selectedCard);
   renderCardPlaceEntries();
 }
@@ -3005,10 +2933,6 @@ function getTextareaSingleLineHeight(textarea) {
   return Number.isFinite(lineHeight) ? Math.ceil(lineHeight) : 20;
 }
 
-function getFolderText(folder) {
-  return getFormattedFolderPropertyValue(folder, "text");
-}
-
 function getFolderProperties(folder) {
   return folder?.properties && typeof folder.properties === "object" && !Array.isArray(folder.properties)
     ? folder.properties
@@ -3022,10 +2946,6 @@ function getFolderPropertyValue(folder, columnId) {
 
   if (columnId === "status") {
     return folder?.status || "";
-  }
-
-  if (columnId === "text") {
-    return normalizePropertyValue("text", getFolderProperties(folder)["property:text"] ?? folder?.text);
   }
 
   return normalizePropertyValue(getPropertyType(columnId), getFolderProperties(folder)[columnId]);
@@ -3042,10 +2962,6 @@ function getFormattedFolderPropertyValue(folder, columnId) {
 
 function getActiveTextEditState() {
   const activeElement = document.activeElement;
-  if (activeElement === cardPlaceText && selectedCardPath) {
-    return createTextEditState("card-place", selectedCardPath, cardPlaceText, "text");
-  }
-
   if (activeElement?.classList?.contains("card-place-property-input") && selectedCardPath) {
     return createTextEditState("card-place", selectedCardPath, activeElement, activeElement.dataset.tableColumn);
   }
@@ -3059,10 +2975,10 @@ function getActiveTextEditState() {
     return null;
   }
 
-  return createTextEditState("table", row.dataset.folderPath, activeElement, activeElement.dataset.tableColumn || "text");
+  return createTextEditState("table", row.dataset.folderPath, activeElement, activeElement.dataset.tableColumn);
 }
 
-function createTextEditState(kind, path, control, columnId = "text") {
+function createTextEditState(kind, path, control, columnId) {
   return {
     kind,
     path,
@@ -3097,9 +3013,7 @@ function getTextEditControl(editState) {
       return null;
     }
 
-    return editState.columnId === "text"
-      ? cardPlaceText
-      : cardPlacePropertyList?.querySelector(`[data-table-column="${CSS.escape(editState.columnId)}"]`);
+    return cardPlacePropertyList?.querySelector(`[data-table-column="${CSS.escape(editState.columnId)}"]`);
   }
 
   const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
@@ -3117,37 +3031,27 @@ function restoreTextSelection(control, editState) {
   control.setSelectionRange(selectionStart, selectionEnd);
 }
 
-function mergeScannedFoldersWithLocalText(scannedFolders) {
-  const localTextsByPath = new Map(
-    folders.map((folder) => [getFolderPath(folder), getFolderText(folder)]),
-  );
+function mergeScannedFoldersWithLocalProperties(scannedFolders) {
   const localPropertiesByPath = new Map(
     folders.map((folder) => [getFolderPath(folder), getFolderProperties(folder)]),
   );
 
   return scannedFolders.map((folder) => (
-    localTextsByPath.has(getFolderPath(folder))
+    localPropertiesByPath.has(getFolderPath(folder))
       ? {
           ...folder,
           properties: {
             ...getFolderProperties(folder),
             ...localPropertiesByPath.get(getFolderPath(folder)),
-            "property:text": localTextsByPath.get(getFolderPath(folder)),
           },
-          text: localTextsByPath.get(getFolderPath(folder)),
         }
       : folder
   ));
 }
 
-function updateFolderText(path, text, options = {}) {
-  updateFolderProperty(path, "text", text, options);
-}
-
 function updateFolderProperty(path, columnId, value, options = {}) {
   const normalizedValue = normalizePropertyValue(getPropertyType(columnId), value);
   const propertyId = getColumnPropertyId(columnId);
-  const normalizedText = propertyId === "property:text" ? normalizePropertyValue("text", normalizedValue) : null;
   folders = folders.map((folder) => (
     getFolderPath(folder) === path
       ? {
@@ -3156,22 +3060,11 @@ function updateFolderProperty(path, columnId, value, options = {}) {
             ...getFolderProperties(folder),
             [propertyId]: normalizedValue,
           },
-          ...(normalizedText === null ? {} : { text: normalizedText }),
         }
       : folder
   ));
 
-  if (
-    propertyId === "property:text" &&
-    selectedCardPath === path &&
-    cardPlaceText.value !== normalizedText &&
-    document.activeElement !== cardPlaceText
-  ) {
-    cardPlaceText.value = normalizedText;
-    resizeTextareaToContent(cardPlaceText);
-  }
-
-  if (propertyId !== "property:text" && selectedCardPath === path) {
+  if (selectedCardPath === path) {
     const control = cardPlacePropertyList?.querySelector(`.card-place-property-input[data-property-id="${CSS.escape(propertyId)}"]`);
     if (control && document.activeElement !== control) {
       control.value = formatPropertyValueForInput(normalizedValue, getPropertyType(columnId), control instanceof HTMLTextAreaElement);
@@ -3188,13 +3081,11 @@ function updateFolderProperty(path, columnId, value, options = {}) {
   scheduleFolderTextSave(path, columnId, normalizedValue);
 }
 
-function syncVisibleTableText(path, columnIdOrText, value) {
+function syncVisibleTableText(path, columnId, nextValue) {
   if (getActiveBoardView() !== "table") {
     return;
   }
 
-  const columnId = value === undefined ? "text" : columnIdOrText;
-  const nextValue = value === undefined ? columnIdOrText : value;
   const row = [...folderGrid.querySelectorAll(".folder-table-row[data-folder-path]")]
     .find((tableRow) => tableRow.dataset.folderPath === path);
   const cell = row?.querySelector(`.folder-table-cell[data-table-column="${CSS.escape(columnId)}"]`);
@@ -3208,9 +3099,7 @@ function syncVisibleTableText(path, columnIdOrText, value) {
   );
 }
 
-function scheduleFolderTextSave(path, columnIdOrText, value) {
-  const columnId = value === undefined ? "text" : columnIdOrText;
-  const nextValue = value === undefined ? columnIdOrText : value;
+function scheduleFolderTextSave(path, columnId, nextValue) {
   const timerKey = `${path}\u0000${getColumnPropertyId(columnId)}`;
   window.clearTimeout(folderPropertySaveTimers.get(timerKey));
   const timer = window.setTimeout(() => {
@@ -3218,10 +3107,6 @@ function scheduleFolderTextSave(path, columnIdOrText, value) {
     saveFolderProperty(path, columnId, nextValue);
   }, 350);
   folderPropertySaveTimers.set(timerKey, timer);
-}
-
-async function saveFolderText(path, text) {
-  return saveFolderProperty(path, "text", text);
 }
 
 async function saveFolderProperty(path, columnId, value) {
@@ -4117,7 +4002,7 @@ function setAllFolderAccess(access) {
 
 function applyFolderAccessRules() {
   applyRulesToAccessTree(folderAccessTree);
-  folders = mergeScannedFoldersWithLocalText(
+  folders = mergeScannedFoldersWithLocalProperties(
     flattenAccessTreeCards(folderAccessTree, { rootStatus: selectedRoot?.name || "Client Projects" }),
   );
   saveBoardSnapshot();
@@ -4726,9 +4611,7 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
   row.className = "folder-table-row";
   row.dataset.folderPath = folder.path || folder.name;
   row.classList.toggle("is-hidden-status-row", Boolean(options.hidden));
-  const wrappedColumns = Array.isArray(options.wrappedColumns)
-    ? options.wrappedColumns
-    : (options.textWrapped ? ["text"] : []);
+  const wrappedColumns = Array.isArray(options.wrappedColumns) ? options.wrappedColumns : [];
   row.classList.toggle(
     "is-text-wrapped",
     wrappedColumns.some((columnId) => hasMultilineTableText(folder, columnId)),
@@ -4738,7 +4621,7 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
   return row;
 }
 
-function hasMultilineTableText(folder, columnId = "text") {
+function hasMultilineTableText(folder, columnId) {
   return getFormattedFolderPropertyValue(folder, columnId).includes("\n");
 }
 
@@ -4807,7 +4690,7 @@ function createTableStatusMenu(statuses, hiddenStatuses) {
   return menu;
 }
 
-function createTableTextMenu(columnId = "text") {
+function createTableTextMenu(columnId) {
   const menu = document.createElement("div");
   menu.className = "table-text-menu";
   menu.setAttribute("role", "menu");
@@ -5235,7 +5118,7 @@ function handleTableTextMenuClick(event) {
   toggleTableTextMenu(textHeader);
 }
 
-function handleTableTextMenuAction(action, columnId = "text", headerCell) {
+function handleTableTextMenuAction(action, columnId, headerCell) {
   if (action === "rename") {
     closeTableTextMenus();
     startTableColumnRename(columnId, headerCell);
@@ -5482,9 +5365,8 @@ function createTableCell(folder, columnId, options = {}) {
   cell.dataset.tableColumn = columnId;
 
   if (isEditableTableColumn(columnId)) {
-    const wrappedColumns = Array.isArray(options.wrappedColumns)
-      ? options.wrappedColumns
-      : (options.textWrapped ? ["text"] : []);
+    const wrappedColumns = Array.isArray(options.wrappedColumns) ? options.wrappedColumns : [];
+    cell.classList.add("is-editable-property-cell");
     cell.append(createTableTextControl(folder, wrappedColumns.includes(columnId), columnId));
     return cell;
   }
@@ -5494,7 +5376,7 @@ function createTableCell(folder, columnId, options = {}) {
   return cell;
 }
 
-function createTableTextControl(folder, wrapped, columnId = "text") {
+function createTableTextControl(folder, wrapped, columnId) {
   return createPropertyEditor({
     folder,
     columnId,
@@ -5524,6 +5406,10 @@ function createPropertyEditor({ folder, columnId, context, wrapped = false, clas
   control.value = formatPropertyValueForInput(getFolderPropertyValue(folder, columnId), type, hasWrappedText);
   control.addEventListener("click", (event) => event.stopPropagation());
   control.addEventListener("input", () => {
+    if (type === "number") {
+      control.value = sanitizeNumberInputValue(control.value);
+    }
+
     const value = normalizeInputPropertyValue(type, control.value);
     updateFolderProperty(path, columnId, value, { syncTable: context !== "card-place" ? false : true });
     syncTableTextRowState(control, columnId, control.value);
@@ -5541,11 +5427,16 @@ function createPropertyEditor({ folder, columnId, context, wrapped = false, clas
 
   if (type === "number") {
     control.type = "text";
-    control.inputMode = "decimal";
+    control.inputMode = "numeric";
+    control.pattern = "[0-9]*";
   } else {
     control.type = "text";
   }
   return control;
+}
+
+function sanitizeNumberInputValue(value) {
+  return String(value ?? "").replace(/\D/g, "");
 }
 
 function createDatePropertyEditor({ folder, columnId, context, className = "" }) {
@@ -5563,13 +5454,11 @@ function createDatePropertyEditor({ folder, columnId, context, className = "" })
   display.spellcheck = false;
   display.value = formatPropertyValueForInput(getFolderPropertyValue(folder, columnId), "date");
 
-  const menu = document.createElement("span");
-  menu.className = "property-date-menu";
-  menu.hidden = true;
-
   const picker = document.createElement("input");
-  picker.className = "property-date-picker";
+  picker.className = "property-date-native-picker";
   picker.type = "date";
+  picker.tabIndex = -1;
+  picker.setAttribute("aria-hidden", "true");
   picker.value = display.value;
   picker.addEventListener("click", (event) => event.stopPropagation());
   picker.addEventListener("input", () => {
@@ -5581,68 +5470,39 @@ function createDatePropertyEditor({ folder, columnId, context, className = "" })
     updateFolderProperty(path, columnId, picker.value, { syncTable: context !== "table" });
   });
 
-  menu.append(picker);
   display.addEventListener("click", (event) => {
     event.stopPropagation();
     openDatePropertyMenu(display);
   });
   display.addEventListener("focus", () => openDatePropertyMenu(display));
-  wrapper.append(display, menu);
+  wrapper.append(display, picker);
 
   return wrapper;
 }
 
 function openDatePropertyMenu(display) {
   const wrapper = display.closest(".property-date-editor");
-  const menu = wrapper?.querySelector(".property-date-menu");
-  const picker = menu?.querySelector(".property-date-picker");
-  if (!wrapper || !menu || display.disabled) {
+  const picker = wrapper?.querySelector(".property-date-native-picker");
+  if (!wrapper || !picker || display.disabled) {
     return;
   }
 
-  closeDatePropertyMenus(wrapper);
-  menu.hidden = false;
   picker.value = display.value;
-  requestAnimationFrame(() => picker.focus({ preventScroll: true }));
-}
-
-function closeDatePropertyMenus(exceptWrapper = null) {
-  document.querySelectorAll(".property-date-editor").forEach((wrapper) => {
-    if (wrapper === exceptWrapper) {
-      return;
+  if (typeof picker.showPicker === "function") {
+    try {
+      picker.showPicker();
+    } catch (error) {
+      picker.focus({ preventScroll: true });
     }
-
-    const menu = wrapper.querySelector(".property-date-menu");
-    if (menu) {
-      menu.hidden = true;
-    }
-  });
-}
-
-function handleDatePropertyMenuOutsideClick(event) {
-  if (event.target.closest(".property-date-editor")) {
     return;
   }
 
-  closeDatePropertyMenus();
-}
-
-function handleDatePropertyKeydown(event) {
-  if (event.key !== "Escape") {
-    return;
-  }
-
-  closeDatePropertyMenus();
+  picker.click();
 }
 
 function syncTableTextRowState(control, columnId, text) {
   const row = control.closest(".folder-table-row");
   row?.classList.toggle("is-text-wrapped", isTableTextWrapped(columnId) && text.includes("\n"));
-}
-
-function formatTableTextValue(folder, wrapped) {
-  const text = getFormattedFolderPropertyValue(folder, "text");
-  return wrapped ? text : text.replace(/\s*\n\s*/g, " ");
 }
 
 function formatPropertyValueForInput(value, type, wrapped = false) {
@@ -5719,7 +5579,6 @@ function saveBoardSnapshot() {
       name: folder.name,
       path: folder.path,
       status: folder.status,
-      text: getFolderText(folder),
       properties: getFolderProperties(folder),
     })),
   };

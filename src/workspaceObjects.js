@@ -1,5 +1,3 @@
-import { normalizePropertyValue } from "./workspaceProperties.js";
-
 export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folders }) {
   const objects = [];
   const propertyValues = [];
@@ -18,23 +16,59 @@ export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folder
       folderName: folder.name,
       folderStatus: folder.status,
     };
-    const textValue = normalizePropertyValue("text", folder.text);
 
     objects.push(object);
 
-    if (textValue.trim() !== "") {
+    Object.entries(getUserPropertyValues(folder.properties)).forEach(([propertyId, value]) => {
       propertyValues.push({
-        id: createPropertyValueId(objectId, "property:text"),
+        id: createPropertyValueId(objectId, propertyId),
         workspaceId,
         objectId,
-        propertyId: "property:text",
-        type: "text",
-        value: textValue,
+        propertyId,
+        type: inferPropertyValueType(value),
+        value,
       });
-    }
+    });
   }
 
   return { objects, propertyValues };
+}
+
+function getUserPropertyValues(properties) {
+  if (!properties || typeof properties !== "object" || Array.isArray(properties)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(properties)
+      .filter(([propertyId, value]) => (
+        typeof propertyId === "string" &&
+        propertyId.startsWith("property:") &&
+        propertyId !== "property:name" &&
+        propertyId !== "property:status" &&
+        hasStoredPropertyValue(value)
+      )),
+  );
+}
+
+function hasStoredPropertyValue(value) {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== null && value !== undefined && value !== "";
+}
+
+function inferPropertyValueType(value) {
+  if (Array.isArray(value)) {
+    return "multi-select";
+  }
+
+  if (typeof value === "number") {
+    return "number";
+  }
+
+  return "text";
 }
 
 export function createFolderObjectId(workspaceId, folderPath) {

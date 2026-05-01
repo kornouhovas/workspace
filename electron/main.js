@@ -185,7 +185,6 @@ function registerWorkspaceHandlers() {
       body: {
         path: body.path,
         propertyId: body.propertyId,
-        text: body.propertyId && body.propertyId !== "property:text" ? undefined : body.value ?? body.text,
       },
     });
     if (response.status < 400) {
@@ -307,7 +306,6 @@ async function attachStoredWorkspaceProperties(rootPath, payload) {
       return {
         ...folder,
         properties,
-        text: typeof properties["property:text"] === "string" ? properties["property:text"] : folder.text,
       };
     });
     payload.workspace.propertyValues = storedValues;
@@ -321,7 +319,11 @@ async function persistWorkspacePropertyValue(rootPath, body) {
     return;
   }
 
-  const propertyId = typeof body.propertyId === "string" && body.propertyId ? body.propertyId : "property:text";
+  const propertyId = typeof body.propertyId === "string" && body.propertyId ? body.propertyId : "";
+  if (!propertyId) {
+    return;
+  }
+
   const type = typeof body.type === "string" && body.type ? body.type : "text";
   const workspaceId = createWorkspaceId(rootPath);
   const objectId = createFolderObjectId(workspaceId, body.path);

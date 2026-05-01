@@ -35,7 +35,7 @@ test("createPropertyValueId combines object and property identifiers", () => {
   );
 });
 
-test("projectFoldersToWorkspaceObjects maps folders to workspace objects and text property values", () => {
+test("projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values", () => {
   const projection = projectFoldersToWorkspaceObjects({
     workspaceId: "workspace:main",
     rootPath: "/Users/example/Workspace",
@@ -44,13 +44,20 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
         name: "Project Alpha",
         status: "Active",
         path: "Active/Project Alpha",
-        text: " Project context ",
+        text: " Legacy text is not a default property ",
+        properties: {
+          "property:text-1": " Project context ",
+          "property:number-1": 7,
+          "property:name": "Ignored system name",
+        },
       },
       {
         name: "Completed",
         status: "Archive",
         path: "Archive/Completed",
-        text: "   ",
+        properties: {
+          "property:text-1": "",
+        },
       },
     ],
   });
@@ -83,12 +90,20 @@ test("projectFoldersToWorkspaceObjects maps folders to workspace objects and tex
   ]);
   assert.deepEqual(projection.propertyValues, [
     {
-      id: "value:object:workspace-main:active-project-alpha-1v09uq:property:text",
+      id: "value:object:workspace-main:active-project-alpha-1v09uq:property:text-1",
       workspaceId: "workspace:main",
       objectId: "object:workspace-main:active-project-alpha-1v09uq",
-      propertyId: "property:text",
+      propertyId: "property:text-1",
       type: "text",
       value: " Project context ",
+    },
+    {
+      id: "value:object:workspace-main:active-project-alpha-1v09uq:property:number-1",
+      workspaceId: "workspace:main",
+      objectId: "object:workspace-main:active-project-alpha-1v09uq",
+      propertyId: "property:number-1",
+      type: "number",
+      value: 7,
     },
   ]);
 });

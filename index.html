@@ -192,17 +192,6 @@
               <span class="eyebrow">Status</span>
               <p id="cardPlaceStatus"></p>
             </section>
-            <section class="card-place-text-section" aria-label="Text">
-              <label class="card-place-section-title" for="cardPlaceText">Text</label>
-              <textarea
-                class="card-place-text"
-                id="cardPlaceText"
-                rows="1"
-                placeholder="Text"
-                spellcheck="false"
-                disabled
-              ></textarea>
-            </section>
             <div class="card-place-property-list" id="cardPlacePropertyList"></div>
             <section class="card-place-folder-section" aria-label="Folder contents">
               <div class="card-place-section-title">Folder</div>
@@ -335,8 +324,8 @@
           statusOrder = [],
           hiddenStatuses = [],
           showHiddenStatuses = false,
-          tableColumnOrder = ["name", "status", "text"],
-          tableColumnWidths = { name: 34, status: 18, text: 21 },
+          tableColumnOrder = ["name", "status"],
+          tableColumnWidths = { name: 34, status: 18 },
           tableHiddenColumns = [],
           tableColumnLabels = {},
           tableWrappedColumns = [],
@@ -415,12 +404,11 @@
           showHiddenStatuses,
         ) {
           const visibleTableColumnOrder = tableColumnOrder.filter((columnId) => !tableHiddenColumns.includes(columnId));
-          const textWrapped = tableWrappedColumns.includes("text");
+          const wrappedColumns = Array.isArray(tableWrappedColumns) ? tableWrappedColumns : [];
           const table = document.createElement("div");
           table.className = "folder-table-surface";
           table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
           table.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
-          table.style.setProperty("--table-text-column-width", `${tableColumnWidths.text}%`);
           Object.entries(tableColumnWidths).forEach(([columnId, width]) => {
             table.style.setProperty(`--table-${getInitialTableColumnCssKey(columnId)}-column-width`, `${width}%`);
           });
@@ -444,7 +432,7 @@
           table.append(
             header,
             ...getInitialTableFolders(folders, statusOrder, hiddenStatuses, showHiddenStatuses).map((folder) =>
-              createInitialTableRow(folder, visibleTableColumnOrder, hiddenStatuses, textWrapped),
+              createInitialTableRow(folder, visibleTableColumnOrder, hiddenStatuses, wrappedColumns),
             ),
           );
 
@@ -603,12 +591,12 @@
           return icon;
         }
 
-        function createInitialTableRow(folder, tableColumnOrder, hiddenStatuses = [], textWrapped = false) {
+        function createInitialTableRow(folder, tableColumnOrder, hiddenStatuses = [], wrappedColumns = []) {
           const row = document.createElement("div");
           row.className = "folder-table-row";
           row.dataset.folderPath = folder.path || folder.name;
           row.classList.toggle("is-hidden-status-row", hiddenStatuses.includes(folder.status));
-          row.classList.toggle("is-text-wrapped", textWrapped && hasInitialMultilineTableText(folder));
+          row.classList.toggle("is-text-wrapped", hasInitialMultilineTableText(folder, wrappedColumns));
           row.append(
             ...tableColumnOrder.map((columnId) =>
               createInitialTableCell(getInitialTableCellText(folder, columnId), columnId),
@@ -618,17 +606,13 @@
           return row;
         }
 
-        function hasInitialMultilineTableText(folder) {
-          return typeof folder?.text === "string" && folder.text.includes("\n");
+        function hasInitialMultilineTableText(folder, wrappedColumns = []) {
+          return wrappedColumns.some((columnId) => String(getInitialTableCellText(folder, columnId)).includes("\n"));
         }
 
         function getInitialTableCellText(folder, columnId) {
           if (columnId === "status") {
             return folder?.status || "Status";
-          }
-
-          if (columnId === "text") {
-            return folder?.properties?.["property:text"] || folder?.text || "";
           }
 
           if (columnId.startsWith("property:")) {
@@ -649,10 +633,6 @@
         }
 
         function getInitialTableColumnLabel(columnId, tableColumnLabels = {}) {
-          if (columnId === "text") {
-            return tableColumnLabels.text || "Text";
-          }
-
           if (columnId.startsWith("property:")) {
             return tableColumnLabels[columnId] || columnId.replace(/^property:/, "");
           }
@@ -717,7 +697,7 @@
         function getStoredTableColumnOrder(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const columnOrder = Array.isArray(activeView.tableColumnOrder) ? activeView.tableColumnOrder : [];
-          const tableColumnIds = ["name", "status", "text"];
+          const tableColumnIds = ["name", "status"];
           const knownColumnIds = [...tableColumnIds, ...getStoredCustomProperties(state).map((property) => property.id)];
           const normalizedColumns = columnOrder.filter((columnId) => knownColumnIds.includes(columnId));
           const missingColumns = tableColumnIds.filter((columnId) => !normalizedColumns.includes(columnId));
@@ -726,7 +706,7 @@
         }
 
         function getStoredTableColumnWidths(state) {
-          const defaultWidths = { name: 34, status: 18, text: 21 };
+          const defaultWidths = { name: 34, status: 18 };
           const tableColumnWidthVersion = 2;
           const activeView = getStoredActiveBoardViewConfig(state);
           const storedWidths = activeView.tableColumnWidths || {};
@@ -738,22 +718,16 @@
           const widths = {
             name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeView.tableNameWidth, 24, 78, 34),
             status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 18),
-            text: normalizeInitialTableColumnWidth(storedWidths.text, 12, 42, 21),
           };
           getStoredCustomProperties(state).forEach((property) => {
             widths[property.id] = normalizeInitialTableColumnWidth(storedWidths[property.id], 10, 42, 16);
           });
-
-          if (activeView.tableColumnWidthVersion !== tableColumnWidthVersion && Number(storedWidths.text) === 42) {
-            widths.text = 21;
-          }
 
           return widths;
         }
 
         function getStoredTableColumnLabels(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
-          const textLabel = typeof activeView.tableColumnLabels?.text === "string" ? activeView.tableColumnLabels.text.trim() : "";
           const customLabels = Object.fromEntries(
             getStoredCustomProperties(state).map((property) => [
               property.id,
@@ -763,18 +737,17 @@
             ]),
           );
 
-          return textLabel ? { text: textLabel, ...customLabels } : customLabels;
+          return customLabels;
         }
 
         function getStoredTableWrappedColumns(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const wrappedColumns = Array.isArray(activeView.tableWrappedColumns) ? activeView.tableWrappedColumns : [];
-          const textColumnIds = new Set([
-            "text",
-            ...getStoredCustomProperties(state)
+          const textColumnIds = new Set(
+            getStoredCustomProperties(state)
               .filter((property) => property.type === "text")
               .map((property) => property.id),
-          ]);
+          );
 
           return wrappedColumns.filter((columnId) => textColumnIds.has(columnId));
         }
@@ -782,7 +755,7 @@
         function getStoredTableHiddenColumns(state) {
           const activeView = getStoredActiveBoardViewConfig(state);
           const hiddenColumns = Array.isArray(activeView.tableHiddenColumns) ? activeView.tableHiddenColumns : [];
-          const knownColumnIds = ["status", "text", ...getStoredCustomProperties(state).map((property) => property.id)];
+          const knownColumnIds = ["status", ...getStoredCustomProperties(state).map((property) => property.id)];
 
           return hiddenColumns.filter((columnId) => knownColumnIds.includes(columnId));
         }
@@ -811,12 +784,12 @@
             statusOrder: [],
             hiddenStatuses: [],
             showHiddenStatuses: false,
-            tableColumnOrder: ["name", "status", "text"],
+            tableColumnOrder: ["name", "status"],
             tableHiddenColumns: [],
             tableColumnLabels: {},
             tableWrappedColumns: [],
             tableColumnWidthVersion: 2,
-            tableColumnWidths: { name: 34, status: 18, text: 21 },
+            tableColumnWidths: { name: 34, status: 18 },
           };
           if (!isStoredWorkspaceState(state)) {
             return fallbackView;

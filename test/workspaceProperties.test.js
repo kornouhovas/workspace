@@ -11,7 +11,7 @@ test("propertyTypeIds lists supported property types in storage order", () => {
   assert.deepEqual(propertyTypeIds, ["text", "number", "date", "select", "multi-select"]);
 });
 
-test("createDefaultPropertySchemas returns normalized default property schemas for a workspace", () => {
+test("createDefaultPropertySchemas returns only system Name and Status schemas for a workspace", () => {
   assert.deepEqual(createDefaultPropertySchemas("workspace-1"), [
     {
       id: "property:name",
@@ -32,16 +32,6 @@ test("createDefaultPropertySchemas returns normalized default property schemas f
       hidden: false,
       order: 20,
       config: { options: [] },
-    },
-    {
-      id: "property:text",
-      workspaceId: "workspace-1",
-      name: "Text",
-      type: "text",
-      system: false,
-      hidden: false,
-      order: 30,
-      config: {},
     },
   ]);
 });
