@@ -297,9 +297,9 @@ test("table and card place expose editable text property UI", async () => {
   assert.match(css, /\.card-place-text\s*\{[^}]*justify-self:\s*start/s);
   assert.match(css, /\.card-place-text\s*\{[^}]*flex:\s*1 1 auto/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*display:\s*flex/s);
-  assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*baseline/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*flex-start/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*width:\s*100%/s);
-  assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*visible/s);
   assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.35/s);
   assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*max-width:\s*15ch/s);
   assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*white-space:\s*nowrap/s);
@@ -371,6 +371,29 @@ test("table and card place expose typed custom property creation UI", async () =
   assert.match(css, /\.property-type-menu/);
   assert.match(css, /\.card-place-add-property/);
   assert.match(css, /\.card-place-property-row/);
+});
+
+test("typed property UI keeps date and number fields visually plain and supports delete", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /function createDatePropertyEditor\(/);
+  assert.match(app, /display\.type = "text"/);
+  assert.match(app, /display\.readOnly = true/);
+  assert.match(app, /function openDatePropertyMenu\(/);
+  assert.match(app, /className = "property-date-menu"/);
+  assert.match(app, /picker\.type = "date"/);
+  assert.doesNotMatch(app, /control\.type = type === "number" \|\| type === "date" \? type : "text"/);
+  assert.match(app, /if \(type === "number"\)[\s\S]*control\.type = "text"[\s\S]*control\.inputMode = "decimal"/);
+  assert.match(app, /createTableTextMenuAction\("delete", "Delete", createMenuIcon\("delete"\)\)/);
+  assert.match(app, /function deleteCustomProperty\(propertyId\)/);
+  assert.match(app, /if \(action === "delete"\)[\s\S]*deleteCustomProperty\(columnId\)/);
+  assert.match(app, /name:\s*getDefaultCustomPropertyName\(normalizedType\)/);
+  assert.doesNotMatch(app, /name:\s*getNextCustomPropertyName\(normalizedType\)/);
+  assert.match(css, /\.property-date-editor/);
+  assert.match(css, /\.property-date-menu/);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*flex-start/s);
+  assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*visible/s);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {

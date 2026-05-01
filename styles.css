@@ -1383,6 +1383,46 @@ textarea.table-text-input {
   outline: 0;
 }
 
+.property-date-editor {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.card-place-text-section .property-date-editor {
+  flex: 1 1 auto;
+}
+
+.property-date-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 36;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #181817;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.property-date-menu[hidden] {
+  display: none;
+}
+
+.property-date-picker {
+  box-sizing: border-box;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 8px;
+  color-scheme: dark;
+  font: inherit;
+}
+
 .table-header-rename-input {
   min-width: 0;
   width: 100%;
@@ -1744,11 +1784,11 @@ textarea.table-text-input {
 
 .card-place-text-section {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .card-place-property-list {

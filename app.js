@@ -289,10 +289,12 @@ function bindEvents() {
   document.addEventListener("click", handleTableStatusMenuOutsideClick);
   document.addEventListener("click", handleTableTextMenuOutsideClick);
   document.addEventListener("click", handlePropertyTypeMenuOutsideClick);
+  document.addEventListener("click", handleDatePropertyMenuOutsideClick);
   document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
   document.addEventListener("keydown", handleTableTextMenuKeydown);
+  document.addEventListener("keydown", handleDatePropertyKeydown);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
@@ -2404,7 +2406,7 @@ function addCustomProperty(type, options = {}) {
   const normalizedType = customPropertyTypes.includes(type) ? type : "text";
   const property = {
     id: createCustomPropertyId(normalizedType),
-    name: getNextCustomPropertyName(normalizedType),
+    name: getDefaultCustomPropertyName(normalizedType),
     type: normalizedType,
     order: (getActiveCustomProperties().length + 1) * 10,
   };
@@ -2457,21 +2459,6 @@ function createCustomPropertyId(type) {
   return id;
 }
 
-function getNextCustomPropertyName(type) {
-  const baseName = getDefaultCustomPropertyName(type);
-  const names = new Set([...Object.values(tableColumnLabels), ...getActiveCustomProperties().map((property) => property.name)]);
-  if (!names.has(baseName)) {
-    return baseName;
-  }
-
-  let index = 2;
-  while (names.has(`${baseName} ${index}`)) {
-    index += 1;
-  }
-
-  return `${baseName} ${index}`;
-}
-
 function renameCustomProperty(propertyId, name) {
   const nextName = typeof name === "string" && name.trim() ? name.trim() : "Property";
   workspaces = workspaces.map((workspace) =>
@@ -2485,6 +2472,64 @@ function renameCustomProperty(propertyId, name) {
       : workspace,
   );
   saveWorkspaceState();
+}
+
+function deleteCustomProperty(propertyId) {
+  if (!getActiveCustomProperties().some((property) => property.id === propertyId)) {
+    return;
+  }
+
+  workspaces = workspaces.map((workspace) => {
+    if (workspace.id !== activeWorkspaceId) {
+      return workspace;
+    }
+
+    const customProperties = normalizeCustomProperties(workspace.customProperties)
+      .filter((property) => property.id !== propertyId)
+      .map((property, index) => ({ ...property, order: (index + 1) * 10 }));
+    const boardViews = normalizeBoardViews({
+      ...workspace,
+      customProperties,
+      boardViews: workspace.boardViews,
+    }).map((view) => {
+      const { [propertyId]: _deletedLabel, ...tableColumnLabels } = view.tableColumnLabels || {};
+      const { [propertyId]: _deletedWidth, ...tableColumnWidths } = view.tableColumnWidths || {};
+
+      return {
+        ...view,
+        tableColumnOrder: normalizeTableColumnOrder(
+          (view.tableColumnOrder || []).filter((columnId) => columnId !== propertyId),
+          customProperties,
+        ),
+        tableHiddenColumns: normalizeTableHiddenColumns(
+          (view.tableHiddenColumns || []).filter((columnId) => columnId !== propertyId),
+          customProperties,
+        ),
+        tableWrappedColumns: normalizeTableWrappedColumns(
+          (view.tableWrappedColumns || []).filter((columnId) => columnId !== propertyId),
+          customProperties,
+        ),
+        tableColumnLabels: normalizeTableColumnLabels(tableColumnLabels, customProperties),
+        tableColumnWidths: normalizeTableColumnWidths(tableColumnWidths, view.tableNameWidth, customProperties),
+      };
+    });
+
+    return {
+      ...workspace,
+      customProperties,
+      boardViews,
+    };
+  });
+
+  folders = folders.map((folder) => {
+    const { [propertyId]: _deletedValue, ...properties } = getFolderProperties(folder);
+    return { ...folder, properties };
+  });
+
+  saveWorkspaceState();
+  saveBoardSnapshot();
+  renderBoardViewSwitcher();
+  renderFolders();
 }
 
 function updateActiveBoardViewConfig(updater) {
@@ -2914,14 +2959,19 @@ function createCardPlacePropertyRow(property, selectedCard) {
     wrapped: property.type === "text",
     className: "card-place-text card-place-property-input",
   });
+  const primaryControl = getPrimaryPropertyEditorControl(control);
   const controlId = `cardPlaceProperty-${getTableColumnCssKey(property.id)}`;
-  control.id = controlId;
-  control.disabled = !selectedCard;
+  primaryControl.id = controlId;
+  primaryControl.disabled = !selectedCard;
   label.htmlFor = controlId;
 
   row.append(label, control);
 
   return row;
+}
+
+function getPrimaryPropertyEditorControl(editor) {
+  return editor.querySelector?.(".card-place-property-input, .table-property-input") || editor;
 }
 
 function handleCardPlacePropertyInput(event) {
@@ -3122,7 +3172,7 @@ function updateFolderProperty(path, columnId, value, options = {}) {
   }
 
   if (propertyId !== "property:text" && selectedCardPath === path) {
-    const control = cardPlacePropertyList?.querySelector(`[data-property-id="${CSS.escape(propertyId)}"]`);
+    const control = cardPlacePropertyList?.querySelector(`.card-place-property-input[data-property-id="${CSS.escape(propertyId)}"]`);
     if (control && document.activeElement !== control) {
       control.value = formatPropertyValueForInput(normalizedValue, getPropertyType(columnId), control instanceof HTMLTextAreaElement);
       if (control instanceof HTMLTextAreaElement) {
@@ -4772,6 +4822,9 @@ function createTableTextMenu(columnId = "text") {
       createTableTextMenuAction("wrap", isTableTextWrapped(columnId) ? "Unwrap text" : "Wrap text", createMenuIcon("wrap")),
     );
   }
+  if (!tableColumnIds.includes(columnId)) {
+    actions.push(createTableTextMenuAction("delete", "Delete", createMenuIcon("delete")));
+  }
 
   menu.replaceChildren(...actions);
 
@@ -5195,6 +5248,12 @@ function handleTableTextMenuAction(action, columnId = "text", headerCell) {
     return;
   }
 
+  if (action === "delete") {
+    closeTableTextMenus();
+    deleteCustomProperty(columnId);
+    return;
+  }
+
   if (action === "wrap") {
     toggleTableTextWrap(columnId);
   }
@@ -5447,6 +5506,10 @@ function createTableTextControl(folder, wrapped, columnId = "text") {
 
 function createPropertyEditor({ folder, columnId, context, wrapped = false, className = "" }) {
   const type = getPropertyType(columnId);
+  if (type === "date") {
+    return createDatePropertyEditor({ folder, columnId, context, className });
+  }
+
   const path = getFolderPath(folder);
   const hasWrappedText = type === "text" && (
     context === "card-place" ||
@@ -5476,11 +5539,100 @@ function createPropertyEditor({ folder, columnId, context, wrapped = false, clas
     return control;
   }
 
-  control.type = type === "number" || type === "date" ? type : "text";
   if (type === "number") {
+    control.type = "text";
     control.inputMode = "decimal";
+  } else {
+    control.type = "text";
   }
   return control;
+}
+
+function createDatePropertyEditor({ folder, columnId, context, className = "" }) {
+  const path = getFolderPath(folder);
+  const wrapper = document.createElement("span");
+  wrapper.className = "property-date-editor";
+
+  const display = document.createElement("input");
+  display.className = className;
+  display.dataset.tableColumn = columnId;
+  display.dataset.propertyId = getColumnPropertyId(columnId);
+  display.type = "text";
+  display.readOnly = true;
+  display.autocomplete = "off";
+  display.spellcheck = false;
+  display.value = formatPropertyValueForInput(getFolderPropertyValue(folder, columnId), "date");
+
+  const menu = document.createElement("span");
+  menu.className = "property-date-menu";
+  menu.hidden = true;
+
+  const picker = document.createElement("input");
+  picker.className = "property-date-picker";
+  picker.type = "date";
+  picker.value = display.value;
+  picker.addEventListener("click", (event) => event.stopPropagation());
+  picker.addEventListener("input", () => {
+    display.value = picker.value;
+    updateFolderProperty(path, columnId, picker.value, { syncTable: context !== "table" });
+  });
+  picker.addEventListener("change", () => {
+    display.value = picker.value;
+    updateFolderProperty(path, columnId, picker.value, { syncTable: context !== "table" });
+  });
+
+  menu.append(picker);
+  display.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openDatePropertyMenu(display);
+  });
+  display.addEventListener("focus", () => openDatePropertyMenu(display));
+  wrapper.append(display, menu);
+
+  return wrapper;
+}
+
+function openDatePropertyMenu(display) {
+  const wrapper = display.closest(".property-date-editor");
+  const menu = wrapper?.querySelector(".property-date-menu");
+  const picker = menu?.querySelector(".property-date-picker");
+  if (!wrapper || !menu || display.disabled) {
+    return;
+  }
+
+  closeDatePropertyMenus(wrapper);
+  menu.hidden = false;
+  picker.value = display.value;
+  requestAnimationFrame(() => picker.focus({ preventScroll: true }));
+}
+
+function closeDatePropertyMenus(exceptWrapper = null) {
+  document.querySelectorAll(".property-date-editor").forEach((wrapper) => {
+    if (wrapper === exceptWrapper) {
+      return;
+    }
+
+    const menu = wrapper.querySelector(".property-date-menu");
+    if (menu) {
+      menu.hidden = true;
+    }
+  });
+}
+
+function handleDatePropertyMenuOutsideClick(event) {
+  if (event.target.closest(".property-date-editor")) {
+    return;
+  }
+
+  closeDatePropertyMenus();
+}
+
+function handleDatePropertyKeydown(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  closeDatePropertyMenus();
 }
 
 function syncTableTextRowState(control, columnId, text) {
