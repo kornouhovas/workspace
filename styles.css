@@ -2144,11 +2144,13 @@ textarea.table-text-input {
   visibility: hidden;
 }
 
-.card-place-property-row.is-card-place-property-preview-up {
+.card-place-property-row.is-card-place-property-preview-up,
+.card-place-hidden-properties.is-card-place-property-preview-up {
   transform: translateY(calc(-1 * var(--card-place-property-shift)));
 }
 
-.card-place-property-row.is-card-place-property-preview-down {
+.card-place-property-row.is-card-place-property-preview-down,
+.card-place-hidden-properties.is-card-place-property-preview-down {
   transform: translateY(var(--card-place-property-shift));
 }
 
@@ -2262,8 +2264,10 @@ textarea.table-text-input {
 
 .card-place-hidden-properties {
   display: grid;
+  --card-place-property-shift: 0px;
   gap: 8px;
   min-width: 0;
+  transition: transform 140ms ease;
 }
 
 .card-place-hidden-properties-toggle {

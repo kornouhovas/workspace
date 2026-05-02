@@ -368,6 +368,11 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
   assert.match(app, /function applyCardPlacePropertyDrop\(/);
   assert.match(app, /function getCardPlacePropertyDragTarget\(event\)/);
+  assert.match(app, /const cardPlaceHiddenSectionDragId = "__card-place-hidden-properties__"/);
+  assert.match(app, /function applyCardPlacePropertyRootPreview\(/);
+  assert.match(app, /function applyCardPlacePropertySourceListPreview\(/);
+  assert.match(app, /function getCardPlacePropertyRootDragItems\(\)/);
+  assert.match(app, /cardPlacePropertyPointerDragState\?\.sourceItem\.getBoundingClientRect\(\)\.height/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
   const dragStartIndex = app.indexOf("function handleCardPlacePropertyPointerDragStart(event)");
@@ -402,6 +407,9 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(css, /\.card-place-property-row:hover \.card-place-property-name/s);
   assert.match(css, /\.card-place-property-menu\[hidden\]/);
   assert.match(css, /\.card-place-hidden-properties-toggle/);
+  assert.match(css, /\.card-place-hidden-properties\s*\{[^}]*transition:\s*transform 140ms ease/s);
+  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-up/s);
+  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-down/s);
   assert.match(css, /\.card-place-property-row\.is-card-place-property-drag-source/);
   assert.match(css, /\.card-place-property-drag-image/);
   assert.match(css, /\.property-type-icon\s*\{[^}]*stroke:\s*currentColor/s);
