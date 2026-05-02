@@ -407,6 +407,35 @@ test("typed property UI keeps date and number fields visually plain and supports
   assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*visible/s);
 });
 
+test("select and multi-select properties use Notion-like option menus instead of text inputs", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /if \(type === "select" \|\| type === "multi-select"\) \{/);
+  assert.match(app, /return createOptionPropertyEditor\(\{ folder, columnId, context, className \}\)/);
+  assert.match(app, /function createOptionPropertyEditor\(/);
+  assert.match(app, /button\.className = `\$\{className\} option-property-trigger`\.trim\(\)/);
+  assert.match(app, /button\.type = "button"/);
+  assert.match(app, /function createOptionPropertyMenu\(/);
+  assert.match(app, /menu\.className = "option-property-menu"/);
+  assert.match(app, /function createOptionPropertyMenuInput\(/);
+  assert.match(app, /input\.placeholder = "Add option"/);
+  assert.match(app, /function createOptionPropertyItem\(/);
+  assert.match(app, /button\.append\(createOptionPropertyPill\(option\)\)/);
+  assert.match(app, /function toggleOptionPropertyMenu\(/);
+  assert.match(app, /function closeOptionPropertyMenus\(/);
+  assert.match(app, /function handleOptionPropertyMenuInputKeydown\(/);
+  assert.match(app, /function upsertCustomPropertyOption\(propertyId, name\)/);
+  assert.match(app, /function normalizeCustomPropertyOptions\(options = \[\]\)/);
+  assert.match(app, /config:\s*normalizeCustomPropertyConfig\(type, property\.config\)/);
+  assert.match(app, /function setOptionPropertyValue\(/);
+  assert.match(app, /type === "multi-select"[\s\S]*normalizePropertyValue\("multi-select"/);
+  assert.match(css, /\.option-property-editor/);
+  assert.match(css, /\.option-property-trigger/);
+  assert.match(css, /\.option-property-menu/);
+  assert.match(css, /\.option-property-pill/);
+});
+
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
