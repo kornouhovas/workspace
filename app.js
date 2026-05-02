@@ -108,6 +108,7 @@ const tableColumnWidthLimits = {
   status: { min: 12, max: 36 },
 };
 const maxTableColumnTotalWidth = 94;
+const tableTrailingColumnTrack = "minmax(160px, 1fr)";
 const boardScrollbarHotZoneSize = 56;
 const boardScrollbarIdleDelay = 900;
 const minCardPlaceWidth = 320;
@@ -3939,6 +3940,7 @@ function renderTableView(visibleFolders) {
     ...columnOrder.map((columnId, index) =>
       createTableHeaderCell(columnId, { isLastColumn: index === columnOrder.length - 1 }),
     ),
+    createTableTrailingCell("header"),
   );
 
   table.append(
@@ -3989,7 +3991,7 @@ function setTableGridTemplate(tableElement) {
       `${tableColumnWidths[columnId] ?? getDefaultTableColumnWidth(columnId)}%`,
     );
   });
-  tableElement.style.setProperty("--table-columns", columnTracks.join(" "));
+  tableElement.style.setProperty("--table-columns", [...columnTracks, tableTrailingColumnTrack].join(" "));
 }
 
 function renderPlaceholder(title, description) {
@@ -4743,6 +4745,7 @@ function handleTableColumnDragStart(event) {
   const cell = event.target.closest(".folder-table-head .folder-table-cell");
   if (
     !cell ||
+    cell.classList.contains("folder-table-trailing-cell") ||
     event.target.closest(".table-resize-handle") ||
     event.target.closest(".table-status-menu, .table-text-menu, .table-add-property, .property-type-menu") ||
     getActiveBoardView() !== "table"
@@ -4797,6 +4800,7 @@ function handleTableColumnPointerDragStart(event) {
   const cell = event.target.closest(".folder-table-head .folder-table-cell");
   if (
     !cell ||
+    cell.classList.contains("folder-table-trailing-cell") ||
     event.target.closest(".table-resize-handle") ||
     event.target.closest(".table-status-menu, .table-text-menu, .table-add-property, .property-type-menu") ||
     tableResizeState ||
@@ -4978,7 +4982,10 @@ function createTableRow(folder, columnOrder = getActiveTableColumnOrder(), optio
     "is-text-wrapped",
     wrappedColumns.some((columnId) => hasMultilineTableText(folder, columnId)),
   );
-  row.append(...columnOrder.map((columnId) => createTableCell(folder, columnId, options)));
+  row.append(
+    ...columnOrder.map((columnId) => createTableCell(folder, columnId, options)),
+    createTableTrailingCell(),
+  );
 
   return row;
 }
@@ -5019,6 +5026,14 @@ function createTableHeaderCell(columnId, options = {}) {
   }
 
   cell.append(createTableResizeHandle(columnId));
+
+  return cell;
+}
+
+function createTableTrailingCell(kind = "body") {
+  const cell = document.createElement("span");
+  cell.className = `folder-table-trailing-cell is-${kind}`;
+  cell.setAttribute("aria-hidden", "true");
 
   return cell;
 }

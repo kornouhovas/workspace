@@ -770,6 +770,13 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function setTableGridTemplate\(tableElement\)/);
   assert.match(app, /tableElement\.style\.setProperty\(\s*`--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width`/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
+  assert.match(app, /const tableTrailingColumnTrack = "minmax\(160px, 1fr\)"/);
+  assert.match(app, /\.\.\.columnTracks,\s*tableTrailingColumnTrack/);
+  assert.match(app, /function createTableTrailingCell\(kind = "body"\)/);
+  assert.match(app, /cell\.className = `folder-table-trailing-cell is-\$\{kind\}`/);
+  assert.match(app, /header\.append\([\s\S]*createTableTrailingCell\("header"\),[\s\S]*\)/);
+  assert.match(app, /row\.append\([\s\S]*createTableTrailingCell\(\),[\s\S]*\)/);
+  assert.match(app, /cell\.classList\.contains\("folder-table-trailing-cell"\)/);
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
   assert.match(app, /cell\.draggable = false/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
@@ -784,6 +791,9 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell:hover::after/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*background:/s);
   assert.doesNotMatch(css, /\.folder-table-head \.folder-table-cell:hover\s*\{[^}]*border-radius/s);
+  assert.match(css, /\.folder-table-trailing-cell\s*\{/);
+  assert.match(css, /\.folder-table-trailing-cell\s*\{[^}]*border-left:\s*1px solid var\(--line\)/s);
+  assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.table-column-drag-image\s*\{/);
   assert.match(css, /\.table-column-drag-image\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.table-resize-handle\s*\{/);
