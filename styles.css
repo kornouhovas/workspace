@@ -1165,7 +1165,27 @@ input:focus-visible {
 }
 
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"] {
+  position: relative;
+  overflow: visible;
   cursor: pointer;
+}
+
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"]::after {
+  position: absolute;
+  top: -10px;
+  right: 0;
+  bottom: -10px;
+  width: 1px;
+  background: var(--line);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.folder-table-row:not(.folder-table-head):hover .folder-table-cell[data-table-column="name"]::after,
+.folder-table-row:not(.folder-table-head):focus-within .folder-table-cell[data-table-column="name"]::after {
+  opacity: 1;
 }
 
 .table-text-input {
@@ -1883,11 +1903,11 @@ textarea.table-text-input {
 .table-resize-handle {
   position: absolute;
   top: 0;
-  right: 0;
+  right: -6px;
   bottom: 0;
   z-index: 2;
   display: block;
-  width: 8px;
+  width: 12px;
   cursor: col-resize;
   opacity: 0;
 }
@@ -1895,7 +1915,7 @@ textarea.table-text-input {
 .table-resize-handle::after {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 6px;
   bottom: 0;
   width: 1px;
   background: var(--line);
