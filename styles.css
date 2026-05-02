@@ -1144,6 +1144,10 @@ input:focus-visible {
   pointer-events: auto;
 }
 
+.folder-table-head .folder-table-trailing-cell .table-add-property {
+  margin-left: 0;
+}
+
 .folder-table-head .folder-table-trailing-cell::before {
   top: 0;
   bottom: 0;

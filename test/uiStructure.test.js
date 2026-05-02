@@ -805,6 +805,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*align-items:\s*center/s);
+  assert.match(css, /\.folder-table-head \.folder-table-trailing-cell \.table-add-property\s*\{[^}]*margin-left:\s*0/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell::before\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell::before\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.folder-table-head:hover \.folder-table-trailing-cell::before/s);
