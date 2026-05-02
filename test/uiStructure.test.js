@@ -800,6 +800,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /cell\.classList\.contains\("folder-table-trailing-cell"\)/);
   assert.match(app, /cell\.dataset\.tableColumn = columnId/);
   assert.match(app, /cell\.draggable = false/);
+  assert.match(app, /function createTableCellText\(text\)/);
+  assert.match(app, /if \(columnId === "name"\) \{\s*cell\.append\(createTableCellText\(getTableCellText\(folder, columnId\)\)\);\s*return cell;\s*\}/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*gap:\s*0/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*padding:\s*10px 0/s);
@@ -809,6 +811,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\s*\{[^}]*padding:\s*0 20px/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\] \.table-cell-content\s*\{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\] \.table-cell-content\s*\{[^}]*text-overflow:\s*ellipsis/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]::after\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]::after\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.folder-table-cell\[data-table-column="name"\]::after/s);
@@ -855,6 +859,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
   assert.match(html, /function getStoredTableColumnWidths\(state\)/);
+  assert.match(html, /function createInitialTableCellText\(text\)/);
+  assert.match(html, /if \(columnId === "name"\) \{\s*cell\.append\(createInitialTableCellText\(text\)\);\s*return cell;\s*\}/);
   assert.match(html, /tableColumnWidthVersion:\s*3/);
   assert.match(html, /function convertLegacyInitialTableColumnWidth\(width\)/);
   assert.match(html, /table\.style\.setProperty\("--table-name-column-width", `\$\{tableColumnWidths\.name\}px`\)/);

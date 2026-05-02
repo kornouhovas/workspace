@@ -627,9 +627,23 @@
           const cell = document.createElement("span");
           cell.className = "folder-table-cell";
           cell.dataset.tableColumn = columnId;
+
+          if (columnId === "name") {
+            cell.append(createInitialTableCellText(text));
+            return cell;
+          }
+
           cell.textContent = text;
 
           return cell;
+        }
+
+        function createInitialTableCellText(text) {
+          const content = document.createElement("span");
+          content.className = "table-cell-content";
+          content.textContent = text;
+
+          return content;
         }
 
         function getInitialTableColumnLabel(columnId, tableColumnLabels = {}) {

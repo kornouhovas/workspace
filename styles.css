@@ -1170,6 +1170,14 @@ input:focus-visible {
   cursor: pointer;
 }
 
+.folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"] .table-cell-content {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"]::after {
   position: absolute;
   top: -10px;

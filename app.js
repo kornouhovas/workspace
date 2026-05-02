@@ -5743,9 +5743,22 @@ function createTableCell(folder, columnId, options = {}) {
     return cell;
   }
 
+  if (columnId === "name") {
+    cell.append(createTableCellText(getTableCellText(folder, columnId)));
+    return cell;
+  }
+
   cell.textContent = getTableCellText(folder, columnId);
 
   return cell;
+}
+
+function createTableCellText(text) {
+  const content = document.createElement("span");
+  content.className = "table-cell-content";
+  content.textContent = text;
+
+  return content;
 }
 
 function createTableTextControl(folder, wrapped, columnId) {
