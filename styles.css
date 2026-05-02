@@ -2137,12 +2137,243 @@ textarea.table-text-input {
 
 .card-place-property-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .card-place-property-row {
+  display: grid;
+  --card-place-property-shift: 0px;
+  grid-template-columns: minmax(150px, 150px) minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
   margin: 0;
+  min-width: 0;
+  transition: transform 140ms ease;
+  user-select: none;
+}
+
+.card-place-property-row.is-hidden-card-place-property {
+  opacity: 0.62;
+}
+
+.card-place-property-row.is-card-place-property-drag-source {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.card-place-property-row.is-card-place-property-preview-up {
+  transform: translateY(calc(-1 * var(--card-place-property-shift)));
+}
+
+.card-place-property-row.is-card-place-property-preview-down {
+  transform: translateY(var(--card-place-property-shift));
+}
+
+.card-place-property-name-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.card-place-property-name {
+  display: grid;
+  width: 100%;
+  min-height: 24px;
+  grid-template-columns: 17px 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  padding: 0 6px 0 0;
+  font: inherit;
+  text-align: left;
+}
+
+.card-place-property-row:hover .card-place-property-name,
+.card-place-property-name:hover,
+.card-place-property-name:focus-visible,
+.card-place-property-name[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  outline: 0;
+}
+
+.card-place-property-name:active {
+  cursor: grabbing;
+}
+
+.card-place-property-drag-handle {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card-place-property-row:hover .card-place-property-drag-handle,
+.card-place-property-name:focus-visible .card-place-property-drag-handle,
+.card-place-property-name[aria-expanded="true"] .card-place-property-drag-handle {
+  opacity: 0.54;
+}
+
+.card-place-property-icon {
+  flex: 0 0 auto;
+}
+
+.card-place-property-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.card-place-property-value {
+  align-self: start;
+  min-width: 0;
+}
+
+.card-place-status-value {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.card-place-property-menu {
+  position: absolute;
+  z-index: 62;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  width: 180px;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #20201f;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.32);
+  padding: 6px;
+}
+
+.card-place-property-menu[hidden] {
+  display: none;
+}
+
+.card-place-property-menu-action {
+  display: grid;
+  min-height: 30px;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 0 8px;
+  font: inherit;
+  text-align: left;
+}
+
+.card-place-property-menu-action:hover,
+.card-place-property-menu-action:focus-visible {
+  background: rgba(255, 255, 255, 0.045);
+  outline: 0;
+}
+
+.card-place-property-menu-action:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+.card-place-property-menu-action:disabled:hover {
+  background: transparent;
+}
+
+.card-place-hidden-properties {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card-place-hidden-properties-toggle {
+  display: inline-grid;
+  width: max-content;
+  min-height: 24px;
+  grid-template-columns: 14px max-content;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 6px 0 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.card-place-hidden-properties-toggle:hover,
+.card-place-hidden-properties-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  outline: 0;
+}
+
+.card-place-hidden-properties-chevron {
+  width: 14px;
+  height: 14px;
+  position: relative;
+}
+
+.card-place-hidden-properties-chevron::before {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
+  transition: transform 140ms ease;
+}
+
+.card-place-hidden-properties-chevron[data-expanded="true"]::before {
+  transform: rotate(45deg);
+}
+
+.card-place-hidden-properties-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card-place-property-rename-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  font: inherit;
+  outline: 0;
+}
+
+.card-place-property-drag-image {
+  display: grid;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 72;
+  grid-template-columns: minmax(150px, 150px) minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
+  border-radius: 8px;
+  background: #242422;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  opacity: 0.96;
+  pointer-events: none;
+  transform: translate(-9999px, -9999px);
 }
 
 .card-place-add-property {

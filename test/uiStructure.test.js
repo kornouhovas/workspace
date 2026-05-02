@@ -354,6 +354,44 @@ test("table and card place expose typed custom property creation UI", async () =
   assert.match(css, /\.card-place-property-row/);
 });
 
+test("card place properties share row layout, actions, hidden disclosure, and drag ordering", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /function getActiveCardPlacePropertyOrder\(\)/);
+  assert.match(app, /function createCardPlaceStatusPropertyRow\(selectedCard\)/);
+  assert.match(app, /function createCardPlacePropertyNameButton\(property/);
+  assert.match(app, /function createCardPlacePropertyMenu\(property/);
+  assert.match(app, /function createCardPlaceHiddenPropertiesDisclosure\(/);
+  assert.match(app, /function toggleCardPlacePropertyVisibility\(propertyId\)/);
+  assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
+  assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
+  assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
+  assert.match(app, /window\.addEventListener\("pointermove", handleCardPlacePropertyPointerDragMove\)/);
+  assert.match(app, /window\.addEventListener\("pointerup", handleCardPlacePropertyPointerDragEnd\)/);
+  assert.match(app, /cardPlacePanel\.addEventListener\("click", handleCardPlacePropertyMenuClick\)/);
+  assert.match(app, /cardPlacePropertyList\.addEventListener\("pointerdown", handleCardPlacePropertyPointerDragStart\)/);
+  assert.match(app, /createCardPlacePropertyIcon\(property\.type\)/);
+  assert.match(app, /createTableStatusDragHandle\(\)/);
+  assert.match(app, /data-card-place-property-action/);
+  assert.match(app, /Hidden properties/);
+  assert.match(app, /data-card-place-hidden-toggle/);
+  assert.match(app, /createCardPlacePropertyMenuAction\("rename", "Rename", createMenuIcon\("rename"\)\)/);
+  assert.match(app, /createCardPlacePropertyMenuAction\("hide", hidden \? "Show" : "Hide", createEyeIcon\(hidden\)\)/);
+  assert.match(app, /createCardPlacePropertyMenuAction\("delete", "Delete", createMenuIcon\("delete"\)\)/);
+  assert.match(app, /property\.id === "status"/);
+
+  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
+  assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(150px,\s*150px\) minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*17px 18px minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-row:hover \.card-place-property-name/s);
+  assert.match(css, /\.card-place-property-row:hover \.card-place-property-drag-handle/s);
+  assert.match(css, /\.card-place-property-menu\[hidden\]/);
+  assert.match(css, /\.card-place-hidden-properties-toggle/);
+  assert.match(css, /\.card-place-property-row\.is-card-place-property-drag-source/);
+  assert.match(css, /\.card-place-property-drag-image/);
+});
+
 test("Text is treated as a user-created property instead of a default system field", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");

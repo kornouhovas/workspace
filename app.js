@@ -123,10 +123,15 @@ let boardView = "overview";
 let draggedStatus = null;
 let draggedBoardColumnMenuStatus = null;
 let draggedBoardColumnMenuProperty = null;
+let draggedCardPlaceProperty = null;
 let draggedOptionProperty = null;
 let optionPropertyPointerDragState = null;
 let optionPropertyDragImage = null;
 let optionPropertySuppressClick = false;
+let cardPlacePropertyPointerDragState = null;
+let cardPlacePropertyDragImage = null;
+let cardPlacePropertySuppressClick = false;
+let cardPlacePropertySuppressClickTimer = null;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
 let boardColumnMenuPointerDragState = null;
@@ -161,6 +166,7 @@ let cardPlaceChildrenByPath = new Map();
 let cardPlaceLoadingPaths = new Set();
 let cardPlaceFailedPaths = new Set();
 let cardPlaceEntriesRequest = 0;
+let cardPlaceHiddenPropertiesExpanded = false;
 let folderPropertySaveTimers = new Map();
 let workspaceSequence = 1;
 let workspaces = [
@@ -170,6 +176,8 @@ let workspaces = [
     boardView: "overview",
     boardViews: createDefaultBoardViews(),
     cardPlaceWidth: normalizeCardPlaceWidth(),
+    cardPlacePropertyOrder: ["status"],
+    cardPlaceHiddenProperties: [],
     customProperties: [],
   },
 ];
@@ -299,11 +307,13 @@ function bindEvents() {
   document.addEventListener("click", handleTableTextMenuOutsideClick);
   document.addEventListener("click", handlePropertyTypeMenuOutsideClick);
   document.addEventListener("click", handleOptionPropertyMenuOutsideClick);
+  document.addEventListener("click", handleCardPlacePropertyMenuOutsideClick);
   document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
   document.addEventListener("keydown", handleTableTextMenuKeydown);
   document.addEventListener("keydown", handleOptionPropertyMenuKeydown);
+  document.addEventListener("keydown", handleCardPlacePropertyMenuKeydown);
   restoreButton.addEventListener("click", restoreAccess);
   searchInput.addEventListener("input", renderFolders);
   boardSurface.addEventListener("pointermove", handleBoardSurfacePointerMove);
@@ -333,6 +343,8 @@ function bindEvents() {
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
   cardPlacePanel.addEventListener("click", handlePropertyTypeMenuClick);
+  cardPlacePanel.addEventListener("click", handleCardPlacePropertyMenuClick);
+  cardPlacePropertyList.addEventListener("pointerdown", handleCardPlacePropertyPointerDragStart);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
   window.addEventListener("pointermove", handleTableColumnResizeMove);
@@ -343,6 +355,7 @@ function bindEvents() {
   window.addEventListener("pointermove", handleBoardViewPointerDragMove);
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
   window.addEventListener("pointermove", handleOptionPropertyPointerDragMove);
+  window.addEventListener("pointermove", handleCardPlacePropertyPointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
   window.addEventListener("pointerup", handleCardPlaceResizeEnd);
@@ -352,6 +365,7 @@ function bindEvents() {
   window.addEventListener("pointerup", handleBoardViewPointerDragEnd);
   window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
   window.addEventListener("pointerup", handleOptionPropertyPointerDragEnd);
+  window.addEventListener("pointerup", handleCardPlacePropertyPointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
@@ -1385,6 +1399,8 @@ function addWorkspace() {
     boardView: "overview",
     boardViews: createDefaultBoardViews(),
     cardPlaceWidth: normalizeCardPlaceWidth(),
+    cardPlacePropertyOrder: ["status"],
+    cardPlaceHiddenProperties: [],
     customProperties: [],
   };
 
@@ -1661,6 +1677,59 @@ function getActiveWorkspace() {
 
 function getActiveCustomProperties() {
   return normalizeCustomProperties(getActiveWorkspace()?.customProperties);
+}
+
+function getKnownCardPlacePropertyIds(customProperties = getActiveCustomProperties()) {
+  return ["status", ...customProperties.map((property) => property.id)];
+}
+
+function normalizeCardPlacePropertyOrder(propertyOrder, customProperties = []) {
+  const knownPropertyIds = getKnownCardPlacePropertyIds(customProperties);
+  if (!Array.isArray(propertyOrder)) {
+    return knownPropertyIds;
+  }
+
+  const usedPropertyIds = new Set();
+  const orderedPropertyIds = propertyOrder.filter((propertyId) => {
+    if (!knownPropertyIds.includes(propertyId) || usedPropertyIds.has(propertyId)) {
+      return false;
+    }
+
+    usedPropertyIds.add(propertyId);
+    return true;
+  });
+  const missingPropertyIds = knownPropertyIds.filter((propertyId) => !usedPropertyIds.has(propertyId));
+
+  return [...orderedPropertyIds, ...missingPropertyIds];
+}
+
+function normalizeCardPlaceHiddenProperties(hiddenProperties, customProperties = []) {
+  if (!Array.isArray(hiddenProperties)) {
+    return [];
+  }
+
+  const knownPropertyIds = getKnownCardPlacePropertyIds(customProperties);
+  return [...new Set(hiddenProperties)].filter((propertyId) => knownPropertyIds.includes(propertyId));
+}
+
+function getActiveCardPlacePropertyOrder() {
+  return normalizeCardPlacePropertyOrder(getActiveWorkspace()?.cardPlacePropertyOrder, getActiveCustomProperties());
+}
+
+function getActiveCardPlaceHiddenProperties() {
+  return normalizeCardPlaceHiddenProperties(getActiveWorkspace()?.cardPlaceHiddenProperties, getActiveCustomProperties());
+}
+
+function getCardPlacePropertySchemas() {
+  const customProperties = getActiveCustomProperties();
+  const propertyById = new Map([
+    ["status", { id: "status", name: "Status", type: "select", system: true }],
+    ...customProperties.map((property) => [property.id, property]),
+  ]);
+
+  return getActiveCardPlacePropertyOrder()
+    .map((propertyId) => propertyById.get(propertyId))
+    .filter(Boolean);
 }
 
 function createDefaultBoardViews(legacyWorkspace = {}) {
@@ -2284,6 +2353,8 @@ function loadWorkspaceState() {
         name: workspace.name,
         boardViews: normalizeBoardViews({ ...workspace, customProperties }),
         cardPlaceWidth: normalizeCardPlaceWidth(workspace.cardPlaceWidth),
+        cardPlacePropertyOrder: normalizeCardPlacePropertyOrder(workspace.cardPlacePropertyOrder, customProperties),
+        cardPlaceHiddenProperties: normalizeCardPlaceHiddenProperties(workspace.cardPlaceHiddenProperties, customProperties),
         customProperties,
       };
     });
@@ -2416,6 +2487,30 @@ function saveTableHiddenColumns(tableHiddenColumns) {
   }));
 }
 
+function saveCardPlacePropertyOrder(cardPlacePropertyOrder) {
+  workspaces = workspaces.map((workspace) => (
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          cardPlacePropertyOrder: normalizeCardPlacePropertyOrder(cardPlacePropertyOrder, getActiveCustomProperties()),
+        }
+      : workspace
+  ));
+  saveWorkspaceState();
+}
+
+function saveCardPlaceHiddenProperties(cardPlaceHiddenProperties) {
+  workspaces = workspaces.map((workspace) => (
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          cardPlaceHiddenProperties: normalizeCardPlaceHiddenProperties(cardPlaceHiddenProperties, getActiveCustomProperties()),
+        }
+      : workspace
+  ));
+  saveWorkspaceState();
+}
+
 function saveTableColumnLabel(columnId, label) {
   if (!getActiveCustomProperties().some((property) => property.id === columnId)) {
     return;
@@ -2520,6 +2615,11 @@ function addCustomProperty(type, options = {}) {
     return {
       ...workspace,
       customProperties,
+      cardPlacePropertyOrder: normalizeCardPlacePropertyOrder(
+        [...(workspace.cardPlacePropertyOrder || []), property.id],
+        customProperties,
+      ),
+      cardPlaceHiddenProperties: normalizeCardPlaceHiddenProperties(workspace.cardPlaceHiddenProperties, customProperties),
       boardViews,
     };
   });
@@ -2833,6 +2933,14 @@ function deleteCustomProperty(propertyId) {
     return {
       ...workspace,
       customProperties,
+      cardPlacePropertyOrder: normalizeCardPlacePropertyOrder(
+        (workspace.cardPlacePropertyOrder || []).filter((cardPlacePropertyId) => cardPlacePropertyId !== propertyId),
+        customProperties,
+      ),
+      cardPlaceHiddenProperties: normalizeCardPlaceHiddenProperties(
+        (workspace.cardPlaceHiddenProperties || []).filter((cardPlacePropertyId) => cardPlacePropertyId !== propertyId),
+        customProperties,
+      ),
       boardViews,
     };
   });
@@ -3216,22 +3324,48 @@ function renderCardPlaceProperties(selectedCard) {
     return;
   }
 
+  const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
+  const properties = getCardPlacePropertySchemas();
+  const visibleProperties = properties.filter((property) => !hiddenProperties.has(property.id));
+  const hiddenPropertyList = properties.filter((property) => hiddenProperties.has(property.id));
   cardPlacePropertyList.replaceChildren(
-    ...getActiveCustomProperties().map((property) => createCardPlacePropertyRow(property, selectedCard)),
+    ...visibleProperties.map((property) => (
+      property.id === "status"
+        ? createCardPlaceStatusPropertyRow(selectedCard)
+        : createCardPlacePropertyRow(property, selectedCard)
+    )),
+    ...(hiddenPropertyList.length > 0
+      ? [createCardPlaceHiddenPropertiesDisclosure(hiddenPropertyList, selectedCard)]
+      : []),
     createCardPlaceAddPropertyButton(),
   );
 }
 
-function createCardPlacePropertyRow(property, selectedCard) {
+function createCardPlaceStatusPropertyRow(selectedCard) {
+  return createCardPlacePropertyRow({ id: "status", name: "Status", type: "select", system: true }, selectedCard);
+}
+
+function createCardPlacePropertyRow(property, selectedCard, options = {}) {
+  const hidden = options.hidden === true;
   const row = document.createElement("section");
   row.className = "card-place-text-section card-place-property-row";
   row.dataset.propertyId = property.id;
+  row.dataset.cardPlacePropertyId = property.id;
   row.setAttribute("aria-label", property.name);
+  row.classList.toggle("is-hidden-card-place-property", hidden);
 
-  const label = document.createElement("label");
-  label.className = "card-place-section-title";
-  label.textContent = property.name;
-  label.title = property.name;
+  const label = createCardPlacePropertyNameButton(property, hidden);
+  const controlId = `cardPlaceProperty-${getTableColumnCssKey(property.id)}`;
+
+  if (property.id === "status") {
+    const value = document.createElement("p");
+    value.className = "card-place-property-value card-place-status-value";
+    value.id = controlId;
+    value.textContent = selectedCard?.status || "";
+    row.append(label, value);
+
+    return row;
+  }
 
   const control = createPropertyEditor({
     folder: selectedCard || { properties: {} },
@@ -3241,14 +3375,497 @@ function createCardPlacePropertyRow(property, selectedCard) {
     className: "card-place-text card-place-property-input",
   });
   const primaryControl = getPrimaryPropertyEditorControl(control);
-  const controlId = `cardPlaceProperty-${getTableColumnCssKey(property.id)}`;
   primaryControl.id = controlId;
   primaryControl.disabled = !selectedCard;
-  label.htmlFor = controlId;
+  control.classList?.add("card-place-property-value");
 
   row.append(label, control);
 
   return row;
+}
+
+function createCardPlacePropertyNameButton(property, hidden = false) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "card-place-property-name-wrap";
+
+  const button = document.createElement("button");
+  button.className = "card-place-property-name";
+  button.type = "button";
+  button.dataset.cardPlacePropertyName = property.id;
+  button.setAttribute("aria-haspopup", "menu");
+  button.setAttribute("aria-expanded", "false");
+  button.title = property.name;
+
+  const dragHandle = createTableStatusDragHandle();
+  dragHandle.classList.add("card-place-property-drag-handle");
+
+  const label = document.createElement("span");
+  label.className = "card-place-property-label";
+  label.textContent = property.name;
+
+  button.append(dragHandle, createCardPlacePropertyIcon(property.type), label);
+  wrapper.append(button, createCardPlacePropertyMenu(property, hidden));
+
+  return wrapper;
+}
+
+function createCardPlacePropertyIcon(type) {
+  const icon = createPropertyTypeIcon(type);
+  icon.classList.add("card-place-property-icon");
+
+  return icon;
+}
+
+function createCardPlacePropertyMenu(property, hidden = false) {
+  const menu = document.createElement("div");
+  menu.className = "card-place-property-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  const isSystemProperty = property.id === "status";
+  const renameAction = createCardPlacePropertyMenuAction("rename", "Rename", createMenuIcon("rename"));
+  const hideAction = createCardPlacePropertyMenuAction("hide", hidden ? "Show" : "Hide", createEyeIcon(hidden));
+  const deleteAction = createCardPlacePropertyMenuAction("delete", "Delete", createMenuIcon("delete"));
+  renameAction.disabled = isSystemProperty;
+  deleteAction.disabled = isSystemProperty;
+  menu.append(renameAction, hideAction, deleteAction);
+
+  return menu;
+}
+
+function createCardPlacePropertyMenuAction(action, label, icon, enabled = true) {
+  const button = document.createElement("button");
+  button.className = "card-place-property-menu-action";
+  button.type = "button";
+  button.dataset.cardPlacePropertyAction = action;
+  button.disabled = !enabled;
+  button.setAttribute("role", "menuitem");
+  button.append(icon, document.createTextNode(label));
+
+  return button;
+}
+
+function createCardPlaceHiddenPropertiesDisclosure(properties, selectedCard) {
+  const section = document.createElement("section");
+  section.className = "card-place-hidden-properties";
+
+  const toggle = document.createElement("button");
+  toggle.className = "card-place-hidden-properties-toggle";
+  toggle.type = "button";
+  toggle.dataset.cardPlaceHiddenToggle = "true";
+  toggle.setAttribute("aria-expanded", String(cardPlaceHiddenPropertiesExpanded));
+  toggle.append(createChevronIcon(cardPlaceHiddenPropertiesExpanded), document.createTextNode("Hidden properties"));
+
+  section.append(toggle);
+  if (cardPlaceHiddenPropertiesExpanded) {
+    const list = document.createElement("div");
+    list.className = "card-place-hidden-properties-list";
+    list.replaceChildren(...properties.map((property) => createCardPlacePropertyRow(property, selectedCard, { hidden: true })));
+    section.append(list);
+  }
+
+  return section;
+}
+
+function createChevronIcon(expanded) {
+  const icon = document.createElement("span");
+  icon.className = "card-place-hidden-properties-chevron";
+  icon.setAttribute("aria-hidden", "true");
+  icon.dataset.expanded = String(expanded);
+
+  return icon;
+}
+
+function handleCardPlacePropertyMenuClick(event) {
+  if (cardPlacePropertySuppressClick) {
+    cardPlacePropertySuppressClick = false;
+    window.clearTimeout(cardPlacePropertySuppressClickTimer);
+    cardPlacePropertySuppressClickTimer = null;
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  const hiddenToggle = event.target.closest("[data-card-place-hidden-toggle]");
+  if (hiddenToggle) {
+    event.preventDefault();
+    event.stopPropagation();
+    cardPlaceHiddenPropertiesExpanded = !cardPlaceHiddenPropertiesExpanded;
+    renderCardPlaceProperties(findFolderByPath(selectedCardPath));
+    return;
+  }
+
+  const action = event.target.closest("[data-card-place-property-action]");
+  if (action) {
+    event.preventDefault();
+    event.stopPropagation();
+    const propertyId = action.closest(".card-place-property-row")?.dataset.cardPlacePropertyId;
+    handleCardPlacePropertyAction(propertyId, action.dataset.cardPlacePropertyAction);
+    return;
+  }
+
+  const nameButton = event.target.closest("[data-card-place-property-name]");
+  if (!nameButton) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  toggleCardPlacePropertyMenu(nameButton);
+}
+
+function handleCardPlacePropertyAction(propertyId, action) {
+  if (!propertyId) {
+    return;
+  }
+
+  if (action === "rename") {
+    startCardPlacePropertyRename(propertyId);
+    return;
+  }
+
+  if (action === "hide") {
+    toggleCardPlacePropertyVisibility(propertyId);
+    return;
+  }
+
+  if (action === "delete" && propertyId !== "status") {
+    deleteCustomProperty(propertyId);
+  }
+}
+
+function toggleCardPlacePropertyMenu(button) {
+  const wrapper = button.closest(".card-place-property-name-wrap");
+  const menu = wrapper?.querySelector(".card-place-property-menu");
+  if (!wrapper || !menu) {
+    return;
+  }
+
+  const shouldOpen = menu.hidden;
+  closeCardPlacePropertyMenus(wrapper);
+  closePropertyTypeMenus();
+  closeOptionPropertyMenus();
+  menu.hidden = !shouldOpen;
+  button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+function closeCardPlacePropertyMenus(exceptWrapper = null) {
+  cardPlacePropertyList?.querySelectorAll(".card-place-property-name-wrap").forEach((wrapper) => {
+    if (wrapper === exceptWrapper) {
+      return;
+    }
+
+    const menu = wrapper.querySelector(".card-place-property-menu");
+    const button = wrapper.querySelector(".card-place-property-name");
+    if (menu) {
+      menu.hidden = true;
+    }
+    button?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function handleCardPlacePropertyMenuOutsideClick(event) {
+  if (event.target.closest(".card-place-property-name-wrap")) {
+    return;
+  }
+
+  closeCardPlacePropertyMenus();
+}
+
+function handleCardPlacePropertyMenuKeydown(event) {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  closeCardPlacePropertyMenus();
+}
+
+function startCardPlacePropertyRename(propertyId) {
+  const property = getPropertySchema(propertyId);
+  const nameButton = cardPlacePropertyList?.querySelector(
+    `.card-place-property-row[data-card-place-property-id="${CSS.escape(propertyId)}"] .card-place-property-name`,
+  );
+  if (!property || property.system || !nameButton) {
+    return;
+  }
+
+  const label = nameButton.querySelector(".card-place-property-label");
+  if (!label) {
+    return;
+  }
+
+  closeCardPlacePropertyMenus();
+  const input = document.createElement("input");
+  input.className = "card-place-property-rename-input";
+  input.type = "text";
+  input.autocomplete = "off";
+  input.spellcheck = false;
+  input.value = property.name;
+  label.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let finished = false;
+  const finish = (save) => {
+    if (finished) {
+      return;
+    }
+
+    finished = true;
+    if (save) {
+      renameCustomProperty(propertyId, input.value);
+    }
+    renderBoardViewSwitcher();
+    renderFolders();
+  };
+
+  input.addEventListener("click", (event) => event.stopPropagation());
+  input.addEventListener("blur", () => finish(true), { once: true });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      finish(false);
+    }
+  });
+}
+
+function toggleCardPlacePropertyVisibility(propertyId) {
+  if (!getKnownCardPlacePropertyIds().includes(propertyId)) {
+    return;
+  }
+
+  const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
+  if (hiddenProperties.has(propertyId)) {
+    hiddenProperties.delete(propertyId);
+  } else {
+    hiddenProperties.add(propertyId);
+    cardPlaceHiddenPropertiesExpanded = true;
+  }
+
+  saveCardPlaceHiddenProperties([...hiddenProperties]);
+  closeCardPlacePropertyMenus();
+  renderCardPlaceProperties(findFolderByPath(selectedCardPath));
+}
+
+function reorderCardPlaceProperty(sourcePropertyId, targetPropertyId, insertAfterTarget) {
+  if (!sourcePropertyId || !targetPropertyId || sourcePropertyId === targetPropertyId) {
+    return;
+  }
+
+  const currentOrder = getActiveCardPlacePropertyOrder();
+  if (!currentOrder.includes(sourcePropertyId) || !currentOrder.includes(targetPropertyId)) {
+    return;
+  }
+
+  const nextOrder = moveStatusNearTarget(currentOrder, sourcePropertyId, targetPropertyId, insertAfterTarget);
+  saveCardPlacePropertyOrder(nextOrder);
+}
+
+function handleCardPlacePropertyPointerDragStart(event) {
+  if (
+    event.target.closest(
+      ".card-place-property-menu, .card-place-property-menu-action, .card-place-property-rename-input, .card-place-property-value, .property-type-menu",
+    )
+  ) {
+    return;
+  }
+
+  const row = event.target.closest(".card-place-property-row");
+  const nameButton = event.target.closest(".card-place-property-name");
+  if (!row || !nameButton || cardPlacePropertyPointerDragState) {
+    return;
+  }
+
+  const sourceRect = row.getBoundingClientRect();
+  cardPlacePropertyPointerDragState = {
+    propertyId: row.dataset.cardPlacePropertyId,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
+    sourceItem: row,
+    targetItem: row,
+    isDragging: false,
+  };
+  draggedCardPlaceProperty = row.dataset.cardPlacePropertyId;
+  try {
+    row.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
+  }
+}
+
+function handleCardPlacePropertyPointerDragMove(event) {
+  if (!cardPlacePropertyPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - cardPlacePropertyPointerDragState.startX,
+    event.clientY - cardPlacePropertyPointerDragState.startY,
+  );
+  if (!cardPlacePropertyPointerDragState.isDragging && dragDistance < 4) {
+    return;
+  }
+
+  event.preventDefault();
+  closeCardPlacePropertyMenus();
+  const startsDragging = !cardPlacePropertyPointerDragState.isDragging;
+  cardPlacePropertyPointerDragState.isDragging = true;
+  cardPlacePropertyPointerDragState.sourceItem.classList.add("is-card-place-property-drag-source");
+  if (startsDragging) {
+    createCardPlacePropertyDragImage(cardPlacePropertyPointerDragState.sourceItem, event);
+  } else {
+    moveCardPlacePropertyDragImage(event);
+  }
+
+  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(".card-place-property-row");
+  const sourceList = cardPlacePropertyPointerDragState.sourceItem.parentElement;
+  if (!targetItem || targetItem.parentElement !== sourceList) {
+    return;
+  }
+
+  cardPlacePropertyPointerDragState.targetItem = targetItem;
+  applyCardPlacePropertyPreview(getCardPlacePropertyPreviewOrder(event, targetItem));
+}
+
+function handleCardPlacePropertyPointerDragEnd(event) {
+  if (!cardPlacePropertyPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetItem } = cardPlacePropertyPointerDragState;
+  if (!isDragging || !targetItem) {
+    cardPlacePropertyPointerDragState = null;
+    draggedCardPlaceProperty = null;
+    clearCardPlacePropertyDragState();
+    removeCardPlacePropertyDragImage();
+    return;
+  }
+
+  event.preventDefault();
+  const insertAfterTarget = getCardPlacePropertyInsertAfterTarget(event, targetItem);
+  reorderCardPlaceProperty(
+    cardPlacePropertyPointerDragState.propertyId,
+    targetItem.dataset.cardPlacePropertyId,
+    insertAfterTarget,
+  );
+  cardPlacePropertyPointerDragState = null;
+  draggedCardPlaceProperty = null;
+  clearCardPlacePropertyDragState();
+  removeCardPlacePropertyDragImage();
+  suppressNextCardPlacePropertyClick();
+  renderCardPlaceProperties(findFolderByPath(selectedCardPath));
+}
+
+function createCardPlacePropertyDragImage(sourceItem, event) {
+  removeCardPlacePropertyDragImage();
+  const sourceRect = sourceItem.getBoundingClientRect();
+  const dragImage = sourceItem.cloneNode(true);
+  dragImage.className = "card-place-property-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  document.body.append(dragImage);
+  cardPlacePropertyDragImage = dragImage;
+  moveCardPlacePropertyDragImage(event);
+}
+
+function moveCardPlacePropertyDragImage(event) {
+  if (!cardPlacePropertyDragImage) {
+    return;
+  }
+
+  const offsetX = cardPlacePropertyPointerDragState?.dragOffsetX ?? 0;
+  const offsetY = cardPlacePropertyPointerDragState?.dragOffsetY ?? 0;
+  cardPlacePropertyDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+}
+
+function removeCardPlacePropertyDragImage() {
+  cardPlacePropertyDragImage?.remove();
+  cardPlacePropertyDragImage = null;
+}
+
+function getCardPlacePropertyPreviewOrder(event, targetItem) {
+  const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
+  const targetPropertyId = targetItem.dataset.cardPlacePropertyId;
+  if (!draggedCardPlaceProperty || !targetPropertyId || targetPropertyId === draggedCardPlaceProperty) {
+    return propertyIds;
+  }
+
+  return moveStatusNearTarget(
+    propertyIds,
+    draggedCardPlaceProperty,
+    targetPropertyId,
+    getCardPlacePropertyInsertAfterTarget(event, targetItem),
+  );
+}
+
+function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
+  const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
+  const draggedIndex = propertyIds.indexOf(draggedCardPlaceProperty);
+  const targetIndex = propertyIds.indexOf(targetItem.dataset.cardPlacePropertyId);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return false;
+  }
+
+  return draggedIndex < targetIndex
+    ? event.clientY > targetRect.top + targetRect.height * 0.25
+    : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+}
+
+function getCardPlacePropertyDragItems() {
+  const list = cardPlacePropertyPointerDragState?.sourceItem.parentElement;
+  return [...(list?.children || [])].filter((item) => item.classList?.contains("card-place-property-row"));
+}
+
+function applyCardPlacePropertyPreview(previewPropertyIds) {
+  const items = getCardPlacePropertyDragItems();
+  const rowGap = Number.parseFloat(getComputedStyle(cardPlacePropertyPointerDragState?.sourceItem.parentElement).rowGap) || 0;
+  items.forEach((item, currentIndex) => {
+    const previewIndex = previewPropertyIds.indexOf(item.dataset.cardPlacePropertyId);
+    const shiftDistance = `${item.getBoundingClientRect().height + rowGap}px`;
+    item.classList.remove("is-card-place-property-preview-up", "is-card-place-property-preview-down");
+    item.style.setProperty("--card-place-property-shift", shiftDistance);
+
+    if (item.dataset.cardPlacePropertyId === draggedCardPlaceProperty) {
+      item.classList.add("is-card-place-property-drag-source");
+      return;
+    }
+
+    if (previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      item.classList.add("is-card-place-property-preview-up");
+    } else if (previewIndex > currentIndex) {
+      item.classList.add("is-card-place-property-preview-down");
+    }
+  });
+}
+
+function clearCardPlacePropertyDragState() {
+  cardPlacePropertyList?.querySelectorAll(".card-place-property-row").forEach((row) => {
+    row.classList.remove(
+      "is-card-place-property-drag-source",
+      "is-card-place-property-preview-up",
+      "is-card-place-property-preview-down",
+    );
+    row.style.removeProperty("--card-place-property-shift");
+  });
+}
+
+function suppressNextCardPlacePropertyClick() {
+  cardPlacePropertySuppressClick = true;
+  window.clearTimeout(cardPlacePropertySuppressClickTimer);
+  cardPlacePropertySuppressClickTimer = window.setTimeout(() => {
+    cardPlacePropertySuppressClick = false;
+    cardPlacePropertySuppressClickTimer = null;
+  }, 0);
 }
 
 function getPrimaryPropertyEditorControl(editor) {
