@@ -367,6 +367,11 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
+  const dragStartIndex = app.indexOf("function handleCardPlacePropertyPointerDragStart(event)");
+  const dragMoveIndex = app.indexOf("function handleCardPlacePropertyPointerDragMove(event)");
+  assert.notEqual(dragStartIndex, -1);
+  assert.notEqual(dragMoveIndex, -1);
+  assert.doesNotMatch(app.slice(dragStartIndex, dragMoveIndex), /setPointerCapture/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlacePropertyPointerDragMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleCardPlacePropertyPointerDragEnd\)/);
   assert.match(app, /cardPlacePropertyList\.addEventListener\("click", handleCardPlacePropertyMenuClick\)/);
@@ -385,6 +390,8 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
   assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(126px,\s*126px\) minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*18px minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-name\s*\{[^}]*margin-left:\s*-8px/s);
+  assert.match(css, /\.card-place-property-name\s*\{[^}]*padding:\s*0 6px 0 8px/s);
   assert.match(css, /\.card-place-property-row:hover \.card-place-property-name/s);
   assert.match(css, /\.card-place-property-menu\[hidden\]/);
   assert.match(css, /\.card-place-hidden-properties-toggle/);

@@ -2158,7 +2158,8 @@ textarea.table-text-input {
 
 .card-place-property-name {
   display: grid;
-  width: 100%;
+  width: calc(100% + 8px);
+  margin-left: -8px;
   min-height: 24px;
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
@@ -2168,7 +2169,7 @@ textarea.table-text-input {
   background: transparent;
   color: var(--muted);
   cursor: grab;
-  padding: 0 6px 0 0;
+  padding: 0 6px 0 8px;
   font: inherit;
   text-align: left;
 }

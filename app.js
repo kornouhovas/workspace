@@ -3685,11 +3685,6 @@ function handleCardPlacePropertyPointerDragStart(event) {
     isDragging: false,
   };
   draggedCardPlaceProperty = row.dataset.cardPlacePropertyId;
-  try {
-    row.setPointerCapture?.(event.pointerId);
-  } catch (error) {
-    // Synthetic pointer events used in tests do not always create an active pointer.
-  }
 }
 
 function handleCardPlacePropertyPointerDragMove(event) {
