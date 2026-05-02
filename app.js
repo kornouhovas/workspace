@@ -123,6 +123,8 @@ let draggedStatus = null;
 let draggedBoardColumnMenuStatus = null;
 let draggedBoardColumnMenuProperty = null;
 let draggedOptionProperty = null;
+let optionPropertyPointerDragState = null;
+let optionPropertyDragImage = null;
 let optionPropertySuppressClick = false;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
@@ -343,6 +345,7 @@ function bindEvents() {
   window.addEventListener("pointermove", handleTableColumnPointerDragMove);
   window.addEventListener("pointermove", handleBoardViewPointerDragMove);
   window.addEventListener("pointermove", handleWorkspacePointerDragMove);
+  window.addEventListener("pointermove", handleOptionPropertyPointerDragMove);
   window.addEventListener("mousemove", handleTableColumnResizeMove);
   window.addEventListener("pointerup", handleTableColumnResizeEnd);
   window.addEventListener("pointerup", handleCardPlaceResizeEnd);
@@ -351,6 +354,7 @@ function bindEvents() {
   window.addEventListener("pointerup", handleTableColumnPointerDragEnd);
   window.addEventListener("pointerup", handleBoardViewPointerDragEnd);
   window.addEventListener("pointerup", handleWorkspacePointerDragEnd);
+  window.addEventListener("pointerup", handleOptionPropertyPointerDragEnd);
   window.addEventListener("mouseup", handleTableColumnResizeEnd);
   window.addEventListener("keydown", handleSidebarShortcut);
 }
@@ -5905,12 +5909,9 @@ function createOptionPropertyItem({ option, path, columnId, context, selected })
   item.dataset.propertyId = columnId;
   item.dataset.optionId = option.id;
   item.dataset.optionName = option.name;
-  item.draggable = true;
+  item.draggable = false;
   item.setAttribute("role", "presentation");
-  item.addEventListener("dragstart", handleOptionPropertyDragStart);
-  item.addEventListener("dragover", handleOptionPropertyDragOver);
-  item.addEventListener("drop", handleOptionPropertyDrop);
-  item.addEventListener("dragend", handleOptionPropertyDragEnd);
+  item.addEventListener("pointerdown", handleOptionPropertyPointerDragStart);
 
   const selectButton = document.createElement("button");
   selectButton.className = "option-property-select";
@@ -5997,14 +5998,14 @@ function createOptionPropertyActionMenu({ option, path, columnId, context }) {
   menu.setAttribute("role", "menu");
   menu.hidden = true;
 
-  const renameButton = createOptionPropertyActionButton("rename", "Rename");
+  const renameButton = createOptionPropertyActionButton("rename", "Rename", createMenuIcon("rename"));
   renameButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
     startOptionPropertyRename(renameButton, option, path, columnId, context);
   });
 
-  const deleteButton = createOptionPropertyActionButton("delete", "Delete");
+  const deleteButton = createOptionPropertyActionButton("delete", "Delete", createMenuIcon("delete"));
   deleteButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -6029,13 +6030,13 @@ function createOptionPropertyActionMenu({ option, path, columnId, context }) {
   return menu;
 }
 
-function createOptionPropertyActionButton(action, label) {
+function createOptionPropertyActionButton(action, label, icon) {
   const button = document.createElement("button");
   button.className = "option-property-menu-action";
   button.type = "button";
   button.dataset.optionAction = action;
   button.setAttribute("role", "menuitem");
-  button.textContent = label;
+  button.append(icon, document.createTextNode(label));
 
   return button;
 }
@@ -6162,65 +6163,193 @@ function startOptionPropertyRename(actionButton, option, path, columnId, context
   });
 }
 
-function handleOptionPropertyDragStart(event) {
-  const item = event.currentTarget;
+function handleOptionPropertyPointerDragStart(event) {
+  const item = event.target.closest(".option-property-item");
   if (event.target.closest(".option-property-action-button, .option-property-action-menu, .option-property-rename-input")) {
-    event.preventDefault();
     return;
   }
 
+  if (!item) {
+    return;
+  }
+
+  const sourceRect = item.getBoundingClientRect();
   closeOptionPropertyActionMenus();
+  optionPropertyPointerDragState = {
+    propertyId: item.dataset.propertyId,
+    optionId: item.dataset.optionId,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragOffsetX: event.clientX - sourceRect.left,
+    dragOffsetY: event.clientY - sourceRect.top,
+    sourceItem: item,
+    targetItem: item,
+    isDragging: false,
+  };
   draggedOptionProperty = {
     propertyId: item.dataset.propertyId,
     optionId: item.dataset.optionId,
     sourceItem: item,
   };
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", item.dataset.optionId);
+  try {
+    item.setPointerCapture?.(event.pointerId);
+  } catch (error) {
+    // Synthetic pointer events used in tests do not always create an active pointer.
   }
-  requestAnimationFrame(() => item.classList.add("is-option-drag-source"));
 }
 
-function handleOptionPropertyDragOver(event) {
-  const item = event.currentTarget;
-  if (!draggedOptionProperty || item.dataset.propertyId !== draggedOptionProperty.propertyId) {
+function handleOptionPropertyPointerDragMove(event) {
+  if (!optionPropertyPointerDragState) {
+    return;
+  }
+
+  const dragDistance = Math.hypot(
+    event.clientX - optionPropertyPointerDragState.startX,
+    event.clientY - optionPropertyPointerDragState.startY,
+  );
+  if (!optionPropertyPointerDragState.isDragging && dragDistance < 4) {
     return;
   }
 
   event.preventDefault();
-  item.classList.toggle("is-option-preview-after", isOptionPropertyDropAfterTarget(event, item));
+  const startsDragging = !optionPropertyPointerDragState.isDragging;
+  optionPropertyPointerDragState.isDragging = true;
+  optionPropertyPointerDragState.sourceItem.classList.add("is-option-drag-source");
+  if (startsDragging) {
+    createOptionPropertyDragImage(optionPropertyPointerDragState.sourceItem, event);
+  } else {
+    moveOptionPropertyDragImage(event);
+  }
+
+  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(".option-property-item");
+  const menu = optionPropertyPointerDragState.sourceItem.closest(".option-property-menu");
+  if (!targetItem || !menu?.contains(targetItem)) {
+    return;
+  }
+
+  optionPropertyPointerDragState.targetItem = targetItem;
+  applyOptionPropertyPreview(getOptionPropertyPreviewOrder(event, targetItem));
 }
 
-function handleOptionPropertyDrop(event) {
-  const item = event.currentTarget;
-  if (!draggedOptionProperty || item.dataset.propertyId !== draggedOptionProperty.propertyId) {
+function handleOptionPropertyPointerDragEnd(event) {
+  if (!optionPropertyPointerDragState) {
+    return;
+  }
+
+  const { isDragging, targetItem } = optionPropertyPointerDragState;
+  if (!isDragging || !targetItem) {
+    optionPropertyPointerDragState = null;
+    draggedOptionProperty = null;
+    clearOptionPropertyDragState();
+    removeOptionPropertyDragImage();
     return;
   }
 
   event.preventDefault();
-  const editor = item.closest(".option-property-editor");
-  const insertAfterTarget = isOptionPropertyDropAfterTarget(event, item);
-  reorderCustomPropertyOption(item.dataset.propertyId, draggedOptionProperty.optionId, item.dataset.optionId, insertAfterTarget);
-  refreshOptionPropertyEditor(editor, editor?.dataset.folderPath, item.dataset.propertyId);
+  const editor = targetItem.closest(".option-property-editor");
+  const insertAfterTarget = getOptionPropertyInsertAfterTarget(event, targetItem);
+  reorderCustomPropertyOption(
+    optionPropertyPointerDragState.propertyId,
+    optionPropertyPointerDragState.optionId,
+    targetItem.dataset.optionId,
+    insertAfterTarget,
+  );
+  refreshOptionPropertyEditor(editor, editor?.dataset.folderPath, optionPropertyPointerDragState.propertyId);
+  optionPropertyPointerDragState = null;
+  draggedOptionProperty = null;
   clearOptionPropertyDragState();
+  removeOptionPropertyDragImage();
   suppressNextOptionPropertyClick();
 }
 
-function handleOptionPropertyDragEnd() {
-  clearOptionPropertyDragState();
-  suppressNextOptionPropertyClick();
+function createOptionPropertyDragImage(sourceItem, event) {
+  removeOptionPropertyDragImage();
+  const sourceRect = sourceItem.getBoundingClientRect();
+  const dragImage = sourceItem.cloneNode(true);
+  dragImage.className = "option-property-drag-image";
+  dragImage.style.width = `${sourceRect.width}px`;
+  dragImage.style.height = `${sourceRect.height}px`;
+  document.body.append(dragImage);
+  optionPropertyDragImage = dragImage;
+  moveOptionPropertyDragImage(event);
 }
 
-function isOptionPropertyDropAfterTarget(event, item) {
-  const rect = item.getBoundingClientRect();
-  return event.clientY > rect.top + rect.height / 2;
+function moveOptionPropertyDragImage(event) {
+  if (!optionPropertyDragImage) {
+    return;
+  }
+
+  const offsetX = optionPropertyPointerDragState?.dragOffsetX ?? 0;
+  const offsetY = optionPropertyPointerDragState?.dragOffsetY ?? 0;
+  optionPropertyDragImage.style.transform = `translate(${event.clientX - offsetX}px, ${event.clientY - offsetY}px)`;
+}
+
+function removeOptionPropertyDragImage() {
+  optionPropertyDragImage?.remove();
+  optionPropertyDragImage = null;
+}
+
+function getOptionPropertyPreviewOrder(event, targetItem) {
+  const optionIds = getPropertyOptions(optionPropertyPointerDragState?.propertyId).map((option) => option.id);
+  const targetOptionId = targetItem.dataset.optionId;
+  if (!optionPropertyPointerDragState?.optionId || !targetOptionId || targetOptionId === optionPropertyPointerDragState.optionId) {
+    return optionIds;
+  }
+
+  return moveStatusNearTarget(
+    optionIds,
+    optionPropertyPointerDragState.optionId,
+    targetOptionId,
+    getOptionPropertyInsertAfterTarget(event, targetItem),
+  );
+}
+
+function getOptionPropertyInsertAfterTarget(event, targetItem) {
+  const optionIds = getPropertyOptions(optionPropertyPointerDragState?.propertyId).map((option) => option.id);
+  const draggedIndex = optionIds.indexOf(optionPropertyPointerDragState?.optionId);
+  const targetIndex = optionIds.indexOf(targetItem.dataset.optionId);
+  const targetRect = targetItem.getBoundingClientRect();
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return false;
+  }
+
+  return draggedIndex < targetIndex
+    ? event.clientY > targetRect.top + targetRect.height * 0.25
+    : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+}
+
+function applyOptionPropertyPreview(previewOptionIds) {
+  const list = optionPropertyPointerDragState?.sourceItem.closest(".option-property-list");
+  const items = [...(list?.querySelectorAll(".option-property-item") || [])];
+  const menuGap = Number.parseFloat(getComputedStyle(list).rowGap) || 0;
+  items.forEach((item, currentIndex) => {
+    const previewIndex = previewOptionIds.indexOf(item.dataset.optionId);
+    const shiftDistance = `${item.getBoundingClientRect().height + menuGap}px`;
+    item.classList.remove("is-option-preview-up", "is-option-preview-down");
+    item.style.setProperty("--option-property-item-shift", shiftDistance);
+
+    if (item.dataset.optionId === optionPropertyPointerDragState?.optionId) {
+      item.classList.add("is-option-drag-source");
+      return;
+    }
+
+    if (previewIndex < 0) {
+      return;
+    }
+
+    if (previewIndex < currentIndex) {
+      item.classList.add("is-option-preview-up");
+    } else if (previewIndex > currentIndex) {
+      item.classList.add("is-option-preview-down");
+    }
+  });
 }
 
 function clearOptionPropertyDragState() {
   draggedOptionProperty = null;
   document.querySelectorAll(".option-property-item").forEach((item) => {
-    item.classList.remove("is-option-drag-source", "is-option-preview-after");
+    item.classList.remove("is-option-drag-source", "is-option-preview-up", "is-option-preview-down");
+    item.style.removeProperty("--option-property-item-shift");
   });
 }
 

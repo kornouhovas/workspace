@@ -447,15 +447,26 @@ test("select and multi-select option menus can clear, edit, recolor, delete, and
   assert.match(app, /function clearOptionPropertyValue\(/);
   assert.match(app, /updateFolderProperty\(path, columnId, type === "multi-select" \? \[\] : null/);
   assert.match(app, /function createOptionPropertyDragHandle\(/);
-  assert.match(app, /item\.draggable = true/);
-  assert.match(app, /function handleOptionPropertyDragStart\(/);
-  assert.match(app, /function handleOptionPropertyDrop\(/);
+  assert.match(app, /let optionPropertyPointerDragState = null/);
+  assert.match(app, /let optionPropertyDragImage = null/);
+  assert.match(app, /item\.draggable = false/);
+  assert.match(app, /item\.addEventListener\("pointerdown", handleOptionPropertyPointerDragStart\)/);
+  assert.match(app, /window\.addEventListener\("pointermove", handleOptionPropertyPointerDragMove\)/);
+  assert.match(app, /window\.addEventListener\("pointerup", handleOptionPropertyPointerDragEnd\)/);
+  assert.match(app, /function handleOptionPropertyPointerDragStart\(/);
+  assert.match(app, /function handleOptionPropertyPointerDragMove\(/);
+  assert.match(app, /function handleOptionPropertyPointerDragEnd\(/);
+  assert.match(app, /function createOptionPropertyDragImage\(/);
+  assert.match(app, /dragImage\.className = "option-property-drag-image"/);
+  assert.match(app, /function moveOptionPropertyDragImage\(/);
+  assert.match(app, /function removeOptionPropertyDragImage\(/);
+  assert.match(app, /function applyOptionPropertyPreview\(/);
   assert.match(app, /function reorderCustomPropertyOption\(propertyId, sourceOptionId, targetOptionId, insertAfterTarget\)/);
   assert.match(app, /function createOptionPropertyActionsButton\(/);
   assert.match(app, /button\.dataset\.optionAction = "open-actions"/);
   assert.match(app, /function createOptionPropertyActionMenu\(/);
-  assert.match(app, /createOptionPropertyActionButton\("rename", "Rename"\)/);
-  assert.match(app, /createOptionPropertyActionButton\("delete", "Delete"\)/);
+  assert.match(app, /createOptionPropertyActionButton\("rename", "Rename", createMenuIcon\("rename"\)\)/);
+  assert.match(app, /createOptionPropertyActionButton\("delete", "Delete", createMenuIcon\("delete"\)\)/);
   assert.match(app, /function startOptionPropertyRename\(/);
   assert.match(app, /function renameCustomPropertyOption\(propertyId, optionId, name\)/);
   assert.match(app, /function deleteCustomPropertyOption\(propertyId, optionId\)/);
@@ -468,6 +479,9 @@ test("select and multi-select option menus can clear, edit, recolor, delete, and
   assert.match(css, /\.option-property-action-menu/);
   assert.match(css, /\.option-property-color-button/);
   assert.match(css, /\.option-property-rename-input/);
+  assert.match(css, /\.option-property-drag-image/);
+  assert.match(css, /\.option-property-item\.is-option-preview-up/);
+  assert.match(css, /\.option-property-item\.is-option-preview-down/);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {

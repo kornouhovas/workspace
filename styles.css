@@ -1522,8 +1522,12 @@ textarea.table-text-input {
   opacity: 0.38;
 }
 
-.option-property-item.is-option-preview-after {
-  transform: translateY(6px);
+.option-property-item.is-option-preview-up {
+  transform: translateY(calc(-1 * var(--option-property-item-shift)));
+}
+
+.option-property-item.is-option-preview-down {
+  transform: translateY(var(--option-property-item-shift));
 }
 
 .option-property-drag-handle {
@@ -1602,8 +1606,12 @@ textarea.table-text-input {
 }
 
 .option-property-menu-action {
+  display: grid;
   width: 100%;
   min-height: 28px;
+  grid-template-columns: 17px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -1617,6 +1625,29 @@ textarea.table-text-input {
 .option-property-menu-action:focus-visible {
   background: rgba(255, 255, 255, 0.045);
   outline: 0;
+}
+
+.option-property-drag-image {
+  display: grid;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 70;
+  grid-template-columns: 14px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1e1e1c;
+  color: var(--text);
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+}
+
+.option-property-drag-image .option-property-action-menu {
+  display: none;
 }
 
 .option-property-color-list {
