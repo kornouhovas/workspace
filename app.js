@@ -185,26 +185,22 @@ async function initializeApp() {
   renderBoardViewSwitcher();
   bindEvents();
 
-  try {
-    const root = await fetchWorkspaceRoot();
-    if (!root) {
-      restoreButton.hidden = true;
-      renderFolders();
-      return;
-    }
-
-    selectedRoot = root;
-    updateRoot(root.name);
-    renderFolders();
-    if (selectedCardPath) {
-      loadCardPlaceEntries(findFolderByPath(selectedCardPath));
-    }
-
+  const root = await fetchWorkspaceRoot();
+  if (!root) {
     restoreButton.hidden = true;
-    await scanSelectedFolder();
-  } finally {
-    finishInitialLayout();
+    renderFolders();
+    return;
   }
+
+  selectedRoot = root;
+  updateRoot(root.name);
+  renderFolders();
+  if (selectedCardPath) {
+    loadCardPlaceEntries(findFolderByPath(selectedCardPath));
+  }
+
+  restoreButton.hidden = true;
+  await scanSelectedFolder();
 }
 
 function bindEvents() {
@@ -2864,10 +2860,6 @@ function updateBoardViewConfig(viewId, updater) {
 
 function saveSidebarState(collapsed) {
   localStorage.setItem(sidebarStorageKey, collapsed ? "collapsed" : "expanded");
-}
-
-function finishInitialLayout() {
-  document.documentElement.classList.remove("app-loading", "sidebar-saved-collapsed");
 }
 
 function saveWorkspaceState() {

@@ -9,8 +9,9 @@ test("app shell is not wrapped in a decorative browser frame", async () => {
   assert.equal(html.includes("browser-bar"), false);
   assert.match(html, /<html lang="ru">/);
   assert.doesNotMatch(html, /<html lang="ru" class="app-loading">/);
-  assert.match(html, /localStorage\.getItem\("sidebar-state"\) === "collapsed"/);
-  assert.match(html, /document\.documentElement\.classList\.add\("app-loading", "sidebar-saved-collapsed"\)/);
+  assert.doesNotMatch(html, /localStorage\.getItem\("sidebar-state"\) === "collapsed"/);
+  assert.doesNotMatch(html, /document\.documentElement\.classList\.add\("app-loading"/);
+  assert.match(html, /<script type="module" src="app\.js"><\/script>/);
   assert.match(html, /<div class="app-shell" id="appShell">/);
 });
 
@@ -117,19 +118,16 @@ test("collapsed sidebar fully hides the panel and leaves a return button", async
 
   assert.match(html, /id="sidebarReturn"/);
   assert.match(css, /\.app-shell\.sidebar-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0,\s*1fr\)/s);
-  assert.match(css, /\.sidebar-saved-collapsed \.app-shell\s*\{[^}]*grid-template-columns:\s*0 minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.sidebar-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
-  assert.match(css, /\.sidebar-saved-collapsed \.sidebar\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*display:\s*none/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*left:\s*26px/s);
   assert.match(css, /\.icon-button\.sidebar-return\s*\{[^}]*top:\s*26px/s);
   assert.match(css, /\.sidebar-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
-  assert.match(css, /\.sidebar-saved-collapsed \.icon-button\.sidebar-return\s*\{[^}]*display:\s*grid/s);
   assert.doesNotMatch(css, /\.sidebar-collapsed \.main\s*\{[^}]*padding-top/s);
   assert.match(css, /\.sidebar-collapsed \.topbar-copy\s*\{[^}]*margin-left:\s*64px/s);
-  assert.match(css, /\.app-loading \.app-shell\s*\{[^}]*transition:\s*none/s);
-  assert.doesNotMatch(css, /\.app-loading \.main\s*\{[^}]*visibility:\s*hidden/s);
-  assert.match(app, /document\.documentElement\.classList\.remove\("app-loading", "sidebar-saved-collapsed"\)/);
+  assert.doesNotMatch(css, /sidebar-saved-collapsed/);
+  assert.doesNotMatch(css, /app-loading/);
+  assert.doesNotMatch(app, /app-loading|sidebar-saved-collapsed/);
   assert.doesNotMatch(css, /\.sidebar-return span\s*\{[^}]*transform:\s*rotate/s);
 });
 
@@ -189,7 +187,7 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(css, /\.workspace-drag-image\s*\{[^}]*pointer-events:\s*none/s);
 });
 
-test("workspace state is persisted across browser refresh", async () => {
+test("workspace state is persisted across app reload", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(app, /const workspaceStorageKey = "workspaces-state"/);
@@ -220,17 +218,17 @@ test("workspace state is persisted across browser refresh", async () => {
   assert.match(app, /restoreBoardViewScrollPosition\(activeBoardViewId\)/);
 });
 
-test("saved workspace chrome is bootstrapped before app module hydration", async () => {
+test("electron shell does not inline bootstrap saved workspace chrome", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
-  assert.match(html, /function hydrateSavedWorkspaceState\(\)/);
-  assert.match(html, /localStorage\.getItem\("workspaces-state"\)/);
-  assert.match(html, /workspaceTitle\.textContent = activeWorkspace\.name/);
-  assert.match(html, /workspaceTabs\.replaceChildren\(\.\.\.state\.workspaces\.map\(createInitialWorkspaceTab\)\)/);
-  assert.match(html, /button\.dataset\.workspaceId = workspace\.id/);
+  assert.doesNotMatch(html, /function hydrateSavedWorkspaceState\(\)/);
+  assert.doesNotMatch(html, /localStorage\.getItem\("workspaces-state"\)/);
+  assert.doesNotMatch(html, /workspaceTabs\.replaceChildren\(\.\.\.state\.workspaces\.map\(createInitialWorkspaceTab\)\)/);
+  assert.doesNotMatch(html, /button\.dataset\.workspaceId = workspace\.id/);
+  assert.match(html, /<nav class="workspace-tabs" id="workspaceTabs" aria-label="Workspaces"><\/nav>/);
 });
 
-test("folder board snapshot is persisted and bootstrapped before app module hydration", async () => {
+test("folder board snapshot is persisted by app without inline bootstrap render", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
@@ -238,19 +236,12 @@ test("folder board snapshot is persisted and bootstrapped before app module hydr
   assert.match(app, /function saveBoardSnapshot\(\)/);
   assert.match(app, /localStorage\.setItem\(boardSnapshotStorageKey/);
   assert.match(app, /path:\s*folder\.path/);
-  assert.match(html, /function hydrateSavedBoardSnapshot\(\)/);
-  assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
-  assert.match(html, /localStorage\.getItem\("folder-board-snapshot"\)[\s\S]*document\.documentElement\.classList\.add\("app-loading"\)/);
-  assert.match(
-    html,
-    /renderInitialFolders\(\s*folderGrid,\s*snapshot\.folders,\s*boardView,\s*statusOrder,\s*hiddenStatuses,\s*showHiddenStatuses,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*\)/,
-  );
-  assert.match(html, /card\.dataset\.folderPath = folder\.path \|\| folder\.name/);
-  assert.match(html, /row\.dataset\.folderPath = folder\.path \|\| folder\.name/);
-  assert.match(html, /createInitialTableCell\(getInitialTableCellText\(folder, columnId\), columnId\)/);
-  assert.match(html, /cell\.dataset\.tableColumn = columnId/);
-  assert.match(html, /function getStoredStatusOrder\(state\)/);
-  assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
+  assert.doesNotMatch(html, /function hydrateSavedBoardSnapshot\(\)/);
+  assert.doesNotMatch(html, /localStorage\.getItem\("folder-board-snapshot"\)/);
+  assert.doesNotMatch(html, /renderInitialFolders\(/);
+  assert.doesNotMatch(html, /createInitialTableCell\(/);
+  assert.doesNotMatch(html, /function getStoredStatusOrder\(state\)/);
+  assert.doesNotMatch(html, /createInitialBoardColumns\(/);
   assert.equal(html.includes("sidebarFolderCount"), false);
 });
 
@@ -331,8 +322,7 @@ test("table and card place expose editable custom text property UI", async () =>
   assert.match(app, /document\.createElement\(hasWrappedText \? "textarea" : "input"\)/);
   assert.match(app, /function getTextareaSingleLineHeight\(textarea\)/);
   assert.match(app, /textarea\.style\.height = `\$\{getTextareaSingleLineHeight\(textarea\)\}px`/);
-  assert.match(html, /function hasInitialMultilineTableText\(folder, wrappedColumns = \[\]\)/);
-  assert.match(html, /row\.classList\.toggle\("is-text-wrapped", hasInitialMultilineTableText\(folder, wrappedColumns\)\)/);
+  assert.doesNotMatch(html, /hasInitialMultilineTableText/);
 });
 
 test("table and card place expose typed custom property creation UI", async () => {
@@ -374,8 +364,8 @@ test("Text is treated as a user-created property instead of a default system fie
   assert.doesNotMatch(app, /if \(columnId === "text"\)/);
   assert.doesNotMatch(app, /const cardPlaceText\b/);
   assert.doesNotMatch(html, /id="cardPlaceText"/);
-  assert.match(html, /tableColumnOrder = \["name", "status"\]/);
-  assert.doesNotMatch(html, /tableColumnOrder = \["name", "status", "text"\]/);
+  assert.match(app, /const tableColumnIds = \["name", "status"\]/);
+  assert.doesNotMatch(app, /tableColumnOrder = \["name", "status", "text"\]/);
   assert.doesNotMatch(properties, /\["property:text", "Text", "text", false/);
 });
 
@@ -495,13 +485,13 @@ test("topbar exposes per-workspace board view modes instead of folder summary te
   assert.match(html, /data-board-view="table"[\s\S]*class="search board-view-search"[\s\S]*id="boardColumnMenuButton"/);
   assert.doesNotMatch(html, /id="totalFolders"/);
   assert.doesNotMatch(html, /id="rootLabel"/);
-  assert.match(html, /function hydrateSavedBoardViewState\(\)/);
+  assert.doesNotMatch(html, /function hydrateSavedBoardViewState\(\)/);
   assert.match(app, /function loadBoardView\(\)/);
   assert.match(app, /function saveBoardView\(\)/);
   assert.doesNotMatch(app, /const boardViewStorageKey = "board-view"/);
   assert.doesNotMatch(app, /localStorage\.setItem\(boardViewStorageKey, boardView\)/);
   assert.match(app, /workspace\.id === activeWorkspaceId \? \{ \.\.\.workspace, boardView \}/);
-  assert.match(html, /activeWorkspace\.boardView/);
+  assert.match(app, /boardView = workspace\.boardView/);
 });
 
 test("board views can be added and managed from the active view menu", async () => {
@@ -857,21 +847,21 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-drag-source\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.folder-table-cell\.is-table-preview-left/s);
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
-  assert.match(html, /function getStoredTableColumnOrder\(state\)/);
-  assert.match(html, /function getStoredTableColumnWidths\(state\)/);
-  assert.match(html, /function createInitialTableCellText\(text\)/);
-  assert.match(html, /if \(columnId === "name"\) \{\s*cell\.append\(createInitialTableCellText\(text\)\);\s*return cell;\s*\}/);
-  assert.match(html, /tableColumnWidthVersion:\s*3/);
-  assert.match(html, /function convertLegacyInitialTableColumnWidth\(width\)/);
-  assert.match(html, /table\.style\.setProperty\("--table-name-column-width", `\$\{tableColumnWidths\.name\}px`\)/);
-  assert.match(html, /`var\(--table-\$\{getInitialTableColumnCssKey\(columnId\)\}-column-width\)`/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
+  assert.doesNotMatch(html, /createInitial/);
+  assert.match(app, /function normalizeTableColumnOrder\(columnOrder, customProperties = \[\]\)/);
+  assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth, customProperties = \[\]\)/);
+  assert.match(app, /function createTableCellText\(text\)/);
+  assert.match(app, /if \(columnId === "name"\) \{\s*cell\.append\(createTableCellText\(getTableCellText\(folder, columnId\)\)\);\s*return cell;\s*\}/);
+  assert.match(app, /const tableColumnWidthVersion = 3/);
+  assert.match(app, /function convertLegacyTableColumnWidth\(width\)/);
+  assert.match(app, /tableElement\.style\.setProperty\(\s*getTableColumnWidthCssProperty\(columnId\),/s);
+  assert.match(app, /`var\(--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width\)`/);
+  assert.match(app, /createTableRow\(folder, columnOrder, \{ hidden: hiddenStatuses\.has\(folder\.status\), wrappedColumns \}\)/);
 });
 
 test("table view can hide and unhide status sections", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
   assert.match(app, /folderGrid\.addEventListener\("click", handleTableStatusMenuClick\)/);
   assert.match(app, /document\.addEventListener\("click", handleTableStatusMenuOutsideClick\)/);
@@ -929,19 +919,14 @@ test("table view can hide and unhide status sections", async () => {
   assert.match(app, /cell\.setAttribute\("aria-expanded", "false"\)/);
   assert.match(app, /createTableStatusMenu\(getOrderedStatuses\(folders\), getActiveHiddenStatuses\(\)\)/);
   assert.match(app, /row\.classList\.toggle\("is-hidden-status-row", Boolean\(options\.hidden\)\)/);
-  assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
-  assert.match(html, /function createInitialTableHeaderCell\(columnId, folders, statusOrder, hiddenStatuses, tableColumnLabels = \{\}\)/);
-  assert.match(html, /cell\.dataset\.tableColumn = columnId/);
-  assert.match(html, /cell\.classList\.add\("has-table-status-menu"\)/);
-  assert.match(html, /function createInitialTableStatusMenu\(statuses, hiddenStatuses\)/);
-  assert.match(html, /function createInitialTableStatusVisibilityButton\(status, hidden\)/);
-  assert.match(html, /button\.className = "table-status-visibility"/);
-  assert.match(html, /item\.dataset\.status = status/);
-  assert.match(html, /item\.draggable = false/);
-  assert.match(html, /function createInitialTableStatusDragHandle\(\)/);
-  assert.match(html, /function getInitialTableFolders\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
-  assert.match(html, /compareInitialFoldersByStatusOrder\(left, right, orderedStatuses\)/);
-  assert.match(html, /row\.classList\.toggle\("is-hidden-status-row", hiddenStatuses\.includes\(folder\.status\)\)/);
+  assert.match(app, /function createTableHeaderCell\(columnId, options = \{\}\)/);
+  assert.match(app, /cell\.dataset\.tableColumn = columnId/);
+  assert.match(app, /function createTableStatusMenu\(statuses, hiddenStatuses\)/);
+  assert.match(app, /function createTableStatusVisibilityButton\(status, hidden\)/);
+  assert.match(app, /button\.className = "table-status-visibility"/);
+  assert.match(app, /item\.dataset\.status = status/);
+  assert.match(app, /item\.draggable = false/);
+  assert.match(app, /function createTableStatusDragHandle\(\)/);
   assert.match(css, /\.has-table-status-menu\.is-table-status-menu-open \.table-status-menu\s*\{[^}]*display:\s*grid/s);
   assert.match(css, /\.table-status-menu\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.table-status-menu-item\s*\{[^}]*grid-template-columns:\s*14px minmax\(0,\s*1fr\) 20px/s);
@@ -1023,11 +1008,10 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(html, /id="boardColumnMenuStatuses"/);
   assert.equal(html.includes("Show hidden columns"), false);
   assert.equal(html.includes("toggleHiddenColumnsButton"), false);
-  assert.match(html, /function getStoredHiddenStatuses\(state\)/);
-  assert.match(html, /function getStoredShowHiddenStatuses\(state\)/);
-  assert.match(html, /createInitialBoardColumns\(folders, statusOrder, hiddenStatuses, showHiddenStatuses\)/);
-  assert.match(html, /column\.classList\.toggle\("is-hidden-column", hiddenStatuses\.includes\(status\)\)/);
-  assert.match(html, /statuses[\s\S]*\.filter\(\(status\) => showHiddenStatuses \|\| !hiddenStatuses\.includes\(status\)\)/);
+  assert.doesNotMatch(html, /getStoredHiddenStatuses|createInitialBoardColumns/);
+  assert.match(app, /function createBoardColumn\(status, statusFolders, options = \{\}\)/);
+  assert.match(app, /column\.classList\.toggle\("is-hidden-column", Boolean\(options\.hidden\)\)/);
+  assert.match(app, /getOrderedStatuses\(visibleFolders\)\.filter\(\(status\) => showHiddenStatuses \|\| !hiddenStatuses\.has\(status\)\)/);
   assert.match(app, /hiddenStatuses:\s*normalizeStatusList\(settings\.hiddenStatuses\)/);
   assert.match(app, /showHiddenStatuses:\s*settings\.showHiddenStatuses === true/);
   assert.match(app, /function updateActiveBoardViewConfig\(updater\)/);
@@ -1116,7 +1100,7 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(css, /\.settings-gear\s*\{[^}]*stroke-linejoin:\s*round/s);
 });
 
-test("left panel collapsed state is persisted across browser refresh", async () => {
+test("left panel collapsed state is persisted across app reload", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.match(app, /const sidebarStorageKey = "sidebar-state"/);

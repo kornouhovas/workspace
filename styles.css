@@ -68,20 +68,6 @@ input:focus-visible {
   grid-template-columns: 0 minmax(0, 1fr);
 }
 
-.sidebar-saved-collapsed .app-shell {
-  grid-template-columns: 0 minmax(0, 1fr);
-}
-
-.app-loading .app-shell {
-  transition: none;
-}
-
-.app-loading .sidebar,
-.app-loading .main,
-.app-loading .topbar-copy {
-  transition: none;
-}
-
 .icon-button.sidebar-return {
   position: fixed;
   top: 26px;
@@ -115,10 +101,6 @@ input:focus-visible {
 }
 
 .sidebar-collapsed .icon-button.sidebar-return {
-  display: grid;
-}
-
-.sidebar-saved-collapsed .icon-button.sidebar-return {
   display: grid;
 }
 
@@ -301,13 +283,6 @@ input:focus-visible {
   pointer-events: none;
 }
 
-.sidebar-saved-collapsed .sidebar {
-  visibility: hidden;
-  padding: 0;
-  border-right: 0;
-  pointer-events: none;
-}
-
 .workspace-delete {
   opacity: 0;
   transition:
@@ -352,10 +327,6 @@ input:focus-visible {
 }
 
 .sidebar-collapsed .topbar-copy {
-  margin-left: 64px;
-}
-
-.sidebar-saved-collapsed .topbar-copy {
   margin-left: 64px;
 }
 
