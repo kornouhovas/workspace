@@ -3937,9 +3937,7 @@ function renderTableView(visibleFolders) {
   const header = document.createElement("div");
   header.className = "folder-table-row folder-table-head";
   header.append(
-    ...columnOrder.map((columnId, index) =>
-      createTableHeaderCell(columnId, { isLastColumn: index === columnOrder.length - 1 }),
-    ),
+    ...columnOrder.map((columnId) => createTableHeaderCell(columnId)),
     createTableTrailingCell("header"),
   );
 
@@ -5021,10 +5019,6 @@ function createTableHeaderCell(columnId, options = {}) {
     cell.append(createTableTextMenu(columnId));
   }
 
-  if (options.isLastColumn) {
-    cell.append(createAddTablePropertyButton());
-  }
-
   cell.append(createTableResizeHandle(columnId));
 
   return cell;
@@ -5034,6 +5028,9 @@ function createTableTrailingCell(kind = "body") {
   const cell = document.createElement("span");
   cell.className = `folder-table-trailing-cell is-${kind}`;
   cell.setAttribute("aria-hidden", "true");
+  if (kind === "header") {
+    cell.append(createAddTablePropertyButton());
+  }
 
   return cell;
 }

@@ -1138,7 +1138,10 @@ input:focus-visible {
 }
 
 .folder-table-head .folder-table-trailing-cell {
+  display: flex;
   min-height: 36px;
+  align-items: center;
+  pointer-events: auto;
 }
 
 .folder-table-head .folder-table-trailing-cell::before {

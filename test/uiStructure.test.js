@@ -763,6 +763,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function removeTableColumnDragImage\(\)/);
   assert.match(app, /document\s*\.elementFromPoint\(event\.clientX, event\.clientY\)/);
   assert.match(app, /function createTableHeaderCell\(columnId, options = \{\}\)/);
+  assert.doesNotMatch(app, /if \(options\.isLastColumn\) \{[\s\S]*createAddTablePropertyButton\(\)/);
   assert.match(app, /function createTableResizeHandle\(columnId\)/);
   assert.match(app, /function getTablePreviewColumnOrder\(event, targetCell\)/);
   assert.match(app, /function applyTableColumnPreview\(previewColumnOrder\)/);
@@ -774,6 +775,7 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /\.\.\.columnTracks,\s*tableTrailingColumnTrack/);
   assert.match(app, /function createTableTrailingCell\(kind = "body"\)/);
   assert.match(app, /cell\.className = `folder-table-trailing-cell is-\$\{kind\}`/);
+  assert.match(app, /if \(kind === "header"\) \{\s*cell\.append\(createAddTablePropertyButton\(\)\);\s*\}/);
   assert.match(app, /header\.append\([\s\S]*createTableTrailingCell\("header"\),[\s\S]*\)/);
   assert.match(app, /row\.append\([\s\S]*createTableTrailingCell\(\),[\s\S]*\)/);
   assert.match(app, /cell\.classList\.contains\("folder-table-trailing-cell"\)/);
@@ -801,6 +803,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):hover \.folder-table-trailing-cell::before/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\):focus-within \.folder-table-trailing-cell::before/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*min-height:\s*36px/s);
+  assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*display:\s*flex/s);
+  assert.match(css, /\.folder-table-head \.folder-table-trailing-cell\s*\{[^}]*align-items:\s*center/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell::before\s*\{[^}]*top:\s*0/s);
   assert.match(css, /\.folder-table-head \.folder-table-trailing-cell::before\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.folder-table-head:hover \.folder-table-trailing-cell::before/s);
