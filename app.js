@@ -79,6 +79,19 @@ const customPropertyTypeLabels = {
   select: "Select",
   "multi-select": "Multi-select",
 };
+const optionPropertyColorIds = ["default", "gray", "brown", "orange", "yellow", "green", "blue", "purple", "pink", "red"];
+const optionPropertyColorPalettes = {
+  default: { background: "rgba(255, 255, 255, 0.08)", text: "var(--text)" },
+  gray: { background: "rgba(145, 145, 142, 0.24)", text: "#c8c8c2" },
+  brown: { background: "rgba(147, 114, 84, 0.28)", text: "#d8b994" },
+  orange: { background: "rgba(199, 117, 49, 0.28)", text: "#f0b16e" },
+  yellow: { background: "rgba(198, 154, 39, 0.28)", text: "#e6ca69" },
+  green: { background: "rgba(68, 142, 92, 0.28)", text: "#98d6a8" },
+  blue: { background: "rgba(74, 122, 196, 0.28)", text: "#adcdf6" },
+  purple: { background: "rgba(132, 94, 194, 0.28)", text: "#c7b5f4" },
+  pink: { background: "rgba(190, 82, 139, 0.28)", text: "#efadd0" },
+  red: { background: "rgba(191, 78, 72, 0.28)", text: "#efaaa5" },
+};
 const folderRoleIds = ["status", "card", "group"];
 const folderRoleLabels = {
   status: "Status",
@@ -109,6 +122,8 @@ let boardView = "overview";
 let draggedStatus = null;
 let draggedBoardColumnMenuStatus = null;
 let draggedBoardColumnMenuProperty = null;
+let draggedOptionProperty = null;
+let optionPropertySuppressClick = false;
 let draggedTableMenuStatus = null;
 let draggedTableColumn = null;
 let boardColumnMenuPointerDragState = null;
@@ -1976,7 +1991,7 @@ function normalizeCustomPropertyOptions(options = []) {
       return {
         id,
         name,
-        color: typeof option?.color === "string" ? option.color : "",
+        color: normalizeOptionPropertyColor(option?.color),
         order: Number.isFinite(Number(option?.order)) ? Number(option.order) : (index + 1) * 10,
       };
     })
@@ -1985,11 +2000,39 @@ function normalizeCustomPropertyOptions(options = []) {
 }
 
 function normalizeCustomPropertyOptionName(option) {
-  if (typeof option === "string") {
-    return option.trim();
+  const value = typeof option === "string" ? option : option?.name;
+  if (typeof value !== "string") {
+    return "";
   }
 
-  return typeof option?.name === "string" ? option.name.trim() : "";
+  return value.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function normalizeOptionPropertyColor(color) {
+  return optionPropertyColorIds.includes(color) ? color : "default";
+}
+
+function getNextOptionPropertyColor(index) {
+  const colors = optionPropertyColorIds.filter((color) => color !== "default");
+  return colors[index % colors.length] || "default";
+}
+
+function getOptionPropertyColorPalette(color) {
+  return optionPropertyColorPalettes[normalizeOptionPropertyColor(color)] || optionPropertyColorPalettes.default;
+}
+
+function applyOptionPropertyPillColor(pill, color) {
+  const palette = getOptionPropertyColorPalette(color);
+  pill.dataset.optionColor = normalizeOptionPropertyColor(color);
+  pill.style.setProperty("--option-pill-bg", palette.background);
+  pill.style.setProperty("--option-pill-text", palette.text);
+}
+
+function applyOptionPropertyColorSwatch(button, color) {
+  const palette = getOptionPropertyColorPalette(color);
+  button.dataset.optionColor = normalizeOptionPropertyColor(color);
+  button.style.setProperty("--option-swatch-bg", palette.background);
+  button.style.setProperty("--option-swatch-text", palette.text);
 }
 
 function createCustomPropertyOptionId(name, usedIds = new Set()) {
@@ -2496,7 +2539,7 @@ function upsertCustomPropertyOption(propertyId, name) {
   const nextOption = {
     id: createCustomPropertyOptionId(optionName, usedIds),
     name: optionName,
-    color: "",
+    color: getNextOptionPropertyColor(options.length),
     order: (options.length + 1) * 10,
   };
 
@@ -2521,6 +2564,195 @@ function upsertCustomPropertyOption(propertyId, name) {
   saveWorkspaceState();
 
   return nextOption;
+}
+
+function renameCustomPropertyOption(propertyId, optionId, name) {
+  const property = getPropertySchema(propertyId);
+  const nextName = normalizeCustomPropertyOptionName(name);
+  if (!property || (property.type !== "select" && property.type !== "multi-select") || !nextName) {
+    return null;
+  }
+
+  const options = getPropertyOptions(propertyId);
+  const option = options.find((propertyOption) => propertyOption.id === optionId);
+  if (!option) {
+    return null;
+  }
+
+  const duplicate = options.some(
+    (propertyOption) =>
+      propertyOption.id !== optionId && propertyOption.name.toLowerCase() === nextName.toLowerCase(),
+  );
+  if (duplicate) {
+    return null;
+  }
+
+  updateCustomPropertyOptions(
+    propertyId,
+    options.map((propertyOption) =>
+      propertyOption.id === optionId ? { ...propertyOption, name: nextName } : propertyOption,
+    ),
+  );
+  updateFolderValuesForRenamedOption(propertyId, option.name, nextName, property.type);
+  refreshVisibleOptionPropertyEditors(propertyId);
+
+  return { ...option, name: nextName };
+}
+
+function deleteCustomPropertyOption(propertyId, optionId) {
+  const property = getPropertySchema(propertyId);
+  if (!property || (property.type !== "select" && property.type !== "multi-select")) {
+    return null;
+  }
+
+  const options = getPropertyOptions(propertyId);
+  const option = options.find((propertyOption) => propertyOption.id === optionId);
+  if (!option) {
+    return null;
+  }
+
+  updateCustomPropertyOptions(
+    propertyId,
+    options.filter((propertyOption) => propertyOption.id !== optionId),
+  );
+  updateFolderValuesForDeletedOption(propertyId, option.name, property.type);
+  refreshVisibleOptionPropertyEditors(propertyId);
+
+  return option;
+}
+
+function updateCustomPropertyOptionColor(propertyId, optionId, color) {
+  const property = getPropertySchema(propertyId);
+  if (!property || (property.type !== "select" && property.type !== "multi-select")) {
+    return null;
+  }
+
+  const nextColor = normalizeOptionPropertyColor(color);
+  const options = getPropertyOptions(propertyId);
+  const option = options.find((propertyOption) => propertyOption.id === optionId);
+  if (!option) {
+    return null;
+  }
+
+  updateCustomPropertyOptions(
+    propertyId,
+    options.map((propertyOption) =>
+      propertyOption.id === optionId ? { ...propertyOption, color: nextColor } : propertyOption,
+    ),
+  );
+  refreshVisibleOptionPropertyEditors(propertyId);
+
+  return { ...option, color: nextColor };
+}
+
+function reorderCustomPropertyOption(propertyId, sourceOptionId, targetOptionId, insertAfterTarget) {
+  if (!sourceOptionId || !targetOptionId || sourceOptionId === targetOptionId) {
+    return;
+  }
+
+  const property = getPropertySchema(propertyId);
+  if (!property || (property.type !== "select" && property.type !== "multi-select")) {
+    return;
+  }
+
+  const options = getPropertyOptions(propertyId);
+  const optionIds = options.map((option) => option.id);
+  if (!optionIds.includes(sourceOptionId) || !optionIds.includes(targetOptionId)) {
+    return;
+  }
+
+  const nextOptionIds = moveStatusNearTarget(optionIds, sourceOptionId, targetOptionId, insertAfterTarget);
+  const optionsById = new Map(options.map((option) => [option.id, option]));
+  updateCustomPropertyOptions(
+    propertyId,
+    nextOptionIds.map((optionId, index) => ({
+      ...optionsById.get(optionId),
+      order: (index + 1) * 10,
+    })),
+  );
+  refreshVisibleOptionPropertyEditors(propertyId);
+}
+
+function updateCustomPropertyOptions(propertyId, options) {
+  workspaces = workspaces.map((workspace) =>
+    workspace.id === activeWorkspaceId
+      ? {
+          ...workspace,
+          customProperties: normalizeCustomProperties(workspace.customProperties).map((customProperty) =>
+            customProperty.id === propertyId
+              ? {
+                  ...customProperty,
+                  config: {
+                    ...customProperty.config,
+                    options: normalizeCustomPropertyOptions(options),
+                  },
+                }
+              : customProperty,
+          ),
+        }
+      : workspace,
+  );
+  saveWorkspaceState();
+}
+
+function updateFolderValuesForRenamedOption(propertyId, oldName, nextName, type) {
+  updateFolderOptionValues(propertyId, (value) => {
+    if (type === "multi-select") {
+      const selectedValues = normalizePropertyValue("multi-select", value);
+      const nextValues = selectedValues.map((selectedValue) => (selectedValue === oldName ? nextName : selectedValue));
+      return arraysEqual(selectedValues, nextValues) ? value : normalizePropertyValue("multi-select", nextValues);
+    }
+
+    return normalizePropertyValue("select", value) === oldName ? nextName : value;
+  });
+}
+
+function updateFolderValuesForDeletedOption(propertyId, deletedName, type) {
+  updateFolderOptionValues(propertyId, (value) => {
+    if (type === "multi-select") {
+      const selectedValues = normalizePropertyValue("multi-select", value);
+      const nextValues = selectedValues.filter((selectedValue) => selectedValue !== deletedName);
+      return arraysEqual(selectedValues, nextValues) ? value : normalizePropertyValue("multi-select", nextValues);
+    }
+
+    return normalizePropertyValue("select", value) === deletedName ? null : value;
+  });
+}
+
+function updateFolderOptionValues(propertyId, updater) {
+  const changedValues = [];
+  folders = folders.map((folder) => {
+    const properties = getFolderProperties(folder);
+    const currentValue = properties[propertyId];
+    const nextValue = updater(currentValue);
+    if (Object.is(currentValue, nextValue) || arraysEqual(currentValue, nextValue)) {
+      return folder;
+    }
+
+    changedValues.push({ path: getFolderPath(folder), value: nextValue });
+    return {
+      ...folder,
+      properties: {
+        ...properties,
+        [propertyId]: nextValue,
+      },
+    };
+  });
+
+  if (changedValues.length === 0) {
+    return;
+  }
+
+  saveBoardSnapshot();
+  changedValues.forEach(({ path, value }) => scheduleFolderTextSave(path, propertyId, value));
+}
+
+function arraysEqual(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
 }
 
 function createCustomPropertyId(type) {
@@ -5566,11 +5798,13 @@ function createPropertyEditor({ folder, columnId, context, wrapped = false, clas
 }
 
 function createOptionPropertyEditor({ folder, columnId, context, className = "" }) {
+  const path = getFolderPath(folder);
   const wrapper = document.createElement("span");
   wrapper.className = "option-property-editor";
   wrapper.dataset.tableColumn = columnId;
   wrapper.dataset.propertyId = getColumnPropertyId(columnId);
   wrapper.dataset.propertyContext = context;
+  wrapper.dataset.folderPath = path;
 
   const button = document.createElement("button");
   button.className = `${className} option-property-trigger`.trim();
@@ -5606,6 +5840,12 @@ function createOptionPropertyMenu({ folder, columnId, context }) {
   const list = document.createElement("div");
   list.className = "option-property-list";
   list.replaceChildren(
+    createOptionPropertyClearItem({
+      path,
+      columnId,
+      context,
+      selected: selectedValues.length === 0,
+    }),
     ...options.map((option) =>
       createOptionPropertyItem({
         option,
@@ -5642,42 +5882,179 @@ function createOptionPropertyMenuInput({ path, columnId, context }) {
   return input;
 }
 
-function createOptionPropertyItem({ option, path, columnId, context, selected }) {
+function createOptionPropertyClearItem({ path, columnId, context, selected }) {
   const button = document.createElement("button");
-  button.className = "option-property-item";
+  button.className = "option-property-clear-item";
   button.type = "button";
-  button.dataset.optionName = option.name;
-  button.setAttribute("role", "menuitemcheckbox");
+  button.dataset.optionAction = "clear";
+  button.setAttribute("role", "menuitemradio");
   button.setAttribute("aria-checked", String(Boolean(selected)));
-  button.classList.toggle("is-selected", Boolean(selected));
-  button.append(createOptionPropertyPill(option));
+  button.textContent = "Empty";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearOptionPropertyValue({ path, columnId, context, sourceElement: button });
+  });
+
+  return button;
+}
+
+function createOptionPropertyItem({ option, path, columnId, context, selected }) {
+  const item = document.createElement("div");
+  item.className = "option-property-item";
+  item.dataset.propertyId = columnId;
+  item.dataset.optionId = option.id;
+  item.dataset.optionName = option.name;
+  item.draggable = true;
+  item.setAttribute("role", "presentation");
+  item.addEventListener("dragstart", handleOptionPropertyDragStart);
+  item.addEventListener("dragover", handleOptionPropertyDragOver);
+  item.addEventListener("drop", handleOptionPropertyDrop);
+  item.addEventListener("dragend", handleOptionPropertyDragEnd);
+
+  const selectButton = document.createElement("button");
+  selectButton.className = "option-property-select";
+  selectButton.type = "button";
+  selectButton.dataset.optionName = option.name;
+  selectButton.setAttribute("role", "menuitemcheckbox");
+  selectButton.setAttribute("aria-checked", String(Boolean(selected)));
+  selectButton.classList.toggle("is-selected", Boolean(selected));
+  selectButton.append(createOptionPropertyPill(option));
 
   const mark = document.createElement("span");
   mark.className = "option-property-check";
   mark.setAttribute("aria-hidden", "true");
   mark.textContent = selected ? "✓" : "";
-  button.append(mark);
-  button.addEventListener("click", (event) => {
+  selectButton.append(mark);
+  selectButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (optionPropertySuppressClick) {
+      optionPropertySuppressClick = false;
+      return;
+    }
+
+    closeOptionPropertyActionMenus();
     setOptionPropertyValue({
       path,
       columnId,
       optionName: option.name,
       context,
-      sourceElement: button,
+      sourceElement: selectButton,
     });
   });
 
-  return button;
+  item.append(
+    createOptionPropertyDragHandle(),
+    selectButton,
+    createOptionPropertyActionsButton(option),
+    createOptionPropertyActionMenu({ option, path, columnId, context }),
+  );
+
+  return item;
 }
 
 function createOptionPropertyPill(option) {
   const pill = document.createElement("span");
   pill.className = "option-property-pill";
   pill.textContent = option?.name || "";
+  applyOptionPropertyPillColor(pill, option?.color);
 
   return pill;
+}
+
+function createOptionPropertyDragHandle() {
+  const handle = document.createElement("span");
+  handle.className = "option-property-drag-handle";
+  handle.setAttribute("aria-hidden", "true");
+  handle.textContent = "⋮⋮";
+
+  return handle;
+}
+
+function createOptionPropertyActionsButton(option) {
+  const button = document.createElement("button");
+  button.className = "option-property-action-button";
+  button.type = "button";
+  button.dataset.optionAction = "open-actions";
+  button.dataset.optionId = option.id;
+  button.setAttribute("aria-label", `Edit ${option.name}`);
+  button.setAttribute("aria-haspopup", "menu");
+  button.setAttribute("aria-expanded", "false");
+  button.textContent = "•••";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleOptionPropertyActionMenu(button);
+  });
+
+  return button;
+}
+
+function createOptionPropertyActionMenu({ option, path, columnId, context }) {
+  const menu = document.createElement("div");
+  menu.className = "option-property-action-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+
+  const renameButton = createOptionPropertyActionButton("rename", "Rename");
+  renameButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startOptionPropertyRename(renameButton, option, path, columnId, context);
+  });
+
+  const deleteButton = createOptionPropertyActionButton("delete", "Delete");
+  deleteButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    deleteCustomPropertyOption(columnId, option.id);
+  });
+
+  const colorList = document.createElement("div");
+  colorList.className = "option-property-color-list";
+  colorList.append(
+    ...optionPropertyColorIds.map((color) =>
+      createOptionPropertyColorButton({
+        color,
+        selected: normalizeOptionPropertyColor(option.color) === color,
+        columnId,
+        optionId: option.id,
+      }),
+    ),
+  );
+
+  menu.append(renameButton, deleteButton, colorList);
+
+  return menu;
+}
+
+function createOptionPropertyActionButton(action, label) {
+  const button = document.createElement("button");
+  button.className = "option-property-menu-action";
+  button.type = "button";
+  button.dataset.optionAction = action;
+  button.setAttribute("role", "menuitem");
+  button.textContent = label;
+
+  return button;
+}
+
+function createOptionPropertyColorButton({ color, selected, columnId, optionId }) {
+  const button = document.createElement("button");
+  button.className = "option-property-color-button";
+  button.type = "button";
+  button.dataset.optionColor = color;
+  button.setAttribute("aria-label", `Set ${color} color`);
+  button.setAttribute("aria-pressed", String(Boolean(selected)));
+  applyOptionPropertyColorSwatch(button, color);
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    updateCustomPropertyOptionColor(columnId, optionId, color);
+  });
+
+  return button;
 }
 
 function createOptionPropertyDisplay(value, type, columnId) {
@@ -5689,8 +6066,12 @@ function createOptionPropertyDisplay(value, type, columnId) {
     return [empty];
   }
 
-  const optionsByName = new Map(getPropertyOptions(columnId).map((option) => [option.name, option]));
-  return selectedValues.map((name) => createOptionPropertyPill(optionsByName.get(name) || { name }));
+  const options = getPropertyOptions(columnId);
+  const optionsByName = new Map(options.map((option) => [option.name, option]));
+  const optionOrder = new Map(options.map((option, index) => [option.name, index]));
+  return [...selectedValues]
+    .sort((left, right) => (optionOrder.get(left) ?? selectedValues.indexOf(left)) - (optionOrder.get(right) ?? selectedValues.indexOf(right)))
+    .map((name) => createOptionPropertyPill(optionsByName.get(name) || { name }));
 }
 
 function getOptionPropertySelectedValues(value, type) {
@@ -5700,6 +6081,154 @@ function getOptionPropertySelectedValues(value, type) {
 
   const selected = normalizePropertyValue("select", value);
   return selected ? [selected] : [];
+}
+
+function clearOptionPropertyValue({ path, columnId, context, sourceElement }) {
+  const type = getPropertyType(columnId);
+  updateFolderProperty(path, columnId, type === "multi-select" ? [] : null, { syncTable: context !== "table" });
+  refreshOptionPropertyEditor(sourceElement?.closest(".option-property-editor"), path, columnId);
+  closeOptionPropertyMenus();
+}
+
+function toggleOptionPropertyActionMenu(button) {
+  const item = button.closest(".option-property-item");
+  const menu = item?.querySelector(".option-property-action-menu");
+  if (!item || !menu) {
+    return;
+  }
+
+  const shouldOpen = menu.hidden;
+  closeOptionPropertyActionMenus(item);
+  menu.hidden = !shouldOpen;
+  button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+function closeOptionPropertyActionMenus(exceptItem = null) {
+  document.querySelectorAll(".option-property-item").forEach((item) => {
+    if (item === exceptItem) {
+      return;
+    }
+
+    const menu = item.querySelector(".option-property-action-menu");
+    const button = item.querySelector(".option-property-action-button");
+    if (menu) {
+      menu.hidden = true;
+    }
+    button?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function startOptionPropertyRename(actionButton, option, path, columnId, context) {
+  const item = actionButton.closest(".option-property-item");
+  const selectButton = item?.querySelector(".option-property-select");
+  if (!item || !selectButton) {
+    return;
+  }
+
+  closeOptionPropertyActionMenus();
+  const input = document.createElement("input");
+  input.className = "option-property-rename-input";
+  input.type = "text";
+  input.value = option.name;
+  input.autocomplete = "off";
+  input.spellcheck = false;
+  selectButton.replaceWith(input);
+  input.focus({ preventScroll: true });
+  input.select();
+
+  let finished = false;
+  const finish = (save) => {
+    if (finished) {
+      return;
+    }
+
+    finished = true;
+    if (save) {
+      renameCustomPropertyOption(columnId, option.id, input.value);
+    }
+    refreshOptionPropertyEditor(item.closest(".option-property-editor"), path, columnId);
+  };
+
+  input.addEventListener("click", (event) => event.stopPropagation());
+  input.addEventListener("blur", () => finish(true), { once: true });
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finish(true);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      finish(false);
+    }
+  });
+}
+
+function handleOptionPropertyDragStart(event) {
+  const item = event.currentTarget;
+  if (event.target.closest(".option-property-action-button, .option-property-action-menu, .option-property-rename-input")) {
+    event.preventDefault();
+    return;
+  }
+
+  closeOptionPropertyActionMenus();
+  draggedOptionProperty = {
+    propertyId: item.dataset.propertyId,
+    optionId: item.dataset.optionId,
+    sourceItem: item,
+  };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", item.dataset.optionId);
+  }
+  requestAnimationFrame(() => item.classList.add("is-option-drag-source"));
+}
+
+function handleOptionPropertyDragOver(event) {
+  const item = event.currentTarget;
+  if (!draggedOptionProperty || item.dataset.propertyId !== draggedOptionProperty.propertyId) {
+    return;
+  }
+
+  event.preventDefault();
+  item.classList.toggle("is-option-preview-after", isOptionPropertyDropAfterTarget(event, item));
+}
+
+function handleOptionPropertyDrop(event) {
+  const item = event.currentTarget;
+  if (!draggedOptionProperty || item.dataset.propertyId !== draggedOptionProperty.propertyId) {
+    return;
+  }
+
+  event.preventDefault();
+  const editor = item.closest(".option-property-editor");
+  const insertAfterTarget = isOptionPropertyDropAfterTarget(event, item);
+  reorderCustomPropertyOption(item.dataset.propertyId, draggedOptionProperty.optionId, item.dataset.optionId, insertAfterTarget);
+  refreshOptionPropertyEditor(editor, editor?.dataset.folderPath, item.dataset.propertyId);
+  clearOptionPropertyDragState();
+  suppressNextOptionPropertyClick();
+}
+
+function handleOptionPropertyDragEnd() {
+  clearOptionPropertyDragState();
+  suppressNextOptionPropertyClick();
+}
+
+function isOptionPropertyDropAfterTarget(event, item) {
+  const rect = item.getBoundingClientRect();
+  return event.clientY > rect.top + rect.height / 2;
+}
+
+function clearOptionPropertyDragState() {
+  draggedOptionProperty = null;
+  document.querySelectorAll(".option-property-item").forEach((item) => {
+    item.classList.remove("is-option-drag-source", "is-option-preview-after");
+  });
+}
+
+function suppressNextOptionPropertyClick() {
+  optionPropertySuppressClick = true;
+  window.setTimeout(() => {
+    optionPropertySuppressClick = false;
+  }, 0);
 }
 
 function toggleOptionPropertyMenu(button) {
@@ -5722,6 +6251,7 @@ function toggleOptionPropertyMenu(button) {
 }
 
 function closeOptionPropertyMenus(exceptEditor = null) {
+  closeOptionPropertyActionMenus();
   document.querySelectorAll(".option-property-editor").forEach((editor) => {
     if (editor === exceptEditor) {
       return;
@@ -5777,7 +6307,7 @@ function setOptionPropertyValue({ path, columnId, optionName, context, sourceEle
     const selectedValues = normalizePropertyValue("multi-select", getFolderPropertyValue(folder, columnId));
     nextValue = selectedValues.includes(optionName)
       ? normalizePropertyValue("multi-select", selectedValues.filter((value) => value !== optionName))
-      : normalizePropertyValue("multi-select", [...selectedValues, optionName]);
+      : normalizePropertyValue("multi-select", sortOptionPropertyValues([...selectedValues, optionName], columnId));
   }
 
   updateFolderProperty(path, columnId, nextValue, { syncTable: context !== "table" });
@@ -5785,6 +6315,11 @@ function setOptionPropertyValue({ path, columnId, optionName, context, sourceEle
   if (type === "select") {
     closeOptionPropertyMenus();
   }
+}
+
+function sortOptionPropertyValues(values, columnId) {
+  const optionOrder = new Map(getPropertyOptions(columnId).map((option, index) => [option.name, index]));
+  return [...values].sort((left, right) => (optionOrder.get(left) ?? values.indexOf(left)) - (optionOrder.get(right) ?? values.indexOf(right)));
 }
 
 function refreshOptionPropertyEditor(editor, path, columnId) {
@@ -5795,8 +6330,10 @@ function refreshOptionPropertyEditor(editor, path, columnId) {
   }
 
   const context = editor.dataset.propertyContext || button.dataset.propertyContext || "table";
-  const folder = findFolderByPath(path) || { path, properties: {} };
+  const folderPath = path || editor.dataset.folderPath || "";
+  const folder = findFolderByPath(folderPath) || { path: folderPath, properties: {} };
   const wasOpen = !menu.hidden;
+  editor.dataset.folderPath = folderPath;
   button.replaceChildren(...createOptionPropertyDisplay(getFolderPropertyValue(folder, columnId), getPropertyType(columnId), columnId));
   const nextMenu = createOptionPropertyMenu({ folder, columnId, context });
   nextMenu.hidden = !wasOpen;
@@ -5807,8 +6344,17 @@ function refreshOptionPropertyEditor(editor, path, columnId) {
   }
 }
 
+function refreshVisibleOptionPropertyEditors(columnId) {
+  document
+    .querySelectorAll(`.option-property-editor[data-table-column="${CSS.escape(columnId)}"]`)
+    .forEach((editor) => refreshOptionPropertyEditor(editor, editor.dataset.folderPath, columnId));
+}
+
 function handleOptionPropertyMenuOutsideClick(event) {
   if (event.target.closest(".option-property-editor")) {
+    if (!event.target.closest(".option-property-item")) {
+      closeOptionPropertyActionMenus();
+    }
     return;
   }
 

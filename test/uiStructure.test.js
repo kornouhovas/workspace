@@ -421,7 +421,7 @@ test("select and multi-select properties use Notion-like option menus instead of
   assert.match(app, /function createOptionPropertyMenuInput\(/);
   assert.match(app, /input\.placeholder = "Add option"/);
   assert.match(app, /function createOptionPropertyItem\(/);
-  assert.match(app, /button\.append\(createOptionPropertyPill\(option\)\)/);
+  assert.match(app, /selectButton\.append\(createOptionPropertyPill\(option\)\)/);
   assert.match(app, /function toggleOptionPropertyMenu\(/);
   assert.match(app, /function closeOptionPropertyMenus\(/);
   assert.match(app, /function handleOptionPropertyMenuInputKeydown\(/);
@@ -434,6 +434,40 @@ test("select and multi-select properties use Notion-like option menus instead of
   assert.match(css, /\.option-property-trigger/);
   assert.match(css, /\.option-property-menu/);
   assert.match(css, /\.option-property-pill/);
+});
+
+test("select and multi-select option menus can clear, edit, recolor, delete, and reorder options", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(app, /const optionPropertyColorIds = \[/);
+  assert.match(app, /default", "gray", "brown", "orange", "yellow", "green", "blue", "purple", "pink", "red"/);
+  assert.match(app, /function createOptionPropertyClearItem\(/);
+  assert.match(app, /button\.dataset\.optionAction = "clear"/);
+  assert.match(app, /function clearOptionPropertyValue\(/);
+  assert.match(app, /updateFolderProperty\(path, columnId, type === "multi-select" \? \[\] : null/);
+  assert.match(app, /function createOptionPropertyDragHandle\(/);
+  assert.match(app, /item\.draggable = true/);
+  assert.match(app, /function handleOptionPropertyDragStart\(/);
+  assert.match(app, /function handleOptionPropertyDrop\(/);
+  assert.match(app, /function reorderCustomPropertyOption\(propertyId, sourceOptionId, targetOptionId, insertAfterTarget\)/);
+  assert.match(app, /function createOptionPropertyActionsButton\(/);
+  assert.match(app, /button\.dataset\.optionAction = "open-actions"/);
+  assert.match(app, /function createOptionPropertyActionMenu\(/);
+  assert.match(app, /createOptionPropertyActionButton\("rename", "Rename"\)/);
+  assert.match(app, /createOptionPropertyActionButton\("delete", "Delete"\)/);
+  assert.match(app, /function startOptionPropertyRename\(/);
+  assert.match(app, /function renameCustomPropertyOption\(propertyId, optionId, name\)/);
+  assert.match(app, /function deleteCustomPropertyOption\(propertyId, optionId\)/);
+  assert.match(app, /function updateCustomPropertyOptionColor\(propertyId, optionId, color\)/);
+  assert.match(app, /function updateFolderValuesForRenamedOption\(propertyId, oldName, nextName, type\)/);
+  assert.match(app, /function updateFolderValuesForDeletedOption\(propertyId, deletedName, type\)/);
+  assert.match(css, /\.option-property-clear-item/);
+  assert.match(css, /\.option-property-drag-handle/);
+  assert.match(css, /\.option-property-action-button/);
+  assert.match(css, /\.option-property-action-menu/);
+  assert.match(css, /\.option-property-color-button/);
+  assert.match(css, /\.option-property-rename-input/);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {

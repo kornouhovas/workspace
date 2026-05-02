@@ -1475,13 +1475,135 @@ textarea.table-text-input {
   min-width: 0;
 }
 
+.option-property-clear-item,
 .option-property-item {
+  width: 100%;
+  min-height: 30px;
+  border-radius: 6px;
+}
+
+.option-property-clear-item {
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  padding: 0 8px;
+  font: inherit;
+  text-align: left;
+}
+
+.option-property-clear-item:hover,
+.option-property-clear-item:focus-visible,
+.option-property-clear-item[aria-checked="true"] {
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  outline: 0;
+}
+
+.option-property-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: var(--text);
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease,
+    opacity 140ms ease;
+}
+
+.option-property-item:hover,
+.option-property-item:focus-within {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.option-property-item.is-option-drag-source {
+  opacity: 0.38;
+}
+
+.option-property-item.is-option-preview-after {
+  transform: translateY(6px);
+}
+
+.option-property-drag-handle {
+  color: var(--faint);
+  cursor: grab;
+  font-size: 12px;
+  line-height: 1;
+  text-align: center;
+}
+
+.option-property-select {
   display: grid;
   width: 100%;
+  min-width: 0;
   min-height: 30px;
   grid-template-columns: minmax(0, 1fr) 16px;
   align-items: center;
   gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0 8px;
+  font: inherit;
+  text-align: left;
+}
+
+.option-property-select:focus-visible {
+  outline: 0;
+}
+
+.option-property-action-button {
+  display: grid;
+  width: 24px;
+  min-height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+  padding: 0;
+  font: inherit;
+  opacity: 0;
+}
+
+.option-property-item:hover .option-property-action-button,
+.option-property-item:focus-within .option-property-action-button,
+.option-property-action-button[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.option-property-action-button:hover,
+.option-property-action-button:focus-visible,
+.option-property-action-button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: 0;
+}
+
+.option-property-action-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 39;
+  display: grid;
+  width: 176px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1d1d1b;
+  padding: 6px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+.option-property-action-menu[hidden] {
+  display: none;
+}
+
+.option-property-menu-action {
+  width: 100%;
+  min-height: 28px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -1491,9 +1613,36 @@ textarea.table-text-input {
   text-align: left;
 }
 
-.option-property-item:hover,
-.option-property-item:focus-visible {
+.option-property-menu-action:hover,
+.option-property-menu-action:focus-visible {
   background: rgba(255, 255, 255, 0.045);
+  outline: 0;
+}
+
+.option-property-color-list {
+  display: grid;
+  grid-template-columns: repeat(5, 22px);
+  gap: 5px;
+  padding: 4px 2px 0;
+}
+
+.option-property-color-button {
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--option-swatch-bg, rgba(255, 255, 255, 0.08));
+  color: var(--option-swatch-text, var(--text));
+  padding: 0;
+}
+
+.option-property-color-button[aria-pressed="true"] {
+  border-color: currentColor;
+}
+
+.option-property-color-button:hover,
+.option-property-color-button:focus-visible {
+  border-color: currentColor;
   outline: 0;
 }
 
@@ -1503,8 +1652,8 @@ textarea.table-text-input {
   min-width: 0;
   align-items: center;
   border-radius: 999px;
-  background: rgba(107, 154, 214, 0.22);
-  color: #b8d4f7;
+  background: var(--option-pill-bg, rgba(255, 255, 255, 0.08));
+  color: var(--option-pill-text, var(--text));
   padding: 1px 7px;
   font-size: 12px;
   font-weight: 560;
@@ -1518,6 +1667,20 @@ textarea.table-text-input {
   color: var(--muted);
   font-size: 12px;
   text-align: right;
+}
+
+.option-property-rename-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0 8px;
+  font: inherit;
+  outline: 0;
 }
 
 .option-property-empty {
