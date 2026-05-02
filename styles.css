@@ -1085,7 +1085,7 @@ input:focus-visible {
   grid-template-columns: var(--table-columns, minmax(180px, 46%) minmax(110px, 22%));
   gap: 0;
   border-bottom: 1px solid var(--line);
-  padding: 10px 8px;
+  padding: 10px 0;
   transition:
     background-color 140ms ease,
     color 140ms ease;
@@ -1115,6 +1115,10 @@ input:focus-visible {
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.folder-table-row:not(.folder-table-head) .folder-table-cell {
+  padding: 0 20px;
 }
 
 .folder-table-trailing-cell {

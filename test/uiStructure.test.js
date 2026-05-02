@@ -783,8 +783,11 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /cell\.draggable = false/);
   assert.match(css, /\.folder-table-row\s*\{[^}]*grid-template-columns:\s*var\(--table-columns/s);
   assert.match(css, /\.folder-table-row\s*\{[^}]*gap:\s*0/s);
+  assert.match(css, /\.folder-table-row\s*\{[^}]*padding:\s*10px 0/s);
+  assert.doesNotMatch(css, /\.folder-table-row\s*\{[^}]*padding:\s*10px 8px/s);
   assert.match(css, /\.folder-table-head\s*\{[^}]*padding:\s*0/s);
   assert.match(css, /\.folder-table-cell\s*\{[^}]*padding:\s*0 12px/s);
+  assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\s*\{[^}]*padding:\s*0 20px/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*display:\s*flex/s);
   assert.match(css, /\.folder-table-head \.folder-table-cell\s*\{[^}]*min-height:\s*36px/s);
