@@ -369,10 +369,11 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlacePropertyPointerDragMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleCardPlacePropertyPointerDragEnd\)/);
-  assert.match(app, /cardPlacePanel\.addEventListener\("click", handleCardPlacePropertyMenuClick\)/);
+  assert.match(app, /cardPlacePropertyList\.addEventListener\("click", handleCardPlacePropertyMenuClick\)/);
   assert.match(app, /cardPlacePropertyList\.addEventListener\("pointerdown", handleCardPlacePropertyPointerDragStart\)/);
   assert.match(app, /createCardPlacePropertyIcon\(property\.type\)/);
-  assert.match(app, /createTableStatusDragHandle\(\)/);
+  assert.doesNotMatch(app, /card-place-property-drag-handle/);
+  assert.doesNotMatch(css, /card-place-property-drag-handle/);
   assert.match(app, /data-card-place-property-action/);
   assert.match(app, /Hidden properties/);
   assert.match(app, /data-card-place-hidden-toggle/);
@@ -382,14 +383,15 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /property\.id === "status"/);
 
   assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
-  assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(150px,\s*150px\) minmax\(0,\s*1fr\)/s);
-  assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*17px 18px minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(126px,\s*126px\) minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*18px minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.card-place-property-row:hover \.card-place-property-name/s);
-  assert.match(css, /\.card-place-property-row:hover \.card-place-property-drag-handle/s);
   assert.match(css, /\.card-place-property-menu\[hidden\]/);
   assert.match(css, /\.card-place-hidden-properties-toggle/);
   assert.match(css, /\.card-place-property-row\.is-card-place-property-drag-source/);
   assert.match(css, /\.card-place-property-drag-image/);
+  assert.match(css, /\.property-type-icon\s*\{[^}]*stroke:\s*currentColor/s);
+  assert.match(app, /createSvgIcon\("property-type-icon"/);
 });
 
 test("Text is treated as a user-created property instead of a default system field", async () => {
@@ -665,10 +667,10 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(html, /class="card-place-entry-icon is-directory card-place-folder-open"/);
   assert.match(html, /role="button"/);
   assert.match(html, /id="cardPlaceTitle"/);
-  assert.match(html, /id="cardPlaceStatus"/);
+  assert.doesNotMatch(html, /id="cardPlaceStatus"/);
+  assert.doesNotMatch(app, /const cardPlaceStatus\b/);
   assert.match(html, /id="cardPlaceFolderList"/);
   assert.match(html, /id="cardPlaceCloseButton"/);
-  assert.match(html, />Status</);
   assert.match(app, /import \{[^}]*filterFolders[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
   assert.match(app, /const cardPlacePanel = document\.querySelector\("#cardPlacePanel"\)/);
   assert.match(app, /const cardPlaceFolderOpenButton = document\.querySelector\("#cardPlaceFolderOpenButton"\)/);
@@ -726,7 +728,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /row\.dataset\.folderPath = folder\.path/);
   assert.match(app, /cardPlacePanel\.style\.setProperty\("--card-place-width"/);
   assert.match(app, /cardPlacePanel\.classList\.toggle\("is-open", Boolean\(selectedCard\)\)/);
-  assert.match(app, /cardPlaceStatus\.textContent = selectedCard\.status/);
+  assert.match(app, /function createCardPlaceStatusPropertyRow\(selectedCard\)/);
   assert.match(app, /selectedCardPath = null;\s*renderCardPlacePanel\(\)/);
   assert.match(css, /\.card-place-panel\s*\{[^}]*position:\s*fixed/s);
   assert.match(css, /\.card-place-panel\s*\{[^}]*top:\s*0/s);
@@ -740,11 +742,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-title-row\s*\{/);
   assert.match(css, /\.card-place-folder-open\s*\{/);
   assert.doesNotMatch(css, /\.card-place-folder-open-icon/);
-  assert.match(css, /\.card-place-field\s*\{[^}]*grid-template-columns:\s*auto auto/s);
-  assert.match(css, /\.card-place-field\s*\{[^}]*justify-content:\s*start/s);
-  assert.match(css, /\.card-place-field\s*\{[^}]*gap:\s*6px/s);
-  assert.match(css, /\.card-place-field \.eyebrow\s*\{[^}]*text-transform:\s*none/s);
-  assert.doesNotMatch(css, /\.card-place-field p\s*\{[^}]*text-align:\s*right/s);
+  assert.doesNotMatch(css, /\.card-place-field/);
   assert.match(css, /\.card-place-folder-list\s*\{/);
   assert.match(css, /\.card-place-entry\s*\{/);
   assert.doesNotMatch(css, /\.card-place-entry\s*\{[^}]*border-bottom:/s);

@@ -1396,15 +1396,14 @@ textarea.table-text-input {
 }
 
 .property-type-icon {
-  display: grid;
   width: 18px;
   height: 18px;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 5px;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .table-text-menu-action {
@@ -2107,25 +2106,6 @@ textarea.table-text-input {
   color: var(--text);
 }
 
-.card-place-field {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  justify-content: start;
-  gap: 6px;
-}
-
-.card-place-field .eyebrow {
-  text-transform: none;
-}
-
-.card-place-field p {
-  margin: 0;
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.35;
-}
-
 .card-place-text-section {
   display: flex;
   align-items: flex-start;
@@ -2144,7 +2124,7 @@ textarea.table-text-input {
 .card-place-property-row {
   display: grid;
   --card-place-property-shift: 0px;
-  grid-template-columns: minmax(150px, 150px) minmax(0, 1fr);
+  grid-template-columns: minmax(126px, 126px) minmax(0, 1fr);
   align-items: start;
   gap: 40px;
   margin: 0;
@@ -2180,7 +2160,7 @@ textarea.table-text-input {
   display: grid;
   width: 100%;
   min-height: 24px;
-  grid-template-columns: 17px 18px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
   gap: 7px;
   border: 0;
@@ -2204,17 +2184,6 @@ textarea.table-text-input {
 
 .card-place-property-name:active {
   cursor: grabbing;
-}
-
-.card-place-property-drag-handle {
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.card-place-property-row:hover .card-place-property-drag-handle,
-.card-place-property-name:focus-visible .card-place-property-drag-handle,
-.card-place-property-name[aria-expanded="true"] .card-place-property-drag-handle {
-  opacity: 0.54;
 }
 
 .card-place-property-icon {
@@ -2365,7 +2334,7 @@ textarea.table-text-input {
   top: 0;
   left: 0;
   z-index: 72;
-  grid-template-columns: minmax(150px, 150px) minmax(0, 1fr);
+  grid-template-columns: minmax(126px, 126px) minmax(0, 1fr);
   align-items: start;
   gap: 40px;
   border-radius: 8px;

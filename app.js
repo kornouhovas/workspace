@@ -29,7 +29,6 @@ const cardPlacePanel = document.querySelector("#cardPlacePanel");
 const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
-const cardPlaceStatus = document.querySelector("#cardPlaceStatus");
 const cardPlacePropertyList = document.querySelector("#cardPlacePropertyList");
 const cardPlaceFolderList = document.querySelector("#cardPlaceFolderList");
 const cardPlaceCloseButton = document.querySelector("#cardPlaceCloseButton");
@@ -343,7 +342,7 @@ function bindEvents() {
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
   cardPlacePanel.addEventListener("click", handlePropertyTypeMenuClick);
-  cardPlacePanel.addEventListener("click", handleCardPlacePropertyMenuClick);
+  cardPlacePropertyList.addEventListener("click", handleCardPlacePropertyMenuClick);
   cardPlacePropertyList.addEventListener("pointerdown", handleCardPlacePropertyPointerDragStart);
   cardPlaceCloseButton.addEventListener("click", closeCardPlace);
   cardPlaceResizeHandle.addEventListener("pointerdown", handleCardPlaceResizeStart);
@@ -3310,10 +3309,8 @@ function renderCardPlacePanel() {
   cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
   cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
   cardPlaceTitle.textContent = "";
-  cardPlaceStatus.textContent = "";
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
-    cardPlaceStatus.textContent = selectedCard.status;
   }
   renderCardPlaceProperties(selectedCard);
   renderCardPlaceEntries();
@@ -3396,14 +3393,11 @@ function createCardPlacePropertyNameButton(property, hidden = false) {
   button.setAttribute("aria-expanded", "false");
   button.title = property.name;
 
-  const dragHandle = createTableStatusDragHandle();
-  dragHandle.classList.add("card-place-property-drag-handle");
-
   const label = document.createElement("span");
   label.className = "card-place-property-label";
   label.textContent = property.name;
 
-  button.append(dragHandle, createCardPlacePropertyIcon(property.type), label);
+  button.append(createCardPlacePropertyIcon(property.type), label);
   wrapper.append(button, createCardPlacePropertyMenu(property, hidden));
 
   return wrapper;
@@ -5776,16 +5770,28 @@ function createPropertyTypeMenu(source) {
 }
 
 function createPropertyTypeIcon(type) {
-  const icon = document.createElement("span");
-  icon.className = "property-type-icon";
+  const icon = createSvgIcon("property-type-icon", "0 0 24 24");
+  const pathsByType = {
+    text: ["M5 7h14", "M5 12h14", "M5 17h9"],
+    number: ["M9 4 7 20", "M17 4l-2 16", "M5 9h14", "M4 15h14"],
+    date: ["M7 4v3", "M17 4v3", "M5 8h14", "M6 6h12a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 18 19H6a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 6 6Z"],
+    select: ["M7 8h10", "M7 12h7", "m16 13 2 2 2-2"],
+    "multi-select": ["M5 7h4v4H5Z", "M13 8h6", "M5 15h4v4H5Z", "M13 16h6"],
+  };
+  (pathsByType[type] || pathsByType.text).forEach((pathData) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  });
+
+  return icon;
+}
+
+function createSvgIcon(className, viewBox = "0 0 24 24") {
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("class", className);
+  icon.setAttribute("viewBox", viewBox);
   icon.setAttribute("aria-hidden", "true");
-  icon.textContent = {
-    text: "T",
-    number: "#",
-    date: "D",
-    select: "S",
-    "multi-select": "M",
-  }[type] || "T";
 
   return icon;
 }
