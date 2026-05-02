@@ -364,7 +364,10 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function createCardPlacePropertyMenu\(property/);
   assert.match(app, /function createCardPlaceHiddenPropertiesDisclosure\(/);
   assert.match(app, /function toggleCardPlacePropertyVisibility\(propertyId\)/);
+  assert.match(app, /function setCardPlacePropertyHiddenState\(propertyId, hidden\)/);
   assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
+  assert.match(app, /function applyCardPlacePropertyDrop\(/);
+  assert.match(app, /function getCardPlacePropertyDragTarget\(event\)/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
   const dragStartIndex = app.indexOf("function handleCardPlacePropertyPointerDragStart(event)");
@@ -386,9 +389,13 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /createCardPlacePropertyMenuAction\("hide", hidden \? "Show" : "Hide", createEyeIcon\(hidden\)\)/);
   assert.match(app, /createCardPlacePropertyMenuAction\("delete", "Delete", createMenuIcon\("delete"\)\)/);
   assert.match(app, /property\.id === "status"/);
+  assert.match(app, /hiddenProperties\.add\(propertyId\);\s*cardPlaceHiddenPropertiesExpanded = false;/);
+  assert.match(app, /targetHidden/);
 
   assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
   assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(126px,\s*126px\) minmax\(0,\s*1fr\)/s);
+  assert.doesNotMatch(css, /\.card-place-property-row\.is-hidden-card-place-property\s*\{[^}]*opacity:/s);
+  assert.match(css, /\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-name,\s*\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-value\s*\{[^}]*opacity:\s*0\.62/s);
   assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*18px minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.card-place-property-name\s*\{[^}]*margin-left:\s*-8px/s);
   assert.match(css, /\.card-place-property-name\s*\{[^}]*padding:\s*0 6px 0 8px/s);

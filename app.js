@@ -3627,21 +3627,34 @@ function startCardPlacePropertyRename(propertyId) {
 }
 
 function toggleCardPlacePropertyVisibility(propertyId) {
-  if (!getKnownCardPlacePropertyIds().includes(propertyId)) {
+  const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
+  const shouldHide = !hiddenProperties.has(propertyId);
+  if (!setCardPlacePropertyHiddenState(propertyId, shouldHide)) {
     return;
   }
 
+  closeCardPlacePropertyMenus();
+  renderCardPlaceProperties(findFolderByPath(selectedCardPath));
+}
+
+function setCardPlacePropertyHiddenState(propertyId, hidden) {
+  if (!getKnownCardPlacePropertyIds().includes(propertyId)) {
+    return false;
+  }
+
   const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
-  if (hiddenProperties.has(propertyId)) {
-    hiddenProperties.delete(propertyId);
-  } else {
+  if (hidden) {
     hiddenProperties.add(propertyId);
-    cardPlaceHiddenPropertiesExpanded = true;
+    cardPlaceHiddenPropertiesExpanded = false;
+  } else {
+    hiddenProperties.delete(propertyId);
+    if (hiddenProperties.size === 0) {
+      cardPlaceHiddenPropertiesExpanded = false;
+    }
   }
 
   saveCardPlaceHiddenProperties([...hiddenProperties]);
-  closeCardPlacePropertyMenus();
-  renderCardPlaceProperties(findFolderByPath(selectedCardPath));
+  return true;
 }
 
 function reorderCardPlaceProperty(sourcePropertyId, targetPropertyId, insertAfterTarget) {
@@ -3656,6 +3669,22 @@ function reorderCardPlaceProperty(sourcePropertyId, targetPropertyId, insertAfte
 
   const nextOrder = moveStatusNearTarget(currentOrder, sourcePropertyId, targetPropertyId, insertAfterTarget);
   saveCardPlacePropertyOrder(nextOrder);
+}
+
+function applyCardPlacePropertyDrop(propertyId, targetItem, targetHidden, insertAfterTarget) {
+  if (!propertyId || typeof targetHidden !== "boolean") {
+    return;
+  }
+
+  const targetPropertyId = targetItem?.dataset.cardPlacePropertyId;
+  if (targetPropertyId && targetPropertyId !== propertyId) {
+    reorderCardPlaceProperty(propertyId, targetPropertyId, insertAfterTarget);
+  }
+
+  const sourceHidden = getActiveCardPlaceHiddenProperties().includes(propertyId);
+  if (sourceHidden !== targetHidden) {
+    setCardPlacePropertyHiddenState(propertyId, targetHidden);
+  }
 }
 
 function handleCardPlacePropertyPointerDragStart(event) {
@@ -3682,6 +3711,8 @@ function handleCardPlacePropertyPointerDragStart(event) {
     dragOffsetY: event.clientY - sourceRect.top,
     sourceItem: row,
     targetItem: row,
+    targetHidden: isCardPlacePropertyHiddenRow(row),
+    targetList: row.parentElement,
     isDragging: false,
   };
   draggedCardPlaceProperty = row.dataset.cardPlacePropertyId;
@@ -3711,14 +3742,20 @@ function handleCardPlacePropertyPointerDragMove(event) {
     moveCardPlacePropertyDragImage(event);
   }
 
-  const targetItem = document.elementFromPoint(event.clientX, event.clientY)?.closest(".card-place-property-row");
-  const sourceList = cardPlacePropertyPointerDragState.sourceItem.parentElement;
-  if (!targetItem || targetItem.parentElement !== sourceList) {
+  const target = getCardPlacePropertyDragTarget(event);
+  clearCardPlacePropertyDragState();
+  cardPlacePropertyPointerDragState.sourceItem.classList.add("is-card-place-property-drag-source");
+  if (!target) {
     return;
   }
 
-  cardPlacePropertyPointerDragState.targetItem = targetItem;
-  applyCardPlacePropertyPreview(getCardPlacePropertyPreviewOrder(event, targetItem));
+  cardPlacePropertyPointerDragState.targetItem = target.targetItem;
+  cardPlacePropertyPointerDragState.targetHidden = target.targetHidden;
+  cardPlacePropertyPointerDragState.targetList = target.targetList;
+  target.dropZone?.classList.add("is-card-place-property-drop-target");
+  if (target.targetItem) {
+    applyCardPlacePropertyPreview(getCardPlacePropertyPreviewOrder(event, target.targetItem));
+  }
 }
 
 function handleCardPlacePropertyPointerDragEnd(event) {
@@ -3726,8 +3763,8 @@ function handleCardPlacePropertyPointerDragEnd(event) {
     return;
   }
 
-  const { isDragging, targetItem } = cardPlacePropertyPointerDragState;
-  if (!isDragging || !targetItem) {
+  const { isDragging, targetItem, targetHidden } = cardPlacePropertyPointerDragState;
+  if (!isDragging || typeof targetHidden !== "boolean") {
     cardPlacePropertyPointerDragState = null;
     draggedCardPlaceProperty = null;
     clearCardPlacePropertyDragState();
@@ -3736,10 +3773,11 @@ function handleCardPlacePropertyPointerDragEnd(event) {
   }
 
   event.preventDefault();
-  const insertAfterTarget = getCardPlacePropertyInsertAfterTarget(event, targetItem);
-  reorderCardPlaceProperty(
+  const insertAfterTarget = targetItem ? getCardPlacePropertyInsertAfterTarget(event, targetItem) : false;
+  applyCardPlacePropertyDrop(
     cardPlacePropertyPointerDragState.propertyId,
-    targetItem.dataset.cardPlacePropertyId,
+    targetItem,
+    targetHidden,
     insertAfterTarget,
   );
   cardPlacePropertyPointerDragState = null;
@@ -3797,8 +3835,12 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
   const draggedIndex = propertyIds.indexOf(draggedCardPlaceProperty);
   const targetIndex = propertyIds.indexOf(targetItem.dataset.cardPlacePropertyId);
   const targetRect = targetItem.getBoundingClientRect();
-  if (draggedIndex < 0 || targetIndex < 0) {
+  if (targetIndex < 0) {
     return false;
+  }
+
+  if (draggedIndex < 0) {
+    return event.clientY > targetRect.top + targetRect.height * 0.5;
   }
 
   return draggedIndex < targetIndex
@@ -3807,13 +3849,51 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
 }
 
 function getCardPlacePropertyDragItems() {
-  const list = cardPlacePropertyPointerDragState?.sourceItem.parentElement;
+  const list = cardPlacePropertyPointerDragState?.targetList || cardPlacePropertyPointerDragState?.sourceItem.parentElement;
   return [...(list?.children || [])].filter((item) => item.classList?.contains("card-place-property-row"));
+}
+
+function getCardPlacePropertyDragTarget(event) {
+  const element = document.elementFromPoint(event.clientX, event.clientY);
+  if (!element || !cardPlacePropertyList?.contains(element)) {
+    return null;
+  }
+
+  const targetItem = element.closest(".card-place-property-row");
+  if (targetItem && cardPlacePropertyList.contains(targetItem)) {
+    return {
+      targetItem,
+      targetHidden: isCardPlacePropertyHiddenRow(targetItem),
+      targetList: targetItem.parentElement,
+      dropZone: null,
+    };
+  }
+
+  const hiddenDropZone = element.closest(".card-place-hidden-properties");
+  if (hiddenDropZone && cardPlacePropertyList.contains(hiddenDropZone)) {
+    return {
+      targetItem: null,
+      targetHidden: true,
+      targetList: hiddenDropZone.querySelector(".card-place-hidden-properties-list"),
+      dropZone: hiddenDropZone,
+    };
+  }
+
+  return {
+    targetItem: null,
+    targetHidden: false,
+    targetList: cardPlacePropertyList,
+    dropZone: null,
+  };
+}
+
+function isCardPlacePropertyHiddenRow(row) {
+  return Boolean(row?.closest(".card-place-hidden-properties-list"));
 }
 
 function applyCardPlacePropertyPreview(previewPropertyIds) {
   const items = getCardPlacePropertyDragItems();
-  const rowGap = Number.parseFloat(getComputedStyle(cardPlacePropertyPointerDragState?.sourceItem.parentElement).rowGap) || 0;
+  const rowGap = Number.parseFloat(getComputedStyle(cardPlacePropertyPointerDragState?.targetList).rowGap) || 0;
   items.forEach((item, currentIndex) => {
     const previewIndex = previewPropertyIds.indexOf(item.dataset.cardPlacePropertyId);
     const shiftDistance = `${item.getBoundingClientRect().height + rowGap}px`;
@@ -3845,6 +3925,9 @@ function clearCardPlacePropertyDragState() {
       "is-card-place-property-preview-down",
     );
     row.style.removeProperty("--card-place-property-shift");
+  });
+  cardPlacePropertyList?.querySelectorAll(".is-card-place-property-drop-target").forEach((dropZone) => {
+    dropZone.classList.remove("is-card-place-property-drop-target");
   });
 }
 

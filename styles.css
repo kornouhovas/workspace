@@ -2133,7 +2133,8 @@ textarea.table-text-input {
   user-select: none;
 }
 
-.card-place-property-row.is-hidden-card-place-property {
+.card-place-property-row.is-hidden-card-place-property .card-place-property-name,
+.card-place-property-row.is-hidden-card-place-property .card-place-property-value {
   opacity: 0.62;
 }
 
@@ -2283,7 +2284,8 @@ textarea.table-text-input {
 }
 
 .card-place-hidden-properties-toggle:hover,
-.card-place-hidden-properties-toggle:focus-visible {
+.card-place-hidden-properties-toggle:focus-visible,
+.card-place-hidden-properties.is-card-place-property-drop-target .card-place-hidden-properties-toggle {
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
   outline: 0;
