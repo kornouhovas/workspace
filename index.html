@@ -325,7 +325,7 @@
           hiddenStatuses = [],
           showHiddenStatuses = false,
           tableColumnOrder = ["name", "status"],
-          tableColumnWidths = { name: 34, status: 18 },
+          tableColumnWidths = { name: 360, status: 190 },
           tableHiddenColumns = [],
           tableColumnLabels = {},
           tableWrappedColumns = [],
@@ -407,16 +407,16 @@
           const wrappedColumns = Array.isArray(tableWrappedColumns) ? tableWrappedColumns : [];
           const table = document.createElement("div");
           table.className = "folder-table-surface";
-          table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}%`);
-          table.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}%`);
+          table.style.setProperty("--table-name-column-width", `${tableColumnWidths.name}px`);
+          table.style.setProperty("--table-status-column-width", `${tableColumnWidths.status}px`);
           Object.entries(tableColumnWidths).forEach(([columnId, width]) => {
-            table.style.setProperty(`--table-${getInitialTableColumnCssKey(columnId)}-column-width`, `${width}%`);
+            table.style.setProperty(`--table-${getInitialTableColumnCssKey(columnId)}-column-width`, `${width}px`);
           });
           table.style.setProperty(
             "--table-columns",
             visibleTableColumnOrder
               .map((columnId) =>
-                `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${getInitialTableColumnCssKey(columnId)}-column-width))`,
+                `var(--table-${getInitialTableColumnCssKey(columnId)}-column-width)`,
               )
               .join(" "),
           );
@@ -706,8 +706,7 @@
         }
 
         function getStoredTableColumnWidths(state) {
-          const defaultWidths = { name: 34, status: 18 };
-          const tableColumnWidthVersion = 2;
+          const defaultWidths = { name: 360, status: 190 };
           const activeView = getStoredActiveBoardViewConfig(state);
           const storedWidths = activeView.tableColumnWidths || {};
 
@@ -715,12 +714,19 @@
             return defaultWidths;
           }
 
+          const customProperties = getStoredCustomProperties(state);
           const widths = {
-            name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeView.tableNameWidth, 24, 78, 34),
-            status: normalizeInitialTableColumnWidth(storedWidths.status, 12, 36, 18),
+            name: normalizeInitialTableColumnWidth(storedWidths.name ?? activeView.tableNameWidth, 180, 760, 360),
+            status: normalizeInitialTableColumnWidth(storedWidths.status, 110, 420, 190),
           };
-          getStoredCustomProperties(state).forEach((property) => {
-            widths[property.id] = normalizeInitialTableColumnWidth(storedWidths[property.id], 10, 42, 16);
+          customProperties.forEach((property) => {
+            const limits = getInitialTableColumnWidthLimits(property.id);
+            widths[property.id] = normalizeInitialTableColumnWidth(
+              storedWidths[property.id],
+              limits.min,
+              limits.max,
+              getInitialDefaultTableColumnWidth(property.id),
+            );
           });
 
           return widths;
@@ -788,8 +794,8 @@
             tableHiddenColumns: [],
             tableColumnLabels: {},
             tableWrappedColumns: [],
-            tableColumnWidthVersion: 2,
-            tableColumnWidths: { name: 34, status: 18 },
+            tableColumnWidthVersion: 3,
+            tableColumnWidths: { name: 360, status: 190 },
           };
           if (!isStoredWorkspaceState(state)) {
             return fallbackView;
@@ -832,8 +838,62 @@
 
         function normalizeInitialTableColumnWidth(width, min, max, fallback) {
           const tableColumnWidth = Number(width);
+          const normalizedWidth = tableColumnWidth > 0 && tableColumnWidth < 100
+            ? convertLegacyInitialTableColumnWidth(tableColumnWidth)
+            : tableColumnWidth;
 
-          return Number.isFinite(tableColumnWidth) ? Math.min(max, Math.max(min, Math.round(tableColumnWidth))) : fallback;
+          return Number.isFinite(normalizedWidth) ? Math.min(max, Math.max(min, Math.round(normalizedWidth))) : fallback;
+        }
+
+        function convertLegacyInitialTableColumnWidth(width) {
+          return Math.round((Number(width) / 100) * 1100);
+        }
+
+        function getInitialDefaultTableColumnWidth(columnId) {
+          if (columnId === "name") {
+            return 360;
+          }
+
+          if (columnId === "status") {
+            return 190;
+          }
+
+          const type = getInitialPropertyType(columnId);
+          if (type === "number" || type === "date") {
+            return 150;
+          }
+
+          return type === "multi-select" ? 200 : 180;
+        }
+
+        function getInitialTableColumnWidthLimits(columnId) {
+          if (columnId === "name") {
+            return { min: 180, max: 760 };
+          }
+
+          if (columnId === "status") {
+            return { min: 110, max: 420 };
+          }
+
+          const type = getInitialPropertyType(columnId);
+          if (type === "number" || type === "date") {
+            return { min: 110, max: 340 };
+          }
+
+          return { min: 120, max: 560 };
+        }
+
+        function getInitialPropertyType(columnId) {
+          if (columnId === "name") {
+            return "text";
+          }
+
+          if (columnId === "status") {
+            return "select";
+          }
+
+          return getStoredCustomProperties(JSON.parse(localStorage.getItem("workspaces-state")))
+            .find((property) => property.id === columnId)?.type || "text";
         }
 
         function isStoredWorkspaceState(state) {

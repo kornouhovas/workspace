@@ -742,6 +742,8 @@ test("table columns can be resized and reordered from the header", async () => {
 
   assert.match(app, /const tableColumnIds = \["name", "status"\]/);
   assert.match(app, /const defaultTableColumnWidths = \{/);
+  assert.match(app, /const tableColumnWidthVersion = 3/);
+  assert.match(app, /const legacyTableColumnWidthBase = 1100/);
   assert.match(app, /let tableColumnPointerDragState = null/);
   assert.match(app, /let tableColumnDragImage = null/);
   assert.match(app, /tableColumnOrder:\s*normalizeTableColumnOrder\(settings\.tableColumnOrder, customProperties\)/);
@@ -753,6 +755,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function normalizeResizedTableColumnWidth\(columnId, width\)/);
   assert.match(app, /return normalizeTableColumnWidth\(columnId, width\);/);
   assert.doesNotMatch(app, /maxTableColumnTotalWidth - siblingWidth/);
+  assert.match(app, /function convertLegacyTableColumnWidth\(width\)/);
+  assert.match(app, /parsedWidth > 0 && parsedWidth < 100/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
   assert.match(app, /function saveTableColumnWidth\(columnId, width\)/);
   assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnResizeStart\)/);
@@ -776,9 +780,14 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function setTableGridTemplate\(tableElement\)/);
   assert.match(app, /function getTableColumnWidthCssProperty\(columnId\)/);
   assert.match(app, /return `--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width`/);
+  assert.match(app, /`var\(--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width\)`/);
+  assert.doesNotMatch(app, /minmax\(\$\{getTableColumnWidthLimits\(columnId\)\.min\}px, var/);
   assert.match(app, /tableElement\.style\.setProperty\(\s*getTableColumnWidthCssProperty\(columnId\)/);
+  assert.match(app, /`\$\{tableColumnWidths\[columnId\] \?\? getDefaultTableColumnWidth\(columnId\)\}px`/);
   assert.match(app, /columnCssProperty:\s*getTableColumnWidthCssProperty\(handle\.dataset\.tableColumn\)/);
   assert.match(app, /tableResizeState\.tableElement\.style\.setProperty\(\s*tableResizeState\.columnCssProperty/);
+  assert.match(app, /const deltaWidth = event\.clientX - tableResizeState\.startX/);
+  assert.doesNotMatch(app, /\/ tableResizeState\.tableWidth\) \* 100/);
   assert.doesNotMatch(app, /`--table-\$\{tableResizeState\.columnId\}-column-width`/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
   assert.match(app, /const tableTrailingColumnTrack = "minmax\(160px, 1fr\)"/);
@@ -846,6 +855,10 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.folder-table-cell\.is-table-preview-right/s);
   assert.match(html, /function getStoredTableColumnOrder\(state\)/);
   assert.match(html, /function getStoredTableColumnWidths\(state\)/);
+  assert.match(html, /tableColumnWidthVersion:\s*3/);
+  assert.match(html, /function convertLegacyInitialTableColumnWidth\(width\)/);
+  assert.match(html, /table\.style\.setProperty\("--table-name-column-width", `\$\{tableColumnWidths\.name\}px`\)/);
+  assert.match(html, /`var\(--table-\$\{getInitialTableColumnCssKey\(columnId\)\}-column-width\)`/);
   assert.match(html, /createInitialTable\(\s*folders,\s*statusOrder,\s*tableColumnOrder,\s*tableColumnWidths,\s*tableHiddenColumns,\s*tableColumnLabels,\s*tableWrappedColumns,\s*hiddenStatuses,\s*showHiddenStatuses,\s*\)/);
 });
 

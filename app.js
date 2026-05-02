@@ -99,13 +99,14 @@ const folderRoleLabels = {
   group: "Group",
 };
 const defaultTableColumnWidths = {
-  name: 34,
-  status: 18,
+  name: 360,
+  status: 190,
 };
-const tableColumnWidthVersion = 2;
+const tableColumnWidthVersion = 3;
+const legacyTableColumnWidthBase = 1100;
 const tableColumnWidthLimits = {
-  name: { min: 24, max: 78 },
-  status: { min: 12, max: 36 },
+  name: { min: 180, max: 760 },
+  status: { min: 110, max: 420 },
 };
 const tableTrailingColumnTrack = "minmax(160px, 1fr)";
 const boardScrollbarHotZoneSize = 56;
@@ -2129,10 +2130,10 @@ function getDefaultTableColumnWidth(columnId) {
 
   const type = getPropertyType(columnId);
   if (type === "number" || type === "date") {
-    return 14;
+    return 150;
   }
 
-  return type === "multi-select" ? 18 : 16;
+  return type === "multi-select" ? 200 : 180;
 }
 
 function getTableColumnWidthLimits(columnId) {
@@ -2142,10 +2143,10 @@ function getTableColumnWidthLimits(columnId) {
 
   const type = getPropertyType(columnId);
   if (type === "number" || type === "date") {
-    return { min: 10, max: 28 };
+    return { min: 110, max: 340 };
   }
 
-  return { min: 12, max: 42 };
+  return { min: 120, max: 560 };
 }
 
 function isTextLikeColumn(columnId, customProperties = getActiveCustomProperties()) {
@@ -2159,8 +2160,15 @@ function normalizeTableColumnWidth(columnId, width) {
   }
 
   const limits = getTableColumnWidthLimits(columnId);
+  const tableColumnWidth = parsedWidth > 0 && parsedWidth < 100
+    ? convertLegacyTableColumnWidth(parsedWidth)
+    : parsedWidth;
 
-  return Math.min(limits.max, Math.max(limits.min, Math.round(parsedWidth)));
+  return Math.min(limits.max, Math.max(limits.min, Math.round(tableColumnWidth)));
+}
+
+function convertLegacyTableColumnWidth(width) {
+  return Math.round((Number(width) / 100) * legacyTableColumnWidthBase);
 }
 
 function normalizeTableColumnWidths(widths, legacyNameWidth, customProperties = []) {
@@ -3970,13 +3978,13 @@ function setTableGridTemplate(tableElement) {
   const columnOrder = getActiveVisibleTableColumnOrder();
   const tableColumnWidths = getActiveTableColumnWidths();
   const columnTracks = columnOrder.map((columnId) =>
-    `minmax(${columnId === "name" ? "180px" : "110px"}, var(--table-${getTableColumnCssKey(columnId)}-column-width))`,
+    `var(--table-${getTableColumnCssKey(columnId)}-column-width)`,
   );
 
   getKnownTableColumnIds().forEach((columnId) => {
     tableElement.style.setProperty(
       getTableColumnWidthCssProperty(columnId),
-      `${tableColumnWidths[columnId] ?? getDefaultTableColumnWidth(columnId)}%`,
+      `${tableColumnWidths[columnId] ?? getDefaultTableColumnWidth(columnId)}px`,
     );
   });
   tableElement.style.setProperty("--table-columns", [...columnTracks, tableTrailingColumnTrack].join(" "));
@@ -4687,7 +4695,6 @@ function handleTableColumnResizeStart(event) {
     startX: event.clientX,
     startWidth: startColumnWidths[handle.dataset.tableColumn],
     startColumnWidths,
-    tableWidth: tableElement.getBoundingClientRect().width,
     tableElement,
   };
   tableElement.classList.add("is-resizing-table");
@@ -4701,7 +4708,7 @@ function handleTableColumnResizeMove(event) {
     return;
   }
 
-  const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
+  const deltaWidth = event.clientX - tableResizeState.startX;
   const tableColumnWidth = normalizeResizedTableColumnWidth(
     tableResizeState.columnId,
     tableResizeState.startWidth + deltaWidth,
@@ -4709,7 +4716,7 @@ function handleTableColumnResizeMove(event) {
   );
   tableResizeState.tableElement.style.setProperty(
     tableResizeState.columnCssProperty,
-    `${tableColumnWidth}%`,
+    `${tableColumnWidth}px`,
   );
 }
 
@@ -4718,7 +4725,7 @@ function handleTableColumnResizeEnd(event) {
     return;
   }
 
-  const deltaWidth = ((event.clientX - tableResizeState.startX) / tableResizeState.tableWidth) * 100;
+  const deltaWidth = event.clientX - tableResizeState.startX;
   const tableColumnWidth = normalizeResizedTableColumnWidth(
     tableResizeState.columnId,
     tableResizeState.startWidth + deltaWidth,
