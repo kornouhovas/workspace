@@ -1903,11 +1903,11 @@ textarea.table-text-input {
 .table-resize-handle {
   position: absolute;
   top: 0;
-  right: -6px;
+  right: 0;
   bottom: 0;
   z-index: 2;
   display: block;
-  width: 12px;
+  width: 14px;
   cursor: col-resize;
   opacity: 0;
 }
@@ -1915,7 +1915,7 @@ textarea.table-text-input {
 .table-resize-handle::after {
   position: absolute;
   top: 0;
-  right: 6px;
+  right: 0;
   bottom: 0;
   width: 1px;
   background: var(--line);

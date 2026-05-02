@@ -107,7 +107,6 @@ const tableColumnWidthLimits = {
   name: { min: 24, max: 78 },
   status: { min: 12, max: 36 },
 };
-const maxTableColumnTotalWidth = 94;
 const tableTrailingColumnTrack = "minmax(160px, 1fr)";
 const boardScrollbarHotZoneSize = 56;
 const boardScrollbarIdleDelay = 900;
@@ -2162,20 +2161,12 @@ function normalizeTableColumnWidth(columnId, width) {
 
 function normalizeTableColumnWidths(widths, legacyNameWidth, customProperties = []) {
   const columnIds = getKnownTableColumnIds(customProperties);
-  const normalizedWidths = columnIds.reduce((nextWidths, columnId) => {
+  return columnIds.reduce((nextWidths, columnId) => {
     const width = widths?.[columnId] ?? (columnId === "name" ? legacyNameWidth : undefined);
     nextWidths[columnId] = normalizeTableColumnWidth(columnId, width);
 
     return nextWidths;
   }, {});
-  const totalWidth = columnIds.reduce((total, columnId) => total + normalizedWidths[columnId], 0);
-
-  if (totalWidth > maxTableColumnTotalWidth) {
-    const overflow = totalWidth - maxTableColumnTotalWidth;
-    normalizedWidths.name = normalizeTableColumnWidth("name", normalizedWidths.name - overflow);
-  }
-
-  return normalizedWidths;
 }
 
 function normalizeBoardViewTableColumnWidths(settings = {}) {
@@ -2186,13 +2177,8 @@ function normalizeBoardViewTableColumnWidths(settings = {}) {
   );
 }
 
-function normalizeResizedTableColumnWidth(columnId, width, currentWidths) {
-  const siblingWidth = getActiveVisibleTableColumnOrder()
-    .filter((tableColumnId) => tableColumnId !== columnId)
-    .reduce((total, tableColumnId) => total + currentWidths[tableColumnId], 0);
-  const maxWidth = maxTableColumnTotalWidth - siblingWidth;
-
-  return Math.min(maxWidth, normalizeTableColumnWidth(columnId, width));
+function normalizeResizedTableColumnWidth(columnId, width) {
+  return normalizeTableColumnWidth(columnId, width);
 }
 
 function getNextWorkspaceNumber() {

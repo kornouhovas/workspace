@@ -748,6 +748,11 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /tableColumnWidths:\s*normalizeBoardViewTableColumnWidths\(\{ \.\.\.settings, customProperties \}\)/);
   assert.match(app, /function normalizeTableColumnOrder\(columnOrder, customProperties = \[\]\)/);
   assert.match(app, /function normalizeTableColumnWidths\(widths, legacyNameWidth, customProperties = \[\]\)/);
+  assert.doesNotMatch(app, /if \(totalWidth > maxTableColumnTotalWidth\)/);
+  assert.doesNotMatch(app, /const maxTableColumnTotalWidth = 94/);
+  assert.match(app, /function normalizeResizedTableColumnWidth\(columnId, width\)/);
+  assert.match(app, /return normalizeTableColumnWidth\(columnId, width\);/);
+  assert.doesNotMatch(app, /maxTableColumnTotalWidth - siblingWidth/);
   assert.match(app, /function saveTableColumnOrder\(tableColumnOrder\)/);
   assert.match(app, /function saveTableColumnWidth\(columnId, width\)/);
   assert.match(app, /folderGrid\.addEventListener\("pointerdown", handleTableColumnResizeStart\)/);
@@ -822,12 +827,12 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(css, /\.table-column-drag-image\s*\{[^}]*min-height:\s*36px/s);
   assert.match(css, /\.table-resize-handle\s*\{/);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*top:\s*0/s);
-  assert.match(css, /\.table-resize-handle\s*\{[^}]*right:\s*-6px/s);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*bottom:\s*0/s);
-  assert.match(css, /\.table-resize-handle\s*\{[^}]*width:\s*12px/s);
+  assert.match(css, /\.table-resize-handle\s*\{[^}]*width:\s*14px/s);
   assert.match(css, /\.table-resize-handle\s*\{[^}]*cursor:\s*col-resize/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*top:\s*0/s);
-  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*right:\s*6px/s);
+  assert.match(css, /\.table-resize-handle::after\s*\{[^}]*right:\s*0/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*bottom:\s*0/s);
   assert.match(css, /\.table-resize-handle::after\s*\{[^}]*background:\s*var\(--line\)/s);
   assert.match(css, /\.folder-table-head:hover \.table-resize-handle/s);
