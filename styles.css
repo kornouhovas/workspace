@@ -1118,13 +1118,39 @@ input:focus-visible {
 }
 
 .folder-table-trailing-cell {
+  position: relative;
   min-width: 0;
-  border-left: 1px solid var(--line);
+  overflow: visible;
   pointer-events: none;
+}
+
+.folder-table-trailing-cell::before {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 0;
+  width: 1px;
+  background: var(--line);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
 }
 
 .folder-table-head .folder-table-trailing-cell {
   min-height: 36px;
+}
+
+.folder-table-head .folder-table-trailing-cell::before {
+  top: 0;
+  bottom: 0;
+}
+
+.folder-table-row:not(.folder-table-head):hover .folder-table-trailing-cell::before,
+.folder-table-row:not(.folder-table-head):focus-within .folder-table-trailing-cell::before,
+.folder-table-head:hover .folder-table-trailing-cell::before,
+.folder-table-head:focus-within .folder-table-trailing-cell::before {
+  opacity: 1;
 }
 
 .folder-table-row:not(.folder-table-head) .folder-table-cell[data-table-column="name"] {
