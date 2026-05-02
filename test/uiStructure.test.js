@@ -743,7 +743,12 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.doesNotMatch(app, /if \(totalWidth > maxTableColumnTotalWidth\)/);
   assert.doesNotMatch(app, /const maxTableColumnTotalWidth = 94/);
   assert.match(app, /function normalizeResizedTableColumnWidth\(columnId, width\)/);
-  assert.match(app, /return normalizeTableColumnWidth\(columnId, width\);/);
+  assert.match(app, /function normalizeTableColumnPixelWidth\(columnId, width\)/);
+  assert.match(app, /function normalizeResizedTableColumnWidth\(columnId, width\)[\s\S]*return normalizeTableColumnPixelWidth\(columnId, width\);/);
+  assert.doesNotMatch(
+    app,
+    /function normalizeResizedTableColumnWidth\(columnId, width\) \{\s*return normalizeTableColumnWidth\(columnId, width\);\s*\}/,
+  );
   assert.doesNotMatch(app, /maxTableColumnTotalWidth - siblingWidth/);
   assert.match(app, /function convertLegacyTableColumnWidth\(width\)/);
   assert.match(app, /parsedWidth > 0 && parsedWidth < 100/);
@@ -757,6 +762,9 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function handleTableColumnPointerDragStart\(event\)/);
   assert.match(app, /function handleTableColumnPointerDragMove\(event\)/);
   assert.match(app, /function handleTableColumnPointerDragEnd\(event\)/);
+  assert.match(app, /function getTableColumnResizeStartWidth\(handle, startColumnWidths\)/);
+  assert.match(app, /handle\.closest\("\.folder-table-head \.folder-table-cell"\)/);
+  assert.match(app, /cell\?\.getBoundingClientRect\(\)\.width/);
   assert.match(app, /function createTableColumnDragImage\(columnId, event\)/);
   assert.match(app, /function moveTableColumnDragImage\(event\)/);
   assert.match(app, /function removeTableColumnDragImage\(\)/);
@@ -775,6 +783,8 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /tableElement\.style\.setProperty\(\s*getTableColumnWidthCssProperty\(columnId\)/);
   assert.match(app, /`\$\{tableColumnWidths\[columnId\] \?\? getDefaultTableColumnWidth\(columnId\)\}px`/);
   assert.match(app, /columnCssProperty:\s*getTableColumnWidthCssProperty\(handle\.dataset\.tableColumn\)/);
+  assert.match(app, /startWidth:\s*getTableColumnResizeStartWidth\(handle, startColumnWidths\)/);
+  assert.doesNotMatch(app, /startWidth:\s*startColumnWidths\[handle\.dataset\.tableColumn\]/);
   assert.match(app, /tableResizeState\.tableElement\.style\.setProperty\(\s*tableResizeState\.columnCssProperty/);
   assert.match(app, /const deltaWidth = event\.clientX - tableResizeState\.startX/);
   assert.doesNotMatch(app, /\/ tableResizeState\.tableWidth\) \* 100/);

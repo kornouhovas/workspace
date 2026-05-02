@@ -2155,12 +2155,21 @@ function normalizeTableColumnWidth(columnId, width) {
     return getDefaultTableColumnWidth(columnId);
   }
 
-  const limits = getTableColumnWidthLimits(columnId);
   const tableColumnWidth = parsedWidth > 0 && parsedWidth < 100
     ? convertLegacyTableColumnWidth(parsedWidth)
     : parsedWidth;
 
-  return Math.min(limits.max, Math.max(limits.min, Math.round(tableColumnWidth)));
+  return normalizeTableColumnPixelWidth(columnId, tableColumnWidth);
+}
+
+function normalizeTableColumnPixelWidth(columnId, width) {
+  const parsedWidth = Number(width);
+  if (!Number.isFinite(parsedWidth)) {
+    return getDefaultTableColumnWidth(columnId);
+  }
+
+  const limits = getTableColumnWidthLimits(columnId);
+  return Math.min(limits.max, Math.max(limits.min, Math.round(parsedWidth)));
 }
 
 function convertLegacyTableColumnWidth(width) {
@@ -2186,7 +2195,7 @@ function normalizeBoardViewTableColumnWidths(settings = {}) {
 }
 
 function normalizeResizedTableColumnWidth(columnId, width) {
-  return normalizeTableColumnWidth(columnId, width);
+  return normalizeTableColumnPixelWidth(columnId, width);
 }
 
 function getNextWorkspaceNumber() {
@@ -4685,7 +4694,7 @@ function handleTableColumnResizeStart(event) {
     columnId: handle.dataset.tableColumn,
     columnCssProperty: getTableColumnWidthCssProperty(handle.dataset.tableColumn),
     startX: event.clientX,
-    startWidth: startColumnWidths[handle.dataset.tableColumn],
+    startWidth: getTableColumnResizeStartWidth(handle, startColumnWidths),
     startColumnWidths,
     tableElement,
   };
@@ -4693,6 +4702,16 @@ function handleTableColumnResizeStart(event) {
   if ("pointerId" in event) {
     handle.setPointerCapture?.(event.pointerId);
   }
+}
+
+function getTableColumnResizeStartWidth(handle, startColumnWidths) {
+  const columnId = handle.dataset.tableColumn;
+  const cell = handle.closest(".folder-table-head .folder-table-cell");
+  const renderedWidth = cell?.getBoundingClientRect().width;
+
+  return Number.isFinite(renderedWidth) && renderedWidth > 0
+    ? renderedWidth
+    : startColumnWidths[columnId];
 }
 
 function handleTableColumnResizeMove(event) {
