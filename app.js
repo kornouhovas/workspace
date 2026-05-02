@@ -1858,6 +1858,10 @@ function getTableColumnCssKey(columnId) {
   return columnId.replace(/[^a-z0-9-]/gi, "-");
 }
 
+function getTableColumnWidthCssProperty(columnId) {
+  return `--table-${getTableColumnCssKey(columnId)}-column-width`;
+}
+
 function isEditableTableColumn(columnId) {
   return columnId !== "name" && columnId !== "status";
 }
@@ -3971,7 +3975,7 @@ function setTableGridTemplate(tableElement) {
 
   getKnownTableColumnIds().forEach((columnId) => {
     tableElement.style.setProperty(
-      `--table-${getTableColumnCssKey(columnId)}-column-width`,
+      getTableColumnWidthCssProperty(columnId),
       `${tableColumnWidths[columnId] ?? getDefaultTableColumnWidth(columnId)}%`,
     );
   });
@@ -4679,6 +4683,7 @@ function handleTableColumnResizeStart(event) {
   const startColumnWidths = getActiveTableColumnWidths();
   tableResizeState = {
     columnId: handle.dataset.tableColumn,
+    columnCssProperty: getTableColumnWidthCssProperty(handle.dataset.tableColumn),
     startX: event.clientX,
     startWidth: startColumnWidths[handle.dataset.tableColumn],
     startColumnWidths,
@@ -4703,7 +4708,7 @@ function handleTableColumnResizeMove(event) {
     tableResizeState.startColumnWidths,
   );
   tableResizeState.tableElement.style.setProperty(
-    `--table-${tableResizeState.columnId}-column-width`,
+    tableResizeState.columnCssProperty,
     `${tableColumnWidth}%`,
   );
 }

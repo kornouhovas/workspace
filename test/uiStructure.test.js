@@ -774,7 +774,12 @@ test("table columns can be resized and reordered from the header", async () => {
   assert.match(app, /function applyTableColumnPreview\(previewColumnOrder\)/);
   assert.match(app, /function clearTableColumnDragState\(\)/);
   assert.match(app, /function setTableGridTemplate\(tableElement\)/);
-  assert.match(app, /tableElement\.style\.setProperty\(\s*`--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width`/);
+  assert.match(app, /function getTableColumnWidthCssProperty\(columnId\)/);
+  assert.match(app, /return `--table-\$\{getTableColumnCssKey\(columnId\)\}-column-width`/);
+  assert.match(app, /tableElement\.style\.setProperty\(\s*getTableColumnWidthCssProperty\(columnId\)/);
+  assert.match(app, /columnCssProperty:\s*getTableColumnWidthCssProperty\(handle\.dataset\.tableColumn\)/);
+  assert.match(app, /tableResizeState\.tableElement\.style\.setProperty\(\s*tableResizeState\.columnCssProperty/);
+  assert.doesNotMatch(app, /`--table-\$\{tableResizeState\.columnId\}-column-width`/);
   assert.match(app, /tableElement\.style\.setProperty\("--table-columns"/);
   assert.match(app, /const tableTrailingColumnTrack = "minmax\(160px, 1fr\)"/);
   assert.match(app, /\.\.\.columnTracks,\s*tableTrailingColumnTrack/);
