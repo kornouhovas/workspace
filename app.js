@@ -3638,7 +3638,7 @@ function toggleCardPlacePropertyVisibility(propertyId) {
   renderCardPlaceProperties(findFolderByPath(selectedCardPath));
 }
 
-function setCardPlacePropertyHiddenState(propertyId, hidden) {
+function setCardPlacePropertyHiddenState(propertyId, hidden, options = {}) {
   if (!getKnownCardPlacePropertyIds().includes(propertyId)) {
     return false;
   }
@@ -3646,7 +3646,9 @@ function setCardPlacePropertyHiddenState(propertyId, hidden) {
   const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
   if (hidden) {
     hiddenProperties.add(propertyId);
-    cardPlaceHiddenPropertiesExpanded = false;
+    if (!options.preserveHiddenExpansion) {
+      cardPlaceHiddenPropertiesExpanded = false;
+    }
   } else {
     hiddenProperties.delete(propertyId);
     if (hiddenProperties.size === 0) {
@@ -3684,7 +3686,7 @@ function applyCardPlacePropertyDrop(propertyId, targetItem, targetHidden, insert
 
   const sourceHidden = getActiveCardPlaceHiddenProperties().includes(propertyId);
   if (sourceHidden !== targetHidden) {
-    setCardPlacePropertyHiddenState(propertyId, targetHidden);
+    setCardPlacePropertyHiddenState(propertyId, targetHidden, { preserveHiddenExpansion: true });
   }
 }
 
@@ -3743,9 +3745,10 @@ function handleCardPlacePropertyPointerDragMove(event) {
     moveCardPlacePropertyDragImage(event);
   }
 
-  const target = getCardPlacePropertyDragTarget(event);
+  const previousTarget = getCardPlacePropertyPreviousDragTarget();
   clearCardPlacePropertyDragState();
   cardPlacePropertyPointerDragState.sourceItem.classList.add("is-card-place-property-drag-source");
+  const target = getCardPlacePropertyDragTarget(event) || previousTarget;
   if (!target) {
     return;
   }
@@ -3877,7 +3880,7 @@ function getCardPlacePropertySourceRootId() {
 function getCardPlacePropertyDragTarget(event) {
   const element = document.elementFromPoint(event.clientX, event.clientY);
   if (!element || !cardPlacePropertyList?.contains(element)) {
-    return null;
+    return getNearestCardPlacePropertyDragTarget(event);
   }
 
   const targetItem = element.closest(".card-place-property-row");
@@ -3900,12 +3903,72 @@ function getCardPlacePropertyDragTarget(event) {
     };
   }
 
+  return getNearestCardPlacePropertyDragTarget(event);
+}
+
+function getNearestCardPlacePropertyDragTarget(event) {
+  const listRect = cardPlacePropertyList?.getBoundingClientRect();
+  if (
+    !listRect ||
+    event.clientX < listRect.left ||
+    event.clientX > listRect.right ||
+    event.clientY < listRect.top ||
+    event.clientY > listRect.bottom
+  ) {
+    return null;
+  }
+
+  const hiddenDropZone = cardPlacePropertyList.querySelector(".card-place-hidden-properties");
+  const hiddenRect = hiddenDropZone?.getBoundingClientRect();
+  if (hiddenDropZone && hiddenRect && event.clientY >= hiddenRect.top && event.clientY <= hiddenRect.bottom) {
+    const hiddenList = hiddenDropZone.querySelector(".card-place-hidden-properties-list");
+    const hiddenRows = [...(hiddenList?.querySelectorAll(".card-place-property-row") || [])];
+    return {
+      targetItem: getNearestCardPlacePropertyRow(event, hiddenRows),
+      targetHidden: true,
+      targetList: hiddenList,
+      dropZone: hiddenDropZone,
+    };
+  }
+
+  const rootRows = [...cardPlacePropertyList.children].filter((item) => (
+    item.classList?.contains("card-place-property-row")
+  ));
   return {
-    targetItem: null,
+    targetItem: getNearestCardPlacePropertyRow(event, rootRows),
     targetHidden: false,
     targetList: cardPlacePropertyList,
     dropZone: null,
   };
+}
+
+function getCardPlacePropertyPreviousDragTarget() {
+  if (typeof cardPlacePropertyPointerDragState?.targetHidden !== "boolean") {
+    return null;
+  }
+
+  return {
+    targetItem: cardPlacePropertyPointerDragState.targetItem,
+    targetHidden: cardPlacePropertyPointerDragState.targetHidden,
+    targetList: cardPlacePropertyPointerDragState.targetList,
+    dropZone: cardPlacePropertyPointerDragState.targetHidden
+      ? cardPlacePropertyPointerDragState.targetItem?.closest(".card-place-hidden-properties") ||
+        cardPlacePropertyList?.querySelector(".card-place-hidden-properties")
+      : null,
+  };
+}
+
+function getNearestCardPlacePropertyRow(event, rows) {
+  return rows.reduce((nearestRow, row) => {
+    const rowRect = row.getBoundingClientRect();
+    const nearestRect = nearestRow?.getBoundingClientRect();
+    const rowDistance = Math.abs(event.clientY - (rowRect.top + rowRect.height / 2));
+    const nearestDistance = nearestRect
+      ? Math.abs(event.clientY - (nearestRect.top + nearestRect.height / 2))
+      : Infinity;
+
+    return rowDistance < nearestDistance ? row : nearestRow;
+  }, null);
 }
 
 function isCardPlacePropertyHiddenRow(row) {

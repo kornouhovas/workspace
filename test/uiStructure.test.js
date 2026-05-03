@@ -364,7 +364,7 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function createCardPlacePropertyMenu\(property/);
   assert.match(app, /function createCardPlaceHiddenPropertiesDisclosure\(/);
   assert.match(app, /function toggleCardPlacePropertyVisibility\(propertyId\)/);
-  assert.match(app, /function setCardPlacePropertyHiddenState\(propertyId, hidden\)/);
+  assert.match(app, /function setCardPlacePropertyHiddenState\(propertyId, hidden, options = \{\}\)/);
   assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
   assert.match(app, /function applyCardPlacePropertyDrop\(/);
   assert.match(app, /function getCardPlacePropertyDragTarget\(event\)/);
@@ -372,9 +372,20 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function applyCardPlacePropertyRootPreview\(/);
   assert.match(app, /function applyCardPlacePropertySourceListPreview\(/);
   assert.match(app, /function getCardPlacePropertyRootDragItems\(\)/);
+  assert.match(app, /function getNearestCardPlacePropertyDragTarget\(event\)/);
+  assert.match(app, /function getNearestCardPlacePropertyRow\(event, rows\)/);
+  assert.match(app, /return getNearestCardPlacePropertyDragTarget\(event\);/);
   assert.match(app, /function getCardPlaceDirectionalInsertAfterTarget\(/);
   assert.match(app, /function getCardPlacePropertyInsertRect\(targetItem\)/);
   assert.match(app, /querySelector\?\.\("\.card-place-property-name"\)/);
+  assert.match(
+    app,
+    /clearCardPlacePropertyDragState\(\);\s*cardPlacePropertyPointerDragState\.sourceItem\.classList\.add\("is-card-place-property-drag-source"\);\s*const target = getCardPlacePropertyDragTarget\(event\) \|\| previousTarget;/s,
+  );
+  assert.match(app, /const previousTarget = getCardPlacePropertyPreviousDragTarget\(\);/);
+  assert.match(app, /const target = getCardPlacePropertyDragTarget\(event\) \|\| previousTarget;/);
+  assert.match(app, /function getCardPlacePropertyPreviousDragTarget\(\)/);
+  assert.match(app, /setCardPlacePropertyHiddenState\(propertyId, targetHidden, \{ preserveHiddenExpansion: true \}\)/);
   assert.match(app, /cardPlacePropertyPointerDragState\?\.sourceItem\.getBoundingClientRect\(\)\.height/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
@@ -402,7 +413,7 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /createCardPlacePropertyMenuAction\("hide", hidden \? "Show" : "Hide", createEyeIcon\(hidden\)\)/);
   assert.match(app, /createCardPlacePropertyMenuAction\("delete", "Delete", createMenuIcon\("delete"\)\)/);
   assert.match(app, /property\.id === "status"/);
-  assert.match(app, /hiddenProperties\.add\(propertyId\);\s*cardPlaceHiddenPropertiesExpanded = false;/);
+  assert.match(app, /hiddenProperties\.add\(propertyId\);\s*if \(!options\.preserveHiddenExpansion\) \{\s*cardPlaceHiddenPropertiesExpanded = false;\s*\}/s);
   assert.match(app, /targetHidden/);
 
   assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
