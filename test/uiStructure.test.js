@@ -435,6 +435,20 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /createSvgIcon\("property-type-icon"/);
 });
 
+test("card place property drag keeps hidden disclosure stationary while dropping into hidden", async () => {
+  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+
+  assert.doesNotMatch(
+    app,
+    /previewIds = sourceHidden \? itemIds : itemIds\.filter\(\(itemId\) => itemId !== draggedCardPlaceProperty\)/,
+  );
+  assert.match(app, /if \(target\.targetHidden\) \{\s*previewIds = itemIds;\s*\}/s);
+  assert.match(
+    app,
+    /moveStatusNearTarget\(\s*itemIds,\s*getCardPlacePropertySourceRootId\(\),\s*targetRootId,/s,
+  );
+});
+
 test("Text is treated as a user-created property instead of a default system field", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");

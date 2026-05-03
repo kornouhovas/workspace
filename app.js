@@ -3978,18 +3978,17 @@ function isCardPlacePropertyHiddenRow(row) {
 function applyCardPlacePropertyRootPreview(target, event) {
   const items = getCardPlacePropertyRootDragItems();
   const itemIds = items.map(getCardPlacePropertyRootDragId).filter(Boolean);
-  const sourceHidden = isCardPlacePropertyHiddenRow(cardPlacePropertyPointerDragState?.sourceItem);
   const targetRootId = target.targetHidden
     ? cardPlaceHiddenSectionDragId
     : getCardPlacePropertyRootDragId(target.targetItem);
   let previewIds = itemIds;
 
   if (target.targetHidden) {
-    previewIds = sourceHidden ? itemIds : itemIds.filter((itemId) => itemId !== draggedCardPlaceProperty);
+    previewIds = itemIds;
   } else if (targetRootId) {
     previewIds = moveStatusNearTarget(
       itemIds,
-      draggedCardPlaceProperty,
+      getCardPlacePropertySourceRootId(),
       targetRootId,
       getCardPlacePropertyRootInsertAfterTarget(event, target.targetItem),
     );
