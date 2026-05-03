@@ -372,6 +372,7 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function applyCardPlacePropertyRootPreview\(/);
   assert.match(app, /function applyCardPlacePropertySourceListPreview\(/);
   assert.match(app, /function getCardPlacePropertyRootDragItems\(\)/);
+  assert.match(app, /function getCardPlaceDirectionalInsertAfterTarget\(/);
   assert.match(app, /cardPlacePropertyPointerDragState\?\.sourceItem\.getBoundingClientRect\(\)\.height/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
@@ -380,6 +381,11 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.notEqual(dragStartIndex, -1);
   assert.notEqual(dragMoveIndex, -1);
   assert.doesNotMatch(app.slice(dragStartIndex, dragMoveIndex), /setPointerCapture/);
+  const cardPlaceInsertStart = app.indexOf("function getCardPlacePropertyInsertAfterTarget(event, targetItem)");
+  const cardPlacePreviewStart = app.indexOf("function applyCardPlacePropertyPreview(previewPropertyIds)");
+  assert.notEqual(cardPlaceInsertStart, -1);
+  assert.notEqual(cardPlacePreviewStart, -1);
+  assert.doesNotMatch(app.slice(cardPlaceInsertStart, cardPlacePreviewStart), /height \* 0\.5/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlacePropertyPointerDragMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleCardPlacePropertyPointerDragEnd\)/);
   assert.match(app, /cardPlacePropertyList\.addEventListener\("click", handleCardPlacePropertyMenuClick\)/);

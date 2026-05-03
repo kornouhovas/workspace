@@ -3843,12 +3843,12 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
   }
 
   if (draggedIndex < 0) {
-    return event.clientY > targetRect.top + targetRect.height * 0.5;
+    const sourceHidden = isCardPlacePropertyHiddenRow(cardPlacePropertyPointerDragState?.sourceItem);
+    const targetHidden = cardPlacePropertyPointerDragState?.targetHidden === true;
+    return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, !sourceHidden && targetHidden);
   }
 
-  return draggedIndex < targetIndex
-    ? event.clientY > targetRect.top + targetRect.height * 0.25
-    : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+  return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, draggedIndex < targetIndex);
 }
 
 function getCardPlacePropertyDragItems() {
@@ -3867,6 +3867,11 @@ function getCardPlacePropertyRootDragId(item) {
   return item?.classList?.contains("card-place-hidden-properties")
     ? cardPlaceHiddenSectionDragId
     : item?.dataset?.cardPlacePropertyId;
+}
+
+function getCardPlacePropertySourceRootId() {
+  const sourceItem = cardPlacePropertyPointerDragState?.sourceItem;
+  return isCardPlacePropertyHiddenRow(sourceItem) ? cardPlaceHiddenSectionDragId : sourceItem?.dataset?.cardPlacePropertyId;
 }
 
 function getCardPlacePropertyDragTarget(event) {
@@ -3949,17 +3954,22 @@ function getCardPlacePropertyRootInsertAfterTarget(event, targetItem) {
   const rootItems = getCardPlacePropertyRootDragItems();
   const itemIds = rootItems.map(getCardPlacePropertyRootDragId).filter(Boolean);
   const draggedIndex = itemIds.indexOf(draggedCardPlaceProperty);
+  const sourceRootIndex = draggedIndex >= 0 ? draggedIndex : itemIds.indexOf(getCardPlacePropertySourceRootId());
   const targetIndex = itemIds.indexOf(getCardPlacePropertyRootDragId(targetItem));
   const targetRect = targetItem?.getBoundingClientRect();
   if (targetIndex < 0 || !targetRect) {
     return false;
   }
 
-  if (draggedIndex < 0) {
-    return event.clientY > targetRect.top + targetRect.height * 0.5;
+  if (sourceRootIndex < 0) {
+    return false;
   }
 
-  return draggedIndex < targetIndex
+  return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, sourceRootIndex < targetIndex);
+}
+
+function getCardPlaceDirectionalInsertAfterTarget(event, targetRect, movingDown) {
+  return movingDown
     ? event.clientY > targetRect.top + targetRect.height * 0.25
     : event.clientY > targetRect.bottom - targetRect.height * 0.25;
 }
