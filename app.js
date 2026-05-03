@@ -3837,8 +3837,8 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
   const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
   const draggedIndex = propertyIds.indexOf(draggedCardPlaceProperty);
   const targetIndex = propertyIds.indexOf(targetItem.dataset.cardPlacePropertyId);
-  const targetRect = targetItem.getBoundingClientRect();
-  if (targetIndex < 0) {
+  const targetRect = getCardPlacePropertyInsertRect(targetItem);
+  if (targetIndex < 0 || !targetRect) {
     return false;
   }
 
@@ -3956,7 +3956,7 @@ function getCardPlacePropertyRootInsertAfterTarget(event, targetItem) {
   const draggedIndex = itemIds.indexOf(draggedCardPlaceProperty);
   const sourceRootIndex = draggedIndex >= 0 ? draggedIndex : itemIds.indexOf(getCardPlacePropertySourceRootId());
   const targetIndex = itemIds.indexOf(getCardPlacePropertyRootDragId(targetItem));
-  const targetRect = targetItem?.getBoundingClientRect();
+  const targetRect = getCardPlacePropertyInsertRect(targetItem);
   if (targetIndex < 0 || !targetRect) {
     return false;
   }
@@ -3972,6 +3972,15 @@ function getCardPlaceDirectionalInsertAfterTarget(event, targetRect, movingDown)
   return movingDown
     ? event.clientY > targetRect.top + targetRect.height * 0.25
     : event.clientY > targetRect.bottom - targetRect.height * 0.25;
+}
+
+function getCardPlacePropertyInsertRect(targetItem) {
+  const insertSurface =
+    targetItem?.querySelector?.(".card-place-property-name") ||
+    targetItem?.querySelector?.(".card-place-hidden-properties-toggle") ||
+    targetItem;
+
+  return insertSurface?.getBoundingClientRect?.() || null;
 }
 
 function applyCardPlacePropertyPreview(previewPropertyIds) {

@@ -373,6 +373,8 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function applyCardPlacePropertySourceListPreview\(/);
   assert.match(app, /function getCardPlacePropertyRootDragItems\(\)/);
   assert.match(app, /function getCardPlaceDirectionalInsertAfterTarget\(/);
+  assert.match(app, /function getCardPlacePropertyInsertRect\(targetItem\)/);
+  assert.match(app, /querySelector\?\.\("\.card-place-property-name"\)/);
   assert.match(app, /cardPlacePropertyPointerDragState\?\.sourceItem\.getBoundingClientRect\(\)\.height/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
   assert.match(app, /function handleCardPlacePropertyPointerDragStart\(event\)/);
