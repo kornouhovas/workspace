@@ -368,15 +368,15 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /function reorderCardPlaceProperty\(sourcePropertyId, targetPropertyId, insertAfterTarget\)/);
   assert.match(app, /function applyCardPlacePropertyDrop\(/);
   assert.match(app, /function getCardPlacePropertyDragTarget\(event\)/);
-  assert.match(app, /const cardPlaceHiddenSectionDragId = "__card-place-hidden-properties__"/);
-  assert.match(app, /function applyCardPlacePropertyRootPreview\(/);
-  assert.match(app, /function applyCardPlacePropertySourceListPreview\(/);
-  assert.match(app, /function getCardPlacePropertyRootDragItems\(\)/);
+  assert.doesNotMatch(app, /cardPlaceHiddenSectionDragId/);
+  assert.doesNotMatch(app, /function applyCardPlacePropertyRootPreview\(/);
+  assert.doesNotMatch(app, /function applyCardPlacePropertySourceListPreview\(/);
+  assert.doesNotMatch(app, /function getCardPlacePropertyRootDragItems\(\)/);
+  assert.doesNotMatch(app, /card-place-hidden-properties-list/);
   assert.match(app, /function getNearestCardPlacePropertyDragTarget\(event\)/);
   assert.match(app, /function getNearestCardPlacePropertyRow\(event, rows\)/);
   assert.match(app, /return getNearestCardPlacePropertyDragTarget\(event\);/);
   assert.match(app, /function getCardPlaceDirectionalInsertAfterTarget\(/);
-  assert.match(app, /function getCardPlacePropertyInsertRect\(targetItem\)/);
   assert.match(app, /querySelector\?\.\("\.card-place-property-name"\)/);
   assert.match(
     app,
@@ -385,6 +385,10 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /const previousTarget = getCardPlacePropertyPreviousDragTarget\(\);/);
   assert.match(app, /const target = getCardPlacePropertyDragTarget\(event\) \|\| previousTarget;/);
   assert.match(app, /function getCardPlacePropertyPreviousDragTarget\(\)/);
+  assert.match(app, /targetList:\s*cardPlacePropertyList/);
+  assert.match(app, /function getCardPlacePropertyHiddenDivider\(\)/);
+  assert.match(app, /function isCardPlacePropertyHiddenDropZone\(/);
+  assert.match(app, /isCardPlacePropertyHiddenRow\(row\)[\s\S]*is-hidden-card-place-property/s);
   assert.match(app, /setCardPlacePropertyHiddenState\(propertyId, targetHidden, \{ preserveHiddenExpansion: true \}\)/);
   assert.match(app, /cardPlacePropertyPointerDragState\?\.sourceItem\.getBoundingClientRect\(\)\.height/);
   assert.match(app, /function handleCardPlacePropertyMenuClick\(event\)/);
@@ -426,27 +430,25 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(css, /\.card-place-property-row:hover \.card-place-property-name/s);
   assert.match(css, /\.card-place-property-menu\[hidden\]/);
   assert.match(css, /\.card-place-hidden-properties-toggle/);
-  assert.match(css, /\.card-place-hidden-properties\s*\{[^}]*transition:\s*transform 140ms ease/s);
-  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-up/s);
-  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-down/s);
+  assert.doesNotMatch(css, /\.card-place-hidden-properties-list/);
+  assert.doesNotMatch(css, /\.card-place-hidden-properties\.is-card-place-property-preview-up/s);
+  assert.doesNotMatch(css, /\.card-place-hidden-properties\.is-card-place-property-preview-down/s);
   assert.match(css, /\.card-place-property-row\.is-card-place-property-drag-source/);
   assert.match(css, /\.card-place-property-drag-image/);
   assert.match(css, /\.property-type-icon\s*\{[^}]*stroke:\s*currentColor/s);
   assert.match(app, /createSvgIcon\("property-type-icon"/);
 });
 
-test("card place property drag keeps hidden disclosure stationary while dropping into hidden", async () => {
+test("card place property drag uses one flat list with hidden as a divider", async () => {
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
-  assert.doesNotMatch(
-    app,
-    /previewIds = sourceHidden \? itemIds : itemIds\.filter\(\(itemId\) => itemId !== draggedCardPlaceProperty\)/,
-  );
-  assert.match(app, /if \(target\.targetHidden\) \{\s*previewIds = itemIds;\s*\}/s);
-  assert.match(
-    app,
-    /moveStatusNearTarget\(\s*itemIds,\s*getCardPlacePropertySourceRootId\(\),\s*targetRootId,/s,
-  );
+  assert.match(app, /createCardPlaceHiddenPropertiesDisclosure\(\)/);
+  assert.match(app, /cardPlaceHiddenPropertiesExpanded\s*\?\s*hiddenPropertyList\.map/);
+  assert.doesNotMatch(app, /hiddenDropZone\.querySelector\("\.card-place-hidden-properties-list"\)/);
+  assert.match(app, /applyCardPlacePropertyPreview\(getCardPlacePropertyPreviewOrder\(event, target\)\)/);
+  assert.match(app, /getCardPlacePropertyDragItems\(\)[\s\S]*cardPlacePropertyList\?\.querySelectorAll\("\.card-place-property-row"\)/s);
+  assert.doesNotMatch(css, /card-place-hidden-properties-list/);
 });
 
 test("Text is treated as a user-created property instead of a default system field", async () => {

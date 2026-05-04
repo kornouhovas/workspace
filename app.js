@@ -112,7 +112,6 @@ const boardScrollbarHotZoneSize = 56;
 const boardScrollbarIdleDelay = 900;
 const minCardPlaceWidth = 320;
 const maxCardPlaceWidthRatio = 0.82;
-const cardPlaceHiddenSectionDragId = "__card-place-hidden-properties__";
 
 let selectedRoot = null;
 let folders = [];
@@ -3333,7 +3332,12 @@ function renderCardPlaceProperties(selectedCard) {
         : createCardPlacePropertyRow(property, selectedCard)
     )),
     ...(hiddenPropertyList.length > 0
-      ? [createCardPlaceHiddenPropertiesDisclosure(hiddenPropertyList, selectedCard)]
+      ? [
+          createCardPlaceHiddenPropertiesDisclosure(),
+          ...(cardPlaceHiddenPropertiesExpanded
+            ? hiddenPropertyList.map((property) => createCardPlacePropertyRow(property, selectedCard, { hidden: true }))
+            : []),
+        ]
       : []),
     createCardPlaceAddPropertyButton(),
   );
@@ -3440,7 +3444,7 @@ function createCardPlacePropertyMenuAction(action, label, icon, enabled = true) 
   return button;
 }
 
-function createCardPlaceHiddenPropertiesDisclosure(properties, selectedCard) {
+function createCardPlaceHiddenPropertiesDisclosure() {
   const section = document.createElement("section");
   section.className = "card-place-hidden-properties";
 
@@ -3452,12 +3456,6 @@ function createCardPlaceHiddenPropertiesDisclosure(properties, selectedCard) {
   toggle.append(createChevronIcon(cardPlaceHiddenPropertiesExpanded), document.createTextNode("Hidden properties"));
 
   section.append(toggle);
-  if (cardPlaceHiddenPropertiesExpanded) {
-    const list = document.createElement("div");
-    list.className = "card-place-hidden-properties-list";
-    list.replaceChildren(...properties.map((property) => createCardPlacePropertyRow(property, selectedCard, { hidden: true })));
-    section.append(list);
-  }
 
   return section;
 }
@@ -3715,7 +3713,7 @@ function handleCardPlacePropertyPointerDragStart(event) {
     sourceItem: row,
     targetItem: row,
     targetHidden: isCardPlacePropertyHiddenRow(row),
-    targetList: row.parentElement,
+    targetList: cardPlacePropertyList,
     isDragging: false,
   };
   draggedCardPlaceProperty = row.dataset.cardPlacePropertyId;
@@ -3757,11 +3755,7 @@ function handleCardPlacePropertyPointerDragMove(event) {
   cardPlacePropertyPointerDragState.targetHidden = target.targetHidden;
   cardPlacePropertyPointerDragState.targetList = target.targetList;
   target.dropZone?.classList.add("is-card-place-property-drop-target");
-  applyCardPlacePropertyRootPreview(target, event);
-  applyCardPlacePropertySourceListPreview(target);
-  if (target.targetItem && target.targetList?.classList.contains("card-place-hidden-properties-list")) {
-    applyCardPlacePropertyPreview(getCardPlacePropertyPreviewOrder(event, target.targetItem));
-  }
+  applyCardPlacePropertyPreview(getCardPlacePropertyPreviewOrder(event, target));
 }
 
 function handleCardPlacePropertyPointerDragEnd(event) {
@@ -3821,9 +3815,9 @@ function removeCardPlacePropertyDragImage() {
   cardPlacePropertyDragImage = null;
 }
 
-function getCardPlacePropertyPreviewOrder(event, targetItem) {
+function getCardPlacePropertyPreviewOrder(event, target) {
   const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
-  const targetPropertyId = targetItem.dataset.cardPlacePropertyId;
+  const targetPropertyId = target.targetItem?.dataset.cardPlacePropertyId;
   if (!draggedCardPlaceProperty || !targetPropertyId || targetPropertyId === draggedCardPlaceProperty) {
     return propertyIds;
   }
@@ -3840,41 +3834,17 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
   const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
   const draggedIndex = propertyIds.indexOf(draggedCardPlaceProperty);
   const targetIndex = propertyIds.indexOf(targetItem.dataset.cardPlacePropertyId);
-  const targetRect = getCardPlacePropertyInsertRect(targetItem);
+  const targetRect = targetItem.querySelector?.(".card-place-property-name")?.getBoundingClientRect() ||
+    targetItem.getBoundingClientRect();
   if (targetIndex < 0 || !targetRect) {
     return false;
-  }
-
-  if (draggedIndex < 0) {
-    const sourceHidden = isCardPlacePropertyHiddenRow(cardPlacePropertyPointerDragState?.sourceItem);
-    const targetHidden = cardPlacePropertyPointerDragState?.targetHidden === true;
-    return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, !sourceHidden && targetHidden);
   }
 
   return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, draggedIndex < targetIndex);
 }
 
 function getCardPlacePropertyDragItems() {
-  const list = cardPlacePropertyPointerDragState?.targetList || cardPlacePropertyPointerDragState?.sourceItem.parentElement;
-  return [...(list?.children || [])].filter((item) => item.classList?.contains("card-place-property-row"));
-}
-
-function getCardPlacePropertyRootDragItems() {
-  return [...(cardPlacePropertyList?.children || [])].filter((item) => (
-    item.classList?.contains("card-place-property-row") ||
-    item.classList?.contains("card-place-hidden-properties")
-  ));
-}
-
-function getCardPlacePropertyRootDragId(item) {
-  return item?.classList?.contains("card-place-hidden-properties")
-    ? cardPlaceHiddenSectionDragId
-    : item?.dataset?.cardPlacePropertyId;
-}
-
-function getCardPlacePropertySourceRootId() {
-  const sourceItem = cardPlacePropertyPointerDragState?.sourceItem;
-  return isCardPlacePropertyHiddenRow(sourceItem) ? cardPlaceHiddenSectionDragId : sourceItem?.dataset?.cardPlacePropertyId;
+  return [...(cardPlacePropertyList?.querySelectorAll(".card-place-property-row") || [])];
 }
 
 function getCardPlacePropertyDragTarget(event) {
@@ -3888,17 +3858,17 @@ function getCardPlacePropertyDragTarget(event) {
     return {
       targetItem,
       targetHidden: isCardPlacePropertyHiddenRow(targetItem),
-      targetList: targetItem.parentElement,
+      targetList: cardPlacePropertyList,
       dropZone: null,
     };
   }
 
   const hiddenDropZone = element.closest(".card-place-hidden-properties");
-  if (hiddenDropZone && cardPlacePropertyList.contains(hiddenDropZone)) {
+  if (isCardPlacePropertyHiddenDropZone(hiddenDropZone)) {
     return {
       targetItem: null,
       targetHidden: true,
-      targetList: hiddenDropZone.querySelector(".card-place-hidden-properties-list"),
+      targetList: cardPlacePropertyList,
       dropZone: hiddenDropZone,
     };
   }
@@ -3918,25 +3888,22 @@ function getNearestCardPlacePropertyDragTarget(event) {
     return null;
   }
 
-  const hiddenDropZone = cardPlacePropertyList.querySelector(".card-place-hidden-properties");
+  const hiddenDropZone = getCardPlacePropertyHiddenDivider();
   const hiddenRect = hiddenDropZone?.getBoundingClientRect();
   if (hiddenDropZone && hiddenRect && event.clientY >= hiddenRect.top && event.clientY <= hiddenRect.bottom) {
-    const hiddenList = hiddenDropZone.querySelector(".card-place-hidden-properties-list");
-    const hiddenRows = [...(hiddenList?.querySelectorAll(".card-place-property-row") || [])];
     return {
-      targetItem: getNearestCardPlacePropertyRow(event, hiddenRows),
+      targetItem: null,
       targetHidden: true,
-      targetList: hiddenList,
+      targetList: cardPlacePropertyList,
       dropZone: hiddenDropZone,
     };
   }
 
-  const rootRows = [...cardPlacePropertyList.children].filter((item) => (
-    item.classList?.contains("card-place-property-row")
-  ));
+  const rootRows = getCardPlacePropertyDragItems();
+  const targetItem = getNearestCardPlacePropertyRow(event, rootRows);
   return {
-    targetItem: getNearestCardPlacePropertyRow(event, rootRows),
-    targetHidden: false,
+    targetItem,
+    targetHidden: targetItem ? isCardPlacePropertyHiddenRow(targetItem) : Boolean(hiddenRect && event.clientY > hiddenRect.bottom),
     targetList: cardPlacePropertyList,
     dropZone: null,
   };
@@ -3951,10 +3918,7 @@ function getCardPlacePropertyPreviousDragTarget() {
     targetItem: cardPlacePropertyPointerDragState.targetItem,
     targetHidden: cardPlacePropertyPointerDragState.targetHidden,
     targetList: cardPlacePropertyPointerDragState.targetList,
-    dropZone: cardPlacePropertyPointerDragState.targetHidden
-      ? cardPlacePropertyPointerDragState.targetItem?.closest(".card-place-hidden-properties") ||
-        cardPlacePropertyList?.querySelector(".card-place-hidden-properties")
-      : null,
+    dropZone: cardPlacePropertyPointerDragState.targetHidden ? getCardPlacePropertyHiddenDivider() : null,
   };
 }
 
@@ -3972,62 +3936,7 @@ function getNearestCardPlacePropertyRow(event, rows) {
 }
 
 function isCardPlacePropertyHiddenRow(row) {
-  return Boolean(row?.closest(".card-place-hidden-properties-list"));
-}
-
-function applyCardPlacePropertyRootPreview(target, event) {
-  const items = getCardPlacePropertyRootDragItems();
-  const itemIds = items.map(getCardPlacePropertyRootDragId).filter(Boolean);
-  const targetRootId = target.targetHidden
-    ? cardPlaceHiddenSectionDragId
-    : getCardPlacePropertyRootDragId(target.targetItem);
-  let previewIds = itemIds;
-
-  if (target.targetHidden) {
-    previewIds = itemIds;
-  } else if (targetRootId) {
-    previewIds = moveStatusNearTarget(
-      itemIds,
-      getCardPlacePropertySourceRootId(),
-      targetRootId,
-      getCardPlacePropertyRootInsertAfterTarget(event, target.targetItem),
-    );
-  }
-
-  const rowGap = Number.parseFloat(getComputedStyle(cardPlacePropertyList).rowGap) || 0;
-  applyCardPlacePropertyItemPreview(items, previewIds, getCardPlacePropertyRootDragId, rowGap);
-}
-
-function applyCardPlacePropertySourceListPreview(target) {
-  const sourceList = cardPlacePropertyPointerDragState?.sourceItem?.parentElement;
-  if (!sourceList?.classList?.contains("card-place-hidden-properties-list") || sourceList === target.targetList) {
-    return;
-  }
-
-  const items = [...sourceList.children].filter((item) => item.classList?.contains("card-place-property-row"));
-  const previewIds = items
-    .map((item) => item.dataset.cardPlacePropertyId)
-    .filter((propertyId) => propertyId !== draggedCardPlaceProperty);
-  const rowGap = Number.parseFloat(getComputedStyle(sourceList).rowGap) || 0;
-  applyCardPlacePropertyItemPreview(items, previewIds, (item) => item.dataset.cardPlacePropertyId, rowGap);
-}
-
-function getCardPlacePropertyRootInsertAfterTarget(event, targetItem) {
-  const rootItems = getCardPlacePropertyRootDragItems();
-  const itemIds = rootItems.map(getCardPlacePropertyRootDragId).filter(Boolean);
-  const draggedIndex = itemIds.indexOf(draggedCardPlaceProperty);
-  const sourceRootIndex = draggedIndex >= 0 ? draggedIndex : itemIds.indexOf(getCardPlacePropertySourceRootId());
-  const targetIndex = itemIds.indexOf(getCardPlacePropertyRootDragId(targetItem));
-  const targetRect = getCardPlacePropertyInsertRect(targetItem);
-  if (targetIndex < 0 || !targetRect) {
-    return false;
-  }
-
-  if (sourceRootIndex < 0) {
-    return false;
-  }
-
-  return getCardPlaceDirectionalInsertAfterTarget(event, targetRect, sourceRootIndex < targetIndex);
+  return row?.classList?.contains("is-hidden-card-place-property") === true;
 }
 
 function getCardPlaceDirectionalInsertAfterTarget(event, targetRect, movingDown) {
@@ -4036,13 +3945,12 @@ function getCardPlaceDirectionalInsertAfterTarget(event, targetRect, movingDown)
     : event.clientY > targetRect.bottom - targetRect.height * 0.25;
 }
 
-function getCardPlacePropertyInsertRect(targetItem) {
-  const insertSurface =
-    targetItem?.querySelector?.(".card-place-property-name") ||
-    targetItem?.querySelector?.(".card-place-hidden-properties-toggle") ||
-    targetItem;
+function getCardPlacePropertyHiddenDivider() {
+  return cardPlacePropertyList?.querySelector(".card-place-hidden-properties");
+}
 
-  return insertSurface?.getBoundingClientRect?.() || null;
+function isCardPlacePropertyHiddenDropZone(element) {
+  return Boolean(element && cardPlacePropertyList?.contains(element));
 }
 
 function applyCardPlacePropertyPreview(previewPropertyIds) {
