@@ -31,7 +31,12 @@ function createWindow() {
     title: "Workspace",
     width: 1440,
     height: 960,
-    backgroundColor: "#181818",
+    backgroundColor: "#00000000",
+    transparent: true,
+    vibrancy: "sidebar",
+    visualEffectState: "active",
+    titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 22, y: 19 },
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

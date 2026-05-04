@@ -4,7 +4,6 @@ import type { DragEvent, MouseEvent, ReactNode } from "react";
 type Workspace = {
   id: string;
   name: string;
-  pinned: boolean;
 };
 
 type WorkspaceState = {
@@ -22,16 +21,10 @@ type ContextMenuState = {
 type IconName =
   | "arrow-left"
   | "arrow-right"
-  | "automations"
-  | "chat"
   | "dots"
-  | "drag"
-  | "edit"
   | "folder"
+  | "folder-plus"
   | "layout"
-  | "pin"
-  | "plugins"
-  | "plus"
   | "rename"
   | "search"
   | "settings"
@@ -42,116 +35,67 @@ const selectedWorkspaceStorageKey = "workspace.leftPanel.selectedWorkspaceId";
 const collapsedStorageKey = "workspace.leftPanel.sidebarCollapsed";
 
 const defaultWorkspaces: Workspace[] = [
-  { id: "workspace-project-folder", name: "project_folder", pinned: true },
-  { id: "workspace-neovimbanner", name: "NeoVimBanner", pinned: false },
-  { id: "workspace-markdown-le", name: "markdown-le", pinned: false },
-  { id: "workspace-new-electric", name: "new-electric", pinned: false },
-];
-
-const recentChats = [
-  { id: "calendar-ui", title: "Создай интерфейс календаря", age: "1w" },
-  { id: "svg-icons", title: "Сделай SVG-набор иконок", age: "1w" },
-  { id: "zip-context", title: "Установи zip_context skill", age: "1w" },
+  { id: "workspace-project-folder", name: "project_folder" },
+  { id: "workspace-neovimbanner", name: "NeoVimBanner" },
+  { id: "workspace-markdown-le", name: "markdown-le" },
+  { id: "workspace-new-electric", name: "new-electric" },
 ];
 
 const iconPaths: Record<IconName, ReactNode> = {
-  "arrow-left": <path d="M12.5 4.5 7 10l5.5 5.5" />,
-  "arrow-right": <path d="M7.5 4.5 13 10l-5.5 5.5" />,
-  automations: (
-    <>
-      <circle cx="10" cy="10" r="7" />
-      <path d="M10 5.8V10l2.8 2" />
-    </>
-  ),
-  chat: (
-    <>
-      <path d="M5 5.5h10v7H8.4L5 15.2z" />
-      <path d="M7.5 8.2h5" />
-      <path d="M7.5 10.5h3.5" />
-    </>
-  ),
+  "arrow-left": <path d="m15 18-6-6 6-6" />,
+  "arrow-right": <path d="m9 18 6-6-6-6" />,
   dots: (
     <>
-      <path d="M5 10h.01" />
-      <path d="M10 10h.01" />
-      <path d="M15 10h.01" />
-    </>
-  ),
-  drag: (
-    <>
-      <path d="M8 6h.01" />
-      <path d="M12 6h.01" />
-      <path d="M8 10h.01" />
-      <path d="M12 10h.01" />
-      <path d="M8 14h.01" />
-      <path d="M12 14h.01" />
-    </>
-  ),
-  edit: (
-    <>
-      <path d="M4.5 15.5h3l8-8a2.12 2.12 0 0 0-3-3l-8 8z" />
-      <path d="m11.5 5.5 3 3" />
+      <circle cx="5" cy="12" r="1.2" />
+      <circle cx="12" cy="12" r="1.2" />
+      <circle cx="19" cy="12" r="1.2" />
     </>
   ),
   folder: (
     <>
-      <path d="M3.5 6.5h5l1.4 1.7h6.6v6.3h-13z" />
-      <path d="M3.5 8.2h13" />
-      <path d="M12.5 12.5h.01" />
-      <path d="M15 12.5h.01" />
+      <path d="M3.5 7.75A2.75 2.75 0 0 1 6.25 5h4.2l2 2.25h5.3a2.75 2.75 0 0 1 2.75 2.75v6.25A2.75 2.75 0 0 1 17.75 19H6.25a2.75 2.75 0 0 1-2.75-2.75z" />
+      <path d="M3.5 10h17" />
+    </>
+  ),
+  "folder-plus": (
+    <>
+      <path d="M3.5 7.75A2.75 2.75 0 0 1 6.25 5h4.2l2 2.25h5.3a2.75 2.75 0 0 1 2.75 2.75v6.25A2.75 2.75 0 0 1 17.75 19H6.25a2.75 2.75 0 0 1-2.75-2.75z" />
+      <path d="M3.5 10h17" />
+      <path d="M12 12.25v4.5" />
+      <path d="M9.75 14.5h4.5" />
     </>
   ),
   layout: (
     <>
-      <path d="M3.5 4.5h13v11h-13z" />
-      <path d="M8 4.5v11" />
-    </>
-  ),
-  pin: (
-    <>
-      <path d="m6.5 3.5 6 6" />
-      <path d="m13 4 3 3-5 5v3l-1 1-3.5-3.5L3 9l1-1h3z" />
-    </>
-  ),
-  plugins: (
-    <>
-      <circle cx="6" cy="6" r="2.2" />
-      <circle cx="14" cy="6" r="2.2" />
-      <circle cx="6" cy="14" r="2.2" />
-      <circle cx="14" cy="14" r="2.2" />
-    </>
-  ),
-  plus: (
-    <>
-      <path d="M10 4.5v11" />
-      <path d="M4.5 10h11" />
+      <rect x="4" y="5" width="16" height="14" rx="3" />
+      <path d="M9.5 5v14" />
     </>
   ),
   rename: (
     <>
-      <path d="M4.5 15.5h3l8-8a2.12 2.12 0 0 0-3-3l-8 8z" />
-      <path d="m11.5 5.5 3 3" />
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
     </>
   ),
   search: (
     <>
-      <circle cx="9" cy="9" r="4.5" />
-      <path d="m12.5 12.5 3 3" />
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
     </>
   ),
   settings: (
     <>
-      <path d="M8.7 3.5h2.6l.45 2.1c.45.16.86.4 1.23.72l2-.68 1.3 2.25-1.56 1.42c.04.23.07.46.07.69s-.03.46-.07.69l1.56 1.42-1.3 2.25-2-.68c-.37.32-.78.56-1.23.72l-.45 2.1H8.7l-.45-2.1a5.1 5.1 0 0 1-1.23-.72l-2 .68-1.3-2.25 1.56-1.42A4 4 0 0 1 5.21 10c0-.23.03-.46.07-.69L3.72 7.89l1.3-2.25 2 .68c.37-.32.78-.56 1.23-.72z" />
-      <circle cx="10" cy="10" r="2.1" />
+      <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.08a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.37.36.87.56 1.4.56H21a2 2 0 0 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
     </>
   ),
   trash: (
     <>
-      <path d="M4.5 6h11" />
-      <path d="M8 6V4.5h4V6" />
-      <path d="M6 6.5 6.7 16h6.6l.7-9.5" />
-      <path d="M8.5 9v4.5" />
-      <path d="M11.5 9v4.5" />
+      <path d="M3 6h18" />
+      <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
+      <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </>
   ),
 };
@@ -175,6 +119,7 @@ function App() {
       ? workspaces.filter((workspace) => workspace.name.toLowerCase().includes(normalizedSearch))
       : workspaces;
   }, [searchTerm, workspaces]);
+
   useEffect(() => {
     localStorage.setItem(workspaceStorageKey, JSON.stringify(workspaces));
     localStorage.setItem(selectedWorkspaceStorageKey, selectedWorkspaceId);
@@ -204,8 +149,7 @@ function App() {
   function addWorkspace() {
     const workspace: Workspace = {
       id: `workspace-${Date.now()}`,
-      name: `project-${workspaceCounter}`,
-      pinned: false,
+      name: `workspace-${workspaceCounter}`,
     };
 
     setSearchTerm("");
@@ -227,14 +171,14 @@ function App() {
     setIsCollapsed((current) => !current);
   }
 
-  function openContextMenu(event: MouseEvent<HTMLButtonElement>, workspaceId: string) {
+  function openContextMenu(event: MouseEvent<HTMLElement>, workspaceId: string) {
     event.preventDefault();
     event.stopPropagation();
     selectWorkspace(workspaceId);
     setContextMenu({
       workspaceId,
-      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 220)),
-      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 158)),
+      x: Math.max(10, Math.min(event.clientX, window.innerWidth - 236)),
+      y: Math.max(10, Math.min(event.clientY, window.innerHeight - 118)),
     });
   }
 
@@ -253,15 +197,6 @@ function App() {
     setWorkspaceState((current) => ({
       ...current,
       workspaces: current.workspaces.map((item) => (item.id === workspaceId ? { ...item, name: trimmedName } : item)),
-    }));
-  }
-
-  function pinWorkspace(workspaceId: string) {
-    setWorkspaceState((current) => ({
-      ...current,
-      workspaces: current.workspaces.map((workspace) =>
-        workspace.id === workspaceId ? { ...workspace, pinned: !workspace.pinned } : workspace,
-      ),
     }));
   }
 
@@ -287,13 +222,14 @@ function App() {
     });
   }
 
-  function handleWorkspaceDragStart(event: DragEvent<HTMLButtonElement>, workspaceId: string) {
+  function handleWorkspaceDragStart(event: DragEvent<HTMLDivElement>, workspaceId: string) {
     setDraggedWorkspaceId(workspaceId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", workspaceId);
+    event.dataTransfer.setDragImage(event.currentTarget, 18, event.currentTarget.offsetHeight / 2);
   }
 
-  function handleWorkspaceDragOver(event: DragEvent<HTMLButtonElement>, workspaceId: string) {
+  function handleWorkspaceDragOver(event: DragEvent<HTMLDivElement>, workspaceId: string) {
     if (!draggedWorkspaceId || draggedWorkspaceId === workspaceId) {
       return;
     }
@@ -303,7 +239,7 @@ function App() {
     setDropTargetWorkspaceId(workspaceId);
   }
 
-  function handleWorkspaceDrop(event: DragEvent<HTMLButtonElement>, targetWorkspaceId: string) {
+  function handleWorkspaceDrop(event: DragEvent<HTMLDivElement>, targetWorkspaceId: string) {
     event.preventDefault();
     if (!draggedWorkspaceId || draggedWorkspaceId === targetWorkspaceId) {
       return;
@@ -325,11 +261,6 @@ function App() {
     >
       <aside id="leftPanel" className="left-panel" aria-label="Workspace navigation">
         <div className="window-strip">
-          <div className="traffic-lights" aria-hidden="true">
-            <span className="traffic-light traffic-red" />
-            <span className="traffic-light traffic-yellow" />
-            <span className="traffic-light traffic-green" />
-          </div>
           <button
             id="sidebarToggle"
             className="window-icon-button"
@@ -355,9 +286,9 @@ function App() {
         <div className="panel-top">
           <button id="newWorkspaceButton" className="utility-row" type="button" onClick={addWorkspace}>
             <span className="utility-icon" aria-hidden="true">
-              <Icon name="edit" />
+              <Icon name="folder-plus" />
             </span>
-            <span className="utility-label">New chat</span>
+            <span className="utility-label">New Workspace</span>
           </button>
 
           <label className="utility-row search-field" htmlFor="workspaceSearch">
@@ -373,27 +304,13 @@ function App() {
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
-
-          <button className="utility-row" type="button">
-            <span className="utility-icon" aria-hidden="true">
-              <Icon name="plugins" />
-            </span>
-            <span className="utility-label">Plugins</span>
-          </button>
-
-          <button className="utility-row" type="button">
-            <span className="utility-icon" aria-hidden="true">
-              <Icon name="automations" />
-            </span>
-            <span className="utility-label">Automations</span>
-          </button>
         </div>
 
         <section className="workspace-section" aria-labelledby="workspaceSectionTitle">
           <h2 id="workspaceSectionTitle" className="nav-section-title">
-            Projects
+            Workspace
           </h2>
-          <div id="workspaceList" className="workspace-list" role="list" aria-label="Projects">
+          <div id="workspaceList" className="workspace-list" role="list" aria-label="Workspace">
             {visibleWorkspaces.length > 0 ? (
               visibleWorkspaces.map((workspace) => (
                 <WorkspaceRow
@@ -403,7 +320,7 @@ function App() {
                   isDragging={workspace.id === draggedWorkspaceId}
                   isDropTarget={workspace.id === dropTargetWorkspaceId}
                   onSelect={selectWorkspace}
-                  onContextMenu={openContextMenu}
+                  onMenuOpen={openContextMenu}
                   onDragStart={handleWorkspaceDragStart}
                   onDragOver={handleWorkspaceDragOver}
                   onDrop={handleWorkspaceDrop}
@@ -415,28 +332,8 @@ function App() {
                 />
               ))
             ) : (
-              <div className="empty-results">No projects</div>
+              <div className="empty-results">No workspace</div>
             )}
-          </div>
-        </section>
-
-        <section className="chat-section" aria-labelledby="chatSectionTitle">
-          <div className="section-header-row">
-            <h2 id="chatSectionTitle" className="nav-section-title">
-              Chats
-            </h2>
-            <div className="section-actions" aria-hidden="true">
-              <Icon name="drag" />
-              <Icon name="edit" />
-            </div>
-          </div>
-          <div className="chat-list" role="list" aria-label="Recent chats">
-            {recentChats.map((chat) => (
-              <button key={chat.id} className="chat-row" type="button" role="listitem">
-                <span className="chat-title">{chat.title}</span>
-                <span className="chat-age">{chat.age}</span>
-              </button>
-            ))}
           </div>
         </section>
 
@@ -447,15 +344,12 @@ function App() {
             </span>
             <span className="settings-label">Settings</span>
           </button>
-          <button className="upgrade-button" type="button">
-            Upgrade
-          </button>
         </div>
       </aside>
 
       <main className="main-surface" aria-label="Workspace surface">
         <div className="workspace-preview" aria-live="polite">
-          <span className="workspace-preview-label">Current project</span>
+          <span className="workspace-preview-label">Current workspace</span>
           <h1 id="activeWorkspaceName">{activeWorkspace?.name || "project_folder"}</h1>
         </div>
       </main>
@@ -473,12 +367,6 @@ function App() {
               <Icon name="rename" />
             </span>
             Rename
-          </button>
-          <button type="button" role="menuitem" data-action="pin" onClick={() => pinWorkspace(contextMenu.workspaceId)}>
-            <span className="menu-icon" aria-hidden="true">
-              <Icon name="pin" />
-            </span>
-            Pin workspace
           </button>
           <button
             type="button"
@@ -505,10 +393,10 @@ type WorkspaceRowProps = {
   isDragging: boolean;
   isDropTarget: boolean;
   onSelect: (workspaceId: string) => void;
-  onContextMenu: (event: MouseEvent<HTMLButtonElement>, workspaceId: string) => void;
-  onDragStart: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
-  onDragOver: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
-  onDrop: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
+  onMenuOpen: (event: MouseEvent<HTMLElement>, workspaceId: string) => void;
+  onDragStart: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
+  onDragOver: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
+  onDrop: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
   onDragLeave: () => void;
   onDragEnd: () => void;
 };
@@ -519,7 +407,7 @@ function WorkspaceRow({
   isDragging,
   isDropTarget,
   onSelect,
-  onContextMenu,
+  onMenuOpen,
   onDragStart,
   onDragOver,
   onDrop,
@@ -529,7 +417,6 @@ function WorkspaceRow({
   const className = [
     "workspace-row",
     isSelected ? "is-selected" : "",
-    workspace.pinned ? "is-pinned" : "",
     isDragging ? "is-dragging" : "",
     isDropTarget ? "is-drop-target" : "",
   ]
@@ -537,36 +424,39 @@ function WorkspaceRow({
     .join(" ");
 
   return (
-    <button
+    <div
       className={className}
-      type="button"
       draggable
       data-workspace-id={workspace.id}
       role="listitem"
-      aria-label={workspace.name}
-      onClick={() => onSelect(workspace.id)}
-      onContextMenu={(event) => onContextMenu(event, workspace.id)}
+      onContextMenu={(event) => onMenuOpen(event, workspace.id)}
       onDragStart={(event) => onDragStart(event, workspace.id)}
       onDragOver={(event) => onDragOver(event, workspace.id)}
       onDragLeave={onDragLeave}
       onDrop={(event) => onDrop(event, workspace.id)}
       onDragEnd={onDragEnd}
     >
-      <span className="project-icon" aria-hidden="true">
-        <Icon name="folder" />
-      </span>
-      <span className="workspace-name">{workspace.name}</span>
-      <span className="project-actions" aria-hidden="true">
+      <button className="workspace-select-button" type="button" onClick={() => onSelect(workspace.id)}>
+        <span className="project-icon" aria-hidden="true">
+          <Icon name="folder" />
+        </span>
+        <span className="workspace-name">{workspace.name}</span>
+      </button>
+      <button
+        className="workspace-menu-button"
+        type="button"
+        aria-label={`Open menu for ${workspace.name}`}
+        onClick={(event) => onMenuOpen(event, workspace.id)}
+      >
         <Icon name="dots" />
-        <Icon name="edit" />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
 function Icon({ name }: { name: IconName }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
+    <svg aria-hidden="true" viewBox="0 0 24 24">
       {iconPaths[name]}
     </svg>
   );
@@ -590,7 +480,6 @@ function loadWorkspaces(): Workspace[] {
         .map((workspace) => ({
           id: workspace.id,
           name: workspace.name.trim() || "project_folder",
-          pinned: Boolean(workspace.pinned),
         }));
     }
   } catch {
@@ -611,7 +500,7 @@ function loadInitialCollapsedState() {
 
 function getNextWorkspaceCounter(workspaces: Workspace[]) {
   const highestNumber = workspaces.reduce((highest, workspace) => {
-    const match = workspace.name.match(/^project-(\d+)$/);
+    const match = workspace.name.match(/^workspace-(\d+)$/);
     return match ? Math.max(highest, Number(match[1])) : highest;
   }, 1);
 
