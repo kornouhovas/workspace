@@ -8,15 +8,20 @@ test("workspace keeps Electron and local runtime with the rebuilt renderer shell
 
   assert.equal(packageJson.name, "workspace");
   assert.equal(packageJson.scripts.dev, undefined);
-  assert.equal(packageJson.scripts.electron, "npm run build:sidecar && electron electron/main.js");
+  assert.equal(packageJson.scripts.electron, "npm run build:sidecar && npm run build:renderer && electron electron/main.js");
+  assert.equal(packageJson.scripts["build:renderer"], "vite build");
+  assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
   assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOOS=darwin GOARCH=arm64"), true);
   assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOOS=windows GOARCH=amd64"), true);
   assert.equal(packageJson.scripts["prepare:electron:mac"], "xattr -cr node_modules/electron/dist 2>/dev/null || true");
   assert.equal(
     packageJson.scripts["dist:mac"],
-    "npm run build:sidecars && npm run prepare:electron:mac && electron-builder --mac dmg --arm64",
+    "npm run build:renderer && npm run build:sidecars && npm run prepare:electron:mac && electron-builder --mac dmg --arm64",
   );
-  assert.equal(packageJson.scripts["dist:win"], "npm run build:sidecars && electron-builder --win portable --x64");
+  assert.equal(
+    packageJson.scripts["dist:win"],
+    "npm run build:renderer && npm run build:sidecars && electron-builder --win portable --x64",
+  );
   assert.equal(packageJson.build.productName, "Workspace");
   assert.deepEqual(packageJson.build.mac.target, ["dmg"]);
   assert.deepEqual(packageJson.build.win.target, ["portable"]);
@@ -28,19 +33,18 @@ test("workspace keeps Electron and local runtime with the rebuilt renderer shell
     ],
   );
   assert.deepEqual(packageJson.build.files, [
-    "app.js",
+    "dist/renderer/**/*",
     "electron/**/*",
-    "index.html",
     "src/**/*",
-    "styles.css",
     "THIRD_PARTY_NOTICES.md",
   ]);
   assert.equal(readme.includes("npm run dev"), false);
   assert.equal(readme.includes("127.0.0.1:4173"), false);
   assert.equal(readme.includes("Renderer UI is intentionally absent"), false);
   await access(new URL("../index.html", import.meta.url));
-  await access(new URL("../app.js", import.meta.url));
-  await access(new URL("../styles.css", import.meta.url));
+  await access(new URL("../src/renderer/App.tsx", import.meta.url));
+  await access(new URL("../src/renderer/main.tsx", import.meta.url));
+  await access(new URL("../src/renderer/renderer.css", import.meta.url));
   await assert.rejects(access(new URL("../referens/index.html", import.meta.url)), { code: "ENOENT" });
 });
 

@@ -39,7 +39,7 @@ function createWindow() {
     },
   });
 
-  window.loadFile(join(__dirname, "../index.html"));
+  window.loadFile(join(__dirname, "../dist/renderer/index.html"));
 }
 
 async function startWorkspaceSidecar() {

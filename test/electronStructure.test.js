@@ -12,7 +12,7 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /contextIsolation:\s*true/);
   assert.match(mainSource, /nodeIntegration:\s*false/);
   assert.match(mainSource, /preload:\s*join\(__dirname,\s*"preload\.cjs"\)/);
-  assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/index\.html"\)\)/);
+  assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
   assert.doesNotMatch(mainSource, /window\.loadURL\("about:blank"\)/);
   assert.match(mainSource, /import\s+\{\s*spawn\s*\}\s+from\s+"node:child_process"/);
   assert.match(mainSource, /import\s+\{\s*once\s*\}\s+from\s+"node:events"/);

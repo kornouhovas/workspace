@@ -2,13 +2,14 @@
 
 Локальная Electron/any-store основа для работы с workspace-папкой.
 
-На ветке `app-redesign` renderer пересобирается заново. Сейчас в приложении есть новый Codex-style LeftPanel: toggle sidebar, создание workspace, поиск, список workspace с pin-иконкой, drag-and-drop порядком, контекстным меню и Settings внизу.
+На ветке `app-redesign` renderer пересобирается заново на React и TypeScript. Сейчас в приложении есть новый Codex-style LeftPanel: toggle sidebar, создание workspace, поиск, список workspace с pin-иконкой, drag-and-drop порядком, контекстным меню и Settings внизу.
 
 ## Нужно ли поднимать backend отдельно?
 
 Нет. Команда `npm run electron` запускает локальную Electron/backend-обвязку:
 
 - собирает локальный sidecar `workspace-sidecar`;
+- собирает React/TypeScript renderer через Vite;
 - открывает Electron-окно с новым LeftPanel renderer;
 - запускает backend внутри Electron main process;
 - подключает локальный `any-store` storage через sidecar.
@@ -41,7 +42,7 @@ Electron main owns OS access, exposes the preload IPC contract, starts the local
 npm run electron
 ```
 
-This command builds the local `workspace-sidecar` binary first, then opens the Electron renderer shell. The generated binary is ignored by git.
+This command builds the local `workspace-sidecar` binary and Vite renderer first, then opens the Electron renderer shell. The generated binary and renderer output are ignored by git.
 
 ## Сборка приложения
 
@@ -75,8 +76,10 @@ Backend endpoints принимают только относительные п�
 
 ```bash
 npm test
+npm run typecheck
+npm run build:renderer
 ```
 
 ## Как это устроено
 
-Electron main владеет доступом к файловой системе, держит preload IPC contract и синхронизирует выбранный workspace root с `any-store`. Renderer сейчас содержит только LeftPanel и рабочую область-заглушку для следующего этапа редизайна.
+Electron main владеет доступом к файловой системе, держит preload IPC contract и синхронизирует выбранный workspace root с `any-store`. Renderer сейчас живет в `src/renderer`, собирается Vite в `dist/renderer` и содержит только LeftPanel плюс рабочую область-заглушку для следующего этапа редизайна.
