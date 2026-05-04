@@ -447,6 +447,7 @@ test("card place property drag uses one flat list with hidden as a divider", asy
   assert.match(app, /cardPlaceHiddenPropertiesExpanded\s*\?\s*hiddenPropertyList\.map/);
   assert.doesNotMatch(app, /hiddenDropZone\.querySelector\("\.card-place-hidden-properties-list"\)/);
   assert.match(app, /applyCardPlacePropertyPreview\(getCardPlacePropertyPreviewOrder\(event, target\)\)/);
+  assert.match(app, /getCardPlacePropertyInsertAfterTarget\(event, target\.targetItem\)/);
   assert.match(app, /getCardPlacePropertyDragItems\(\)[\s\S]*cardPlacePropertyList\?\.querySelectorAll\("\.card-place-property-row"\)/s);
   assert.doesNotMatch(css, /card-place-hidden-properties-list/);
 });

@@ -3826,7 +3826,7 @@ function getCardPlacePropertyPreviewOrder(event, target) {
     propertyIds,
     draggedCardPlaceProperty,
     targetPropertyId,
-    getCardPlacePropertyInsertAfterTarget(event, targetItem),
+    getCardPlacePropertyInsertAfterTarget(event, target.targetItem),
   );
 }
 
