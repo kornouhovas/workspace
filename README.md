@@ -2,14 +2,14 @@
 
 Локальная Electron/any-store основа для работы с workspace-папкой.
 
-Renderer UI is intentionally absent on the `app-redesign` branch. The previous handwritten interface and its UI tests were removed so the renderer can be rebuilt from a clean slate while keeping Electron, local filesystem access, and storage plumbing.
+На ветке `app-redesign` renderer пересобирается заново. Сейчас в приложении есть новый Codex-style LeftPanel: toggle sidebar, создание workspace, поиск, список workspace с pin-иконкой, drag-and-drop порядком, контекстным меню и Settings внизу.
 
 ## Нужно ли поднимать backend отдельно?
 
 Нет. Команда `npm run electron` запускает локальную Electron/backend-обвязку:
 
 - собирает локальный sidecar `workspace-sidecar`;
-- открывает пустое Electron-окно для будущего renderer;
+- открывает Electron-окно с новым LeftPanel renderer;
 - запускает backend внутри Electron main process;
 - подключает локальный `any-store` storage через sidecar.
 
@@ -31,7 +31,7 @@ npm run electron
 ## Storage
 
 Workspace stores local object and property data through `any-store`, a Go document database on top of SQLite.
-Electron main owns OS access, exposes the preload IPC contract, and starts the local Workspace storage sidecar. A new renderer can be attached to that contract during the redesign.
+Electron main owns OS access, exposes the preload IPC contract, starts the local Workspace storage sidecar, and loads the rebuilt renderer shell.
 
 `any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
 
@@ -41,7 +41,7 @@ Electron main owns OS access, exposes the preload IPC contract, and starts the l
 npm run electron
 ```
 
-This command builds the local `workspace-sidecar` binary first, then opens a blank Electron window. The generated binary is ignored by git.
+This command builds the local `workspace-sidecar` binary first, then opens the Electron renderer shell. The generated binary is ignored by git.
 
 ## Сборка приложения
 
@@ -79,4 +79,4 @@ npm test
 
 ## Как это устроено
 
-Electron main владеет доступом к файловой системе, держит preload IPC contract и синхронизирует выбранный workspace root с `any-store`. Renderer на этой ветке удален и будет создан заново.
+Electron main владеет доступом к файловой системе, держит preload IPC contract и синхронизирует выбранный workspace root с `any-store`. Renderer сейчас содержит только LeftPanel и рабочую область-заглушку для следующего этапа редизайна.
