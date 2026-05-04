@@ -152,7 +152,7 @@ input:focus-visible {
   grid-template-columns: minmax(0, 1fr) 30px;
   align-items: center;
   gap: 10px;
-  margin-bottom: 34px;
+  margin-bottom: 18px;
 }
 
 .brand-mark {
@@ -186,18 +186,77 @@ input:focus-visible {
 }
 
 .workspace-list-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  display: block;
+  margin: 22px 0 8px;
 }
 
-.add-workspace,
 .workspace-delete {
   width: 30px;
   min-height: 30px;
   padding: 0;
+}
+
+.sidebar-primary-actions {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.sidebar-action {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.86);
+  padding: 0 8px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 510;
+  letter-spacing: 0;
+  line-height: 1.3;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.sidebar-action:hover,
+.sidebar-action:focus-within,
+.sidebar-action:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
+  outline: 0;
+}
+
+.new-workspace-button {
+  margin-bottom: 2px;
+}
+
+.sidebar-search {
+  height: 34px;
+}
+
+.sidebar-action-icon {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: rgba(244, 244, 245, 0.78);
+}
+
+.sidebar-action-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .workspace-tabs {
@@ -317,9 +376,10 @@ input:focus-visible {
 }
 
 .eyebrow {
-  color: var(--faint);
-  font-size: 12px;
-  text-transform: uppercase;
+  color: rgba(244, 244, 245, 0.48);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
 }
 
 .sidebar-collapsed .sidebar {
@@ -503,9 +563,9 @@ input:focus-visible {
 
 .board-view-settings {
   position: absolute;
-  top: 40px;
+  top: 0;
   right: 0;
-  display: none;
+  display: grid;
 }
 
 .board-view-add-button {
@@ -784,19 +844,15 @@ input:focus-visible {
 
 .search {
   display: flex;
-  width: 220px;
-  height: 28px;
+  width: 100%;
+  height: 34px;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #171716;
-  color: var(--faint);
-  padding: 0 11px;
-}
-
-.board-view-search {
-  margin-left: auto;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(244, 244, 245, 0.62);
+  padding: 0 8px;
 }
 
 .search-icon {
@@ -826,7 +882,8 @@ input:focus-visible {
   outline: 0;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 510;
 }
 
 .primary-button,

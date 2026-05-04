@@ -61,7 +61,9 @@ test("settings access view exposes folder picker and recursive access tree contr
 
   assert.match(html, /id="settingsNavButton"/);
   assert.match(html, /data-view="settings"/);
-  assert.match(html, /id="workspaceTabs"[\s\S]*id="settingsNavButton"/);
+  assert.match(html, /id="sidebarSearch"[\s\S]*id="workspaceTabs"[\s\S]*id="settingsNavButton"/);
+  assert.match(html, /id="searchInput"[\s\S]*placeholder="Search folders"/);
+  assert.doesNotMatch(html, /class="search board-view-search"/);
   assert.equal(html.includes("Selected root"), false);
   assert.equal(html.includes("sidebarRootName"), false);
   assert.doesNotMatch(html, /sidebar-footer-nav/);
@@ -162,7 +164,8 @@ test("left panel action buttons align on the same vertical rail", async () => {
   assert.match(css, /\.brand-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.sidebar-toggle\s*\{[^}]*width:\s*30px/s);
   assert.match(css, /\.sidebar-toggle\s*\{[^}]*min-height:\s*30px/s);
-  assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.sidebar-primary-actions\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.workspace-list-head\s*\{[^}]*display:\s*block/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
 });
 
@@ -173,6 +176,9 @@ test("left panel shows workspace tab controls", async () => {
 
   assert.match(html, /class="workspace-tabs"/);
   assert.match(html, /id="addWorkspaceButton"/);
+  assert.match(html, /class="sidebar-action new-workspace-button"/);
+  assert.match(html, />New workspace</);
+  assert.doesNotMatch(html, /class="icon-button add-workspace"/);
   assert.match(app, /function addWorkspace\(\)/);
   assert.match(app, /function deleteWorkspace\(workspaceId\)/);
   assert.match(app, /function isDefaultWorkspace\(workspace\)/);
@@ -201,7 +207,11 @@ test("left panel shows workspace tab controls", async () => {
   assert.match(css, /\.workspace-delete\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab:hover \.workspace-delete/s);
   assert.match(css, /\.workspace-tabs\s*\{[^}]*gap:\s*2px/s);
-  assert.match(css, /\.workspace-list-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
+  assert.match(css, /\.sidebar-primary-actions\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.sidebar-action\s*\{[^}]*min-height:\s*34px/s);
+  assert.match(css, /\.new-workspace-button\s*\{[^}]*margin-bottom:\s*2px/s);
+  assert.match(css, /\.sidebar-search\s*\{[^}]*height:\s*34px/s);
+  assert.match(css, /\.workspace-list-head\s*\{[^}]*display:\s*block/s);
   assert.match(css, /\.workspace-tab\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) 30px/s);
   assert.match(css, /\.workspace-tab\.is-workspace-drag-source\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /\.workspace-tab\.is-workspace-preview-up/s);
@@ -616,7 +626,8 @@ test("topbar exposes per-workspace board view modes instead of folder summary te
   assert.match(html, /data-board-view="overview"[^>]*>Overview</);
   assert.match(html, /data-board-view="board"[^>]*>Board</);
   assert.match(html, /data-board-view="table"[^>]*>Table</);
-  assert.match(html, /data-board-view="table"[\s\S]*class="search board-view-search"[\s\S]*id="boardColumnMenuButton"/);
+  assert.match(html, /data-board-view="table"[\s\S]*id="boardColumnMenuButton"/);
+  assert.doesNotMatch(html, /board-view-search/);
   assert.doesNotMatch(html, /id="totalFolders"/);
   assert.doesNotMatch(html, /id="rootLabel"/);
   assert.doesNotMatch(html, /function hydrateSavedBoardViewState\(\)/);
@@ -1259,12 +1270,12 @@ test("board columns can be hidden and revealed per workspace", async () => {
   assert.match(html, /class="settings-gear"[\s\S]*viewBox="0 0 24 24"/);
   assert.match(css, /\.topbar\s*\{[^}]*position:\s*relative/s);
   assert.match(css, /\.board-view-switcher\s*\{[^}]*padding-right:\s*36px/s);
-  assert.match(css, /\.board-view-search\s*\{[^}]*margin-left:\s*auto/s);
-  assert.match(css, /\.search\s*\{[^}]*height:\s*28px/s);
-  assert.match(css, /\.search\s*\{[^}]*border-radius:\s*14px/s);
+  assert.doesNotMatch(css, /\.board-view-search\s*\{/);
+  assert.match(css, /\.search\s*\{[^}]*height:\s*34px/s);
+  assert.match(css, /\.search\s*\{[^}]*border-radius:\s*10px/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*position:\s*absolute/s);
   assert.match(css, /\.board-view-settings\s*\{[^}]*right:\s*0/s);
-  assert.match(css, /\.board-view-settings\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.board-view-settings\s*\{[^}]*display:\s*grid/s);
   assert.match(css, /\.board-view-add-button\s*\{/);
   assert.match(css, /\.board-view-switcher:hover \.board-view-add-button/s);
   assert.match(css, /\.board-view-menu-popover\s*\{[^}]*min-width:\s*264px/s);

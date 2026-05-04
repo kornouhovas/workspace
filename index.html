@@ -32,17 +32,31 @@
           </button>
         </div>
 
-        <div class="workspace-list-head">
-          <span class="eyebrow">Workspaces</span>
+        <nav class="sidebar-primary-actions" aria-label="Workspace actions">
           <button
-            class="icon-button add-workspace"
+            class="sidebar-action new-workspace-button"
             id="addWorkspaceButton"
             type="button"
             aria-label="Добавить workspace"
             title="Добавить workspace"
           >
-            +
+            <span class="sidebar-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"></path>
+                <path d="m14.5 4.5 5 5"></path>
+                <path d="M19 5 10 14l-1 4 4-1 9-9"></path>
+              </svg>
+            </span>
+            <span>New workspace</span>
           </button>
+          <label class="sidebar-action search sidebar-search" id="sidebarSearch">
+            <span class="search-icon" aria-hidden="true"></span>
+            <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
+          </label>
+        </nav>
+
+        <div class="workspace-list-head">
+          <span class="eyebrow">Workspaces</span>
         </div>
 
         <nav class="workspace-tabs" id="workspaceTabs" aria-label="Workspaces"></nav>
@@ -102,10 +116,6 @@
               <button class="board-view-option active" type="button" data-board-view="overview">Overview</button>
               <button class="board-view-option" type="button" data-board-view="board">Board</button>
               <button class="board-view-option" type="button" data-board-view="table">Table</button>
-              <label class="search board-view-search">
-                <span class="search-icon" aria-hidden="true"></span>
-                <input id="searchInput" type="search" placeholder="Search folders" autocomplete="off" />
-              </label>
               <div class="board-view-settings">
                 <button
                   class="board-view-settings-button"

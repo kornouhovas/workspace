@@ -401,8 +401,8 @@ function setBoardView(nextBoardView) {
 }
 
 function renderBoardViewSwitcher() {
-  const searchControl = boardViewSwitcher.querySelector(".board-view-search");
   const settingsControl = boardViewSwitcher.querySelector(".board-view-settings");
+  const insertionAnchor = settingsControl || null;
   boardViewSwitcher
     .querySelectorAll(".board-view-option, .board-view-add-button, .board-add-view-menu, .board-view-menu-popover")
     .forEach((element) => element.remove());
@@ -417,7 +417,7 @@ function renderBoardViewSwitcher() {
     const isActive = view.id === getActiveBoardViewId();
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
-    boardViewSwitcher.insertBefore(button, searchControl);
+    boardViewSwitcher.insertBefore(button, insertionAnchor);
   });
 
   const addButton = document.createElement("button");
@@ -426,7 +426,7 @@ function renderBoardViewSwitcher() {
   addButton.type = "button";
   addButton.setAttribute("aria-label", "Add view");
   addButton.textContent = "+";
-  boardViewSwitcher.insertBefore(addButton, searchControl);
+  boardViewSwitcher.insertBefore(addButton, insertionAnchor);
 
   const addMenu = document.createElement("div");
   addMenu.className = "board-add-view-menu";
@@ -442,10 +442,10 @@ function renderBoardViewSwitcher() {
       return option;
     }),
   );
-  boardViewSwitcher.insertBefore(addMenu, searchControl);
+  boardViewSwitcher.insertBefore(addMenu, insertionAnchor);
 
   const viewMenu = createBoardViewMenu();
-  boardViewSwitcher.insertBefore(viewMenu, searchControl);
+  boardViewSwitcher.insertBefore(viewMenu, insertionAnchor);
 
   if (settingsControl) {
     settingsControl.hidden = true;
@@ -464,7 +464,7 @@ function handleBoardViewPointerDragStart(event) {
   if (
     !button ||
     button.dataset.boardViewType === "overview" ||
-    event.target.closest(".board-view-menu-popover, .board-add-view-menu, .board-view-search") ||
+    event.target.closest(".board-view-menu-popover, .board-add-view-menu") ||
     boardViewPointerDragState
   ) {
     return;
