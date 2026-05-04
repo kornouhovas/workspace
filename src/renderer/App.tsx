@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { DragEvent, MouseEvent, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react";
 
 type Workspace = {
   id: string;
@@ -18,21 +18,38 @@ type ContextMenuState = {
   y: number;
 };
 
+type WorkspaceDragState = {
+  workspaceId: string;
+  pointerId: number;
+  startY: number;
+  currentY: number;
+  listTop: number;
+  listBottom: number;
+  rowLeft: number;
+  rowWidth: number;
+  rowHeight: number;
+  active: boolean;
+};
+
 type IconName =
   | "arrow-left"
   | "arrow-right"
   | "dots"
   | "folder"
-  | "folder-plus"
-  | "layout"
+  | "panel-left"
   | "rename"
   | "search"
   | "settings"
+  | "square-pen"
   | "trash";
 
 const workspaceStorageKey = "workspace.leftPanel.workspaces";
 const selectedWorkspaceStorageKey = "workspace.leftPanel.selectedWorkspaceId";
 const collapsedStorageKey = "workspace.leftPanel.sidebarCollapsed";
+const contextMenuWidth = 224;
+const contextMenuHeight = 104;
+const screenPadding = 14;
+const dragStartThreshold = 4;
 
 const defaultWorkspaces: Workspace[] = [
   { id: "workspace-project-folder", name: "project_folder" },
@@ -46,56 +63,51 @@ const iconPaths: Record<IconName, ReactNode> = {
   "arrow-right": <path d="m9 18 6-6-6-6" />,
   dots: (
     <>
-      <circle cx="5" cy="12" r="1.2" />
-      <circle cx="12" cy="12" r="1.2" />
-      <circle cx="19" cy="12" r="1.2" />
+      <circle cx="5" cy="12" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="12" r="1.15" fill="currentColor" stroke="none" />
     </>
   ),
   folder: (
-    <>
-      <path d="M3.5 7.75A2.75 2.75 0 0 1 6.25 5h4.2l2 2.25h5.3a2.75 2.75 0 0 1 2.75 2.75v6.25A2.75 2.75 0 0 1 17.75 19H6.25a2.75 2.75 0 0 1-2.75-2.75z" />
-      <path d="M3.5 10h17" />
-    </>
+    <path d="M3.25 6.75A2.25 2.25 0 0 1 5.5 4.5h4.04c.64 0 1.25.28 1.68.76l1.06 1.23c.43.49 1.04.76 1.68.76h4.54a2.25 2.25 0 0 1 2.25 2.25v7.25A2.25 2.25 0 0 1 18.5 19H5.5a2.25 2.25 0 0 1-2.25-2.25z" />
   ),
-  "folder-plus": (
+  "panel-left": (
     <>
-      <path d="M3.5 7.75A2.75 2.75 0 0 1 6.25 5h4.2l2 2.25h5.3a2.75 2.75 0 0 1 2.75 2.75v6.25A2.75 2.75 0 0 1 17.75 19H6.25a2.75 2.75 0 0 1-2.75-2.75z" />
-      <path d="M3.5 10h17" />
-      <path d="M12 12.25v4.5" />
-      <path d="M9.75 14.5h4.5" />
-    </>
-  ),
-  layout: (
-    <>
-      <rect x="4" y="5" width="16" height="14" rx="3" />
-      <path d="M9.5 5v14" />
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M9.5 4v16" />
     </>
   ),
   rename: (
     <>
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+      <path d="M12 20h8" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7.25 18.75 3.5 20.5l1.75-3.75z" />
     </>
   ),
   search: (
     <>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
+      <circle cx="11" cy="11" r="7" />
+      <path d="m16.2 16.2 3.8 3.8" />
     </>
   ),
   settings: (
     <>
-      <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.08a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.37.36.87.56 1.4.56H21a2 2 0 0 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15Z" />
+      <path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z" />
+      <path d="M19.25 13.5c.08-.49.08-1.01 0-1.5l1.57-1.22-1.5-2.6-1.85.74a7.43 7.43 0 0 0-1.3-.75L15.9 6.2h-3l-.27 1.97c-.45.2-.88.45-1.29.75l-1.86-.74-1.5 2.6L9.55 12a7.9 7.9 0 0 0 0 1.5l-1.57 1.22 1.5 2.6 1.86-.74c.4.3.84.55 1.29.75l.27 1.97h3l.27-1.97c.46-.2.9-.45 1.3-.75l1.85.74 1.5-2.6z" />
+    </>
+  ),
+  "square-pen": (
+    <>
+      <path d="M12 4H5.75A1.75 1.75 0 0 0 4 5.75v12.5C4 19.22 4.78 20 5.75 20h12.5c.97 0 1.75-.78 1.75-1.75V12" />
+      <path d="M18.25 3.75a2.12 2.12 0 0 1 3 3L12 16l-4 1 1-4z" />
     </>
   ),
   trash: (
     <>
-      <path d="M3 6h18" />
-      <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
-      <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
+      <path d="M4 6.5h16" />
+      <path d="M9 6.5v-1A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v1" />
+      <path d="m18.5 6.5-.8 12.1A2 2 0 0 1 15.7 20h-7.4a2 2 0 0 1-2-1.4L5.5 6.5" />
+      <path d="M10 10.5v5.5" />
+      <path d="M14 10.5v5.5" />
     </>
   ),
 };
@@ -105,8 +117,11 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(loadInitialCollapsedState);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
-  const [draggedWorkspaceId, setDraggedWorkspaceId] = useState("");
-  const [dropTargetWorkspaceId, setDropTargetWorkspaceId] = useState("");
+  const [dragState, setDragState] = useState<WorkspaceDragState | null>(null);
+  const dragStateRef = useRef<WorkspaceDragState | null>(null);
+  const leftPanelRef = useRef<HTMLElement | null>(null);
+  const workspaceListRef = useRef<HTMLDivElement | null>(null);
+  const suppressNextWorkspaceSelectRef = useRef(false);
 
   const { workspaces, selectedWorkspaceId, workspaceCounter } = workspaceState;
   const activeWorkspace = useMemo(
@@ -119,6 +134,24 @@ function App() {
       ? workspaces.filter((workspace) => workspace.name.toLowerCase().includes(normalizedSearch))
       : workspaces;
   }, [searchTerm, workspaces]);
+  const dragOverlay =
+    dragState?.active && workspaces.find((workspace) => workspace.id === dragState.workspaceId)
+      ? {
+          state: dragState,
+          workspace: workspaces.find((workspace) => workspace.id === dragState.workspaceId),
+        }
+      : null;
+  const dragOverlayStyle = dragOverlay?.workspace
+    ? ({
+        "--drag-left": `${dragOverlay.state.rowLeft}px`,
+        "--drag-top": `${clamp(
+          dragOverlay.state.currentY - dragOverlay.state.rowHeight / 2,
+          dragOverlay.state.listTop,
+          dragOverlay.state.listBottom - dragOverlay.state.rowHeight,
+        )}px`,
+        "--drag-width": `${dragOverlay.state.rowWidth}px`,
+      } as CSSProperties)
+    : undefined;
 
   useEffect(() => {
     localStorage.setItem(workspaceStorageKey, JSON.stringify(workspaces));
@@ -139,6 +172,7 @@ function App() {
 
       if (event.key === "Escape") {
         setContextMenu(null);
+        clearWorkspaceDrag();
       }
     }
 
@@ -161,6 +195,11 @@ function App() {
   }
 
   function selectWorkspace(workspaceId: string) {
+    if (suppressNextWorkspaceSelectRef.current) {
+      suppressNextWorkspaceSelectRef.current = false;
+      return;
+    }
+
     setWorkspaceState((current) => ({
       ...current,
       selectedWorkspaceId: workspaceId,
@@ -174,11 +213,20 @@ function App() {
   function openContextMenu(event: MouseEvent<HTMLElement>, workspaceId: string) {
     event.preventDefault();
     event.stopPropagation();
-    selectWorkspace(workspaceId);
+    clearWorkspaceDrag();
+    setWorkspaceState((current) => ({
+      ...current,
+      selectedWorkspaceId: workspaceId,
+    }));
+    const panelRect = leftPanelRef.current?.getBoundingClientRect();
+    const minX = panelRect ? panelRect.left + screenPadding : screenPadding;
+    const maxX = panelRect
+      ? panelRect.right - contextMenuWidth - screenPadding
+      : window.innerWidth - contextMenuWidth - screenPadding;
     setContextMenu({
       workspaceId,
-      x: Math.max(10, Math.min(event.clientX, window.innerWidth - 236)),
-      y: Math.max(10, Math.min(event.clientY, window.innerHeight - 118)),
+      x: clamp(event.clientX, minX, maxX),
+      y: clamp(event.clientY, screenPadding, window.innerHeight - contextMenuHeight - screenPadding),
     });
   }
 
@@ -188,6 +236,7 @@ function App() {
       return;
     }
 
+    setContextMenu(null);
     const nextName = window.prompt("Rename workspace", workspace.name);
     const trimmedName = nextName?.trim();
     if (!trimmedName) {
@@ -205,6 +254,7 @@ function App() {
       return;
     }
 
+    setContextMenu(null);
     const workspace = workspaces.find((item) => item.id === workspaceId);
     const confirmed = window.confirm(`Delete ${workspace?.name || "workspace"}?`);
     if (!confirmed) {
@@ -222,35 +272,90 @@ function App() {
     });
   }
 
-  function handleWorkspaceDragStart(event: DragEvent<HTMLDivElement>, workspaceId: string) {
-    setDraggedWorkspaceId(workspaceId);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", workspaceId);
-    event.dataTransfer.setDragImage(event.currentTarget, 18, event.currentTarget.offsetHeight / 2);
+  function setNextDragState(nextState: WorkspaceDragState | null) {
+    dragStateRef.current = nextState;
+    setDragState(nextState);
   }
 
-  function handleWorkspaceDragOver(event: DragEvent<HTMLDivElement>, workspaceId: string) {
-    if (!draggedWorkspaceId || draggedWorkspaceId === workspaceId) {
+  function clearWorkspaceDrag() {
+    setNextDragState(null);
+  }
+
+  function handleWorkspacePointerDown(event: PointerEvent<HTMLDivElement>, workspaceId: string) {
+    if (event.button !== 0 || (event.target as HTMLElement).closest(".workspace-menu-button")) {
+      return;
+    }
+
+    const listRect = workspaceListRef.current?.getBoundingClientRect();
+    if (!listRect) {
+      return;
+    }
+
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setNextDragState({
+      workspaceId,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      currentY: clamp(event.clientY, listRect.top + rowRect.height / 2, listRect.bottom - rowRect.height / 2),
+      listTop: listRect.top,
+      listBottom: listRect.bottom,
+      rowLeft: rowRect.left,
+      rowWidth: rowRect.width,
+      rowHeight: rowRect.height,
+      active: false,
+    });
+  }
+
+  function handleWorkspacePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const currentDragState = dragStateRef.current;
+    if (!currentDragState || currentDragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const currentY = clamp(
+      event.clientY,
+      currentDragState.listTop + currentDragState.rowHeight / 2,
+      currentDragState.listBottom - currentDragState.rowHeight / 2,
+    );
+    const isActive = currentDragState.active || Math.abs(event.clientY - currentDragState.startY) > dragStartThreshold;
+    const nextDragState = { ...currentDragState, currentY, active: isActive };
+    setNextDragState(nextDragState);
+
+    if (!isActive) {
       return;
     }
 
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    setDropTargetWorkspaceId(workspaceId);
-  }
+    suppressNextWorkspaceSelectRef.current = true;
+    setContextMenu(null);
 
-  function handleWorkspaceDrop(event: DragEvent<HTMLDivElement>, targetWorkspaceId: string) {
-    event.preventDefault();
-    if (!draggedWorkspaceId || draggedWorkspaceId === targetWorkspaceId) {
+    const targetWorkspaceId = getWorkspaceIdAtPoint(currentDragState.rowLeft + currentDragState.rowWidth / 2, currentY);
+    if (!targetWorkspaceId || targetWorkspaceId === currentDragState.workspaceId) {
       return;
     }
 
     setWorkspaceState((current) => ({
       ...current,
-      workspaces: reorderWorkspaces(current.workspaces, draggedWorkspaceId, targetWorkspaceId),
+      workspaces: reorderWorkspaces(current.workspaces, currentDragState.workspaceId, targetWorkspaceId),
     }));
-    setDraggedWorkspaceId("");
-    setDropTargetWorkspaceId("");
+  }
+
+  function handleWorkspacePointerEnd(event: PointerEvent<HTMLDivElement>) {
+    const currentDragState = dragStateRef.current;
+    if (!currentDragState || currentDragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (currentDragState.active) {
+      event.preventDefault();
+      suppressNextWorkspaceSelectRef.current = true;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    clearWorkspaceDrag();
   }
 
   return (
@@ -259,34 +364,33 @@ function App() {
       className={`app-shell${isCollapsed ? " sidebar-collapsed" : ""}`}
       onClick={() => setContextMenu(null)}
     >
-      <aside id="leftPanel" className="left-panel" aria-label="Workspace navigation">
-        <div className="window-strip">
-          <button
-            id="sidebarToggle"
-            className="window-icon-button"
-            type="button"
-            aria-label="Toggle sidebar (Command+B)"
-            aria-pressed={isCollapsed}
-            title="Toggle sidebar (Command+B)"
-            onClick={(event) => {
-              event.stopPropagation();
-              toggleSidebar();
-            }}
-          >
-            <Icon name="layout" />
-          </button>
-          <button className="window-icon-button" type="button" aria-label="Back" title="Back">
-            <Icon name="arrow-left" />
-          </button>
-          <button className="window-icon-button" type="button" aria-label="Forward" title="Forward">
-            <Icon name="arrow-right" />
-          </button>
-        </div>
+      <div className="window-strip">
+        <button
+          id="sidebarToggle"
+          className="window-icon-button"
+          type="button"
+          aria-label="Toggle sidebar (Command+B)"
+          aria-pressed={isCollapsed}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleSidebar();
+          }}
+        >
+          <Icon name="panel-left" />
+        </button>
+        <button className="window-icon-button" type="button" aria-label="Back">
+          <Icon name="arrow-left" />
+        </button>
+        <button className="window-icon-button" type="button" aria-label="Forward">
+          <Icon name="arrow-right" />
+        </button>
+      </div>
 
+      <aside id="leftPanel" ref={leftPanelRef} className="left-panel" aria-label="Workspace navigation">
         <div className="panel-top">
           <button id="newWorkspaceButton" className="utility-row" type="button" onClick={addWorkspace}>
             <span className="utility-icon" aria-hidden="true">
-              <Icon name="folder-plus" />
+              <Icon name="square-pen" />
             </span>
             <span className="utility-label">New Workspace</span>
           </button>
@@ -310,25 +414,19 @@ function App() {
           <h2 id="workspaceSectionTitle" className="nav-section-title">
             Workspace
           </h2>
-          <div id="workspaceList" className="workspace-list" role="list" aria-label="Workspace">
+          <div id="workspaceList" ref={workspaceListRef} className="workspace-list" role="list" aria-label="Workspace">
             {visibleWorkspaces.length > 0 ? (
               visibleWorkspaces.map((workspace) => (
                 <WorkspaceRow
                   key={workspace.id}
                   workspace={workspace}
                   isSelected={workspace.id === selectedWorkspaceId}
-                  isDragging={workspace.id === draggedWorkspaceId}
-                  isDropTarget={workspace.id === dropTargetWorkspaceId}
+                  isDragging={dragState?.workspaceId === workspace.id && dragState.active}
                   onSelect={selectWorkspace}
                   onMenuOpen={openContextMenu}
-                  onDragStart={handleWorkspaceDragStart}
-                  onDragOver={handleWorkspaceDragOver}
-                  onDrop={handleWorkspaceDrop}
-                  onDragLeave={() => setDropTargetWorkspaceId("")}
-                  onDragEnd={() => {
-                    setDraggedWorkspaceId("");
-                    setDropTargetWorkspaceId("");
-                  }}
+                  onPointerDown={handleWorkspacePointerDown}
+                  onPointerMove={handleWorkspacePointerMove}
+                  onPointerEnd={handleWorkspacePointerEnd}
                 />
               ))
             ) : (
@@ -353,6 +451,18 @@ function App() {
           <h1 id="activeWorkspaceName">{activeWorkspace?.name || "project_folder"}</h1>
         </div>
       </main>
+
+      {dragOverlay?.workspace && dragOverlayStyle ? (
+        <div className="workspace-drag-overlay" style={dragOverlayStyle} aria-hidden="true">
+          <span className="project-icon">
+            <Icon name="folder" />
+          </span>
+          <span className="workspace-name">{dragOverlay.workspace.name}</span>
+          <span className="workspace-menu-button is-visible">
+            <Icon name="dots" />
+          </span>
+        </div>
+      ) : null}
 
       {contextMenu ? (
         <div
@@ -391,50 +501,38 @@ type WorkspaceRowProps = {
   workspace: Workspace;
   isSelected: boolean;
   isDragging: boolean;
-  isDropTarget: boolean;
   onSelect: (workspaceId: string) => void;
   onMenuOpen: (event: MouseEvent<HTMLElement>, workspaceId: string) => void;
-  onDragStart: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
-  onDragOver: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
-  onDrop: (event: DragEvent<HTMLDivElement>, workspaceId: string) => void;
-  onDragLeave: () => void;
-  onDragEnd: () => void;
+  onPointerDown: (event: PointerEvent<HTMLDivElement>, workspaceId: string) => void;
+  onPointerMove: (event: PointerEvent<HTMLDivElement>) => void;
+  onPointerEnd: (event: PointerEvent<HTMLDivElement>) => void;
 };
 
 function WorkspaceRow({
   workspace,
   isSelected,
   isDragging,
-  isDropTarget,
   onSelect,
   onMenuOpen,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragLeave,
-  onDragEnd,
+  onPointerDown,
+  onPointerMove,
+  onPointerEnd,
 }: WorkspaceRowProps) {
-  const className = [
-    "workspace-row",
-    isSelected ? "is-selected" : "",
-    isDragging ? "is-dragging" : "",
-    isDropTarget ? "is-drop-target" : "",
-  ]
+  const className = ["workspace-row", isSelected ? "is-selected" : "", isDragging ? "is-dragging" : ""]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div
       className={className}
-      draggable
       data-workspace-id={workspace.id}
       role="listitem"
       onContextMenu={(event) => onMenuOpen(event, workspace.id)}
-      onDragStart={(event) => onDragStart(event, workspace.id)}
-      onDragOver={(event) => onDragOver(event, workspace.id)}
-      onDragLeave={onDragLeave}
-      onDrop={(event) => onDrop(event, workspace.id)}
-      onDragEnd={onDragEnd}
+      onPointerDown={(event) => onPointerDown(event, workspace.id)}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onLostPointerCapture={onPointerEnd}
     >
       <button className="workspace-select-button" type="button" onClick={() => onSelect(workspace.id)}>
         <span className="project-icon" aria-hidden="true">
@@ -456,7 +554,7 @@ function WorkspaceRow({
 
 function Icon({ name }: { name: IconName }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg className={`icon icon-${name}`} aria-hidden="true" viewBox="0 0 24 24" strokeWidth={1.7}>
       {iconPaths[name]}
     </svg>
   );
@@ -510,7 +608,7 @@ function getNextWorkspaceCounter(workspaces: Workspace[]) {
 function reorderWorkspaces(workspaces: Workspace[], sourceId: string, targetId: string) {
   const sourceIndex = workspaces.findIndex((workspace) => workspace.id === sourceId);
   const targetIndex = workspaces.findIndex((workspace) => workspace.id === targetId);
-  if (sourceIndex < 0 || targetIndex < 0) {
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
     return workspaces;
   }
 
@@ -518,6 +616,17 @@ function reorderWorkspaces(workspaces: Workspace[], sourceId: string, targetId: 
   const [source] = reordered.splice(sourceIndex, 1);
   reordered.splice(targetIndex, 0, source);
   return reordered;
+}
+
+function getWorkspaceIdAtPoint(x: number, y: number) {
+  const target = document.elementFromPoint(x, y);
+  const row = target?.closest("[data-workspace-id]") as HTMLElement | null;
+  return row?.dataset.workspaceId || "";
+}
+
+function clamp(value: number, min: number, max: number) {
+  const upperBound = Math.max(min, max);
+  return Math.min(Math.max(value, min), upperBound);
 }
 
 export default App;

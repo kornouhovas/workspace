@@ -2,11 +2,11 @@
   --codex-bg: #111211;
   --codex-sidebar-glass: rgba(20, 53, 31, 0.7);
   --codex-sidebar-text: #f1f6ee;
-  --codex-sidebar-muted: rgba(241, 246, 238, 0.58);
-  --codex-sidebar-dim: rgba(241, 246, 238, 0.38);
-  --codex-sidebar-hover: rgba(255, 255, 255, 0.1);
-  --codex-sidebar-selected: rgba(255, 255, 255, 0.13);
-  --codex-surface: rgba(44, 44, 44, 0.9);
+  --codex-sidebar-muted: rgba(241, 246, 238, 0.6);
+  --codex-sidebar-dim: rgba(241, 246, 238, 0.42);
+  --codex-sidebar-hover: rgba(255, 255, 255, 0.095);
+  --codex-sidebar-selected: rgba(255, 255, 255, 0.14);
+  --codex-surface: rgba(43, 43, 43, 0.94);
   --codex-surface-hover: rgba(255, 255, 255, 0.1);
   --codex-text: #f5f5f3;
   --codex-text-secondary: #a7a7a2;
@@ -14,6 +14,9 @@
   --codex-border: rgba(255, 255, 255, 0.16);
   --codex-border-soft: rgba(255, 255, 255, 0.1);
   --codex-delete: #ff8a80;
+  --codex-font: "OpenAI Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --left-panel-width: 300px;
+  --context-menu-width: 224px;
   --codex-radius-sm: 8px;
   --codex-radius-md: 16px;
   --codex-radius-pill: 999px;
@@ -37,8 +40,10 @@ body {
   overflow: hidden;
   background: transparent;
   color: var(--codex-text);
-  font-family: "OpenAI Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--codex-font);
   font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -51,19 +56,18 @@ button {
 }
 
 svg {
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   display: block;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 
 .app-shell {
   display: grid;
-  grid-template-columns: 306px minmax(0, 1fr);
+  grid-template-columns: var(--left-panel-width) minmax(0, 1fr);
   width: 100vw;
   height: 100vh;
   background: transparent;
@@ -74,12 +78,32 @@ svg {
   grid-template-columns: 0px minmax(0, 1fr);
 }
 
+.window-strip {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  left: 0;
+  width: var(--left-panel-width);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 18px 0 88px;
+  color: var(--codex-sidebar-muted);
+  -webkit-app-region: drag;
+}
+
+.app-shell.sidebar-collapsed .window-strip {
+  width: 176px;
+}
+
 .left-panel {
   min-width: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: 76px;
   background: var(--codex-sidebar-glass);
   -webkit-backdrop-filter: blur(28px) saturate(135%);
   backdrop-filter: blur(28px) saturate(135%);
@@ -88,16 +112,6 @@ svg {
     inset -1px 0 0 rgba(255, 255, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: opacity 170ms ease, visibility 170ms ease;
-}
-
-.window-strip {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 0 18px 0 88px;
-  color: var(--codex-sidebar-muted);
-  -webkit-app-region: drag;
 }
 
 .window-icon-button,
@@ -122,6 +136,11 @@ svg {
   -webkit-app-region: no-drag;
 }
 
+.window-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 .window-icon-button:hover,
 .utility-row:hover,
 .settings-button:hover,
@@ -143,7 +162,7 @@ svg {
 .panel-top {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   padding: 0 16px;
 }
 
@@ -154,7 +173,7 @@ svg {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 10px 0 0;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-text);
@@ -173,6 +192,11 @@ svg {
   color: currentColor;
 }
 
+.utility-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
 .utility-label,
 .settings-label,
 .workspace-name,
@@ -186,7 +210,7 @@ svg {
 .utility-label,
 .settings-label {
   font-size: 15px;
-  font-weight: 450;
+  font-weight: 400;
   line-height: 1.2;
 }
 
@@ -202,6 +226,7 @@ svg {
   background: transparent;
   color: var(--codex-sidebar-text);
   font-size: 15px;
+  font-weight: 400;
 }
 
 .search-field input::placeholder {
@@ -214,8 +239,8 @@ svg {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 10px;
-  padding: 26px 16px 0;
+  gap: 9px;
+  padding: 28px 16px 0;
 }
 
 .nav-section-title {
@@ -223,7 +248,7 @@ svg {
   padding: 0;
   color: var(--codex-sidebar-muted);
   font-size: 14px;
-  font-weight: 450;
+  font-weight: 400;
   line-height: 1.2;
 }
 
@@ -242,11 +267,13 @@ svg {
   width: 100%;
   min-height: 31px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) 32px;
   align-items: center;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-muted);
   contain: layout paint;
+  cursor: default;
+  touch-action: none;
   user-select: none;
   transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
 }
@@ -257,19 +284,7 @@ svg {
 }
 
 .workspace-row.is-dragging {
-  opacity: 0.44;
-  transform: translateX(0);
-}
-
-.workspace-row.is-drop-target::after {
-  position: absolute;
-  right: 10px;
-  bottom: -1px;
-  left: 10px;
-  height: 2px;
-  border-radius: var(--codex-radius-pill);
-  background: rgba(214, 232, 206, 0.48);
-  content: "";
+  opacity: 0.18;
 }
 
 .workspace-select-button {
@@ -278,22 +293,27 @@ svg {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  padding: 0 0 0 0;
+  gap: 6px;
+  padding: 0;
   border-radius: var(--codex-radius-sm);
   color: inherit;
   cursor: default;
   text-align: left;
 }
 
+.project-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .workspace-name {
   font-size: 15px;
-  font-weight: 450;
+  font-weight: 400;
   line-height: 1.2;
 }
 
 .workspace-menu-button {
-  width: 32px;
+  width: 30px;
   height: 31px;
   display: inline-flex;
   align-items: center;
@@ -304,11 +324,18 @@ svg {
   color: var(--codex-sidebar-muted);
   cursor: pointer;
   opacity: 0;
+  transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.workspace-menu-button svg {
+  width: 17px;
+  height: 17px;
 }
 
 .workspace-row:hover .workspace-menu-button,
 .workspace-row.is-selected .workspace-menu-button,
-.workspace-menu-button:focus-visible {
+.workspace-menu-button:focus-visible,
+.workspace-menu-button.is-visible {
   opacity: 1;
 }
 
@@ -317,10 +344,31 @@ svg {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.workspace-drag-overlay {
+  position: fixed;
+  z-index: 40;
+  left: var(--drag-left);
+  top: var(--drag-top);
+  width: var(--drag-width);
+  height: 31px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--codex-radius-sm);
+  color: var(--codex-sidebar-text);
+  background: var(--codex-sidebar-selected);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
 .empty-results {
   padding: 8px 2px;
   color: var(--codex-sidebar-muted);
   font-size: 14px;
+  font-weight: 400;
 }
 
 .panel-footer {
@@ -333,8 +381,8 @@ svg {
 }
 
 .settings-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .main-surface {
@@ -355,7 +403,7 @@ svg {
 .workspace-preview-label {
   color: var(--codex-text-tertiary);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0;
 }
 
@@ -363,15 +411,15 @@ svg {
   margin: 10px 0 0;
   color: var(--codex-text);
   font-size: 34px;
-  font-weight: 520;
+  font-weight: 500;
   line-height: 1.16;
   overflow-wrap: anywhere;
 }
 
 .context-menu {
   position: fixed;
-  z-index: 20;
-  min-width: 228px;
+  z-index: 50;
+  width: min(var(--context-menu-width), calc(100vw - 28px));
   padding: 8px;
   border: 1px solid var(--codex-border-soft);
   border-radius: var(--codex-radius-md);
@@ -383,14 +431,17 @@ svg {
 
 .context-menu button {
   width: 100%;
-  height: 42px;
+  height: 36px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 14px;
-  border-radius: 10px;
+  padding: 0 18px;
+  border-radius: 12px;
   color: var(--codex-text);
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.2;
   text-align: left;
 }
 
@@ -413,6 +464,11 @@ svg {
   flex: 0 0 20px;
 }
 
+.menu-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
 .app-shell.sidebar-collapsed .left-panel {
   opacity: 0;
   visibility: hidden;
@@ -420,8 +476,12 @@ svg {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --left-panel-width: 300px;
+  }
+
   .app-shell {
-    grid-template-columns: 286px minmax(0, 1fr);
+    grid-template-columns: var(--left-panel-width) minmax(0, 1fr);
   }
 
   .app-shell.sidebar-collapsed {
@@ -429,7 +489,7 @@ svg {
   }
 
   .window-strip {
-    padding-left: 82px;
+    padding-left: 88px;
   }
 }
 
