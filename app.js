@@ -4406,19 +4406,10 @@ function createCardPlaceEntryRow(entry, depth) {
 
   const rowItems = [];
   if (entry.kind === "directory") {
-    const chevron = document.createElement("span");
-    chevron.className = "card-place-entry-chevron";
-    chevron.setAttribute("aria-hidden", "true");
     row.setAttribute("aria-expanded", String(cardPlaceExpandedPaths.has(entry.path)));
-    const icon = document.createElement("span");
-    icon.className = "card-place-entry-icon is-directory";
-    icon.setAttribute("aria-hidden", "true");
-    rowItems.push(chevron, icon);
+    rowItems.push(createCardPlaceEntryChevron(), createCardPlaceFolderIcon());
   } else {
-    const icon = document.createElement("span");
-    icon.className = "card-place-entry-icon is-file";
-    icon.setAttribute("aria-hidden", "true");
-    rowItems.push(icon);
+    rowItems.push(createCardPlaceFileIcon());
   }
 
   const name = document.createElement("span");
@@ -4428,6 +4419,42 @@ function createCardPlaceEntryRow(entry, depth) {
   row.append(...rowItems, name);
 
   return row;
+}
+
+function createCardPlaceEntryChevron() {
+  const icon = createSvgIcon("card-place-entry-chevron", "0 0 24 24");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "m9 6 6 6-6 6");
+  icon.append(path);
+
+  return icon;
+}
+
+function createCardPlaceFolderIcon() {
+  const icon = createSvgIcon("card-place-entry-icon is-directory", "0 0 24 24");
+  const paths = [
+    "M4 7.5h5l2 2h9",
+    "M4 7.5v9A2.5 2.5 0 0 0 6.5 19h11A2.5 2.5 0 0 0 20 16.5v-7H4Z",
+  ];
+  paths.forEach((pathData) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  });
+
+  return icon;
+}
+
+function createCardPlaceFileIcon() {
+  const icon = createSvgIcon("card-place-entry-icon is-file", "0 0 24 24");
+  const paths = ["M7 4h7l4 4v12H7Z", "M14 4v5h5"];
+  paths.forEach((pathData) => {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    icon.append(path);
+  });
+
+  return icon;
 }
 
 function createCardPlaceEntryMessage(message, depth) {
