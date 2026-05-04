@@ -822,7 +822,10 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*box-shadow:/s);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{/);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*grid-template-columns:\s*18px minmax\(0, 1fr\)/s);
-  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*padding-left:\s*calc\(24px \+ var\(--entry-depth, 0\) \* 16px\)/s);
+  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*padding-left:\s*calc\(2px \+ var\(--entry-depth, 0\) \* 16px\)/s);
+  assert.match(css, /\.card-place-entry-icon\.is-file::before\s*\{[^}]*clip-path:\s*polygon/s);
+  assert.match(css, /\.card-place-entry-icon\.is-file::after\s*\{[^}]*clip-path:\s*polygon/s);
+  assert.doesNotMatch(css, /\.card-place-entry-icon\.is-file::before\s*\{[^}]*border:/s);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
   assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);

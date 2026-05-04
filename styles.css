@@ -2478,7 +2478,7 @@ textarea.table-text-input {
 
 .card-place-entry[data-kind="file"] {
   grid-template-columns: 18px minmax(0, 1fr);
-  padding-left: calc(24px + var(--entry-depth, 0) * 16px);
+  padding-left: calc(2px + var(--entry-depth, 0) * 16px);
 }
 
 .card-place-entry-icon {
@@ -2522,31 +2522,31 @@ textarea.table-text-input {
 }
 
 .card-place-entry-icon.is-file {
-  width: 15px;
-  height: 17px;
-  color: var(--muted);
+  width: 14px;
+  height: 16px;
+  color: color-mix(in srgb, var(--muted) 88%, var(--text) 12%);
 }
 
 .card-place-entry-icon.is-file::before {
   position: absolute;
   inset: 1px 2px;
-  border: 1.5px solid currentColor;
   border-radius: 2px;
+  background: currentColor;
+  clip-path: polygon(0 0, 72% 0, 100% 28%, 100% 100%, 0 100%);
   content: "";
-  opacity: 0.78;
+  opacity: 0.72;
 }
 
 .card-place-entry-icon.is-file::after {
   position: absolute;
-  top: 2px;
-  right: 3px;
+  top: 1px;
+  right: 2px;
   width: 4px;
   height: 4px;
-  border-left: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
   background: #1b1b1a;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
   content: "";
-  opacity: 0.78;
+  opacity: 0.9;
 }
 
 .card-place-entry-name {
