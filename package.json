@@ -25,11 +25,8 @@
     "productName": "Workspace",
     "asar": true,
     "files": [
-      "app.js",
       "electron/**/*",
-      "index.html",
       "src/**/*",
-      "styles.css",
       "THIRD_PARTY_NOTICES.md"
     ],
     "extraResources": [

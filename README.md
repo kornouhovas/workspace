@@ -1,13 +1,15 @@
 # Workspace
 
-Локальное Electron-приложение для работы с workspace-папкой.
+Локальная Electron/any-store основа для работы с workspace-папкой.
+
+Renderer UI is intentionally absent on the `app-redesign` branch. The previous handwritten interface and its UI tests were removed so the renderer can be rebuilt from a clean slate while keeping Electron, local filesystem access, and storage plumbing.
 
 ## Нужно ли поднимать backend отдельно?
 
-Нет. Команда `npm run electron` запускает UI и backend в одном приложении:
+Нет. Команда `npm run electron` запускает локальную Electron/backend-обвязку:
 
 - собирает локальный sidecar `workspace-sidecar`;
-- открывает Electron UI;
+- открывает пустое Electron-окно для будущего renderer;
 - запускает backend внутри Electron main process;
 - подключает локальный `any-store` storage через sidecar.
 
@@ -20,31 +22,16 @@ cd /Users/aleksandersk/Documents/programming/node/project_folder
 npm run electron
 ```
 
-## Выбор workspace-папки
-
-Путь к workspace root больше не нужно передавать через переменную окружения.
-
-1. Запусти приложение командой `npm run electron`.
-2. Перейди в `Settings`.
-3. Нажми `Choose folder` и выбери папку в системном macOS-диалоге.
-
 Выбранный абсолютный путь сохраняется локально в `.workspace/settings.json`.
 Свойства папок сохраняются рядом в `.workspace/properties.json`.
 В Electron-сборке эти файлы находятся внутри системной папки данных приложения, например `~/Library/Application Support/Workspace/.workspace/` на macOS.
 При первом чтении приложение мигрирует legacy-данные из `.folder-kanban/settings.json` и `.folder-kanban/properties.json`, если новые файлы еще не созданы.
 Обе локальные папки добавлены в `.gitignore`, потому что в них хранятся данные, специфичные для твоей машины.
 
-## Как работает открытие файлов и папок
-
-- Клик по шеврону папки в `card place` раскрывает вложенные файлы и папки.
-- Клик по строке папки открывает эту папку в Finder.
-- PDF, изображения, текстовые файлы, видео, аудио, JSON, HTML, CSS, Markdown и похожие preview-типы открываются в браузере.
-- Остальные файлы открываются в macOS через `open`.
-
 ## Storage
 
 Workspace stores local object and property data through `any-store`, a Go document database on top of SQLite.
-The Electron app includes the UI and backend in one application. The renderer talks to Electron main through preload IPC. Electron main owns OS access and starts the local Workspace storage sidecar.
+Electron main owns OS access, exposes the preload IPC contract, and starts the local Workspace storage sidecar. A new renderer can be attached to that contract during the redesign.
 
 `any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
 
@@ -54,7 +41,7 @@ The Electron app includes the UI and backend in one application. The renderer ta
 npm run electron
 ```
 
-This command builds the local `workspace-sidecar` binary first, then opens the Electron app. The generated binary is ignored by git.
+This command builds the local `workspace-sidecar` binary first, then opens a blank Electron window. The generated binary is ignored by git.
 
 ## Сборка приложения
 
@@ -92,4 +79,4 @@ npm test
 
 ## Как это устроено
 
-Выбор папки делает Electron backend через системный macOS-диалог. Renderer получает root, дерево папок и содержимое `card place` через preload IPC. Electron main владеет доступом к файловой системе и синхронизирует выбранный workspace root с `any-store`.
+Electron main владеет доступом к файловой системе, держит preload IPC contract и синхронизирует выбранный workspace root с `any-store`. Renderer на этой ветке удален и будет создан заново.

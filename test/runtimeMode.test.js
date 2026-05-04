@@ -2,11 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 
-test("workspace runs through Electron only", async () => {
+test("workspace keeps Electron and local runtime without renderer UI", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
   assert.equal(packageJson.name, "workspace");
   assert.equal(packageJson.scripts.dev, undefined);
@@ -29,11 +27,14 @@ test("workspace runs through Electron only", async () => {
       "sidecar/win32-x64/workspace-sidecar.exe",
     ],
   );
-  assert.equal(html.includes("<title>Workspace</title>"), true);
+  assert.deepEqual(packageJson.build.files, ["electron/**/*", "src/**/*", "THIRD_PARTY_NOTICES.md"]);
   assert.equal(readme.includes("npm run dev"), false);
   assert.equal(readme.includes("127.0.0.1:4173"), false);
-  assert.equal(app.includes("/api/"), false);
-  assert.equal(app.includes("fetch("), false);
+  assert.equal(readme.includes("Renderer UI is intentionally absent"), true);
+  await assert.rejects(access(new URL("../index.html", import.meta.url)), { code: "ENOENT" });
+  await assert.rejects(access(new URL("../app.js", import.meta.url)), { code: "ENOENT" });
+  await assert.rejects(access(new URL("../styles.css", import.meta.url)), { code: "ENOENT" });
+  await assert.rejects(access(new URL("../referens/index.html", import.meta.url)), { code: "ENOENT" });
 });
 
 test("legacy browser dev server is not shipped", async () => {
