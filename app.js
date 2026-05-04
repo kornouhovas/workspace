@@ -7051,7 +7051,7 @@ function startOptionPropertyRename(actionButton, option, path, columnId, context
 
 function handleOptionPropertyPointerDragStart(event) {
   const item = event.target.closest(".option-property-item");
-  if (event.target.closest(".option-property-action-button, .option-property-action-menu, .option-property-rename-input")) {
+  if (event.target.closest(".option-property-action-button, .option-property-action-menu, .option-property-rename-input, .option-property-select")) {
     return;
   }
 

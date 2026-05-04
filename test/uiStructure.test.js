@@ -546,6 +546,10 @@ test("select and multi-select option menus can clear, edit, recolor, delete, and
   assert.match(app, /window\.addEventListener\("pointermove", handleOptionPropertyPointerDragMove\)/);
   assert.match(app, /window\.addEventListener\("pointerup", handleOptionPropertyPointerDragEnd\)/);
   assert.match(app, /function handleOptionPropertyPointerDragStart\(/);
+  assert.match(
+    app,
+    /event\.target\.closest\("\.option-property-action-button, \.option-property-action-menu, \.option-property-rename-input, \.option-property-select"\)/,
+  );
   assert.match(app, /function handleOptionPropertyPointerDragMove\(/);
   assert.match(app, /function handleOptionPropertyPointerDragEnd\(/);
   assert.match(app, /function createOptionPropertyDragImage\(/);
@@ -574,6 +578,10 @@ test("select and multi-select option menus can clear, edit, recolor, delete, and
   assert.match(css, /\.option-property-drag-image/);
   assert.match(css, /\.option-property-item\.is-option-preview-up/);
   assert.match(css, /\.option-property-item\.is-option-preview-down/);
+  assert.match(css, /\.card-place-property-value\.option-property-editor\s*\{[^}]*align-self:\s*center/s);
+  assert.match(css, /\.card-place-property-input\.option-property-trigger\s*\{[^}]*min-height:\s*22px/s);
+  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-size:\s*14px/s);
+  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-weight:\s*500/s);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
