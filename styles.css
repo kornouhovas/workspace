@@ -2261,7 +2261,18 @@ textarea.table-text-input {
 }
 
 .card-place-hidden-properties {
+  --card-place-property-shift: 0px;
   min-width: 0;
+  transition: transform 140ms ease;
+  user-select: none;
+}
+
+.card-place-hidden-properties.is-card-place-property-preview-up {
+  transform: translateY(calc(-1 * var(--card-place-property-shift)));
+}
+
+.card-place-hidden-properties.is-card-place-property-preview-down {
+  transform: translateY(var(--card-place-property-shift));
 }
 
 .card-place-hidden-properties-toggle {

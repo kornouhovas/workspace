@@ -431,8 +431,8 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(css, /\.card-place-property-menu\[hidden\]/);
   assert.match(css, /\.card-place-hidden-properties-toggle/);
   assert.doesNotMatch(css, /\.card-place-hidden-properties-list/);
-  assert.doesNotMatch(css, /\.card-place-hidden-properties\.is-card-place-property-preview-up/s);
-  assert.doesNotMatch(css, /\.card-place-hidden-properties\.is-card-place-property-preview-down/s);
+  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-up/s);
+  assert.match(css, /\.card-place-hidden-properties\.is-card-place-property-preview-down/s);
   assert.match(css, /\.card-place-property-row\.is-card-place-property-drag-source/);
   assert.match(css, /\.card-place-property-drag-image/);
   assert.match(css, /\.property-type-icon\s*\{[^}]*stroke:\s*currentColor/s);
@@ -448,6 +448,10 @@ test("card place property drag uses one flat list with hidden as a divider", asy
   assert.doesNotMatch(app, /hiddenDropZone\.querySelector\("\.card-place-hidden-properties-list"\)/);
   assert.match(app, /applyCardPlacePropertyPreview\(getCardPlacePropertyPreviewOrder\(event, target\)\)/);
   assert.match(app, /getCardPlacePropertyInsertAfterTarget\(event, target\.targetItem\)/);
+  assert.match(app, /function getCardPlacePropertyPreviewItems\(\)/);
+  assert.match(app, /querySelectorAll\("\.card-place-property-row, \.card-place-hidden-properties"\)/);
+  assert.match(app, /function getCardPlacePropertyVisualPreviewOrder\(/);
+  assert.match(app, /hiddenPropertyIds\.length > 0 \|\| Boolean\(getCardPlacePropertyHiddenDivider\(\)\)/);
   assert.match(app, /getCardPlacePropertyDragItems\(\)[\s\S]*cardPlacePropertyList\?\.querySelectorAll\("\.card-place-property-row"\)/s);
   assert.doesNotMatch(css, /card-place-hidden-properties-list/);
 });

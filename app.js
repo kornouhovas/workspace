@@ -112,6 +112,7 @@ const boardScrollbarHotZoneSize = 56;
 const boardScrollbarIdleDelay = 900;
 const minCardPlaceWidth = 320;
 const maxCardPlaceWidthRatio = 0.82;
+const cardPlaceHiddenDividerPreviewId = "card-place-hidden-divider";
 
 let selectedRoot = null;
 let folders = [];
@@ -3447,6 +3448,7 @@ function createCardPlacePropertyMenuAction(action, label, icon, enabled = true) 
 function createCardPlaceHiddenPropertiesDisclosure() {
   const section = document.createElement("section");
   section.className = "card-place-hidden-properties";
+  section.dataset.cardPlacePropertyPreviewId = cardPlaceHiddenDividerPreviewId;
 
   const toggle = document.createElement("button");
   toggle.className = "card-place-hidden-properties-toggle";
@@ -3816,18 +3818,51 @@ function removeCardPlacePropertyDragImage() {
 }
 
 function getCardPlacePropertyPreviewOrder(event, target) {
-  const propertyIds = getCardPlacePropertyDragItems().map((item) => item.dataset.cardPlacePropertyId);
+  const propertyIds = getActiveCardPlacePropertyOrder();
   const targetPropertyId = target.targetItem?.dataset.cardPlacePropertyId;
-  if (!draggedCardPlaceProperty || !targetPropertyId || targetPropertyId === draggedCardPlaceProperty) {
-    return propertyIds;
+  let previewPropertyIds = propertyIds;
+  if (draggedCardPlaceProperty && targetPropertyId && targetPropertyId !== draggedCardPlaceProperty) {
+    previewPropertyIds = moveStatusNearTarget(
+      propertyIds,
+      draggedCardPlaceProperty,
+      targetPropertyId,
+      getCardPlacePropertyInsertAfterTarget(event, target.targetItem),
+    );
   }
 
-  return moveStatusNearTarget(
-    propertyIds,
-    draggedCardPlaceProperty,
-    targetPropertyId,
-    getCardPlacePropertyInsertAfterTarget(event, target.targetItem),
-  );
+  return getCardPlacePropertyVisualPreviewOrder(previewPropertyIds, target);
+}
+
+function getCardPlacePropertyVisualPreviewOrder(propertyIds, target) {
+  const hiddenProperties = new Set(getActiveCardPlaceHiddenProperties());
+  if (draggedCardPlaceProperty && typeof target?.targetHidden === "boolean") {
+    if (target.targetHidden) {
+      hiddenProperties.add(draggedCardPlaceProperty);
+    } else {
+      hiddenProperties.delete(draggedCardPlaceProperty);
+    }
+  }
+
+  const visiblePropertyIds = [];
+  const hiddenPropertyIds = [];
+  propertyIds.forEach((propertyId) => {
+    if (hiddenProperties.has(propertyId)) {
+      hiddenPropertyIds.push(propertyId);
+    } else {
+      visiblePropertyIds.push(propertyId);
+    }
+  });
+
+  const includeHiddenDivider = hiddenPropertyIds.length > 0 || Boolean(getCardPlacePropertyHiddenDivider());
+  if (!includeHiddenDivider) {
+    return visiblePropertyIds;
+  }
+
+  return [
+    ...visiblePropertyIds,
+    cardPlaceHiddenDividerPreviewId,
+    ...(cardPlaceHiddenPropertiesExpanded ? hiddenPropertyIds : []),
+  ];
 }
 
 function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
@@ -3845,6 +3880,14 @@ function getCardPlacePropertyInsertAfterTarget(event, targetItem) {
 
 function getCardPlacePropertyDragItems() {
   return [...(cardPlacePropertyList?.querySelectorAll(".card-place-property-row") || [])];
+}
+
+function getCardPlacePropertyPreviewItems() {
+  return [...(cardPlacePropertyList?.querySelectorAll(".card-place-property-row, .card-place-hidden-properties") || [])];
+}
+
+function getCardPlacePropertyPreviewItemId(item) {
+  return item.dataset.cardPlacePropertyId || item.dataset.cardPlacePropertyPreviewId;
 }
 
 function getCardPlacePropertyDragTarget(event) {
@@ -3954,9 +3997,9 @@ function isCardPlacePropertyHiddenDropZone(element) {
 }
 
 function applyCardPlacePropertyPreview(previewPropertyIds) {
-  const items = getCardPlacePropertyDragItems();
+  const items = getCardPlacePropertyPreviewItems();
   const rowGap = Number.parseFloat(getComputedStyle(cardPlacePropertyPointerDragState?.targetList).rowGap) || 0;
-  applyCardPlacePropertyItemPreview(items, previewPropertyIds, (item) => item.dataset.cardPlacePropertyId, rowGap);
+  applyCardPlacePropertyItemPreview(items, previewPropertyIds, getCardPlacePropertyPreviewItemId, rowGap);
 }
 
 function applyCardPlacePropertyItemPreview(items, previewPropertyIds, getItemId, rowGap) {
