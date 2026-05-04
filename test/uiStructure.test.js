@@ -832,6 +832,11 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /createSvgIcon\("card-place-entry-chevron"/);
   assert.match(app, /createSvgIcon\("card-place-entry-icon is-directory"/);
   assert.match(app, /createSvgIcon\("card-place-entry-icon is-file"/);
+  assert.match(app, /M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7\.9a2 2 0 0 1-1\.69-\.9L9\.6 3\.9A2 2 0 0 0 7\.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z/);
+  assert.match(app, /M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z/);
+  assert.match(app, /M14 2v6h6/);
+  assert.doesNotMatch(app, /M4 7\.5h5l2 2h9/);
+  assert.doesNotMatch(app, /M7 4h7l4 4v12H7Z/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*transform:\s*translateY\(1px\)/s);

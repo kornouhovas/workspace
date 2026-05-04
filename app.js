@@ -4432,10 +4432,7 @@ function createCardPlaceEntryChevron() {
 
 function createCardPlaceFolderIcon() {
   const icon = createSvgIcon("card-place-entry-icon is-directory", "0 0 24 24");
-  const paths = [
-    "M4 7.5h5l2 2h9",
-    "M4 7.5v9A2.5 2.5 0 0 0 6.5 19h11A2.5 2.5 0 0 0 20 16.5v-7H4Z",
-  ];
+  const paths = ["M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"];
   paths.forEach((pathData) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
@@ -4447,7 +4444,7 @@ function createCardPlaceFolderIcon() {
 
 function createCardPlaceFileIcon() {
   const icon = createSvgIcon("card-place-entry-icon is-file", "0 0 24 24");
-  const paths = ["M7 4h7l4 4v12H7Z", "M14 4v5h5"];
+  const paths = ["M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", "M14 2v6h6"];
   paths.forEach((pathData) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
