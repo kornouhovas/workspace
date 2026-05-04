@@ -19,21 +19,64 @@ type ContextMenuState = {
   y: number;
 };
 
-type IconName = "drag" | "layout" | "pin" | "plus" | "rename" | "search" | "settings" | "trash";
+type IconName =
+  | "arrow-left"
+  | "arrow-right"
+  | "automations"
+  | "chat"
+  | "dots"
+  | "drag"
+  | "edit"
+  | "folder"
+  | "layout"
+  | "pin"
+  | "plugins"
+  | "plus"
+  | "rename"
+  | "search"
+  | "settings"
+  | "trash";
 
 const workspaceStorageKey = "workspace.leftPanel.workspaces";
 const selectedWorkspaceStorageKey = "workspace.leftPanel.selectedWorkspaceId";
 const collapsedStorageKey = "workspace.leftPanel.sidebarCollapsed";
 
 const defaultWorkspaces: Workspace[] = [
-  {
-    id: "workspace-1",
-    name: "Workspace",
-    pinned: true,
-  },
+  { id: "workspace-project-folder", name: "project_folder", pinned: true },
+  { id: "workspace-neovimbanner", name: "NeoVimBanner", pinned: false },
+  { id: "workspace-markdown-le", name: "markdown-le", pinned: false },
+  { id: "workspace-new-electric", name: "new-electric", pinned: false },
+];
+
+const recentChats = [
+  { id: "calendar-ui", title: "Создай интерфейс календаря", age: "1w" },
+  { id: "svg-icons", title: "Сделай SVG-набор иконок", age: "1w" },
+  { id: "zip-context", title: "Установи zip_context skill", age: "1w" },
 ];
 
 const iconPaths: Record<IconName, ReactNode> = {
+  "arrow-left": <path d="M12.5 4.5 7 10l5.5 5.5" />,
+  "arrow-right": <path d="M7.5 4.5 13 10l-5.5 5.5" />,
+  automations: (
+    <>
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 5.8V10l2.8 2" />
+    </>
+  ),
+  chat: (
+    <>
+      <path d="M5 5.5h10v7H8.4L5 15.2z" />
+      <path d="M7.5 8.2h5" />
+      <path d="M7.5 10.5h3.5" />
+    </>
+  ),
+  dots: (
+    <>
+      <path d="M5 10h.01" />
+      <path d="M10 10h.01" />
+      <path d="M15 10h.01" />
+    </>
+  ),
   drag: (
     <>
       <path d="M8 6h.01" />
@@ -44,17 +87,38 @@ const iconPaths: Record<IconName, ReactNode> = {
       <path d="M12 14h.01" />
     </>
   ),
+  edit: (
+    <>
+      <path d="M4.5 15.5h3l8-8a2.12 2.12 0 0 0-3-3l-8 8z" />
+      <path d="m11.5 5.5 3 3" />
+    </>
+  ),
+  folder: (
+    <>
+      <path d="M3.5 6.5h5l1.4 1.7h6.6v6.3h-13z" />
+      <path d="M3.5 8.2h13" />
+      <path d="M12.5 12.5h.01" />
+      <path d="M15 12.5h.01" />
+    </>
+  ),
   layout: (
     <>
       <path d="M3.5 4.5h13v11h-13z" />
       <path d="M8 4.5v11" />
-      <path d="M12.5 8 10.5 10l2 2" />
     </>
   ),
   pin: (
     <>
       <path d="m6.5 3.5 6 6" />
       <path d="m13 4 3 3-5 5v3l-1 1-3.5-3.5L3 9l1-1h3z" />
+    </>
+  ),
+  plugins: (
+    <>
+      <circle cx="6" cy="6" r="2.2" />
+      <circle cx="14" cy="6" r="2.2" />
+      <circle cx="6" cy="14" r="2.2" />
+      <circle cx="14" cy="14" r="2.2" />
     </>
   ),
   plus: (
@@ -111,10 +175,6 @@ function App() {
       ? workspaces.filter((workspace) => workspace.name.toLowerCase().includes(normalizedSearch))
       : workspaces;
   }, [searchTerm, workspaces]);
-  const contextWorkspace = contextMenu
-    ? workspaces.find((workspace) => workspace.id === contextMenu.workspaceId)
-    : undefined;
-
   useEffect(() => {
     localStorage.setItem(workspaceStorageKey, JSON.stringify(workspaces));
     localStorage.setItem(selectedWorkspaceStorageKey, selectedWorkspaceId);
@@ -144,7 +204,7 @@ function App() {
   function addWorkspace() {
     const workspace: Workspace = {
       id: `workspace-${Date.now()}`,
-      name: `Workspace ${workspaceCounter}`,
+      name: `project-${workspaceCounter}`,
       pinned: false,
     };
 
@@ -264,10 +324,15 @@ function App() {
       onClick={() => setContextMenu(null)}
     >
       <aside id="leftPanel" className="left-panel" aria-label="Workspace navigation">
-        <div className="panel-top">
+        <div className="window-strip">
+          <div className="traffic-lights" aria-hidden="true">
+            <span className="traffic-light traffic-red" />
+            <span className="traffic-light traffic-yellow" />
+            <span className="traffic-light traffic-green" />
+          </div>
           <button
             id="sidebarToggle"
-            className="icon-button sidebar-toggle"
+            className="window-icon-button"
             type="button"
             aria-label="Toggle sidebar (Command+B)"
             aria-pressed={isCollapsed}
@@ -279,16 +344,26 @@ function App() {
           >
             <Icon name="layout" />
           </button>
+          <button className="window-icon-button" type="button" aria-label="Back" title="Back">
+            <Icon name="arrow-left" />
+          </button>
+          <button className="window-icon-button" type="button" aria-label="Forward" title="Forward">
+            <Icon name="arrow-right" />
+          </button>
+        </div>
 
-          <button id="newWorkspaceButton" className="panel-action" type="button" onClick={addWorkspace}>
-            <span className="action-icon" aria-hidden="true">
-              <Icon name="plus" />
+        <div className="panel-top">
+          <button id="newWorkspaceButton" className="utility-row" type="button" onClick={addWorkspace}>
+            <span className="utility-icon" aria-hidden="true">
+              <Icon name="edit" />
             </span>
-            <span className="panel-action-label">New workspace</span>
+            <span className="utility-label">New chat</span>
           </button>
 
-          <label className="search-field" htmlFor="workspaceSearch">
-            <Icon name="search" />
+          <label className="utility-row search-field" htmlFor="workspaceSearch">
+            <span className="utility-icon" aria-hidden="true">
+              <Icon name="search" />
+            </span>
             <input
               id="workspaceSearch"
               type="search"
@@ -298,13 +373,27 @@ function App() {
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
+
+          <button className="utility-row" type="button">
+            <span className="utility-icon" aria-hidden="true">
+              <Icon name="plugins" />
+            </span>
+            <span className="utility-label">Plugins</span>
+          </button>
+
+          <button className="utility-row" type="button">
+            <span className="utility-icon" aria-hidden="true">
+              <Icon name="automations" />
+            </span>
+            <span className="utility-label">Automations</span>
+          </button>
         </div>
 
         <section className="workspace-section" aria-labelledby="workspaceSectionTitle">
-          <h2 id="workspaceSectionTitle" className="workspace-section-title">
-            Workspace
+          <h2 id="workspaceSectionTitle" className="nav-section-title">
+            Projects
           </h2>
-          <div id="workspaceList" className="workspace-list" role="list" aria-label="Workspaces">
+          <div id="workspaceList" className="workspace-list" role="list" aria-label="Projects">
             {visibleWorkspaces.length > 0 ? (
               visibleWorkspaces.map((workspace) => (
                 <WorkspaceRow
@@ -326,23 +415,48 @@ function App() {
                 />
               ))
             ) : (
-              <div className="empty-results">No workspaces</div>
+              <div className="empty-results">No projects</div>
             )}
           </div>
         </section>
 
-        <button id="settingsButton" className="settings-button" type="button">
-          <span className="action-icon" aria-hidden="true">
-            <Icon name="settings" />
-          </span>
-          <span className="settings-label">Settings</span>
-        </button>
+        <section className="chat-section" aria-labelledby="chatSectionTitle">
+          <div className="section-header-row">
+            <h2 id="chatSectionTitle" className="nav-section-title">
+              Chats
+            </h2>
+            <div className="section-actions" aria-hidden="true">
+              <Icon name="drag" />
+              <Icon name="edit" />
+            </div>
+          </div>
+          <div className="chat-list" role="list" aria-label="Recent chats">
+            {recentChats.map((chat) => (
+              <button key={chat.id} className="chat-row" type="button" role="listitem">
+                <span className="chat-title">{chat.title}</span>
+                <span className="chat-age">{chat.age}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="panel-footer">
+          <button id="settingsButton" className="settings-button" type="button">
+            <span className="utility-icon settings-icon" aria-hidden="true">
+              <Icon name="settings" />
+            </span>
+            <span className="settings-label">Settings</span>
+          </button>
+          <button className="upgrade-button" type="button">
+            Upgrade
+          </button>
+        </div>
       </aside>
 
       <main className="main-surface" aria-label="Workspace surface">
         <div className="workspace-preview" aria-live="polite">
-          <span className="workspace-preview-label">Current workspace</span>
-          <h1 id="activeWorkspaceName">{activeWorkspace?.name || "Workspace"}</h1>
+          <span className="workspace-preview-label">Current project</span>
+          <h1 id="activeWorkspaceName">{activeWorkspace?.name || "project_folder"}</h1>
         </div>
       </main>
 
@@ -364,7 +478,7 @@ function App() {
             <span className="menu-icon" aria-hidden="true">
               <Icon name="pin" />
             </span>
-            {contextWorkspace?.pinned ? "Unpin workspace" : "Pin workspace"}
+            Pin workspace
           </button>
           <button
             type="button"
@@ -438,12 +552,13 @@ function WorkspaceRow({
       onDrop={(event) => onDrop(event, workspace.id)}
       onDragEnd={onDragEnd}
     >
-      <span className="action-icon pin-icon" aria-hidden="true">
-        <Icon name="pin" />
+      <span className="project-icon" aria-hidden="true">
+        <Icon name="folder" />
       </span>
       <span className="workspace-name">{workspace.name}</span>
-      <span className="drag-handle" aria-hidden="true">
-        <Icon name="drag" />
+      <span className="project-actions" aria-hidden="true">
+        <Icon name="dots" />
+        <Icon name="edit" />
       </span>
     </button>
   );
@@ -474,7 +589,7 @@ function loadWorkspaces(): Workspace[] {
         .filter((workspace) => workspace && typeof workspace.id === "string" && typeof workspace.name === "string")
         .map((workspace) => ({
           id: workspace.id,
-          name: workspace.name.trim() || "Workspace",
+          name: workspace.name.trim() || "project_folder",
           pinned: Boolean(workspace.pinned),
         }));
     }
@@ -496,7 +611,7 @@ function loadInitialCollapsedState() {
 
 function getNextWorkspaceCounter(workspaces: Workspace[]) {
   const highestNumber = workspaces.reduce((highest, workspace) => {
-    const match = workspace.name.match(/^Workspace\s+(\d+)$/);
+    const match = workspace.name.match(/^project-(\d+)$/);
     return match ? Math.max(highest, Number(match[1])) : highest;
   }, 1);
 

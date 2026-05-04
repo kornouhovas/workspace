@@ -50,6 +50,7 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(appTsx, /onContextMenu/);
   assert.match(appTsx, /onDragStart/);
   assert.match(appTsx, /onDrop/);
-  assert.match(styles, /--codex-sidebar:\s*#eaf1fb/);
+  assert.match(styles, /--codex-sidebar:\s*#14351f/);
+  assert.match(styles, /--codex-sidebar-text:\s*#f1f6ee/);
   assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
 });
