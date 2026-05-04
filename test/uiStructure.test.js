@@ -284,7 +284,7 @@ test("table and card place expose editable custom text property UI", async () =>
   assert.match(css, /\.card-place-text-section\s*\{[^}]*align-items:\s*flex-start/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*width:\s*100%/s);
   assert.match(css, /\.card-place-text-section\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.35/s);
+  assert.match(css, /\.card-place-section-title\s*\{[^}]*line-height:\s*1\.25/s);
   assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*max-width:\s*15ch/s);
   assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*white-space:\s*nowrap/s);
   assert.match(css, /\.card-place-text-section \.card-place-section-title\s*\{[^}]*overflow:\s*hidden/s);
@@ -420,7 +420,7 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /hiddenProperties\.add\(propertyId\);\s*if \(!options\.preserveHiddenExpansion\) \{\s*cardPlaceHiddenPropertiesExpanded = false;\s*\}/s);
   assert.match(app, /targetHidden/);
 
-  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*10px/s);
+  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*6px/s);
   assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(126px,\s*126px\) minmax\(0,\s*1fr\)/s);
   assert.doesNotMatch(css, /\.card-place-property-row\.is-hidden-card-place-property\s*\{[^}]*opacity:/s);
   assert.match(css, /\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-name,\s*\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-value\s*\{[^}]*opacity:\s*0\.62/s);
@@ -806,18 +806,23 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.doesNotMatch(css, /\.card-place-folder-open-icon/);
   assert.doesNotMatch(css, /\.card-place-field/);
   assert.match(css, /\.card-place-folder-list\s*\{/);
+  assert.doesNotMatch(css, /\.card-place-folder-list\s*\{[^}]*border:/s);
+  assert.doesNotMatch(css, /\.card-place-folder-list\s*\{[^}]*border-radius:/s);
+  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*6px/s);
   assert.match(css, /\.card-place-entry\s*\{/);
+  assert.match(css, /\.card-place-entry\s*\{[^}]*min-height:\s*26px/s);
   assert.doesNotMatch(css, /\.card-place-entry\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.card-place-entry-chevron\s*\{/);
+  assert.match(app, /icon\.className = "card-place-entry-icon is-file"/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
+  assert.match(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory::after\s*\{/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*linear-gradient/s);
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory::before\s*\{[^}]*z-index:\s*-1/s);
   assert.doesNotMatch(css, /\.card-place-entry-icon\.is-directory\s*\{[^}]*box-shadow:/s);
-  assert.doesNotMatch(css, /\.card-place-entry-icon\.is-file\s*\{/);
   assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{/);
-  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/s);
-  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*padding-left:\s*calc\(10px \+ var\(--entry-depth, 0\) \* 18px\)/s);
+  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*grid-template-columns:\s*18px minmax\(0, 1fr\)/s);
+  assert.match(css, /\.card-place-entry\[data-kind="file"\]\s*\{[^}]*padding-left:\s*calc\(24px \+ var\(--entry-depth, 0\) \* 16px\)/s);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
   assert.match(css, /\.folder-card\s*\{[^}]*cursor:\s*pointer/s);
   assert.match(css, /\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]\s*\{[^}]*cursor:\s*pointer/s);

@@ -4414,6 +4414,11 @@ function createCardPlaceEntryRow(entry, depth) {
     icon.className = "card-place-entry-icon is-directory";
     icon.setAttribute("aria-hidden", "true");
     rowItems.push(chevron, icon);
+  } else {
+    const icon = document.createElement("span");
+    icon.className = "card-place-entry-icon is-file";
+    icon.setAttribute("aria-hidden", "true");
+    rowItems.push(icon);
   }
 
   const name = document.createElement("span");
