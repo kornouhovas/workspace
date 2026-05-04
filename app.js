@@ -310,6 +310,7 @@ function bindEvents() {
   document.addEventListener("click", handlePropertyTypeMenuOutsideClick);
   document.addEventListener("click", handleOptionPropertyMenuOutsideClick);
   document.addEventListener("click", handleCardPlacePropertyMenuOutsideClick);
+  document.addEventListener("click", handleCardPlaceEntryMenuOutsideClick);
   document.addEventListener("click", handleCardPlaceOutsideClick);
   document.addEventListener("keydown", handleBoardColumnMenuKeydown);
   document.addEventListener("keydown", handleTableStatusMenuKeydown);
@@ -342,6 +343,7 @@ function bindEvents() {
   folderGrid.addEventListener("click", handleCardPlaceClick);
   folderGrid.addEventListener("mousedown", handleTableColumnResizeStart);
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
+  cardPlaceFolderList.addEventListener("keydown", handleCardPlaceEntryKeydown);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
   cardPlaceEdgeToggle.addEventListener("click", toggleCardPlacePanel);
@@ -802,6 +804,7 @@ function createMenuIcon(type) {
     rename: ["M4 20h4l10.5-10.5a2.8 2.8 0 0 0-4-4L4 16v4Z", "M13.5 6.5l4 4"],
     duplicate: ["M8 8h10v10H8z", "M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"],
     delete: ["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 14h10l1-14", "M9 7V4h6v3"],
+    "open-folder": ["M3 7.5A2.5 2.5 0 0 1 5.5 5h3.3l2 2H18a3 3 0 0 1 3 3v6.5A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z", "M3.5 9.5h17"],
     wrap: ["M4 7h16", "M4 12h10", "M4 17h12", "M16 12h2a2 2 0 0 1 0 4h-2", "M17 14l-2 2 2 2"],
   };
 
@@ -4424,9 +4427,10 @@ function createCardPlaceEntryRows(entries, depth = 0) {
 }
 
 function createCardPlaceEntryRow(entry, depth) {
-  const row = document.createElement("button");
+  const row = document.createElement("div");
   row.className = "card-place-entry";
-  row.type = "button";
+  row.setAttribute("role", "button");
+  row.tabIndex = 0;
   row.dataset.kind = entry.kind;
   row.dataset.path = entry.path;
   row.style.setProperty("--entry-depth", String(depth));
@@ -4434,7 +4438,7 @@ function createCardPlaceEntryRow(entry, depth) {
   const rowItems = [];
   if (entry.kind === "directory") {
     row.setAttribute("aria-expanded", String(cardPlaceExpandedPaths.has(entry.path)));
-    rowItems.push(createCardPlaceEntryChevron(), createCardPlaceFolderIcon());
+    rowItems.push(createCardPlaceFolderIcon());
   } else {
     rowItems.push(createCardPlaceFileIcon());
   }
@@ -4444,17 +4448,11 @@ function createCardPlaceEntryRow(entry, depth) {
   name.textContent = entry.name;
 
   row.append(...rowItems, name);
+  if (entry.kind === "directory") {
+    row.append(createCardPlaceEntryActions(entry));
+  }
 
   return row;
-}
-
-function createCardPlaceEntryChevron() {
-  const icon = createSvgIcon("card-place-entry-chevron", "0 0 24 24");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", "m9 6 6 6-6 6");
-  icon.append(path);
-
-  return icon;
 }
 
 function createCardPlaceFolderIcon() {
@@ -4489,6 +4487,41 @@ function createCardPlaceFileIcon() {
   return icon;
 }
 
+function createCardPlaceEntryActions(entry) {
+  const actions = document.createElement("span");
+  actions.className = "card-place-entry-actions";
+
+  const button = document.createElement("button");
+  button.className = "card-place-entry-action";
+  button.type = "button";
+  button.dataset.cardPlaceEntryAction = "menu";
+  button.setAttribute("aria-haspopup", "menu");
+  button.setAttribute("aria-expanded", "false");
+  button.setAttribute("aria-label", `Folder actions for ${entry.name}`);
+  button.title = "Folder actions";
+  button.textContent = "...";
+
+  const menu = document.createElement("div");
+  menu.className = "card-place-entry-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+  menu.append(createCardPlaceEntryMenuAction("open-finder", "Open in Finder", createMenuIcon("open-folder")));
+
+  actions.append(button, menu);
+  return actions;
+}
+
+function createCardPlaceEntryMenuAction(action, label, icon) {
+  const button = document.createElement("button");
+  button.className = "card-place-entry-menu-action";
+  button.type = "button";
+  button.dataset.cardPlaceEntryAction = action;
+  button.setAttribute("role", "menuitem");
+  button.append(icon, document.createTextNode(label));
+
+  return button;
+}
+
 function createCardPlaceEntryMessage(message, depth) {
   const row = document.createElement("div");
   row.className = "card-place-entry-message";
@@ -4506,17 +4539,94 @@ function handleCardPlaceEntryClick(event) {
 
   event.preventDefault();
   event.stopPropagation();
-  if (row.dataset.kind === "directory") {
-    if (!event.target.closest(".card-place-entry-chevron")) {
-      revealCardPlaceEntry(row.dataset.path, "directory");
-      return;
-    }
+  const action = event.target.closest("[data-card-place-entry-action]");
+  if (action) {
+    handleCardPlaceEntryAction(action, row);
+    return;
+  }
 
+  closeCardPlaceEntryMenus();
+  if (row.dataset.kind === "directory") {
     toggleCardPlaceDirectory(row.dataset.path);
     return;
   }
 
   openCardPlaceFile(row.dataset.path);
+}
+
+function handleCardPlaceEntryKeydown(event) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  if (event.target.closest("[data-card-place-entry-action]")) {
+    return;
+  }
+
+  const row = event.target.closest(".card-place-entry");
+  if (!row || !cardPlaceFolderList.contains(row)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  if (row.dataset.kind === "directory") {
+    closeCardPlaceEntryMenus();
+    toggleCardPlaceDirectory(row.dataset.path);
+    return;
+  }
+
+  openCardPlaceFile(row.dataset.path);
+}
+
+function handleCardPlaceEntryAction(action, row) {
+  const actionType = action.dataset.cardPlaceEntryAction;
+  if (actionType === "menu") {
+    toggleCardPlaceEntryMenu(row);
+    return;
+  }
+
+  if (actionType === "open-finder") {
+    const path = row.dataset.path;
+    closeCardPlaceEntryMenus();
+    revealCardPlaceEntry(path, "directory");
+  }
+}
+
+function toggleCardPlaceEntryMenu(row) {
+  const menu = row.querySelector(".card-place-entry-menu");
+  const button = row.querySelector(".card-place-entry-action");
+  if (!menu || !button) {
+    return;
+  }
+
+  const shouldOpen = menu.hidden;
+  closeCardPlaceEntryMenus(row);
+  menu.hidden = !shouldOpen;
+  button.setAttribute("aria-expanded", String(shouldOpen));
+}
+
+function closeCardPlaceEntryMenus(exceptRow = null) {
+  cardPlaceFolderList.querySelectorAll(".card-place-entry").forEach((row) => {
+    if (row === exceptRow) {
+      return;
+    }
+
+    const menu = row.querySelector(".card-place-entry-menu");
+    const button = row.querySelector(".card-place-entry-action");
+    if (menu) {
+      menu.hidden = true;
+    }
+    button?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function handleCardPlaceEntryMenuOutsideClick(event) {
+  if (event.target.closest(".card-place-entry-actions")) {
+    return;
+  }
+
+  closeCardPlaceEntryMenus();
 }
 
 function toggleCardPlaceDirectory(path) {
