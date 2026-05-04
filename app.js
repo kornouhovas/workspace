@@ -26,6 +26,7 @@ const folderGrid = document.querySelector("#folderGrid");
 const emptyState = document.querySelector("#emptyState");
 const statusLine = document.querySelector("#statusLine");
 const cardPlacePanel = document.querySelector("#cardPlacePanel");
+const cardPlaceEdgeToggle = document.querySelector("#cardPlaceEdgeToggle");
 const cardPlaceResizeHandle = document.querySelector("#cardPlaceResizeHandle");
 const cardPlaceFolderOpenButton = document.querySelector("#cardPlaceFolderOpenButton");
 const cardPlaceTitle = document.querySelector("#cardPlaceTitle");
@@ -159,6 +160,7 @@ let boardScrollbarHideTimer = null;
 let tableStatusMenuOpen = false;
 let tableTextMenuOpen = false;
 let selectedCardPath = null;
+let cardPlaceCollapsed = false;
 let cardPlaceEntries = [];
 let cardPlaceEntriesState = "idle";
 let cardPlaceExpandedPaths = new Set();
@@ -342,6 +344,7 @@ function bindEvents() {
   cardPlaceFolderList.addEventListener("click", handleCardPlaceEntryClick);
   cardPlaceFolderOpenButton.addEventListener("click", handleCardPlaceFolderOpen);
   cardPlaceFolderOpenButton.addEventListener("keydown", handleCardPlaceFolderOpenKeydown);
+  cardPlaceEdgeToggle.addEventListener("click", toggleCardPlacePanel);
   cardPlacePanel.addEventListener("click", handlePropertyTypeMenuClick);
   cardPlacePropertyList.addEventListener("click", handleCardPlacePropertyMenuClick);
   cardPlacePropertyList.addEventListener("pointerdown", handleCardPlacePropertyPointerDragStart);
@@ -3262,7 +3265,11 @@ function handleCardPlaceClick(event) {
 }
 
 function handleCardPlaceOutsideClick(event) {
-  if (!selectedCardPath || event.target.closest(".card-place-panel")) {
+  if (
+    !selectedCardPath ||
+    event.target.closest(".card-place-panel") ||
+    event.target.closest(".card-place-edge-toggle")
+  ) {
     return;
   }
 
@@ -3271,13 +3278,24 @@ function handleCardPlaceOutsideClick(event) {
 
 function openCardPlace(folder) {
   selectedCardPath = getFolderPath(folder);
+  cardPlaceCollapsed = false;
   renderCardPlacePanel();
   loadCardPlaceEntries(folder);
 }
 
 function closeCardPlace() {
   selectedCardPath = null;
+  cardPlaceCollapsed = false;
   resetCardPlaceEntries("idle", true);
+  renderCardPlacePanel();
+}
+
+function toggleCardPlacePanel() {
+  if (!selectedCardPath) {
+    return;
+  }
+
+  cardPlaceCollapsed = !cardPlaceCollapsed;
   renderCardPlacePanel();
 }
 
@@ -3302,13 +3320,22 @@ function renderCardPlacePanel() {
   const selectedCard = selectedCardPath ? findFolderByPath(selectedCardPath) : null;
   if (selectedCardPath && !selectedCard) {
     selectedCardPath = null;
+    cardPlaceCollapsed = false;
   }
 
-  cardPlacePanel.style.setProperty("--card-place-width", `${getActiveCardPlaceWidth()}px`);
-  cardPlacePanel.classList.toggle("is-open", Boolean(selectedCard));
-  cardPlacePanel.setAttribute("aria-hidden", String(!selectedCard));
-  cardPlaceFolderOpenButton.tabIndex = selectedCard ? 0 : -1;
-  cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!selectedCard));
+  const cardPlacePanelOpen = Boolean(selectedCard) && !cardPlaceCollapsed;
+  const cardPlaceWidth = `${getActiveCardPlaceWidth()}px`;
+  cardPlacePanel.style.setProperty("--card-place-width", cardPlaceWidth);
+  cardPlaceEdgeToggle.style.setProperty("--card-place-width", cardPlaceWidth);
+  cardPlacePanel.classList.toggle("is-open", cardPlacePanelOpen);
+  cardPlacePanel.setAttribute("aria-hidden", String(!cardPlacePanelOpen));
+  cardPlaceEdgeToggle.hidden = !selectedCard;
+  cardPlaceEdgeToggle.classList.toggle("is-open", cardPlacePanelOpen);
+  const edgeToggleLabel = cardPlacePanelOpen ? "Hide card place" : "Show card place";
+  cardPlaceEdgeToggle.setAttribute("aria-label", edgeToggleLabel);
+  cardPlaceEdgeToggle.title = edgeToggleLabel;
+  cardPlaceFolderOpenButton.tabIndex = cardPlacePanelOpen ? 0 : -1;
+  cardPlaceFolderOpenButton.setAttribute("aria-disabled", String(!cardPlacePanelOpen));
   cardPlaceTitle.textContent = "";
   if (selectedCard) {
     cardPlaceTitle.textContent = selectedCard.name;
@@ -4432,7 +4459,10 @@ function createCardPlaceEntryChevron() {
 
 function createCardPlaceFolderIcon() {
   const icon = createSvgIcon("card-place-entry-icon is-directory", "0 0 24 24");
-  const paths = ["M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"];
+  const paths = [
+    "M3.75 6.25a2 2 0 0 1 2-2h3.1c.55 0 1.07.23 1.44.64L11.31 6h6.94a2 2 0 0 1 2 2v8.75a2 2 0 0 1-2 2H5.75a2 2 0 0 1-2-2V6.25Z",
+    "M4 8.25h16",
+  ];
   paths.forEach((pathData) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
@@ -4444,7 +4474,12 @@ function createCardPlaceFolderIcon() {
 
 function createCardPlaceFileIcon() {
   const icon = createSvgIcon("card-place-entry-icon is-file", "0 0 24 24");
-  const paths = ["M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z", "M14 2v6h6"];
+  const paths = [
+    "M7 3.75h6.35L18.25 8.6v11.65A1.75 1.75 0 0 1 16.5 22h-9A1.75 1.75 0 0 1 5.75 20.25V5.5A1.75 1.75 0 0 1 7 3.75Z",
+    "M13.25 4v4.75h4.75",
+    "M8.75 13h6.5",
+    "M8.75 16h4.5",
+  ];
   paths.forEach((pathData) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
@@ -4632,6 +4667,7 @@ function handleCardPlaceResizeMove(event) {
 
   const nextWidth = normalizeCardPlaceWidth(cardPlaceResizeState.startWidth + cardPlaceResizeState.startX - event.clientX);
   cardPlacePanel.style.setProperty("--card-place-width", `${nextWidth}px`);
+  cardPlaceEdgeToggle.style.setProperty("--card-place-width", `${nextWidth}px`);
 }
 
 function handleCardPlaceResizeEnd() {

@@ -15,6 +15,21 @@ test("app shell is not wrapped in a decorative browser frame", async () => {
   assert.match(html, /<div class="app-shell" id="appShell">/);
 });
 
+test("interface shell uses Codex-like neutral surfaces and system typography", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /--codex-page:\s*#0e0f10/);
+  assert.match(css, /--codex-surface:\s*#171819/);
+  assert.match(css, /--codex-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.06\)/);
+  assert.match(css, /--codex-control:\s*#202124/);
+  assert.match(css, /--shadow-popover:\s*0 18px 44px rgba\(0,\s*0,\s*0,\s*0\.34\)/);
+  assert.match(css, /font-family:[\s\S]*"SF Pro Text"[\s\S]*Inter[\s\S]*system-ui/s);
+  assert.match(css, /\.app-shell\s*\{[^}]*background:\s*var\(--codex-page\)/s);
+  assert.match(css, /\.sidebar\s*\{[^}]*background:\s*var\(--codex-sidebar\)/s);
+  assert.match(css, /\.main\s*\{[^}]*background:\s*var\(--codex-page\)/s);
+  assert.match(css, /\.topbar\s*\{[^}]*border-bottom:\s*1px solid var\(--line-soft\)/s);
+});
+
 test("mobile layout keeps navigation as a left rail instead of a top bar", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
@@ -50,7 +65,7 @@ test("settings access view exposes folder picker and recursive access tree contr
   assert.equal(html.includes("Selected root"), false);
   assert.equal(html.includes("sidebarRootName"), false);
   assert.doesNotMatch(html, /sidebar-footer-nav/);
-  assert.match(css, /\.workspace-tools\s*\{[^}]*border-top:\s*1px solid var\(--line-soft\)[^}]*padding-top:\s*20px/s);
+  assert.match(css, /\.workspace-tools\s*\{[^}]*border-top:\s*1px solid var\(--line-soft\)[^}]*padding-top:\s*12px/s);
   assert.doesNotMatch(css, /\.workspace-tools\s*\{[^}]*border-bottom/s);
   assert.match(html, /id="settingsViewSwitcher"/);
   assert.match(html, />Access</);
@@ -420,8 +435,8 @@ test("card place properties share row layout, actions, hidden disclosure, and dr
   assert.match(app, /hiddenProperties\.add\(propertyId\);\s*if \(!options\.preserveHiddenExpansion\) \{\s*cardPlaceHiddenPropertiesExpanded = false;\s*\}/s);
   assert.match(app, /targetHidden/);
 
-  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*6px/s);
-  assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(126px,\s*126px\) minmax\(0,\s*1fr\)/s);
+  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*4px/s);
+  assert.match(css, /\.card-place-property-row\s*\{[^}]*grid-template-columns:\s*minmax\(118px,\s*118px\) minmax\(0,\s*1fr\)/s);
   assert.doesNotMatch(css, /\.card-place-property-row\.is-hidden-card-place-property\s*\{[^}]*opacity:/s);
   assert.match(css, /\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-name,\s*\.card-place-property-row\.is-hidden-card-place-property \.card-place-property-value\s*\{[^}]*opacity:\s*0\.62/s);
   assert.match(css, /\.card-place-property-name\s*\{[^}]*grid-template-columns:\s*18px minmax\(0,\s*1fr\)/s);
@@ -580,8 +595,8 @@ test("select and multi-select option menus can clear, edit, recolor, delete, and
   assert.match(css, /\.option-property-item\.is-option-preview-down/);
   assert.match(css, /\.card-place-property-value\.option-property-editor\s*\{[^}]*align-self:\s*center/s);
   assert.match(css, /\.card-place-property-input\.option-property-trigger\s*\{[^}]*min-height:\s*22px/s);
-  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-size:\s*14px/s);
-  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-weight:\s*500/s);
+  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-size:\s*13px/s);
+  assert.match(css, /\.card-place-add-property \.property-add-button\s*\{[^}]*font-weight:\s*560/s);
 });
 
 test("topbar exposes per-workspace board view modes instead of folder summary text", async () => {
@@ -637,7 +652,7 @@ test("board views can be added and managed from the active view menu", async () 
   assert.match(app, /createBoardViewMenuAction\("duplicate", "Duplicate view"/);
   assert.match(app, /createBoardViewMenuAction\("delete", "Delete view"/);
   assert.match(css, /\.board-view-switcher\s*\{[^}]*gap:\s*0/s);
-  assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*4px 8px/s);
+  assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*3px 7px/s);
   assert.match(css, /\.board-view-add-button\s*\{[^}]*width:\s*24px/s);
   assert.match(css, /\.board-view-add-button\s*\{[^}]*height:\s*24px/s);
   assert.match(css, /\.board-view-add-button\s*\{[^}]*font-size:\s*18px/s);
@@ -645,7 +660,7 @@ test("board views can be added and managed from the active view menu", async () 
   assert.match(css, /\.board-view-option\.is-board-view-preview-left/s);
   assert.match(css, /\.board-view-option\.is-board-view-preview-right/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*position:\s*fixed/s);
-  assert.match(css, /\.board-view-drag-image\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
+  assert.match(css, /\.board-view-drag-image\s*\{[^}]*background:\s*var\(--codex-hover\)/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*color:\s*var\(--text\)/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*font-size:\s*13px/s);
   assert.match(css, /\.board-view-drag-image\s*\{[^}]*box-shadow:\s*none/s);
@@ -731,6 +746,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
   assert.match(html, /id="cardPlacePanel"/);
+  assert.match(html, /id="cardPlaceEdgeToggle"/);
   assert.match(html, /id="cardPlaceResizeHandle"/);
   assert.match(html, /id="cardPlaceFolderOpenButton"/);
   assert.doesNotMatch(html, /class="icon-button card-place-folder-open"/);
@@ -743,9 +759,11 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(html, /id="cardPlaceCloseButton"/);
   assert.match(app, /import \{[^}]*filterFolders[^}]*flattenAccessTreeCards[^}]*\} from "\.\/src\/folderModel\.js"/s);
   assert.match(app, /const cardPlacePanel = document\.querySelector\("#cardPlacePanel"\)/);
+  assert.match(app, /const cardPlaceEdgeToggle = document\.querySelector\("#cardPlaceEdgeToggle"\)/);
   assert.match(app, /const cardPlaceFolderOpenButton = document\.querySelector\("#cardPlaceFolderOpenButton"\)/);
   assert.match(app, /const cardPlaceFolderList = document\.querySelector\("#cardPlaceFolderList"\)/);
   assert.match(app, /let selectedCardPath = null/);
+  assert.match(app, /let cardPlaceCollapsed = false/);
   assert.match(app, /let cardPlaceEntries = \[\]/);
   assert.match(app, /let cardPlaceEntriesState = "idle"/);
   assert.match(app, /let cardPlaceExpandedPaths = new Set\(\)/);
@@ -757,6 +775,7 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /cardPlaceFolderList\.addEventListener\("click", handleCardPlaceEntryClick\)/);
   assert.match(app, /cardPlaceFolderOpenButton\.addEventListener\("click", handleCardPlaceFolderOpen\)/);
   assert.match(app, /cardPlaceFolderOpenButton\.addEventListener\("keydown", handleCardPlaceFolderOpenKeydown\)/);
+  assert.match(app, /cardPlaceEdgeToggle\.addEventListener\("click", toggleCardPlacePanel\)/);
   assert.match(app, /cardPlaceResizeHandle\.addEventListener\("pointerdown", handleCardPlaceResizeStart\)/);
   assert.match(app, /document\.addEventListener\("click", handleCardPlaceOutsideClick\)/);
   assert.match(app, /window\.addEventListener\("pointermove", handleCardPlaceResizeMove\)/);
@@ -764,11 +783,14 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /function handleCardPlaceClick\(event\)/);
   assert.match(app, /function handleCardPlaceOutsideClick\(event\)/);
   assert.match(app, /event\.target\.closest\("\.card-place-panel"\)/);
+  assert.match(app, /event\.target\.closest\("\.card-place-edge-toggle"\)/);
   assert.match(app, /closeCardPlace\(\)/);
   assert.match(app, /event\.target\.closest\("\.folder-card"\)/);
   assert.match(app, /event\.target\.closest\('\.folder-table-row:not\(\.folder-table-head\) \.folder-table-cell\[data-table-column="name"\]'\)/);
   assert.match(app, /function openCardPlace\(folder\)/);
   assert.match(app, /function closeCardPlace\(\)/);
+  assert.match(app, /function toggleCardPlacePanel\(\)/);
+  assert.match(app, /cardPlaceCollapsed = !cardPlaceCollapsed/);
   assert.match(app, /function handleCardPlaceFolderOpen\(\)/);
   assert.match(app, /function handleCardPlaceFolderOpenKeydown\(event\)/);
   assert.match(app, /revealCardPlaceEntry\(selectedCardPath, "directory"\)/);
@@ -797,7 +819,11 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /card\.dataset\.folderPath = folder\.path/);
   assert.match(app, /row\.dataset\.folderPath = folder\.path/);
   assert.match(app, /cardPlacePanel\.style\.setProperty\("--card-place-width"/);
-  assert.match(app, /cardPlacePanel\.classList\.toggle\("is-open", Boolean\(selectedCard\)\)/);
+  assert.match(app, /cardPlaceCollapsed = false;\s*renderCardPlacePanel\(\)/);
+  assert.match(app, /const cardPlacePanelOpen = Boolean\(selectedCard\) && !cardPlaceCollapsed/);
+  assert.match(app, /cardPlacePanel\.classList\.toggle\("is-open", cardPlacePanelOpen\)/);
+  assert.match(app, /cardPlaceEdgeToggle\.hidden = !selectedCard/);
+  assert.match(app, /cardPlaceEdgeToggle\.classList\.toggle\("is-open", cardPlacePanelOpen\)/);
   assert.match(app, /function createCardPlaceStatusPropertyRow\(selectedCard\)/);
   assert.match(app, /selectedCardPath = null;\s*renderCardPlacePanel\(\)/);
   assert.match(css, /\.card-place-panel\s*\{[^}]*position:\s*fixed/s);
@@ -808,6 +834,10 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.doesNotMatch(css, /\.card-place-panel\s*\{[^}]*box-shadow:/s);
   assert.match(css, /\.card-place-panel\s*\{[^}]*transform:\s*translateX\(100%\)/s);
   assert.match(css, /\.card-place-panel\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/s);
+  assert.match(css, /\.card-place-edge-toggle\s*\{[^}]*position:\s*fixed/s);
+  assert.match(css, /\.card-place-edge-toggle\s*\{[^}]*right:\s*12px/s);
+  assert.match(css, /\.card-place-edge-toggle\[hidden\]\s*\{[^}]*display:\s*none/s);
+  assert.match(css, /\.card-place-edge-toggle\.is-open\s*\{[^}]*right:\s*calc\(var\(--card-place-width,\s*50vw\) \+ 12px\)/s);
   assert.match(css, /\.card-place-resize-handle\s*\{[^}]*cursor:\s*ew-resize/s);
   assert.match(css, /\.card-place-title-row\s*\{/);
   assert.match(css, /\.card-place-folder-open\s*\{/);
@@ -816,9 +846,9 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(css, /\.card-place-folder-list\s*\{/);
   assert.doesNotMatch(css, /\.card-place-folder-list\s*\{[^}]*border:/s);
   assert.doesNotMatch(css, /\.card-place-folder-list\s*\{[^}]*border-radius:/s);
-  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*6px/s);
+  assert.match(css, /\.card-place-property-list\s*\{[^}]*gap:\s*4px/s);
   assert.match(css, /\.card-place-entry\s*\{/);
-  assert.match(css, /\.card-place-entry\s*\{[^}]*min-height:\s*26px/s);
+  assert.match(css, /\.card-place-entry\s*\{[^}]*min-height:\s*24px/s);
   assert.match(css, /\.card-place-entry\s*\{[^}]*grid-template-columns:\s*18px 18px minmax\(0, 1fr\)/s);
   assert.doesNotMatch(css, /\.card-place-entry\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.card-place-entry-chevron\s*\{/);
@@ -832,9 +862,10 @@ test("card place opens from cards and stores its width per workspace", async () 
   assert.match(app, /createSvgIcon\("card-place-entry-chevron"/);
   assert.match(app, /createSvgIcon\("card-place-entry-icon is-directory"/);
   assert.match(app, /createSvgIcon\("card-place-entry-icon is-file"/);
-  assert.match(app, /M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7\.9a2 2 0 0 1-1\.69-\.9L9\.6 3\.9A2 2 0 0 0 7\.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z/);
-  assert.match(app, /M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z/);
-  assert.match(app, /M14 2v6h6/);
+  assert.match(app, /M3\.75 6\.25a2 2 0 0 1 2-2h3\.1c\.55 0 1\.07\.23 1\.44\.64L11\.31 6h6\.94a2 2 0 0 1 2 2v8\.75a2 2 0 0 1-2 2H5\.75a2 2 0 0 1-2-2V6\.25Z/);
+  assert.match(app, /M4 8\.25h16/);
+  assert.match(app, /M7 3\.75h6\.35L18\.25 8\.6v11\.65A1\.75 1\.75 0 0 1 16\.5 22h-9A1\.75 1\.75 0 0 1 5\.75 20\.25V5\.5A1\.75 1\.75 0 0 1 7 3\.75Z/);
+  assert.match(app, /M13\.25 4v4\.75h4\.75/);
   assert.doesNotMatch(app, /M4 7\.5h5l2 2h9/);
   assert.doesNotMatch(app, /M7 4h7l4 4v12H7Z/);
   assert.match(css, /\.card-place-entry-icon\.is-directory\s*\{/);
@@ -1267,10 +1298,10 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const app = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
-  assert.match(css, /--content-x:\s*9px/);
+  assert.match(css, /--content-x:\s*16px/);
   assert.match(css, /\.main\s*\{[^}]*padding:\s*0/s);
-  assert.match(css, /\.topbar\s*\{[^}]*margin:\s*9px var\(--content-x\) 24px/s);
-  assert.match(css, /\.board-toolbar\s*\{[^}]*margin:\s*0 var\(--content-x\) 18px/s);
+  assert.match(css, /\.topbar\s*\{[^}]*padding:\s*14px var\(--content-x\) 10px/s);
+  assert.match(css, /\.board-toolbar\s*\{[^}]*margin:\s*10px var\(--content-x\) 12px/s);
   assert.match(html, /class="topbar-copy"/);
   assert.match(html, /id="boardViewSwitcher"/);
   assert.match(html, /id="workspaceTitleButton"/);
@@ -1283,11 +1314,11 @@ test("topbar title mirrors and edits the active workspace name", async () => {
   assert.match(css, /\.workspace-title-row:hover \.title-edit-button/s);
   assert.match(css, /\.workspace-title-row:hover \.workspace-title-button/s);
   assert.match(css, /\.workspace-title-row:focus-within \.workspace-title-button/s);
-  assert.match(css, /\.workspace-title-button\s*\{[^}]*padding:\s*4px 12px/s);
-  assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.045\)/s);
+  assert.match(css, /\.workspace-title-button\s*\{[^}]*padding:\s*3px 8px/s);
+  assert.match(css, /\.workspace-title-input\s*\{[^}]*background:\s*var\(--codex-hover\)/s);
   assert.match(css, /\.workspace-title-input\s*\{[^}]*padding:\s*4px 8px/s);
   assert.match(css, /\.board-view-switcher\s*\{[^}]*margin-left:\s*0/s);
-  assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*4px 8px/s);
+  assert.match(css, /\.board-view-option\s*\{[^}]*padding:\s*3px 7px/s);
   assert.match(css, /\.folder-card\s*\{[^}]*padding:\s*12px/s);
   assert.match(css, /\.folder-card h2\s*\{[^}]*font-size:\s*14px/s);
 });
@@ -1304,7 +1335,7 @@ test("kanban scroll area leaves room for lifted folder-card hover", async () => 
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 
   assert.match(css, /\.folder-card:hover\s*\{[^}]*transform:\s*translateY\(-1px\)/s);
-  assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*6px 4px 18px var\(--content-x\)/s);
+  assert.match(css, /\.kanban-board\s*\{[^}]*padding:\s*8px 8px 18px var\(--content-x\)/s);
 });
 
 test("folder card renders only the folder name and its status tag", async () => {
