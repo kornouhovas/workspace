@@ -47,6 +47,8 @@ const workspaceStorageKey = "workspace.leftPanel.workspaces";
 const selectedWorkspaceStorageKey = "workspace.leftPanel.selectedWorkspaceId";
 const collapsedStorageKey = "workspace.leftPanel.sidebarCollapsed";
 const dragStartThreshold = 4;
+const workspaceDropThreshold = 0.3;
+const reverseWorkspaceDropThreshold = 1 - workspaceDropThreshold;
 
 const defaultWorkspaces: Workspace[] = [
   { id: "workspace-project-folder", name: "project_folder" },
@@ -726,14 +728,20 @@ function reorderWorkspaces(
   const [source] = reordered.splice(sourceIndex, 1);
   const nextTargetIndex = reordered.findIndex((workspace) => workspace.id === targetId);
   const insertionIndex = placement === "after" ? nextTargetIndex + 1 : nextTargetIndex;
+  if (insertionIndex === sourceIndex) {
+    return workspaces;
+  }
+
   reordered.splice(insertionIndex, 0, source);
   return reordered;
 }
 
 function getWorkspaceDropIntentAtPoint(x: number, y: number, sourceId: string): WorkspaceDropIntent | null {
-  const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-workspace-id]")).filter(
-    (row) => row.dataset.workspaceId && row.dataset.workspaceId !== sourceId,
+  const allRows = Array.from(document.querySelectorAll<HTMLElement>("[data-workspace-id]")).filter(
+    (row) => row.dataset.workspaceId,
   );
+  const sourceIndex = allRows.findIndex((row) => row.dataset.workspaceId === sourceId);
+  const rows = allRows.filter((row) => row.dataset.workspaceId && row.dataset.workspaceId !== sourceId);
   if (rows.length === 0) {
     return null;
   }
@@ -741,16 +749,28 @@ function getWorkspaceDropIntentAtPoint(x: number, y: number, sourceId: string): 
   for (const row of rows) {
     const rowRect = row.getBoundingClientRect();
     if (x >= rowRect.left && x <= rowRect.right && y >= rowRect.top && y <= rowRect.bottom) {
+      const targetIndex = allRows.indexOf(row);
+      const sourceIsAboveTarget = sourceIndex < targetIndex;
+      const thresholdY = sourceIsAboveTarget
+        ? rowRect.top + rowRect.height * workspaceDropThreshold
+        : rowRect.top + rowRect.height * reverseWorkspaceDropThreshold;
+
       return {
         workspaceId: row.dataset.workspaceId || "",
-        placement: y > rowRect.top + rowRect.height / 2 ? "after" : "before",
+        placement: sourceIsAboveTarget
+          ? y > thresholdY
+            ? "after"
+            : "before"
+          : y < thresholdY
+            ? "before"
+            : "after",
       };
     }
   }
 
   const firstRowAfterPointer = rows.find((row) => {
     const rowRect = row.getBoundingClientRect();
-    return y < rowRect.top + rowRect.height / 2;
+    return y < rowRect.top + rowRect.height * workspaceDropThreshold;
   });
   if (firstRowAfterPointer?.dataset.workspaceId) {
     return {

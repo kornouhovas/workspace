@@ -201,7 +201,7 @@ Drag-and-drop правила:
 - Pointer capture ставится только после активации drag и снимается на pointer up/cancel/lost capture.
 - Drag overlay является отдельным fixed-элементом `.workspace-drag-overlay` с теми же row metrics, что и `.workspace-row`.
 - Исходная строка в активном drag получает `opacity: 0` и `pointer-events: none`.
-- Drop intent определяется по положению pointer относительно верхней или нижней половины целевой строки: `before` или `after`.
+- Drop intent определяется с directional threshold: при движении вниз target-строка должна уступать место после прохождения примерно `30%` ее высоты, при движении вверх используется симметричный порог примерно `70%`.
 - При reorder строки анимируются через FLIP-подход: старые позиции сохраняются, затем строки анимируются `transform` за `150ms`.
 - При `prefers-reduced-motion: reduce` drag/reorder-анимации не должны выполняться.
 

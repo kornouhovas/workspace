@@ -87,7 +87,12 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /workspaceListRef\.current\?\.releasePointerCapture\(event\.pointerId\)/);
   assert.equal(appSource.includes('document.querySelectorAll<HTMLElement>("[data-workspace-id]")'), true);
   assert.match(appSource, /row\.dataset\.workspaceId\s*!==\s*sourceId/);
-  assert.match(appSource, /placement:\s*y\s*>\s*rowRect\.top\s*\+\s*rowRect\.height\s*\/\s*2\s*\?\s*"after"\s*:\s*"before"/);
+  assert.match(appSource, /const\s+workspaceDropThreshold\s*=\s*0\.3/);
+  assert.match(appSource, /const\s+reverseWorkspaceDropThreshold\s*=\s*1\s*-\s*workspaceDropThreshold/);
+  assert.match(appSource, /sourceIndex\s*<\s*targetIndex/);
+  assert.match(appSource, /rowRect\.top\s*\+\s*rowRect\.height\s*\*\s*workspaceDropThreshold/);
+  assert.match(appSource, /rowRect\.top\s*\+\s*rowRect\.height\s*\*\s*reverseWorkspaceDropThreshold/);
+  assert.match(appSource, /if\s*\(insertionIndex\s*===\s*sourceIndex\)/);
   assert.match(appSource, /getWorkspaceDropIntentAtPoint\([^)]*currentDragState\.workspaceId[^)]*\)/);
   assert.match(
     appSource,
