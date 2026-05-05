@@ -1,6 +1,6 @@
 :root {
   --codex-bg: #111211;
-  --codex-sidebar-glass: rgba(255, 255, 255, 0.055);
+  --codex-sidebar-glass: rgba(0, 0, 0, 0.28);
   --codex-sidebar-text: #f1f6ee;
   --codex-sidebar-muted: rgba(241, 246, 238, 0.6);
   --codex-sidebar-dim: rgba(241, 246, 238, 0.42);
