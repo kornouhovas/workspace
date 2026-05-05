@@ -31,6 +31,13 @@ type WorkspaceDragState = {
   active: boolean;
 };
 
+type WorkspaceDropPlacement = "before" | "after";
+
+type WorkspaceDropIntent = {
+  workspaceId: string;
+  placement: WorkspaceDropPlacement;
+};
+
 type IconName =
   | "arrow-left"
   | "arrow-right"
@@ -115,6 +122,7 @@ const iconPaths: Record<IconName, ReactNode> = {
 function App() {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>(loadInitialWorkspaceState);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(loadInitialCollapsedState);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [dragState, setDragState] = useState<WorkspaceDragState | null>(null);
@@ -330,14 +338,19 @@ function App() {
     suppressNextWorkspaceSelectRef.current = true;
     setContextMenu(null);
 
-    const targetWorkspaceId = getWorkspaceIdAtPoint(currentDragState.rowLeft + currentDragState.rowWidth / 2, currentY);
-    if (!targetWorkspaceId || targetWorkspaceId === currentDragState.workspaceId) {
+    const dropIntent = getWorkspaceDropIntentAtPoint(currentDragState.rowLeft + currentDragState.rowWidth / 2, currentY);
+    if (!dropIntent || dropIntent.workspaceId === currentDragState.workspaceId) {
       return;
     }
 
     setWorkspaceState((current) => ({
       ...current,
-      workspaces: reorderWorkspaces(current.workspaces, currentDragState.workspaceId, targetWorkspaceId),
+      workspaces: reorderWorkspaces(
+        current.workspaces,
+        currentDragState.workspaceId,
+        dropIntent.workspaceId,
+        dropIntent.placement,
+      ),
     }));
   }
 
@@ -402,9 +415,11 @@ function App() {
             <input
               id="workspaceSearch"
               type="search"
-              placeholder="Search"
+              placeholder={isSearchFocused ? "" : "Search"}
               autoComplete="off"
               value={searchTerm}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
@@ -605,7 +620,12 @@ function getNextWorkspaceCounter(workspaces: Workspace[]) {
   return highestNumber + 1;
 }
 
-function reorderWorkspaces(workspaces: Workspace[], sourceId: string, targetId: string) {
+function reorderWorkspaces(
+  workspaces: Workspace[],
+  sourceId: string,
+  targetId: string,
+  placement: WorkspaceDropPlacement = "before",
+) {
   const sourceIndex = workspaces.findIndex((workspace) => workspace.id === sourceId);
   const targetIndex = workspaces.findIndex((workspace) => workspace.id === targetId);
   if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
@@ -614,14 +634,24 @@ function reorderWorkspaces(workspaces: Workspace[], sourceId: string, targetId: 
 
   const reordered = [...workspaces];
   const [source] = reordered.splice(sourceIndex, 1);
-  reordered.splice(targetIndex, 0, source);
+  const nextTargetIndex = reordered.findIndex((workspace) => workspace.id === targetId);
+  const insertionIndex = placement === "after" ? nextTargetIndex + 1 : nextTargetIndex;
+  reordered.splice(insertionIndex, 0, source);
   return reordered;
 }
 
-function getWorkspaceIdAtPoint(x: number, y: number) {
+function getWorkspaceDropIntentAtPoint(x: number, y: number): WorkspaceDropIntent | null {
   const target = document.elementFromPoint(x, y);
   const row = target?.closest("[data-workspace-id]") as HTMLElement | null;
-  return row?.dataset.workspaceId || "";
+  if (!row?.dataset.workspaceId) {
+    return null;
+  }
+
+  const rowRect = row.getBoundingClientRect();
+  return {
+    workspaceId: row.dataset.workspaceId,
+    placement: y > rowRect.top + rowRect.height / 2 ? "after" : "before",
+  };
 }
 
 function clamp(value: number, min: number, max: number) {

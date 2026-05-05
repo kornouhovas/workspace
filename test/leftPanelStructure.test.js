@@ -48,6 +48,10 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /New Workspace/);
   assert.doesNotMatch(appSource, /New chat/);
   assert.match(appSource, /id="workspaceSearch"/);
+  assert.match(appSource, /isSearchFocused/);
+  assert.match(appSource, /onFocus=\{\(\)\s*=>\s*setIsSearchFocused\(true\)\}/);
+  assert.match(appSource, /onBlur=\{\(\)\s*=>\s*setIsSearchFocused\(false\)\}/);
+  assert.match(appSource, /placeholder=\{isSearchFocused\s*\?\s*""\s*:\s*"Search"\}/);
   assert.doesNotMatch(appSource, /Plugins/);
   assert.doesNotMatch(appSource, /Automations/);
   assert.match(appSource, /id="workspaceList"/);
@@ -65,9 +69,16 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /Delete workspace/);
   assert.match(appSource, /handleWorkspacePointerDown/);
   assert.match(appSource, /handleWorkspacePointerMove/);
+  assert.match(appSource, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);
   assert.match(appSource, /setPointerCapture/);
   assert.match(appSource, /releasePointerCapture/);
   assert.match(appSource, /document\.elementFromPoint/);
+  assert.match(appSource, /getWorkspaceDropIntentAtPoint/);
+  assert.match(appSource, /placement:\s*y\s*>\s*rowRect\.top\s*\+\s*rowRect\.height\s*\/\s*2\s*\?\s*"after"\s*:\s*"before"/);
+  assert.match(
+    appSource,
+    /reorderWorkspaces\([\s\S]*?current\.workspaces,[\s\S]*?currentDragState\.workspaceId,[\s\S]*?dropIntent\.workspaceId,[\s\S]*?dropIntent\.placement,[\s\S]*?\)/,
+  );
   assert.match(appSource, /panelRect\.right\s*-\s*contextMenuWidth\s*-\s*screenPadding/);
   assert.match(appSource, /clamp\(/);
   assert.doesNotMatch(appSource, /\sdraggable\b/);
@@ -80,6 +91,8 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(css, /backdrop-filter:\s*blur\(28px\)\s*saturate\(135%\)/);
   assert.match(css, /\.left-panel\b/);
   assert.match(css, /\.window-strip\b/);
+  assert.match(css, /\.window-strip\s*\{[\s\S]*?height:\s*52px/);
+  assert.match(css, /\.window-icon-button\s*\{[\s\S]*?border-radius:\s*var\(--codex-radius-sm\)/);
   assert.doesNotMatch(css, /\.traffic-light\b/);
   assert.match(css, /\.nav-section-title\b/);
   assert.match(css, /\.workspace-row\b/);
@@ -93,7 +106,6 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(css, /\.app-shell\.sidebar-collapsed\b/);
   assert.match(css, /\.context-menu\b/);
   assert.match(css, /--context-menu-width:\s*224px/);
-  assert.match(css, /height:\s*40px/);
   assert.match(css, /padding:\s*0\s+18px/);
   assert.match(css, /font-weight:\s*400/);
 
