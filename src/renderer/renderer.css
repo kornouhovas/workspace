@@ -103,7 +103,7 @@ svg {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: 76px;
+  padding-top: 52px;
   background: var(--codex-sidebar-glass);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -138,8 +138,8 @@ svg {
 }
 
 .window-icon-button svg {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
 }
 
 .window-icon-button:hover,
@@ -164,18 +164,18 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0 16px;
+  padding: 0 4px;
 }
 
 .utility-row,
 .settings-button {
   width: 100%;
-  min-height: 32px;
+  min-height: 24px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
-  padding: 0 10px 0 0;
+  gap: 2px;
+  padding: 0;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-text);
   cursor: pointer;
@@ -185,8 +185,8 @@ svg {
 .utility-icon,
 .project-icon,
 .settings-icon {
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -194,8 +194,8 @@ svg {
 }
 
 .utility-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 12px;
+  height: 12px;
 }
 
 .utility-label,
@@ -210,7 +210,7 @@ svg {
 
 .utility-label,
 .settings-label {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -226,7 +226,7 @@ svg {
   outline: 0;
   background: transparent;
   color: var(--codex-sidebar-text);
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -240,15 +240,15 @@ svg {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 9px;
-  padding: 28px 16px 0;
+  gap: 6px;
+  padding: 24px 4px 0;
 }
 
 .nav-section-title {
   margin: 0;
   padding: 0;
   color: var(--codex-sidebar-muted);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -257,7 +257,7 @@ svg {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0 0 8px;
@@ -266,9 +266,9 @@ svg {
 .workspace-row {
   position: relative;
   width: 100%;
-  min-height: 31px;
+  min-height: 24px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px;
+  grid-template-columns: minmax(0, 1fr) 24px;
   align-items: center;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-muted);
@@ -295,11 +295,11 @@ svg {
 
 .workspace-select-button {
   min-width: 0;
-  height: 31px;
+  height: 24px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   padding: 0;
   border-radius: var(--codex-radius-sm);
   color: inherit;
@@ -308,19 +308,19 @@ svg {
 }
 
 .project-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
 }
 
 .workspace-name {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
 }
 
 .workspace-menu-button {
-  width: 30px;
-  height: 31px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -334,8 +334,8 @@ svg {
 }
 
 .workspace-menu-button svg {
-  width: 17px;
-  height: 17px;
+  width: 12px;
+  height: 12px;
 }
 
 .workspace-row:hover .workspace-menu-button,
@@ -356,11 +356,11 @@ svg {
   left: var(--drag-left);
   top: var(--drag-top);
   width: var(--drag-width);
-  height: 31px;
+  height: 24px;
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  grid-template-columns: 18px minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   overflow: hidden;
   padding: 0;
   border-radius: var(--codex-radius-sm);
@@ -373,7 +373,7 @@ svg {
 .empty-results {
   padding: 8px 2px;
   color: var(--codex-sidebar-muted);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -383,12 +383,12 @@ svg {
 }
 
 .settings-button {
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 18px minmax(0, 1fr);
 }
 
 .settings-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
 }
 
 .main-surface {
