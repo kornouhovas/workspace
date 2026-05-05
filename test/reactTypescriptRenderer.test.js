@@ -71,7 +71,8 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(appTsx, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);
   assert.doesNotMatch(appTsx, /onDragStart/);
   assert.doesNotMatch(appTsx, /onDrop/);
-  assert.match(styles, /--codex-sidebar-glass:\s*rgba\(20,\s*53,\s*31,\s*0\.7\)/);
+  assert.match(styles, /--codex-sidebar-glass:\s*rgba\(255,\s*255,\s*255,\s*0\.055\)/);
+  assert.doesNotMatch(styles, /--codex-sidebar-glass:\s*rgba\(20,\s*53,\s*31,\s*0\.7\)/);
   assert.match(styles, /--codex-sidebar-text:\s*#f1f6ee/);
   assert.match(styles, /--codex-font:\s*"OpenAI Sans"/);
   assert.match(styles, /\.window-strip\s*\{[\s\S]*?height:\s*52px/);

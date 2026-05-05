@@ -100,7 +100,8 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.doesNotMatch(appSource, /onDragStart/);
   assert.doesNotMatch(appSource, /onDrop/);
 
-  assert.match(css, /--codex-sidebar-glass:\s*rgba\(20,\s*53,\s*31,\s*0\.7\)/);
+  assert.match(css, /--codex-sidebar-glass:\s*rgba\(255,\s*255,\s*255,\s*0\.055\)/);
+  assert.doesNotMatch(css, /--codex-sidebar-glass:\s*rgba\(20,\s*53,\s*31,\s*0\.7\)/);
   assert.match(css, /--codex-sidebar-text:\s*#f1f6ee/);
   assert.match(css, /--codex-font:\s*"OpenAI Sans"/);
   assert.match(css, /backdrop-filter:\s*blur\(28px\)\s*saturate\(135%\)/);
