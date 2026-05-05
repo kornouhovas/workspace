@@ -61,7 +61,7 @@
 
 - App shell: корневой desktop-контейнер приложения.
 - Left Panel: постоянная левая панель для навигации, поиска, списка проектов и настроек.
-- Main Workspace: основная рабочая область активного проекта или выбранного сценария.
+- Main Workspace: основная рабочая область выбранного Workspace или выбранного сценария.
 - Detail Panels: дополнительная панель для деталей, показ данных и свойств проекта.
 - Settings Area: зона настройки приложения и поведения рабочих процессов.
 
@@ -69,7 +69,7 @@
 
 - Project Folder: локальная папка проекта.
 - Workspace Item: элемент списка проектов или рабочих областей в Left Panel.
-- Active Project: текущий выбранный проект.
+- Active Workspace: текущий выбранный Workspace.
 - Component: переиспользуемая часть интерфейса с описанным поведением.
 - Pattern: повторяемое UI/UX-решение, которое можно применять в разных местах.
 
@@ -95,6 +95,14 @@
 
 Left Panel является первой конкретной компонентной зоной гайдлайна, потому что текущая разработка приложения сфокусирована на sidebar/left panel.
 
+Текущие источники реализации:
+
+- `src/renderer/App.tsx`: структура, состояние, действия, drag-and-drop, inline rename/delete.
+- `src/renderer/renderer.css`: визуальные токены, размеры, состояния, motion.
+- `electron/main.js`: нативное Electron context menu для Workspace Item.
+- `electron/preload.cjs`: узкий IPC API `window.workspace.showContextMenu`.
+- `test/leftPanelStructure.test.js`: структурные ожидания и запрещенные паттерны для Left Panel.
+
 Назначение Left Panel:
 
 - Показывать основные действия приложения.
@@ -106,15 +114,38 @@ Left Panel является первой конкретной компонент
 
 Базовая структура Left Panel:
 
+- Window Strip: верхняя draggable-зона с кнопками sidebar toggle, Back и Forward.
 - Верхняя зона действий: основные команды приложения.
 - Search: поле поиска по списку проектов или рабочих элементов.
 - Workspace List: список доступных элементов.
 - Context Actions: действия над конкретным элементом через меню или inline-control.
 - Bottom Area: Settings и другие постоянные нижние действия.
 
+Текущая структура в DOM:
+
+- `#appShell`: корневой grid-контейнер.
+- `.window-strip`: фиксированная верхняя зона окна.
+- `#sidebarToggle`: кнопка collapse/expand для Left Panel.
+- `#leftPanel.left-panel`: основная левая панель с `aria-label="Workspace navigation"`.
+- `#newWorkspaceButton`: создание нового Workspace Item.
+- `#workspaceSearch`: поиск по Workspace List.
+- `#workspaceList`: список Workspace Item с `role="list"`.
+- `.workspace-row`: строка Workspace Item с `role="listitem"`.
+- `#settingsButton`: постоянный Settings action в нижней зоне.
+
 Правила Left Panel:
 
 - Панель должна быть визуально спокойной и нативной для desktop-приложения.
+- Панель работает внутри прозрачного Electron-окна с `titleBarStyle: "hiddenInset"`, `vibrancy: "sidebar"` и `visualEffectState: "followWindow"`.
+- Нативные traffic lights не дублируются кастомными DOM-элементами.
+- Базовая ширина панели задается через `--left-panel-width: 300px`.
+- Left Panel использует прозрачный material surface: `--codex-sidebar-glass: transparent`; CSS `backdrop-filter` для самой панели отключен, потому что системный material задает Electron.
+- Верхняя зона окна `.window-strip` имеет высоту `52px`, остается шириной `var(--left-panel-width)` даже в collapsed-состоянии и использует `-webkit-app-region: drag`.
+- Интерактивные кнопки внутри `.window-strip` обязаны иметь `-webkit-app-region: no-drag`.
+- Left Panel имеет `padding-top: 56px`, чтобы не конфликтовать с системной верхней зоной окна.
+- Collapse-состояние задает `grid-template-columns: 0px minmax(0, 1fr)`, скрывает `.left-panel` через opacity/visibility/pointer-events и не меняет ширину `.window-strip`.
+- Sidebar toggle доступен через кнопку и shortcut `Command+B` на macOS или `Ctrl+B` на Windows/Linux.
+- `Escape` сбрасывает inline rename, inline delete confirmation и активный drag.
 - Выбранный элемент должен иметь явное selected-состояние.
 - Hover и focus-состояния должны быть различимыми, но не агрессивными.
 - Длинные названия проектов должны обрезаться через ellipsis.
@@ -123,7 +154,7 @@ Left Panel является первой конкретной компонент
 - Drag-and-drop, если используется, должен иметь понятный visual feedback.
 - Контекстное меню должно открываться рядом с выбранным элементом и не выходить за границы окна.
 - Контекстное меню Workspace Item должно быть нативным Electron/macOS menu через `Menu.popup`, а не DOM-popover. Нативное меню наследует системный glass/material, шрифт, отступы и скругления платформы.
-- Открытие контекстного меню через ПКМ по Workspace Item не меняет Active Project и selected-состояние.
+- Открытие контекстного меню через ПКМ по Workspace Item не меняет Active Workspace и selected-состояние.
 - Заголовок секции списка рабочих областей должен быть во множественном числе: `Workspaces`.
 - Новые Workspace Item создаются с именем `Workspace` без числового суффикса.
 - Rename для Workspace Item закрывает контекстное меню и переводит название строки в inline-редактирование с выделенным текущим текстом.
@@ -132,10 +163,77 @@ Left Panel является первой конкретной компонент
 - Опасные действия внутри панели, например удаление, должны быть отделены визуально и требовать осторожного поведения.
 - Delete для Workspace Item не использует системное окно подтверждения. После команды удаления строка получает inline-состояние подтверждения: рядом с hover-действиями появляется прозрачная красная кнопка `Confirm`, которая выполняет удаление. Пока `Confirm` активен, строка сохраняет hover-визуал даже после ухода мыши. Клик по любой области приложения вне кнопки `Confirm` сбрасывает это состояние.
 
+Метрики и визуальные токены:
+
+- Основной цвет текста панели: `--codex-sidebar-text: #f1f6ee`.
+- Muted-текст: `--codex-sidebar-muted: rgba(241, 246, 238, 0.6)`.
+- Hover строки: `--codex-sidebar-hover: rgba(255, 255, 255, 0.085)`.
+- Selected строки: `--codex-sidebar-selected: rgba(255, 255, 255, 0.13)`.
+- Основной шрифт: `"OpenAI Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
+- Все основные строки Left Panel используют 30px row height, 18px icon slot, 16px SVG, 14px regular label и `line-height: 1.25`.
+- `panel-top` использует `padding: 0 8px` и `gap: 4px`.
+- `workspace-section` использует `padding: 26px 8px 0` и `gap: 8px`.
+- `workspace-list` использует `gap: 2px`, вертикальный scroll и скрытый horizontal overflow.
+- `workspace-row` использует `grid-template-columns: minmax(0, 1fr) 30px`, `padding: 0 10px`, `border-radius: var(--codex-radius-sm)`, `touch-action: none` и `user-select: none`.
+- `workspace-select-button` использует `grid-template-columns: 18px minmax(0, 1fr)` и `gap: 8px`.
+- `workspace-menu-button` имеет 30px touch-target, `margin-right: -10px`, 16px icon и появляется на hover, selected, focus или drag overlay.
+- `workspace-confirm-delete` располагается внутри строки справа от menu button: `right: 32px`, `top: 3px`, `width: 76px`, `height: 24px`.
+- `panel-footer` использует `padding: 0 8px 12px`.
+
+Поведение Workspace List:
+
+- Список Workspace Item хранится в `localStorage` под ключом `workspace.leftPanel.workspaces`.
+- Выбранный Workspace хранится в `localStorage` под ключом `workspace.leftPanel.selectedWorkspaceId`.
+- Collapsed-состояние хранится в `localStorage` под ключом `workspace.leftPanel.sidebarCollapsed`.
+- Если сохраненные workspace data повреждены, список сбрасывается к `defaultWorkspaces`.
+- Новый Workspace Item получает `id` вида `workspace-${Date.now()}`, имя `Workspace`, становится selected и очищает search/edit/delete состояния.
+- Search фильтрует Workspace Item по имени без учета регистра.
+- Search placeholder равен `Search` только когда поле не в focus; во время focus placeholder скрывается.
+- Если поиск не нашел элементы, список показывает `No workspace`.
+- Selected Workspace отображается в Main Workspace preview как `Current workspace`.
+
+Drag-and-drop правила:
+
+- Workspace reorder реализуется через Pointer Events, а не через HTML `draggable`, `onDragStart` или `onDrop`.
+- Drag начинается только левой кнопкой мыши и не начинается из menu button, confirm button или rename input.
+- Drag становится активным после движения больше `4px`.
+- Pointer capture ставится только после активации drag и снимается на pointer up/cancel/lost capture.
+- Drag overlay является отдельным fixed-элементом `.workspace-drag-overlay` с теми же row metrics, что и `.workspace-row`.
+- Исходная строка в активном drag получает `opacity: 0` и `pointer-events: none`.
+- Drop intent определяется по положению pointer относительно верхней или нижней половины целевой строки: `before` или `after`.
+- При reorder строки анимируются через FLIP-подход: старые позиции сохраняются, затем строки анимируются `transform` за `150ms`.
+- При `prefers-reduced-motion: reduce` drag/reorder-анимации не должны выполняться.
+
+Inline rename правила:
+
+- Rename переводит Workspace Item в состояние `.is-editing`.
+- Rename input использует класс `.workspace-name-input`, `autoFocus`, выделяет текущий текст on focus и сохраняет значение on submit или blur.
+- Пустое имя не сохраняется; состояние редактирования закрывается без изменения имени.
+- `Escape` внутри rename input отменяет редактирование.
+- Для rename не использовать `window.prompt`.
+
+Inline delete правила:
+
+- Delete недоступен, если в списке остался только один Workspace Item.
+- Команда `Delete workspace` в нативном меню переводит строку в `.is-delete-pending`.
+- Подтверждение удаления выполняется только через inline-кнопку `Confirm`.
+- При удалении selected Workspace следующим selected становится первый элемент оставшегося списка.
+- Для delete не использовать `window.confirm`.
+
+Accessibility и тестируемость:
+
+- Left Panel должна иметь понятный `aria-label`.
+- Workspace List должен использовать `role="list"`, а Workspace Item - `role="listitem"`.
+- Icon-only buttons должны иметь `aria-label`.
+- Sidebar toggle должен иметь `aria-pressed`.
+- Active Workspace preview использует `aria-live="polite"`.
+- Состояния и структура Left Panel должны оставаться проверяемыми через `test/leftPanelStructure.test.js`.
+
 Перед изменением Left Panel нужно проверить:
 
 - Не существует ли уже подходящий компонент или паттерн.
-- Сохраняется ли selected-состояние активного проекта.
+- Сохраняется ли selected-состояние Active Workspace.
 - Работают ли hover, focus, keyboard и collapsed-состояния.
 - Не ломается ли список при длинных названиях.
 - Не создается ли новый стиль, который конфликтует с существующей панелью.
+- Не возвращаются ли запрещенные паттерны: DOM context menu, `window.prompt`, `window.confirm`, HTML draggable API, кастомные traffic lights, `New chat`, `Plugins`, `Automations`, `Projects`, `Chats`, `Upgrade`.
