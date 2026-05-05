@@ -7,7 +7,7 @@ async function readProjectFile(path) {
 }
 
 test("renderer installs and composes shadcn dashboard-01", async () => {
-  const [componentsSource, appSource, cssSource, packageSource, viteSource, tsconfigSource] = await Promise.all([
+  const [componentsSource, appSource, cssSource, packageSource, viteSource, tsconfigSource, appSidebarSource] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
     readProjectFile("src/styles.css"),
@@ -17,6 +17,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     readProjectFile("src/components/app-sidebar.tsx"),
     readProjectFile("src/components/data-table.tsx"),
     readProjectFile("src/components/chart-area-interactive.tsx"),
+    readProjectFile("public/avatars/shadcn.svg"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -36,6 +37,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.ok(packageJson.dependencies["react-dom"]);
   assert.ok(packageJson.dependencies.shadcn);
   assert.ok(packageJson.dependencies["lucide-react"]);
+  assert.ok(packageJson.dependencies["@tabler/icons-react"]);
   assert.ok(packageJson.dependencies.recharts);
   assert.ok(packageJson.dependencies["@tanstack/react-table"]);
 
@@ -57,6 +59,10 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSource, /<div className="px-4 lg:px-6">\s*<ChartAreaInteractive \/>/);
   assert.match(appSource, /<ChartAreaInteractive/);
   assert.match(appSource, /<DataTable data=\{data\}/);
+  assert.match(appSidebarSource, /from "@tabler\/icons-react"/);
+  assert.match(appSidebarSource, /IconInnerShadowTop/);
+  assert.match(appSidebarSource, /IconDashboard/);
+  assert.match(appSidebarSource, /avatar:\s*"\.\/avatars\/shadcn\.svg"/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /--header-height:\s*3rem/);
   assert.match(cssSource, /\.dashboard-01-shell/);

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="shadcn avatar">
+  <rect width="64" height="64" rx="12" fill="#d8d8d8"/>
+  <circle cx="32" cy="31" r="18" fill="#9f9f9f"/>
+  <circle cx="25" cy="27" r="3" fill="#1f1f1f"/>
+  <circle cx="39" cy="27" r="3" fill="#1f1f1f"/>
+  <path d="M24 39c4.7 4 11.3 4 16 0" fill="none" stroke="#1f1f1f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M17 21c6-9 24-9 30 0-6-3-24-3-30 0Z" fill="#2c2c2c"/>
+  <path d="M11 50c4-9 12-13 21-13s17 4 21 13v14H11Z" fill="#3a3a3a"/>
+</svg>
