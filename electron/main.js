@@ -27,6 +27,11 @@ async function createWindow() {
     window.show();
   });
 
+  window.webContents.on("did-finish-load", () => {
+    window.webContents.setZoomFactor(1);
+  });
+  await window.webContents.setVisualZoomLevelLimits(1, 1);
+
   await window.loadFile(join(__dirname, "../dist/renderer/index.html"));
 }
 

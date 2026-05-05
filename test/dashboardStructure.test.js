@@ -47,9 +47,14 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSource, /from "@\/components\/ui\/tooltip"/);
   assert.match(appSource, /from "\.\/app\/dashboard\/data\.json"/);
   assert.match(appSource, /<TooltipProvider>[\s\S]*<SidebarProvider/);
+  assert.match(appSource, /className="dashboard-01-shell dark"/);
+  assert.match(appSource, /"--sidebar-width":\s*"calc\(var\(--spacing\) \* 72\)"/);
+  assert.match(appSource, /"--header-height":\s*"calc\(var\(--spacing\) \* 12\)"/);
   assert.match(appSource, /<AppSidebar variant="inset"/);
   assert.match(appSource, /<SiteHeader/);
+  assert.match(appSource, /@container\/main flex flex-1 flex-col gap-2/);
   assert.match(appSource, /<SectionCards/);
+  assert.match(appSource, /<div className="px-4 lg:px-6">\s*<ChartAreaInteractive \/>/);
   assert.match(appSource, /<ChartAreaInteractive/);
   assert.match(appSource, /<DataTable data=\{data\}/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);

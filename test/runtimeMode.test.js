@@ -39,6 +39,8 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(electronMain, /contextIsolation:\s*true/);
   assert.match(electronMain, /nodeIntegration:\s*false/);
   assert.match(electronMain, /sandbox:\s*true/);
+  assert.match(electronMain, /window\.webContents\.setZoomFactor\(1\)/);
+  assert.match(electronMain, /setVisualZoomLevelLimits\(1,\s*1\)/);
   assert.match(electronMain, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
   assert.doesNotMatch(electronMain, /loadURL/);
   await access(new URL("../electron/main.js", import.meta.url));
