@@ -83,7 +83,9 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(appTsx, /workspaceRowRefs/);
   assert.match(appTsx, /useLayoutEffect/);
   assert.match(appTsx, /function\s+cancelWorkspaceRowAnimations\(/);
-  assert.match(appTsx, /function captureWorkspaceRowPositions[\s\S]*?cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  const capturePositionsBody = appTsx.match(/function captureWorkspaceRowPositions[\s\S]*?\n  function handleWorkspacePointerDown/)?.[0] || "";
+  assert.doesNotMatch(capturePositionsBody, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  assert.match(capturePositionsBody, /previousWorkspaceRowRectsRef\.current\.set\(workspaceId,\s*row\.getBoundingClientRect\(\)\)/);
   assert.match(appTsx, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?row\.animate\(\[/);
   assert.match(appTsx, /\.animate\(\[/);
   assert.match(appTsx, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);

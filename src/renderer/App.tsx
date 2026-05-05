@@ -332,7 +332,6 @@ function App() {
   function captureWorkspaceRowPositions() {
     previousWorkspaceRowRectsRef.current.clear();
     workspaceRowRefs.current.forEach((row, workspaceId) => {
-      cancelWorkspaceRowAnimations(row);
       previousWorkspaceRowRectsRef.current.set(workspaceId, row.getBoundingClientRect());
     });
   }

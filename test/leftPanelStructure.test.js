@@ -97,7 +97,9 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /workspaceRowRefs/);
   assert.match(appSource, /captureWorkspaceRowPositions/);
   assert.match(appSource, /function\s+cancelWorkspaceRowAnimations\(/);
-  assert.match(appSource, /function captureWorkspaceRowPositions[\s\S]*?cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  const capturePositionsBody = appSource.match(/function captureWorkspaceRowPositions[\s\S]*?\n  function handleWorkspacePointerDown/)?.[0] || "";
+  assert.doesNotMatch(capturePositionsBody, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  assert.match(capturePositionsBody, /previousWorkspaceRowRectsRef\.current\.set\(workspaceId,\s*row\.getBoundingClientRect\(\)\)/);
   assert.match(appSource, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?row\.animate\(\[/);
   assert.match(appSource, /registerWorkspaceRow/);
   assert.match(appSource, /\.animate\(\[/);
