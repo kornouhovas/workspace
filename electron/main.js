@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -25,7 +25,6 @@ let workspaceClient = null;
 let sidecarProcess = null;
 
 app.setName("Workspace");
-nativeTheme.themeSource = "dark";
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -35,7 +34,7 @@ function createWindow() {
     backgroundColor: "#00000000",
     transparent: true,
     vibrancy: "sidebar",
-    visualEffectState: "active",
+    visualEffectState: "followWindow",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 22, y: 19 },
     webPreferences: {

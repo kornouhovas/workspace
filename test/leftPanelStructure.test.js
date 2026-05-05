@@ -35,11 +35,10 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(html, /src="\/src\/renderer\/main\.tsx"/);
   assert.match(mainSource, /titleBarStyle:\s*"hiddenInset"/);
   assert.match(mainSource, /trafficLightPosition:\s*\{/);
-  assert.match(mainSource, /import\s*\{[^}]*nativeTheme[^}]*\}\s*from\s*"electron"/);
-  assert.match(mainSource, /nativeTheme\.themeSource\s*=\s*"dark"/);
-  assert.ok(mainSource.indexOf('nativeTheme.themeSource = "dark";') < mainSource.indexOf("function createWindow()"));
+  assert.doesNotMatch(mainSource, /nativeTheme/);
+  assert.doesNotMatch(mainSource, /themeSource/);
   assert.match(mainSource, /vibrancy:\s*"sidebar"/);
-  assert.match(mainSource, /visualEffectState:\s*"active"/);
+  assert.match(mainSource, /visualEffectState:\s*"followWindow"/);
   assert.match(appSource, /id="leftPanel"/);
   assert.match(appSource, /className="left-panel"/);
   assert.match(appSource, /className="window-strip"/);
@@ -104,12 +103,15 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.doesNotMatch(appSource, /onDragStart/);
   assert.doesNotMatch(appSource, /onDrop/);
 
-  assert.match(css, /--codex-sidebar-glass:\s*rgba\(0,\s*0,\s*0,\s*0\.28\)/);
+  assert.match(css, /--codex-sidebar-glass:\s*transparent/);
   assert.doesNotMatch(css, /--codex-sidebar-glass:\s*rgba\(20,\s*53,\s*31,\s*0\.7\)/);
   assert.doesNotMatch(css, /--codex-sidebar-glass:\s*rgba\(255,\s*255,\s*255,\s*0\.055\)/);
+  assert.doesNotMatch(css, /--codex-sidebar-glass:\s*rgba\(0,\s*0,\s*0,\s*0\.28\)/);
   assert.match(css, /--codex-sidebar-text:\s*#f1f6ee/);
   assert.match(css, /--codex-font:\s*"OpenAI Sans"/);
-  assert.match(css, /backdrop-filter:\s*blur\(28px\)\s*saturate\(135%\)/);
+  assert.match(css, /\.left-panel\s*\{[\s\S]*?-webkit-backdrop-filter:\s*none/);
+  assert.match(css, /\.left-panel\s*\{[\s\S]*?backdrop-filter:\s*none/);
+  assert.doesNotMatch(css, /\.left-panel\s*\{[\s\S]*?backdrop-filter:\s*blur\(28px\)\s*saturate\(135%\)/);
   assert.match(css, /\.left-panel\b/);
   assert.match(css, /\.window-strip\b/);
   assert.match(css, /\.window-strip\s*\{[\s\S]*?height:\s*52px/);
