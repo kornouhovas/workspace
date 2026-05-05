@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react";
+import type { CSSProperties, FormEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 
 type Workspace = {
   id: string;
@@ -9,13 +9,6 @@ type Workspace = {
 type WorkspaceState = {
   workspaces: Workspace[];
   selectedWorkspaceId: string;
-  workspaceCounter: number;
-};
-
-type ContextMenuState = {
-  workspaceId: string;
-  x: number;
-  y: number;
 };
 
 type WorkspaceDragState = {
@@ -53,9 +46,6 @@ type IconName =
 const workspaceStorageKey = "workspace.leftPanel.workspaces";
 const selectedWorkspaceStorageKey = "workspace.leftPanel.selectedWorkspaceId";
 const collapsedStorageKey = "workspace.leftPanel.sidebarCollapsed";
-const contextMenuWidth = 224;
-const contextMenuHeight = 104;
-const screenPadding = 14;
 const dragStartThreshold = 4;
 
 const defaultWorkspaces: Workspace[] = [
@@ -124,16 +114,16 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(loadInitialCollapsedState);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
+  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<WorkspaceDragState | null>(null);
   const dragStateRef = useRef<WorkspaceDragState | null>(null);
-  const leftPanelRef = useRef<HTMLElement | null>(null);
   const workspaceListRef = useRef<HTMLDivElement | null>(null);
   const workspaceRowRefs = useRef(new Map<string, HTMLDivElement>());
   const previousWorkspaceRowRectsRef = useRef(new Map<string, DOMRect>());
   const suppressNextWorkspaceSelectRef = useRef(false);
 
-  const { workspaces, selectedWorkspaceId, workspaceCounter } = workspaceState;
+  const { workspaces, selectedWorkspaceId } = workspaceState;
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === selectedWorkspaceId) || workspaces[0],
     [selectedWorkspaceId, workspaces],
@@ -208,7 +198,8 @@ function App() {
       }
 
       if (event.key === "Escape") {
-        setContextMenu(null);
+        setEditingWorkspaceId(null);
+        setPendingDeleteWorkspaceId(null);
         clearWorkspaceDrag();
       }
     }
@@ -220,14 +211,15 @@ function App() {
   function addWorkspace() {
     const workspace: Workspace = {
       id: `workspace-${Date.now()}`,
-      name: `workspace-${workspaceCounter}`,
+      name: "Workspace",
     };
 
     setSearchTerm("");
+    setEditingWorkspaceId(null);
+    setPendingDeleteWorkspaceId(null);
     setWorkspaceState((current) => ({
       workspaces: [...current.workspaces, workspace],
       selectedWorkspaceId: workspace.id,
-      workspaceCounter: current.workspaceCounter + 1,
     }));
   }
 
@@ -237,6 +229,8 @@ function App() {
       return;
     }
 
+    setEditingWorkspaceId(null);
+    setPendingDeleteWorkspaceId(null);
     setWorkspaceState((current) => ({
       ...current,
       selectedWorkspaceId: workspaceId,
@@ -247,24 +241,24 @@ function App() {
     setIsCollapsed((current) => !current);
   }
 
-  function openContextMenu(event: MouseEvent<HTMLElement>, workspaceId: string) {
+  async function openContextMenu(event: MouseEvent<HTMLElement>, workspaceId: string) {
     event.preventDefault();
     event.stopPropagation();
     clearWorkspaceDrag();
-    setWorkspaceState((current) => ({
-      ...current,
-      selectedWorkspaceId: workspaceId,
-    }));
-    const panelRect = leftPanelRef.current?.getBoundingClientRect();
-    const minX = panelRect ? panelRect.left + screenPadding : screenPadding;
-    const maxX = panelRect
-      ? panelRect.right - contextMenuWidth - screenPadding
-      : window.innerWidth - contextMenuWidth - screenPadding;
-    setContextMenu({
-      workspaceId,
-      x: clamp(event.clientX, minX, maxX),
-      y: clamp(event.clientY, screenPadding, window.innerHeight - contextMenuHeight - screenPadding),
+    setEditingWorkspaceId(null);
+    setPendingDeleteWorkspaceId(null);
+    const result = await window.workspace?.showContextMenu?.({
+      x: event.clientX,
+      y: event.clientY,
+      canDelete: workspaces.length > 1,
     });
+
+    if (result?.action === "rename") {
+      renameWorkspace(workspaceId);
+    }
+    if (result?.action === "delete") {
+      deleteWorkspace(workspaceId);
+    }
   }
 
   function renameWorkspace(workspaceId: string) {
@@ -273,10 +267,14 @@ function App() {
       return;
     }
 
-    setContextMenu(null);
-    const nextName = window.prompt("Rename workspace", workspace.name);
-    const trimmedName = nextName?.trim();
+    setPendingDeleteWorkspaceId(null);
+    setEditingWorkspaceId(workspaceId);
+  }
+
+  function commitWorkspaceRename(workspaceId: string, nextName: string) {
+    const trimmedName = nextName.trim();
     if (!trimmedName) {
+      setEditingWorkspaceId(null);
       return;
     }
 
@@ -284,6 +282,7 @@ function App() {
       ...current,
       workspaces: current.workspaces.map((item) => (item.id === workspaceId ? { ...item, name: trimmedName } : item)),
     }));
+    setEditingWorkspaceId(null);
   }
 
   function deleteWorkspace(workspaceId: string) {
@@ -291,13 +290,16 @@ function App() {
       return;
     }
 
-    setContextMenu(null);
-    const workspace = workspaces.find((item) => item.id === workspaceId);
-    const confirmed = window.confirm(`Delete ${workspace?.name || "workspace"}?`);
-    if (!confirmed) {
+    setEditingWorkspaceId(null);
+    setPendingDeleteWorkspaceId(workspaceId);
+  }
+
+  function confirmDeleteWorkspace(workspaceId: string) {
+    if (workspaces.length <= 1) {
       return;
     }
 
+    setPendingDeleteWorkspaceId(null);
     setWorkspaceState((current) => {
       const nextWorkspaces = current.workspaces.filter((item) => item.id !== workspaceId);
       return {
@@ -334,7 +336,10 @@ function App() {
   }
 
   function handleWorkspacePointerDown(event: PointerEvent<HTMLDivElement>, workspaceId: string) {
-    if (event.button !== 0 || (event.target as HTMLElement).closest(".workspace-menu-button")) {
+    if (
+      event.button !== 0 ||
+      (event.target as HTMLElement).closest(".workspace-menu-button, .workspace-confirm-delete, .workspace-name-input")
+    ) {
       return;
     }
 
@@ -383,7 +388,6 @@ function App() {
       workspaceListRef.current?.setPointerCapture(event.pointerId);
     }
     suppressNextWorkspaceSelectRef.current = true;
-    setContextMenu(null);
 
     const dropIntent = getWorkspaceDropIntentAtPoint(
       currentDragState.rowLeft + currentDragState.rowWidth / 2,
@@ -427,7 +431,9 @@ function App() {
     <div
       id="appShell"
       className={`app-shell${isCollapsed ? " sidebar-collapsed" : ""}`}
-      onClick={() => setContextMenu(null)}
+      onClick={() => {
+        setPendingDeleteWorkspaceId(null);
+      }}
     >
       <div className="window-strip">
         <button
@@ -451,7 +457,7 @@ function App() {
         </button>
       </div>
 
-      <aside id="leftPanel" ref={leftPanelRef} className="left-panel" aria-label="Workspace navigation">
+      <aside id="leftPanel" className="left-panel" aria-label="Workspace navigation">
         <div className="panel-top">
           <button id="newWorkspaceButton" className="utility-row" type="button" onClick={addWorkspace}>
             <span className="utility-icon" aria-hidden="true">
@@ -479,7 +485,7 @@ function App() {
 
         <section className="workspace-section" aria-labelledby="workspaceSectionTitle">
           <h2 id="workspaceSectionTitle" className="nav-section-title">
-            Workspace
+            Workspaces
           </h2>
           <div
             id="workspaceList"
@@ -498,9 +504,14 @@ function App() {
                   key={workspace.id}
                   workspace={workspace}
                   isSelected={workspace.id === selectedWorkspaceId}
+                  isEditing={workspace.id === editingWorkspaceId}
+                  isDeletePending={workspace.id === pendingDeleteWorkspaceId}
                   isDragging={dragState?.workspaceId === workspace.id && dragState.active}
                   onSelect={selectWorkspace}
                   onMenuOpen={openContextMenu}
+                  onRenameCommit={commitWorkspaceRename}
+                  onRenameCancel={() => setEditingWorkspaceId(null)}
+                  onDeleteConfirm={confirmDeleteWorkspace}
                   onPointerDown={handleWorkspacePointerDown}
                   registerRow={registerWorkspaceRow}
                 />
@@ -540,35 +551,6 @@ function App() {
         </div>
       ) : null}
 
-      {contextMenu ? (
-        <div
-          id="workspaceContextMenu"
-          className="context-menu"
-          role="menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button type="button" role="menuitem" data-action="rename" onClick={() => renameWorkspace(contextMenu.workspaceId)}>
-            <span className="menu-icon" aria-hidden="true">
-              <Icon name="rename" />
-            </span>
-            Rename
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            data-action="delete"
-            className="danger-item"
-            disabled={workspaces.length <= 1}
-            onClick={() => deleteWorkspace(contextMenu.workspaceId)}
-          >
-            <span className="menu-icon" aria-hidden="true">
-              <Icon name="trash" />
-            </span>
-            Delete workspace
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -576,9 +558,14 @@ function App() {
 type WorkspaceRowProps = {
   workspace: Workspace;
   isSelected: boolean;
+  isEditing: boolean;
+  isDeletePending: boolean;
   isDragging: boolean;
   onSelect: (workspaceId: string) => void;
   onMenuOpen: (event: MouseEvent<HTMLElement>, workspaceId: string) => void;
+  onRenameCommit: (workspaceId: string, nextName: string) => void;
+  onRenameCancel: () => void;
+  onDeleteConfirm: (workspaceId: string) => void;
   onPointerDown: (event: PointerEvent<HTMLDivElement>, workspaceId: string) => void;
   registerRow: (workspaceId: string, row: HTMLDivElement | null) => void;
 };
@@ -586,15 +573,37 @@ type WorkspaceRowProps = {
 function WorkspaceRow({
   workspace,
   isSelected,
+  isEditing,
+  isDeletePending,
   isDragging,
   onSelect,
   onMenuOpen,
+  onRenameCommit,
+  onRenameCancel,
+  onDeleteConfirm,
   onPointerDown,
   registerRow,
 }: WorkspaceRowProps) {
-  const className = ["workspace-row", isSelected ? "is-selected" : "", isDragging ? "is-dragging" : ""]
+  const className = [
+    "workspace-row",
+    isSelected ? "is-selected" : "",
+    isEditing ? "is-editing" : "",
+    isDeletePending ? "is-delete-pending" : "",
+    isDragging ? "is-dragging" : "",
+  ]
     .filter(Boolean)
     .join(" ");
+  const handleRenameSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem("workspaceName") as HTMLInputElement | null;
+    onRenameCommit(workspace.id, input?.value || "");
+  };
+  const handleRenameKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onRenameCancel();
+    }
+  };
 
   return (
     <div
@@ -605,12 +614,42 @@ function WorkspaceRow({
       onContextMenu={(event) => onMenuOpen(event, workspace.id)}
       onPointerDown={(event) => onPointerDown(event, workspace.id)}
     >
-      <button className="workspace-select-button" type="button" onClick={() => onSelect(workspace.id)}>
-        <span className="project-icon" aria-hidden="true">
-          <Icon name="folder" />
-        </span>
-        <span className="workspace-name">{workspace.name}</span>
-      </button>
+      {isEditing ? (
+        <form className="workspace-select-button workspace-edit-form" onSubmit={handleRenameSubmit}>
+          <span className="project-icon" aria-hidden="true">
+            <Icon name="folder" />
+          </span>
+          <input
+            className="workspace-name-input"
+            name="workspaceName"
+            aria-label={`Rename ${workspace.name}`}
+            defaultValue={workspace.name}
+            autoFocus
+            onFocus={(event) => event.currentTarget.select()}
+            onBlur={(event) => onRenameCommit(workspace.id, event.currentTarget.value)}
+            onKeyDown={handleRenameKeyDown}
+          />
+        </form>
+      ) : (
+        <button className="workspace-select-button" type="button" onClick={() => onSelect(workspace.id)}>
+          <span className="project-icon" aria-hidden="true">
+            <Icon name="folder" />
+          </span>
+          <span className="workspace-name">{workspace.name}</span>
+        </button>
+      )}
+      {isDeletePending ? (
+        <button
+          className="workspace-confirm-delete"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDeleteConfirm(workspace.id);
+          }}
+        >
+          Confirm
+        </button>
+      ) : null}
       <button
         className="workspace-menu-button"
         type="button"
@@ -636,7 +675,6 @@ function loadInitialWorkspaceState(): WorkspaceState {
   return {
     workspaces,
     selectedWorkspaceId: loadSelectedWorkspaceId(workspaces),
-    workspaceCounter: getNextWorkspaceCounter(workspaces),
   };
 }
 
@@ -665,15 +703,6 @@ function loadSelectedWorkspaceId(workspaces: Workspace[]): string {
 
 function loadInitialCollapsedState() {
   return localStorage.getItem(collapsedStorageKey) === "true";
-}
-
-function getNextWorkspaceCounter(workspaces: Workspace[]) {
-  const highestNumber = workspaces.reduce((highest, workspace) => {
-    const match = workspace.name.match(/^workspace-(\d+)$/);
-    return match ? Math.max(highest, Number(match[1])) : highest;
-  }, 1);
-
-  return highestNumber + 1;
 }
 
 function reorderWorkspaces(

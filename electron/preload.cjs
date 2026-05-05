@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld("workspace", {
   saveProperty: (payload) => ipcRenderer.invoke("workspace:saveProperty", payload),
   previewFile: (payload) => ipcRenderer.invoke("workspace:previewFile", payload),
   reveal: (payload) => ipcRenderer.invoke("workspace:reveal", payload),
+  showContextMenu: (payload) => ipcRenderer.invoke("workspace:showContextMenu", payload),
 });

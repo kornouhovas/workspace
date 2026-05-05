@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu } from "electron";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -219,6 +219,48 @@ function registerWorkspaceHandlers() {
     const rootPath = await readSelectedWorkspaceRootPath();
     return createRevealResponse({ root: rootPath, body });
   });
+  ipcMain.handle("workspace:showContextMenu", async (event, payload = {}) => {
+    const body = normalizePayload(payload);
+    return showWorkspaceContextMenu(event, body);
+  });
+}
+
+function showWorkspaceContextMenu(event, body) {
+  return new Promise((resolve) => {
+    let didResolve = false;
+    const finish = (action) => {
+      if (didResolve) {
+        return;
+      }
+
+      didResolve = true;
+      resolve({ action });
+    };
+    const menu = Menu.buildFromTemplate([
+      {
+        label: "Rename",
+        click: () => finish("rename"),
+      },
+      {
+        label: "Delete workspace",
+        enabled: body.canDelete !== false,
+        click: () => finish("delete"),
+      },
+    ]);
+
+    menu.on("menu-will-close", () => {
+      setTimeout(() => finish(null), 0);
+    });
+    menu.popup({
+      window: BrowserWindow.fromWebContents(event.sender),
+      x: normalizeMenuCoordinate(body.x),
+      y: normalizeMenuCoordinate(body.y),
+    });
+  });
+}
+
+function normalizeMenuCoordinate(value) {
+  return Number.isFinite(value) ? Math.round(value) : undefined;
 }
 
 async function readSelectedWorkspaceRootPath() {

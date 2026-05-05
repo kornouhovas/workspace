@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 test("electron main process uses an isolated preload shell with workspace IPC handlers", async () => {
   const mainSource = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
 
-  assert.match(mainSource, /import\s+\{\s*app,\s*BrowserWindow,\s*dialog,\s*ipcMain\s*\}\s+from\s+"electron"/);
+  assert.match(mainSource, /import\s+\{\s*app,\s*BrowserWindow,\s*dialog,\s*ipcMain,\s*Menu\s*\}\s+from\s+"electron"/);
   assert.match(mainSource, /app\.setName\("Workspace"\)/);
   assert.doesNotMatch(mainSource, /nativeTheme/);
   assert.doesNotMatch(mainSource, /themeSource/);
@@ -54,6 +54,10 @@ test("electron main process uses an isolated preload shell with workspace IPC ha
   assert.match(mainSource, /function\s+getWorkspacePropertiesPath\(\)/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:saveProperty",\s*async/);
   assert.match(mainSource, /ipcMain\.handle\("workspace:previewFile",\s*async/);
+  assert.match(mainSource, /ipcMain\.handle\("workspace:showContextMenu",\s*async/);
+  assert.match(mainSource, /Menu\.buildFromTemplate/);
+  assert.match(mainSource, /menu\.popup\(\{\s*window:\s*BrowserWindow\.fromWebContents\(event\.sender\)/);
+  assert.match(mainSource, /menu\.on\("menu-will-close",\s*\(\)\s*=>\s*\{[\s\S]*?setTimeout\(\(\)\s*=>\s*finish\(null\),\s*0\)/);
   assert.match(mainSource, /await\s+workspaceClient\.getRoot\(\)/);
   assert.match(mainSource, /await\s+workspaceClient\.setRoot\(/);
   assert.match(mainSource, /await\s+workspaceClient\.listPropertyValues\(/);
@@ -82,6 +86,7 @@ test("electron preload exposes only the narrow workspace API", async () => {
   assert.match(preloadSource, /saveProperty:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:saveProperty",\s*payload\)/);
   assert.match(preloadSource, /previewFile:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:previewFile",\s*payload\)/);
   assert.match(preloadSource, /reveal:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:reveal",\s*payload\)/);
+  assert.match(preloadSource, /showContextMenu:\s*\(payload\)\s*=>\s*ipcRenderer\.invoke\("workspace:showContextMenu",\s*payload\)/);
   assert.doesNotMatch(preloadSource, /require\("fs"\)/);
   assert.doesNotMatch(preloadSource, /from\s+["']electron["']/);
   assert.doesNotMatch(preloadSource, /from\s+["']node:fs["']/);

@@ -16,7 +16,6 @@
   --codex-delete: #ff8a80;
   --codex-font: "OpenAI Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --left-panel-width: 300px;
-  --context-menu-width: 224px;
   --codex-radius-sm: 8px;
   --codex-radius-md: 16px;
   --codex-radius-pill: 999px;
@@ -94,7 +93,7 @@ svg {
 }
 
 .app-shell.sidebar-collapsed .window-strip {
-  width: 176px;
+  width: var(--left-panel-width);
 }
 
 .left-panel {
@@ -119,7 +118,7 @@ svg {
 .settings-button,
 .workspace-select-button,
 .workspace-menu-button,
-.context-menu button {
+.workspace-confirm-delete {
   color: inherit;
   background: transparent;
 }
@@ -138,8 +137,8 @@ svg {
 }
 
 .window-icon-button svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .window-icon-button:hover,
@@ -155,7 +154,7 @@ svg {
 .settings-button:focus-visible,
 .workspace-select-button:focus-visible,
 .workspace-menu-button:focus-visible,
-.context-menu button:focus-visible {
+.workspace-confirm-delete:focus-visible {
   outline: 2px solid rgba(214, 232, 206, 0.72);
   outline-offset: 2px;
 }
@@ -183,8 +182,7 @@ svg {
 }
 
 .utility-icon,
-.project-icon,
-.settings-icon {
+.project-icon {
   width: 18px;
   height: 18px;
   display: inline-flex;
@@ -247,7 +245,7 @@ svg {
 
 .nav-section-title {
   margin: 0;
-  padding: 0;
+  padding: 0 10px;
   color: var(--codex-sidebar-muted);
   font-size: 14px;
   font-weight: 400;
@@ -290,6 +288,16 @@ svg {
   background: var(--codex-sidebar-selected);
 }
 
+.workspace-row.is-editing {
+  color: var(--codex-sidebar-text);
+  background: var(--codex-sidebar-hover);
+}
+
+.workspace-row.is-delete-pending {
+  color: var(--codex-sidebar-text);
+  background: var(--codex-sidebar-hover);
+}
+
 .workspace-row.is-dragging {
   opacity: 0;
   pointer-events: none;
@@ -320,6 +328,59 @@ svg {
   line-height: 1.25;
 }
 
+.workspace-edit-form {
+  cursor: text;
+}
+
+.workspace-name-input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--codex-sidebar-text);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.25;
+  user-select: text;
+}
+
+.workspace-confirm-delete {
+  position: absolute;
+  top: 3px;
+  right: 32px;
+  width: 76px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 70, 70, 0.22);
+  border-radius: var(--codex-radius-sm);
+  color: var(--codex-delete);
+  background: rgba(255, 70, 70, 0.14);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: background 120ms ease, opacity 120ms ease, border-color 120ms ease;
+}
+
+.workspace-row:hover .workspace-confirm-delete,
+.workspace-row.is-delete-pending .workspace-confirm-delete,
+.workspace-confirm-delete:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.workspace-confirm-delete:hover {
+  border-color: rgba(255, 70, 70, 0.34);
+  background: rgba(255, 70, 70, 0.22);
+}
+
 .workspace-menu-button {
   width: 30px;
   height: 30px;
@@ -327,12 +388,13 @@ svg {
   align-items: center;
   justify-content: center;
   justify-self: end;
+  margin-right: -10px;
   padding: 0;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-muted);
   cursor: pointer;
   opacity: 0;
-  transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+  transition: color 120ms ease, opacity 120ms ease;
 }
 
 .workspace-menu-button svg {
@@ -349,7 +411,6 @@ svg {
 
 .workspace-menu-button:hover {
   color: var(--codex-sidebar-text);
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .workspace-drag-overlay {
@@ -382,16 +443,26 @@ svg {
 
 .panel-footer {
   margin-top: auto;
-  padding: 0 16px 12px;
+  padding: 0 8px 12px;
 }
 
 .settings-button {
   grid-template-columns: 18px minmax(0, 1fr);
 }
 
+.settings-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .settings-icon svg {
   width: 16px;
   height: 16px;
+}
+
+.settings-label {
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .main-surface {
@@ -423,59 +494,6 @@ svg {
   font-weight: 500;
   line-height: 1.16;
   overflow-wrap: anywhere;
-}
-
-.context-menu {
-  position: fixed;
-  z-index: 50;
-  width: min(var(--context-menu-width), calc(100vw - 28px));
-  padding: 8px;
-  border: 1px solid var(--codex-border-soft);
-  border-radius: var(--codex-radius-md);
-  background: var(--codex-surface);
-  -webkit-backdrop-filter: blur(22px) saturate(125%);
-  backdrop-filter: blur(22px) saturate(125%);
-  box-shadow: var(--codex-shadow-popover);
-}
-
-.context-menu button {
-  width: 100%;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 18px;
-  border-radius: 12px;
-  color: var(--codex-text);
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.2;
-  text-align: left;
-}
-
-.context-menu button:hover {
-  background: var(--codex-surface-hover);
-}
-
-.context-menu button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.context-menu .danger-item:not(:disabled) {
-  color: var(--codex-delete);
-}
-
-.menu-icon {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
-}
-
-.menu-icon svg {
-  width: 19px;
-  height: 19px;
 }
 
 .app-shell.sidebar-collapsed .left-panel {
