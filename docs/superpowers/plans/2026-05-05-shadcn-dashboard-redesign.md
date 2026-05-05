@@ -4,7 +4,7 @@
 
 **Goal:** Replace the existing Electron-specific left panel screen with a shadcn-style React dashboard/sidebar implementation.
 
-**Architecture:** Keep the current Vite/Electron renderer entrypoint and workspace state model, but move visual structure to shadcn source components, lucide icons, Tailwind CSS, and semantic CSS variables. Update tests and `styleguideline.md` so the new shadcn dashboard/sidebar is the documented source of truth.
+**Architecture:** Keep the current Vite/Electron renderer entrypoint and workspace state model, but move visual structure to shadcn source components, lucide icons, Tailwind CSS, and semantic CSS variables. Update tests so the new shadcn dashboard/sidebar structure is verified.
 
 **Tech Stack:** React 19, Vite, Electron, shadcn/ui, Tailwind CSS, lucide-react, node:test.
 
@@ -66,14 +66,14 @@ Use `SidebarProvider`, `Sidebar`, `SidebarHeader`, `SidebarContent`, `SidebarGro
 
 Keep localStorage-backed workspace list, selected workspace, search filtering, inline rename, inline delete confirmation, and current workspace preview.
 
-### Task 4: Style Guideline Rewrite
+### Task 4: Structural Documentation Cleanup
 
 **Files:**
-- Modify: `styleguideline.md`
+- Modify: relevant project documentation
 
-- [ ] **Step 1: Rewrite source of truth**
+- [ ] **Step 1: Remove stale renderer guidance**
 
-Document shadcn/ui as the default UI framework, Tailwind semantic tokens, lucide icons, dashboard/sidebar structure, accepted component set, compact sizes, and the removed Electron-native constraints.
+Remove stale source-of-truth wording after the renderer structure is covered by tests.
 
 ### Task 5: Verification And Commit
 

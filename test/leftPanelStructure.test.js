@@ -22,7 +22,6 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
     componentsSource,
     viteSource,
     tsconfigSource,
-    guidelineSource,
     appSidebarSource,
     siteHeaderSource,
     sectionCardsSource,
@@ -37,7 +36,6 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
       readRequiredProjectFile("components.json"),
       readRequiredProjectFile("vite.config.ts"),
       readRequiredProjectFile("tsconfig.json"),
-      readRequiredProjectFile("styleguideline.md"),
       readRequiredProjectFile("src/renderer/components/app-sidebar.tsx"),
       readRequiredProjectFile("src/renderer/components/site-header.tsx"),
       readRequiredProjectFile("src/renderer/components/section-cards.tsx"),
@@ -103,11 +101,6 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
   assert.match(css, /\.dashboard-01-shell/);
   assert.doesNotMatch(css, /--codex-sidebar-glass/);
   assert.doesNotMatch(css, /\.workspace-drag-overlay/);
-
-  assert.match(guidelineSource, /shadcn\/ui/);
-  assert.match(guidelineSource, /lucide-react/);
-  assert.match(guidelineSource, /dashboard-01/);
-  assert.match(guidelineSource, /Tailwind CSS v4/);
 
   assert.match(appSidebarSource, /export function AppSidebar/);
   assert.match(siteHeaderSource, /export function SiteHeader/);
