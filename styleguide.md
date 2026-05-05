@@ -8,6 +8,20 @@ Codex is a focused coding-agent command center. The product should feel like a q
 
 The core promise is: one agent for everywhere you code. The UI should make that promise concrete by keeping projects, threads, permissions, environment mode, model choice, Git state, review, and verification close to the composer.
 
+The Codex app is a desktop product for macOS and Windows. It centers on choosing a project folder, running Codex in Local mode on the user's machine, and expanding from there into parallel threads, worktrees, automations, review, terminal/actions, browser flows, artifacts, skills, plugins, and IDE Extension sync.
+
+## Onboarding And Availability
+
+Core onboarding flow:
+
+- Download and install the Codex app for macOS or Windows.
+- Open Codex and sign in with a ChatGPT account or an OpenAI API key.
+- If signed in with an OpenAI API key, some functionality such as cloud threads may be unavailable.
+- Select a project folder for Codex to work in.
+- Send the first message with Local selected so Codex works on the user's machine.
+
+Returning users should see past projects from the app, CLI, or IDE Extension where available.
+
 ## Experience Principles
 
 1. Keep the thread as the primary unit of work.
@@ -46,6 +60,8 @@ Primary app objects:
 - Automation: a scheduled or recurring Codex run, usually project-scoped.
 - Skill: reusable instructions and resources for a workflow.
 - Plugin: installable bundle of skills, apps, and MCP servers.
+- Artifact: a generated or inspected file preview associated with thread work.
+- IDE session: an editor-side context source that can share Auto Context and active threads with the app.
 
 ## App Shell
 
@@ -74,7 +90,9 @@ The main workspace should support split panels:
 - Thread content in the central column.
 - Review/diff pane on the right when reviewing changes.
 - Browser, artifact, or preview pane on the right when visual output is active.
-- Terminal drawer below the thread when commands need direct inspection.
+- Terminal/actions surface below or near the thread when commands or repeatable project actions need direct inspection.
+
+The app should also expose a sidebar/artifacts surface for plans, sources, task summaries, and generated file previews. Treat it as evidence and navigation, not decoration.
 
 Avoid landing-page patterns inside the app. No hero copy, marketing cards, oversized decorative sections, or explanatory feature panels in the product surface.
 
@@ -102,6 +120,7 @@ Behavior:
 - Keep selected mode and permissions visible after submission.
 - Disable or de-emphasize controls that are unavailable for the current mode.
 - Show loading/running state directly in the thread and composer region.
+- For the first project message, make Local mode visible and selected by default so users understand Codex will work on their machine.
 
 ## Thread Content
 
@@ -115,6 +134,7 @@ Use these patterns:
 - Tool output should be summarized by default, expandable when useful.
 - Completed turns should show what changed and how it was verified.
 - Follow-up composer remains available at the bottom of the thread.
+- Image generation or editing can happen inside a thread when the surrounding code or asset work needs generated visuals.
 
 Use inline monospace for commands, filenames, symbols, and short code identifiers. Keep code blocks practical and visually distinct.
 
@@ -189,7 +209,7 @@ Security behavior:
 
 The permission UI should be visually calm but persistent. Avoid alarmist styling except for truly destructive or irreversible actions.
 
-## Browser, Artifacts, And Terminal
+## Browser, Artifacts, Terminal, And Actions
 
 Use right-side or drawer surfaces for non-thread evidence.
 
@@ -212,6 +232,16 @@ Terminal drawer:
 - Keep it collapsible.
 - Provide clear running, completed, and failed states.
 - Do not let terminal output dominate the thread unless the user is debugging command output.
+
+Actions:
+
+- Let users launch repeatable project actions from the active thread context.
+- Keep action output tied to the thread so commands, logs, changed files, and verification remain inspectable.
+
+Sidebar and artifacts:
+
+- Surface plans, sources, task summaries, and generated file previews without forcing the user to leave the thread.
+- Keep artifact previews adjacent to the reasoning, code changes, and review evidence that produced them.
 
 ## Automations
 
@@ -250,6 +280,16 @@ UI rules:
 - Use explicit invocation patterns such as `@plugin`, `@skill`, or slash commands when the user wants precision.
 - Keep plugin descriptions workflow-focused, not brand-heavy.
 - Clearly distinguish read-only context access from actions that modify external systems.
+
+## IDE Extension Sync
+
+The app and IDE Extension should feel connected, not like separate products.
+
+Use sync for:
+
+- Sharing Auto Context from the editor into active Codex work.
+- Continuing or inspecting active threads across app and IDE sessions.
+- Keeping project context, thread state, and local code work aligned when the user moves between surfaces.
 
 ## Visual Language
 
@@ -291,6 +331,8 @@ Recommended tokens:
   --codex-shadow-popover: 0 10px 30px rgba(0, 0, 0, 0.14);
 }
 ```
+
+These tokens are recommended, product-derived defaults. The Codex app documentation shows product screenshots and capabilities but does not publish exact CSS values for color, typography, spacing, or shadows. When implementing production UI, verify exact visual choices against current reference screenshots.
 
 Use dark mode only as a true alternate product mode. Do not mix dark marketing backgrounds into the app shell unless a screenshot or artifact requires it.
 
@@ -433,10 +475,12 @@ Use product terms consistently:
 - Codex, not "bot".
 - Thread, not "conversation" in product UI.
 - Project, not "workspace", unless referring to a code workspace explicitly.
+- Project folder when describing the onboarding selection step.
 - Local, Worktree, Cloud as execution modes.
-- Review pane, diff panel, terminal drawer, in-app browser, artifact viewer.
+- Review pane, diff panel, terminal/actions surface, in-app browser, artifact viewer.
 - Permissions, sandbox, approval policy.
 - Skill, plugin, MCP server, automation.
+- Auto Context and active threads when describing IDE Extension sync.
 
 Voice:
 
@@ -506,8 +550,8 @@ Before building a Codex-like screen, verify:
 
 ## Source Pages
 
+- Primary app product model: https://developers.openai.com/codex/app
 - https://developers.openai.com/codex
-- https://developers.openai.com/codex/app
 - https://developers.openai.com/codex/app/features
 - https://developers.openai.com/codex/app/review
 - https://developers.openai.com/codex/app/worktrees
