@@ -96,6 +96,9 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /useLayoutEffect/);
   assert.match(appSource, /workspaceRowRefs/);
   assert.match(appSource, /captureWorkspaceRowPositions/);
+  assert.match(appSource, /function\s+cancelWorkspaceRowAnimations\(/);
+  assert.match(appSource, /function captureWorkspaceRowPositions[\s\S]*?cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  assert.match(appSource, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?row\.animate\(\[/);
   assert.match(appSource, /registerWorkspaceRow/);
   assert.match(appSource, /\.animate\(\[/);
   assert.match(appSource, /window\.workspace\?\.showContextMenu/);

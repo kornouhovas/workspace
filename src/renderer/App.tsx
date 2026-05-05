@@ -175,6 +175,7 @@ function App() {
         return;
       }
 
+      cancelWorkspaceRowAnimations(row);
       const nextRect = row.getBoundingClientRect();
       const deltaY = previousRect.top - nextRect.top;
       if (Math.abs(deltaY) < 1 || reduceMotion) {
@@ -331,6 +332,7 @@ function App() {
   function captureWorkspaceRowPositions() {
     previousWorkspaceRowRectsRef.current.clear();
     workspaceRowRefs.current.forEach((row, workspaceId) => {
+      cancelWorkspaceRowAnimations(row);
       previousWorkspaceRowRectsRef.current.set(workspaceId, row.getBoundingClientRect());
     });
   }
@@ -703,6 +705,10 @@ function loadSelectedWorkspaceId(workspaces: Workspace[]): string {
 
 function loadInitialCollapsedState() {
   return localStorage.getItem(collapsedStorageKey) === "true";
+}
+
+function cancelWorkspaceRowAnimations(row: HTMLElement) {
+  row.getAnimations().forEach((animation) => animation.cancel());
 }
 
 function reorderWorkspaces(

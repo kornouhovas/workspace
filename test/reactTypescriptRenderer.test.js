@@ -82,6 +82,9 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.equal(appTsx.includes('document.querySelectorAll<HTMLElement>("[data-workspace-id]")'), true);
   assert.match(appTsx, /workspaceRowRefs/);
   assert.match(appTsx, /useLayoutEffect/);
+  assert.match(appTsx, /function\s+cancelWorkspaceRowAnimations\(/);
+  assert.match(appTsx, /function captureWorkspaceRowPositions[\s\S]*?cancelWorkspaceRowAnimations\(row\)[\s\S]*?getBoundingClientRect/);
+  assert.match(appTsx, /cancelWorkspaceRowAnimations\(row\)[\s\S]*?row\.animate\(\[/);
   assert.match(appTsx, /\.animate\(\[/);
   assert.match(appTsx, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);
   assert.doesNotMatch(appTsx, /onDragStart/);
