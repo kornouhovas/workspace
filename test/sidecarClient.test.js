@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSidecarHttpTransport } from "../electron/sidecarClient.js";
+import { createSidecarHttpTransport } from "../src/workspaceSidecarClient.js";
 
 test("createSidecarHttpTransport maps service methods to sidecar routes", async () => {
   const calls = [];

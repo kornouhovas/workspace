@@ -20,8 +20,10 @@ test("agent instructions are backend and local any-store focused", async () => {
   assert.match(agents, /backend and local storage work/);
   assert.match(agents, /local `any-store` sidecar/);
   assert.match(agents, /SQLite-backed workspace storage/);
-  assert.match(agents, /Preload IPC contracts/);
+  assert.match(agents, /Workspace backend modules/);
   assert.doesNotMatch(agents, removedStyleGuidePattern);
+  assert.doesNotMatch(agents, /Electron/i);
+  assert.doesNotMatch(agents, /Preload IPC contracts/);
   assert.doesNotMatch(agents, /frontend/i);
   assert.doesNotMatch(agents, /shadcn/i);
   assert.doesNotMatch(agents, /UI and UX rules/);

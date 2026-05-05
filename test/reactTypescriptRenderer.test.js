@@ -7,7 +7,7 @@ async function readProjectFile(path) {
 }
 
 test("renderer is built with React, TypeScript, Vite, and shadcn", async () => {
-  const [packageSource, viteConfig, tsconfig, indexHtml, mainTsx, appTsx, styles, mainSource, componentsSource] =
+  const [packageSource, viteConfig, tsconfig, indexHtml, mainTsx, appTsx, styles, componentsSource] =
     await Promise.all([
       readProjectFile("package.json"),
       readProjectFile("vite.config.ts"),
@@ -16,7 +16,6 @@ test("renderer is built with React, TypeScript, Vite, and shadcn", async () => {
       readProjectFile("src/renderer/main.tsx"),
       readProjectFile("src/renderer/App.tsx"),
       readProjectFile("src/renderer/renderer.css"),
-      readProjectFile("electron/main.js"),
       readProjectFile("components.json"),
     ]);
   const packageJson = JSON.parse(packageSource);
@@ -24,8 +23,15 @@ test("renderer is built with React, TypeScript, Vite, and shadcn", async () => {
   const tsconfigJson = JSON.parse(tsconfig);
 
   assert.equal(packageJson.scripts["build:renderer"], "vite build");
+  assert.equal(packageJson.scripts.dev, "vite");
+  assert.equal(packageJson.scripts.preview, "vite preview");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
-  assert.equal(packageJson.scripts.electron, "npm run build:sidecar && npm run build:renderer && electron electron/main.js");
+  assert.equal(packageJson.main, undefined);
+  assert.equal(packageJson.scripts.electron, undefined);
+  assert.equal(packageJson.scripts["prepare:electron:mac"], undefined);
+  assert.equal(packageJson.scripts["dist:mac"], undefined);
+  assert.equal(packageJson.scripts["dist:win"], undefined);
+  assert.equal(packageJson.scripts["dist:all"], undefined);
   assert.equal(packageJson.dependencies.react.startsWith("^"), true);
   assert.equal(packageJson.dependencies["react-dom"].startsWith("^"), true);
   assert.equal(packageJson.dependencies["@tailwindcss/vite"].startsWith("^"), true);
@@ -42,12 +48,9 @@ test("renderer is built with React, TypeScript, Vite, and shadcn", async () => {
   assert.equal(packageJson.devDependencies["@vitejs/plugin-react"].startsWith("^"), true);
   assert.equal(packageJson.devDependencies["@types/react"].startsWith("^"), true);
   assert.equal(packageJson.devDependencies["@types/react-dom"].startsWith("^"), true);
-  assert.deepEqual(packageJson.build.files, [
-    "dist/renderer/**/*",
-    "electron/**/*",
-    "src/**/*",
-    "THIRD_PARTY_NOTICES.md",
-  ]);
+  assert.equal(packageJson.devDependencies.electron, undefined);
+  assert.equal(packageJson.devDependencies["electron-builder"], undefined);
+  assert.equal(packageJson.build, undefined);
 
   assert.equal(componentsJson.style, "radix-nova");
   assert.equal(componentsJson.tailwind.css, "src/renderer/renderer.css");
@@ -119,9 +122,4 @@ test("renderer is built with React, TypeScript, Vite, and shadcn", async () => {
   assert.doesNotMatch(styles, /--codex-sidebar-glass/);
   assert.doesNotMatch(styles, /\.left-panel\b/);
   assert.doesNotMatch(styles, /\.workspace-drag-overlay/);
-
-  assert.doesNotMatch(mainSource, /nativeTheme/);
-  assert.doesNotMatch(mainSource, /themeSource/);
-  assert.match(mainSource, /titleBarStyle:\s*"hiddenInset"/);
-  assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
 });

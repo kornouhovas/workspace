@@ -17,7 +17,6 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
   const [
     css,
     appSource,
-    mainSource,
     packageSource,
     componentsSource,
     viteSource,
@@ -31,7 +30,6 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
     await Promise.all([
       readRequiredProjectFile("src/renderer/renderer.css"),
       readRequiredProjectFile("src/renderer/App.tsx"),
-      readRequiredProjectFile("electron/main.js"),
       readRequiredProjectFile("package.json"),
       readRequiredProjectFile("components.json"),
       readRequiredProjectFile("vite.config.ts"),
@@ -59,8 +57,10 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
   assert.ok(packageJson.dependencies["lucide-react"]);
   assert.ok(packageJson.dependencies["class-variance-authority"]);
   assert.ok(packageJson.dependencies["tailwind-merge"]);
+  assert.equal(packageJson.devDependencies.electron, undefined);
+  assert.equal(packageJson.devDependencies["electron-builder"], undefined);
+  assert.equal(packageJson.scripts.electron, undefined);
 
-  assert.match(mainSource, /titleBarStyle:\s*"hiddenInset"/);
   assert.match(appSource, /from "@\/components\/app-sidebar"/);
   assert.match(appSource, /from "@\/components\/site-header"/);
   assert.match(appSource, /from "@\/components\/section-cards"/);
