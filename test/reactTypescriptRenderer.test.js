@@ -56,6 +56,12 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(appTsx, /onPointerDown/);
   assert.match(appTsx, /onPointerMove/);
   assert.match(appTsx, /getWorkspaceDropIntentAtPoint/);
+  assert.match(appTsx, /workspaceListRef\.current\?\.setPointerCapture\(event\.pointerId\)/);
+  assert.match(appTsx, /workspaceListRef\.current\?\.releasePointerCapture\(event\.pointerId\)/);
+  assert.equal(appTsx.includes('document.querySelectorAll<HTMLElement>("[data-workspace-id]")'), true);
+  assert.match(appTsx, /workspaceRowRefs/);
+  assert.match(appTsx, /useLayoutEffect/);
+  assert.match(appTsx, /\.animate\(\[/);
   assert.match(appTsx, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);
   assert.doesNotMatch(appTsx, /onDragStart/);
   assert.doesNotMatch(appTsx, /onDrop/);
@@ -63,7 +69,11 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(styles, /--codex-sidebar-text:\s*#f1f6ee/);
   assert.match(styles, /--codex-font:\s*"OpenAI Sans"/);
   assert.match(styles, /\.window-strip\s*\{[\s\S]*?height:\s*52px/);
+  assert.match(styles, /\.window-strip\s*\{[\s\S]*?gap:\s*14px/);
+  assert.match(styles, /\.window-strip\s*\{[\s\S]*?padding:\s*0\s+18px\s+0\s+104px/);
   assert.match(styles, /\.window-icon-button\s*\{[\s\S]*?border-radius:\s*var\(--codex-radius-sm\)/);
+  assert.match(styles, /\.workspace-row\.is-dragging\s*\{[\s\S]*?pointer-events:\s*none/);
+  assert.match(styles, /--codex-surface:\s*#2c2c2c/);
   assert.match(styles, /touch-action:\s*none/);
   assert.match(styles, /backdrop-filter:\s*blur\(28px\)\s*saturate\(135%\)/);
   assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from "react";
 
 type Workspace = {
@@ -129,6 +129,8 @@ function App() {
   const dragStateRef = useRef<WorkspaceDragState | null>(null);
   const leftPanelRef = useRef<HTMLElement | null>(null);
   const workspaceListRef = useRef<HTMLDivElement | null>(null);
+  const workspaceRowRefs = useRef(new Map<string, HTMLDivElement>());
+  const previousWorkspaceRowRectsRef = useRef(new Map<string, DOMRect>());
   const suppressNextWorkspaceSelectRef = useRef(false);
 
   const { workspaces, selectedWorkspaceId, workspaceCounter } = workspaceState;
@@ -169,6 +171,33 @@ function App() {
   useEffect(() => {
     localStorage.setItem(collapsedStorageKey, String(isCollapsed));
   }, [isCollapsed]);
+
+  useLayoutEffect(() => {
+    const previousRects = previousWorkspaceRowRectsRef.current;
+    if (previousRects.size === 0) {
+      return;
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    workspaceRowRefs.current.forEach((row, workspaceId) => {
+      const previousRect = previousRects.get(workspaceId);
+      if (!previousRect) {
+        return;
+      }
+
+      const nextRect = row.getBoundingClientRect();
+      const deltaY = previousRect.top - nextRect.top;
+      if (Math.abs(deltaY) < 1 || reduceMotion) {
+        return;
+      }
+
+      row.animate([{ transform: `translateY(${deltaY}px)` }, { transform: "translateY(0)" }], {
+        duration: 150,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+      });
+    });
+    previousRects.clear();
+  }, [workspaces]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -289,18 +318,34 @@ function App() {
     setNextDragState(null);
   }
 
+  function registerWorkspaceRow(workspaceId: string, row: HTMLDivElement | null) {
+    if (row) {
+      workspaceRowRefs.current.set(workspaceId, row);
+    } else {
+      workspaceRowRefs.current.delete(workspaceId);
+    }
+  }
+
+  function captureWorkspaceRowPositions() {
+    previousWorkspaceRowRectsRef.current.clear();
+    workspaceRowRefs.current.forEach((row, workspaceId) => {
+      previousWorkspaceRowRectsRef.current.set(workspaceId, row.getBoundingClientRect());
+    });
+  }
+
   function handleWorkspacePointerDown(event: PointerEvent<HTMLDivElement>, workspaceId: string) {
     if (event.button !== 0 || (event.target as HTMLElement).closest(".workspace-menu-button")) {
       return;
     }
 
-    const listRect = workspaceListRef.current?.getBoundingClientRect();
-    if (!listRect) {
+    const listElement = workspaceListRef.current;
+    const listRect = listElement?.getBoundingClientRect();
+    if (!listElement || !listRect) {
       return;
     }
 
     const rowRect = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.setPointerCapture(event.pointerId);
+    workspaceListRef.current?.setPointerCapture(event.pointerId);
     setNextDragState({
       workspaceId,
       pointerId: event.pointerId,
@@ -338,11 +383,16 @@ function App() {
     suppressNextWorkspaceSelectRef.current = true;
     setContextMenu(null);
 
-    const dropIntent = getWorkspaceDropIntentAtPoint(currentDragState.rowLeft + currentDragState.rowWidth / 2, currentY);
+    const dropIntent = getWorkspaceDropIntentAtPoint(
+      currentDragState.rowLeft + currentDragState.rowWidth / 2,
+      currentY,
+      currentDragState.workspaceId,
+    );
     if (!dropIntent || dropIntent.workspaceId === currentDragState.workspaceId) {
       return;
     }
 
+    captureWorkspaceRowPositions();
     setWorkspaceState((current) => ({
       ...current,
       workspaces: reorderWorkspaces(
@@ -365,8 +415,8 @@ function App() {
       suppressNextWorkspaceSelectRef.current = true;
     }
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (workspaceListRef.current?.hasPointerCapture(event.pointerId)) {
+      workspaceListRef.current?.releasePointerCapture(event.pointerId);
     }
     clearWorkspaceDrag();
   }
@@ -429,7 +479,17 @@ function App() {
           <h2 id="workspaceSectionTitle" className="nav-section-title">
             Workspace
           </h2>
-          <div id="workspaceList" ref={workspaceListRef} className="workspace-list" role="list" aria-label="Workspace">
+          <div
+            id="workspaceList"
+            ref={workspaceListRef}
+            className="workspace-list"
+            role="list"
+            aria-label="Workspace"
+            onPointerMove={handleWorkspacePointerMove}
+            onPointerUp={handleWorkspacePointerEnd}
+            onPointerCancel={handleWorkspacePointerEnd}
+            onLostPointerCapture={handleWorkspacePointerEnd}
+          >
             {visibleWorkspaces.length > 0 ? (
               visibleWorkspaces.map((workspace) => (
                 <WorkspaceRow
@@ -440,8 +500,7 @@ function App() {
                   onSelect={selectWorkspace}
                   onMenuOpen={openContextMenu}
                   onPointerDown={handleWorkspacePointerDown}
-                  onPointerMove={handleWorkspacePointerMove}
-                  onPointerEnd={handleWorkspacePointerEnd}
+                  registerRow={registerWorkspaceRow}
                 />
               ))
             ) : (
@@ -519,8 +578,7 @@ type WorkspaceRowProps = {
   onSelect: (workspaceId: string) => void;
   onMenuOpen: (event: MouseEvent<HTMLElement>, workspaceId: string) => void;
   onPointerDown: (event: PointerEvent<HTMLDivElement>, workspaceId: string) => void;
-  onPointerMove: (event: PointerEvent<HTMLDivElement>) => void;
-  onPointerEnd: (event: PointerEvent<HTMLDivElement>) => void;
+  registerRow: (workspaceId: string, row: HTMLDivElement | null) => void;
 };
 
 function WorkspaceRow({
@@ -530,8 +588,7 @@ function WorkspaceRow({
   onSelect,
   onMenuOpen,
   onPointerDown,
-  onPointerMove,
-  onPointerEnd,
+  registerRow,
 }: WorkspaceRowProps) {
   const className = ["workspace-row", isSelected ? "is-selected" : "", isDragging ? "is-dragging" : ""]
     .filter(Boolean)
@@ -539,15 +596,12 @@ function WorkspaceRow({
 
   return (
     <div
+      ref={(row) => registerRow(workspace.id, row)}
       className={className}
       data-workspace-id={workspace.id}
       role="listitem"
       onContextMenu={(event) => onMenuOpen(event, workspace.id)}
       onPointerDown={(event) => onPointerDown(event, workspace.id)}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
-      onLostPointerCapture={onPointerEnd}
     >
       <button className="workspace-select-button" type="button" onClick={() => onSelect(workspace.id)}>
         <span className="project-icon" aria-hidden="true">
@@ -640,18 +694,42 @@ function reorderWorkspaces(
   return reordered;
 }
 
-function getWorkspaceDropIntentAtPoint(x: number, y: number): WorkspaceDropIntent | null {
-  const target = document.elementFromPoint(x, y);
-  const row = target?.closest("[data-workspace-id]") as HTMLElement | null;
-  if (!row?.dataset.workspaceId) {
+function getWorkspaceDropIntentAtPoint(x: number, y: number, sourceId: string): WorkspaceDropIntent | null {
+  const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-workspace-id]")).filter(
+    (row) => row.dataset.workspaceId && row.dataset.workspaceId !== sourceId,
+  );
+  if (rows.length === 0) {
     return null;
   }
 
-  const rowRect = row.getBoundingClientRect();
-  return {
-    workspaceId: row.dataset.workspaceId,
-    placement: y > rowRect.top + rowRect.height / 2 ? "after" : "before",
-  };
+  for (const row of rows) {
+    const rowRect = row.getBoundingClientRect();
+    if (x >= rowRect.left && x <= rowRect.right && y >= rowRect.top && y <= rowRect.bottom) {
+      return {
+        workspaceId: row.dataset.workspaceId || "",
+        placement: y > rowRect.top + rowRect.height / 2 ? "after" : "before",
+      };
+    }
+  }
+
+  const firstRowAfterPointer = rows.find((row) => {
+    const rowRect = row.getBoundingClientRect();
+    return y < rowRect.top + rowRect.height / 2;
+  });
+  if (firstRowAfterPointer?.dataset.workspaceId) {
+    return {
+      workspaceId: firstRowAfterPointer.dataset.workspaceId,
+      placement: "before",
+    };
+  }
+
+  const lastRow = rows[rows.length - 1];
+  return lastRow?.dataset.workspaceId
+    ? {
+        workspaceId: lastRow.dataset.workspaceId,
+        placement: "after",
+      }
+    : null;
 }
 
 function clamp(value: number, min: number, max: number) {

@@ -6,7 +6,7 @@
   --codex-sidebar-dim: rgba(241, 246, 238, 0.42);
   --codex-sidebar-hover: rgba(255, 255, 255, 0.095);
   --codex-sidebar-selected: rgba(255, 255, 255, 0.14);
-  --codex-surface: rgba(43, 43, 43, 0.94);
+  --codex-surface: #2c2c2c;
   --codex-surface-hover: rgba(255, 255, 255, 0.1);
   --codex-text: #f5f5f3;
   --codex-text-secondary: #a7a7a2;
@@ -87,8 +87,8 @@ svg {
   height: 52px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 18px 0 88px;
+  gap: 14px;
+  padding: 0 18px 0 104px;
   color: var(--codex-sidebar-muted);
   -webkit-app-region: drag;
 }
@@ -276,7 +276,11 @@ svg {
   cursor: default;
   touch-action: none;
   user-select: none;
-  transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+  transition:
+    transform 150ms ease,
+    background 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
 }
 
 .workspace-row.is-selected {
@@ -285,7 +289,8 @@ svg {
 }
 
 .workspace-row.is-dragging {
-  opacity: 0.18;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .workspace-select-button {
@@ -490,7 +495,7 @@ svg {
   }
 
   .window-strip {
-    padding-left: 88px;
+    padding-left: 104px;
   }
 }
 

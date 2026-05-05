@@ -72,13 +72,22 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(appSource, /type\s+WorkspaceDropPlacement\s*=\s*"before"\s*\|\s*"after"/);
   assert.match(appSource, /setPointerCapture/);
   assert.match(appSource, /releasePointerCapture/);
-  assert.match(appSource, /document\.elementFromPoint/);
   assert.match(appSource, /getWorkspaceDropIntentAtPoint/);
+  assert.match(appSource, /workspaceListRef\.current\?\.setPointerCapture\(event\.pointerId\)/);
+  assert.match(appSource, /workspaceListRef\.current\?\.releasePointerCapture\(event\.pointerId\)/);
+  assert.equal(appSource.includes('document.querySelectorAll<HTMLElement>("[data-workspace-id]")'), true);
+  assert.match(appSource, /row\.dataset\.workspaceId\s*!==\s*sourceId/);
   assert.match(appSource, /placement:\s*y\s*>\s*rowRect\.top\s*\+\s*rowRect\.height\s*\/\s*2\s*\?\s*"after"\s*:\s*"before"/);
+  assert.match(appSource, /getWorkspaceDropIntentAtPoint\([^)]*currentDragState\.workspaceId[^)]*\)/);
   assert.match(
     appSource,
     /reorderWorkspaces\([\s\S]*?current\.workspaces,[\s\S]*?currentDragState\.workspaceId,[\s\S]*?dropIntent\.workspaceId,[\s\S]*?dropIntent\.placement,[\s\S]*?\)/,
   );
+  assert.match(appSource, /useLayoutEffect/);
+  assert.match(appSource, /workspaceRowRefs/);
+  assert.match(appSource, /captureWorkspaceRowPositions/);
+  assert.match(appSource, /registerWorkspaceRow/);
+  assert.match(appSource, /\.animate\(\[/);
   assert.match(appSource, /panelRect\.right\s*-\s*contextMenuWidth\s*-\s*screenPadding/);
   assert.match(appSource, /clamp\(/);
   assert.doesNotMatch(appSource, /\sdraggable\b/);
@@ -92,6 +101,8 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(css, /\.left-panel\b/);
   assert.match(css, /\.window-strip\b/);
   assert.match(css, /\.window-strip\s*\{[\s\S]*?height:\s*52px/);
+  assert.match(css, /\.window-strip\s*\{[\s\S]*?gap:\s*14px/);
+  assert.match(css, /\.window-strip\s*\{[\s\S]*?padding:\s*0\s+18px\s+0\s+104px/);
   assert.match(css, /\.window-icon-button\s*\{[\s\S]*?border-radius:\s*var\(--codex-radius-sm\)/);
   assert.doesNotMatch(css, /\.traffic-light\b/);
   assert.match(css, /\.nav-section-title\b/);
@@ -101,12 +112,14 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.match(css, /\.workspace-drag-overlay\b/);
   assert.match(css, /left:\s*var\(--drag-left\)/);
   assert.match(css, /top:\s*var\(--drag-top\)/);
+  assert.match(css, /\.workspace-row\s*\{[\s\S]*?transition:[\s\S]*?transform\s+150ms\s+ease/);
+  assert.match(css, /\.workspace-row\.is-dragging\s*\{[\s\S]*?pointer-events:\s*none/);
+  assert.match(css, /--codex-surface:\s*#2c2c2c/);
   assert.match(css, /grid-template-columns:\s*0px\s+minmax\(0,\s*1fr\)/);
   assert.match(css, /\.workspace-row\.is-dragging\b/);
   assert.match(css, /\.app-shell\.sidebar-collapsed\b/);
   assert.match(css, /\.context-menu\b/);
   assert.match(css, /--context-menu-width:\s*224px/);
-  assert.match(css, /padding:\s*0\s+18px/);
   assert.match(css, /font-weight:\s*400/);
 
   assert.match(appSource, /const\s+defaultWorkspaces/);
