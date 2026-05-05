@@ -6,8 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 app.setName("Workspace");
 
+let mainWindow = null;
+
 async function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 960,
     minWidth: 1024,
@@ -15,7 +17,7 @@ async function createWindow() {
     title: "Workspace",
     titleBarStyle: "hiddenInset",
     backgroundColor: "#171717",
-    show: false,
+    show: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -23,24 +25,30 @@ async function createWindow() {
     },
   });
 
-  window.once("ready-to-show", () => {
-    window.show();
+  mainWindow.once("closed", () => {
+    mainWindow = null;
   });
 
-  window.webContents.on("did-finish-load", () => {
-    window.webContents.setZoomFactor(1);
+  mainWindow.webContents.on("did-finish-load", () => {
+    mainWindow?.webContents.setZoomFactor(1);
+    mainWindow?.focus();
   });
-  await window.webContents.setVisualZoomLevelLimits(1, 1);
+  await mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
 
-  await window.loadFile(join(__dirname, "../dist/renderer/index.html"));
+  mainWindow.show();
+  mainWindow.focus();
+  await mainWindow.loadFile(join(__dirname, "../dist/renderer/index.html"));
 }
 
 app.whenReady().then(async () => {
   await createWindow();
 
   app.on("activate", async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    if (mainWindow === null) {
       await createWindow();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
     }
   });
 });
