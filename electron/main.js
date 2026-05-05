@@ -34,7 +34,7 @@ function createWindow() {
     backgroundColor: "#00000000",
     transparent: true,
     vibrancy: "sidebar",
-    visualEffectState: "active",
+    visualEffectState: "followWindow",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 22, y: 19 },
     webPreferences: {
