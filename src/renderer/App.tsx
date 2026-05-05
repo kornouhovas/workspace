@@ -345,7 +345,6 @@ function App() {
     }
 
     const rowRect = event.currentTarget.getBoundingClientRect();
-    workspaceListRef.current?.setPointerCapture(event.pointerId);
     setNextDragState({
       workspaceId,
       pointerId: event.pointerId,
@@ -380,6 +379,9 @@ function App() {
     }
 
     event.preventDefault();
+    if (!workspaceListRef.current?.hasPointerCapture(event.pointerId)) {
+      workspaceListRef.current?.setPointerCapture(event.pointerId);
+    }
     suppressNextWorkspaceSelectRef.current = true;
     setContextMenu(null);
 

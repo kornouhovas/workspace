@@ -56,7 +56,13 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(appTsx, /onPointerDown/);
   assert.match(appTsx, /onPointerMove/);
   assert.match(appTsx, /getWorkspaceDropIntentAtPoint/);
-  assert.match(appTsx, /workspaceListRef\.current\?\.setPointerCapture\(event\.pointerId\)/);
+  const pointerDownBody = appTsx.match(/function handleWorkspacePointerDown[\s\S]*?\n  function handleWorkspacePointerMove/)?.[0] || "";
+  const pointerMoveBody = appTsx.match(/function handleWorkspacePointerMove[\s\S]*?\n  function handleWorkspacePointerEnd/)?.[0] || "";
+  assert.doesNotMatch(pointerDownBody, /setPointerCapture/);
+  assert.match(
+    pointerMoveBody,
+    /if\s*\(!workspaceListRef\.current\?\.hasPointerCapture\(event\.pointerId\)\)\s*\{[\s\S]*?workspaceListRef\.current\?\.setPointerCapture\(event\.pointerId\)/,
+  );
   assert.match(appTsx, /workspaceListRef\.current\?\.releasePointerCapture\(event\.pointerId\)/);
   assert.equal(appTsx.includes('document.querySelectorAll<HTMLElement>("[data-workspace-id]")'), true);
   assert.match(appTsx, /workspaceRowRefs/);
