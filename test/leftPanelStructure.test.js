@@ -38,7 +38,7 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.doesNotMatch(mainSource, /nativeTheme/);
   assert.doesNotMatch(mainSource, /themeSource/);
   assert.match(mainSource, /vibrancy:\s*"sidebar"/);
-  assert.match(mainSource, /visualEffectState:\s*"followWindow"/);
+  assert.match(mainSource, /visualEffectState:\s*"active"/);
   assert.match(appSource, /id="leftPanel"/);
   assert.match(appSource, /className="left-panel"/);
   assert.match(appSource, /className="window-strip"/);

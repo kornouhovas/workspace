@@ -90,6 +90,6 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.doesNotMatch(mainSource, /nativeTheme/);
   assert.doesNotMatch(mainSource, /themeSource/);
   assert.match(mainSource, /vibrancy:\s*"sidebar"/);
-  assert.match(mainSource, /visualEffectState:\s*"followWindow"/);
+  assert.match(mainSource, /visualEffectState:\s*"active"/);
   assert.match(mainSource, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
 });
