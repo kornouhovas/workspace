@@ -126,10 +126,14 @@
     @apply bg-background text-foreground;
     margin: 0;
     overflow-x: hidden;
+    color-scheme: dark;
     }
   html {
     @apply font-sans;
+    width: 100%;
     min-height: 100%;
+    overflow-x: hidden;
+    color-scheme: dark;
     }
   #root {
     min-height: 100vh;
@@ -142,4 +146,41 @@
   overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
+}
+
+.electron-window-drag {
+  -webkit-app-region: drag;
+}
+
+.electron-window-drag :is(a, button, input, textarea, select, [role="button"], [data-slot="dropdown-menu-trigger"]),
+.electron-window-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+* {
+  scrollbar-color: oklch(1 0 0 / 22%) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 18%);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 28%);
+  background-clip: padding-box;
 }

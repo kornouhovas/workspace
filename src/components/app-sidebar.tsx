@@ -151,12 +151,12 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="electron-window-drag">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="electron-window-no-drag data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="#">
                 <IconInnerShadowTop className="size-5!" />

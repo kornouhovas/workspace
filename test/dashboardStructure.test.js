@@ -7,9 +7,23 @@ async function readProjectFile(path) {
 }
 
 test("renderer installs and composes shadcn dashboard-01", async () => {
-  const [componentsSource, appSource, cssSource, packageSource, viteSource, tsconfigSource, appSidebarSource] = await Promise.all([
+  const [
+    componentsSource,
+    appSource,
+    mainSource,
+    cssSource,
+    packageSource,
+    viteSource,
+    tsconfigSource,
+    appSidebarSource,
+    _dataTableSource,
+    _chartSource,
+    _avatarSource,
+    siteHeaderSource,
+  ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
+    readProjectFile("src/main.tsx"),
     readProjectFile("src/styles.css"),
     readProjectFile("package.json"),
     readProjectFile("vite.config.ts"),
@@ -18,6 +32,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     readProjectFile("src/components/data-table.tsx"),
     readProjectFile("src/components/chart-area-interactive.tsx"),
     readProjectFile("public/avatars/shadcn.svg"),
+    readProjectFile("src/components/site-header.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -59,11 +74,18 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSource, /<div className="px-4 lg:px-6">\s*<ChartAreaInteractive \/>/);
   assert.match(appSource, /<ChartAreaInteractive/);
   assert.match(appSource, /<DataTable data=\{data\}/);
+  assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(appSidebarSource, /from "@tabler\/icons-react"/);
   assert.match(appSidebarSource, /IconInnerShadowTop/);
   assert.match(appSidebarSource, /IconDashboard/);
   assert.match(appSidebarSource, /avatar:\s*"\.\/avatars\/shadcn\.svg"/);
+  assert.match(appSidebarSource, /electron-window-drag/);
+  assert.match(appSidebarSource, /electron-window-no-drag/);
+  assert.match(siteHeaderSource, /electron-window-drag/);
+  assert.match(siteHeaderSource, /electron-window-no-drag/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /--header-height:\s*3rem/);
   assert.match(cssSource, /\.dashboard-01-shell/);
+  assert.match(cssSource, /-webkit-app-region:\s*drag/);
+  assert.match(cssSource, /::-webkit-scrollbar-thumb/);
 });
