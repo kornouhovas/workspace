@@ -123,8 +123,9 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     margin: 0;
+    background: var(--sidebar);
     overflow-x: hidden;
     scrollbar-gutter: stable;
     color-scheme: dark;
@@ -139,6 +140,7 @@
     }
   #root {
     min-height: 100vh;
+    background: var(--sidebar);
   }
 }
 
@@ -146,13 +148,14 @@
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
-  background: var(--background);
+  background: var(--sidebar);
   color: var(--foreground);
 }
 
 .dashboard-main-inset {
   min-width: 0;
   overflow: clip;
+  background: var(--background);
   transition:
     margin 200ms ease,
     width 200ms ease,
