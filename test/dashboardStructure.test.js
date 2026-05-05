@@ -20,6 +20,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     _chartSource,
     _avatarSource,
     siteHeaderSource,
+    dropdownMenuSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -33,6 +34,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     readProjectFile("src/components/chart-area-interactive.tsx"),
     readProjectFile("public/avatars/shadcn.svg"),
     readProjectFile("src/components/site-header.tsx"),
+    readProjectFile("src/components/ui/dropdown-menu.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -68,6 +70,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSource, /"--sidebar-width":\s*"calc\(var\(--spacing\) \* 72\)"/);
   assert.match(appSource, /"--header-height":\s*"calc\(var\(--spacing\) \* 12\)"/);
   assert.match(appSource, /<AppSidebar variant="inset"/);
+  assert.match(appSource, /<SidebarInset className="dashboard-main-inset">/);
   assert.match(appSource, /<SiteHeader/);
   assert.match(appSource, /@container\/main flex flex-1 flex-col gap-2/);
   assert.match(appSource, /<SectionCards/);
@@ -83,9 +86,12 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSidebarSource, /electron-window-no-drag/);
   assert.match(siteHeaderSource, /electron-window-drag/);
   assert.match(siteHeaderSource, /electron-window-no-drag/);
+  assert.match(dropdownMenuSource, /modal\s*=\s*false/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /--header-height:\s*3rem/);
   assert.match(cssSource, /\.dashboard-01-shell/);
+  assert.match(cssSource, /\.dashboard-main-inset/);
+  assert.match(cssSource, /scrollbar-gutter:\s*stable/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
   assert.match(cssSource, /::-webkit-scrollbar-thumb/);
 });

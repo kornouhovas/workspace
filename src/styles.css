@@ -126,6 +126,7 @@
     @apply bg-background text-foreground;
     margin: 0;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     color-scheme: dark;
     }
   html {
@@ -133,6 +134,7 @@
     width: 100%;
     min-height: 100%;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     color-scheme: dark;
     }
   #root {
@@ -146,6 +148,25 @@
   overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
+}
+
+.dashboard-main-inset {
+  min-width: 0;
+  overflow: clip;
+  transition:
+    margin 200ms ease,
+    width 200ms ease,
+    border-radius 200ms ease;
+}
+
+@media (min-width: 768px) {
+  .dashboard-main-inset {
+    min-height: calc(100svh - calc(var(--spacing) * 4));
+    margin: calc(var(--spacing) * 2);
+    margin-left: 0;
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 0 0 1px var(--border);
+  }
 }
 
 .electron-window-drag {
