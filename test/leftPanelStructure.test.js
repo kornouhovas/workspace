@@ -69,12 +69,15 @@ test("renderer uses the shadcn dashboard-01 block shell", async () => {
   assert.match(appSource, /from "@\/components\/data-table"/);
   assert.match(appSource, /from "@\/components\/chart-area-interactive"/);
   assert.match(appSource, /from "@\/components\/ui\/sidebar"/);
+  assert.match(appSource, /from "@\/components\/ui\/tooltip"/);
   assert.match(appSource, /data\.json/);
   assert.match(appSource, /function App\(\)/);
   assert.doesNotMatch(appSource, /function DashboardSidebar/);
   assert.doesNotMatch(appSource, /function WorkspaceContent/);
   assert.doesNotMatch(appSource, /function WorkspaceMenuRow/);
   assert.match(appSource, /<SidebarProvider/);
+  assert.match(appSource, /<TooltipProvider/);
+  assert.match(appSource, /<TooltipProvider>[\s\S]*<SidebarProvider/);
   assert.match(appSource, /<AppSidebar/);
   assert.match(appSource, /<SiteHeader/);
   assert.match(appSource, /<SectionCards/);

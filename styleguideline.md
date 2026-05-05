@@ -54,6 +54,7 @@ Use these `dashboard-01` components directly:
 Use the block structure as installed:
 
 - `SidebarProvider`
+- `TooltipProvider` wrapping `SidebarProvider`; `dashboard-01` sidebar menu tooltips crash without this provider.
 - `AppSidebar variant="inset"`
 - `SidebarInset`
 - `SiteHeader`

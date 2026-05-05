@@ -5,30 +5,33 @@ import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import data from "../app/dashboard/data.json"
 
 function App() {
   return (
-    <SidebarProvider>
-      <div className="dashboard-01-shell dark">
-        <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader />
-          <main className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <SectionCards />
-                <div className="px-4 lg:px-6">
-                  <ChartAreaInteractive />
+    <TooltipProvider>
+      <SidebarProvider>
+        <div className="dashboard-01-shell dark">
+          <AppSidebar variant="inset" />
+          <SidebarInset>
+            <SiteHeader />
+            <main className="flex flex-1 flex-col">
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                  <SectionCards />
+                  <div className="px-4 lg:px-6">
+                    <ChartAreaInteractive />
+                  </div>
+                  <DataTable data={data} />
                 </div>
-                <DataTable data={data} />
               </div>
-            </div>
-          </main>
-        </SidebarInset>
-        <Toaster />
-      </div>
-    </SidebarProvider>
+            </main>
+          </SidebarInset>
+          <Toaster />
+        </div>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
 
