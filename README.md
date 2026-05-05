@@ -1,15 +1,21 @@
 # Workspace
 
-Локальная backend/storage основа для работы с workspace-папкой.
+Локальная React/Vite и any-store основа для работы с workspace-папкой.
 
-В проекте оставлены backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Interface layer, Electron shell и web renderer удалены.
+В проекте есть web interface layer на shadcn/ui `dashboard-01`, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Electron shell удален.
 
 ## Быстрый запуск
+
+Renderer:
+
+```bash
+cd /Users/aleksandersk/Documents/programming/node/project_folder
+npm run dev
+```
 
 Sidecar:
 
 ```bash
-cd /Users/aleksandersk/Documents/programming/node/project_folder
 npm run build:sidecar
 ./workspace-sidecar -db .workspace/workspace.db
 ```
@@ -35,6 +41,8 @@ Backend endpoints принимают только относительные п�
 
 ```bash
 npm test
+npm run typecheck
+npm run build:renderer
 go test ./...
 npm run build:sidecar
 ```
