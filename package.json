@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "test": "node --test",
-    "dev": "vite",
-    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "build:renderer": "vite build",
+    "electron": "npm run build:renderer && electron electron/main.js",
     "build:sidecar": "go build -o workspace-sidecar ./cmd/workspace-sidecar",
     "build:sidecar:mac": "mkdir -p build/sidecar/darwin-arm64 && GOOS=darwin GOARCH=arm64 go build -o build/sidecar/darwin-arm64/workspace-sidecar ./cmd/workspace-sidecar",
     "build:sidecar:win": "mkdir -p build/sidecar/win32-x64 && GOOS=windows GOARCH=amd64 go build -o build/sidecar/win32-x64/workspace-sidecar.exe ./cmd/workspace-sidecar",
@@ -41,6 +41,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^41.5.0",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^6.4.2"

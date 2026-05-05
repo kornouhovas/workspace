@@ -2,15 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 
-test("workspace keeps shadcn dashboard renderer and sidecar runtime without Electron", async () => {
+test("workspace runs as an Electron-only app shell", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const electronMain = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
 
   assert.equal(packageJson.name, "workspace");
-  assert.equal(packageJson.main, undefined);
-  assert.equal(packageJson.scripts.dev, "vite");
-  assert.equal(packageJson.scripts.preview, "vite preview");
-  assert.equal(packageJson.scripts.electron, undefined);
+  assert.equal(packageJson.main, "electron/main.js");
+  assert.equal(packageJson.scripts.dev, undefined);
+  assert.equal(packageJson.scripts.preview, undefined);
+  assert.equal(packageJson.scripts.electron, "npm run build:renderer && electron electron/main.js");
   assert.equal(packageJson.scripts["build:renderer"], "vite build");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
   assert.equal(packageJson.scripts["build:sidecar"], "go build -o workspace-sidecar ./cmd/workspace-sidecar");
@@ -20,7 +21,7 @@ test("workspace keeps shadcn dashboard renderer and sidecar runtime without Elec
   assert.equal(packageJson.scripts["dist:mac"], undefined);
   assert.equal(packageJson.scripts["dist:win"], undefined);
   assert.equal(packageJson.scripts["dist:all"], undefined);
-  assert.equal(packageJson.devDependencies?.electron, undefined);
+  assert.equal(packageJson.devDependencies?.electron.startsWith("^"), true);
   assert.equal(packageJson.devDependencies?.["electron-builder"], undefined);
   assert.equal(packageJson.devDependencies?.vite.startsWith("^"), true);
   assert.equal(packageJson.devDependencies?.["@vitejs/plugin-react"].startsWith("^"), true);
@@ -28,10 +29,19 @@ test("workspace keeps shadcn dashboard renderer and sidecar runtime without Elec
   assert.equal(packageJson.dependencies?.["react-dom"].startsWith("^"), true);
   assert.equal(packageJson.dependencies?.shadcn.startsWith("^"), true);
   assert.equal(packageJson.build, undefined);
-  assert.equal(readme.includes("npm run electron"), false);
+  assert.match(readme, /npm run electron/);
+  assert.doesNotMatch(readme, /npm run dev/);
   assert.match(readme, /dashboard-01/);
-  assert.match(readme, /npm run dev/);
   assert.match(readme, /npm run build:renderer/);
+  assert.match(electronMain, /import\s+\{\s*app,\s*BrowserWindow\s*\}\s+from\s+"electron"/);
+  assert.match(electronMain, /new BrowserWindow\(/);
+  assert.match(electronMain, /titleBarStyle:\s*"hiddenInset"/);
+  assert.match(electronMain, /contextIsolation:\s*true/);
+  assert.match(electronMain, /nodeIntegration:\s*false/);
+  assert.match(electronMain, /sandbox:\s*true/);
+  assert.match(electronMain, /window\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
+  assert.doesNotMatch(electronMain, /loadURL/);
+  await access(new URL("../electron/main.js", import.meta.url));
   await access(new URL("../index.html", import.meta.url));
   await access(new URL("../components.json", import.meta.url));
   await access(new URL("../vite.config.ts", import.meta.url));
@@ -39,7 +49,6 @@ test("workspace keeps shadcn dashboard renderer and sidecar runtime without Elec
   await access(new URL("../src/components/app-sidebar.tsx", import.meta.url));
   await access(new URL("../src/workspaceSidecarClient.js", import.meta.url));
   await assert.rejects(access(new URL("../src/renderer/App.tsx", import.meta.url)), { code: "ENOENT" });
-  await assert.rejects(access(new URL("../electron/main.js", import.meta.url)), { code: "ENOENT" });
   await assert.rejects(access(new URL("../electron/preload.cjs", import.meta.url)), { code: "ENOENT" });
   await assert.rejects(access(new URL("../referens/index.html", import.meta.url)), { code: "ENOENT" });
 });

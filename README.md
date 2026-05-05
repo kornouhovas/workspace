@@ -1,16 +1,16 @@
 # Workspace
 
-Локальная React/Vite и any-store основа для работы с workspace-папкой.
+Локальное Electron-приложение на React/Vite и any-store для работы с workspace-папкой.
 
-В проекте есть web interface layer на shadcn/ui `dashboard-01`, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Electron shell удален.
+В проекте есть Electron shell, renderer на shadcn/ui `dashboard-01`, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Прямой browser/Vite dev режим не используется как пользовательский запуск.
 
 ## Быстрый запуск
 
-Renderer:
+Electron app:
 
 ```bash
 cd /Users/aleksandersk/Documents/programming/node/project_folder
-npm run dev
+npm run electron
 ```
 
 Sidecar:
@@ -43,6 +43,7 @@ Backend endpoints принимают только относительные п�
 npm test
 npm run typecheck
 npm run build:renderer
+npm run electron
 go test ./...
 npm run build:sidecar
 ```
