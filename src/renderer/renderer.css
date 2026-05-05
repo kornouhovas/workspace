@@ -257,7 +257,7 @@ svg {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 4px;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0 0 8px;

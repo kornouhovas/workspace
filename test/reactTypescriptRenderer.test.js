@@ -81,6 +81,7 @@ test("renderer is built with React and TypeScript through Vite", async () => {
   assert.match(styles, /\.window-strip\s*\{[\s\S]*?gap:\s*14px/);
   assert.match(styles, /\.window-strip\s*\{[\s\S]*?padding:\s*0\s+18px\s+0\s+104px/);
   assert.match(styles, /\.window-icon-button\s*\{[\s\S]*?border-radius:\s*var\(--codex-radius-sm\)/);
+  assert.match(styles, /\.workspace-list\s*\{[\s\S]*?gap:\s*4px/);
   assert.match(styles, /\.workspace-row\.is-dragging\s*\{[\s\S]*?pointer-events:\s*none/);
   assert.match(styles, /--codex-surface:\s*#2c2c2c/);
   assert.match(styles, /touch-action:\s*none/);

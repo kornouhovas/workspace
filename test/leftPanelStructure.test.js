@@ -121,6 +121,7 @@ test("renderer exposes the Codex-style left panel shell", async () => {
   assert.doesNotMatch(css, /\.traffic-light\b/);
   assert.match(css, /\.nav-section-title\b/);
   assert.match(css, /\.workspace-row\b/);
+  assert.match(css, /\.workspace-list\s*\{[\s\S]*?gap:\s*4px/);
   assert.match(css, /\.workspace-menu-button\b/);
   assert.match(css, /touch-action:\s*none/);
   assert.match(css, /\.workspace-drag-overlay\b/);
