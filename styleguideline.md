@@ -1,240 +1,192 @@
 # Style Guideline
 
-## Цель документа
+## Purpose
 
-Этот гайдлайн является основным источником правил для дизайна, UX, архитектуры интерфейса и повторного использования компонентов при разработке Electron desktop app.
+This document is the source of truth for UI, UX, visual style, component reuse, behavior, and terminology in the Electron desktop renderer.
 
-Документ регулирует:
+Before changing UI, UX, navigation, layout, renderer components, or app shell behavior, read this document and follow the patterns here. If a new stable component, state, restriction, or design rule appears during development, update this document in the same change.
 
-- UI: структуру экранов, панелей, компонентов и состояний.
-- UX: поведение интерфейса, навигацию, сценарии взаимодействия и обработку ошибок.
-- Visual style: визуальную плотность, цвета, типографику, отступы, иконки, motion и общую стилистику.
-- Components: правила использования и расширения существующих компонентов.
-- Behavior: реакции на действия пользователя, системные состояния и ограничения.
-- Terminology: стабильные названия сущностей, действий и зон приложения.
+## Product Direction
 
-ИИ-агент не должен изобретать уже описанные компоненты заново. Если компонент, паттерн, состояние или правило уже описаны в этом документе, агент обязан использовать существующее решение и развивать его в рамках заданных ограничений.
+The app is a local workspace dashboard for project folders and development workflows. The interface should feel like a focused desktop productivity tool built with a modern shadcn dashboard/sidebar system.
 
-Гайдлайн должен быть удобен человеку и ИИ-агенту. Правила должны быть короткими, конкретными и применимыми при разработке. По мере развития приложения документ должен обновляться и дополняться новыми компонентами, паттернами, запретами и чеклистами.
+The current permanent direction is a full shadcn/ui dashboard shell, not a custom native Electron sidebar clone. The UI may keep Electron window integration where useful, but shadcn composition, Tailwind CSS v4 tokens, and lucide-react icons are the primary interface system.
 
-## Как использовать этот гайдлайн при разработке
+## Framework Rules
 
-Перед изменением UI, UX или поведения приложения ИИ-агент обязан:
+- Use [shadcn/ui](https://ui.shadcn.com) as the default React UI framework.
+- Use source components under `src/renderer/components/ui`.
+- Use `components.json` as the shadcn project contract.
+- Use Tailwind CSS v4 in `src/renderer/renderer.css`.
+- Use semantic tokens such as `bg-background`, `text-muted-foreground`, `border-border`, `bg-sidebar`, and `text-sidebar-foreground`.
+- Do not introduce a second component framework for core UI.
+- Do not hand-roll a component when an installed shadcn component can be composed.
+- Use local CSS only for app shell layout, fixed dashboard surfaces, and product-specific composition.
+- Keep custom CSS class names stable and descriptive.
 
-1. Проверить релевантные разделы этого документа.
-2. Найти существующий компонент, паттерн или правило, которое уже решает задачу.
-3. Использовать стабильные названия компонентов и сущностей из гайдлайна.
-4. Следовать визуальным токенам, ограничениям и принципам поведения, если они уже описаны.
-5. Не создавать новый паттерн, если существующий можно расширить без ухудшения архитектуры.
-6. Обновить гайдлайн, если в ходе разработки появляется новый устойчивый компонент, состояние, правило или запрет.
+## Installed UI Components
 
-Если задача требует решения, которого нет в гайдлайне, агент должен сначала предложить правило или паттерн для обсуждения. После утверждения это правило добавляется в документ и только затем используется как основа для разработки.
+Current shadcn components:
 
-## Product Vision
+- `Sidebar`
+- `Button`
+- `Input`
+- `Badge`
+- `Separator`
+- `Tooltip`
+- `Avatar`
+- `Sheet`
+- `Skeleton`
 
-Продукт является desktop-приложением на Electron для работы с локальными project folders и связанными рабочими процессами разработки.
+Use full shadcn composition:
 
-Интерфейс должен ощущаться как спокойная, нативная рабочая среда для инженерной работы. Пользователь должен быстро понимать, с каким проектом он работает, какие действия доступны, что изменилось, какие процессы запущены и где находятся важные элементы управления.
+- Dashboard shell: `SidebarProvider`, `Sidebar`, `SidebarInset`.
+- Sidebar layout: `SidebarHeader`, `SidebarContent`, `SidebarFooter`.
+- Sidebar groups: `SidebarGroup`, `SidebarGroupLabel`, `SidebarGroupContent`.
+- Sidebar navigation: `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarMenuAction`.
+- Tooltips: `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent`.
 
-Продукт не должен выглядеть как маркетинговый сайт, обычный чат или декоративный dashboard. Основной опыт должен быть практичным, плотным, предсказуемым и удобным для повторной ежедневной работы.
+## Icon Rules
 
-## Основные принципы интерфейса
+- Use `lucide-react` for icons.
+- Import icons directly from `lucide-react`.
+- Do not maintain custom SVG path maps in React.
+- Do not pass icon names as strings.
+- Buttons with text place icons with `data-icon="inline-start"` or `data-icon="inline-end"`.
+- Icon-only buttons must have `aria-label`.
+- Do not add manual sizing classes to icons inside shadcn buttons unless a local component explicitly requires it.
 
-Эти правила нельзя нарушать при разработке новых экранов и компонентов:
+## Typography
 
-- Desktop-native first: приложение должно ощущаться как нативный desktop-инструмент, а не как веб-лендинг внутри окна.
-- Рабочая среда важнее декора: интерфейс должен помогать выполнять задачи, а не демонстрировать визуальные эффекты.
-- Минимум декоративности: избегать лишних карточек, hero-блоков, градиентных фонов и маркетинговой композиции.
-- Видимость действий: пользователь должен видеть, что происходит, какие данные выбраны, какие изменения сделаны и какие действия доступны.
-- Опасные действия подтверждаются: удаление, разрушительные операции, внешние действия и необратимые изменения не должны выполняться случайно.
-- Стабильная навигация: основные зоны приложения должны оставаться предсказуемыми и доступными.
-- Повторное использование компонентов: существующие компоненты и паттерны расширяются, а не заменяются без необходимости.
-- Плотность без перегруза: интерфейс должен быть компактным, но читаемым.
-- Состояния обязательны: у компонента должны быть продуманы normal, hover, focus, active, selected, disabled, loading и error-состояния, если они применимы.
-- Терминология едина: одинаковые сущности и действия называются одинаково во всем приложении.
+- Use the shadcn/Tailwind font token `--font-sans`.
+- The current font stack is `Geist Variable`, `OpenAI Sans`, system UI, and platform sans fallbacks.
+- Body text defaults to 16px browser sizing.
+- Sidebar labels use compact shadcn menu sizing.
+- Dashboard headings may be larger, but only in the main workspace content area.
+- Do not use negative letter spacing.
+- Do not scale normal control text with viewport width.
 
-## Информационная архитектура
+## Color And Theme
 
-Информационная архитектура отвечает на вопрос: из каких зон и сущностей состоит приложение.
+- The renderer is dark by default.
+- Tokens live in `src/renderer/renderer.css`.
+- Use OKLCH CSS variables for theme tokens.
+- Do not hardcode Tailwind palette classes such as `bg-blue-500` for app surfaces.
+- Use semantic colors and shadcn variants first.
+- The palette should stay mostly neutral with restrained green and multi-color signal accents.
+- Avoid decorative gradient orbs and marketing-style background effects.
 
-Базовые зоны приложения:
+## Dashboard Shell
 
-- App shell: корневой desktop-контейнер приложения.
-- Left Panel: постоянная левая панель для навигации, поиска, списка проектов и настроек.
-- Main Workspace: основная рабочая область выбранного Workspace или выбранного сценария.
-- Detail Panels: дополнительная панель для деталей, показ данных и свойств проекта.
-- Settings Area: зона настройки приложения и поведения рабочих процессов.
+The root renderer shell is the shadcn dashboard:
 
-Базовые сущности приложения:
+- `.dashboard-shell`: full viewport background and dark theme scope.
+- `.dashboard-sidebar`: shadcn `Sidebar` customization.
+- `.dashboard-inset`: shadcn `SidebarInset` main surface.
+- `.window-drag-region`: top toolbar and Electron drag area.
+- `.workspace-content`: main workspace body.
 
-- Project Folder: локальная папка проекта.
-- Workspace Item: элемент списка проектов или рабочих областей в Left Panel.
-- Active Workspace: текущий выбранный Workspace.
-- Component: переиспользуемая часть интерфейса с описанным поведением.
-- Pattern: повторяемое UI/UX-решение, которое можно применять в разных местах.
+The main screen should show the actual workspace tool immediately. Do not replace it with a landing page or marketing hero.
 
-Информационная архитектура должна оставаться простой. Новая зона добавляется только тогда, когда существующие зоны не могут ясно вместить новый сценарий.
+## Dashboard Sidebar Guidelines
 
-## Навигация
+The sidebar is now a shadcn `Sidebar`, not the previous custom `Left Panel`.
 
-Навигация отвечает на вопрос: как пользователь перемещается между зонами, проектами и действиями приложения.
+Rules:
 
-Основные правила навигации:
+- Use `SidebarProvider` at the top of the renderer app.
+- Use `Sidebar` with `collapsible="icon"` for dashboard behavior.
+- Use `SidebarTrigger` for collapse behavior.
+- Keep `Command+B` / `Ctrl+B` behavior provided by shadcn sidebar.
+- Use `SidebarMenuButton` for selectable workspace rows.
+- Use `SidebarMenuAction` for row actions.
+- Use `Badge` for compact row status.
+- Keep workspace names truncatable.
+- Empty search state says `No workspace`.
+- Settings remains in `SidebarFooter`.
 
-- Left Panel является главной постоянной навигационной зоной.
-- Выбранный проект должен быть визуально очевиден.
-- Поиск должен помогать быстро найти project folder или workspace item.
-- Settings должны быть стабильно доступны из нижней части Left Panel.
-- Collapse/expand состояния панели должны сохранять понятность структуры приложения.
-- Контекстные действия должны быть рядом с объектом, к которому они относятся.
-- Навигация не должна скрывать критический контекст: активный проект, выбранный элемент и текущий режим работы.
+Allowed workspace row states:
 
-Переходы между зонами должны быть спокойными и быстрыми. Motion используется только для объяснения состояния: раскрытие панели, hover, focus, drag-and-drop, появление меню.
+- Normal
+- Hover
+- Active selected workspace
+- Inline rename
+- Inline delete confirmation
+- Disabled delete when only one workspace remains
 
-## Left Panel Guidelines
+Removed legacy rules:
 
-Left Panel является первой конкретной компонентной зоной гайдлайна, потому что текущая разработка приложения сфокусирована на sidebar/left panel.
+- Workspace reorder by custom Pointer Events is no longer required.
+- FLIP row animation is no longer required.
+- Native Electron context menu for workspace items is no longer required.
+- DOM-free context actions are no longer required.
+- `--codex-sidebar-glass` and transparent Electron vibrancy sidebar styling are no longer part of the design system.
 
-Текущие источники реализации:
+## Window Integration
 
-- `src/renderer/App.tsx`: структура, состояние, действия, drag-and-drop, inline rename/delete.
-- `src/renderer/renderer.css`: визуальные токены, размеры, состояния, motion.
-- `electron/main.js`: нативное Electron context menu для Workspace Item.
-- `electron/preload.cjs`: узкий IPC API `window.workspace.showContextMenu`.
-- `test/leftPanelStructure.test.js`: структурные ожидания и запрещенные паттерны для Left Panel.
+The app still runs in Electron and may use a hidden title bar window.
 
-Назначение Left Panel:
+Current window integration rules:
 
-- Показывать основные действия приложения.
-- Давать доступ к поиску.
-- Отображать список workspace items.
-- Показывать выбранный Workspace.
-- Давать доступ к Settings.
-- Поддерживать collapse/expand поведение.
+- Top toolbar uses `.window-drag-region` with `-webkit-app-region: drag`.
+- Buttons inside `.window-drag-region` use `-webkit-app-region: no-drag`.
+- Do not add custom traffic light controls.
+- Do not put critical controls under the macOS traffic light area.
 
-Базовая структура Left Panel:
+Electron-specific UI constraints from the old sidebar design should not block shadcn dashboard/sidebar composition unless the user explicitly asks to restore them.
 
-- Window Strip: верхняя draggable-зона с кнопками sidebar toggle, Back и Forward.
-- Верхняя зона действий: основные команды приложения.
-- Search: поле поиска по списку проектов или рабочих элементов.
-- Workspace List: список доступных элементов.
-- Context Actions: действия над конкретным элементом через меню или inline-control.
-- Bottom Area: Settings и другие постоянные нижние действия.
+## Workspace Behavior
 
-Текущая структура в DOM:
+Workspace data is renderer-local state persisted to `localStorage`.
 
-- `#appShell`: корневой grid-контейнер.
-- `.window-strip`: фиксированная верхняя зона окна.
-- `#sidebarToggle`: кнопка collapse/expand для Left Panel.
-- `#leftPanel.left-panel`: основная левая панель с `aria-label="Workspace navigation"`.
-- `#newWorkspaceButton`: создание нового Workspace Item.
-- `#workspaceSearch`: поиск по Workspace List.
-- `#workspaceList`: список Workspace Item с `role="list"`.
-- `.workspace-row`: строка Workspace Item с `role="listitem"`.
-- `#settingsButton`: постоянный Settings action в нижней зоне.
+Current keys:
 
-Правила Left Panel:
+- `workspace.dashboard.workspaces`
+- `workspace.dashboard.selectedWorkspaceId`
 
-- Панель должна быть визуально спокойной и нативной для desktop-приложения.
-- Панель работает внутри прозрачного Electron-окна с `titleBarStyle: "hiddenInset"`, `vibrancy: "sidebar"` и `visualEffectState: "followWindow"`.
-- Нативные traffic lights не дублируются кастомными DOM-элементами.
-- Базовая ширина панели задается через `--left-panel-width: 300px`.
-- Left Panel использует прозрачный material surface: `--codex-sidebar-glass: transparent`; CSS `backdrop-filter` для самой панели отключен, потому что системный material задает Electron.
-- Верхняя зона окна `.window-strip` имеет высоту `52px`, остается шириной `var(--left-panel-width)` даже в collapsed-состоянии и использует `-webkit-app-region: drag`.
-- Интерактивные кнопки внутри `.window-strip` обязаны иметь `-webkit-app-region: no-drag`.
-- Left Panel имеет `padding-top: 56px`, чтобы не конфликтовать с системной верхней зоной окна.
-- Collapse-состояние задает `grid-template-columns: 0px minmax(0, 1fr)`, скрывает `.left-panel` через opacity/visibility/pointer-events и не меняет ширину `.window-strip`.
-- Sidebar toggle доступен через кнопку и shortcut `Command+B` на macOS или `Ctrl+B` на Windows/Linux.
-- `Escape` сбрасывает inline rename, inline delete confirmation и активный drag.
-- Выбранный элемент должен иметь явное selected-состояние.
-- Hover и focus-состояния должны быть различимыми, но не агрессивными.
-- Длинные названия проектов должны обрезаться через ellipsis.
-- Иконки должны быть функциональными, а не декоративными.
-- Collapse-состояние не должно ломать навигацию.
-- Drag-and-drop, если используется, должен иметь понятный visual feedback.
-- Drag-and-drop Workspace Item должен оставаться плавным при частом reorder: текущую позицию строки нужно измерять из ее видимого состояния без предварительного сброса анимации; старые row-анимации отменяются только в layout-phase перед расчетом новой FLIP-анимации.
-- Контекстное меню должно открываться рядом с выбранным элементом и не выходить за границы окна.
-- Контекстное меню Workspace Item должно быть нативным Electron/macOS menu через `Menu.popup`, а не DOM-popover. Нативное меню наследует системный glass/material, шрифт, отступы и скругления платформы.
-- Открытие контекстного меню через ПКМ по Workspace Item не меняет Active Workspace и selected-состояние.
-- Заголовок секции списка рабочих областей должен быть во множественном числе: `Workspaces`.
-- Новые Workspace Item создаются с именем `Workspace` без числового суффикса.
-- Rename для Workspace Item закрывает контекстное меню и переводит название строки в inline-редактирование с выделенным текущим текстом.
-- Кнопка с тремя точками внутри Workspace Item выравнивается по правому краю строки так, чтобы ее 30px touch-target совпадал с радиусом hover строки. У самой кнопки не должно быть отдельного background-hover; hover-состояние задает строка.
-- Settings в Bottom Area использует те же row metrics и hover-поведение, что и остальные строки Left Panel: 30px высота, 18px icon-slot, 16px SVG, 14px regular label. Горизонтальный padding контейнера Settings должен совпадать с Workspace List, чтобы hover-капсула имела ту же ширину.
-- Опасные действия внутри панели, например удаление, должны быть отделены визуально и требовать осторожного поведения.
-- Delete для Workspace Item не использует системное окно подтверждения. После команды удаления строка получает inline-состояние подтверждения: рядом с hover-действиями появляется прозрачная красная кнопка `Confirm`, которая выполняет удаление. Пока `Confirm` активен, строка сохраняет hover-визуал даже после ухода мыши. Клик по любой области приложения вне кнопки `Confirm` сбрасывает это состояние.
+Behavior:
 
-Метрики и визуальные токены:
+- New workspace name is `Workspace`.
+- New workspace becomes selected.
+- Search filters workspace names case-insensitively.
+- Inline rename saves on submit or blur.
+- Empty rename is ignored.
+- `Escape` cancels inline rename.
+- Delete requires inline confirmation.
+- Delete is disabled when only one workspace remains.
+- Deleting the selected workspace selects the first remaining workspace.
 
-- Основной цвет текста панели: `--codex-sidebar-text: #f1f6ee`.
-- Muted-текст: `--codex-sidebar-muted: rgba(241, 246, 238, 0.6)`.
-- Hover строки: `--codex-sidebar-hover: rgba(255, 255, 255, 0.085)`.
-- Selected строки: `--codex-sidebar-selected: rgba(255, 255, 255, 0.13)`.
-- Основной шрифт: `"OpenAI Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
-- Все основные строки Left Panel используют 30px row height, 18px icon slot, 16px SVG, 14px regular label и `line-height: 1.25`.
-- `panel-top` использует `padding: 0 8px` и `gap: 4px`.
-- `workspace-section` использует `padding: 26px 8px 0` и `gap: 8px`.
-- `workspace-list` использует `gap: 2px`, вертикальный scroll и скрытый horizontal overflow.
-- `workspace-row` использует `grid-template-columns: minmax(0, 1fr) 30px`, `padding: 0 10px`, `border-radius: var(--codex-radius-sm)`, `touch-action: none` и `user-select: none`.
-- `workspace-select-button` использует `grid-template-columns: 18px minmax(0, 1fr)` и `gap: 8px`.
-- `workspace-menu-button` имеет 30px touch-target, `margin-right: -10px`, 16px icon и появляется на hover, selected, focus или drag overlay.
-- `workspace-confirm-delete` располагается внутри строки справа от menu button: `right: 32px`, `top: 3px`, `width: 76px`, `height: 24px`.
-- `panel-footer` использует `padding: 0 8px 12px`.
+Do not use:
 
-Поведение Workspace List:
+- `window.prompt`
+- `window.confirm`
+- HTML `draggable`
+- `onDragStart`
+- `onDrop`
 
-- Список Workspace Item хранится в `localStorage` под ключом `workspace.leftPanel.workspaces`.
-- Выбранный Workspace хранится в `localStorage` под ключом `workspace.leftPanel.selectedWorkspaceId`.
-- Collapsed-состояние хранится в `localStorage` под ключом `workspace.leftPanel.sidebarCollapsed`.
-- Если сохраненные workspace data повреждены, список сбрасывается к `defaultWorkspaces`.
-- Новый Workspace Item получает `id` вида `workspace-${Date.now()}`, имя `Workspace`, становится selected и очищает search/edit/delete состояния.
-- Search фильтрует Workspace Item по имени без учета регистра.
-- Search placeholder равен `Search` только когда поле не в focus; во время focus placeholder скрывается.
-- Если поиск не нашел элементы, список показывает `No workspace`.
-- Selected Workspace отображается в Main Workspace preview как `Current workspace`.
+## Accessibility
 
-Drag-and-drop правила:
+- Main content has `aria-label="Workspace surface"`.
+- Search input has stable id `workspaceSearch`.
+- Workspace list has stable id `workspaceList`.
+- Icon-only buttons must have `aria-label`.
+- Active workspace display uses `aria-live="polite"` where appropriate.
+- Inline rename input must have an `aria-label`.
+- Tooltips should describe unfamiliar icon-only controls.
 
-- Workspace reorder реализуется через Pointer Events, а не через HTML `draggable`, `onDragStart` или `onDrop`.
-- Drag начинается только левой кнопкой мыши и не начинается из menu button, confirm button или rename input.
-- Drag становится активным после движения больше `4px`.
-- Pointer capture ставится только после активации drag и снимается на pointer up/cancel/lost capture.
-- Drag overlay является отдельным fixed-элементом `.workspace-drag-overlay` с теми же row metrics, что и `.workspace-row`.
-- Исходная строка в активном drag получает `opacity: 0` и `pointer-events: none`.
-- Drop intent определяется с directional threshold: при движении вниз target-строка должна уступать место после прохождения примерно `30%` ее высоты, при движении вверх используется симметричный порог примерно `70%`.
-- При reorder строки анимируются через FLIP-подход: старые позиции сохраняются, затем строки анимируются `transform` за `150ms`.
-- При `prefers-reduced-motion: reduce` drag/reorder-анимации не должны выполняться.
+## Testing Expectations
 
-Inline rename правила:
+After UI changes, run:
 
-- Rename переводит Workspace Item в состояние `.is-editing`.
-- Rename input использует класс `.workspace-name-input`, `autoFocus`, выделяет текущий текст on focus и сохраняет значение on submit или blur.
-- Пустое имя не сохраняется; состояние редактирования закрывается без изменения имени.
-- `Escape` внутри rename input отменяет редактирование.
-- Для rename не использовать `window.prompt`.
+- `npm test`
+- `npm run typecheck`
+- `npm run build:renderer`
 
-Inline delete правила:
+Structural tests should verify:
 
-- Delete недоступен, если в списке остался только один Workspace Item.
-- Команда `Delete workspace` в нативном меню переводит строку в `.is-delete-pending`.
-- Подтверждение удаления выполняется только через inline-кнопку `Confirm`.
-- При удалении selected Workspace следующим selected становится первый элемент оставшегося списка.
-- Для delete не использовать `window.confirm`.
-
-Accessibility и тестируемость:
-
-- Left Panel должна иметь понятный `aria-label`.
-- Workspace List должен использовать `role="list"`, а Workspace Item - `role="listitem"`.
-- Icon-only buttons должны иметь `aria-label`.
-- Sidebar toggle должен иметь `aria-pressed`.
-- Active Workspace preview использует `aria-live="polite"`.
-- Состояния и структура Left Panel должны оставаться проверяемыми через `test/leftPanelStructure.test.js`.
-
-Перед изменением Left Panel нужно проверить:
-
-- Не существует ли уже подходящий компонент или паттерн.
-- Сохраняется ли selected-состояние Active Workspace.
-- Работают ли hover, focus, keyboard и collapsed-состояния.
-- Не ломается ли список при длинных названиях.
-- Не создается ли новый стиль, который конфликтует с существующей панелью.
-- Не возвращаются ли запрещенные паттерны: DOM context menu, `window.prompt`, `window.confirm`, HTML draggable API, кастомные traffic lights, `New chat`, `Plugins`, `Automations`, `Projects`, `Chats`, `Upgrade`.
+- shadcn configuration exists.
+- Tailwind CSS v4 is wired through Vite.
+- `@/*` alias resolves to `src/renderer`.
+- Renderer imports shadcn components from `@/components/ui`.
+- Renderer imports icons from `lucide-react`.
+- Old custom icon maps, native workspace context menu calls, and custom Pointer Events drag handlers do not return unless deliberately reintroduced.
