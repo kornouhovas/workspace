@@ -138,8 +138,8 @@ svg {
 }
 
 .window-icon-button svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .window-icon-button:hover,
@@ -172,21 +172,26 @@ svg {
   width: 100%;
   min-height: 24px;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 14px minmax(0, 1fr);
   align-items: center;
   gap: 2px;
-  padding: 0;
+  padding: 0 8px;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-text);
   cursor: pointer;
   text-align: left;
 }
 
+.utility-row {
+  width: calc(100% - 8px);
+  margin: 0 4px;
+}
+
 .utility-icon,
 .project-icon,
 .settings-icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -194,8 +199,8 @@ svg {
 }
 
 .utility-icon svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .utility-label,
@@ -210,7 +215,7 @@ svg {
 
 .utility-label,
 .settings-label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -226,7 +231,7 @@ svg {
   outline: 0;
   background: transparent;
   color: var(--codex-sidebar-text);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
 }
 
@@ -246,9 +251,9 @@ svg {
 
 .nav-section-title {
   margin: 0;
-  padding: 0;
+  padding: 0 4px;
   color: var(--codex-sidebar-muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -265,11 +270,13 @@ svg {
 
 .workspace-row {
   position: relative;
-  width: 100%;
+  width: calc(100% - 8px);
+  margin: 0 4px;
   min-height: 24px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 24px;
   align-items: center;
+  padding: 0 8px;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-muted);
   contain: layout paint;
@@ -297,7 +304,7 @@ svg {
   min-width: 0;
   height: 24px;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 14px minmax(0, 1fr);
   align-items: center;
   gap: 2px;
   padding: 0;
@@ -308,12 +315,12 @@ svg {
 }
 
 .project-icon svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .workspace-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -334,8 +341,8 @@ svg {
 }
 
 .workspace-menu-button svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .workspace-row:hover .workspace-menu-button,
@@ -358,11 +365,11 @@ svg {
   width: var(--drag-width);
   height: 24px;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 24px;
+  grid-template-columns: 14px minmax(0, 1fr) 24px;
   align-items: center;
   gap: 2px;
   overflow: hidden;
-  padding: 0;
+  padding: 0 8px;
   border-radius: var(--codex-radius-sm);
   color: var(--codex-sidebar-text);
   background: var(--codex-sidebar-selected);
@@ -373,7 +380,7 @@ svg {
 .empty-results {
   padding: 8px 2px;
   color: var(--codex-sidebar-muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
 }
 
@@ -383,12 +390,12 @@ svg {
 }
 
 .settings-button {
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 14px minmax(0, 1fr);
 }
 
 .settings-icon svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 .main-surface {
