@@ -2,179 +2,152 @@
 
 ## Purpose
 
-This document is the source of truth for UI, UX, visual style, component reuse, behavior, and terminology in the Electron desktop renderer.
+This document is the source of truth for UI, UX, visual style, component reuse, behavior, and terminology in the Electron renderer.
 
-Before changing UI, UX, navigation, layout, renderer components, or app shell behavior, read this document and follow the patterns here. If a new stable component, state, restriction, or design rule appears during development, update this document in the same change.
+Before changing UI, UX, navigation, layout, renderer components, or app shell behavior, read this file. If a stable component, state, restriction, or design rule changes during development, update this file in the same change.
 
-## Product Direction
+## Current Interface Source
 
-The app is a local workspace dashboard for project folders and development workflows. The interface should feel like a focused desktop productivity tool built with a modern shadcn dashboard/sidebar system.
+The renderer uses the official shadcn/ui `dashboard-01` block installed with:
 
-The current permanent direction is a full shadcn/ui dashboard shell, not a custom native Electron sidebar clone. The UI may keep Electron window integration where useful, but shadcn composition, Tailwind CSS v4 tokens, and lucide-react icons are the primary interface system.
+```bash
+npx shadcn@latest add dashboard-01
+```
+
+This block is the baseline interface. Do not recreate a parallel dashboard shell, sidebar, table, chart, toolbar, or navigation system by hand while `dashboard-01` provides the pattern.
+
+The renderer app composition is:
+
+- `src/renderer/App.tsx`
+- `src/renderer/components/app-sidebar.tsx`
+- `src/renderer/components/site-header.tsx`
+- `src/renderer/components/section-cards.tsx`
+- `src/renderer/components/chart-area-interactive.tsx`
+- `src/renderer/components/data-table.tsx`
+- `src/app/dashboard/data.json`
 
 ## Framework Rules
 
-- Use [shadcn/ui](https://ui.shadcn.com) as the default React UI framework.
+- Use [shadcn/ui](https://ui.shadcn.com) as the React UI framework.
 - Use source components under `src/renderer/components/ui`.
 - Use `components.json` as the shadcn project contract.
 - Use Tailwind CSS v4 in `src/renderer/renderer.css`.
+- Use `lucide-react` icons from the block or direct imports.
 - Use semantic tokens such as `bg-background`, `text-muted-foreground`, `border-border`, `bg-sidebar`, and `text-sidebar-foreground`.
-- Do not introduce a second component framework for core UI.
-- Do not hand-roll a component when an installed shadcn component can be composed.
-- Use local CSS only for app shell layout, fixed dashboard surfaces, and product-specific composition.
-- Keep custom CSS class names stable and descriptive.
+- Do not introduce a second UI framework for core renderer UI.
+- Do not hand-roll components when the block or installed shadcn components already provide them.
+
+## Installed Block Components
+
+Use these `dashboard-01` components directly:
+
+- `AppSidebar`
+- `SiteHeader`
+- `SectionCards`
+- `ChartAreaInteractive`
+- `DataTable`
+- `NavMain`
+- `NavDocuments`
+- `NavSecondary`
+- `NavUser`
+
+Use the block structure as installed:
+
+- `SidebarProvider`
+- `AppSidebar variant="inset"`
+- `SidebarInset`
+- `SiteHeader`
+- `SectionCards`
+- `ChartAreaInteractive`
+- `DataTable`
 
 ## Installed UI Components
 
-Current shadcn components:
+Current shadcn UI components include:
 
-- `Sidebar`
-- `Button`
-- `Input`
-- `Badge`
-- `Separator`
-- `Tooltip`
 - `Avatar`
+- `Badge`
+- `Breadcrumb`
+- `Button`
+- `Card`
+- `Chart`
+- `Checkbox`
+- `Drawer`
+- `DropdownMenu`
+- `Input`
+- `Label`
+- `Select`
+- `Separator`
 - `Sheet`
+- `Sidebar`
 - `Skeleton`
+- `Sonner`
+- `Table`
+- `Tabs`
+- `Toggle`
+- `ToggleGroup`
+- `Tooltip`
 
-Use full shadcn composition:
+When adding UI, compose these components first. Add new shadcn components through the CLI instead of writing raw equivalents.
 
-- Dashboard shell: `SidebarProvider`, `Sidebar`, `SidebarInset`.
-- Sidebar layout: `SidebarHeader`, `SidebarContent`, `SidebarFooter`.
-- Sidebar groups: `SidebarGroup`, `SidebarGroupLabel`, `SidebarGroupContent`.
-- Sidebar navigation: `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarMenuAction`.
-- Tooltips: `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent`.
+## Visual System
+
+- The renderer is dark by default.
+- Theme tokens live in `src/renderer/renderer.css`.
+- Keep the CSS file focused on Tailwind imports, shadcn tokens, base rules, and the minimal `.dashboard-01-shell`.
+- Do not reintroduce custom `.dashboard-sidebar`, `.workspace-hero`, `.workspace-grid`, `.workspace-panel`, or other parallel shell classes.
+- Do not add decorative gradient orbs or marketing-style backgrounds.
+- Do not scale normal text with viewport width.
+- Cards, charts, tables, tabs, and sidebars should use the classes provided by the block unless there is a specific product reason to change them.
 
 ## Icon Rules
 
-- Use `lucide-react` for icons.
-- Import icons directly from `lucide-react`.
-- Do not maintain custom SVG path maps in React.
+- Use `lucide-react`.
+- Keep block-provided icon imports unless replacing labels with product-specific navigation.
+- Do not maintain custom SVG path maps.
 - Do not pass icon names as strings.
-- Buttons with text place icons with `data-icon="inline-start"` or `data-icon="inline-end"`.
-- Icon-only buttons must have `aria-label`.
-- Do not add manual sizing classes to icons inside shadcn buttons unless a local component explicitly requires it.
+- Icon-only buttons must have accessible labels or screen-reader text.
 
-## Typography
+## Electron Integration
 
-- Use the shadcn/Tailwind font token `--font-sans`.
-- The current font stack is `Geist Variable`, `OpenAI Sans`, system UI, and platform sans fallbacks.
-- Body text defaults to 16px browser sizing.
-- Sidebar labels use compact shadcn menu sizing.
-- Dashboard headings may be larger, but only in the main workspace content area.
-- Do not use negative letter spacing.
-- Do not scale normal control text with viewport width.
+The app still runs in Electron, but `dashboard-01` controls the renderer UI.
 
-## Color And Theme
+Current Electron rules:
 
-- The renderer is dark by default.
-- Tokens live in `src/renderer/renderer.css`.
-- Use OKLCH CSS variables for theme tokens.
-- Do not hardcode Tailwind palette classes such as `bg-blue-500` for app surfaces.
-- Use semantic colors and shadcn variants first.
-- The palette should stay mostly neutral with restrained green and multi-color signal accents.
-- Avoid decorative gradient orbs and marketing-style background effects.
-
-## Dashboard Shell
-
-The root renderer shell is the shadcn dashboard:
-
-- `.dashboard-shell`: full viewport background and dark theme scope.
-- `.dashboard-sidebar`: shadcn `Sidebar` customization.
-- `.dashboard-inset`: shadcn `SidebarInset` main surface.
-- `.window-drag-region`: top toolbar and Electron drag area.
-- `.workspace-content`: main workspace body.
-
-The main screen should show the actual workspace tool immediately. Do not replace it with a landing page or marketing hero.
-
-## Dashboard Sidebar Guidelines
-
-The sidebar is now a shadcn `Sidebar`, not the previous custom `Left Panel`.
-
-Rules:
-
-- Use `SidebarProvider` at the top of the renderer app.
-- Use `Sidebar` with `collapsible="icon"` for dashboard behavior.
-- Use `SidebarTrigger` for collapse behavior.
-- Keep `Command+B` / `Ctrl+B` behavior provided by shadcn sidebar.
-- Use `SidebarMenuButton` for selectable workspace rows.
-- Use `SidebarMenuAction` for row actions.
-- Use `Badge` for compact row status.
-- Keep workspace names truncatable.
-- Empty search state says `No workspace`.
-- Settings remains in `SidebarFooter`.
-
-Allowed workspace row states:
-
-- Normal
-- Hover
-- Active selected workspace
-- Inline rename
-- Inline delete confirmation
-- Disabled delete when only one workspace remains
-
-Removed legacy rules:
-
-- Workspace reorder by custom Pointer Events is no longer required.
-- FLIP row animation is no longer required.
-- Native Electron context menu for workspace items is no longer required.
-- DOM-free context actions are no longer required.
-- `--codex-sidebar-glass` and transparent Electron vibrancy sidebar styling are no longer part of the design system.
-
-## Window Integration
-
-The app still runs in Electron and may use a hidden title bar window.
-
-Current window integration rules:
-
-- Top toolbar uses `.window-drag-region` with `-webkit-app-region: drag`.
-- Buttons inside `.window-drag-region` use `-webkit-app-region: no-drag`.
 - Do not add custom traffic light controls.
-- Do not put critical controls under the macOS traffic light area.
+- Keep `titleBarStyle: "hiddenInset"` in the main process unless the user asks to change the window chrome.
+- Do not rebuild the old transparent native sidebar material system around the dashboard block.
+- Keep renderer imports and UI code independent from direct Electron APIs.
 
-Electron-specific UI constraints from the old sidebar design should not block shadcn dashboard/sidebar composition unless the user explicitly asks to restore them.
+## Removed Legacy Renderer Patterns
 
-## Workspace Behavior
+These patterns must not return unless explicitly requested:
 
-Workspace data is renderer-local state persisted to `localStorage`.
+- Custom `DashboardSidebar` in `App.tsx`.
+- Custom `WorkspaceContent` in `App.tsx`.
+- Custom workspace localStorage sidebar state.
+- Custom `workspace.dashboard.*` storage keys.
+- Custom SVG icon map.
+- Native workspace context menu calls from renderer.
+- Custom Pointer Events reorder implementation.
+- HTML `draggable`, `onDragStart`, or `onDrop` for renderer shell navigation.
+- `window.prompt`.
+- `window.confirm`.
 
-Current keys:
+## Data And Interaction
 
-- `workspace.dashboard.workspaces`
-- `workspace.dashboard.selectedWorkspaceId`
+The current dashboard data source is `src/app/dashboard/data.json`, installed by `dashboard-01`.
 
-Behavior:
-
-- New workspace name is `Workspace`.
-- New workspace becomes selected.
-- Search filters workspace names case-insensitively.
-- Inline rename saves on submit or blur.
-- Empty rename is ignored.
-- `Escape` cancels inline rename.
-- Delete requires inline confirmation.
-- Delete is disabled when only one workspace remains.
-- Deleting the selected workspace selects the first remaining workspace.
-
-Do not use:
-
-- `window.prompt`
-- `window.confirm`
-- HTML `draggable`
-- `onDragStart`
-- `onDrop`
+`DataTable` owns its local row order and table state. If product data replaces the fixture later, keep the `dashboard-01` component API intact and pass data through props instead of embedding unrelated local state in `App.tsx`.
 
 ## Accessibility
 
-- Main content has `aria-label="Workspace surface"`.
-- Search input has stable id `workspaceSearch`.
-- Workspace list has stable id `workspaceList`.
-- Icon-only buttons must have `aria-label`.
-- Active workspace display uses `aria-live="polite"` where appropriate.
-- Inline rename input must have an `aria-label`.
-- Tooltips should describe unfamiliar icon-only controls.
+- Keep shadcn component accessibility structure intact.
+- Drawer, dropdown, select, tabs, and sidebar components must use their provided primitives.
+- Icon-only controls must have `aria-label` or `sr-only` text.
+- Keep table controls keyboard-accessible.
 
-## Testing Expectations
+## Verification
 
 After UI changes, run:
 
@@ -182,11 +155,10 @@ After UI changes, run:
 - `npm run typecheck`
 - `npm run build:renderer`
 
-Structural tests should verify:
+Structural tests should verify that:
 
-- shadcn configuration exists.
+- `dashboard-01` block files exist.
+- `App.tsx` composes the installed block components.
 - Tailwind CSS v4 is wired through Vite.
 - `@/*` alias resolves to `src/renderer`.
-- Renderer imports shadcn components from `@/components/ui`.
-- Renderer imports icons from `lucide-react`.
-- Old custom icon maps, native workspace context menu calls, and custom Pointer Events drag handlers do not return unless deliberately reintroduced.
+- Old local hybrid shell patterns do not return.

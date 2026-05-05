@@ -13,8 +13,22 @@ async function readRequiredProjectFile(path) {
   }
 }
 
-test("renderer uses a shadcn dashboard sidebar shell", async () => {
-  const [css, appSource, mainSource, packageSource, componentsSource, viteSource, tsconfigSource, guidelineSource] =
+test("renderer uses the shadcn dashboard-01 block shell", async () => {
+  const [
+    css,
+    appSource,
+    mainSource,
+    packageSource,
+    componentsSource,
+    viteSource,
+    tsconfigSource,
+    guidelineSource,
+    appSidebarSource,
+    siteHeaderSource,
+    sectionCardsSource,
+    dataTableSource,
+    chartSource,
+  ] =
     await Promise.all([
       readRequiredProjectFile("src/renderer/renderer.css"),
       readRequiredProjectFile("src/renderer/App.tsx"),
@@ -24,6 +38,11 @@ test("renderer uses a shadcn dashboard sidebar shell", async () => {
       readRequiredProjectFile("vite.config.ts"),
       readRequiredProjectFile("tsconfig.json"),
       readRequiredProjectFile("styleguideline.md"),
+      readRequiredProjectFile("src/renderer/components/app-sidebar.tsx"),
+      readRequiredProjectFile("src/renderer/components/site-header.tsx"),
+      readRequiredProjectFile("src/renderer/components/section-cards.tsx"),
+      readRequiredProjectFile("src/renderer/components/data-table.tsx"),
+      readRequiredProjectFile("src/renderer/components/chart-area-interactive.tsx"),
     ]);
   const packageJson = JSON.parse(packageSource);
   const componentsJson = JSON.parse(componentsSource);
@@ -44,27 +63,25 @@ test("renderer uses a shadcn dashboard sidebar shell", async () => {
   assert.ok(packageJson.dependencies["tailwind-merge"]);
 
   assert.match(mainSource, /titleBarStyle:\s*"hiddenInset"/);
-  assert.match(appSource, /from "lucide-react"/);
+  assert.match(appSource, /from "@\/components\/app-sidebar"/);
+  assert.match(appSource, /from "@\/components\/site-header"/);
+  assert.match(appSource, /from "@\/components\/section-cards"/);
+  assert.match(appSource, /from "@\/components\/data-table"/);
+  assert.match(appSource, /from "@\/components\/chart-area-interactive"/);
   assert.match(appSource, /from "@\/components\/ui\/sidebar"/);
-  assert.match(appSource, /from "@\/components\/ui\/button"/);
-  assert.match(appSource, /from "@\/components\/ui\/input"/);
-  assert.match(appSource, /from "@\/components\/ui\/badge"/);
-  assert.match(appSource, /from "@\/components\/ui\/separator"/);
-  assert.match(appSource, /from "@\/components\/ui\/tooltip"/);
-  assert.match(appSource, /function DashboardSidebar/);
-  assert.match(appSource, /function WorkspaceContent/);
+  assert.match(appSource, /data\.json/);
+  assert.match(appSource, /function App\(\)/);
+  assert.doesNotMatch(appSource, /function DashboardSidebar/);
+  assert.doesNotMatch(appSource, /function WorkspaceContent/);
+  assert.doesNotMatch(appSource, /function WorkspaceMenuRow/);
   assert.match(appSource, /<SidebarProvider/);
-  assert.match(appSource, /<Sidebar/);
-  assert.match(appSource, /<SidebarMenuButton/);
-  assert.match(appSource, /<SidebarTrigger/);
-  assert.match(appSource, /<TooltipProvider/);
-  assert.match(appSource, /<Badge/);
-  assert.match(appSource, /<Input/);
-  assert.match(appSource, /<Button/);
-  assert.match(appSource, /Command center/);
-  assert.match(appSource, /Current workspace/);
-  assert.match(appSource, /workspace\.dashboard\.workspaces/);
-  assert.match(appSource, /workspace\.dashboard\.selectedWorkspaceId/);
+  assert.match(appSource, /<AppSidebar/);
+  assert.match(appSource, /<SiteHeader/);
+  assert.match(appSource, /<SectionCards/);
+  assert.match(appSource, /<ChartAreaInteractive/);
+  assert.match(appSource, /<DataTable/);
+  assert.doesNotMatch(appSource, /workspace\.dashboard\.workspaces/);
+  assert.doesNotMatch(appSource, /workspace\.dashboard\.selectedWorkspaceId/);
   assert.doesNotMatch(appSource, /iconPaths/);
   assert.doesNotMatch(appSource, /function Icon\(/);
   assert.doesNotMatch(appSource, /handleWorkspacePointerDown/);
@@ -80,16 +97,18 @@ test("renderer uses a shadcn dashboard sidebar shell", async () => {
   assert.match(css, /@theme inline/);
   assert.match(css, /--sidebar:/);
   assert.match(css, /--radius:/);
-  assert.match(css, /\.dashboard-shell/);
-  assert.match(css, /\.window-drag-region/);
-  assert.match(css, /-webkit-app-region:\s*drag/);
-  assert.match(css, /\.window-drag-region button/);
-  assert.match(css, /-webkit-app-region:\s*no-drag/);
+  assert.match(css, /\.dashboard-01-shell/);
   assert.doesNotMatch(css, /--codex-sidebar-glass/);
   assert.doesNotMatch(css, /\.workspace-drag-overlay/);
 
   assert.match(guidelineSource, /shadcn\/ui/);
   assert.match(guidelineSource, /lucide-react/);
-  assert.match(guidelineSource, /Dashboard Sidebar/);
+  assert.match(guidelineSource, /dashboard-01/);
   assert.match(guidelineSource, /Tailwind CSS v4/);
+
+  assert.match(appSidebarSource, /export function AppSidebar/);
+  assert.match(siteHeaderSource, /export function SiteHeader/);
+  assert.match(sectionCardsSource, /export function SectionCards/);
+  assert.match(dataTableSource, /export function DataTable/);
+  assert.match(chartSource, /export function ChartAreaInteractive/);
 });
