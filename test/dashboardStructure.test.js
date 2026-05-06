@@ -16,11 +16,26 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     viteSource,
     tsconfigSource,
     appSidebarSource,
-    _dataTableSource,
-    _chartSource,
+    dataTableSource,
+    chartAreaSource,
     _avatarSource,
     siteHeaderSource,
     dropdownMenuSource,
+    tablerIconsSource,
+    tablerIconTypesSource,
+    lucideIconsSource,
+    lucideIconTypesSource,
+    rechartsSource,
+    rechartsTypesSource,
+    navMainSource,
+    navUserSource,
+    navDocumentsSource,
+    sectionCardsSource,
+    selectSource,
+    checkboxSource,
+    sidebarSource,
+    sonnerSource,
+    uiChartSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -35,6 +50,21 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
     readProjectFile("public/avatars/shadcn.svg"),
     readProjectFile("src/components/site-header.tsx"),
     readProjectFile("src/components/ui/dropdown-menu.tsx"),
+    readProjectFile("src/lib/tabler-icons.ts"),
+    readProjectFile("src/types/tabler-icons-react.d.ts"),
+    readProjectFile("src/lib/lucide-icons.ts"),
+    readProjectFile("src/types/lucide-react-icons.d.ts"),
+    readProjectFile("src/lib/recharts.ts"),
+    readProjectFile("src/types/recharts-es6.d.ts"),
+    readProjectFile("src/components/nav-main.tsx"),
+    readProjectFile("src/components/nav-user.tsx"),
+    readProjectFile("src/components/nav-documents.tsx"),
+    readProjectFile("src/components/section-cards.tsx"),
+    readProjectFile("src/components/ui/select.tsx"),
+    readProjectFile("src/components/ui/checkbox.tsx"),
+    readProjectFile("src/components/ui/sidebar.tsx"),
+    readProjectFile("src/components/ui/sonner.tsx"),
+    readProjectFile("src/components/ui/chart.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -78,7 +108,17 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSource, /<ChartAreaInteractive/);
   assert.match(appSource, /<DataTable data=\{data\}/);
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
-  assert.match(appSidebarSource, /from "@tabler\/icons-react"/);
+  assert.match(appSidebarSource, /from "@\/lib\/tabler-icons"/);
+  assert.match(navMainSource, /from "@\/lib\/tabler-icons"/);
+  assert.match(navUserSource, /from "@\/lib\/tabler-icons"/);
+  assert.match(navDocumentsSource, /from "@\/lib\/tabler-icons"/);
+  assert.doesNotMatch(appSidebarSource, /from "@tabler\/icons-react"/);
+  assert.doesNotMatch(navMainSource, /from "@tabler\/icons-react"/);
+  assert.doesNotMatch(navUserSource, /from "@tabler\/icons-react"/);
+  assert.doesNotMatch(navDocumentsSource, /from "@tabler\/icons-react"/);
+  assert.match(tablerIconsSource, /@tabler\/icons-react\/dist\/esm\/icons\/IconDashboard\.mjs/);
+  assert.match(tablerIconsSource, /@tabler\/icons-react\/dist\/esm\/icons\/IconInnerShadowTop\.mjs/);
+  assert.match(tablerIconTypesSource, /declare module "@tabler\/icons-react\/dist\/esm\/icons\/\*\.mjs"/);
   assert.match(appSidebarSource, /IconInnerShadowTop/);
   assert.match(appSidebarSource, /IconDashboard/);
   assert.match(appSidebarSource, /avatar:\s*"\.\/avatars\/shadcn\.svg"/);
@@ -87,6 +127,28 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(siteHeaderSource, /electron-window-drag/);
   assert.match(siteHeaderSource, /electron-window-no-drag/);
   assert.match(dropdownMenuSource, /modal\s*=\s*false/);
+  for (const source of [
+    dataTableSource,
+    dropdownMenuSource,
+    sectionCardsSource,
+    selectSource,
+    checkboxSource,
+    sidebarSource,
+    sonnerSource,
+  ]) {
+    assert.doesNotMatch(source, /from "lucide-react"/);
+    assert.match(source, /from "@\/lib\/lucide-icons"/);
+  }
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/check\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/panel-left\.mjs/);
+  assert.match(lucideIconTypesSource, /declare module "lucide-react\/dist\/esm\/icons\/\*\.mjs"/);
+  for (const source of [dataTableSource, chartAreaSource, uiChartSource]) {
+    assert.doesNotMatch(source, /from "recharts"/);
+    assert.match(source, /from "@\/lib\/recharts"/);
+  }
+  assert.match(rechartsSource, /recharts\/es6\/chart\/AreaChart\.js/);
+  assert.match(rechartsSource, /recharts\/es6\/component\/ResponsiveContainer\.js/);
+  assert.match(rechartsTypesSource, /declare module "recharts\/es6\/chart\/AreaChart\.js"/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /--header-height:\s*3rem/);
   assert.match(cssSource, /\.dashboard-01-shell/);

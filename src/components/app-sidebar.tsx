@@ -29,7 +29,7 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+} from "@/lib/tabler-icons"
 
 const data = {
   user: {

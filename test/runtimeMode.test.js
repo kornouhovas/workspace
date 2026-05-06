@@ -11,7 +11,8 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.main, "electron/main.js");
   assert.equal(packageJson.scripts.dev, undefined);
   assert.equal(packageJson.scripts.preview, undefined);
-  assert.equal(packageJson.scripts.electron, "npm run build:renderer && electron electron/main.js");
+  assert.equal(packageJson.scripts.electron, "electron electron/main.js");
+  assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && electron electron/main.js");
   assert.equal(packageJson.scripts["build:renderer"], "vite build");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
   assert.equal(packageJson.scripts["build:sidecar"], "go build -o workspace-sidecar ./cmd/workspace-sidecar");

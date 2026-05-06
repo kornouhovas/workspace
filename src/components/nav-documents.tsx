@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { IconDots, IconFolder, IconShare3, IconTrash } from "@tabler/icons-react"
+import { IconDots, IconFolder, IconShare3, IconTrash } from "@/lib/tabler-icons"
 
 export function NavDocuments({
   items,

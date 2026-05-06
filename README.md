@@ -13,6 +13,13 @@ cd /Users/aleksandersk/Documents/programming/node/project_folder
 npm run electron
 ```
 
+Если renderer еще не собран или нужен свежий production bundle:
+
+```bash
+npm run build:renderer
+npm run electron
+```
+
 Sidecar:
 
 ```bash
@@ -44,6 +51,7 @@ npm test
 npm run typecheck
 npm run build:renderer
 npm run electron
+npm run electron:build
 go test ./...
 npm run build:sidecar
 ```

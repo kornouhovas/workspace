@@ -6,7 +6,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { IconCirclePlusFilled, IconMail } from "@tabler/icons-react"
+import { IconCirclePlusFilled, IconMail } from "@/lib/tabler-icons"
 
 export function NavMain({
   items,

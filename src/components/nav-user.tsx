@@ -24,7 +24,7 @@ import {
   IconLogout,
   IconNotification,
   IconUserCircle,
-} from "@tabler/icons-react"
+} from "@/lib/tabler-icons"
 
 export function NavUser({
   user,

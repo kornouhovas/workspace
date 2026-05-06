@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { TrendingUpIcon, TrendingDownIcon } from "lucide-react"
+import { TrendingUpIcon, TrendingDownIcon } from "@/lib/lucide-icons"
 
 export function SectionCards() {
   return (
