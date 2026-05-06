@@ -126,6 +126,9 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSidebarSource, /electron-window-no-drag/);
   assert.match(siteHeaderSource, /electron-window-drag/);
   assert.match(siteHeaderSource, /electron-window-no-drag/);
+  assert.match(siteHeaderSource, /site-header-content/);
+  assert.match(siteHeaderSource, /size="icon-xs"/);
+  assert.match(siteHeaderSource, /text-sm font-medium leading-none/);
   assert.match(dropdownMenuSource, /modal\s*=\s*false/);
   for (const source of [
     dataTableSource,
@@ -158,6 +161,9 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(cssSource, /\.dashboard-01-shell\s*\{[\s\S]*background:\s*var\(--sidebar\)/);
   assert.match(cssSource, /\.dashboard-main-inset/);
   assert.match(cssSource, /\.dashboard-main-inset\s*\{[\s\S]*background:\s*var\(--background\)/);
+  assert.match(cssSource, /margin:\s*0\s+0\s+calc\(var\(--spacing\)\s*\*\s*2\)/);
+  assert.match(cssSource, /\.site-header-content\s*\{[\s\S]*padding-inline:\s*calc\(var\(--spacing\)\s*\*\s*4\)/);
+  assert.match(cssSource, /\[data-variant="inset"\]\[data-state="collapsed"\]\s*~\s*\.dashboard-main-inset\s+\.site-header-content\s*\{[\s\S]*padding-left:\s*calc\(var\(--spacing\)\s*\*\s*26\)/);
   assert.match(cssSource, /scrollbar-gutter:\s*stable/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
   assert.match(cssSource, /::-webkit-scrollbar-thumb/);
