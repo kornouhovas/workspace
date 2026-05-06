@@ -158,7 +158,8 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(cssSource, /\.dashboard-01-shell\s*\{[\s\S]*background:\s*var\(--sidebar\)/);
   assert.match(cssSource, /\.dashboard-main-inset/);
   assert.match(cssSource, /\.dashboard-main-inset\s*\{[\s\S]*background:\s*var\(--background\)/);
-  assert.match(sidebarSource, /peer-data-\[state=collapsed\]:ml-24/);
+  assert.match(cssSource, /\[data-variant="inset"\]\[data-state="collapsed"\]\s*~\s*\.dashboard-main-inset\s*\{[\s\S]*margin-left:\s*calc\(var\(--spacing\)\s*\*\s*24\)/);
+  assert.doesNotMatch(sidebarSource, /peer-data-\[state=collapsed\]:ml-24/);
   assert.match(cssSource, /scrollbar-gutter:\s*stable/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
   assert.match(cssSource, /::-webkit-scrollbar-thumb/);
