@@ -173,10 +173,6 @@
     border-radius: var(--radius-2xl);
     box-shadow: 0 0 0 1px var(--border);
   }
-
-  [data-variant="inset"][data-state="collapsed"] ~ .dashboard-main-inset {
-    margin-left: calc(var(--spacing) * 24);
-  }
 }
 
 .electron-window-drag {
