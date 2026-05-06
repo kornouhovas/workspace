@@ -122,7 +122,7 @@ test("renderer installs and composes shadcn dashboard-01", async () => {
   assert.match(appSidebarSource, /IconInnerShadowTop/);
   assert.match(appSidebarSource, /IconDashboard/);
   assert.match(appSidebarSource, /avatar:\s*"\.\/avatars\/shadcn\.svg"/);
-  assert.match(appSidebarSource, /electron-window-drag/);
+  assert.match(appSidebarSource, /<SidebarHeader className="electron-window-drag pt-9">/);
   assert.match(appSidebarSource, /electron-window-no-drag/);
   assert.match(siteHeaderSource, /electron-window-drag/);
   assert.match(siteHeaderSource, /electron-window-no-drag/);
