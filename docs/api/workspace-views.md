@@ -457,6 +457,9 @@ Response for Board:
   ],
   "projection": {
     "type": "board",
+    "capabilities": {
+      "canMoveBetweenStatuses": false
+    },
     "columns": [
       {
         "statusValueId": "statusValue:folderRole:workspace-main:active",
