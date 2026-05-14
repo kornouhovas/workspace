@@ -1,10 +1,20 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { registerWorkspaceIpc } from "./workspaceIpc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 app.setName("Workspace");
+registerWorkspaceIpc(ipcMain, {
+  async chooseRoot() {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory"],
+      title: "Choose workspace source folder",
+    });
+    return result.canceled ? "" : result.filePaths[0] || "";
+  },
+});
 
 let mainWindow = null;
 

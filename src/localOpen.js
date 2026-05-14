@@ -1,4 +1,4 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { spawn } from "node:child_process";
 
@@ -45,6 +45,22 @@ export function resolveWorkspacePath(root, relativePath) {
   return targetPath;
 }
 
+export function resolveExistingWorkspacePath(root, relativePath) {
+  const targetPath = resolveWorkspacePath(root, relativePath);
+  if (!existsSync(targetPath)) {
+    return targetPath;
+  }
+
+  const realRoot = realpathSync(root);
+  const realTargetPath = realpathSync(targetPath);
+  const rootRelativePath = relative(realRoot, realTargetPath);
+  if (rootRelativePath.startsWith("..") || isAbsolute(rootRelativePath)) {
+    throw new Error("Path is outside workspace root.");
+  }
+
+  return targetPath;
+}
+
 export function getMacOpenCommand(targetPath, kind) {
   return { command: "open", args: [targetPath] };
 }
@@ -69,7 +85,7 @@ export async function createRevealResponse({ body, root, platform = process.plat
       return createJsonResponse(501, { error: "Opening local items is currently implemented for macOS only." });
     }
 
-    const targetPath = resolveWorkspacePath(root, body?.path);
+    const targetPath = resolveExistingWorkspacePath(root, body?.path);
     if (!existsSync(targetPath)) {
       return createJsonResponse(404, { error: "Local item was not found." });
     }

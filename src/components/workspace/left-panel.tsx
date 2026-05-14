@@ -5,7 +5,15 @@ import {
   SettingsIcon,
 } from "@/lib/lucide-icons";
 
-export function WorkspaceLeftPanel() {
+type WorkspaceLeftPanelProps = {
+  readonly searchQuery: string;
+  readonly onSearchQueryChange: (searchQuery: string) => void;
+};
+
+export function WorkspaceLeftPanel({
+  searchQuery,
+  onSearchQueryChange,
+}: WorkspaceLeftPanelProps) {
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="electron-window-drag flex h-12 items-center px-4">
@@ -28,6 +36,8 @@ export function WorkspaceLeftPanel() {
             <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
               placeholder="Project name"
               type="search"
             />

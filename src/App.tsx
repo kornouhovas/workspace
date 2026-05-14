@@ -148,7 +148,10 @@ export default function App() {
           await workspaceClient.listViews({ workspaceId: root.workspaceId }),
           root.workspaceId,
         );
-        const activeViewId = viewsResponse.activeViewId || viewsResponse.views[0]?.id;
+        const requestedViewExists = viewsResponse.views.some((view) => view.id === state.activeViewId);
+        const activeViewId = requestedViewExists
+          ? state.activeViewId
+          : viewsResponse.activeViewId || viewsResponse.views[0]?.id;
         if (!activeViewId) {
           throw new Error("Workspace active view is unavailable.");
         }
@@ -185,7 +188,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [workspaceClient, state.searchQuery]);
+  }, [workspaceClient, state.activeViewId, state.searchQuery]);
 
   const viewState = {
     activeViewId: state.activeViewId || workspaceMockProjection.activeViewId,
@@ -213,13 +216,34 @@ export default function App() {
   return (
     <>
       <div className="dark flex h-screen min-h-0 bg-background text-foreground">
-        <WorkspaceLeftPanel />
+        <WorkspaceLeftPanel
+          searchQuery={state.searchQuery}
+          onSearchQueryChange={(searchQuery) => {
+            dispatch({ type: "searchQueryChanged", searchQuery });
+          }}
+        />
         <main data-testid="workspace-main" className="flex min-w-0 flex-1 flex-col">
           <header className="electron-window-drag flex h-12 shrink-0 items-center border-b border-border px-4">
             <h1 className="text-sm font-medium">Workspace Project Board</h1>
           </header>
           <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden">
-            <WorkspaceViewTabs activeViewId={viewState.activeViewId} views={viewState.views} />
+            <WorkspaceViewTabs
+              activeViewId={viewState.activeViewId}
+              views={viewState.views}
+              onActiveViewChange={(activeViewId) => {
+                dispatch({ type: "activeViewChanged", activeViewId });
+                if (state.workspaceId) {
+                  void workspaceClient.setActiveView({
+                    workspaceId: state.workspaceId,
+                    viewId: activeViewId,
+                  }).catch((error: unknown) => {
+                    toast.error("Could not save active view", {
+                      description: getServiceErrorMessage(error),
+                    });
+                  });
+                }
+              }}
+            />
             <div className="min-h-0 flex-1 overflow-auto">
               {state.status === "loading" || state.status === "idle" ? (
                 <WorkspaceLoadingState />

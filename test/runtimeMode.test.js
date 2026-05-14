@@ -46,7 +46,9 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.doesNotMatch(readme, /npm run dev/);
   assert.match(readme, /Workspace Project Board/);
   assert.match(readme, /npm run build:renderer/);
-  assert.match(electronMain, /import\s+\{\s*app,\s*BrowserWindow\s*\}\s+from\s+"electron"/);
+  assert.match(electronMain, /import\s+\{\s*app,\s*BrowserWindow,\s*dialog,\s*ipcMain\s*\}\s+from\s+"electron"/);
+  assert.match(electronMain, /registerWorkspaceIpc\(ipcMain,\s*\{/);
+  assert.match(electronMain, /dialog\.showOpenDialog/);
   assert.match(electronMain, /let\s+mainWindow\s*=\s*null/);
   assert.match(electronMain, /new BrowserWindow\(/);
   assert.match(electronMain, /titleBarStyle:\s*"hiddenInset"/);
@@ -72,6 +74,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(preload, /exposeInMainWorld\("workspace"/);
   assert.match(preload, /workspace:request/);
   assert.doesNotMatch(preload, /require\(/);
+  await access(new URL("../electron/workspaceIpc.js", import.meta.url));
   await access(new URL("../electron/main.js", import.meta.url));
   await access(new URL("../index.html", import.meta.url));
   await access(new URL("../components.json", import.meta.url));

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -398,6 +398,17 @@ test("createFileResponse streams previewable files inside root", async () => {
   assert.equal(response.status, 200);
   assert.equal(response.contentType, "application/pdf");
   assert.equal(response.filePath, join(root, "Archive", "Completed", "Brief.pdf"));
+});
+
+test("createFileResponse rejects symlink previews outside root", async () => {
+  const root = await createWorkspaceFixture();
+  const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  await writeFile(join(outside, "Secret.pdf"), "secret");
+  await symlink(join(outside, "Secret.pdf"), join(root, "Archive", "Completed", "Secret.pdf"));
+
+  const response = await createFileResponse({ root, path: "Archive/Completed/Secret.pdf" });
+
+  assert.equal(response.status, 400);
 });
 
 test("workspace backend rejects paths outside root", async () => {

@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createRevealResponse,
   getMacOpenCommand,
   isPreviewablePath,
+  resolveExistingWorkspacePath,
   resolveWorkspacePath,
 } from "../src/localOpen.js";
 
@@ -64,4 +65,13 @@ test("createRevealResponse validates path, kind, and existing item before spawni
   });
 
   assert.equal(traversalResponse.status, 400);
+});
+
+test("resolveExistingWorkspacePath rejects symlinks that escape the workspace root", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-"));
+  const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  await writeFile(join(outside, "Secret.pdf"), "secret");
+  await symlink(join(outside, "Secret.pdf"), join(root, "Secret.pdf"));
+
+  assert.throws(() => resolveExistingWorkspacePath(root, "Secret.pdf"), /outside workspace root/);
 });

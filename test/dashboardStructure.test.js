@@ -63,6 +63,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /selectedProject/);
+  assert.match(appSource, /searchQueryChanged/);
+  assert.match(appSource, /activeViewChanged/);
+  assert.match(appSource, /workspaceClient\.setActiveView/);
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);
@@ -74,6 +77,9 @@ test("renderer composes the workspace product shell", async () => {
 
   assert.match(leftPanelSource, /Add Workspace/);
   assert.match(leftPanelSource, /Search/);
+  assert.match(leftPanelSource, /searchQuery/);
+  assert.match(leftPanelSource, /onSearchQueryChange/);
+  assert.match(leftPanelSource, /onChange/);
   assert.match(leftPanelSource, /Workspaces/);
   assert.match(leftPanelSource, /Settings/);
   assert.match(leftPanelSource, /from "@\/lib\/lucide-icons"/);
@@ -86,6 +92,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(settingsViewSource, /status/);
   assert.match(settingsViewSource, /project/);
   assert.match(settingsViewSource, /folderRoleTree/);
+  assert.match(appSource, /onActiveViewChange/);
   assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);
   assert.match(projectDetailPanelSource, /Sheet/);
   assert.match(projectDetailPanelSource, /SheetTitle/);

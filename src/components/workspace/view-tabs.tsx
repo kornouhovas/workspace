@@ -10,12 +10,17 @@ type WorkspaceView = {
 type WorkspaceViewTabsProps = {
   readonly activeViewId: string;
   readonly views: readonly WorkspaceView[];
+  readonly onActiveViewChange: (viewId: string) => void;
 };
 
-export function WorkspaceViewTabs({ activeViewId, views }: WorkspaceViewTabsProps) {
+export function WorkspaceViewTabs({
+  activeViewId,
+  views,
+  onActiveViewChange,
+}: WorkspaceViewTabsProps) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2">
-      <Tabs value={activeViewId} className="min-w-0">
+      <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0">
         <TabsList variant="line" aria-label="Workspace views">
           {views.map((view) => (
             <TabsTrigger key={view.id} value={view.id} className="capitalize">

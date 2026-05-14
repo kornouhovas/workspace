@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { flattenAccessTreeCards } from "./folderModel.js";
-import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
+import { isPreviewablePath, resolveExistingWorkspacePath, resolveWorkspacePath } from "./localOpen.js";
 import { projectFoldersToWorkspaceObjects } from "./workspaceObjects.js";
 import {
   WorkspaceViewError,
@@ -146,7 +146,7 @@ export async function createFileResponse({ root, path }) {
       return createJsonResponse(415, { error: "File type is not previewable." });
     }
 
-    const filePath = resolveWorkspacePath(root, path);
+    const filePath = resolveExistingWorkspacePath(root, path);
     if (!existsSync(filePath) || !statSync(filePath).isFile()) {
       return createJsonResponse(404, { error: "File was not found." });
     }
@@ -548,7 +548,7 @@ async function readVisibleDirectoryEntries(directoryPath) {
 }
 
 function resolveWorkspaceEntryPath(root, relativePath) {
-  return relativePath ? resolveWorkspacePath(root, relativePath) : root;
+  return relativePath ? resolveExistingWorkspacePath(root, relativePath) : root;
 }
 
 function getRootFolderProperties(properties, root) {
