@@ -177,3 +177,44 @@ func TestStorePersistsWorkspaceViewsWithoutBreakingRootDocument(t *testing.T) {
 		t.Fatalf("expected root document compatibility, got %#v", root)
 	}
 }
+
+func TestStoreRejectsWorkspaceDocumentAtReservedRootID(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	if err := store.SetRoot(ctx, RootDocument{
+		ID:       "workspace:other",
+		RootPath: "/tmp/workspace-root",
+		Name:     "workspace-root",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := store.UpsertWorkspace(ctx, WorkspaceDocument{
+		ID:           "workspace:root",
+		Type:         "workspace",
+		ActiveViewID: "view:board",
+	}); err == nil {
+		t.Fatal("expected reserved workspace root id to be rejected")
+	}
+
+	workspace, err := store.GetWorkspace(ctx, "workspace:root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workspace != (WorkspaceDocument{}) {
+		t.Fatalf("expected reserved root id to return zero workspace, got %#v", workspace)
+	}
+
+	root, err := store.GetRoot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root.ID != "workspace:root" || root.RootPath != "/tmp/workspace-root" || root.Name != "workspace-root" {
+		t.Fatalf("expected root document to remain intact, got %#v", root)
+	}
+}

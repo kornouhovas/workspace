@@ -12,6 +12,8 @@ import (
 
 const rootDocumentID = "workspace:root"
 
+var ErrReservedWorkspaceID = errors.New("workspace id is reserved")
+
 type Store struct {
 	db anystore.DB
 }
@@ -106,6 +108,9 @@ func (s *Store) GetRoot(ctx context.Context) (RootDocument, error) {
 }
 
 func (s *Store) UpsertWorkspace(ctx context.Context, workspace WorkspaceDocument) error {
+	if workspace.ID == rootDocumentID {
+		return ErrReservedWorkspaceID
+	}
 	if workspace.Type == "" {
 		workspace.Type = "workspace"
 	}
@@ -116,6 +121,10 @@ func (s *Store) UpsertWorkspace(ctx context.Context, workspace WorkspaceDocument
 }
 
 func (s *Store) GetWorkspace(ctx context.Context, id string) (WorkspaceDocument, error) {
+	if id == rootDocumentID {
+		return WorkspaceDocument{}, nil
+	}
+
 	coll, err := s.db.Collection(ctx, "workspaces")
 	if err != nil {
 		return WorkspaceDocument{}, err
