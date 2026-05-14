@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -7,6 +7,12 @@ import { spawn } from "node:child_process";
 import { flattenAccessTreeCards } from "./folderModel.js";
 import { isPreviewablePath, resolveWorkspacePath } from "./localOpen.js";
 import { projectFoldersToWorkspaceObjects } from "./workspaceObjects.js";
+import {
+  WorkspaceViewError,
+  createDefaultView,
+  normalizeViewDocument,
+  validateViewPatch,
+} from "./workspaceViews.js";
 
 export const defaultWorkspaceDataDirectory = join(process.cwd(), ".workspace");
 export const defaultLegacyWorkspaceDataDirectory = join(process.cwd(), ".folder-kanban");
@@ -152,6 +158,174 @@ export async function createFileResponse({ root, path }) {
     };
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not open file." });
+  }
+}
+
+export async function createListViewsResponse({ body, viewStore }) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const workspace = requireWorkspace(viewStore, workspaceId);
+    const views = await viewStore.listViews(workspaceId);
+
+    return createJsonResponse(200, {
+      workspaceId,
+      activeViewId: workspace.activeViewId || null,
+      views: views.map(normalizeViewDocument),
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
+export async function createCreateViewResponse({
+  body,
+  viewStore,
+  idFactory = randomUUID,
+  now = () => new Date().toISOString(),
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const viewType = requireBodyString(body, "viewType");
+    const workspace = requireWorkspace(viewStore, workspaceId);
+    const views = await viewStore.listViews(workspaceId);
+    const id = normalizeViewId(idFactory());
+    const timestamp = now();
+    const maxOrder = views.reduce((max, view) => Math.max(max, Number(view.order) || 0), 0);
+    const view = createDefaultView({
+      workspaceId,
+      viewType,
+      name: body?.name,
+      id,
+      order: views.length === 0 ? 10 : maxOrder + 10,
+      now: timestamp,
+    });
+    const savedView = await viewStore.saveView(view);
+    await viewStore.saveWorkspace({
+      ...workspace,
+      activeViewId: savedView.id,
+      updatedAt: timestamp,
+    });
+
+    return createJsonResponse(200, {
+      workspaceId,
+      activeViewId: savedView.id,
+      view: normalizeViewDocument(savedView),
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
+export async function createSetActiveViewResponse({
+  body,
+  viewStore,
+  now = () => new Date().toISOString(),
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const viewId = requireBodyString(body, "viewId");
+    const workspace = requireWorkspace(viewStore, workspaceId);
+    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    const timestamp = now();
+
+    await viewStore.saveWorkspace({
+      ...workspace,
+      activeViewId: view.id,
+      updatedAt: timestamp,
+    });
+
+    return createJsonResponse(200, {
+      workspaceId,
+      activeViewId: view.id,
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
+export async function createUpdateViewResponse({
+  body,
+  viewStore,
+  propertyDefinitions = [],
+  selectValues = [],
+  statusValues = [],
+  now = () => new Date().toISOString(),
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const viewId = requireBodyString(body, "viewId");
+    requireWorkspace(viewStore, workspaceId);
+    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+
+    validateViewPatch({
+      patch: body?.patch,
+      propertyDefinitions,
+      selectValues,
+      statusValues,
+    });
+
+    const savedView = await viewStore.saveView(normalizeViewDocument({
+      ...view,
+      ...(body?.patch || {}),
+      updatedAt: now(),
+    }));
+
+    return createJsonResponse(200, {
+      workspaceId,
+      view: normalizeViewDocument(savedView),
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
+export async function createDeleteViewResponse({
+  body,
+  viewStore,
+  now = () => new Date().toISOString(),
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const viewId = requireBodyString(body, "viewId");
+    const workspace = requireWorkspace(viewStore, workspaceId);
+    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    const views = await viewStore.listViews(workspaceId);
+
+    if (views.length <= 1) {
+      throw new WorkspaceViewError(
+        "LAST_VIEW_DELETE_BLOCKED",
+        "Cannot delete the last workspace view.",
+        "viewId",
+      );
+    }
+
+    const timestamp = now();
+    await viewStore.saveView(normalizeViewDocument({
+      ...view,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+    }));
+
+    const remainingViews = await viewStore.listViews(workspaceId);
+    const activeViewId = workspace.activeViewId === view.id
+      ? remainingViews[0]?.id || null
+      : workspace.activeViewId || null;
+
+    if (activeViewId !== (workspace.activeViewId || null)) {
+      await viewStore.saveWorkspace({
+        ...workspace,
+        activeViewId,
+        updatedAt: timestamp,
+      });
+    }
+
+    return createJsonResponse(200, {
+      workspaceId,
+      activeViewId,
+      viewId: view.id,
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
   }
 }
 
@@ -383,8 +557,55 @@ function createFolderId(name) {
   return `folder-${slug || "untitled"}`;
 }
 
+function requireBodyString(body, field) {
+  const value = typeof body?.[field] === "string" ? body[field].trim() : "";
+  if (!value) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", `${field} is required.`, field);
+  }
+
+  return value;
+}
+
+function requireWorkspace(viewStore, workspaceId) {
+  const workspace = viewStore.getWorkspace(workspaceId);
+  if (!workspace) {
+    throw new WorkspaceViewError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+  }
+
+  return workspace;
+}
+
+function requireActiveWorkspaceView(viewStore, workspaceId, viewId) {
+  const view = viewStore.getView(viewId);
+  if (!view || view.workspaceId !== workspaceId || view.deletedAt) {
+    throw new WorkspaceViewError("VIEW_NOT_FOUND", "View was not found.", "viewId");
+  }
+
+  return view;
+}
+
+function normalizeViewId(id) {
+  const value = typeof id === "string" ? id : String(id || "");
+  return value.startsWith("view:") ? value : `view:${value}`;
+}
+
 function createJsonResponse(status, payload) {
   return { status, payload };
+}
+
+function createWorkspaceViewErrorResponse(error) {
+  if (error instanceof WorkspaceViewError) {
+    return createJsonResponse(error.code === "LAST_VIEW_DELETE_BLOCKED" ? 409 : 400, {
+      code: error.code,
+      message: error.message,
+      field: error.field,
+    });
+  }
+
+  return createJsonResponse(400, {
+    code: "VALIDATION_FAILED",
+    message: error?.message || "View request failed.",
+  });
 }
 
 function runCommand(command, args) {
