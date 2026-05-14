@@ -104,8 +104,8 @@ func main() {
 		}
 
 		var payload struct {
-			WorkspaceID  string `json:"workspaceId"`
-			ActiveViewID string `json:"activeViewId"`
+			WorkspaceID string `json:"workspaceId"`
+			ViewID      string `json:"viewId"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
@@ -115,12 +115,22 @@ func main() {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is required"})
 			return
 		}
-		if payload.ActiveViewID == "" {
-			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "activeViewId is required"})
+		if payload.ViewID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "viewId is required"})
 			return
 		}
 		if payload.WorkspaceID == "workspace:root" {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is reserved"})
+			return
+		}
+
+		view, err := store.GetView(r.Context(), payload.ViewID)
+		if err != nil {
+			writeResult(w, nil, err)
+			return
+		}
+		if view.ID == "" || view.WorkspaceID != payload.WorkspaceID || view.DeletedAt != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "view was not found"})
 			return
 		}
 
@@ -136,7 +146,7 @@ func main() {
 				SchemaVersion: 1,
 			}
 		}
-		workspace.ActiveViewID = payload.ActiveViewID
+		workspace.ActiveViewID = payload.ViewID
 		writeResult(w, map[string]any{"ok": true}, store.UpsertWorkspace(r.Context(), workspace))
 	})
 

@@ -36,9 +36,9 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     workspaceId: "workspace:ops",
     viewType: "board",
   });
-  await transport.request("workspace.setWorkspaceActiveView", {
+  await transport.request("workspace.setActiveView", {
     workspaceId: "workspace:ops",
-    activeViewId: "view:board",
+    viewId: "view:board",
   });
 
   assert.deepEqual(calls, [
@@ -95,7 +95,7 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
       headers: { "content-type": "application/json" },
       body: {
         workspaceId: "workspace:ops",
-        activeViewId: "view:board",
+        viewId: "view:board",
       },
     },
   ]);
