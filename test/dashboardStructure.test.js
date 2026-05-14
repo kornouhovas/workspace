@@ -50,9 +50,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.ok(packageJson.dependencies["lucide-react"]);
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
-  assert.match(appSource, /from "@\/components\/workspace\/states"/);
   assert.match(appSource, /Workspace Project Board/);
   assert.match(appSource, /<WorkspaceLeftPanel/);
+  assert.match(appSource, /WorkspaceBoardView/);
+  assert.match(appSource, /WorkspaceTableView/);
+  assert.match(appSource, /WorkspaceViewTabs/);
+  assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);

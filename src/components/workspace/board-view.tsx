@@ -1,0 +1,107 @@
+import { Badge } from "@/components/ui/badge";
+import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
+
+type WorkspaceBoardColumn = {
+  readonly statusValueId: string;
+  readonly name: string;
+  readonly projects: readonly WorkspaceMockProject[];
+};
+
+type WorkspaceBoardProjection = {
+  readonly capabilities: {
+    readonly canMoveBetweenStatuses: boolean;
+  };
+  readonly columns: readonly WorkspaceBoardColumn[];
+};
+
+type WorkspaceBoardViewProps = {
+  readonly projection: WorkspaceBoardProjection;
+  readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+};
+
+function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
+  if (property.id === "property:name") {
+    return project.name;
+  }
+
+  if (property.id === "property:status") {
+    return project.status.name;
+  }
+
+  return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
+}
+
+export function WorkspaceBoardView({ projection, visibleProperties }: WorkspaceBoardViewProps) {
+  const cardProperties = visibleProperties.filter(
+    (property) => property.id !== "property:name" && property.id !== "property:status",
+  );
+
+  return (
+    <section className="flex min-h-0 flex-col gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 id="workspace-board-heading" className="text-sm font-semibold">
+            Board
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Status columns are fixed for the MVP; cross-status drag and drop is disabled.
+          </p>
+        </div>
+        <Badge variant="outline">Move disabled</Badge>
+      </div>
+      <div className="min-h-0 overflow-x-auto">
+        <div className="grid min-w-max auto-cols-[18rem] grid-flow-col gap-3 pb-2">
+          {projection.columns.map((column) => (
+            <section
+              key={column.statusValueId}
+              className="flex max-h-[32rem] min-h-72 flex-col rounded-lg border border-border bg-muted/20"
+              aria-label={`${column.name} projects`}
+            >
+              <header className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
+                <h3 className="truncate text-sm font-medium">{column.name}</h3>
+                <Badge variant="secondary">{column.projects.length}</Badge>
+              </header>
+              <div className="grid gap-2 overflow-y-auto p-2">
+                {column.projects.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                    No projects
+                  </div>
+                ) : (
+                  column.projects.map((project) => (
+                    <article
+                      key={project.id}
+                      className="rounded-lg border border-border bg-card p-3 text-card-foreground shadow-xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="truncate text-sm font-medium">{project.name}</h4>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {project.currentRelativePath}
+                          </p>
+                        </div>
+                        <Badge variant="outline">{project.status.name}</Badge>
+                      </div>
+                      <dl className="mt-3 grid gap-2">
+                        {cardProperties.map((property) => (
+                          <div key={property.id} className="grid grid-cols-[5rem_1fr] gap-2 text-xs">
+                            <dt className="truncate text-muted-foreground">{property.name}</dt>
+                            <dd className="truncate text-foreground">{getPropertyValue(project, property)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+      {!projection.capabilities.canMoveBetweenStatuses ? (
+        <p className="text-xs text-muted-foreground">
+          Cards are read-only across status columns until move support is wired through workspace services.
+        </p>
+      ) : null}
+    </section>
+  );
+}
