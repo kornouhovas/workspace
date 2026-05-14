@@ -40,6 +40,10 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     workspaceId: "workspace:ops",
     viewId: "view:board",
   });
+  await transport.request("workspace.reorderViews", {
+    workspaceId: "workspace:ops",
+    orderedViewIds: ["view:table", "view:board"],
+  });
 
   assert.deepEqual(calls, [
     {
@@ -96,6 +100,15 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
       body: {
         workspaceId: "workspace:ops",
         viewId: "view:board",
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/views/reorder",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        orderedViewIds: ["view:table", "view:board"],
       },
     },
   ]);

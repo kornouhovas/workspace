@@ -2,6 +2,7 @@ package workspacestore
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -216,5 +217,69 @@ func TestStoreRejectsWorkspaceDocumentAtReservedRootID(t *testing.T) {
 	}
 	if root.ID != "workspace:root" || root.RootPath != "/tmp/workspace-root" || root.Name != "workspace-root" {
 		t.Fatalf("expected root document to remain intact, got %#v", root)
+	}
+}
+
+func TestStoreReordersViews(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	for _, view := range []ViewDocument{
+		{ID: "view:board", WorkspaceID: "workspace:ops", Name: "Board", ViewType: "board", Order: 10, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+		{ID: "view:table", WorkspaceID: "workspace:ops", Name: "Table", ViewType: "table", Order: 20, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+	} {
+		if err := store.UpsertView(ctx, view); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	views, err := store.ReorderViews(ctx, "workspace:ops", []string{"view:table", "view:board"}, "2026-05-14T14:00:00.000Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(views) != 2 || views[0].ID != "view:table" || views[0].Order != 10 || views[1].ID != "view:board" || views[1].Order != 20 {
+		t.Fatalf("expected reordered views, got %#v", views)
+	}
+	if views[0].UpdatedAt != "2026-05-14T14:00:00.000Z" || views[1].UpdatedAt != "2026-05-14T14:00:00.000Z" {
+		t.Fatalf("expected updated timestamps, got %#v", views)
+	}
+}
+
+func TestStoreRejectsInvalidViewReorderWithoutMutation(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	for _, view := range []ViewDocument{
+		{ID: "view:board", WorkspaceID: "workspace:ops", Name: "Board", ViewType: "board", Order: 10, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+		{ID: "view:table", WorkspaceID: "workspace:ops", Name: "Table", ViewType: "table", Order: 20, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+	} {
+		if err := store.UpsertView(ctx, view); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err = store.ReorderViews(ctx, "workspace:ops", []string{"view:table", "view:table"}, "2026-05-14T14:00:00.000Z")
+	if !errors.Is(err, ErrInvalidViewOrder) {
+		t.Fatalf("expected ErrInvalidViewOrder, got %v", err)
+	}
+
+	views, err := store.ListViews(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(views) != 2 || views[0].ID != "view:board" || views[0].Order != 10 || views[1].ID != "view:table" || views[1].Order != 20 {
+		t.Fatalf("expected original order to remain, got %#v", views)
+	}
+	if views[0].UpdatedAt != "2026-05-14T09:00:00.000Z" || views[1].UpdatedAt != "2026-05-14T09:00:00.000Z" {
+		t.Fatalf("expected timestamps to remain unchanged, got %#v", views)
 	}
 }

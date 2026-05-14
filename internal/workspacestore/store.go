@@ -13,6 +13,7 @@ import (
 const rootDocumentID = "workspace:root"
 
 var ErrReservedWorkspaceID = errors.New("workspace id is reserved")
+var ErrInvalidViewOrder = errors.New("invalid view order")
 
 type Store struct {
 	db anystore.DB
@@ -228,6 +229,44 @@ func (s *Store) ListViews(ctx context.Context, workspaceID string) ([]ViewDocume
 		return views[i].Order < views[j].Order
 	})
 	return views, nil
+}
+
+func (s *Store) ReorderViews(ctx context.Context, workspaceID string, orderedViewIDs []string, updatedAt string) ([]ViewDocument, error) {
+	views, err := s.ListViews(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	viewsByID := make(map[string]ViewDocument, len(views))
+	for _, view := range views {
+		viewsByID[view.ID] = view
+	}
+
+	seen := make(map[string]bool, len(orderedViewIDs))
+	for _, viewID := range orderedViewIDs {
+		if viewID == "" || seen[viewID] {
+			return nil, ErrInvalidViewOrder
+		}
+		if _, ok := viewsByID[viewID]; !ok {
+			return nil, ErrInvalidViewOrder
+		}
+		seen[viewID] = true
+	}
+	if len(seen) != len(viewsByID) {
+		return nil, ErrInvalidViewOrder
+	}
+
+	reordered := make([]ViewDocument, 0, len(orderedViewIDs))
+	for index, viewID := range orderedViewIDs {
+		view := viewsByID[viewID]
+		view.Order = (index + 1) * 10
+		view.UpdatedAt = updatedAt
+		if err := s.UpsertView(ctx, view); err != nil {
+			return nil, err
+		}
+		reordered = append(reordered, view)
+	}
+	return reordered, nil
 }
 
 func (s *Store) UpsertPropertyValue(ctx context.Context, value PropertyValueDocument) error {

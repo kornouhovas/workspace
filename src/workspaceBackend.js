@@ -277,6 +277,38 @@ export async function createSetActiveViewResponse({
   }
 }
 
+export async function createReorderViewsResponse({
+  body,
+  viewStore,
+  now = () => new Date().toISOString(),
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    await requireWorkspace(viewStore, workspaceId);
+    const views = await viewStore.listViews(workspaceId);
+    const orderedViewIds = validateViewOrder(body?.orderedViewIds, views);
+    const viewsById = new Map(views.map((view) => [view.id, view]));
+    const timestamp = now();
+    const savedViews = [];
+
+    for (const [index, viewId] of orderedViewIds.entries()) {
+      const order = (index + 1) * 10;
+      const savedView = await viewStore.saveView(normalizeViewDocument({
+        ...viewsById.get(viewId),
+        order,
+        updatedAt: timestamp,
+      }));
+      savedViews.push(savedView);
+    }
+
+    return createJsonResponse(200, {
+      views: savedViews.map((view) => ({ id: view.id, order: view.order })),
+    });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
 export async function createUpdateViewResponse({
   body,
   viewStore,
@@ -639,6 +671,27 @@ function validatePropertyOrderVisibleInView({ view, patch }) {
       );
     }
   }
+}
+
+function validateViewOrder(orderedViewIds, views) {
+  if (!Array.isArray(orderedViewIds)) {
+    throw new WorkspaceViewError("INVALID_VIEW_ORDER", "orderedViewIds must contain every active view exactly once.", "orderedViewIds");
+  }
+
+  const activeViewIds = new Set(views.map((view) => view.id));
+  const seen = new Set();
+  for (const viewId of orderedViewIds) {
+    if (typeof viewId !== "string" || !viewId.trim() || seen.has(viewId) || !activeViewIds.has(viewId)) {
+      throw new WorkspaceViewError("INVALID_VIEW_ORDER", "orderedViewIds must contain every active view exactly once.", "orderedViewIds");
+    }
+    seen.add(viewId);
+  }
+
+  if (seen.size !== activeViewIds.size) {
+    throw new WorkspaceViewError("INVALID_VIEW_ORDER", "orderedViewIds must contain every active view exactly once.", "orderedViewIds");
+  }
+
+  return orderedViewIds;
 }
 
 function normalizeViewId(id) {

@@ -11,6 +11,7 @@ import {
   createListEntriesResponse,
   createListViewsResponse,
   createPropertiesResponse,
+  createReorderViewsResponse,
   createScanResponse,
   createSelectRootResponse,
   createSetActiveViewResponse,
@@ -470,6 +471,60 @@ test("createListViewsResponse returns active view id and normalized non-deleted 
       ["view:second", "Board", [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]],
     ],
   );
+});
+
+test("createReorderViewsResponse updates orders and preserves active view", async () => {
+  const now = "2026-05-14T14:00:00.000Z";
+  const store = createMemoryViewStore({
+    workspaces: [{ id: "workspace:ops", activeViewId: "view:board" }],
+    views: [
+      createStoredView({ id: "view:board", order: 10 }),
+      createStoredView({ id: "view:table", order: 20, viewType: "table", name: "Table" }),
+    ],
+  });
+
+  const response = await createReorderViewsResponse({
+    body: { workspaceId: "workspace:ops", orderedViewIds: ["view:table", "view:board"] },
+    viewStore: store,
+    now: () => now,
+  });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.payload, {
+    views: [
+      { id: "view:table", order: 10 },
+      { id: "view:board", order: 20 },
+    ],
+  });
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:board");
+  assert.equal((await store.getView("view:table")).order, 10);
+  assert.equal((await store.getView("view:board")).order, 20);
+  assert.equal((await store.getView("view:table")).updatedAt, now);
+  assert.equal((await store.getView("view:board")).updatedAt, now);
+});
+
+test("createReorderViewsResponse rejects duplicate and missing active views without mutation", async () => {
+  const store = createMemoryViewStore({
+    workspaces: [{ id: "workspace:ops", activeViewId: "view:board" }],
+    views: [
+      createStoredView({ id: "view:board", order: 10 }),
+      createStoredView({ id: "view:table", order: 20, viewType: "table", name: "Table" }),
+    ],
+  });
+
+  const response = await createReorderViewsResponse({
+    body: { workspaceId: "workspace:ops", orderedViewIds: ["view:table", "view:table"] },
+    viewStore: store,
+    now: () => "2026-05-14T14:00:00.000Z",
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(response.payload.code, "INVALID_VIEW_ORDER");
+  assert.equal(response.payload.field, "orderedViewIds");
+  assert.equal((await store.getView("view:board")).order, 10);
+  assert.equal((await store.getView("view:table")).order, 20);
+  assert.equal((await store.getView("view:board")).updatedAt, "2026-05-14T09:00:00.000Z");
+  assert.equal((await store.getView("view:table")).updatedAt, "2026-05-14T09:00:00.000Z");
 });
 
 test("createSetActiveViewResponse rejects missing foreign and deleted views", async () => {

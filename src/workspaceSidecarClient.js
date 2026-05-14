@@ -50,5 +50,8 @@ function getSidecarRoute(method, payload = {}) {
   if (method === "workspace.setActiveView") {
     return { httpMethod: "PUT", path: "/workspace/active-view" };
   }
+  if (method === "workspace.reorderViews") {
+    return { httpMethod: "PUT", path: "/workspace/views/reorder" };
+  }
   throw new Error(`Unsupported sidecar method: ${method}`);
 }

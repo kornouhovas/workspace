@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"workspace/internal/workspacestore"
 )
@@ -69,6 +70,58 @@ func main() {
 			return
 		}
 		writeResult(w, map[string]any{"ok": true}, store.UpsertPropertyValue(r.Context(), value))
+	})
+	mux.HandleFunc("/workspace/views/reorder", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
+			return
+		}
+
+		var payload struct {
+			WorkspaceID    string   `json:"workspaceId"`
+			OrderedViewIDs []string `json:"orderedViewIds"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		if payload.WorkspaceID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is required"})
+			return
+		}
+		if payload.WorkspaceID == "workspace:root" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is reserved"})
+			return
+		}
+		if payload.OrderedViewIDs == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "orderedViewIds is required"})
+			return
+		}
+
+		workspace, err := store.GetWorkspace(r.Context(), payload.WorkspaceID)
+		if err != nil {
+			writeResult(w, nil, err)
+			return
+		}
+		if workspace.ID == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspace was not found"})
+			return
+		}
+
+		views, err := store.ReorderViews(r.Context(), payload.WorkspaceID, payload.OrderedViewIDs, time.Now().UTC().Format(time.RFC3339Nano))
+		if err != nil {
+			writeResult(w, nil, err)
+			return
+		}
+
+		responseViews := make([]map[string]any, 0, len(views))
+		for _, view := range views {
+			responseViews = append(responseViews, map[string]any{
+				"id":    view.ID,
+				"order": view.Order,
+			})
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"views": responseViews})
 	})
 	mux.HandleFunc("/workspace/views", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
