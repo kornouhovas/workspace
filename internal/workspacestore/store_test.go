@@ -100,3 +100,80 @@ func TestSetRootStoresRootAtFixedDocumentID(t *testing.T) {
 		t.Fatalf("expected root path to persist, got %q", root.RootPath)
 	}
 }
+
+func TestStorePersistsWorkspaceViewsWithoutBreakingRootDocument(t *testing.T) {
+	ctx := context.Background()
+	dbPath := filepath.Join(t.TempDir(), "workspace.db")
+
+	store, err := Open(ctx, dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	if err := store.SetRoot(ctx, RootDocument{
+		ID:       "workspace:other",
+		RootPath: "/tmp/workspace-root",
+		Name:     "workspace-root",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	workspace := WorkspaceDocument{
+		ID:             "workspace:ops",
+		Type:           "workspace",
+		SchemaVersion:  1,
+		SourceFolderID: "projectSource:default",
+		Name:           "Operations",
+		Order:          10,
+		ActiveViewID:   "view:board",
+		CreatedAt:      "2026-05-14T00:00:00.000Z",
+		UpdatedAt:      "2026-05-14T00:00:00.000Z",
+	}
+	if err := store.UpsertWorkspace(ctx, workspace); err != nil {
+		t.Fatal(err)
+	}
+
+	view := ViewDocument{
+		ID:                 "view:board",
+		Type:               "view",
+		SchemaVersion:      1,
+		WorkspaceID:        "workspace:ops",
+		Name:               "Board",
+		ViewType:           "board",
+		Order:              10,
+		VisiblePropertyIDs: []string{"property:name", "property:status"},
+		HiddenPropertyIDs:  []string{},
+		PropertyOrder:      map[string]int{"property:name": 10, "property:status": 20},
+		ValueVisibility:    map[string]ValueVisibilityDocument{},
+		CreatedAt:          "2026-05-14T00:00:00.000Z",
+		UpdatedAt:          "2026-05-14T00:00:00.000Z",
+	}
+	if err := store.UpsertView(ctx, view); err != nil {
+		t.Fatal(err)
+	}
+
+	views, err := store.ListViews(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(views) != 1 || views[0].ID != "view:board" {
+		t.Fatalf("expected one active view, got %#v", views)
+	}
+
+	savedWorkspace, err := store.GetWorkspace(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if savedWorkspace.ActiveViewID != "view:board" {
+		t.Fatalf("expected active view to persist, got %#v", savedWorkspace)
+	}
+
+	root, err := store.GetRoot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root.ID != "workspace:root" || root.RootPath != "/tmp/workspace-root" {
+		t.Fatalf("expected root document compatibility, got %#v", root)
+	}
+}
