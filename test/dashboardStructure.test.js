@@ -17,6 +17,8 @@ test("renderer composes the workspace product shell", async () => {
     tsconfigSource,
     leftPanelSource,
     statesSource,
+    settingsViewSource,
+    projectDetailPanelSource,
     lucideIconsSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
@@ -28,6 +30,8 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("tsconfig.json"),
     readProjectFile("src/components/workspace/left-panel.tsx"),
     readProjectFile("src/components/workspace/states.tsx"),
+    readProjectFile("src/components/workspace/settings-view.tsx"),
+    readProjectFile("src/components/workspace/project-detail-panel.tsx"),
     readProjectFile("src/lib/lucide-icons.ts"),
   ]);
 
@@ -55,7 +59,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceBoardView/);
   assert.match(appSource, /WorkspaceTableView/);
   assert.match(appSource, /WorkspaceViewTabs/);
+  assert.match(appSource, /WorkspaceSettingsView/);
+  assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
+  assert.match(appSource, /selectedProject/);
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);
@@ -72,6 +79,19 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /from "@\/lib\/lucide-icons"/);
   assert.match(statesSource, /No source folder selected/);
   assert.match(statesSource, /Open Settings/);
+  assert.match(settingsViewSource, /WorkspaceSettingsView/);
+  assert.match(settingsViewSource, /Source folder/);
+  assert.match(settingsViewSource, /Select folder/);
+  assert.match(settingsViewSource, /group/);
+  assert.match(settingsViewSource, /status/);
+  assert.match(settingsViewSource, /project/);
+  assert.match(settingsViewSource, /folderRoleTree/);
+  assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);
+  assert.match(projectDetailPanelSource, /Sheet/);
+  assert.match(projectDetailPanelSource, /SheetTitle/);
+  assert.match(projectDetailPanelSource, /Properties/);
+  assert.match(projectDetailPanelSource, /File tree/);
+  assert.match(projectDetailPanelSource, /onOpenChange/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);

@@ -1,10 +1,22 @@
+import { useState } from "react";
+
 import { WorkspaceBoardView } from "@/components/workspace/board-view";
 import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
+import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
+import { WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
-import { workspaceMockProjection } from "@/workspaceMockData";
+import {
+  workspaceMockProjection,
+  workspaceMockSettings,
+  type WorkspaceMockProject,
+} from "@/workspaceMockData";
 
 export default function App() {
+  const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(
+    workspaceMockProjection.selectedProject,
+  );
+
   return (
     <div className="dark flex h-screen min-h-0 bg-background text-foreground">
       <WorkspaceLeftPanel />
@@ -18,6 +30,10 @@ export default function App() {
             views={workspaceMockProjection.views}
           />
           <div className="min-h-0 flex-1 overflow-auto">
+            <WorkspaceSettingsView
+              sourceFolder={workspaceMockSettings.sourceFolder}
+              folderRoleTree={workspaceMockSettings.folderRoleTree}
+            />
             <WorkspaceBoardView
               projection={workspaceMockProjection.projection}
               visibleProperties={workspaceMockProjection.visibleProperties}
@@ -29,6 +45,16 @@ export default function App() {
           </div>
         </div>
       </main>
+      <WorkspaceProjectDetailPanel
+        open={selectedProject !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedProject(null);
+          }
+        }}
+        project={selectedProject}
+        visibleProperties={workspaceMockProjection.visibleProperties}
+      />
     </div>
   );
 }
