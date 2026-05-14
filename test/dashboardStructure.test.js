@@ -91,10 +91,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /SheetTitle/);
   assert.match(projectDetailPanelSource, /Properties/);
   assert.match(projectDetailPanelSource, /File tree/);
+  assert.match(projectDetailPanelSource, /FolderIcon/);
+  assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/file\.mjs/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/search\.mjs/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/settings\.mjs/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);

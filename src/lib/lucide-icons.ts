@@ -8,6 +8,8 @@ export { default as ChevronsRightIcon } from "lucide-react/dist/esm/icons/chevro
 export { default as CircleCheckIcon } from "lucide-react/dist/esm/icons/circle-check.mjs"
 export { default as Columns3Icon } from "lucide-react/dist/esm/icons/columns-3.mjs"
 export { default as EllipsisVerticalIcon } from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs"
+export { default as FileIcon } from "lucide-react/dist/esm/icons/file.mjs"
+export { default as FolderIcon } from "lucide-react/dist/esm/icons/folder.mjs"
 export { default as FolderKanbanIcon } from "lucide-react/dist/esm/icons/folder-kanban.mjs"
 export { default as GripVerticalIcon } from "lucide-react/dist/esm/icons/grip-vertical.mjs"
 export { default as InfoIcon } from "lucide-react/dist/esm/icons/info.mjs"

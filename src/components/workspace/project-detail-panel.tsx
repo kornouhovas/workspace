@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { FileIcon, FolderIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
@@ -46,9 +47,11 @@ function FileTreeNode({ node, depth = 0 }: { readonly node: WorkspaceMockFileTre
         title={node.relativePath}
       >
         <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 1}rem` }}>
-          <span className="text-xs text-muted-foreground" aria-hidden="true">
-            {isFolder ? "Folder" : "File"}
-          </span>
+          {isFolder ? (
+            <FolderIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+          ) : (
+            <FileIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+          )}
           <span className="min-w-0">
             <span className="block truncate text-sm">{node.name}</span>
             <span className="block truncate text-xs font-normal text-muted-foreground">{node.relativePath}</span>
