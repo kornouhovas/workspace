@@ -171,6 +171,8 @@ export function createViewProjection({
     };
   }
 
+  const boardStatusValues = createBoardStatusValues({ statusValues, filteredProjects });
+
   return {
     ...response,
     projection: {
@@ -178,7 +180,7 @@ export function createViewProjection({
       capabilities: {
         canMoveBetweenStatuses: false,
       },
-      columns: statusValues.map((statusValue) => ({
+      columns: boardStatusValues.map((statusValue) => ({
         statusValueId: statusValue.id,
         name: statusValue.name,
         projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
@@ -271,6 +273,10 @@ function matchesValueVisibility(project, valueVisibility) {
       : project.propertyValues?.[propertyId];
 
     if (propertyId === PROPERTY_STATUS_ID) {
+      if (setting.valueIds.length === 0) {
+        continue;
+      }
+
       if (!setting.valueIds.includes(value)) {
         return false;
       }
@@ -304,6 +310,25 @@ function matchesValueVisibility(project, valueVisibility) {
   }
 
   return true;
+}
+
+function createBoardStatusValues({ statusValues, filteredProjects }) {
+  if (
+    statusValues.some((statusValue) => statusValue.id === NO_STATUS_VALUE_ID)
+    || !filteredProjects.some((project) => getProjectStatusValueId(project) === NO_STATUS_VALUE_ID)
+  ) {
+    return statusValues;
+  }
+
+  return [
+    ...statusValues,
+    {
+      id: NO_STATUS_VALUE_ID,
+      name: "No status",
+      relativePath: null,
+      source: "no-status",
+    },
+  ];
 }
 
 function projectNameSearchText(project) {

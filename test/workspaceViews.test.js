@@ -262,6 +262,40 @@ test("filterProjectsForView supports system Status filters and No status", () =>
   );
 });
 
+test("filterProjectsForView treats empty Status filters as no-op even with includeEmpty", () => {
+  const view = normalizeViewDocument({
+    id: "view:board",
+    workspaceId: "workspace:root",
+    viewType: "board",
+    valueVisibility: {
+      "property:status": {
+        mode: "include",
+        valueIds: [],
+        includeEmpty: true,
+      },
+    },
+  });
+  const projects = [
+    {
+      id: "project:active",
+      name: "Active Project",
+      status: { id: "statusValue:active", name: "Active" },
+      propertyValues: {},
+    },
+    {
+      id: "project:none",
+      name: "No Status Project",
+      status: { id: "statusValue:no-status", name: "No status" },
+      propertyValues: {},
+    },
+  ];
+
+  assert.deepEqual(
+    filterProjectsForView({ projects, view }).map((project) => project.id),
+    ["project:active", "project:none"],
+  );
+});
+
 test("createViewProjection returns board columns and table rows from the same filtered project set", () => {
   const visibleProperties = [
     { id: "property:name", name: "Name", type: "text", system: true },
@@ -292,5 +326,27 @@ test("createViewProjection returns board columns and table rows from the same fi
   assert.deepEqual(
     createViewProjection({ view: tableView, projects, visibleProperties, statusValues }).projection.rows.map((row) => row.id),
     ["project:alpha", "project:none"],
+  );
+});
+
+test("createViewProjection adds No status column when matching projects have no status", () => {
+  const statusValues = [
+    { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },
+  ];
+  const projects = [
+    { id: "project:none", name: "Loose", status: { id: "statusValue:no-status", name: "No status" }, propertyValues: {} },
+  ];
+  const boardView = normalizeViewDocument({ id: "view:board", workspaceId: "workspace:root", viewType: "board" });
+
+  assert.deepEqual(
+    createViewProjection({ view: boardView, projects, visibleProperties: [], statusValues }).projection.columns.map((column) => [
+      column.statusValueId,
+      column.name,
+      column.projects.map((project) => project.id),
+    ]),
+    [
+      ["statusValue:active", "Active", []],
+      ["statusValue:no-status", "No status", ["project:none"]],
+    ],
   );
 });
