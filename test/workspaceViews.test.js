@@ -94,3 +94,51 @@ test("validateViewPatch rejects removal of required system properties", () => {
     (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
   );
 });
+
+test("validateViewPatch rejects propertyOrder keys outside visible properties", () => {
+  assert.throws(
+    () => validateViewPatch({
+      patch: {
+        visiblePropertyIds: ["property:name", "property:status"],
+        propertyOrder: {
+          "property:name": 10,
+          "property:status": 20,
+          "property:priority": 30,
+        },
+      },
+      propertyDefinitions: [
+        { id: "property:name", type: "text", system: true },
+        { id: "property:status", type: "select", system: true },
+        { id: "property:priority", type: "select", system: false },
+      ],
+      selectValues: [],
+      statusValues: [{ id: "statusValue:no-status" }],
+    }),
+    (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
+  );
+});
+
+test("validateViewPatch rejects valueVisibility for non-filterable properties even when empty", () => {
+  assert.throws(
+    () => validateViewPatch({
+      patch: {
+        visiblePropertyIds: ["property:name", "property:status", "property:notes"],
+        valueVisibility: {
+          "property:notes": {
+            mode: "include",
+            valueIds: [],
+            includeEmpty: false,
+          },
+        },
+      },
+      propertyDefinitions: [
+        { id: "property:name", type: "text", system: true },
+        { id: "property:status", type: "select", system: true },
+        { id: "property:notes", type: "text", system: false },
+      ],
+      selectValues: [],
+      statusValues: [{ id: "statusValue:no-status" }],
+    }),
+    (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
+  );
+});

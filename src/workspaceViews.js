@@ -104,6 +104,15 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     }
   }
 
+  if (isPlainObject(patch.propertyOrder)) {
+    const visiblePropertyIdSet = new Set(visiblePropertyIds);
+    for (const propertyId of Object.keys(patch.propertyOrder)) {
+      if (!visiblePropertyIdSet.has(propertyId)) {
+        throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Property order references a hidden property.", "propertyOrder");
+      }
+    }
+  }
+
   validateValueVisibilityReferences({
     valueVisibility: patch.valueVisibility,
     propertyDefinitions,
@@ -138,7 +147,10 @@ function normalizeValueVisibility(value) {
 }
 
 function validateValueVisibilityReferences({ valueVisibility, propertyDefinitions, selectValues, statusValues }) {
-  const normalized = normalizeValueVisibility(valueVisibility);
+  if (!isPlainObject(valueVisibility)) {
+    return;
+  }
+
   const propertiesById = new Map(propertyDefinitions.filter((item) => !item.deletedAt).map((item) => [item.id, item]));
   const selectValuesByProperty = new Map();
 
@@ -150,11 +162,19 @@ function validateValueVisibilityReferences({ valueVisibility, propertyDefinition
 
   const statusValueIds = new Set(statusValues.map((item) => item.id));
 
-  for (const [propertyId, setting] of Object.entries(normalized)) {
+  for (const [propertyId, rawSetting] of Object.entries(valueVisibility)) {
+    if (typeof propertyId !== "string" || !isPlainObject(rawSetting)) {
+      continue;
+    }
+
     const property = propertiesById.get(propertyId);
     if (!property) {
       throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Filter property does not exist.", "valueVisibility");
     }
+
+    const setting = {
+      valueIds: uniqueStrings(normalizeStringArray(rawSetting.valueIds)),
+    };
 
     if (propertyId === PROPERTY_STATUS_ID) {
       for (const valueId of setting.valueIds) {
