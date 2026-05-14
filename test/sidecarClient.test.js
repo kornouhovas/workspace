@@ -30,6 +30,16 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     value: "note",
   });
   await transport.request("workspace.listPropertyValues", { workspaceId: "workspace:root" });
+  await transport.request("workspace.listViews", { workspaceId: "workspace:ops" });
+  await transport.request("workspace.upsertView", {
+    id: "view:board",
+    workspaceId: "workspace:ops",
+    viewType: "board",
+  });
+  await transport.request("workspace.setWorkspaceActiveView", {
+    workspaceId: "workspace:ops",
+    activeViewId: "view:board",
+  });
 
   assert.deepEqual(calls, [
     {
@@ -62,6 +72,31 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
       method: "GET",
       headers: undefined,
       body: null,
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/views?workspaceId=workspace%3Aops",
+      method: "GET",
+      headers: undefined,
+      body: null,
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/views",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        id: "view:board",
+        workspaceId: "workspace:ops",
+        viewType: "board",
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/active-view",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        activeViewId: "view:board",
+      },
     },
   ]);
 });

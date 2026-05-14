@@ -36,5 +36,19 @@ function getSidecarRoute(method, payload = {}) {
       query: `?workspaceId=${encodeURIComponent(workspaceId)}`,
     };
   }
+  if (method === "workspace.listViews") {
+    const workspaceId = typeof payload.workspaceId === "string" ? payload.workspaceId : "";
+    return {
+      httpMethod: "GET",
+      path: "/workspace/views",
+      query: `?workspaceId=${encodeURIComponent(workspaceId)}`,
+    };
+  }
+  if (method === "workspace.upsertView") {
+    return { httpMethod: "PUT", path: "/workspace/views" };
+  }
+  if (method === "workspace.setWorkspaceActiveView") {
+    return { httpMethod: "PUT", path: "/workspace/active-view" };
+  }
   throw new Error(`Unsupported sidecar method: ${method}`);
 }
