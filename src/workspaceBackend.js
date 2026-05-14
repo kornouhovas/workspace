@@ -263,6 +263,7 @@ export async function createUpdateViewResponse({
       selectValues,
       statusValues,
     });
+    validatePropertyOrderVisibleInView({ view, patch: body?.patch });
 
     const savedView = await viewStore.saveView(normalizeViewDocument({
       ...view,
@@ -322,7 +323,7 @@ export async function createDeleteViewResponse({
     return createJsonResponse(200, {
       workspaceId,
       activeViewId,
-      viewId: view.id,
+      deletedViewId: view.id,
     });
   } catch (error) {
     return createWorkspaceViewErrorResponse(error);
@@ -582,6 +583,28 @@ async function requireActiveWorkspaceView(viewStore, workspaceId, viewId) {
   }
 
   return view;
+}
+
+function validatePropertyOrderVisibleInView({ view, patch }) {
+  if (!patch?.propertyOrder || typeof patch.propertyOrder !== "object" || Array.isArray(patch.propertyOrder)) {
+    return;
+  }
+
+  const effectiveView = normalizeViewDocument({
+    ...view,
+    ...(Object.hasOwn(patch, "visiblePropertyIds") ? { visiblePropertyIds: patch.visiblePropertyIds } : {}),
+  });
+  const visiblePropertyIds = new Set(effectiveView.visiblePropertyIds);
+
+  for (const propertyId of Object.keys(patch.propertyOrder)) {
+    if (!visiblePropertyIds.has(propertyId)) {
+      throw new WorkspaceViewError(
+        "INVALID_PROPERTY_REFERENCE",
+        "Property order references a hidden property.",
+        "propertyOrder",
+      );
+    }
+  }
 }
 
 function normalizeViewId(id) {

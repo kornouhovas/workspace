@@ -607,6 +607,36 @@ test("createUpdateViewResponse forbids invalid view patches", async () => {
   assert.equal((await store.getView("view:board")).updatedAt, "2026-05-14T09:00:00.000Z");
 });
 
+test("createUpdateViewResponse rejects property order for hidden properties", async () => {
+  const store = createMemoryViewStore({
+    workspaces: [{ id: "workspace:ops", activeViewId: "view:board" }],
+    views: [createStoredView({ id: "view:board" })],
+  });
+
+  const response = await createUpdateViewResponse({
+    body: {
+      workspaceId: "workspace:ops",
+      viewId: "view:board",
+      patch: {
+        propertyOrder: {
+          "property:hidden": 5,
+        },
+      },
+    },
+    viewStore: store,
+    propertyDefinitions: [
+      { id: PROPERTY_NAME_ID, type: "text" },
+      { id: PROPERTY_STATUS_ID, type: "status" },
+      { id: "property:hidden", type: "text" },
+    ],
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(response.payload.code, "INVALID_PROPERTY_REFERENCE");
+  assert.equal(response.payload.message, "Property order references a hidden property.");
+  assert.deepEqual(await store.getView("view:board"), createStoredView({ id: "view:board" }));
+});
+
 test("createDeleteViewResponse blocks deleting the last non-deleted view", async () => {
   const store = createMemoryViewStore({
     workspaces: [{ id: "workspace:ops", activeViewId: "view:only" }],
@@ -644,7 +674,7 @@ test("createDeleteViewResponse soft-deletes a non-last active view and switches 
   assert.deepEqual(response.payload, {
     workspaceId: "workspace:ops",
     activeViewId: "view:remaining",
-    viewId: "view:active",
+    deletedViewId: "view:active",
   });
   assert.equal((await store.getView("view:active")).deletedAt, now);
   assert.equal((await store.getView("view:active")).updatedAt, now);
