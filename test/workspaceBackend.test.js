@@ -15,6 +15,7 @@ import {
   createSelectRootResponse,
   createSetActiveViewResponse,
   createUpdateViewResponse,
+  createViewProjectionResponse,
   defaultLegacyWorkspacePropertiesPath,
   defaultLegacyWorkspaceSettingsPath,
   defaultWorkspacePropertiesPath,
@@ -679,6 +680,126 @@ test("createDeleteViewResponse soft-deletes a non-last active view and switches 
   assert.equal((await store.getView("view:active")).deletedAt, now);
   assert.equal((await store.getView("view:active")).updatedAt, now);
   assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:remaining");
+});
+
+test("createViewProjectionResponse projects board and table views with async providers", async () => {
+  const priorityPropertyId = "property:priority";
+  const statusValues = [
+    { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },
+    { id: "statusValue:no-status", name: "No status", relativePath: null, source: "no-status" },
+  ];
+  const visibleProperties = [
+    { id: PROPERTY_NAME_ID, name: "Name", type: "text", system: true },
+    { id: PROPERTY_STATUS_ID, name: "Status", type: "status", system: true },
+    { id: priorityPropertyId, name: "Priority", type: "select" },
+  ];
+  const projects = [
+    {
+      id: "project:alpha",
+      name: "Alpha",
+      status: statusValues[0],
+      propertyValues: {
+        [priorityPropertyId]: "selectValue:high",
+      },
+    },
+    {
+      id: "project:alpha-low",
+      name: "Alpha backlog",
+      status: statusValues[1],
+      propertyValues: {
+        [priorityPropertyId]: "selectValue:low",
+      },
+    },
+  ];
+  const boardView = createStoredView({
+    id: "view:board",
+    visiblePropertyIds: [PROPERTY_NAME_ID, PROPERTY_STATUS_ID, priorityPropertyId],
+    valueVisibility: {
+      [priorityPropertyId]: { valueIds: ["selectValue:high"] },
+    },
+  });
+  const tableView = createStoredView({
+    id: "view:table",
+    name: "Table",
+    viewType: "table",
+    order: 20,
+    visiblePropertyIds: [PROPERTY_NAME_ID, PROPERTY_STATUS_ID, priorityPropertyId],
+    valueVisibility: {
+      [priorityPropertyId]: { valueIds: ["selectValue:high"] },
+    },
+  });
+  const store = createMemoryViewStore({
+    workspaces: [{ id: "workspace:ops", activeViewId: "view:board" }],
+    views: [boardView, tableView],
+  });
+  const projectProviderCalls = [];
+  const propertyProviderCalls = [];
+  const projectProvider = async ({ workspaceId }) => {
+    projectProviderCalls.push({ workspaceId });
+    return projects;
+  };
+  const propertyProvider = async ({ workspaceId, view }) => {
+    propertyProviderCalls.push({ workspaceId, viewId: view.id });
+    return { visibleProperties, statusValues };
+  };
+
+  const boardResponse = await createViewProjectionResponse({
+    body: { workspaceId: "workspace:ops", searchQuery: "alpha" },
+    viewStore: store,
+    projectProvider,
+    propertyProvider,
+  });
+  const tableResponse = await createViewProjectionResponse({
+    body: { workspaceId: "workspace:ops", viewId: "view:table", searchQuery: "alpha" },
+    viewStore: store,
+    projectProvider,
+    propertyProvider,
+  });
+
+  assert.equal(boardResponse.status, 200);
+  assert.equal(boardResponse.payload.projection.type, "board");
+  assert.deepEqual(
+    boardResponse.payload.projection.columns.map((column) => [
+      column.statusValueId,
+      column.projects.map((project) => project.id),
+    ]),
+    [
+      ["statusValue:active", ["project:alpha"]],
+      ["statusValue:no-status", []],
+    ],
+  );
+  assert.equal(boardResponse.payload.projection.capabilities.canMoveBetweenStatuses, false);
+  assert.equal(tableResponse.status, 200);
+  assert.deepEqual(
+    tableResponse.payload.projection.rows.map((project) => project.id),
+    ["project:alpha"],
+  );
+  assert.deepEqual(projectProviderCalls, [
+    { workspaceId: "workspace:ops" },
+    { workspaceId: "workspace:ops" },
+  ]);
+  assert.deepEqual(propertyProviderCalls, [
+    { workspaceId: "workspace:ops", viewId: "view:board" },
+    { workspaceId: "workspace:ops", viewId: "view:table" },
+  ]);
+});
+
+test("createViewProjectionResponse rejects missing active view when view id is omitted", async () => {
+  const store = createMemoryViewStore({
+    workspaces: [{ id: "workspace:ops", activeViewId: null }],
+  });
+
+  const response = await createViewProjectionResponse({
+    body: { workspaceId: "workspace:ops" },
+    viewStore: store,
+    projectProvider: async () => [],
+    propertyProvider: async () => ({ visibleProperties: [], statusValues: [] }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.equal(response.payload.code, "VIEW_NOT_FOUND");
+  assert.equal(response.payload.message, "Active view was not found.");
+  assert.equal(response.payload.field, "viewId");
 });
 
 function createRootPropertiesKey(root) {

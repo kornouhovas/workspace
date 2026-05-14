@@ -10,6 +10,7 @@ import { projectFoldersToWorkspaceObjects } from "./workspaceObjects.js";
 import {
   WorkspaceViewError,
   createDefaultView,
+  createViewProjection,
   normalizeViewDocument,
   validateViewPatch,
 } from "./workspaceViews.js";
@@ -172,6 +173,39 @@ export async function createListViewsResponse({ body, viewStore }) {
       activeViewId: workspace.activeViewId || null,
       views: views.map(normalizeViewDocument),
     });
+  } catch (error) {
+    return createWorkspaceViewErrorResponse(error);
+  }
+}
+
+export async function createViewProjectionResponse({
+  body,
+  viewStore,
+  projectProvider,
+  propertyProvider,
+}) {
+  try {
+    const workspaceId = requireBodyString(body, "workspaceId");
+    const workspace = await requireWorkspace(viewStore, workspaceId);
+    const viewId = typeof body?.viewId === "string" && body.viewId.trim()
+      ? body.viewId.trim()
+      : workspace.activeViewId;
+
+    if (!viewId) {
+      throw new WorkspaceViewError("VIEW_NOT_FOUND", "Active view was not found.", "viewId");
+    }
+
+    const view = await requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    const projects = await projectProvider({ workspaceId });
+    const { visibleProperties, statusValues } = await propertyProvider({ workspaceId, view });
+
+    return createJsonResponse(200, createViewProjection({
+      view,
+      projects,
+      visibleProperties,
+      statusValues,
+      searchQuery: body?.searchQuery,
+    }));
   } catch (error) {
     return createWorkspaceViewErrorResponse(error);
   }
