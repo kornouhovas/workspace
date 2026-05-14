@@ -118,6 +118,44 @@ test("validateViewPatch rejects propertyOrder keys outside visible properties", 
   );
 });
 
+test("validateViewPatch allows propertyOrder-only patches for active custom properties", () => {
+  assert.doesNotThrow(() => validateViewPatch({
+    patch: {
+      propertyOrder: {
+        "property:name": 10,
+        "property:status": 20,
+        "property:priority": 30,
+      },
+    },
+    propertyDefinitions: [
+      { id: "property:name", type: "text", system: true },
+      { id: "property:status", type: "select", system: true },
+      { id: "property:priority", type: "select", system: false },
+    ],
+    selectValues: [],
+    statusValues: [{ id: "statusValue:no-status" }],
+  }));
+});
+
+test("validateViewPatch rejects propertyOrder keys outside active properties", () => {
+  assert.throws(
+    () => validateViewPatch({
+      patch: {
+        propertyOrder: {
+          "property:missing": 30,
+        },
+      },
+      propertyDefinitions: [
+        { id: "property:name", type: "text", system: true },
+        { id: "property:status", type: "select", system: true },
+      ],
+      selectValues: [],
+      statusValues: [{ id: "statusValue:no-status" }],
+    }),
+    (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
+  );
+});
+
 test("validateViewPatch rejects valueVisibility for non-filterable properties even when empty", () => {
   assert.throws(
     () => validateViewPatch({

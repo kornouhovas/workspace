@@ -88,26 +88,33 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
   }
 
   const propertyIds = new Set(propertyDefinitions.filter((item) => !item.deletedAt).map((item) => item.id));
-  const visiblePropertyIds = Object.hasOwn(patch, "visiblePropertyIds")
+  const hasVisiblePropertyIdsPatch = Object.hasOwn(patch, "visiblePropertyIds");
+  const visiblePropertyIds = hasVisiblePropertyIdsPatch
     ? normalizeStringArray(patch.visiblePropertyIds)
-    : [PROPERTY_NAME_ID, PROPERTY_STATUS_ID];
+    : null;
 
-  for (const requiredId of [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]) {
-    if (!visiblePropertyIds.includes(requiredId)) {
-      throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", `${requiredId} is required in MVP.`, "visiblePropertyIds");
+  if (hasVisiblePropertyIdsPatch) {
+    for (const requiredId of [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]) {
+      if (!visiblePropertyIds.includes(requiredId)) {
+        throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", `${requiredId} is required in MVP.`, "visiblePropertyIds");
+      }
     }
-  }
 
-  for (const propertyId of visiblePropertyIds) {
-    if (!propertyIds.has(propertyId)) {
-      throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Visible property does not exist.", "visiblePropertyIds");
+    for (const propertyId of visiblePropertyIds) {
+      if (!propertyIds.has(propertyId)) {
+        throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Visible property does not exist.", "visiblePropertyIds");
+      }
     }
   }
 
   if (isPlainObject(patch.propertyOrder)) {
-    const visiblePropertyIdSet = new Set(visiblePropertyIds);
+    const visiblePropertyIdSet = hasVisiblePropertyIdsPatch ? new Set(visiblePropertyIds) : null;
     for (const propertyId of Object.keys(patch.propertyOrder)) {
-      if (!visiblePropertyIdSet.has(propertyId)) {
+      if (!propertyIds.has(propertyId)) {
+        throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Property order references an unknown property.", "propertyOrder");
+      }
+
+      if (visiblePropertyIdSet && !visiblePropertyIdSet.has(propertyId)) {
         throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Property order references a hidden property.", "propertyOrder");
       }
     }
