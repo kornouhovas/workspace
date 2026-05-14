@@ -3,12 +3,13 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["react", "react-dom"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -21,5 +22,11 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+  "include": [
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "src/components/workspace/**/*.ts",
+    "src/components/workspace/**/*.tsx",
+    "src/types/**/*.d.ts"
+  ]
 }

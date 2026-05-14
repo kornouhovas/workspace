@@ -1,44 +1,18 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
-import { SectionCards } from "@/components/section-cards";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import type { CSSProperties } from "react";
-
-import data from "./app/dashboard/data.json";
+import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
+import { WorkspaceEmptyState } from "@/components/workspace/states";
 
 export default function App() {
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        className="dashboard-01-shell dark"
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" />
-        <SidebarInset className="dashboard-main-inset">
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <SectionCards />
-                <div className="px-4 lg:px-6">
-                  <ChartAreaInteractive />
-                </div>
-                <DataTable data={data} />
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-        <Toaster />
-      </SidebarProvider>
-    </TooltipProvider>
+    <div className="dark flex h-screen min-h-0 bg-background text-foreground">
+      <WorkspaceLeftPanel />
+      <main data-testid="workspace-main" className="flex min-w-0 flex-1 flex-col">
+        <header className="electron-window-drag flex h-12 shrink-0 items-center border-b border-border px-4">
+          <h1 className="text-sm font-medium">Workspace Project Board</h1>
+        </header>
+        <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
+          <WorkspaceEmptyState />
+        </div>
+      </main>
+    </div>
   );
 }

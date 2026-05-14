@@ -4,6 +4,7 @@ import { access, readFile } from "node:fs/promises";
 
 test("workspace runs as an Electron-only app shell", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const tsconfig = JSON.parse(await readFile(new URL("../tsconfig.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const electronMain = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
 
@@ -15,6 +16,16 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && electron electron/main.js");
   assert.equal(packageJson.scripts["build:renderer"], "vite build");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
+  assert.equal(packageJson.devDependencies?.typescript, "5.9.3");
+  assert.deepEqual(tsconfig.compilerOptions.paths, { "@/*": ["./src/*"] });
+  assert.deepEqual(tsconfig.compilerOptions.types, ["react", "react-dom"]);
+  assert.deepEqual(tsconfig.include, [
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "src/components/workspace/**/*.ts",
+    "src/components/workspace/**/*.tsx",
+    "src/types/**/*.d.ts",
+  ]);
   assert.equal(packageJson.scripts["build:sidecar"], "go build -o workspace-sidecar ./cmd/workspace-sidecar");
   assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOOS=darwin GOARCH=arm64"), true);
   assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOOS=windows GOARCH=amd64"), true);
@@ -32,7 +43,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.build, undefined);
   assert.match(readme, /npm run electron/);
   assert.doesNotMatch(readme, /npm run dev/);
-  assert.match(readme, /dashboard-01/);
+  assert.match(readme, /Workspace Project Board/);
   assert.match(readme, /npm run build:renderer/);
   assert.match(electronMain, /import\s+\{\s*app,\s*BrowserWindow\s*\}\s+from\s+"electron"/);
   assert.match(electronMain, /let\s+mainWindow\s*=\s*null/);
@@ -59,7 +70,8 @@ test("workspace runs as an Electron-only app shell", async () => {
   await access(new URL("../components.json", import.meta.url));
   await access(new URL("../vite.config.ts", import.meta.url));
   await access(new URL("../src/App.tsx", import.meta.url));
-  await access(new URL("../src/components/app-sidebar.tsx", import.meta.url));
+  await access(new URL("../src/components/workspace/left-panel.tsx", import.meta.url));
+  await access(new URL("../src/components/workspace/states.tsx", import.meta.url));
   await access(new URL("../src/workspaceSidecarClient.js", import.meta.url));
   await assert.rejects(access(new URL("../src/renderer/App.tsx", import.meta.url)), { code: "ENOENT" });
   await assert.rejects(access(new URL("../electron/preload.cjs", import.meta.url)), { code: "ENOENT" });

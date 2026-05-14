@@ -2,7 +2,7 @@
 
 Локальное Electron-приложение на React/Vite и any-store для работы с workspace-папкой.
 
-В проекте есть Electron shell, renderer на shadcn/ui `dashboard-01`, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Прямой browser/Vite dev режим не используется как пользовательский запуск.
+В проекте есть Electron shell, renderer Workspace Project Board, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Прямой browser/Vite dev режим не используется как пользовательский запуск.
 
 ## Быстрый запуск
 
