@@ -156,7 +156,7 @@ Fields:
 - `visiblePropertyIds`: ordered array of `property_definitions.id`.
 - `hiddenPropertyIds`: array of `property_definitions.id`.
 - `propertyOrder`: object mapping property id to order number.
-- `valueVisibility`: object keyed by property id, with visible select value ids.
+- `valueVisibility`: object keyed by property id, with view-level value filter settings.
 - `createdAt`: timestamp.
 - `updatedAt`: timestamp.
 - `deletedAt`: nullable timestamp.
@@ -166,8 +166,12 @@ Business rules:
 - A Workspace can have multiple views.
 - Deleting a view does not delete projects, properties, or values.
 - A Workspace cannot delete its last view.
+- `property:name` and `property:status` are always visible in Board and Table views in MVP.
 - `valueVisibility` is a view-level filter.
 - View filters affect only display, not stored project values.
+- For `select` and `multi-select` properties, `valueVisibility.valueIds` references `selectValue` document ids.
+- For system `Status`, `valueVisibility.valueIds` references derived status value ids from folder roles plus `statusValue:no-status`.
+- `includeEmpty` controls whether projects without a custom select value remain visible when an include filter is active.
 - Board views do not support drag and drop between primary status groups in MVP.
 
 Example:
@@ -189,9 +193,14 @@ Example:
     "property:priority": 30
   },
   "valueVisibility": {
+    "property:status": {
+      "mode": "include",
+      "valueIds": ["statusValue:folderRole:workspace-main:active", "statusValue:no-status"]
+    },
     "property:priority": {
       "mode": "include",
-      "valueIds": ["selectValue:priority:high", "selectValue:priority:medium"]
+      "valueIds": ["selectValue:priority:high", "selectValue:priority:medium"],
+      "includeEmpty": false
     }
   },
   "createdAt": "2026-05-14T00:00:00.000Z",
@@ -372,7 +381,7 @@ Business rules:
 
 - Select values belong to one property.
 - Deleting a select value requires confirmation if used by any project.
-- View-level value visibility references select value ids.
+- View-level value visibility for `select` and `multi-select` properties references select value ids.
 - Hidden select values are not the same as deleted values.
 
 Example:
@@ -569,7 +578,7 @@ These are logical access patterns. The physical `any-store` indexing strategy ca
 - Date values must be valid `YYYY-MM-DD` strings or null.
 - Select values must reference existing non-deleted `selectValue` documents.
 - Multi-select values must be arrays of unique select value ids.
-- View `valueVisibility.valueIds` must reference select values for the same property.
+- View `valueVisibility.valueIds` must reference select values for the same custom select property, or derived status value ids for system `Status`.
 - A Workspace must always have at least one non-deleted view.
 - System properties cannot be deleted.
 - Search in MVP uses project `name` only.
