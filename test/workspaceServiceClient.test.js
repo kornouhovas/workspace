@@ -54,6 +54,88 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     method: "workspace.listPropertyValues",
     payload: { workspaceId: "workspace:root" },
   });
+  assert.deepEqual(await client.listViews({ workspaceId: "workspace:root" }), {
+    method: "workspace.listViews",
+    payload: { workspaceId: "workspace:root" },
+  });
+  assert.deepEqual(
+    await client.createView({
+      workspaceId: "workspace:root",
+      viewType: "board",
+      name: "Board",
+    }),
+    {
+      method: "workspace.createView",
+      payload: {
+        workspaceId: "workspace:root",
+        viewType: "board",
+        name: "Board",
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.setActiveView({
+      workspaceId: "workspace:root",
+      viewId: "view:board",
+    }),
+    {
+      method: "workspace.setActiveView",
+      payload: { workspaceId: "workspace:root", viewId: "view:board" },
+    },
+  );
+  assert.deepEqual(
+    await client.updateView({
+      workspaceId: "workspace:root",
+      viewId: "view:board",
+      patch: { name: "Priority Board" },
+    }),
+    {
+      method: "workspace.updateView",
+      payload: {
+        workspaceId: "workspace:root",
+        viewId: "view:board",
+        patch: { name: "Priority Board" },
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.reorderViews({
+      workspaceId: "workspace:root",
+      orderedViewIds: ["view:board", "view:table"],
+    }),
+    {
+      method: "workspace.reorderViews",
+      payload: {
+        workspaceId: "workspace:root",
+        orderedViewIds: ["view:board", "view:table"],
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.deleteView({
+      workspaceId: "workspace:root",
+      viewId: "view:board",
+    }),
+    {
+      method: "workspace.deleteView",
+      payload: { workspaceId: "workspace:root", viewId: "view:board" },
+    },
+  );
+  assert.deepEqual(
+    await client.getViewProjection({
+      workspaceId: "workspace:root",
+      viewId: "view:table",
+      searchQuery: "alpha",
+    }),
+    {
+      method: "workspace.getViewProjection",
+      payload: {
+        workspaceId: "workspace:root",
+        viewId: "view:table",
+        searchQuery: "alpha",
+      },
+    },
+  );
   assert.deepEqual(await client.reveal({ path: "Active/Project Alpha/Brief.pdf", kind: "file" }), {
     method: "workspace.reveal",
     payload: { path: "Active/Project Alpha/Brief.pdf", kind: "file" },
@@ -78,6 +160,40 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
       },
     },
     { method: "workspace.listPropertyValues", payload: { workspaceId: "workspace:root" } },
+    { method: "workspace.listViews", payload: { workspaceId: "workspace:root" } },
+    {
+      method: "workspace.createView",
+      payload: {
+        workspaceId: "workspace:root",
+        viewType: "board",
+        name: "Board",
+      },
+    },
+    { method: "workspace.setActiveView", payload: { workspaceId: "workspace:root", viewId: "view:board" } },
+    {
+      method: "workspace.updateView",
+      payload: {
+        workspaceId: "workspace:root",
+        viewId: "view:board",
+        patch: { name: "Priority Board" },
+      },
+    },
+    {
+      method: "workspace.reorderViews",
+      payload: {
+        workspaceId: "workspace:root",
+        orderedViewIds: ["view:board", "view:table"],
+      },
+    },
+    { method: "workspace.deleteView", payload: { workspaceId: "workspace:root", viewId: "view:board" } },
+    {
+      method: "workspace.getViewProjection",
+      payload: {
+        workspaceId: "workspace:root",
+        viewId: "view:table",
+        searchQuery: "alpha",
+      },
+    },
     { method: "workspace.reveal", payload: { path: "Active/Project Alpha/Brief.pdf", kind: "file" } },
     { method: "workspace.previewFile", payload: { path: "Active/Project Alpha/Brief.pdf" } },
   ]);

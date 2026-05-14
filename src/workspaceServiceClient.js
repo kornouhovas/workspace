@@ -31,6 +31,34 @@ export class WorkspaceServiceClient {
     return this.request("workspace.listPropertyValues", payload);
   }
 
+  listViews(payload) {
+    return this.request("workspace.listViews", payload);
+  }
+
+  createView(payload) {
+    return this.request("workspace.createView", payload);
+  }
+
+  setActiveView(payload) {
+    return this.request("workspace.setActiveView", payload);
+  }
+
+  updateView(payload) {
+    return this.request("workspace.updateView", payload);
+  }
+
+  reorderViews(payload) {
+    return this.request("workspace.reorderViews", payload);
+  }
+
+  deleteView(payload) {
+    return this.request("workspace.deleteView", payload);
+  }
+
+  getViewProjection(payload) {
+    return this.request("workspace.getViewProjection", payload);
+  }
+
   reveal(payload) {
     return this.request("workspace.reveal", payload);
   }
