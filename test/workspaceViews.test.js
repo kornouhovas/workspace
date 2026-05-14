@@ -337,9 +337,15 @@ test("createViewProjection adds No status column when matching projects have no 
     { id: "project:none", name: "Loose", status: { id: "statusValue:no-status", name: "No status" }, propertyValues: {} },
   ];
   const boardView = normalizeViewDocument({ id: "view:board", workspaceId: "workspace:root", viewType: "board" });
+  const response = createViewProjection({ view: boardView, projects, visibleProperties: [], statusValues });
+
+  assert.deepEqual(response.statusValues.map((statusValue) => statusValue.id), [
+    "statusValue:active",
+    "statusValue:no-status",
+  ]);
 
   assert.deepEqual(
-    createViewProjection({ view: boardView, projects, visibleProperties: [], statusValues }).projection.columns.map((column) => [
+    response.projection.columns.map((column) => [
       column.statusValueId,
       column.name,
       column.projects.map((project) => project.id),

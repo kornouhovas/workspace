@@ -175,6 +175,7 @@ export function createViewProjection({
 
   return {
     ...response,
+    statusValues: boardStatusValues,
     projection: {
       type: "board",
       capabilities: {
