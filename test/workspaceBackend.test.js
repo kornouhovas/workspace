@@ -440,7 +440,7 @@ test("createCreateViewResponse creates a default active Board view", async () =>
     updatedAt: now,
     deletedAt: null,
   });
-  assert.equal(store.getWorkspace("workspace:ops").activeViewId, "view:abc-123");
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:abc-123");
 });
 
 test("createListViewsResponse returns active view id and normalized non-deleted views", async () => {
@@ -461,6 +461,7 @@ test("createListViewsResponse returns active view id and normalized non-deleted 
   assert.equal(response.status, 200);
   assert.equal(response.payload.workspaceId, "workspace:ops");
   assert.equal(response.payload.activeViewId, "view:second");
+  assert.notEqual(response.payload.activeViewId, undefined);
   assert.deepEqual(
     response.payload.views.map((view) => [view.id, view.name, view.visiblePropertyIds]),
     [
@@ -499,7 +500,7 @@ test("createSetActiveViewResponse rejects missing foreign and deleted views", as
   assert.equal(missingResponse.status, 400);
   assert.equal(foreignResponse.status, 400);
   assert.equal(deletedResponse.status, 400);
-  assert.equal(store.getWorkspace("workspace:ops").activeViewId, "view:current");
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:current");
 });
 
 test("createSetActiveViewResponse saves a valid active view", async () => {
@@ -517,8 +518,8 @@ test("createSetActiveViewResponse saves a valid active view", async () => {
 
   assert.equal(response.status, 200);
   assert.deepEqual(response.payload, { workspaceId: "workspace:ops", activeViewId: "view:second" });
-  assert.equal(store.getWorkspace("workspace:ops").activeViewId, "view:second");
-  assert.equal(store.getWorkspace("workspace:ops").updatedAt, now);
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:second");
+  assert.equal((await store.getWorkspace("workspace:ops")).updatedAt, now);
 });
 
 test("createUpdateViewResponse validates patch references and saves normalized updated view", async () => {
@@ -577,7 +578,7 @@ test("createUpdateViewResponse validates patch references and saves normalized u
     },
   });
   assert.equal(response.payload.view.updatedAt, now);
-  assert.deepEqual(store.getView("view:board"), response.payload.view);
+  assert.deepEqual(await store.getView("view:board"), response.payload.view);
 });
 
 test("createUpdateViewResponse forbids invalid view patches", async () => {
@@ -603,7 +604,7 @@ test("createUpdateViewResponse forbids invalid view patches", async () => {
 
   assert.equal(response.status, 400);
   assert.equal(response.payload.code, "INVALID_PROPERTY_REFERENCE");
-  assert.equal(store.getView("view:board").updatedAt, "2026-05-14T09:00:00.000Z");
+  assert.equal((await store.getView("view:board")).updatedAt, "2026-05-14T09:00:00.000Z");
 });
 
 test("createDeleteViewResponse blocks deleting the last non-deleted view", async () => {
@@ -619,8 +620,8 @@ test("createDeleteViewResponse blocks deleting the last non-deleted view", async
 
   assert.equal(response.status, 409);
   assert.equal(response.payload.code, "LAST_VIEW_DELETE_BLOCKED");
-  assert.equal(store.getView("view:only").deletedAt, null);
-  assert.equal(store.getWorkspace("workspace:ops").activeViewId, "view:only");
+  assert.equal((await store.getView("view:only")).deletedAt, null);
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:only");
 });
 
 test("createDeleteViewResponse soft-deletes a non-last active view and switches active view", async () => {
@@ -645,9 +646,9 @@ test("createDeleteViewResponse soft-deletes a non-last active view and switches 
     activeViewId: "view:remaining",
     viewId: "view:active",
   });
-  assert.equal(store.getView("view:active").deletedAt, now);
-  assert.equal(store.getView("view:active").updatedAt, now);
-  assert.equal(store.getWorkspace("workspace:ops").activeViewId, "view:remaining");
+  assert.equal((await store.getView("view:active")).deletedAt, now);
+  assert.equal((await store.getView("view:active")).updatedAt, now);
+  assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:remaining");
 });
 
 function createRootPropertiesKey(root) {
@@ -693,17 +694,17 @@ function createMemoryViewStore({ workspaces = [], views = [] } = {}) {
   const viewMap = new Map(views.map((view) => [view.id, structuredClone(view)]));
 
   return {
-    getWorkspace(workspaceId) {
+    async getWorkspace(workspaceId) {
       const workspace = workspaceMap.get(workspaceId);
       return workspace ? structuredClone(workspace) : null;
     },
-    saveWorkspace(workspacePatchOrDocument) {
+    async saveWorkspace(workspacePatchOrDocument) {
       const existing = workspaceMap.get(workspacePatchOrDocument.id) || {};
       const workspace = { ...existing, ...structuredClone(workspacePatchOrDocument) };
       workspaceMap.set(workspace.id, workspace);
       return structuredClone(workspace);
     },
-    listViews(workspaceId) {
+    async listViews(workspaceId) {
       return [...viewMap.values()]
         .filter((view) => view.workspaceId === workspaceId && !view.deletedAt)
         .sort((left, right) => (
@@ -713,11 +714,11 @@ function createMemoryViewStore({ workspaces = [], views = [] } = {}) {
         ))
         .map((view) => structuredClone(view));
     },
-    getView(viewId) {
+    async getView(viewId) {
       const view = viewMap.get(viewId);
       return view ? structuredClone(view) : null;
     },
-    saveView(viewDocument) {
+    async saveView(viewDocument) {
       viewMap.set(viewDocument.id, structuredClone(viewDocument));
       return structuredClone(viewDocument);
     },

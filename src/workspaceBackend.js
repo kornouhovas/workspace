@@ -164,7 +164,7 @@ export async function createFileResponse({ root, path }) {
 export async function createListViewsResponse({ body, viewStore }) {
   try {
     const workspaceId = requireBodyString(body, "workspaceId");
-    const workspace = requireWorkspace(viewStore, workspaceId);
+    const workspace = await requireWorkspace(viewStore, workspaceId);
     const views = await viewStore.listViews(workspaceId);
 
     return createJsonResponse(200, {
@@ -186,7 +186,7 @@ export async function createCreateViewResponse({
   try {
     const workspaceId = requireBodyString(body, "workspaceId");
     const viewType = requireBodyString(body, "viewType");
-    const workspace = requireWorkspace(viewStore, workspaceId);
+    const workspace = await requireWorkspace(viewStore, workspaceId);
     const views = await viewStore.listViews(workspaceId);
     const id = normalizeViewId(idFactory());
     const timestamp = now();
@@ -224,8 +224,8 @@ export async function createSetActiveViewResponse({
   try {
     const workspaceId = requireBodyString(body, "workspaceId");
     const viewId = requireBodyString(body, "viewId");
-    const workspace = requireWorkspace(viewStore, workspaceId);
-    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    const workspace = await requireWorkspace(viewStore, workspaceId);
+    const view = await requireActiveWorkspaceView(viewStore, workspaceId, viewId);
     const timestamp = now();
 
     await viewStore.saveWorkspace({
@@ -254,8 +254,8 @@ export async function createUpdateViewResponse({
   try {
     const workspaceId = requireBodyString(body, "workspaceId");
     const viewId = requireBodyString(body, "viewId");
-    requireWorkspace(viewStore, workspaceId);
-    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    await requireWorkspace(viewStore, workspaceId);
+    const view = await requireActiveWorkspaceView(viewStore, workspaceId, viewId);
 
     validateViewPatch({
       patch: body?.patch,
@@ -287,8 +287,8 @@ export async function createDeleteViewResponse({
   try {
     const workspaceId = requireBodyString(body, "workspaceId");
     const viewId = requireBodyString(body, "viewId");
-    const workspace = requireWorkspace(viewStore, workspaceId);
-    const view = requireActiveWorkspaceView(viewStore, workspaceId, viewId);
+    const workspace = await requireWorkspace(viewStore, workspaceId);
+    const view = await requireActiveWorkspaceView(viewStore, workspaceId, viewId);
     const views = await viewStore.listViews(workspaceId);
 
     if (views.length <= 1) {
@@ -566,8 +566,8 @@ function requireBodyString(body, field) {
   return value;
 }
 
-function requireWorkspace(viewStore, workspaceId) {
-  const workspace = viewStore.getWorkspace(workspaceId);
+async function requireWorkspace(viewStore, workspaceId) {
+  const workspace = await viewStore.getWorkspace(workspaceId);
   if (!workspace) {
     throw new WorkspaceViewError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
   }
@@ -575,8 +575,8 @@ function requireWorkspace(viewStore, workspaceId) {
   return workspace;
 }
 
-function requireActiveWorkspaceView(viewStore, workspaceId, viewId) {
-  const view = viewStore.getView(viewId);
+async function requireActiveWorkspaceView(viewStore, workspaceId, viewId) {
+  const view = await viewStore.getView(viewId);
   if (!view || view.workspaceId !== workspaceId || view.deletedAt) {
     throw new WorkspaceViewError("VIEW_NOT_FOUND", "View was not found.", "viewId");
   }
