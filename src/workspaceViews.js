@@ -128,6 +128,65 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
   });
 }
 
+export function filterProjectsForView({ projects = [], view, searchQuery = "" } = {}) {
+  const normalizedView = normalizeViewDocument(view);
+  const query = normalizeString(searchQuery).trim().toLocaleLowerCase();
+
+  return projects.filter((project) => {
+    if (query && !projectNameSearchText(project).includes(query)) {
+      return false;
+    }
+
+    return matchesValueVisibility(project, normalizedView.valueVisibility);
+  });
+}
+
+export function createViewProjection({
+  view,
+  projects = [],
+  visibleProperties = [],
+  statusValues = [],
+  searchQuery = "",
+} = {}) {
+  const normalizedView = normalizeViewDocument(view);
+  const filteredProjects = filterProjectsForView({ projects, view: normalizedView, searchQuery });
+  const response = {
+    workspaceId: normalizedView.workspaceId,
+    view: {
+      id: normalizedView.id,
+      name: normalizedView.name,
+      viewType: normalizedView.viewType,
+    },
+    visibleProperties,
+    statusValues,
+  };
+
+  if (normalizedView.viewType === "table") {
+    return {
+      ...response,
+      projection: {
+        type: "table",
+        rows: filteredProjects,
+      },
+    };
+  }
+
+  return {
+    ...response,
+    projection: {
+      type: "board",
+      capabilities: {
+        canMoveBetweenStatuses: false,
+      },
+      columns: statusValues.map((statusValue) => ({
+        statusValueId: statusValue.id,
+        name: statusValue.name,
+        projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
+      })),
+    },
+  };
+}
+
 function normalizeVisiblePropertyIds(value) {
   const ids = normalizeStringArray(value);
   return uniqueStrings([PROPERTY_NAME_ID, PROPERTY_STATUS_ID, ...ids]);
@@ -203,6 +262,61 @@ function validateValueVisibilityReferences({ valueVisibility, propertyDefinition
       }
     }
   }
+}
+
+function matchesValueVisibility(project, valueVisibility) {
+  for (const [propertyId, setting] of Object.entries(valueVisibility)) {
+    const value = propertyId === PROPERTY_STATUS_ID
+      ? getProjectStatusValueId(project)
+      : project.propertyValues?.[propertyId];
+
+    if (propertyId === PROPERTY_STATUS_ID) {
+      if (!setting.valueIds.includes(value)) {
+        return false;
+      }
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        if (!setting.includeEmpty) {
+          return false;
+        }
+        continue;
+      }
+
+      if (!value.some((item) => setting.valueIds.includes(item))) {
+        return false;
+      }
+      continue;
+    }
+
+    if (!value) {
+      if (!setting.includeEmpty) {
+        return false;
+      }
+      continue;
+    }
+
+    if (!setting.valueIds.includes(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function projectNameSearchText(project) {
+  return [
+    project?.name,
+    project?.propertyValues?.[PROPERTY_NAME_ID],
+  ]
+    .map((value) => normalizeString(value).toLocaleLowerCase())
+    .join(" ");
+}
+
+function getProjectStatusValueId(project) {
+  return project?.status?.id || project?.propertyValues?.[PROPERTY_STATUS_ID] || NO_STATUS_VALUE_ID;
 }
 
 function normalizePropertyOrder(value, visiblePropertyIds) {

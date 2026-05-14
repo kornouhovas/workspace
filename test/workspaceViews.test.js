@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createDefaultView,
+  createViewProjection,
+  filterProjectsForView,
   normalizeViewDocument,
   validateViewPatch,
   WorkspaceViewError,
@@ -178,5 +180,117 @@ test("validateViewPatch rejects valueVisibility for non-filterable properties ev
       statusValues: [{ id: "statusValue:no-status" }],
     }),
     (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
+  );
+});
+
+test("filterProjectsForView applies search by Name only and select value filters", () => {
+  const view = normalizeViewDocument({
+    id: "view:board",
+    workspaceId: "workspace:root",
+    viewType: "board",
+    visiblePropertyIds: ["property:name", "property:status", "property:priority"],
+    valueVisibility: {
+      "property:priority": {
+        mode: "include",
+        valueIds: ["selectValue:high"],
+        includeEmpty: false,
+      },
+    },
+  });
+  const projects = [
+    {
+      id: "project:alpha",
+      name: "Alpha Launch",
+      status: { id: "statusValue:active", name: "Active" },
+      propertyValues: {
+        "property:name": "Alpha Launch",
+        "property:status": "statusValue:active",
+        "property:priority": "selectValue:high",
+        "property:notes": "do not search me",
+      },
+    },
+    {
+      id: "project:beta",
+      name: "Beta",
+      status: { id: "statusValue:active", name: "Active" },
+      propertyValues: {
+        "property:name": "Beta",
+        "property:status": "statusValue:active",
+        "property:priority": "selectValue:low",
+        "property:notes": "Alpha hidden text",
+      },
+    },
+  ];
+
+  assert.deepEqual(
+    filterProjectsForView({ projects, view, searchQuery: "alpha" }).map((project) => project.id),
+    ["project:alpha"],
+  );
+});
+
+test("filterProjectsForView supports system Status filters and No status", () => {
+  const view = normalizeViewDocument({
+    id: "view:board",
+    workspaceId: "workspace:root",
+    viewType: "board",
+    valueVisibility: {
+      "property:status": {
+        mode: "include",
+        valueIds: ["statusValue:no-status"],
+      },
+    },
+  });
+
+  const projects = [
+    {
+      id: "project:active",
+      name: "Active Project",
+      status: { id: "statusValue:active", name: "Active" },
+      propertyValues: { "property:status": "statusValue:active" },
+    },
+    {
+      id: "project:none",
+      name: "No Status Project",
+      status: { id: "statusValue:no-status", name: "No status" },
+      propertyValues: { "property:status": "statusValue:no-status" },
+    },
+  ];
+
+  assert.deepEqual(
+    filterProjectsForView({ projects, view }).map((project) => project.id),
+    ["project:none"],
+  );
+});
+
+test("createViewProjection returns board columns and table rows from the same filtered project set", () => {
+  const visibleProperties = [
+    { id: "property:name", name: "Name", type: "text", system: true },
+    { id: "property:status", name: "Status", type: "select", system: true },
+  ];
+  const statusValues = [
+    { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },
+    { id: "statusValue:no-status", name: "No status", relativePath: null, source: "no-status" },
+  ];
+  const projects = [
+    { id: "project:alpha", name: "Alpha", status: statusValues[0], propertyValues: {} },
+    { id: "project:none", name: "Loose", status: statusValues[1], propertyValues: {} },
+  ];
+
+  const boardView = normalizeViewDocument({ id: "view:board", workspaceId: "workspace:root", viewType: "board" });
+  const tableView = normalizeViewDocument({ id: "view:table", workspaceId: "workspace:root", viewType: "table" });
+
+  assert.deepEqual(
+    createViewProjection({ view: boardView, projects, visibleProperties, statusValues }).projection.columns.map((column) => [
+      column.statusValueId,
+      column.projects.map((project) => project.id),
+    ]),
+    [
+      ["statusValue:active", ["project:alpha"]],
+      ["statusValue:no-status", ["project:none"]],
+    ],
+  );
+  assert.deepEqual(
+    createViewProjection({ view: tableView, projects, visibleProperties, statusValues }).projection.rows.map((row) => row.id),
+    ["project:alpha", "project:none"],
   );
 });
