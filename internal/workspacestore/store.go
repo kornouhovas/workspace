@@ -147,6 +147,11 @@ func (s *Store) GetWorkspace(ctx context.Context, id string) (WorkspaceDocument,
 }
 
 func (s *Store) UpsertView(ctx context.Context, view ViewDocument) error {
+	view = normalizeViewDocument(view)
+	return s.upsertJSON(ctx, "views", view)
+}
+
+func normalizeViewDocument(view ViewDocument) ViewDocument {
 	if view.Type == "" {
 		view.Type = "view"
 	}
@@ -162,7 +167,7 @@ func (s *Store) UpsertView(ctx context.Context, view ViewDocument) error {
 	if view.ValueVisibility == nil {
 		view.ValueVisibility = map[string]ValueVisibilityDocument{}
 	}
-	return s.upsertJSON(ctx, "views", view)
+	return view
 }
 
 func (s *Store) GetView(ctx context.Context, id string) (ViewDocument, error) {
@@ -257,14 +262,39 @@ func (s *Store) ReorderViews(ctx context.Context, workspaceID string, orderedVie
 	}
 
 	reordered := make([]ViewDocument, 0, len(orderedViewIDs))
+	reorderedValues := make([]*anyenc.Value, 0, len(orderedViewIDs))
 	for index, viewID := range orderedViewIDs {
-		view := viewsByID[viewID]
+		view := normalizeViewDocument(viewsByID[viewID])
 		view.Order = (index + 1) * 10
 		view.UpdatedAt = updatedAt
-		if err := s.UpsertView(ctx, view); err != nil {
+		value, err := marshalJSONValue(view)
+		if err != nil {
 			return nil, err
 		}
 		reordered = append(reordered, view)
+		reorderedValues = append(reorderedValues, value)
+	}
+
+	coll, err := s.db.Collection(ctx, "views")
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := s.db.WriteTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, value := range reorderedValues {
+		if err := coll.UpsertOne(tx.Context(), value); err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				return nil, errors.Join(err, rollbackErr)
+			}
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 	return reordered, nil
 }
@@ -310,12 +340,7 @@ func (s *Store) ListPropertyValues(ctx context.Context, workspaceID string) ([]P
 }
 
 func (s *Store) upsertJSON(ctx context.Context, collectionName string, doc any) error {
-	data, err := json.Marshal(doc)
-	if err != nil {
-		return err
-	}
-
-	value, err := anyenc.ParseJson(string(data))
+	value, err := marshalJSONValue(doc)
 	if err != nil {
 		return err
 	}
@@ -325,4 +350,12 @@ func (s *Store) upsertJSON(ctx context.Context, collectionName string, doc any) 
 		return err
 	}
 	return coll.UpsertOne(ctx, value)
+}
+
+func marshalJSONValue(doc any) (*anyenc.Value, error) {
+	data, err := json.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+	return anyenc.ParseJson(string(data))
 }

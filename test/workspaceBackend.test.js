@@ -503,28 +503,53 @@ test("createReorderViewsResponse updates orders and preserves active view", asyn
   assert.equal((await store.getView("view:board")).updatedAt, now);
 });
 
-test("createReorderViewsResponse rejects duplicate and missing active views without mutation", async () => {
+test("createReorderViewsResponse rejects invalid view orders without mutation", async (t) => {
   const store = createMemoryViewStore({
-    workspaces: [{ id: "workspace:ops", activeViewId: "view:board" }],
+    workspaces: [
+      { id: "workspace:ops", activeViewId: "view:board" },
+      { id: "workspace:other", activeViewId: "view:foreign" },
+    ],
     views: [
       createStoredView({ id: "view:board", order: 10 }),
       createStoredView({ id: "view:table", order: 20, viewType: "table", name: "Table" }),
+      createStoredView({ id: "view:foreign", workspaceId: "workspace:other", order: 10 }),
+      createStoredView({ id: "view:deleted", order: 30, deletedAt: "2026-05-14T10:00:00.000Z" }),
     ],
   });
 
-  const response = await createReorderViewsResponse({
-    body: { workspaceId: "workspace:ops", orderedViewIds: ["view:table", "view:table"] },
-    viewStore: store,
-    now: () => "2026-05-14T14:00:00.000Z",
-  });
+  const cases = [
+    { name: "duplicate active id", orderedViewIds: ["view:table", "view:table"] },
+    { name: "missing active id", orderedViewIds: ["view:table"] },
+    { name: "extra foreign id", orderedViewIds: ["view:table", "view:foreign"] },
+    { name: "deleted id", orderedViewIds: ["view:table", "view:deleted"] },
+    { name: "missing payload", orderedViewIds: undefined },
+    { name: "non-array payload", orderedViewIds: "view:table" },
+  ];
 
-  assert.equal(response.status, 400);
-  assert.equal(response.payload.code, "INVALID_VIEW_ORDER");
-  assert.equal(response.payload.field, "orderedViewIds");
-  assert.equal((await store.getView("view:board")).order, 10);
-  assert.equal((await store.getView("view:table")).order, 20);
-  assert.equal((await store.getView("view:board")).updatedAt, "2026-05-14T09:00:00.000Z");
-  assert.equal((await store.getView("view:table")).updatedAt, "2026-05-14T09:00:00.000Z");
+  for (const testCase of cases) {
+    await t.test(testCase.name, async () => {
+      const body = { workspaceId: "workspace:ops" };
+      if (testCase.orderedViewIds !== undefined) {
+        body.orderedViewIds = testCase.orderedViewIds;
+      }
+
+      const response = await createReorderViewsResponse({
+        body,
+        viewStore: store,
+        now: () => "2026-05-14T14:00:00.000Z",
+      });
+
+      assert.equal(response.status, 400);
+      assert.equal(response.payload.code, "INVALID_VIEW_ORDER");
+      assert.equal(response.payload.field, "orderedViewIds");
+      assert.equal((await store.getView("view:board")).order, 10);
+      assert.equal((await store.getView("view:table")).order, 20);
+      assert.equal((await store.getView("view:deleted")).order, 30);
+      assert.equal((await store.getView("view:board")).updatedAt, "2026-05-14T09:00:00.000Z");
+      assert.equal((await store.getView("view:table")).updatedAt, "2026-05-14T09:00:00.000Z");
+      assert.equal((await store.getView("view:deleted")).updatedAt, "2026-05-14T09:00:00.000Z");
+    });
+  }
 });
 
 test("createSetActiveViewResponse rejects missing foreign and deleted views", async () => {

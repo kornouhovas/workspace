@@ -261,25 +261,54 @@ func TestStoreRejectsInvalidViewReorderWithoutMutation(t *testing.T) {
 	for _, view := range []ViewDocument{
 		{ID: "view:board", WorkspaceID: "workspace:ops", Name: "Board", ViewType: "board", Order: 10, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
 		{ID: "view:table", WorkspaceID: "workspace:ops", Name: "Table", ViewType: "table", Order: 20, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+		{ID: "view:foreign", WorkspaceID: "workspace:other", Name: "Foreign", ViewType: "board", Order: 10, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z"},
+		{ID: "view:deleted", WorkspaceID: "workspace:ops", Name: "Deleted", ViewType: "board", Order: 30, CreatedAt: "2026-05-14T09:00:00.000Z", UpdatedAt: "2026-05-14T09:00:00.000Z", DeletedAt: stringPtr("2026-05-14T10:00:00.000Z")},
 	} {
 		if err := store.UpsertView(ctx, view); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	_, err = store.ReorderViews(ctx, "workspace:ops", []string{"view:table", "view:table"}, "2026-05-14T14:00:00.000Z")
-	if !errors.Is(err, ErrInvalidViewOrder) {
-		t.Fatalf("expected ErrInvalidViewOrder, got %v", err)
+	tests := []struct {
+		name          string
+		orderedViews  []string
+		expectedError error
+	}{
+		{name: "duplicate active id", orderedViews: []string{"view:table", "view:table"}, expectedError: ErrInvalidViewOrder},
+		{name: "missing active id", orderedViews: []string{"view:table"}, expectedError: ErrInvalidViewOrder},
+		{name: "extra foreign id", orderedViews: []string{"view:table", "view:foreign"}, expectedError: ErrInvalidViewOrder},
+		{name: "deleted id", orderedViews: []string{"view:table", "view:deleted"}, expectedError: ErrInvalidViewOrder},
 	}
 
-	views, err := store.ListViews(ctx, "workspace:ops")
-	if err != nil {
-		t.Fatal(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err = store.ReorderViews(ctx, "workspace:ops", tt.orderedViews, "2026-05-14T14:00:00.000Z")
+			if !errors.Is(err, tt.expectedError) {
+				t.Fatalf("expected %v, got %v", tt.expectedError, err)
+			}
+
+			views, err := store.ListViews(ctx, "workspace:ops")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(views) != 2 || views[0].ID != "view:board" || views[0].Order != 10 || views[1].ID != "view:table" || views[1].Order != 20 {
+				t.Fatalf("expected original order to remain, got %#v", views)
+			}
+			if views[0].UpdatedAt != "2026-05-14T09:00:00.000Z" || views[1].UpdatedAt != "2026-05-14T09:00:00.000Z" {
+				t.Fatalf("expected timestamps to remain unchanged, got %#v", views)
+			}
+
+			deletedView, err := store.GetView(ctx, "view:deleted")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if deletedView.Order != 30 || deletedView.UpdatedAt != "2026-05-14T09:00:00.000Z" || deletedView.DeletedAt == nil {
+				t.Fatalf("expected deleted view to remain unchanged, got %#v", deletedView)
+			}
+		})
 	}
-	if len(views) != 2 || views[0].ID != "view:board" || views[0].Order != 10 || views[1].ID != "view:table" || views[1].Order != 20 {
-		t.Fatalf("expected original order to remain, got %#v", views)
-	}
-	if views[0].UpdatedAt != "2026-05-14T09:00:00.000Z" || views[1].UpdatedAt != "2026-05-14T09:00:00.000Z" {
-		t.Fatalf("expected timestamps to remain unchanged, got %#v", views)
-	}
+}
+
+func stringPtr(value string) *string {
+	return &value
 }
