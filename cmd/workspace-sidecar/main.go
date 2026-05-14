@@ -119,6 +119,10 @@ func main() {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "viewId is required"})
 			return
 		}
+		if payload.ViewID == "workspace:root" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspace:root is reserved"})
+			return
+		}
 		if payload.WorkspaceID == "workspace:root" {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "workspaceId is reserved"})
 			return
