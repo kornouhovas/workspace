@@ -4,6 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -12,6 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -69,6 +77,7 @@ type WorkspaceTableViewProps = {
   readonly onDeleteProperty: (propertyId: string) => void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
+  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
 };
 
 const propertyTypeOptions: readonly PropertyTypeOption[] = [
@@ -145,6 +154,10 @@ function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
 }
 
+function isEditableProperty(property: WorkspaceMockVisibleProperty) {
+  return !isSystemProperty(property.id) && property.system !== true;
+}
+
 function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
   const className = "mt-0.5 size-4 text-muted-foreground";
 
@@ -167,6 +180,189 @@ function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
   return <TypeIcon className={className} aria-hidden="true" />;
 }
 
+function stringifyEditableValue(value: unknown) {
+  if (value == null) {
+    return "";
+  }
+
+  return Array.isArray(value)
+    ? value.filter((item) => typeof item === "string").join(", ")
+    : String(value);
+}
+
+function getSelectValuesForProperty(
+  selectValues: readonly WorkspaceSelectValueState[],
+  propertyId: string,
+) {
+  return selectValues
+    .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
+    .sort((left, right) => (
+      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
+    ));
+}
+
+function ProjectTablePropertyValueEditor({
+  project,
+  property,
+  selectValues,
+  onProjectPropertyValueChange,
+}: {
+  readonly project: WorkspaceMockProject;
+  readonly property: WorkspaceMockVisibleProperty;
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+}) {
+  const value = getPropertyValue(project, property);
+  const editorKey = `${project.id}:${property.id}:${stringifyEditableValue(value)}`;
+
+  function stopCellActivation(event: { stopPropagation: () => void }) {
+    event.stopPropagation();
+  }
+
+  function saveValue(nextValue: unknown) {
+    onProjectPropertyValueChange(project.id, property.id, nextValue);
+  }
+
+  if (property.propertyType === "number") {
+    return (
+      <Input
+        key={editorKey}
+        type="number"
+        defaultValue={stringifyEditableValue(value)}
+        aria-label={`${property.name} number value`}
+        className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
+        onClick={stopCellActivation}
+        onPointerDown={stopCellActivation}
+        onBlur={(event) => {
+          const text = event.target.value.trim();
+          saveValue(text === "" ? null : Number(text));
+        }}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    );
+  }
+
+  if (property.propertyType === "date") {
+    return (
+      <Input
+        key={editorKey}
+        type="date"
+        defaultValue={stringifyEditableValue(value)}
+        aria-label={`${property.name} date value`}
+        className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
+        onClick={stopCellActivation}
+        onPointerDown={stopCellActivation}
+        onBlur={(event) => saveValue(event.target.value || null)}
+        onKeyDown={(event) => event.stopPropagation()}
+      />
+    );
+  }
+
+  if (property.propertyType === "select") {
+    const values = getSelectValuesForProperty(selectValues, property.id);
+    const selectedValue = typeof value === "string" && value ? value : "__empty";
+
+    return (
+      <div onClick={stopCellActivation} onPointerDown={stopCellActivation}>
+        <Select
+          value={selectedValue}
+          onValueChange={(nextValue) => saveValue(nextValue === "__empty" ? null : nextValue)}
+        >
+          <SelectTrigger
+            className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
+            aria-label={`${property.name} select value`}
+          >
+            <SelectValue placeholder="Empty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__empty">Empty</SelectItem>
+            {values.map((selectValue) => (
+              <SelectItem key={selectValue.id} value={selectValue.id}>
+                {selectValue.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
+  if (property.propertyType === "multi-select") {
+    const values = getSelectValuesForProperty(selectValues, property.id);
+    const selectedValues = Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+    const selectedLabel = formatPropertyValue(selectedValues, property, selectValues) || "Empty";
+
+    return (
+      <div onClick={stopCellActivation} onPointerDown={stopCellActivation}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-full min-w-0 justify-start px-2 font-normal"
+              aria-label={`${property.name} multi-select value`}
+            >
+              <span className="truncate">{selectedLabel}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel>{property.name}</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              {values.length === 0 ? (
+                <DropdownMenuItem disabled>No values</DropdownMenuItem>
+              ) : values.map((selectValue) => {
+                const checked = selectedValues.includes(selectValue.id);
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={selectValue.id}
+                    checked={checked}
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={(nextChecked) => {
+                      const nextValues = nextChecked === true
+                        ? [...selectedValues, selectValue.id]
+                        : selectedValues.filter((valueId) => valueId !== selectValue.id);
+                      saveValue(nextValues);
+                    }}
+                  >
+                    {selectValue.name}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
+
+  return (
+    <Input
+      key={editorKey}
+      defaultValue={stringifyEditableValue(value)}
+      aria-label={`${property.name} text value`}
+      className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
+      onClick={stopCellActivation}
+      onPointerDown={stopCellActivation}
+      onBlur={(event) => saveValue(event.target.value)}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
 export function WorkspaceTableView({
   projection,
   visibleProperties,
@@ -178,6 +374,7 @@ export function WorkspaceTableView({
   onDeleteProperty,
   onReorderViewProperties,
   onTogglePropertyVisibility,
+  onProjectPropertyValueChange,
 }: WorkspaceTableViewProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
@@ -710,15 +907,31 @@ export function WorkspaceTableView({
                 <TableCell className="w-10 text-muted-foreground">
                   <GripVerticalIcon className="size-4" aria-hidden="true" />
                 </TableCell>
-                {visibleProperties.map((property) => (
-                  <TableCell
-                    key={property.id}
-                    className="truncate border-r border-border/40"
-                    style={{ width: visiblePropertyWidths[property.id] }}
-                  >
-                    {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
-                  </TableCell>
-                ))}
+                {visibleProperties.map((property) => {
+                  const editable = isEditableProperty(property);
+
+                  return (
+                    <TableCell
+                      key={property.id}
+                      className={[
+                        "border-r border-border/40",
+                        editable ? "p-1" : "truncate",
+                      ].join(" ")}
+                      style={{ width: visiblePropertyWidths[property.id] }}
+                    >
+                      {editable ? (
+                        <ProjectTablePropertyValueEditor
+                          project={project}
+                          property={property}
+                          selectValues={selectValues}
+                          onProjectPropertyValueChange={onProjectPropertyValueChange}
+                        />
+                      ) : (
+                        formatPropertyValue(getPropertyValue(project, property), property, selectValues)
+                      )}
+                    </TableCell>
+                  );
+                })}
                 <TableCell className="border-l border-border bg-background" aria-hidden="true" />
               </TableRow>
             ))}

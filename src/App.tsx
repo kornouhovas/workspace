@@ -923,9 +923,15 @@ export default function App() {
 
       if (property?.id) {
         const activeView = getActiveViewState();
-        const currentVisiblePropertyIds = activeView?.visiblePropertyIds
-          || state.projection?.visibleProperties.map((item) => item.id)
-          || ["property:name", "property:status"];
+        const currentVisiblePropertyIds = [
+          ...new Set([
+            "property:name",
+            "property:status",
+            ...(activeView?.visiblePropertyIds
+              || state.projection?.visibleProperties.map((item) => item.id)
+              || []),
+          ]),
+        ];
         const nextVisiblePropertyIds = [...new Set([...currentVisiblePropertyIds, property.id])];
         await updateActiveViewPatch({
           visiblePropertyIds: nextVisiblePropertyIds,
@@ -1466,6 +1472,7 @@ export default function App() {
                         onDeleteProperty={handleDeleteProperty}
                         onReorderViewProperties={handleReorderViewProperties}
                         onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
                       />
                     ) : null}
                   </>
