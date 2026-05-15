@@ -251,7 +251,21 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /onProjectOpen/);
   assert.match(tableViewSource, /selectValues/);
   assert.match(tableViewSource, /formatPropertyValue/);
+  assert.match(tableViewSource, /property\.id === "property:status"/);
+  assert.match(tableViewSource, /backendProject\.folderStatus/);
+  assert.match(tableViewSource, /onCreateProperty/);
+  assert.match(tableViewSource, /onRenameProperty/);
+  assert.match(tableViewSource, /onDeleteProperty/);
+  assert.match(tableViewSource, /onReorderViewProperties/);
+  assert.match(tableViewSource, /onTogglePropertyVisibility/);
+  assert.match(tableViewSource, /Add property column/);
+  assert.match(tableViewSource, /New property/);
+  assert.match(tableViewSource, /Hide from view/);
+  assert.match(tableViewSource, /Delete property/);
+  assert.match(tableViewSource, /draggable/);
+  assert.match(tableViewSource, /hiddenViewProperties/);
   assert.match(tableViewSource, /GripVerticalIcon/);
+  assert.match(tableViewSource, /PlusIcon/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
   assert.match(tableViewSource, /w-full/);
@@ -323,6 +337,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /propertySaveFailed/);
   assert.match(appSource, /handleTogglePropertyVisibility/);
   assert.match(appSource, /handleToggleValueFilter/);
+  assert.match(appSource, /handleCreateVisibleProperty/);
+  assert.match(appSource, /handleReorderViewProperties/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);

@@ -888,6 +888,59 @@ export default function App() {
     }
   }
 
+  async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
+    const nextVisiblePropertyIds = [...new Set(orderedPropertyIds)];
+
+    try {
+      await updateActiveViewPatch({
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+      });
+    } catch (error) {
+      toast.error("Could not reorder view properties", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleCreateVisibleProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
+    if (!state.workspaceId) {
+      toast.error("Select a source folder before adding properties.");
+      return;
+    }
+
+    try {
+      const response = await workspaceClient.createProperty({
+        workspaceId: state.workspaceId,
+        name: input.name,
+        type: input.type,
+      });
+      const property = isRecord(response) && isRecord(response.property)
+        ? normalizePropertyDefinition(response.property)
+        : null;
+
+      await refreshPropertyCatalog();
+
+      if (property?.id) {
+        const activeView = getActiveViewState();
+        const currentVisiblePropertyIds = activeView?.visiblePropertyIds
+          || state.projection?.visibleProperties.map((item) => item.id)
+          || ["property:name", "property:status"];
+        const nextVisiblePropertyIds = [...new Set([...currentVisiblePropertyIds, property.id])];
+        await updateActiveViewPatch({
+          visiblePropertyIds: nextVisiblePropertyIds,
+          propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+        });
+      }
+
+      toast.success("Property added");
+    } catch (error) {
+      toast.error("Could not add property", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function handleFolderRoleChange(
     node: WorkspaceFolderRoleNode,
     role: WorkspaceFolderRoleNode["role"],
@@ -1405,8 +1458,14 @@ export default function App() {
                       <WorkspaceTableView
                         projection={tableProjection as typeof workspaceMockProjection.tableProjection}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        properties={settingsProperties}
                         selectValues={settingsSelectValues}
                         onProjectOpen={handleProjectOpen}
+                        onCreateProperty={handleCreateVisibleProperty}
+                        onRenameProperty={handleRenameProperty}
+                        onDeleteProperty={handleDeleteProperty}
+                        onReorderViewProperties={handleReorderViewProperties}
+                        onTogglePropertyVisibility={handleTogglePropertyVisibility}
                       />
                     ) : null}
                   </>
