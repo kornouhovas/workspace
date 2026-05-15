@@ -13,6 +13,7 @@ Read before implementation:
 - `docs/vision.md`
 - `docs/prd.md`
 - `docs/architecture.md`
+- `docs/interface.md`
 - `docs/ui-guidelines.md`
 - `docs/data-model.md`
 - `docs/api/workspace-views.md`
