@@ -54,7 +54,7 @@ type ColumnDragState = {
   readonly propertyId: string;
   readonly startX: number;
   readonly currentX: number;
-  readonly targetPropertyId: string;
+  readonly dropIndex: number;
   readonly columns: readonly ColumnDragPreviewColumn[];
 };
 
@@ -278,27 +278,25 @@ export function WorkspaceTableView({
     onCreateProperty({ name: option.label, type: option.value });
   }
 
-  function getReorderedPropertyIds(sourcePropertyId: string, targetPropertyId: string) {
-    if (sourcePropertyId === targetPropertyId) {
-      return null;
-    }
-
+  function getReorderedPropertyIds(sourcePropertyId: string, dropIndex: number) {
     const orderedPropertyIds = visibleProperties.map((property) => property.id);
     const fromIndex = orderedPropertyIds.indexOf(sourcePropertyId);
-    const toIndex = orderedPropertyIds.indexOf(targetPropertyId);
 
-    if (fromIndex === -1 || toIndex === -1) {
+    if (fromIndex === -1) {
       return null;
     }
 
-    const nextPropertyIds = [...orderedPropertyIds];
-    const [draggedId] = nextPropertyIds.splice(fromIndex, 1);
-    nextPropertyIds.splice(toIndex, 0, draggedId);
+    const nextPropertyIds = getColumnDragOrder(orderedPropertyIds, sourcePropertyId, dropIndex);
+
+    if (nextPropertyIds.every((propertyId, index) => propertyId === orderedPropertyIds[index])) {
+      return null;
+    }
+
     return nextPropertyIds;
   }
 
-  function reorderColumnFromTo(sourcePropertyId: string, targetPropertyId: string) {
-    const nextPropertyIds = getReorderedPropertyIds(sourcePropertyId, targetPropertyId);
+  function reorderColumnToIndex(sourcePropertyId: string, dropIndex: number) {
+    const nextPropertyIds = getReorderedPropertyIds(sourcePropertyId, dropIndex);
 
     if (nextPropertyIds) {
       onReorderViewProperties(nextPropertyIds);
@@ -339,32 +337,64 @@ export function WorkspaceTableView({
   }
 
   function findColumnDragTarget(clientX: number, columns: readonly ColumnDragPreviewColumn[]) {
-    if (columns.length === 0) {
-      return null;
-    }
-
-    let targetPropertyId = columns[0].propertyId;
+    let dropIndex = 0;
 
     for (const column of columns) {
       if (clientX >= column.left + column.width / 2) {
-        targetPropertyId = column.propertyId;
+        dropIndex += 1;
       }
     }
 
-    return targetPropertyId;
+    return dropIndex;
   }
 
-  function findColumnDragTargetFromPoint(clientX: number, clientY: number, sourcePropertyId: string) {
-    for (const element of document.elementsFromPoint(clientX, clientY)) {
-      const column = element.closest<HTMLElement>("[data-property-column-id]");
-      const targetPropertyId = column?.dataset.propertyColumnId;
+  function findColumnDropIndex(
+    clientX: number,
+    columns: readonly ColumnDragPreviewColumn[],
+    sourcePropertyId: string,
+  ) {
+    return findColumnDragTarget(
+      clientX,
+      columns.filter((column) => column.propertyId !== sourcePropertyId),
+    );
+  }
 
-      if (targetPropertyId && targetPropertyId !== sourcePropertyId) {
-        return targetPropertyId;
-      }
+  function getColumnDragOrder(
+    orderedPropertyIds: readonly string[],
+    sourcePropertyId: string,
+    dropIndex: number,
+  ) {
+    const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+    const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
+    return [
+      ...remainingPropertyIds.slice(0, boundedDropIndex),
+      sourcePropertyId,
+      ...remainingPropertyIds.slice(boundedDropIndex),
+    ];
+  }
+
+  function getColumnDragLefts(
+    orderedPropertyIds: readonly string[],
+    columns: readonly ColumnDragPreviewColumn[],
+  ) {
+    const columnById = new Map<string, ColumnDragPreviewColumn>();
+
+    for (const column of columns) {
+      columnById.set(column.propertyId, column);
     }
 
-    return null;
+    const firstColumnLeft = columns[0]?.left ?? 0;
+    const lefts = new Map<string, number>();
+    let nextLeft = firstColumnLeft;
+
+    for (const propertyId of orderedPropertyIds) {
+      lefts.set(propertyId, nextLeft);
+      nextLeft += columnById.get(propertyId)?.width
+        ?? visiblePropertyWidths[propertyId]
+        ?? defaultCustomPropertyColumnWidth;
+    }
+
+    return lefts;
   }
 
   function getColumnHeaderDragStyle(propertyId: string): CSSProperties | undefined {
@@ -372,14 +402,10 @@ export function WorkspaceTableView({
       return undefined;
     }
 
-    const sourceIndex = visibleProperties.findIndex((property) => property.id === columnDrag.propertyId);
-    const targetIndex = visibleProperties.findIndex((property) => property.id === columnDrag.targetPropertyId);
-    const currentIndex = visibleProperties.findIndex((property) => property.id === propertyId);
-    const sourceColumnWidth = columnDrag.columns.find((column) => (
-      column.propertyId === columnDrag.propertyId
-    ))?.width ?? visiblePropertyWidths[columnDrag.propertyId] ?? defaultCustomPropertyColumnWidth;
+    const orderedPropertyIds = visibleProperties.map((property) => property.id);
+    const currentColumn = columnDrag.columns.find((column) => column.propertyId === propertyId);
 
-    if (sourceIndex === -1 || targetIndex === -1 || currentIndex === -1) {
+    if (!currentColumn || !orderedPropertyIds.includes(propertyId)) {
       return undefined;
     }
 
@@ -392,21 +418,28 @@ export function WorkspaceTableView({
       };
     }
 
-    if (sourceIndex < targetIndex && currentIndex > sourceIndex && currentIndex <= targetIndex) {
-      return {
-        transform: `translateX(${-sourceColumnWidth}px)`,
-        transitionDuration: "160ms",
-      };
+    const previewOrder = getColumnDragOrder(
+      orderedPropertyIds,
+      columnDrag.propertyId,
+      columnDrag.dropIndex,
+    );
+    const previewLefts = getColumnDragLefts(previewOrder, columnDrag.columns);
+    const previewLeft = previewLefts.get(propertyId);
+
+    if (previewLeft === undefined) {
+      return undefined;
     }
 
-    if (sourceIndex > targetIndex && currentIndex >= targetIndex && currentIndex < sourceIndex) {
-      return {
-        transform: `translateX(${sourceColumnWidth}px)`,
-        transitionDuration: "160ms",
-      };
+    const offset = previewLeft - currentColumn.left;
+
+    if (Math.abs(offset) < 0.5) {
+      return undefined;
     }
 
-    return undefined;
+    return {
+      transform: `translateX(${offset}px)`,
+      transitionDuration: "180ms",
+    };
   }
 
   function startPointerColumnDrag(
@@ -427,21 +460,26 @@ export function WorkspaceTableView({
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
+    let frameId = 0;
+    let pendingClientX = event.clientX;
+
     setOpenPropertyMenuId(null);
     setColumnDrag({
       propertyId,
       startX: event.clientX,
       currentX: event.clientX,
-      targetPropertyId: propertyId,
+      dropIndex: findColumnDropIndex(event.clientX, columnDragPreviewColumns, propertyId),
       columns: columnDragPreviewColumns,
     });
 
-    function movePointerDraggedColumn(pointerEvent: PointerEvent) {
-      const targetPropertyId = findColumnDragTargetFromPoint(
-        pointerEvent.clientX,
-        pointerEvent.clientY,
+    function updatePointerDraggedColumn() {
+      frameId = 0;
+
+      const dropIndex = findColumnDropIndex(
+        pendingClientX,
+        columnDragPreviewColumns,
         propertyId,
-      ) ?? findColumnDragTarget(pointerEvent.clientX, columnDragPreviewColumns) ?? propertyId;
+      );
 
       setColumnDrag((currentColumnDrag) => {
         if (!currentColumnDrag || currentColumnDrag.propertyId !== propertyId) {
@@ -450,26 +488,35 @@ export function WorkspaceTableView({
 
         return {
           ...currentColumnDrag,
-          currentX: pointerEvent.clientX,
-          targetPropertyId,
+          currentX: pendingClientX,
+          dropIndex,
         };
       });
     }
 
+    function movePointerDraggedColumn(pointerEvent: PointerEvent) {
+      pendingClientX = pointerEvent.clientX;
+
+      if (frameId === 0) {
+        frameId = window.requestAnimationFrame(updatePointerDraggedColumn);
+      }
+    }
+
     function finishPointerDraggedColumn(pointerEvent: PointerEvent) {
-      const targetPropertyId = findColumnDragTargetFromPoint(
+      const dropIndex = findColumnDropIndex(
         pointerEvent.clientX,
-        pointerEvent.clientY,
+        columnDragPreviewColumns,
         propertyId,
-      ) ?? findColumnDragTarget(pointerEvent.clientX, columnDragPreviewColumns);
+      );
 
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
       window.removeEventListener("pointermove", movePointerDraggedColumn);
+      window.cancelAnimationFrame(frameId);
       setColumnDrag(null);
 
-      if (targetPropertyId && Math.abs(pointerEvent.clientX - event.clientX) > 4) {
-        reorderColumnFromTo(propertyId, targetPropertyId);
+      if (Math.abs(pointerEvent.clientX - event.clientX) > 4) {
+        reorderColumnToIndex(propertyId, dropIndex);
       }
     }
 
@@ -504,7 +551,7 @@ export function WorkspaceTableView({
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative border-r border-border/50",
+                      "group/column relative border-r border-border/50 px-1",
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
                     ].filter(Boolean).join(" ")}
@@ -547,16 +594,16 @@ export function WorkspaceTableView({
                         <div className="flex min-w-0 items-center gap-1">
                           <button
                             type="button"
-                            className="flex h-8 min-w-0 flex-1 cursor-grab items-center rounded-md text-left hover:bg-muted active:cursor-grabbing"
+                            className="flex h-8 min-w-0 flex-1 cursor-grab items-center rounded-md px-2 text-left transition-colors hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring/40 active:cursor-grabbing"
                             aria-label={`Drag ${property.name} column`}
                             onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
                           >
-                            <span className="block min-w-0 truncate pr-7">{property.name}</span>
+                            <span className="block min-w-0 truncate">{property.name}</span>
                           </button>
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
-                              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus-visible:ring-1 focus-visible:ring-ring/40 group-hover/column:opacity-100 group-focus-within/column:opacity-100 data-[state=open]:opacity-100"
                               aria-label={`${property.name} property actions`}
                               onPointerDown={(event) => event.stopPropagation()}
                             >

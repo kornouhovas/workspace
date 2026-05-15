@@ -288,8 +288,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /columnDrag/);
   assert.match(tableViewSource, /columnDragPreviewColumns/);
   assert.match(tableViewSource, /getColumnHeaderDragStyle/);
-  assert.match(tableViewSource, /findColumnDragTargetFromPoint/);
-  assert.match(tableViewSource, /document\.elementsFromPoint/);
+  assert.match(tableViewSource, /findColumnDropIndex/);
+  assert.match(tableViewSource, /getColumnDragOrder/);
+  assert.match(tableViewSource, /getColumnDragLefts/);
+  assert.match(tableViewSource, /requestAnimationFrame/);
+  assert.match(tableViewSource, /cancelAnimationFrame/);
+  assert.doesNotMatch(tableViewSource, /findColumnDragTargetFromPoint/);
+  assert.doesNotMatch(tableViewSource, /document\.elementsFromPoint/);
   assert.match(tableViewSource, /pointerEvents: "none"/);
   assert.match(tableViewSource, /transition-transform ease-out/);
   assert.match(tableViewSource, /onContextMenu/);
@@ -299,7 +304,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /onPointerDown=\{\(event\) => startPointerColumnDrag\(event, property\.id\)\}/);
   assert.doesNotMatch(tableViewSource, /GripVerticalIcon className="size-3\.5"/);
   assert.doesNotMatch(tableViewSource, /absolute left-1 top-1\/2/);
-  assert.doesNotMatch(tableViewSource, /group-hover\/column:opacity-100/);
+  assert.match(tableViewSource, /opacity-0/);
+  assert.match(tableViewSource, /group-hover\/column:opacity-100/);
+  assert.match(tableViewSource, /group-focus-within\/column:opacity-100/);
+  assert.match(tableViewSource, /data-\[state=open\]:opacity-100/);
   assert.doesNotMatch(tableViewSource, /onDragOver/);
   assert.doesNotMatch(tableViewSource, /onDrop/);
   assert.match(tableViewSource, /colgroup/);
