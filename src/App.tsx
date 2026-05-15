@@ -99,9 +99,12 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
           : undefined,
         valueVisibility: isRecord(view.valueVisibility)
           ? Object.fromEntries(
-              Object.entries(view.valueVisibility)
-                .filter(([, setting]) => isRecord(setting))
-                .map(([propertyId, setting]) => [
+              Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
+                if (!isRecord(setting)) {
+                  return [];
+                }
+
+                return [[
                   propertyId,
                   {
                     valueIds: Array.isArray(setting.valueIds)
@@ -109,7 +112,8 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
                       : [],
                     includeEmpty: setting.includeEmpty === true,
                   },
-                ]),
+                ]];
+              }),
             )
           : undefined,
       })).filter((view) => view.id)
