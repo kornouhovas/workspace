@@ -248,6 +248,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(boardViewSource, /pb-2/);
   assert.doesNotMatch(boardViewSource, /pr-4/);
   assert.doesNotMatch(boardViewSource, /Cards are read-only across status columns/);
+  assert.doesNotMatch(boardViewSource, /currentRelativePath/);
   assert.match(tableViewSource, /onProjectOpen/);
   assert.match(tableViewSource, /selectValues/);
   assert.match(tableViewSource, /formatPropertyValue/);

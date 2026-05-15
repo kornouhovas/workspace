@@ -99,9 +99,6 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
                       <div className="flex min-w-0 items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h4 className="truncate text-sm font-medium leading-snug">{project.name}</h4>
-                          <p className="mt-1 truncate text-xs leading-snug text-muted-foreground">
-                            {project.currentRelativePath}
-                          </p>
                         </div>
                         <Badge variant="outline" className="max-w-28 shrink-0 truncate">{project.status.name}</Badge>
                       </div>
