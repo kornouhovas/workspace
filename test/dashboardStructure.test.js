@@ -122,6 +122,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /w-0/);
   assert.doesNotMatch(leftPanelSource, /onToggleCollapsed/);
   assert.match(appSource, /data-testid="workspace-main"/);
+  assert.match(appSource, /flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);
   assert.match(workspaceCompatibilitySource, /workspace\.listWorkspaces/);
@@ -192,8 +193,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
+  assert.match(boardViewSource, /px-4 pt-4 pb-0/);
   assert.match(boardViewSource, /min-h-0 flex-1 overflow-x-auto overflow-y-hidden/);
   assert.match(boardViewSource, /w-full/);
+  assert.doesNotMatch(boardViewSource, /py-4/);
+  assert.doesNotMatch(boardViewSource, /pb-2/);
   assert.doesNotMatch(boardViewSource, /Cards are read-only across status columns/);
   assert.match(tableViewSource, /onProjectOpen/);
   assert.match(tableViewSource, /GripVerticalIcon/);

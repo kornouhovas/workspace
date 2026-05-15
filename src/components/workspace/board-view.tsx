@@ -38,7 +38,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
   );
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 px-4 pt-4 pb-0" aria-labelledby="workspace-board-heading">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="workspace-board-heading" className="text-sm font-semibold">
@@ -51,7 +51,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
         <Badge variant="outline">Move disabled</Badge>
       </div>
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="grid h-full w-full auto-cols-[minmax(20rem,1fr)] grid-flow-col gap-3 pb-2 pr-4">
+        <div className="grid h-full w-full auto-cols-[minmax(20rem,1fr)] grid-flow-col gap-3 pr-4">
           {projection.columns.map((column) => (
             <section
               key={column.statusValueId}
