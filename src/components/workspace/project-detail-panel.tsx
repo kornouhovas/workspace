@@ -192,6 +192,10 @@ export function WorkspaceProjectDetailPanel({
     onOpenChange(false);
   }
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <div
       className={[

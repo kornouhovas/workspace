@@ -196,6 +196,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /w-full/);
   assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);
+  assert.match(projectDetailPanelSource, /if \(!isOpen\) \{\s+return null;\s+\}/);
   assert.match(projectDetailPanelSource, /electron-window-no-drag/);
   assert.match(projectDetailPanelSource, /projectDetailPanelWidth/);
   assert.match(projectDetailPanelSource, /localStorage/);
