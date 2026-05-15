@@ -92,7 +92,7 @@ function FileTreeNode({
         type="button"
         variant="ghost"
         disabled={!node.available}
-        className="h-auto w-full justify-start px-2 py-1.5 text-left"
+        className="h-7 w-full justify-start px-2 py-1 text-left"
         title={node.relativePath}
         aria-expanded={isFolder ? isExpanded : undefined}
         onClick={() => {
@@ -116,15 +116,12 @@ function FileTreeNode({
           ) : (
             <FileIcon className="size-4 text-muted-foreground" aria-hidden="true" />
           )}
-          <span className="min-w-0">
-            <span className="block truncate text-sm">{node.name}</span>
-            <span className="block truncate text-xs font-normal text-muted-foreground">{node.relativePath}</span>
-          </span>
+          <span className="min-w-0 truncate text-sm">{node.name}</span>
           {!node.available ? <Badge variant="destructive">Missing</Badge> : null}
         </span>
       </Button>
       {isFolder && isExpanded && node.children && node.children.length > 0 ? (
-        <ul className="grid gap-1">
+        <ul className="grid gap-0.5">
           {node.children.map((child) => (
             <FileTreeNode
               key={child.id}
@@ -390,7 +387,7 @@ export function WorkspaceProjectDetailPanel({
                   </h3>
                   <Badge variant="secondary">{displayedProject.fileTree.length} items</Badge>
                 </div>
-                <ul className="grid gap-1">
+                <ul className="grid gap-0.5">
                   {displayedProject.fileTree.map((node) => (
                     <FileTreeNode
                       key={node.id}
