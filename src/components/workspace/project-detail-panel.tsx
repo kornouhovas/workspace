@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -178,6 +184,14 @@ export function WorkspaceProjectDetailPanel({
     window.addEventListener("pointerup", handlePointerUp, { once: true });
   }
 
+  function closeProjectDetails(
+    event: ReactMouseEvent<HTMLButtonElement> | ReactPointerEvent<HTMLButtonElement>,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenChange(false);
+  }
+
   return (
     <div
       className={[
@@ -191,7 +205,7 @@ export function WorkspaceProjectDetailPanel({
         aria-label="Close project details backdrop"
         className="absolute inset-0 cursor-default bg-transparent"
         tabIndex={isOpen ? 0 : -1}
-        onClick={() => onOpenChange(false)}
+        onClick={closeProjectDetails}
       />
       <aside
         aria-labelledby="project-detail-title"
@@ -218,7 +232,8 @@ export function WorkspaceProjectDetailPanel({
           size="icon-sm"
           className="absolute right-3 top-3 z-10"
           aria-label="Close project details"
-          onClick={() => onOpenChange(false)}
+          onPointerDown={closeProjectDetails}
+          onClick={closeProjectDetails}
         >
           <XIcon className="size-4" aria-hidden="true" />
         </Button>

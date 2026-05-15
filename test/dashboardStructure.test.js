@@ -79,7 +79,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleAddWorkspace/);
   assert.match(appSource, /handleRenameWorkspace/);
   assert.match(appSource, /handleDeleteWorkspace/);
-  assert.match(appSource, /handleReorderWorkspace/);
+  assert.match(appSource, /handleReorderWorkspaces/);
   assert.match(appSource, /handleFolderRoleChange/);
   assert.match(appSource, /workspaceClient\.setRoot/);
   assert.match(appSource, /workspaceClient\.scan/);
@@ -144,7 +144,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onAddWorkspace/);
   assert.match(leftPanelSource, /onRenameWorkspace/);
   assert.match(leftPanelSource, /onDeleteWorkspace/);
-  assert.match(leftPanelSource, /onReorderWorkspace/);
+  assert.match(leftPanelSource, /onReorderWorkspaces/);
   assert.match(leftPanelSource, /editingWorkspaceId/);
   assert.match(leftPanelSource, /aria-label="Rename workspace"/);
   assert.match(leftPanelSource, /min-w-44/);
@@ -200,6 +200,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /localStorage/);
   assert.match(projectDetailPanelSource, /Resize project panel/);
   assert.match(projectDetailPanelSource, /onPointerDown/);
+  assert.match(projectDetailPanelSource, /function closeProjectDetails/);
+  assert.match(projectDetailPanelSource, /onPointerDown=\{closeProjectDetails\}/);
+  assert.match(projectDetailPanelSource, /onClick=\{closeProjectDetails\}/);
   assert.match(projectDetailPanelSource, /Close project details backdrop/);
   assert.match(projectDetailPanelSource, /stopPropagation/);
   assert.match(projectDetailPanelSource, /translate-x-full/);

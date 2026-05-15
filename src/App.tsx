@@ -559,33 +559,31 @@ export default function App() {
     }
   }
 
-  async function handleReorderWorkspace(sourceWorkspaceId: string, targetWorkspaceId: string) {
-    if (sourceWorkspaceId === targetWorkspaceId) {
-      return;
+  async function handleReorderWorkspaces(orderedWorkspaceIds: readonly string[]) {
+    const currentWorkspaceIds = workspaceList.workspaces.map((workspace) => workspace.id);
+    const currentWorkspaceIdSet = new Set(currentWorkspaceIds);
+    const nextOrderedWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) => (
+      currentWorkspaceIdSet.has(workspaceId)
+    ));
+
+    for (const workspaceId of currentWorkspaceIds) {
+      if (!nextOrderedWorkspaceIds.includes(workspaceId)) {
+        nextOrderedWorkspaceIds.push(workspaceId);
+      }
     }
 
-    const workspaceIds = workspaceList.workspaces.map((workspace) => workspace.id);
-    const sourceIndex = workspaceIds.indexOf(sourceWorkspaceId);
-    const targetIndex = workspaceIds.indexOf(targetWorkspaceId);
-    if (sourceIndex === -1 || targetIndex === -1) {
+    if (
+      nextOrderedWorkspaceIds.length !== currentWorkspaceIds.length ||
+      nextOrderedWorkspaceIds.join("\0") === currentWorkspaceIds.join("\0")
+    ) {
       return;
     }
-
-    const orderedWorkspaceIds = [...workspaceIds];
-    const [movedWorkspaceId] = orderedWorkspaceIds.splice(sourceIndex, 1);
-    orderedWorkspaceIds.splice(targetIndex, 0, movedWorkspaceId);
 
     try {
-      setWorkspaceList((current) => ({
-        ...current,
-        workspaces: orderedWorkspaceIds
-          .map((workspaceId) => current.workspaces.find((workspace) => workspace.id === workspaceId))
-          .filter((workspace): workspace is WorkspaceListItem => workspace !== undefined),
-      }));
-      await workspaceClient.reorderWorkspaces({ orderedWorkspaceIds });
+      setWorkspaceList((current) => reorderWorkspaceListFallback(current, nextOrderedWorkspaceIds));
+      await workspaceClient.reorderWorkspaces({ orderedWorkspaceIds: nextOrderedWorkspaceIds });
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.reorderWorkspaces")) {
-        setWorkspaceList((current) => reorderWorkspaceListFallback(current, orderedWorkspaceIds));
         return;
       }
 
@@ -798,7 +796,7 @@ export default function App() {
             onAddWorkspace={handleAddWorkspace}
             onRenameWorkspace={handleRenameWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
-            onReorderWorkspace={handleReorderWorkspace}
+            onReorderWorkspaces={handleReorderWorkspaces}
             onWorkspaceOpen={handleWorkspaceOpen}
             onSearchQueryChange={(searchQuery) => {
               dispatch({ type: "searchQueryChanged", searchQuery });
