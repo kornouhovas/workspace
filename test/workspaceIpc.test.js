@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -70,6 +70,45 @@ test("workspace IPC handler serves default views and projection for selected sou
     assert.deepEqual(
       fileTreeResponse.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
       [["file", "Plan.txt", "Active/Project Alpha/Docs/Plan.txt"]],
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler keeps required Status visible for stale table views", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath: join(tempDirectory, "settings.json"),
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+    });
+
+    await handler(null, "workspace.setRoot", { rootPath: "/" });
+    const rootResponse = await handler(null, "workspace.getRoot", {});
+    const viewStore = JSON.parse(await readFile(viewStorePath, "utf8"));
+    viewStore.views["view:default-table"] = {
+      ...viewStore.views["view:default-table"],
+      visiblePropertyIds: ["property:name"],
+      propertyOrder: {
+        "property:name": 10,
+      },
+    };
+    await writeFile(viewStorePath, `${JSON.stringify(viewStore, null, 2)}\n`);
+
+    const projectionResponse = await handler(null, "workspace.getViewProjection", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewId: "view:default-table",
+    });
+
+    assert.deepEqual(
+      projectionResponse.visibleProperties.map((property) => property.id),
+      ["property:name", "property:status"],
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

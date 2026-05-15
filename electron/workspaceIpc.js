@@ -31,7 +31,13 @@ import {
   normalizePropertyDefinition,
   normalizeSelectValue,
 } from "../src/workspaceProperties.js";
-import { createDefaultView, NO_STATUS_VALUE_ID, PROPERTY_NAME_ID, PROPERTY_STATUS_ID } from "../src/workspaceViews.js";
+import {
+  createDefaultView,
+  normalizeViewDocument,
+  NO_STATUS_VALUE_ID,
+  PROPERTY_NAME_ID,
+  PROPERTY_STATUS_ID,
+} from "../src/workspaceViews.js";
 
 const ipcChannel = "workspace:request";
 
@@ -1131,18 +1137,17 @@ async function listAllPropertyDefinitions({ workspaceId, propertyStore }) {
 }
 
 function createVisiblePropertiesForView({ view, propertyDefinitions }) {
+  const normalizedView = normalizeViewDocument(view);
   const propertyById = new Map(propertyDefinitions.map((property) => [property.id, property]));
-  const visiblePropertyIds = Array.isArray(view?.visiblePropertyIds)
-    ? view.visiblePropertyIds
-    : [PROPERTY_NAME_ID, PROPERTY_STATUS_ID];
+  const visiblePropertyIds = normalizedView.visiblePropertyIds;
 
   return visiblePropertyIds
     .map((propertyId) => propertyById.get(propertyId))
     .filter(Boolean)
     .filter((property) => !property.deletedAt && !property.hidden)
     .sort((left, right) => (
-      Number(view?.propertyOrder?.[left.id] ?? left.order ?? 0)
-      - Number(view?.propertyOrder?.[right.id] ?? right.order ?? 0)
+      Number(normalizedView.propertyOrder?.[left.id] ?? left.order ?? 0)
+      - Number(normalizedView.propertyOrder?.[right.id] ?? right.order ?? 0)
     ))
     .map(toVisibleProperty);
 }
