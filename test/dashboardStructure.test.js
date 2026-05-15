@@ -109,6 +109,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /searchQueryChanged/);
   assert.match(appSource, /activeViewChanged/);
   assert.match(appSource, /workspaceClient\.setActiveView/);
+  assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
   assert.match(appSource, /sidebarCollapsed/);
   assert.match(appSource, /PanelLeftIcon/);
   assert.match(appSource, /pl-24/);
@@ -120,6 +121,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /electron-window-no-drag/);
   assert.match(workspaceCompatibilitySource, /workspace\.listWorkspaces/);
   assert.match(workspaceCompatibilitySource, /createWorkspaceListFallback/);
+  assert.match(workspaceCompatibilitySource, /addWorkspaceListFallback/);
   assert.doesNotMatch(appSource, /app\/dashboard\/data\.json/);
   assert.doesNotMatch(appSource, /ChartAreaInteractive/);
   assert.doesNotMatch(appSource, /SectionCards/);
@@ -173,7 +175,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
   assert.match(boardViewSource, /onProjectOpen/);
-  assert.match(boardViewSource, /auto-cols-\[minmax\(16rem,1fr\)\]/);
+  assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
+  assert.match(boardViewSource, /min-h-24/);
   assert.match(boardViewSource, /w-full/);
   assert.match(tableViewSource, /onProjectOpen/);
   assert.match(tableViewSource, /GripVerticalIcon/);
@@ -183,6 +186,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /localStorage/);
   assert.match(projectDetailPanelSource, /Resize project panel/);
   assert.match(projectDetailPanelSource, /onPointerDown/);
+  assert.match(projectDetailPanelSource, /Close project details backdrop/);
+  assert.match(projectDetailPanelSource, /stopPropagation/);
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.match(projectDetailPanelSource, /Properties/);

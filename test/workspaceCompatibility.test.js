@@ -44,3 +44,21 @@ test("loadWorkspaceList rethrows non-compatibility workspace list errors", async
     /Database is unavailable/,
   );
 });
+
+test("addWorkspaceListFallback appends and activates a local workspace", async () => {
+  const { addWorkspaceListFallback } = await importCompatibilityModule();
+
+  assert.deepEqual(
+    addWorkspaceListFallback({
+      activeWorkspaceId: "workspace:root",
+      workspaces: [{ id: "workspace:root", name: "Operations", order: 10 }],
+    }, "Workspace 2"),
+    {
+      activeWorkspaceId: "workspace:local:workspace-2",
+      workspaces: [
+        { id: "workspace:root", name: "Operations", order: 10 },
+        { id: "workspace:local:workspace-2", name: "Workspace 2", order: 20 },
+      ],
+    },
+  );
+});

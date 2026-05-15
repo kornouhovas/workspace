@@ -30,8 +30,14 @@ import {
 import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";
 import { WorkspaceServiceClient } from "@/workspaceServiceClient.js";
 import {
+  addWorkspaceListFallback,
   createWorkspaceListFallback,
+  deleteWorkspaceListFallback,
+  isUnsupportedWorkspaceMethodError,
   loadWorkspaceList,
+  renameWorkspaceListFallback,
+  reorderWorkspaceListFallback,
+  setActiveWorkspaceListFallback,
   type WorkspaceListItem,
   type WorkspaceListState,
 } from "@/workspaceCompatibility";
@@ -324,16 +330,26 @@ export default function App() {
       return;
     }
 
+    const nextIndex = workspaceList.workspaces.length + 1;
+    const workspaceName = `Workspace ${nextIndex}`;
+
     try {
-      const nextIndex = workspaceList.workspaces.length + 1;
       await workspaceClient.createWorkspace({
-        name: `Workspace ${nextIndex}`,
+        name: workspaceName,
       });
       setSelectedProject(null);
       setActiveSurface("workspace");
       toast.success("Workspace added");
       setReloadToken((value) => value + 1);
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.createWorkspace")) {
+        setWorkspaceList((current) => addWorkspaceListFallback(current, workspaceName));
+        setSelectedProject(null);
+        setActiveSurface("workspace");
+        toast.success("Workspace added locally");
+        return;
+      }
+
       toast.error("Could not add workspace", {
         description: getServiceErrorMessage(error),
       });
@@ -341,7 +357,9 @@ export default function App() {
   }
 
   async function handleWorkspaceOpen(workspaceId: string) {
-    if (!state.root || workspaceId === state.workspaceId) {
+    const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+
+    if (!state.root || workspaceId === activeWorkspaceId) {
       openWorkspaceSurface();
       return;
     }
@@ -352,6 +370,13 @@ export default function App() {
       setActiveSurface("workspace");
       setReloadToken((value) => value + 1);
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.setActiveWorkspace")) {
+        setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
+        setSelectedProject(null);
+        setActiveSurface("workspace");
+        return;
+      }
+
       toast.error("Could not open workspace", {
         description: getServiceErrorMessage(error),
       });
@@ -367,6 +392,12 @@ export default function App() {
       toast.success("Workspace renamed");
       setReloadToken((value) => value + 1);
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.updateWorkspace")) {
+        setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
+        toast.success("Workspace renamed locally");
+        return;
+      }
+
       toast.error("Could not rename workspace", {
         description: getServiceErrorMessage(error),
       });
@@ -380,6 +411,13 @@ export default function App() {
       toast.success("Workspace deleted");
       setReloadToken((value) => value + 1);
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.deleteWorkspace")) {
+        setWorkspaceList((current) => deleteWorkspaceListFallback(current, workspaceId));
+        setSelectedProject(null);
+        toast.success("Workspace deleted locally");
+        return;
+      }
+
       toast.error("Could not delete workspace", {
         description: getServiceErrorMessage(error),
       });
@@ -411,6 +449,11 @@ export default function App() {
       }));
       await workspaceClient.reorderWorkspaces({ orderedWorkspaceIds });
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.reorderWorkspaces")) {
+        setWorkspaceList((current) => reorderWorkspaceListFallback(current, orderedWorkspaceIds));
+        return;
+      }
+
       toast.error("Could not reorder workspaces", {
         description: getServiceErrorMessage(error),
       });
@@ -566,7 +609,7 @@ export default function App() {
         >
           <WorkspaceLeftPanel
             activeSurface={activeSurface}
-            activeWorkspaceId={state.workspaceId || workspaceList.activeWorkspaceId}
+            activeWorkspaceId={workspaceList.activeWorkspaceId || state.workspaceId}
             workspaces={navigationWorkspaces}
             searchQuery={state.searchQuery}
             onAddWorkspace={handleAddWorkspace}

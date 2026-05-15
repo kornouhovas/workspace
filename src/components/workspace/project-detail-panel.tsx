@@ -179,11 +179,25 @@ export function WorkspaceProjectDetailPanel({
   }
 
   return (
-    <div className="pointer-events-none fixed inset-y-0 right-0 z-50 flex justify-end" aria-hidden={!isOpen}>
+    <div
+      className={[
+        "fixed inset-0 z-50 flex justify-end",
+        isOpen ? "pointer-events-auto" : "pointer-events-none",
+      ].join(" ")}
+      aria-hidden={!isOpen}
+    >
+      <button
+        type="button"
+        aria-label="Close project details backdrop"
+        className="absolute inset-0 cursor-default bg-transparent"
+        tabIndex={isOpen ? 0 : -1}
+        onClick={() => onOpenChange(false)}
+      />
       <aside
         aria-labelledby="project-detail-title"
         aria-modal="false"
         role="dialog"
+        onClick={(event) => event.stopPropagation()}
         className={[
           "pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition-transform duration-200 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full",
