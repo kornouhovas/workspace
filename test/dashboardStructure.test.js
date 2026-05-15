@@ -229,10 +229,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /Delete View/);
   assert.match(viewTabsSource, /editingViewId/);
   assert.match(viewTabsSource, /aria-label="Rename view"/);
-  assert.match(viewTabsSource, /rounded-2xl bg-muted\/80/);
-  assert.match(viewTabsSource, /group-data-horizontal\/tabs:!h-10/);
+  assert.match(viewTabsSource, /rounded-xl bg-muted\/80/);
+  assert.match(viewTabsSource, /group-data-horizontal\/tabs:!h-9/);
+  assert.match(viewTabsSource, /text-sm font-medium/);
   assert.match(viewTabsSource, /data-active:border-border/);
   assert.match(viewTabsSource, /data-active:bg-background/);
+  assert.doesNotMatch(viewTabsSource, /text-base font-semibold/);
   assert.match(viewTabsSource, /min-w-44/);
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
