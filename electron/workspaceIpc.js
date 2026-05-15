@@ -114,7 +114,11 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.scan") {
-      return unwrapBackendResponse(await createScanResponse({ root: root.root.rootPath, rules: body.rules || {} }));
+      return unwrapBackendResponse(await createScanResponse({
+        root: root.root.rootPath,
+        rules: body.rules || {},
+        includeCardChildren: body.includeCardChildren === true,
+      }));
     }
 
     if (method === "workspace.listEntries") {

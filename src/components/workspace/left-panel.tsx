@@ -4,15 +4,22 @@ import {
   SearchIcon,
   SettingsIcon,
 } from "@/lib/lucide-icons";
+import { cn } from "@/lib/utils";
 
 type WorkspaceLeftPanelProps = {
+  readonly activeSurface: "workspace" | "settings";
   readonly searchQuery: string;
   readonly onSearchQueryChange: (searchQuery: string) => void;
+  readonly onWorkspaceOpen: () => void;
+  readonly onOpenSettings: () => void;
 };
 
 export function WorkspaceLeftPanel({
+  activeSurface,
   searchQuery,
   onSearchQueryChange,
+  onWorkspaceOpen,
+  onOpenSettings,
 }: WorkspaceLeftPanelProps) {
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-sidebar">
@@ -48,7 +55,12 @@ export function WorkspaceLeftPanel({
           <p className="px-2 text-xs font-medium text-muted-foreground">Workspaces</p>
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-start rounded-lg bg-sidebar-accent px-2 text-sm text-sidebar-accent-foreground"
+            aria-current={activeSurface === "workspace" ? "page" : undefined}
+            className={cn(
+              "inline-flex h-8 items-center justify-start rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+              activeSurface === "workspace" && "bg-sidebar-accent text-sidebar-accent-foreground",
+            )}
+            onClick={onWorkspaceOpen}
           >
             Operations
           </button>
@@ -56,7 +68,12 @@ export function WorkspaceLeftPanel({
         <div className="mt-auto">
           <button
             type="button"
-            className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+            aria-current={activeSurface === "settings" ? "page" : undefined}
+            className={cn(
+              "inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+              activeSurface === "settings" && "bg-sidebar-accent text-sidebar-accent-foreground",
+            )}
+            onClick={onOpenSettings}
           >
             <SettingsIcon className="size-4" aria-hidden="true" />
             Settings

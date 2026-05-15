@@ -265,6 +265,32 @@ test("createScanResponse builds access tree and cards from saved root", async ()
   assert.equal(response.payload.tree.some((node) => node.name === ".hidden"), false);
 });
 
+test("createScanResponse can include card descendants for settings folder role configuration", async () => {
+  const root = await createWorkspaceFixture();
+  const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), ".workspace", "properties.json");
+  const response = await createScanResponse({
+    root,
+    propertiesPath,
+    includeCardChildren: true,
+    rules: {
+      Archive: { role: "status" },
+      "Archive/Completed": { role: "card" },
+    },
+  });
+
+  assert.equal(response.status, 200);
+  const archiveNode = response.payload.tree.find((node) => node.name === "Archive");
+  const completedNode = archiveNode.children.find((node) => node.name === "Completed");
+  assert.deepEqual(completedNode.children.map((node) => node.name), ["Assets"]);
+  assert.deepEqual(
+    response.payload.folders.map((folder) => [folder.name, folder.status, folder.path]),
+    [
+      ["Active", root.split("/").pop(), "Active"],
+      ["Completed", "Archive", "Archive/Completed"],
+    ],
+  );
+});
+
 test("createScanResponse does not expose legacy text as a default card property", async () => {
   const root = await createWorkspaceFixture();
   const propertiesPath = join(await mkdtemp(join(tmpdir(), "workspace-properties-")), "properties.json");

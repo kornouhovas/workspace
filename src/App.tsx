@@ -168,15 +168,16 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
   );
 }
 
+type WorkspaceSurface = "workspace" | "settings";
+
 export default function App() {
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
     undefined,
     createInitialWorkspaceAppState,
   );
-  const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(
-    workspaceMockProjection.selectedProject,
-  );
+  const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
+  const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const workspaceClient = useMemo(
@@ -202,7 +203,7 @@ export default function App() {
         }
 
         const [scanResponse, viewsRawResponse] = await Promise.all([
-          workspaceClient.scan({}),
+          workspaceClient.scan({ includeCardChildren: true }),
           workspaceClient.listViews({ workspaceId: root.workspaceId }),
         ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
@@ -266,6 +267,14 @@ export default function App() {
     }
   }
 
+  function openWorkspaceSurface() {
+    setActiveSurface("workspace");
+  }
+
+  function openSettingsSurface() {
+    setActiveSurface("settings");
+  }
+
   const viewState = {
     activeViewId: state.activeViewId || workspaceMockProjection.activeViewId,
     views: state.views.length > 0 ? state.views : workspaceMockProjection.views,
@@ -294,46 +303,24 @@ export default function App() {
     <>
       <div className="dark flex h-screen min-h-0 bg-background text-foreground">
         <WorkspaceLeftPanel
+          activeSurface={activeSurface}
           searchQuery={state.searchQuery}
           onSearchQueryChange={(searchQuery) => {
             dispatch({ type: "searchQueryChanged", searchQuery });
           }}
+          onWorkspaceOpen={openWorkspaceSurface}
+          onOpenSettings={openSettingsSurface}
         />
         <main data-testid="workspace-main" className="flex min-w-0 flex-1 flex-col">
           <header className="electron-window-drag flex h-12 shrink-0 items-center border-b border-border px-4">
-            <h1 className="text-sm font-medium">Workspace Project Board</h1>
+            <h1 className="text-sm font-medium">
+              {activeSurface === "settings" ? "Settings" : "Workspace Project Board"}
+            </h1>
           </header>
-          <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden">
-            <WorkspaceViewTabs
-              activeViewId={viewState.activeViewId}
-              views={viewState.views}
-              onActiveViewChange={(activeViewId) => {
-                dispatch({ type: "activeViewChanged", activeViewId });
-                if (state.workspaceId) {
-                  void workspaceClient.setActiveView({
-                    workspaceId: state.workspaceId,
-                    viewId: activeViewId,
-                  }).catch((error: unknown) => {
-                    toast.error("Could not save active view", {
-                      description: getServiceErrorMessage(error),
-                    });
-                  });
-                }
-              }}
-            />
-            <div className="min-h-0 flex-1 overflow-auto">
+          {activeSurface === "settings" ? (
+            <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
               {state.status === "loading" || state.status === "idle" ? (
                 <WorkspaceLoadingState />
-              ) : state.sourceFolderMissing ? (
-                <>
-                  <WorkspaceSettingsView
-                    sourceFolder={sourceFolder}
-                    folderRoleTree={folderRoleTree}
-                    onSelectFolder={handleSelectFolder}
-                    selectingFolder={selectingFolder}
-                  />
-                  <WorkspaceEmptyState />
-                </>
               ) : (
                 <>
                   <WorkspaceServiceError state={state} />
@@ -341,20 +328,52 @@ export default function App() {
                     sourceFolder={sourceFolder}
                     folderRoleTree={folderRoleTree}
                     onSelectFolder={handleSelectFolder}
+                    onCloseSettings={openWorkspaceSurface}
                     selectingFolder={selectingFolder}
-                  />
-                  <WorkspaceBoardView
-                    projection={boardProjection as typeof workspaceMockProjection.projection}
-                    visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                  />
-                  <WorkspaceTableView
-                    projection={tableProjection as typeof workspaceMockProjection.tableProjection}
-                    visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
                   />
                 </>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden">
+              <WorkspaceViewTabs
+                activeViewId={viewState.activeViewId}
+                views={viewState.views}
+                onActiveViewChange={(activeViewId) => {
+                  dispatch({ type: "activeViewChanged", activeViewId });
+                  if (state.workspaceId) {
+                    void workspaceClient.setActiveView({
+                      workspaceId: state.workspaceId,
+                      viewId: activeViewId,
+                    }).catch((error: unknown) => {
+                      toast.error("Could not save active view", {
+                        description: getServiceErrorMessage(error),
+                      });
+                    });
+                  }
+                }}
+              />
+              <div className="min-h-0 flex-1 overflow-auto">
+                {state.status === "loading" || state.status === "idle" ? (
+                  <WorkspaceLoadingState />
+                ) : state.sourceFolderMissing ? (
+                  <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
+                ) : (
+                  <>
+                    <WorkspaceServiceError state={state} />
+                    <WorkspaceBoardView
+                      projection={boardProjection as typeof workspaceMockProjection.projection}
+                      visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                    />
+                    <WorkspaceTableView
+                      projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                      visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </main>
         <WorkspaceProjectDetailPanel
           open={selectedProject !== null}

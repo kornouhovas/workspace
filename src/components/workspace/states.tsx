@@ -1,4 +1,8 @@
-export function WorkspaceEmptyState() {
+type WorkspaceEmptyStateProps = {
+  readonly onOpenSettings: () => void;
+};
+
+export function WorkspaceEmptyState({ onOpenSettings }: WorkspaceEmptyStateProps) {
   return (
     <div className="flex min-h-80 flex-col items-center justify-center gap-3 px-6 text-center">
       <div>
@@ -10,6 +14,7 @@ export function WorkspaceEmptyState() {
       <button
         type="button"
         className="inline-flex h-8 items-center rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+        onClick={onOpenSettings}
       >
         Open Settings
       </button>

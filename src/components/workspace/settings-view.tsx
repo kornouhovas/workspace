@@ -14,6 +14,7 @@ type WorkspaceSettingsViewProps = {
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly onSelectFolder: () => void;
+  readonly onCloseSettings: () => void;
   readonly selectingFolder?: boolean;
 };
 
@@ -62,15 +63,25 @@ export function WorkspaceSettingsView({
   sourceFolder,
   folderRoleTree,
   onSelectFolder,
+  onCloseSettings,
   selectingFolder = false,
 }: WorkspaceSettingsViewProps) {
   return (
     <section className="grid gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-labelledby="workspace-settings-heading">
-      <div className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between gap-3 px-3 py-2">
+      <div className="flex items-center justify-between gap-3 lg:col-span-2">
+        <div className="min-w-0">
           <h2 id="workspace-settings-heading" className="text-sm font-semibold">
             Settings
           </h2>
+          <p className="truncate text-xs text-muted-foreground">Workspace source and folder roles</p>
+        </div>
+        <Button type="button" variant="ghost" size="sm" onClick={onCloseSettings}>
+          Back to workspace
+        </Button>
+      </div>
+      <div className="rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between gap-3 px-3 py-2">
+          <h3 className="text-sm font-semibold">Source</h3>
           <Badge variant="secondary">Local only</Badge>
         </div>
         <Separator />

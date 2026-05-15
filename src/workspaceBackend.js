@@ -59,13 +59,18 @@ export async function createSelectRootResponse({
   return createJsonResponse(200, { root: createRootPayload(rootPath) });
 }
 
-export async function createScanResponse({ root, rules = {}, propertiesPath = defaultWorkspacePropertiesPath }) {
+export async function createScanResponse({
+  root,
+  rules = {},
+  propertiesPath = defaultWorkspacePropertiesPath,
+  includeCardChildren = false,
+}) {
   try {
     if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
       return createJsonResponse(404, { error: "Workspace root was not found." });
     }
 
-    const tree = await listWorkspaceAccessTree(root, rules);
+    const tree = await listWorkspaceAccessTree(root, rules, [], { includeCardChildren });
     const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) });
     const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
     const workspace = {
@@ -494,7 +499,7 @@ function resolveLegacyWorkspacePath(filePath, defaultPath, legacyDefaultPath) {
   return pathParts.join("/");
 }
 
-async function listWorkspaceAccessTree(root, rules, parentPath = []) {
+async function listWorkspaceAccessTree(root, rules, parentPath = [], options = {}) {
   const directoryPath = parentPath.length > 0 ? resolveWorkspacePath(root, parentPath.join("/")) : root;
   const entries = await readVisibleDirectoryEntries(directoryPath);
   const nodes = [];
@@ -504,7 +509,9 @@ async function listWorkspaceAccessTree(root, rules, parentPath = []) {
     const path = pathParts.join("/");
     const rule = rules?.[path] || {};
     const role = normalizeFolderRole(rule.role);
-    const children = role === "card" ? [] : await listWorkspaceAccessTree(root, rules, pathParts);
+    const children = role === "card" && !options.includeCardChildren
+      ? []
+      : await listWorkspaceAccessTree(root, rules, pathParts, options);
 
     nodes.push({
       id: createFolderIdFromPath(path),
