@@ -1,14 +1,28 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  customPropertyTypeIds,
   createDefaultPropertySchemas,
+  isSystemPropertyId,
+  normalizeProjectPropertyValue,
+  normalizePropertyDefinition,
   normalizePropertySchema,
+  normalizeSelectValue,
   normalizePropertyValue,
   propertyTypeIds,
+  systemPropertyIds,
 } from "../src/workspaceProperties.js";
 
 test("propertyTypeIds lists supported property types in storage order", () => {
   assert.deepEqual(propertyTypeIds, ["text", "number", "date", "select", "multi-select"]);
+  assert.deepEqual(customPropertyTypeIds, ["text", "number", "date", "select", "multi-select"]);
+  assert.deepEqual(systemPropertyIds, ["property:name", "property:status"]);
+});
+
+test("isSystemPropertyId recognizes immutable system property ids", () => {
+  assert.equal(isSystemPropertyId("property:name"), true);
+  assert.equal(isSystemPropertyId("property:status"), true);
+  assert.equal(isSystemPropertyId("property:priority"), false);
 });
 
 test("createDefaultPropertySchemas returns only system Name and Status schemas for a workspace", () => {
@@ -153,4 +167,137 @@ test("normalizePropertySchema falls back unknown types to text", () => {
     order: 0,
     config: { scale: 5 },
   });
+});
+
+test("normalizePropertyDefinition rejects unsupported custom property types", () => {
+  assert.throws(
+    () => normalizePropertyDefinition({ id: "property:bad", workspaceId: "workspace-1", name: "Rating", type: "rating" }),
+    /Unsupported property type/,
+  );
+});
+
+test("normalizePropertyDefinition marks system properties immutable", () => {
+  assert.deepEqual(
+    normalizePropertyDefinition({
+      id: "property:name",
+      workspaceId: "workspace-1",
+      name: "Renamed",
+      type: "number",
+      hidden: true,
+      order: 80,
+    }, { now: "2026-05-15T00:00:00.000Z" }),
+    {
+      id: "property:name",
+      workspaceId: "workspace-1",
+      name: "Name",
+      type: "text",
+      system: true,
+      immutable: true,
+      hidden: false,
+      order: 10,
+      config: {},
+      createdAt: "2026-05-15T00:00:00.000Z",
+      updatedAt: "2026-05-15T00:00:00.000Z",
+      deletedAt: null,
+    },
+  );
+});
+
+test("normalizePropertyDefinition normalizes custom properties", () => {
+  assert.deepEqual(
+    normalizePropertyDefinition({
+      id: "property:priority",
+      workspaceId: "workspace-1",
+      name: "  Priority  ",
+      type: "select",
+      hidden: true,
+      order: "30",
+      config: { display: "badge" },
+      createdAt: "2026-05-14T00:00:00.000Z",
+    }, { now: "2026-05-15T00:00:00.000Z" }),
+    {
+      id: "property:priority",
+      workspaceId: "workspace-1",
+      name: "Priority",
+      type: "select",
+      system: false,
+      immutable: false,
+      hidden: true,
+      order: 30,
+      config: { display: "badge", options: [] },
+      createdAt: "2026-05-14T00:00:00.000Z",
+      updatedAt: "2026-05-15T00:00:00.000Z",
+      deletedAt: null,
+    },
+  );
+});
+
+test("normalizeSelectValue normalizes select value documents", () => {
+  assert.deepEqual(
+    normalizeSelectValue({
+      id: "selectValue:priority:high",
+      workspaceId: "workspace-1",
+      propertyId: "property:priority",
+      name: "  High  ",
+      color: "red",
+      hidden: true,
+      order: "20",
+      createdAt: "2026-05-14T00:00:00.000Z",
+    }, { now: "2026-05-15T00:00:00.000Z" }),
+    {
+      id: "selectValue:priority:high",
+      workspaceId: "workspace-1",
+      propertyId: "property:priority",
+      name: "High",
+      color: "red",
+      hidden: true,
+      order: 20,
+      createdAt: "2026-05-14T00:00:00.000Z",
+      updatedAt: "2026-05-15T00:00:00.000Z",
+      deletedAt: null,
+    },
+  );
+});
+
+test("normalizeProjectPropertyValue validates type-specific project values", () => {
+  assert.deepEqual(
+    normalizeProjectPropertyValue({
+      property: { id: "property:budget", type: "number" },
+      value: "42.5",
+    }),
+    { propertyId: "property:budget", type: "number", value: 42.5 },
+  );
+  assert.deepEqual(
+    normalizeProjectPropertyValue({
+      property: { id: "property:tags", type: "multi-select" },
+      selectValues: [
+        { id: "selectValue:tags:design", propertyId: "property:tags" },
+        { id: "selectValue:tags:build", propertyId: "property:tags" },
+      ],
+      value: ["selectValue:tags:design", "selectValue:tags:build", "selectValue:tags:design"],
+    }),
+    {
+      propertyId: "property:tags",
+      type: "multi-select",
+      value: ["selectValue:tags:design", "selectValue:tags:build"],
+    },
+  );
+});
+
+test("normalizeProjectPropertyValue rejects invalid select references and system properties", () => {
+  assert.throws(
+    () => normalizeProjectPropertyValue({
+      property: { id: "property:priority", type: "select" },
+      selectValues: [{ id: "selectValue:priority:high", propertyId: "property:priority" }],
+      value: "selectValue:priority:missing",
+    }),
+    /Select value does not exist/,
+  );
+  assert.throws(
+    () => normalizeProjectPropertyValue({
+      property: { id: "property:status", type: "select", system: true },
+      value: "statusValue:active",
+    }),
+    /System property values are derived/,
+  );
 });

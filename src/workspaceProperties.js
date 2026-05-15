@@ -1,4 +1,6 @@
 export const propertyTypeIds = ["text", "number", "date", "select", "multi-select"];
+export const customPropertyTypeIds = propertyTypeIds;
+export const systemPropertyIds = ["property:name", "property:status"];
 
 const defaultPropertyDefinitions = [
   ["property:name", "Name", "text", true, 10],
@@ -40,7 +42,7 @@ export function normalizePropertyValue(type, value) {
     case "date":
       return normalizeDateValue(value);
     case "select":
-      return normalizeSelectValue(value);
+      return normalizeSelectValueId(value);
     case "multi-select":
       return normalizeMultiSelectValue(value);
     case "text":
@@ -49,8 +51,102 @@ export function normalizePropertyValue(type, value) {
   }
 }
 
+export function isSystemPropertyId(propertyId) {
+  return systemPropertyIds.includes(propertyId);
+}
+
+export function normalizePropertyDefinition(input = {}, context = {}) {
+  const id = normalizeString(input.id);
+  const now = normalizeTimestamp(context.now);
+  const systemDefaults = getSystemPropertyDefaults(id);
+
+  if (systemDefaults) {
+    return {
+      id,
+      workspaceId: normalizeString(input.workspaceId || context.workspaceId),
+      name: systemDefaults.name,
+      type: systemDefaults.type,
+      system: true,
+      immutable: true,
+      hidden: false,
+      order: systemDefaults.order,
+      config: normalizePropertyConfig(systemDefaults.type, input.config),
+      createdAt: normalizeTimestamp(input.createdAt, now),
+      updatedAt: now,
+      deletedAt: null,
+    };
+  }
+
+  const type = normalizePropertyTypeStrict(input.type);
+
+  return {
+    id,
+    workspaceId: normalizeString(input.workspaceId || context.workspaceId),
+    name: normalizeTrimmedString(input.name),
+    type,
+    system: false,
+    immutable: false,
+    hidden: Boolean(input.hidden),
+    order: normalizeOrder(input.order),
+    config: normalizePropertyConfig(type, input.config),
+    createdAt: normalizeTimestamp(input.createdAt, now),
+    updatedAt: now,
+    deletedAt: normalizeNullableString(input.deletedAt),
+  };
+}
+
+export function normalizeSelectValue(input = {}, context = {}) {
+  const now = normalizeTimestamp(context.now);
+
+  return {
+    id: normalizeString(input.id),
+    workspaceId: normalizeString(input.workspaceId || context.workspaceId),
+    propertyId: normalizeString(input.propertyId || context.propertyId),
+    name: normalizeTrimmedString(input.name),
+    color: normalizeString(input.color),
+    hidden: Boolean(input.hidden),
+    order: normalizeOrder(input.order),
+    createdAt: normalizeTimestamp(input.createdAt, now),
+    updatedAt: now,
+    deletedAt: normalizeNullableString(input.deletedAt),
+  };
+}
+
+export function normalizeProjectPropertyValue({ property = {}, value, selectValues = [] } = {}) {
+  const propertyId = normalizeString(property.id);
+  if (property.system || isSystemPropertyId(propertyId)) {
+    throw new TypeError("System property values are derived and cannot be stored.");
+  }
+
+  const type = normalizePropertyTypeStrict(property.type);
+  const normalizedValue = normalizePropertyValue(type, value);
+
+  if (type === "select" && normalizedValue !== null) {
+    validateSelectValueReference(propertyId, normalizedValue, selectValues);
+  }
+
+  if (type === "multi-select") {
+    for (const valueId of normalizedValue) {
+      validateSelectValueReference(propertyId, valueId, selectValues);
+    }
+  }
+
+  return {
+    propertyId,
+    type,
+    value: normalizedValue,
+  };
+}
+
 function normalizePropertyType(type) {
   return propertyTypeIds.includes(type) ? type : "text";
+}
+
+function normalizePropertyTypeStrict(type) {
+  if (!customPropertyTypeIds.includes(type)) {
+    throw new TypeError(`Unsupported property type: ${type}`);
+  }
+  return type;
 }
 
 function normalizePropertyConfig(type, config) {
@@ -129,7 +225,7 @@ function normalizeDateValue(value) {
   return value;
 }
 
-function normalizeSelectValue(value) {
+function normalizeSelectValueId(value) {
   if (typeof value !== "string") {
     return null;
   }
@@ -144,7 +240,7 @@ function normalizeMultiSelectValue(value) {
   const seenValues = new Set();
 
   for (const item of values) {
-    const selectedValue = normalizeSelectValue(item);
+    const selectedValue = normalizeSelectValueId(item);
     if (selectedValue && !seenValues.has(selectedValue)) {
       selectedValues.push(selectedValue);
       seenValues.add(selectedValue);
@@ -156,6 +252,18 @@ function normalizeMultiSelectValue(value) {
 
 function normalizeString(value) {
   return value == null ? "" : String(value);
+}
+
+function normalizeTrimmedString(value) {
+  return normalizeString(value).trim();
+}
+
+function normalizeNullableString(value) {
+  return typeof value === "string" && value ? value : null;
+}
+
+function normalizeTimestamp(value, fallback = new Date(0).toISOString()) {
+  return typeof value === "string" && value ? value : fallback;
 }
 
 function normalizeRequiredOptionString(value) {
@@ -185,4 +293,29 @@ function clonePlainObject(value) {
   }
 
   return JSON.parse(JSON.stringify(value));
+}
+
+function getSystemPropertyDefaults(propertyId) {
+  if (propertyId === "property:name") {
+    return { name: "Name", type: "text", order: 10 };
+  }
+
+  if (propertyId === "property:status") {
+    return { name: "Status", type: "select", order: 20 };
+  }
+
+  return null;
+}
+
+function validateSelectValueReference(propertyId, valueId, selectValues) {
+  const match = selectValues.some((selectValue) => (
+    selectValue &&
+    selectValue.id === valueId &&
+    selectValue.propertyId === propertyId &&
+    selectValue.deletedAt == null
+  ));
+
+  if (!match) {
+    throw new TypeError(`Select value does not exist for property: ${valueId}`);
+  }
 }
