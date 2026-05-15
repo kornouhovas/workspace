@@ -10,6 +10,7 @@ import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { PanelLeftIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
@@ -175,6 +176,44 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
 
 type WorkspaceSurface = "workspace" | "settings";
 
+type WorkspaceListItem = {
+  readonly id: string;
+  readonly name: string;
+  readonly order: number;
+};
+
+type WorkspaceListState = {
+  readonly activeWorkspaceId: string | null;
+  readonly workspaces: readonly WorkspaceListItem[];
+};
+
+function normalizeWorkspacesResponse(response: unknown, fallbackWorkspaceId: string): WorkspaceListState {
+  if (!isRecord(response)) {
+    return {
+      activeWorkspaceId: fallbackWorkspaceId,
+      workspaces: [{ id: fallbackWorkspaceId, name: "Operations", order: 10 }],
+    };
+  }
+
+  const workspaces = Array.isArray(response.workspaces)
+    ? response.workspaces
+        .filter(isRecord)
+        .map((workspace, index) => ({
+          id: getString(workspace.id),
+          name: getString(workspace.name) || `Workspace ${index + 1}`,
+          order: Number.isFinite(Number(workspace.order)) ? Number(workspace.order) : (index + 1) * 10,
+        }))
+        .filter((workspace) => workspace.id)
+    : [];
+
+  return {
+    activeWorkspaceId: getString(response.activeWorkspaceId) || fallbackWorkspaceId,
+    workspaces: workspaces.length > 0
+      ? workspaces
+      : [{ id: fallbackWorkspaceId, name: "Operations", order: 10 }],
+  };
+}
+
 export default function App() {
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
@@ -184,6 +223,10 @@ export default function App() {
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [workspaceList, setWorkspaceList] = useState<WorkspaceListState>({
+    activeWorkspaceId: null,
+    workspaces: [],
+  });
   const [reloadToken, setReloadToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const workspaceClient = useMemo(
@@ -208,12 +251,14 @@ export default function App() {
           return;
         }
 
-        const [scanResponse, viewsRawResponse] = await Promise.all([
+        const [scanResponse, viewsRawResponse, workspacesRawResponse] = await Promise.all([
           workspaceClient.scan({ includeCardChildren: true }),
           workspaceClient.listViews({ workspaceId: root.workspaceId }),
+          workspaceClient.listWorkspaces(),
         ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
+        const workspacesResponse = normalizeWorkspacesResponse(workspacesRawResponse, root.workspaceId);
         const requestedViewExists = viewsResponse.views.some((view) => view.id === state.activeViewId);
         const activeViewId = requestedViewExists
           ? state.activeViewId
@@ -231,6 +276,7 @@ export default function App() {
         );
 
         if (!cancelled) {
+          setWorkspaceList(workspacesResponse);
           dispatch({
             type: "projectionLoaded",
             root,
@@ -242,6 +288,7 @@ export default function App() {
       } catch (error) {
         const message = getServiceErrorMessage(error);
         if (!cancelled) {
+          setWorkspaceList({ activeWorkspaceId: null, workspaces: [] });
           dispatch({ type: "serviceError", error: message });
           toast.error("Workspace service unavailable", {
             description: "Mock workspace data is shown while the service bridge is unavailable.",
@@ -270,6 +317,106 @@ export default function App() {
       });
     } finally {
       setSelectingFolder(false);
+    }
+  }
+
+  async function handleAddWorkspace() {
+    if (!state.root) {
+      toast.error("Select a source folder before adding workspaces.");
+      return;
+    }
+
+    try {
+      const nextIndex = workspaceList.workspaces.length + 1;
+      await workspaceClient.createWorkspace({
+        name: `Workspace ${nextIndex}`,
+      });
+      setSelectedProject(null);
+      setActiveSurface("workspace");
+      toast.success("Workspace added");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not add workspace", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleWorkspaceOpen(workspaceId: string) {
+    if (!state.root || workspaceId === state.workspaceId) {
+      openWorkspaceSurface();
+      return;
+    }
+
+    try {
+      await workspaceClient.setActiveWorkspace({ workspaceId });
+      setSelectedProject(null);
+      setActiveSurface("workspace");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not open workspace", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleRenameWorkspace(workspaceId: string, name: string) {
+    try {
+      await workspaceClient.updateWorkspace({
+        workspaceId,
+        patch: { name },
+      });
+      toast.success("Workspace renamed");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not rename workspace", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleDeleteWorkspace(workspaceId: string) {
+    try {
+      await workspaceClient.deleteWorkspace({ workspaceId });
+      setSelectedProject(null);
+      toast.success("Workspace deleted");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not delete workspace", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleReorderWorkspace(sourceWorkspaceId: string, targetWorkspaceId: string) {
+    if (sourceWorkspaceId === targetWorkspaceId) {
+      return;
+    }
+
+    const workspaceIds = workspaceList.workspaces.map((workspace) => workspace.id);
+    const sourceIndex = workspaceIds.indexOf(sourceWorkspaceId);
+    const targetIndex = workspaceIds.indexOf(targetWorkspaceId);
+    if (sourceIndex === -1 || targetIndex === -1) {
+      return;
+    }
+
+    const orderedWorkspaceIds = [...workspaceIds];
+    const [movedWorkspaceId] = orderedWorkspaceIds.splice(sourceIndex, 1);
+    orderedWorkspaceIds.splice(targetIndex, 0, movedWorkspaceId);
+
+    try {
+      setWorkspaceList((current) => ({
+        ...current,
+        workspaces: orderedWorkspaceIds
+          .map((workspaceId) => current.workspaces.find((workspace) => workspace.id === workspaceId))
+          .filter((workspace): workspace is WorkspaceListItem => workspace !== undefined),
+      }));
+      await workspaceClient.reorderWorkspaces({ orderedWorkspaceIds });
+    } catch (error) {
+      toast.error("Could not reorder workspaces", {
+        description: getServiceErrorMessage(error),
+      });
+      setReloadToken((value) => value + 1);
     }
   }
 
@@ -381,6 +528,9 @@ export default function App() {
     activeViewId: state.activeViewId || workspaceMockProjection.activeViewId,
     views: state.views.length > 0 ? state.views : workspaceMockProjection.views,
   };
+  const navigationWorkspaces = workspaceList.workspaces.length > 0
+    ? workspaceList.workspaces
+    : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
   const sourceFolder = state.root
     ? {
         name: state.root.name,
@@ -409,20 +559,40 @@ export default function App() {
   return (
     <>
       <div className="dark flex h-screen min-h-0 bg-background text-foreground">
-        <WorkspaceLeftPanel
-          activeSurface={activeSurface}
-          collapsed={sidebarCollapsed}
-          searchQuery={state.searchQuery}
-          onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
-          onSearchQueryChange={(searchQuery) => {
-            dispatch({ type: "searchQueryChanged", searchQuery });
-          }}
-          onWorkspaceOpen={openWorkspaceSurface}
-          onOpenSettings={openSettingsSurface}
-        />
+        {!sidebarCollapsed ? (
+          <WorkspaceLeftPanel
+            activeSurface={activeSurface}
+            activeWorkspaceId={state.workspaceId || workspaceList.activeWorkspaceId}
+            workspaces={navigationWorkspaces}
+            searchQuery={state.searchQuery}
+            onAddWorkspace={handleAddWorkspace}
+            onRenameWorkspace={handleRenameWorkspace}
+            onDeleteWorkspace={handleDeleteWorkspace}
+            onReorderWorkspace={handleReorderWorkspace}
+            onWorkspaceOpen={handleWorkspaceOpen}
+            onSearchQueryChange={(searchQuery) => {
+              dispatch({ type: "searchQueryChanged", searchQuery });
+            }}
+            onOpenSettings={openSettingsSurface}
+          />
+        ) : null}
         <main data-testid="workspace-main" className="flex min-w-0 flex-1 flex-col">
-          <header className="electron-window-drag flex h-12 shrink-0 items-center border-b border-border px-4">
-            <h1 className="text-sm font-medium">
+          <header
+            className={[
+              "electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4",
+              sidebarCollapsed ? "pl-24" : "pl-4",
+            ].join(" ")}
+          >
+            <button
+              type="button"
+              className="electron-window-no-drag inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+              onClick={() => setSidebarCollapsed((value) => !value)}
+            >
+              <PanelLeftIcon className="size-4" aria-hidden="true" />
+            </button>
+            <h1 className="truncate text-sm font-medium">
               {activeSurface === "settings" ? "Settings" : "Workspace Project Board"}
             </h1>
           </header>
@@ -466,7 +636,7 @@ export default function App() {
                 onRenameView={handleRenameView}
                 onDeleteView={handleDeleteView}
               />
-              <div className="min-h-0 flex-1 overflow-auto">
+              <div className="min-h-0 flex-1 overflow-hidden">
                 {state.status === "loading" || state.status === "idle" ? (
                   <WorkspaceLoadingState />
                 ) : state.sourceFolderMissing ? (

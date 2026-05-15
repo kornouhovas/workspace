@@ -35,6 +35,30 @@ export class WorkspaceServiceClient {
     return this.request("workspace.updateFolderRole", payload);
   }
 
+  listWorkspaces(payload) {
+    return this.request("workspace.listWorkspaces", payload);
+  }
+
+  createWorkspace(payload) {
+    return this.request("workspace.createWorkspace", payload);
+  }
+
+  updateWorkspace(payload) {
+    return this.request("workspace.updateWorkspace", payload);
+  }
+
+  reorderWorkspaces(payload) {
+    return this.request("workspace.reorderWorkspaces", payload);
+  }
+
+  deleteWorkspace(payload) {
+    return this.request("workspace.deleteWorkspace", payload);
+  }
+
+  setActiveWorkspace(payload) {
+    return this.request("workspace.setActiveWorkspace", payload);
+  }
+
   listViews(payload) {
     return this.request("workspace.listViews", payload);
   }

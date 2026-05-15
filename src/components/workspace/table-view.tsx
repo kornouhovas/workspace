@@ -33,15 +33,15 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
 
 export function WorkspaceTableView({ projection, visibleProperties, onProjectOpen }: WorkspaceTableViewProps) {
   return (
-    <section className="flex min-h-0 flex-col gap-3 px-4 pb-4" aria-labelledby="workspace-table-heading">
+    <section className="flex h-full min-h-0 w-full flex-col gap-3 px-4 py-4" aria-labelledby="workspace-table-heading">
       <div>
         <h2 id="workspace-table-heading" className="text-sm font-semibold">
           Table
         </h2>
         <p className="text-xs text-muted-foreground">Rows use the same mock project set as the Board projection.</p>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border">
-        <Table>
+      <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border">
+        <Table className="w-full">
           <TableHeader>
             <TableRow>
               <TableHead className="w-9" aria-label="Row reorder" />

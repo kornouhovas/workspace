@@ -38,7 +38,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
   );
 
   return (
-    <section className="flex min-h-0 flex-col gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
+    <section className="flex h-full min-h-0 w-full flex-col gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="workspace-board-heading" className="text-sm font-semibold">
@@ -50,19 +50,19 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
         </div>
         <Badge variant="outline">Move disabled</Badge>
       </div>
-      <div className="min-h-0 overflow-x-auto">
-        <div className="grid min-w-max auto-cols-[18rem] grid-flow-col gap-3 pb-2">
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="grid h-full w-full auto-cols-[minmax(16rem,1fr)] grid-flow-col gap-3 pb-2 pr-4">
           {projection.columns.map((column) => (
             <section
               key={column.statusValueId}
-              className="flex max-h-[32rem] min-h-72 flex-col rounded-lg border border-border bg-muted/20"
+              className="flex min-h-0 min-w-0 flex-col rounded-lg border border-border bg-muted/20"
               aria-label={`${column.name} projects`}
             >
               <header className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
-                <h3 className="truncate text-sm font-medium">{column.name}</h3>
-                <Badge variant="secondary">{column.projects.length}</Badge>
+                <h3 className="min-w-0 truncate text-sm font-medium">{column.name}</h3>
+                <Badge variant="secondary" className="shrink-0">{column.projects.length}</Badge>
               </header>
-              <div className="grid gap-2 overflow-y-auto p-2">
+              <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto overflow-x-hidden p-2">
                 {column.projects.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
                     No projects
@@ -72,17 +72,17 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
                     <button
                       key={project.id}
                       type="button"
-                      className="rounded-lg border border-border bg-card p-3 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                      className="w-full min-w-0 overflow-hidden rounded-lg border border-border bg-card p-3 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
                       onClick={() => onProjectOpen(project)}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h4 className="truncate text-sm font-medium">{project.name}</h4>
                           <p className="truncate text-xs text-muted-foreground">
                             {project.currentRelativePath}
                           </p>
                         </div>
-                        <Badge variant="outline">{project.status.name}</Badge>
+                        <Badge variant="outline" className="max-w-24 shrink-0 truncate">{project.status.name}</Badge>
                       </div>
                       <dl className="mt-3 grid gap-2">
                         {cardProperties.map((property) => (

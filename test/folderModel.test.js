@@ -242,6 +242,20 @@ test("listFolderAccessTree treats explicitly configured card folders as scan lea
   ]);
 });
 
+test("listFolderAccessTree creates distinct ids for Cyrillic folder paths", async () => {
+  const tree = await listFolderAccessTree(
+    fakeDirectoryHandle([
+      { kind: "directory", name: "В работе", values: fakeDirectoryHandle([]).values },
+      { kind: "directory", name: "Завершенные", values: fakeDirectoryHandle([]).values },
+    ]),
+  );
+
+  assert.deepEqual(tree.map((node) => [node.name, node.id, node.role]), [
+    ["В работе", "folder-в-работе", "status"],
+    ["Завершенные", "folder-завершенные", "status"],
+  ]);
+});
+
 test("flattenAccessTreeCards uses status folders as statuses and skips status containers", () => {
   const cards = flattenAccessTreeCards([
     {

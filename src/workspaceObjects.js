@@ -93,8 +93,9 @@ export function readSystemPropertyValue(object, propertyId) {
 
 function createSlug(value) {
   const slug = String(value ?? "")
+    .normalize("NFKD")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
     .replace(/^-|-$/g, "");
 
   return slug || "untitled";

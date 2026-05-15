@@ -34,6 +34,12 @@ const supportedMethods = new Set([
   "workspace.saveProperty",
   "workspace.listPropertyValues",
   "workspace.updateFolderRole",
+  "workspace.listWorkspaces",
+  "workspace.createWorkspace",
+  "workspace.updateWorkspace",
+  "workspace.reorderWorkspaces",
+  "workspace.deleteWorkspace",
+  "workspace.setActiveWorkspace",
   "workspace.listViews",
   "workspace.createView",
   "workspace.setActiveView",
@@ -76,7 +82,13 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     const workspaceId = createWorkspaceId(rootPath);
     await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
-    return createRootResponse(rootPath);
+    const activeWorkspaceId = await getActiveWorkspaceId({
+      configPath,
+      viewStore,
+      rootPath,
+      fallbackWorkspaceId: workspaceId,
+    });
+    return createRootResponse(rootPath, activeWorkspaceId);
   }
 
   return async function handleWorkspaceRequest(_event, method, payload = {}) {
@@ -99,10 +111,14 @@ export function createWorkspaceIpcHandler(options = {}) {
         );
       }
 
-      await writeWorkspaceSettings(configPath, { rootPath, folderRules: {} });
       const workspaceId = createWorkspaceId(rootPath);
+      await writeWorkspaceSettings(configPath, {
+        rootPath,
+        activeWorkspaceId: workspaceId,
+        folderRules: {},
+      });
       await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
-      return createRootResponse(rootPath);
+      return createRootResponse(rootPath, workspaceId);
     }
 
     const root = await getRootState();
@@ -156,6 +172,157 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (method === "workspace.listPropertyValues") {
       return { values: [] };
+    }
+
+    if (method === "workspace.listWorkspaces") {
+      const sourceFolderId = createWorkspaceId(root.root.rootPath);
+      const settings = await readWorkspaceSettings(configPath);
+      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const activeWorkspaceId = workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
+        ? settings.activeWorkspaceId
+        : workspaces[0]?.id || null;
+
+      return {
+        activeWorkspaceId,
+        workspaces: workspaces.map(toWorkspaceListItem),
+      };
+    }
+
+    if (method === "workspace.createWorkspace") {
+      const sourceFolderId = createWorkspaceId(root.root.rootPath);
+      const settings = await readWorkspaceSettings(configPath);
+      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const timestamp = now();
+      const idSeed = idFactory();
+      const workspaceId = `workspace:${sourceFolderId.replace(/^workspace:/, "")}:${createSlug(idSeed)}`;
+      const maxOrder = workspaces.reduce((max, workspace) => Math.max(max, Number(workspace.order) || 0), 0);
+      const workspace = await createWorkspaceDocument({
+        viewStore,
+        workspaceId,
+        sourceFolderId,
+        name: typeof body.name === "string" && body.name.trim()
+          ? body.name.trim()
+          : `Workspace ${workspaces.length + 1}`,
+        order: workspaces.length === 0 ? 10 : maxOrder + 10,
+        viewIdSeed: idSeed,
+        now: timestamp,
+      });
+
+      await writeWorkspaceSettings(configPath, {
+        ...settings,
+        rootPath: root.root.rootPath,
+        activeWorkspaceId: workspace.id,
+      });
+
+      return {
+        activeWorkspaceId: workspace.id,
+        workspace: toWorkspaceListItem(workspace),
+      };
+    }
+
+    if (method === "workspace.updateWorkspace") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      const workspace = await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      const patch = body.patch && typeof body.patch === "object" && !Array.isArray(body.patch)
+        ? body.patch
+        : {};
+      const name = typeof patch.name === "string" && patch.name.trim()
+        ? patch.name.trim()
+        : workspace.name;
+      const savedWorkspace = await viewStore.saveWorkspace({
+        ...workspace,
+        name,
+        updatedAt: now(),
+      });
+
+      return {
+        workspace: toWorkspaceListItem(savedWorkspace),
+      };
+    }
+
+    if (method === "workspace.reorderWorkspaces") {
+      const sourceFolderId = createWorkspaceId(root.root.rootPath);
+      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const orderedWorkspaceIds = validateWorkspaceOrder(body.orderedWorkspaceIds, workspaces);
+      const workspacesById = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
+      const timestamp = now();
+      const savedWorkspaces = [];
+
+      for (const [index, workspaceId] of orderedWorkspaceIds.entries()) {
+        const workspace = workspacesById.get(workspaceId);
+        savedWorkspaces.push(await viewStore.saveWorkspace({
+          ...workspace,
+          order: (index + 1) * 10,
+          updatedAt: timestamp,
+        }));
+      }
+
+      return {
+        workspaces: savedWorkspaces.map(toWorkspaceListItem),
+      };
+    }
+
+    if (method === "workspace.deleteWorkspace") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      const sourceFolderId = createWorkspaceId(root.root.rootPath);
+      const settings = await readWorkspaceSettings(configPath);
+      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const workspace = workspaces.find((item) => item.id === workspaceId);
+
+      if (!workspace) {
+        throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+      }
+      if (workspaces.length <= 1) {
+        throw createWorkspaceServiceError(
+          "LAST_WORKSPACE_DELETE_BLOCKED",
+          "Cannot delete the last workspace.",
+          "workspaceId",
+        );
+      }
+
+      await viewStore.saveWorkspace({
+        ...workspace,
+        deletedAt: now(),
+        updatedAt: now(),
+      });
+
+      const remainingWorkspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const activeWorkspaceId = settings.activeWorkspaceId === workspace.id
+        ? remainingWorkspaces[0]?.id || null
+        : settings.activeWorkspaceId || remainingWorkspaces[0]?.id || null;
+      await writeWorkspaceSettings(configPath, {
+        ...settings,
+        rootPath: root.root.rootPath,
+        activeWorkspaceId,
+      });
+
+      return {
+        activeWorkspaceId,
+        deletedWorkspaceId: workspace.id,
+      };
+    }
+
+    if (method === "workspace.setActiveWorkspace") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      const settings = await readWorkspaceSettings(configPath);
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      await writeWorkspaceSettings(configPath, {
+        ...settings,
+        rootPath: root.root.rootPath,
+        activeWorkspaceId: workspaceId,
+      });
+
+      return {
+        activeWorkspaceId: workspaceId,
+      };
     }
 
     if (method === "workspace.listViews") {
@@ -256,8 +423,8 @@ function normalizeRootPath(settings) {
   return "";
 }
 
-function createRootResponse(rootPath) {
-  const workspaceId = createWorkspaceId(rootPath);
+function createRootResponse(rootPath, activeWorkspaceId) {
+  const workspaceId = activeWorkspaceId || createWorkspaceId(rootPath);
   return {
     root: {
       id: workspaceId,
@@ -302,11 +469,63 @@ async function ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now })
     type: "workspace",
     schemaVersion: 1,
     sourceFolderId: createWorkspaceId(rootPath),
-    name: basename(rootPath),
-    order: 10,
+    name: existingWorkspace?.name || "Operations",
+    order: Number.isFinite(Number(existingWorkspace?.order)) ? Number(existingWorkspace.order) : 10,
     activeViewId: existingWorkspace?.activeViewId || existingViews[0]?.id || "view:default-board",
     createdAt: existingWorkspace?.createdAt || timestamp,
     updatedAt: timestamp,
+    deletedAt: null,
+  });
+}
+
+async function getActiveWorkspaceId({ configPath, viewStore, rootPath, fallbackWorkspaceId }) {
+  const settings = await readWorkspaceSettings(configPath);
+  const sourceFolderId = createWorkspaceId(rootPath);
+  const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+  return workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
+    ? settings.activeWorkspaceId
+    : fallbackWorkspaceId;
+}
+
+async function createWorkspaceDocument({
+  viewStore,
+  workspaceId,
+  sourceFolderId,
+  name,
+  order,
+  viewIdSeed,
+  now,
+}) {
+  const boardViewId = `view:${createSlug(viewIdSeed)}-board`;
+  const tableViewId = `view:${createSlug(viewIdSeed)}-table`;
+
+  await viewStore.saveView(createDefaultView({
+    workspaceId,
+    viewType: "board",
+    id: boardViewId,
+    name: "Board",
+    order: 10,
+    now,
+  }));
+  await viewStore.saveView(createDefaultView({
+    workspaceId,
+    viewType: "table",
+    id: tableViewId,
+    name: "Table",
+    order: 20,
+    now,
+  }));
+
+  return viewStore.saveWorkspace({
+    id: workspaceId,
+    type: "workspace",
+    schemaVersion: 1,
+    sourceFolderId,
+    name,
+    order,
+    activeViewId: boardViewId,
+    createdAt: now,
+    updatedAt: now,
     deletedAt: null,
   });
 }
@@ -392,6 +611,51 @@ function normalizeFolderRules(value) {
   );
 }
 
+async function requireSourceWorkspace({ viewStore, workspaceId, rootPath }) {
+  const workspace = await viewStore.getWorkspace(workspaceId);
+  if (!workspace || workspace.deletedAt) {
+    throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+  }
+
+  if (workspace.sourceFolderId !== createWorkspaceId(rootPath)) {
+    throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+  }
+
+  return workspace;
+}
+
+function validateWorkspaceOrder(orderedWorkspaceIds, workspaces) {
+  if (!Array.isArray(orderedWorkspaceIds)) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "orderedWorkspaceIds must be an array.", "orderedWorkspaceIds");
+  }
+
+  const existingIds = new Set(workspaces.map((workspace) => workspace.id));
+  const orderedIds = orderedWorkspaceIds
+    .filter((workspaceId) => typeof workspaceId === "string")
+    .map((workspaceId) => workspaceId.trim());
+  const uniqueIds = new Set(orderedIds);
+
+  if (orderedIds.length !== workspaces.length || uniqueIds.size !== workspaces.length) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "Workspace order must include each workspace once.", "orderedWorkspaceIds");
+  }
+
+  for (const workspaceId of orderedIds) {
+    if (!existingIds.has(workspaceId)) {
+      throw createWorkspaceServiceError("VALIDATION_FAILED", "Workspace order references an unknown workspace.", "orderedWorkspaceIds");
+    }
+  }
+
+  return orderedIds;
+}
+
+function toWorkspaceListItem(workspace) {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    order: workspace.order,
+  };
+}
+
 function createStatusValues(workspaceId, objects) {
   const byName = new Map();
   for (const object of objects) {
@@ -472,6 +736,19 @@ function createFileViewStore(filePath) {
           .map(clone);
       });
     },
+    async listWorkspaces(sourceFolderId) {
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        return Object.values(data.workspaces)
+          .filter((workspace) => workspace.sourceFolderId === sourceFolderId && !workspace.deletedAt)
+          .sort((left, right) => (
+            left.order - right.order
+            || String(left.createdAt).localeCompare(String(right.createdAt))
+            || left.id.localeCompare(right.id)
+          ))
+          .map(clone);
+      });
+    },
     async getView(viewId) {
       return runStoreOperation(async () => {
         const data = await readViewStoreData(filePath);
@@ -537,8 +814,9 @@ function createWorkspaceServiceError(code, message, field) {
 
 function createSlug(value) {
   return String(value ?? "")
+    .normalize("NFKD")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
     .replace(/^-|-$/g, "") || "untitled";
 }
 

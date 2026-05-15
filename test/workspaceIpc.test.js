@@ -147,6 +147,103 @@ test("workspace IPC handler persists folder role rules for scans and projections
   }
 });
 
+test("workspace IPC handler keeps Cyrillic status values distinct", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "В работе", "Адонис"), { recursive: true });
+    await mkdir(join(rootPath, "Завершенные", "Альфа"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const projectionResponse = await handler(null, "workspace.getViewProjection", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewId: "view:default-board",
+    });
+
+    assert.deepEqual(
+      projectionResponse.projection.columns.map((column) => [
+        column.name,
+        column.statusValueId,
+        column.projects.map((project) => project.name),
+      ]),
+      [
+        ["В работе", projectionResponse.projection.columns[0].statusValueId, ["Адонис"]],
+        ["Завершенные", projectionResponse.projection.columns[1].statusValueId, ["Альфа"]],
+      ],
+    );
+    assert.notEqual(
+      projectionResponse.projection.columns[0].statusValueId,
+      projectionResponse.projection.columns[1].statusValueId,
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler creates renames reorders and deletes workspaces", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => "workspace-two",
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const initialWorkspaces = await handler(null, "workspace.listWorkspaces", {});
+    assert.deepEqual(initialWorkspaces.workspaces.map((workspace) => workspace.name), ["Operations"]);
+
+    const createdWorkspace = await handler(null, "workspace.createWorkspace", { name: "Design Ops" });
+    assert.equal(createdWorkspace.activeWorkspaceId, createdWorkspace.workspace.id);
+
+    const activeRootResponse = await handler(null, "workspace.getRoot", {});
+    assert.equal(activeRootResponse.root.workspaceId, createdWorkspace.workspace.id);
+
+    await handler(null, "workspace.updateWorkspace", {
+      workspaceId: createdWorkspace.workspace.id,
+      patch: { name: "Service Team" },
+    });
+
+    await handler(null, "workspace.reorderWorkspaces", {
+      orderedWorkspaceIds: [createdWorkspace.workspace.id, rootResponse.root.workspaceId],
+    });
+
+    const reorderedWorkspaces = await handler(null, "workspace.listWorkspaces", {});
+    assert.deepEqual(
+      reorderedWorkspaces.workspaces.map((workspace) => [workspace.id, workspace.name]),
+      [
+        [createdWorkspace.workspace.id, "Service Team"],
+        [rootResponse.root.workspaceId, "Operations"],
+      ],
+    );
+
+    await handler(null, "workspace.deleteWorkspace", {
+      workspaceId: createdWorkspace.workspace.id,
+    });
+
+    const remainingWorkspaces = await handler(null, "workspace.listWorkspaces", {});
+    assert.equal(remainingWorkspaces.activeWorkspaceId, rootResponse.root.workspaceId);
+    assert.deepEqual(remainingWorkspaces.workspaces.map((workspace) => workspace.id), [rootResponse.root.workspaceId]);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler persists view state outside the process handler instance", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");

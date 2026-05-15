@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +34,9 @@ export function WorkspaceViewTabs({
   onDeleteView,
 }: WorkspaceViewTabsProps) {
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
+  const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
 
   function renameActiveView() {
     if (!activeView) {
@@ -54,12 +59,36 @@ export function WorkspaceViewTabs({
     }
   }
 
+  function renameView(view: WorkspaceView) {
+    const nextName = window.prompt("Rename View", view.name);
+    if (nextName?.trim()) {
+      onRenameView(view.id, nextName.trim());
+    }
+    setContextMenuViewId(null);
+  }
+
+  function deleteView(view: WorkspaceView) {
+    if (window.confirm(`Delete view "${view.name}"?`)) {
+      onDeleteView(view.id);
+    }
+    setContextMenuViewId(null);
+  }
+
   return (
-    <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2">
+    <div className="relative flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2">
       <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0">
         <TabsList variant="line" aria-label="Workspace views">
           {views.map((view) => (
-            <TabsTrigger key={view.id} value={view.id} className="capitalize">
+            <TabsTrigger
+              key={view.id}
+              value={view.id}
+              className="capitalize"
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setContextMenuViewId(view.id);
+                setContextMenuPosition({ x: event.clientX, y: event.clientY });
+              }}
+            >
               {view.name}
             </TabsTrigger>
           ))}
@@ -104,6 +133,30 @@ export function WorkspaceViewTabs({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {contextMenuView ? (
+        <div
+          className="fixed z-50 min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
+          role="menu"
+          onMouseLeave={() => setContextMenuViewId(null)}
+        >
+          <button
+            type="button"
+            className="flex w-full items-center rounded-md px-2 py-1 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            onClick={() => renameView(contextMenuView)}
+          >
+            Rename View
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center rounded-md px-2 py-1 text-left text-sm text-destructive hover:bg-destructive/10"
+            disabled={views.length <= 1}
+            onClick={() => deleteView(contextMenuView)}
+          >
+            Delete View
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

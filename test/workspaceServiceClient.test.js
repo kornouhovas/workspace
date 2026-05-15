@@ -58,6 +58,46 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     method: "workspace.updateFolderRole",
     payload: { path: "Active", role: "status" },
   });
+  assert.deepEqual(await client.listWorkspaces(), {
+    method: "workspace.listWorkspaces",
+    payload: {},
+  });
+  assert.deepEqual(await client.createWorkspace({ name: "Design Ops" }), {
+    method: "workspace.createWorkspace",
+    payload: { name: "Design Ops" },
+  });
+  assert.deepEqual(
+    await client.updateWorkspace({
+      workspaceId: "workspace:ops",
+      patch: { name: "Operations" },
+    }),
+    {
+      method: "workspace.updateWorkspace",
+      payload: {
+        workspaceId: "workspace:ops",
+        patch: { name: "Operations" },
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.reorderWorkspaces({
+      orderedWorkspaceIds: ["workspace:ops", "workspace:design"],
+    }),
+    {
+      method: "workspace.reorderWorkspaces",
+      payload: {
+        orderedWorkspaceIds: ["workspace:ops", "workspace:design"],
+      },
+    },
+  );
+  assert.deepEqual(await client.deleteWorkspace({ workspaceId: "workspace:design" }), {
+    method: "workspace.deleteWorkspace",
+    payload: { workspaceId: "workspace:design" },
+  });
+  assert.deepEqual(await client.setActiveWorkspace({ workspaceId: "workspace:ops" }), {
+    method: "workspace.setActiveWorkspace",
+    payload: { workspaceId: "workspace:ops" },
+  });
   assert.deepEqual(await client.listViews({ workspaceId: "workspace:root" }), {
     method: "workspace.listViews",
     payload: { workspaceId: "workspace:root" },
@@ -165,6 +205,23 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     },
     { method: "workspace.listPropertyValues", payload: { workspaceId: "workspace:root" } },
     { method: "workspace.updateFolderRole", payload: { path: "Active", role: "status" } },
+    { method: "workspace.listWorkspaces", payload: {} },
+    { method: "workspace.createWorkspace", payload: { name: "Design Ops" } },
+    {
+      method: "workspace.updateWorkspace",
+      payload: {
+        workspaceId: "workspace:ops",
+        patch: { name: "Operations" },
+      },
+    },
+    {
+      method: "workspace.reorderWorkspaces",
+      payload: {
+        orderedWorkspaceIds: ["workspace:ops", "workspace:design"],
+      },
+    },
+    { method: "workspace.deleteWorkspace", payload: { workspaceId: "workspace:design" } },
+    { method: "workspace.setActiveWorkspace", payload: { workspaceId: "workspace:ops" } },
     { method: "workspace.listViews", payload: { workspaceId: "workspace:root" } },
     {
       method: "workspace.createView",

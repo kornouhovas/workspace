@@ -12,6 +12,12 @@ declare module "@/workspaceServiceClient.js" {
     saveProperty(payload: Record<string, unknown>): Promise<unknown>;
     listPropertyValues(payload: Record<string, unknown>): Promise<unknown>;
     updateFolderRole(payload: Record<string, unknown>): Promise<unknown>;
+    listWorkspaces(payload?: Record<string, unknown>): Promise<unknown>;
+    createWorkspace(payload: Record<string, unknown>): Promise<unknown>;
+    updateWorkspace(payload: Record<string, unknown>): Promise<unknown>;
+    reorderWorkspaces(payload: Record<string, unknown>): Promise<unknown>;
+    deleteWorkspace(payload: Record<string, unknown>): Promise<unknown>;
+    setActiveWorkspace(payload: Record<string, unknown>): Promise<unknown>;
     listViews(payload: Record<string, unknown>): Promise<unknown>;
     createView(payload: Record<string, unknown>): Promise<unknown>;
     setActiveView(payload: Record<string, unknown>): Promise<unknown>;
