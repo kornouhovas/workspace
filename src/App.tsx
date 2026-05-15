@@ -122,6 +122,8 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(
     workspaceMockProjection.selectedProject,
   );
+  const [reloadToken, setReloadToken] = useState(0);
+  const [selectingFolder, setSelectingFolder] = useState(false);
   const workspaceClient = useMemo(
     () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
     [],
@@ -188,7 +190,23 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [workspaceClient, state.activeViewId, state.searchQuery]);
+  }, [reloadToken, workspaceClient, state.activeViewId, state.searchQuery]);
+
+  async function handleSelectFolder() {
+    setSelectingFolder(true);
+
+    try {
+      await workspaceClient.setRoot({});
+      toast.success("Workspace folder selected");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not select workspace folder", {
+        description: getServiceErrorMessage(error),
+      });
+    } finally {
+      setSelectingFolder(false);
+    }
+  }
 
   const viewState = {
     activeViewId: state.activeViewId || workspaceMockProjection.activeViewId,
@@ -248,13 +266,23 @@ export default function App() {
               {state.status === "loading" || state.status === "idle" ? (
                 <WorkspaceLoadingState />
               ) : state.sourceFolderMissing ? (
-                <WorkspaceEmptyState />
+                <>
+                  <WorkspaceSettingsView
+                    sourceFolder={sourceFolder}
+                    folderRoleTree={workspaceMockSettings.folderRoleTree}
+                    onSelectFolder={handleSelectFolder}
+                    selectingFolder={selectingFolder}
+                  />
+                  <WorkspaceEmptyState />
+                </>
               ) : (
                 <>
                   <WorkspaceServiceError state={state} />
                   <WorkspaceSettingsView
                     sourceFolder={sourceFolder}
                     folderRoleTree={workspaceMockSettings.folderRoleTree}
+                    onSelectFolder={handleSelectFolder}
+                    selectingFolder={selectingFolder}
                   />
                   <WorkspaceBoardView
                     projection={boardProjection as typeof workspaceMockProjection.projection}

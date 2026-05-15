@@ -6,6 +6,7 @@ declare module "@/workspaceServiceClient.js" {
   export class WorkspaceServiceClient {
     constructor(transport: WorkspaceTransport);
     getRoot(): Promise<unknown>;
+    setRoot(payload: Record<string, unknown>): Promise<unknown>;
     listViews(payload: Record<string, unknown>): Promise<unknown>;
     setActiveView(payload: Record<string, unknown>): Promise<unknown>;
     getViewProjection(payload: Record<string, unknown>): Promise<unknown>;

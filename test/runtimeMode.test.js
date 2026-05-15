@@ -7,7 +7,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   const tsconfig = JSON.parse(await readFile(new URL("../tsconfig.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const electronMain = await readFile(new URL("../electron/main.js", import.meta.url), "utf8");
-  const preload = await readFile(new URL("../electron/preload.js", import.meta.url), "utf8");
+  const preload = await readFile(new URL("../electron/preload.cjs", import.meta.url), "utf8");
 
   assert.equal(packageJson.name, "workspace");
   assert.equal(packageJson.main, "electron/main.js");
@@ -56,7 +56,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(electronMain, /contextIsolation:\s*true/);
   assert.match(electronMain, /nodeIntegration:\s*false/);
   assert.match(electronMain, /sandbox:\s*true/);
-  assert.match(electronMain, /preload:\s*join\(__dirname,\s*"preload\.js"\)/);
+  assert.match(electronMain, /preload:\s*join\(__dirname,\s*"preload\.cjs"\)/);
   assert.match(electronMain, /mainWindow\.once\("closed"/);
   assert.match(electronMain, /function\s+showMainWindow\(\)/);
   assert.match(electronMain, /mainWindow\.show\(\)/);
@@ -71,10 +71,11 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.doesNotMatch(electronMain, /loadURL/);
   assert.match(preload, /contextBridge/);
   assert.match(preload, /ipcRenderer/);
+  assert.match(preload, /require\("electron"\)/);
   assert.match(preload, /exposeInMainWorld\("workspace"/);
   assert.match(preload, /workspace:request/);
-  assert.doesNotMatch(preload, /require\(/);
   await access(new URL("../electron/workspaceIpc.js", import.meta.url));
+  await access(new URL("../electron/preload.cjs", import.meta.url));
   await access(new URL("../electron/main.js", import.meta.url));
   await access(new URL("../index.html", import.meta.url));
   await access(new URL("../components.json", import.meta.url));
@@ -84,7 +85,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   await access(new URL("../src/components/workspace/states.tsx", import.meta.url));
   await access(new URL("../src/workspaceSidecarClient.js", import.meta.url));
   await assert.rejects(access(new URL("../src/renderer/App.tsx", import.meta.url)), { code: "ENOENT" });
-  await assert.rejects(access(new URL("../electron/preload.cjs", import.meta.url)), { code: "ENOENT" });
+  await assert.rejects(access(new URL("../electron/preload.js", import.meta.url)), { code: "ENOENT" });
   await assert.rejects(access(new URL("../referens/index.html", import.meta.url)), { code: "ENOENT" });
 });
 

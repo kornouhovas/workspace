@@ -13,6 +13,8 @@ type WorkspaceSourceFolder = {
 type WorkspaceSettingsViewProps = {
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceMockFolderRoleNode[];
+  readonly onSelectFolder: () => void;
+  readonly selectingFolder?: boolean;
 };
 
 const roleOptions = ["group", "status", "project"] as const;
@@ -56,7 +58,12 @@ function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceMockFolde
   );
 }
 
-export function WorkspaceSettingsView({ sourceFolder, folderRoleTree }: WorkspaceSettingsViewProps) {
+export function WorkspaceSettingsView({
+  sourceFolder,
+  folderRoleTree,
+  onSelectFolder,
+  selectingFolder = false,
+}: WorkspaceSettingsViewProps) {
   return (
     <section className="grid gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-labelledby="workspace-settings-heading">
       <div className="rounded-lg border border-border bg-card">
@@ -73,8 +80,14 @@ export function WorkspaceSettingsView({ sourceFolder, folderRoleTree }: Workspac
             <p className="truncate text-sm font-medium">{sourceFolder.name}</p>
             <p className="truncate text-xs text-muted-foreground">{sourceFolder.path}</p>
           </div>
-          <Button type="button" variant="outline" className="justify-start">
-            Select folder
+          <Button
+            type="button"
+            variant="outline"
+            className="justify-start"
+            disabled={selectingFolder}
+            onClick={onSelectFolder}
+          >
+            {selectingFolder ? "Selecting..." : "Select folder"}
           </Button>
         </div>
       </div>

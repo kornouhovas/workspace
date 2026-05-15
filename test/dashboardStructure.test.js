@@ -60,6 +60,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceTableView/);
   assert.match(appSource, /WorkspaceViewTabs/);
   assert.match(appSource, /WorkspaceSettingsView/);
+  assert.match(appSource, /handleSelectFolder/);
+  assert.match(appSource, /workspaceClient\.setRoot/);
+  assert.match(appSource, /onSelectFolder/);
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /selectedProject/);
@@ -88,6 +91,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(settingsViewSource, /WorkspaceSettingsView/);
   assert.match(settingsViewSource, /Source folder/);
   assert.match(settingsViewSource, /Select folder/);
+  assert.match(settingsViewSource, /onSelectFolder/);
   assert.match(settingsViewSource, /group/);
   assert.match(settingsViewSource, /status/);
   assert.match(settingsViewSource, /project/);
