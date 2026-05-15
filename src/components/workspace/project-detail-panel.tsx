@@ -110,8 +110,49 @@ export function WorkspaceProjectDetailPanel({
   visibleProperties,
 }: WorkspaceProjectDetailPanelProps) {
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
+  const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
+  const [panelVisible, setPanelVisible] = useState(false);
   const panelWidthRef = useRef(projectDetailPanelWidth);
+  const panelMountedRef = useRef(false);
   const isOpen = open && project !== null;
+
+  useEffect(() => {
+    panelMountedRef.current = panelProject !== null;
+  }, [panelProject]);
+
+  useEffect(() => {
+    if (!isOpen || !project) {
+      setPanelVisible(false);
+      return undefined;
+    }
+
+    const shouldAnimateOpen = !panelMountedRef.current;
+    setPanelProject(project);
+
+    if (!shouldAnimateOpen) {
+      setPanelVisible(true);
+      return undefined;
+    }
+
+    setPanelVisible(false);
+    const timeoutId = window.setTimeout(() => {
+      setPanelVisible(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isOpen, project]);
+
+  useEffect(() => {
+    if (panelVisible || panelProject === null) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setPanelProject(null);
+    }, 240);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [panelProject, panelVisible]);
 
   useEffect(() => {
     panelWidthRef.current = projectDetailPanelWidth;
@@ -192,23 +233,31 @@ export function WorkspaceProjectDetailPanel({
     onOpenChange(false);
   }
 
-  if (!isOpen) {
+  function finishPanelTransition() {
+    if (!panelVisible) {
+      setPanelProject(null);
+    }
+  }
+
+  if (!panelProject) {
     return null;
   }
+
+  const displayedProject = panelProject;
 
   return (
     <div
       className={[
         "electron-window-no-drag fixed inset-0 z-50 flex justify-end",
-        isOpen ? "pointer-events-auto" : "pointer-events-none",
+        panelVisible ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
-      aria-hidden={!isOpen}
+      aria-hidden={!panelVisible}
     >
       <button
         type="button"
         aria-label="Close project details backdrop"
         className="electron-window-no-drag absolute inset-0 cursor-default bg-transparent"
-        tabIndex={isOpen ? 0 : -1}
+        tabIndex={panelVisible ? 0 : -1}
         onClick={closeProjectDetails}
       />
       <aside
@@ -216,9 +265,14 @@ export function WorkspaceProjectDetailPanel({
         aria-modal="false"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
+        onTransitionEnd={(event) => {
+          if (event.currentTarget === event.target) {
+            finishPanelTransition();
+          }
+        }}
         className={[
           "electron-window-no-drag pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition-transform duration-200 ease-out",
-          isOpen ? "translate-x-0" : "translate-x-full",
+          panelVisible ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         style={{ width: projectDetailPanelWidth }}
       >
@@ -241,67 +295,58 @@ export function WorkspaceProjectDetailPanel({
         >
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
-        {project ? (
-          <>
-            <header className="grid gap-0.5 p-4 pr-12">
-              <h2 id="project-detail-title" className="font-heading text-base font-medium text-foreground">
-                {project.name}
-              </h2>
-              <p className="truncate text-sm text-muted-foreground">{project.currentRelativePath}</p>
-            </header>
-            <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
-              <div className="grid gap-4">
-                <section className="grid gap-2" aria-labelledby="project-identity-heading">
-                  <h3 id="project-identity-heading" className="text-xs font-medium text-muted-foreground">
-                    Name
-                  </h3>
-                  <div className="grid gap-1">
-                    <p className="truncate text-sm font-medium">{project.name}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{project.status.name}</Badge>
-                      <span className="truncate text-xs text-muted-foreground">{project.currentRelativePath}</span>
-                    </div>
-                  </div>
-                </section>
-                <Separator />
-                <section className="grid gap-2" aria-labelledby="project-properties-heading">
-                  <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
-                    Properties
-                  </h3>
-                  <dl className="grid gap-2">
-                    {visibleProperties.map((property) => (
-                      <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
-                        <dt className="truncate text-muted-foreground">{property.name}</dt>
-                        <dd className="truncate text-foreground">{getPropertyValue(project, property)}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </section>
-                <Separator />
-                <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 id="project-file-tree-heading" className="text-xs font-medium text-muted-foreground">
-                      File tree
-                    </h3>
-                    <Badge variant="secondary">{project.fileTree.length} items</Badge>
-                  </div>
-                  <ul className="grid gap-1">
-                    {project.fileTree.map((node) => (
-                      <FileTreeNode key={node.id} node={node} />
-                    ))}
-                  </ul>
-                </section>
-              </div>
-            </div>
-          </>
-        ) : (
+        <>
           <header className="grid gap-0.5 p-4 pr-12">
             <h2 id="project-detail-title" className="font-heading text-base font-medium text-foreground">
-              Project detail
+              {displayedProject.name}
             </h2>
-            <p className="text-sm text-muted-foreground">No project selected.</p>
+            <p className="truncate text-sm text-muted-foreground">{displayedProject.currentRelativePath}</p>
           </header>
-        )}
+          <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
+            <div className="grid gap-4">
+              <section className="grid gap-2" aria-labelledby="project-identity-heading">
+                <h3 id="project-identity-heading" className="text-xs font-medium text-muted-foreground">
+                  Name
+                </h3>
+                <div className="grid gap-1">
+                  <p className="truncate text-sm font-medium">{displayedProject.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{displayedProject.status.name}</Badge>
+                    <span className="truncate text-xs text-muted-foreground">{displayedProject.currentRelativePath}</span>
+                  </div>
+                </div>
+              </section>
+              <Separator />
+              <section className="grid gap-2" aria-labelledby="project-properties-heading">
+                <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
+                  Properties
+                </h3>
+                <dl className="grid gap-2">
+                  {visibleProperties.map((property) => (
+                    <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
+                      <dt className="truncate text-muted-foreground">{property.name}</dt>
+                      <dd className="truncate text-foreground">{getPropertyValue(displayedProject, property)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+              <Separator />
+              <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 id="project-file-tree-heading" className="text-xs font-medium text-muted-foreground">
+                    File tree
+                  </h3>
+                  <Badge variant="secondary">{displayedProject.fileTree.length} items</Badge>
+                </div>
+                <ul className="grid gap-1">
+                  {displayedProject.fileTree.map((node) => (
+                    <FileTreeNode key={node.id} node={node} />
+                  ))}
+                </ul>
+              </section>
+            </div>
+          </div>
+        </>
       </aside>
     </div>
   );
