@@ -347,39 +347,57 @@ function toVisibleProperty(property) {
 }
 
 function createFileViewStore(filePath) {
+  let storeOperation = Promise.resolve();
+
+  function runStoreOperation(action) {
+    const result = storeOperation.then(action, action);
+    storeOperation = result.catch(() => {});
+    return result;
+  }
+
   return {
     async getWorkspace(workspaceId) {
-      const data = await readViewStoreData(filePath);
-      return clone(data.workspaces[workspaceId]) || null;
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        return clone(data.workspaces[workspaceId]) || null;
+      });
     },
     async saveWorkspace(workspacePatchOrDocument) {
-      const data = await readViewStoreData(filePath);
-      const existing = data.workspaces[workspacePatchOrDocument.id] || {};
-      const workspace = { ...existing, ...clone(workspacePatchOrDocument) };
-      data.workspaces[workspace.id] = workspace;
-      await writeViewStoreData(filePath, data);
-      return clone(workspace);
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        const existing = data.workspaces[workspacePatchOrDocument.id] || {};
+        const workspace = { ...existing, ...clone(workspacePatchOrDocument) };
+        data.workspaces[workspace.id] = workspace;
+        await writeViewStoreData(filePath, data);
+        return clone(workspace);
+      });
     },
     async listViews(workspaceId) {
-      const data = await readViewStoreData(filePath);
-      return Object.values(data.views)
-        .filter((view) => view.workspaceId === workspaceId && !view.deletedAt)
-        .sort((left, right) => (
-          left.order - right.order
-          || String(left.createdAt).localeCompare(String(right.createdAt))
-          || left.id.localeCompare(right.id)
-        ))
-        .map(clone);
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        return Object.values(data.views)
+          .filter((view) => view.workspaceId === workspaceId && !view.deletedAt)
+          .sort((left, right) => (
+            left.order - right.order
+            || String(left.createdAt).localeCompare(String(right.createdAt))
+            || left.id.localeCompare(right.id)
+          ))
+          .map(clone);
+      });
     },
     async getView(viewId) {
-      const data = await readViewStoreData(filePath);
-      return clone(data.views[viewId]) || null;
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        return clone(data.views[viewId]) || null;
+      });
     },
     async saveView(viewDocument) {
-      const data = await readViewStoreData(filePath);
-      data.views[viewDocument.id] = clone(viewDocument);
-      await writeViewStoreData(filePath, data);
-      return clone(viewDocument);
+      return runStoreOperation(async () => {
+        const data = await readViewStoreData(filePath);
+        data.views[viewDocument.id] = clone(viewDocument);
+        await writeViewStoreData(filePath, data);
+        return clone(viewDocument);
+      });
     },
   };
 }

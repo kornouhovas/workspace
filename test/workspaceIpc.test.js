@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -52,6 +53,48 @@ test("workspace IPC handler serves default views and projection for selected sou
     assert.equal(projectionResponse.projection.type, "board");
     assert.equal(projectionResponse.projection.capabilities.canMoveBetweenStatuses, false);
     assert.equal(projectionResponse.projection.columns.at(0).projects.at(0).name, "Project Alpha");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler tolerates concurrent default workspace initialization", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, ".workspace", "settings.json");
+  const viewStorePath = join(tempDirectory, ".workspace", "views.json");
+  const workspaceId = `workspace:${createHash("sha256").update(rootPath).digest("hex").slice(0, 16)}`;
+
+  try {
+    await mkdir(join(rootPath, "Project Alpha"), { recursive: true });
+    await mkdir(join(configPath, ".."), { recursive: true });
+    await writeFile(configPath, JSON.stringify({ rootPath }));
+
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+    });
+
+    const results = await Promise.allSettled([
+      handler(null, "workspace.scan", { includeCardChildren: true }),
+      handler(null, "workspace.listViews", { workspaceId }),
+      handler(null, "workspace.getViewProjection", {
+        workspaceId,
+        viewId: "view:default-board",
+      }),
+      handler(null, "workspace.scan", { includeCardChildren: true }),
+      handler(null, "workspace.listViews", { workspaceId }),
+    ]);
+    const failures = results.filter((result) => result.status === "rejected");
+
+    assert.deepEqual(failures, []);
+
+    const responses = results.map((result) => result.value);
+    assert.equal(responses[0].tree.some((node) => node.name === "Project Alpha"), true);
+    assert.deepEqual(responses[1].views.map((view) => view.viewType), ["board", "table"]);
+    assert.equal(responses[2].projection.type, "board");
+    assert.deepEqual(responses[4].views.map((view) => view.viewType), ["board", "table"]);
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }
