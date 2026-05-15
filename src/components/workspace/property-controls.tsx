@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,12 @@ type WorkspacePropertyControlsProps = {
   readonly onHideProperty: (propertyId: string, hidden: boolean) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
   readonly onReorderProperties: (orderedPropertyIds: readonly string[]) => void;
+  readonly onCreateSelectValue: (propertyId: string, input: { name: string; color: string }) => void;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onColorSelectValue: (selectValueId: string, color: string) => void;
+  readonly onHideSelectValue: (selectValueId: string, hidden: boolean) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
+  readonly onReorderSelectValues: (propertyId: string, orderedSelectValueIds: readonly string[]) => void;
 };
 
 const propertyTypeOptions: readonly {
@@ -47,8 +53,15 @@ const propertyTypeOptions: readonly {
   { value: "multi-select", label: "Multi-select" },
 ];
 
+const valueColorOptions = ["gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
+
 function getPropertyTypeLabel(propertyType: string) {
   return propertyTypeOptions.find((option) => option.value === propertyType)?.label || "Text";
+}
+
+function isSelectProperty(property: WorkspacePropertyDefinitionState) {
+  const propertyType = property.propertyType || property.type;
+  return propertyType === "select" || propertyType === "multi-select";
 }
 
 export function WorkspacePropertyControls({
@@ -59,18 +72,46 @@ export function WorkspacePropertyControls({
   onHideProperty,
   onDeleteProperty,
   onReorderProperties,
+  onCreateSelectValue,
+  onRenameSelectValue,
+  onColorSelectValue,
+  onHideSelectValue,
+  onDeleteSelectValue,
+  onReorderSelectValues,
 }: WorkspacePropertyControlsProps) {
   const [newPropertyName, setNewPropertyName] = useState("");
   const [newPropertyType, setNewPropertyType] = useState<WorkspaceCustomPropertyType>("text");
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
+  const [newSelectValueNames, setNewSelectValueNames] = useState<Record<string, string>>({});
+  const [newSelectValueColors, setNewSelectValueColors] = useState<Record<string, string>>({});
+  const [editingSelectValueId, setEditingSelectValueId] = useState<string | null>(null);
+  const [editingSelectValueName, setEditingSelectValueName] = useState("");
+  const [draggedSelectValueId, setDraggedSelectValueId] = useState<string | null>(null);
   const sortedProperties = useMemo(
     () => [...properties].sort((left, right) => (
       Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
     )),
     [properties],
   );
+  const selectValuesByProperty = useMemo(() => {
+    const groupedValues = new Map<string, WorkspaceSelectValueState[]>();
+
+    for (const selectValue of selectValues) {
+      const values = groupedValues.get(selectValue.propertyId) || [];
+      values.push(selectValue);
+      groupedValues.set(selectValue.propertyId, values);
+    }
+
+    for (const values of groupedValues.values()) {
+      values.sort((left, right) => (
+        Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
+      ));
+    }
+
+    return groupedValues;
+  }, [selectValues]);
 
   function createProperty() {
     const name = newPropertyName.trim();
@@ -118,6 +159,58 @@ export function WorkspacePropertyControls({
     nextPropertyIds.splice(toIndex, 0, draggedId);
     setDraggedPropertyId(null);
     onReorderProperties(nextPropertyIds);
+  }
+
+  function createSelectValue(propertyId: string) {
+    const name = (newSelectValueNames[propertyId] || "").trim();
+    if (!name) {
+      return;
+    }
+
+    onCreateSelectValue(propertyId, {
+      name,
+      color: newSelectValueColors[propertyId] || "gray",
+    });
+    setNewSelectValueNames((current) => ({ ...current, [propertyId]: "" }));
+    setNewSelectValueColors((current) => ({ ...current, [propertyId]: "gray" }));
+  }
+
+  function beginRenameSelectValue(selectValue: WorkspaceSelectValueState) {
+    setEditingSelectValueId(selectValue.id);
+    setEditingSelectValueName(selectValue.name);
+  }
+
+  function commitRenameSelectValue(selectValueId: string) {
+    const name = editingSelectValueName.trim();
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
+
+    if (name) {
+      onRenameSelectValue(selectValueId, name);
+    }
+  }
+
+  function reorderSelectValue(propertyId: string, targetSelectValueId: string) {
+    const values = selectValuesByProperty.get(propertyId) || [];
+    if (!draggedSelectValueId || draggedSelectValueId === targetSelectValueId) {
+      setDraggedSelectValueId(null);
+      return;
+    }
+
+    const orderedSelectValueIds = values.map((value) => value.id);
+    const fromIndex = orderedSelectValueIds.indexOf(draggedSelectValueId);
+    const toIndex = orderedSelectValueIds.indexOf(targetSelectValueId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDraggedSelectValueId(null);
+      return;
+    }
+
+    const nextSelectValueIds = [...orderedSelectValueIds];
+    const [draggedId] = nextSelectValueIds.splice(fromIndex, 1);
+    nextSelectValueIds.splice(toIndex, 0, draggedId);
+    setDraggedSelectValueId(null);
+    onReorderSelectValues(propertyId, nextSelectValueIds);
   }
 
   return (
@@ -177,90 +270,221 @@ export function WorkspacePropertyControls({
           {sortedProperties.map((property) => {
             const isSystem = property.system === true;
             const isEditing = editingPropertyId === property.id;
-            const propertySelectValueCount = selectValues.filter((value) => value.propertyId === property.id).length;
+            const propertySelectValues = selectValuesByProperty.get(property.id) || [];
+            const propertySelectValueCount = propertySelectValues.length;
 
             return (
-              <li
-                key={property.id}
-                draggable={!isSystem}
-                onDragStart={() => setDraggedPropertyId(property.id)}
-                onDragOver={(event) => {
-                  if (draggedPropertyId && !isSystem) {
+              <Fragment key={property.id}>
+                <li
+                  draggable={!isSystem}
+                  onDragStart={() => setDraggedPropertyId(property.id)}
+                  onDragOver={(event) => {
+                    if (draggedPropertyId && !isSystem) {
+                      event.preventDefault();
+                    }
+                  }}
+                  onDrop={(event) => {
                     event.preventDefault();
-                  }
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  reorderProperty(property.id);
-                }}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border bg-muted/20 px-2 py-2"
-              >
-                <span
-                  className={[
-                    "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground",
-                    isSystem ? "opacity-40" : "cursor-grab hover:bg-muted",
-                  ].join(" ")}
-                  title={isSystem ? "System property order is fixed" : "Drag to reorder property"}
+                    reorderProperty(property.id);
+                  }}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border bg-muted/20 px-2 py-2"
                 >
-                  <GripVerticalIcon className="size-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  {isEditing ? (
-                    <Input
-                      value={editingPropertyName}
-                      autoFocus
-                      aria-label="Rename property"
-                      onChange={(event) => setEditingPropertyName(event.target.value)}
-                      onBlur={() => commitRenameProperty(property.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          commitRenameProperty(property.id);
-                        }
-                        if (event.key === "Escape") {
-                          setEditingPropertyId(null);
-                          setEditingPropertyName("");
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-sm font-medium">{property.name}</span>
-                      <Badge variant="secondary">{getPropertyTypeLabel(property.propertyType || property.type || "text")}</Badge>
-                      {isSystem ? <Badge variant="outline">System</Badge> : null}
-                      {property.hidden ? <Badge variant="outline">Hidden</Badge> : null}
-                      {propertySelectValueCount > 0 ? (
-                        <Badge variant="outline">{propertySelectValueCount} values</Badge>
-                      ) : null}
+                  <span
+                    className={[
+                      "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground",
+                      isSystem ? "opacity-40" : "cursor-grab hover:bg-muted",
+                    ].join(" ")}
+                    title={isSystem ? "System property order is fixed" : "Drag to reorder property"}
+                  >
+                    <GripVerticalIcon className="size-4" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    {isEditing ? (
+                      <Input
+                        value={editingPropertyName}
+                        autoFocus
+                        aria-label="Rename property"
+                        onChange={(event) => setEditingPropertyName(event.target.value)}
+                        onBlur={() => commitRenameProperty(property.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            commitRenameProperty(property.id);
+                          }
+                          if (event.key === "Escape") {
+                            setEditingPropertyId(null);
+                            setEditingPropertyName("");
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-sm font-medium">{property.name}</span>
+                        <Badge variant="secondary">{getPropertyTypeLabel(property.propertyType || property.type || "text")}</Badge>
+                        {isSystem ? <Badge variant="outline">System</Badge> : null}
+                        {property.hidden ? <Badge variant="outline">Hidden</Badge> : null}
+                        {propertySelectValueCount > 0 ? (
+                          <Badge variant="outline">{propertySelectValueCount} values</Badge>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="ghost" size="icon-sm" aria-label={`Property actions for ${property.name}`}>
+                        <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-44">
+                      <DropdownMenuItem disabled={isSystem} onSelect={() => beginRenameProperty(property)}>
+                        Rename property
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={isSystem}
+                        onSelect={() => onHideProperty(property.id, !property.hidden)}
+                      >
+                        {property.hidden ? "Show property" : "Hide property"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={isSystem}
+                        variant="destructive"
+                        onSelect={() => onDeleteProperty(property.id)}
+                      >
+                        Delete property
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+                {isSelectProperty(property) && !isSystem ? (
+                  <li className="ml-9 grid gap-2 rounded-lg border border-border/70 bg-background/60 p-2">
+                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_auto]">
+                      <Input
+                        value={newSelectValueNames[property.id] || ""}
+                        placeholder="Value name"
+                        aria-label="Add select value"
+                        onChange={(event) => {
+                          setNewSelectValueNames((current) => ({
+                            ...current,
+                            [property.id]: event.target.value,
+                          }));
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            createSelectValue(property.id);
+                          }
+                        }}
+                      />
+                      <Select
+                        value={newSelectValueColors[property.id] || "gray"}
+                        onValueChange={(color) => {
+                          setNewSelectValueColors((current) => ({
+                            ...current,
+                            [property.id]: color,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="w-full" aria-label="Color">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {valueColorOptions.map((color) => (
+                            <SelectItem key={color} value={color}>
+                              {color}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" className="justify-center" onClick={() => createSelectValue(property.id)}>
+                        Add select value
+                      </Button>
                     </div>
-                  )}
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Property actions for ${property.name}`}>
-                      <MoreHorizontalIcon className="size-4" aria-hidden="true" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-44">
-                    <DropdownMenuItem disabled={isSystem} onSelect={() => beginRenameProperty(property)}>
-                      Rename property
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={isSystem}
-                      onSelect={() => onHideProperty(property.id, !property.hidden)}
-                    >
-                      {property.hidden ? "Show property" : "Hide property"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={isSystem}
-                      variant="destructive"
-                      onSelect={() => onDeleteProperty(property.id)}
-                    >
-                      Delete property
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </li>
+                    {propertySelectValues.length > 0 ? (
+                      <ul className="grid gap-1">
+                        {propertySelectValues.map((selectValue) => {
+                          const isSelectValueEditing = editingSelectValueId === selectValue.id;
+                          return (
+                            <li
+                              key={selectValue.id}
+                              draggable
+                              onDragStart={() => setDraggedSelectValueId(selectValue.id)}
+                              onDragOver={(event) => {
+                                if (draggedSelectValueId) {
+                                  event.preventDefault();
+                                }
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                reorderSelectValue(property.id, selectValue.id);
+                              }}
+                              className="grid grid-cols-[auto_minmax(0,1fr)_7rem_auto] items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/70"
+                            >
+                              <GripVerticalIcon className="size-4 cursor-grab text-muted-foreground" aria-hidden="true" />
+                              {isSelectValueEditing ? (
+                                <Input
+                                  value={editingSelectValueName}
+                                  autoFocus
+                                  aria-label="Rename select value"
+                                  onChange={(event) => setEditingSelectValueName(event.target.value)}
+                                  onBlur={() => commitRenameSelectValue(selectValue.id)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      commitRenameSelectValue(selectValue.id);
+                                    }
+                                    if (event.key === "Escape") {
+                                      setEditingSelectValueId(null);
+                                      setEditingSelectValueName("");
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground" data-color={selectValue.color || "gray"} />
+                                  <span className="truncate text-sm">{selectValue.name}</span>
+                                  {selectValue.hidden ? <Badge variant="outline">Hidden</Badge> : null}
+                                </div>
+                              )}
+                              <Select
+                                value={selectValue.color || "gray"}
+                                onValueChange={(color) => onColorSelectValue(selectValue.id, color)}
+                              >
+                                <SelectTrigger size="sm" className="w-full" aria-label={`Color for ${selectValue.name}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {valueColorOptions.map((color) => (
+                                    <SelectItem key={color} value={color}>
+                                      {color}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button type="button" variant="ghost" size="icon-xs" aria-label={`Select value actions for ${selectValue.name}`}>
+                                    <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="min-w-44">
+                                  <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                                    Rename select value
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => onHideSelectValue(selectValue.id, !selectValue.hidden)}>
+                                    {selectValue.hidden ? "Show select value" : "Hide select value"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem variant="destructive" onSelect={() => onDeleteSelectValue(selectValue.id)}>
+                                    Delete select value
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </li>
+                ) : null}
+              </Fragment>
             );
           })}
         </ul>

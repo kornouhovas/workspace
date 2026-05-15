@@ -912,6 +912,128 @@ export default function App() {
     }
   }
 
+  async function handleCreateSelectValue(propertyId: string, input: { name: string; color: string }) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.createSelectValue({
+        workspaceId: state.workspaceId,
+        propertyId,
+        name: input.name,
+        color: input.color,
+      });
+      await refreshPropertyCatalog();
+      toast.success("Select value added");
+    } catch (error) {
+      toast.error("Could not add select value", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleRenameSelectValue(selectValueId: string, name: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateSelectValue({
+        workspaceId: state.workspaceId,
+        selectValueId,
+        patch: { name },
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success("Select value renamed");
+    } catch (error) {
+      toast.error("Could not rename select value", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleColorSelectValue(selectValueId: string, color: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateSelectValue({
+        workspaceId: state.workspaceId,
+        selectValueId,
+        patch: { color },
+      });
+      await refreshPropertyCatalog();
+    } catch (error) {
+      toast.error("Could not update select value color", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleHideSelectValue(selectValueId: string, hidden: boolean) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateSelectValue({
+        workspaceId: state.workspaceId,
+        selectValueId,
+        patch: { hidden },
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success(hidden ? "Select value hidden" : "Select value shown");
+    } catch (error) {
+      toast.error("Could not update select value", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleDeleteSelectValue(selectValueId: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.deleteSelectValue({
+        workspaceId: state.workspaceId,
+        selectValueId,
+        confirmDeleteUsages: true,
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success("Select value deleted");
+    } catch (error) {
+      toast.error("Could not delete select value", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleReorderSelectValues(propertyId: string, orderedSelectValueIds: readonly string[]) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.reorderSelectValues({
+        workspaceId: state.workspaceId,
+        propertyId,
+        orderedSelectValueIds,
+      });
+      await refreshPropertyCatalog();
+    } catch (error) {
+      toast.error("Could not reorder select values", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function loadProjectFileTree(project: WorkspaceMockProject) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
@@ -1069,6 +1191,12 @@ export default function App() {
                     onHideProperty={handleHideProperty}
                     onDeleteProperty={handleDeleteProperty}
                     onReorderProperties={handleReorderProperties}
+                    onCreateSelectValue={handleCreateSelectValue}
+                    onRenameSelectValue={handleRenameSelectValue}
+                    onColorSelectValue={handleColorSelectValue}
+                    onHideSelectValue={handleHideSelectValue}
+                    onDeleteSelectValue={handleDeleteSelectValue}
+                    onReorderSelectValues={handleReorderSelectValues}
                     selectingFolder={selectingFolder}
                   />
                 </>

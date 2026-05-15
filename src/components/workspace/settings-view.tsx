@@ -34,6 +34,12 @@ type WorkspaceSettingsViewProps = {
   readonly onHideProperty: (propertyId: string, hidden: boolean) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
   readonly onReorderProperties: (orderedPropertyIds: readonly string[]) => void;
+  readonly onCreateSelectValue: (propertyId: string, input: { name: string; color: string }) => void;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onColorSelectValue: (selectValueId: string, color: string) => void;
+  readonly onHideSelectValue: (selectValueId: string, hidden: boolean) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
+  readonly onReorderSelectValues: (propertyId: string, orderedSelectValueIds: readonly string[]) => void;
   readonly selectingFolder?: boolean;
 };
 
@@ -133,6 +139,12 @@ export function WorkspaceSettingsView({
   onHideProperty,
   onDeleteProperty,
   onReorderProperties,
+  onCreateSelectValue,
+  onRenameSelectValue,
+  onColorSelectValue,
+  onHideSelectValue,
+  onDeleteSelectValue,
+  onReorderSelectValues,
   selectingFolder = false,
 }: WorkspaceSettingsViewProps) {
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -216,6 +228,12 @@ export function WorkspaceSettingsView({
           onHideProperty={onHideProperty}
           onDeleteProperty={onDeleteProperty}
           onReorderProperties={onReorderProperties}
+          onCreateSelectValue={onCreateSelectValue}
+          onRenameSelectValue={onRenameSelectValue}
+          onColorSelectValue={onColorSelectValue}
+          onHideSelectValue={onHideSelectValue}
+          onDeleteSelectValue={onDeleteSelectValue}
+          onReorderSelectValues={onReorderSelectValues}
         />
       </div>
     </section>

@@ -198,6 +198,18 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(propertyControlsSource, /DropdownMenu/);
   assert.match(propertyControlsSource, /<Input/);
   assert.match(propertyControlsSource, /<Select/);
+  assert.match(propertyControlsSource, /Add select value/);
+  assert.match(propertyControlsSource, /Rename select value/);
+  assert.match(propertyControlsSource, /Color/);
+  assert.match(propertyControlsSource, /Hide select value/);
+  assert.match(propertyControlsSource, /Show select value/);
+  assert.match(propertyControlsSource, /Delete select value/);
+  assert.match(propertyControlsSource, /valueColorOptions/);
+  assert.match(propertyControlsSource, /isSelectProperty/);
+  assert.match(appSource, /workspaceClient\.createSelectValue/);
+  assert.match(appSource, /workspaceClient\.updateSelectValue/);
+  assert.match(appSource, /workspaceClient\.deleteSelectValue/);
+  assert.match(appSource, /workspaceClient\.reorderSelectValues/);
   assert.match(appSource, /onActiveViewChange/);
   assert.match(viewTabsSource, /onCreateView/);
   assert.match(viewTabsSource, /onRenameView/);
