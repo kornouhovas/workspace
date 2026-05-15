@@ -107,6 +107,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /sidebarCollapsed/);
   assert.match(appSource, /PanelLeftIcon/);
   assert.match(appSource, /pl-24/);
+  assert.match(appSource, /transition-\[width,opacity\]/);
+  assert.match(appSource, /w-0/);
   assert.doesNotMatch(leftPanelSource, /onToggleCollapsed/);
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
@@ -170,8 +172,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /w-full/);
   assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);
-  assert.match(projectDetailPanelSource, /Sheet/);
-  assert.match(projectDetailPanelSource, /SheetTitle/);
+  assert.match(projectDetailPanelSource, /projectDetailPanelWidth/);
+  assert.match(projectDetailPanelSource, /localStorage/);
+  assert.match(projectDetailPanelSource, /Resize project panel/);
+  assert.match(projectDetailPanelSource, /onPointerDown/);
+  assert.match(projectDetailPanelSource, /translate-x-full/);
+  assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.match(projectDetailPanelSource, /Properties/);
   assert.match(projectDetailPanelSource, /File tree/);
   assert.match(projectDetailPanelSource, /FolderIcon/);

@@ -100,6 +100,37 @@ test("workspace IPC handler tolerates concurrent default workspace initializatio
   }
 });
 
+test("workspace IPC handler tolerates concurrent root selection across process handlers", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, ".workspace", "settings.json");
+  const viewStorePath = join(tempDirectory, ".workspace", "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handlers = Array.from({ length: 12 }, (_, index) => createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => `workspace-${index}`,
+    }));
+
+    const results = await Promise.allSettled(
+      handlers.map((handler) => handler(null, "workspace.setRoot", {})),
+    );
+    const failures = results.filter((result) => result.status === "rejected");
+
+    assert.deepEqual(failures, []);
+    const rootResponse = await handlers[0](null, "workspace.getRoot", {});
+    const viewsResponse = await handlers[0](null, "workspace.listViews", {
+      workspaceId: rootResponse.root.workspaceId,
+    });
+    assert.deepEqual(viewsResponse.views.map((view) => view.viewType), ["board", "table"]);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler persists folder role rules for scans and projections", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");

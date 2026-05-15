@@ -559,7 +559,13 @@ export default function App() {
   return (
     <>
       <div className="dark flex h-screen min-h-0 bg-background text-foreground">
-        {!sidebarCollapsed ? (
+        <div
+          aria-hidden={sidebarCollapsed}
+          className={[
+            "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
+            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-72 opacity-100",
+          ].join(" ")}
+        >
           <WorkspaceLeftPanel
             activeSurface={activeSurface}
             activeWorkspaceId={state.workspaceId || workspaceList.activeWorkspaceId}
@@ -575,7 +581,7 @@ export default function App() {
             }}
             onOpenSettings={openSettingsSurface}
           />
-        ) : null}
+        </div>
         <main data-testid="workspace-main" className="flex min-w-0 flex-1 flex-col">
           <header
             className={[

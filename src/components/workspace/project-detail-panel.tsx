@@ -1,14 +1,9 @@
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { FileIcon, FolderIcon } from "@/lib/lucide-icons";
+import { FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
@@ -21,6 +16,38 @@ type WorkspaceProjectDetailPanelProps = {
   readonly project: WorkspaceMockProject | null;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
 };
+
+const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
+const defaultProjectDetailPanelWidth = 480;
+const minProjectDetailPanelWidth = 360;
+const maxProjectDetailPanelWidth = 760;
+
+function getMaxProjectDetailPanelWidth() {
+  if (typeof window === "undefined") {
+    return maxProjectDetailPanelWidth;
+  }
+
+  return Math.min(
+    maxProjectDetailPanelWidth,
+    Math.max(minProjectDetailPanelWidth, window.innerWidth - 96),
+  );
+}
+
+function clampProjectDetailPanelWidth(value: number) {
+  const fallbackWidth = Number.isFinite(value) ? value : defaultProjectDetailPanelWidth;
+  return Math.min(
+    getMaxProjectDetailPanelWidth(),
+    Math.max(minProjectDetailPanelWidth, Math.round(fallbackWidth)),
+  );
+}
+
+function readSavedProjectDetailPanelWidth() {
+  if (typeof window === "undefined") {
+    return defaultProjectDetailPanelWidth;
+  }
+
+  return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));
+}
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
   if (property.id === "property:name") {
@@ -76,15 +103,119 @@ export function WorkspaceProjectDetailPanel({
   project,
   visibleProperties,
 }: WorkspaceProjectDetailPanelProps) {
+  const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
+  const panelWidthRef = useRef(projectDetailPanelWidth);
+  const isOpen = open && project !== null;
+
+  useEffect(() => {
+    panelWidthRef.current = projectDetailPanelWidth;
+  }, [projectDetailPanelWidth]);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(projectDetailPanelWidth));
+  }, [isOpen, projectDetailPanelWidth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    function handleResize() {
+      setProjectDetailPanelWidth((currentWidth) => clampProjectDetailPanelWidth(currentWidth));
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onOpenChange(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onOpenChange]);
+
+  function updatePanelWidth(nextWidth: number) {
+    const clampedWidth = clampProjectDetailPanelWidth(nextWidth);
+    panelWidthRef.current = clampedWidth;
+    setProjectDetailPanelWidth(clampedWidth);
+  }
+
+  function startPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = panelWidthRef.current;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    function handlePointerMove(pointerEvent: PointerEvent) {
+      updatePanelWidth(startWidth + startX - pointerEvent.clientX);
+    }
+
+    function handlePointerUp() {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(panelWidthRef.current));
+    }
+
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp, { once: true });
+  }
+
   return (
-    <Sheet open={open && project !== null} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[30rem] sm:max-w-[30rem]">
+    <div className="pointer-events-none fixed inset-y-0 right-0 z-50 flex justify-end" aria-hidden={!isOpen}>
+      <aside
+        aria-labelledby="project-detail-title"
+        aria-modal="false"
+        role="dialog"
+        className={[
+          "pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition-transform duration-200 ease-out",
+          isOpen ? "translate-x-0" : "translate-x-full",
+        ].join(" ")}
+        style={{ width: projectDetailPanelWidth }}
+      >
+        <button
+          type="button"
+          aria-label="Resize project panel"
+          className="absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
+          onPointerDown={startPanelResize}
+        >
+          <span className="sr-only">Resize project panel</span>
+        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-3 top-3 z-10"
+          aria-label="Close project details"
+          onClick={() => onOpenChange(false)}
+        >
+          <XIcon className="size-4" aria-hidden="true" />
+        </Button>
         {project ? (
           <>
-            <SheetHeader>
-              <SheetTitle>{project.name}</SheetTitle>
-              <SheetDescription className="truncate">{project.currentRelativePath}</SheetDescription>
-            </SheetHeader>
+            <header className="grid gap-0.5 p-4 pr-12">
+              <h2 id="project-detail-title" className="font-heading text-base font-medium text-foreground">
+                {project.name}
+              </h2>
+              <p className="truncate text-sm text-muted-foreground">{project.currentRelativePath}</p>
+            </header>
             <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
               <div className="grid gap-4">
                 <section className="grid gap-2" aria-labelledby="project-identity-heading">
@@ -131,12 +262,14 @@ export function WorkspaceProjectDetailPanel({
             </div>
           </>
         ) : (
-          <SheetHeader>
-            <SheetTitle>Project detail</SheetTitle>
-            <SheetDescription>No project selected.</SheetDescription>
-          </SheetHeader>
+          <header className="grid gap-0.5 p-4 pr-12">
+            <h2 id="project-detail-title" className="font-heading text-base font-medium text-foreground">
+              Project detail
+            </h2>
+            <p className="text-sm text-muted-foreground">No project selected.</p>
+          </header>
         )}
-      </SheetContent>
-    </Sheet>
+      </aside>
+    </div>
   );
 }

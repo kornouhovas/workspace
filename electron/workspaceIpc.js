@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 import { createRevealResponse } from "../src/localOpen.js";
@@ -783,9 +783,17 @@ async function readViewStoreData(filePath) {
 }
 
 async function writeViewStoreData(filePath, data) {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(`${filePath}.tmp`, `${JSON.stringify(data, null, 2)}\n`);
-  await rename(`${filePath}.tmp`, filePath);
+  const directory = dirname(filePath);
+  const tempPath = join(directory, `.${basename(filePath)}.${randomUUID()}.tmp`);
+  await mkdir(directory, { recursive: true });
+
+  try {
+    await writeFile(tempPath, `${JSON.stringify(data, null, 2)}\n`);
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
 function unwrapBackendResponse(response) {
