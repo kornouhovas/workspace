@@ -12,6 +12,36 @@ export type WorkspaceViewState = {
   readonly viewType: string;
 };
 
+export type WorkspacePropertyDefinitionState = {
+  readonly id: string;
+  readonly name: string;
+  readonly type?: string;
+  readonly propertyType: string;
+  readonly system: boolean;
+  readonly hidden?: boolean;
+  readonly order?: number;
+};
+
+export type WorkspaceSelectValueState = {
+  readonly id: string;
+  readonly workspaceId?: string;
+  readonly propertyId: string;
+  readonly name: string;
+  readonly color?: string;
+  readonly hidden?: boolean;
+  readonly order?: number;
+};
+
+export type WorkspacePropertyCatalogState = {
+  readonly workspaceId: string;
+  readonly properties: readonly WorkspacePropertyDefinitionState[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly usage?: {
+    readonly propertyValueCounts?: Record<string, number>;
+    readonly selectValueCounts?: Record<string, number>;
+  };
+};
+
 export type WorkspaceFolderRole = "group" | "status" | "project";
 
 export type WorkspaceFolderRoleNode = {
@@ -29,8 +59,11 @@ export type WorkspaceProjectionResponse = {
   readonly visibleProperties: readonly {
     readonly id: string;
     readonly name: string;
+    readonly type?: string;
     readonly propertyType: string;
     readonly system: boolean;
+    readonly hidden?: boolean;
+    readonly order?: number;
   }[];
   readonly statusValues: readonly {
     readonly id: string;
@@ -67,6 +100,7 @@ export type WorkspaceAppState = {
   readonly root: WorkspaceRootState | null;
   readonly workspaceId: string | null;
   readonly projection: WorkspaceProjectionResponse | null;
+  readonly propertyCatalog: WorkspacePropertyCatalogState | null;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly views: readonly WorkspaceViewState[];
   readonly activeViewId: string | null;
@@ -75,6 +109,7 @@ export type WorkspaceAppState = {
   readonly detailOpen: boolean;
   readonly sourceFolderMissing: boolean;
   readonly error: string | null;
+  readonly propertySaveError: string | null;
 };
 
 export type WorkspaceAppAction =
@@ -89,6 +124,14 @@ export type WorkspaceAppAction =
       readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
     }
   | { readonly type: "projectionUpdated"; readonly projectionResponse: WorkspaceProjectionResponse }
+  | { readonly type: "propertiesLoaded"; readonly propertiesResponse: WorkspacePropertyCatalogState }
+  | {
+      readonly type: "projectPropertyValueUpdated";
+      readonly projectId: string;
+      readonly propertyId: string;
+      readonly value: unknown;
+    }
+  | { readonly type: "propertySaveFailed"; readonly error: string }
   | { readonly type: "workspaceActivated"; readonly workspaceId: string }
   | { readonly type: "serviceError"; readonly error: string }
   | { readonly type: "searchQueryChanged"; readonly searchQuery: string }
@@ -110,6 +153,7 @@ export function createInitialWorkspaceAppState(): WorkspaceAppState {
     root: null,
     workspaceId: null,
     projection: null,
+    propertyCatalog: null,
     folderRoleTree: [],
     views: [],
     activeViewId: null,
@@ -118,6 +162,7 @@ export function createInitialWorkspaceAppState(): WorkspaceAppState {
     detailOpen: false,
     sourceFolderMissing: false,
     error: null,
+    propertySaveError: null,
   };
 }
 
@@ -141,6 +186,7 @@ export function workspaceAppStateReducer(
       root: null,
       workspaceId: null,
       projection: null,
+      propertyCatalog: null,
       folderRoleTree: [],
       views: [],
       activeViewId: null,
@@ -148,6 +194,7 @@ export function workspaceAppStateReducer(
       detailOpen: false,
       sourceFolderMissing: true,
       error: null,
+      propertySaveError: null,
     };
   }
 
@@ -161,6 +208,7 @@ export function workspaceAppStateReducer(
       detailOpen: false,
       sourceFolderMissing: false,
       error: null,
+      propertySaveError: null,
     };
   }
 
@@ -177,11 +225,15 @@ export function workspaceAppStateReducer(
       root: action.root,
       workspaceId: action.viewsResponse.workspaceId || action.root.workspaceId,
       projection: action.projectionResponse,
+      propertyCatalog: state.propertyCatalog?.workspaceId === (action.viewsResponse.workspaceId || action.root.workspaceId)
+        ? state.propertyCatalog
+        : null,
       folderRoleTree: action.folderRoleTree,
       views: action.viewsResponse.views,
       activeViewId,
       sourceFolderMissing: false,
       error: null,
+      propertySaveError: null,
     };
   }
 
@@ -190,6 +242,40 @@ export function workspaceAppStateReducer(
       ...state,
       projection: action.projectionResponse,
       error: null,
+    };
+  }
+
+  if (action.type === "propertiesLoaded") {
+    if (action.propertiesResponse.workspaceId !== state.workspaceId) {
+      return state;
+    }
+
+    return {
+      ...state,
+      propertyCatalog: action.propertiesResponse,
+      propertySaveError: null,
+    };
+  }
+
+  if (action.type === "projectPropertyValueUpdated") {
+    return {
+      ...state,
+      projection: state.projection
+        ? updateProjectionProjectPropertyValue({
+            projectionResponse: state.projection,
+            projectId: action.projectId,
+            propertyId: action.propertyId,
+            value: action.value,
+          })
+        : state.projection,
+      propertySaveError: null,
+    };
+  }
+
+  if (action.type === "propertySaveFailed") {
+    return {
+      ...state,
+      propertySaveError: action.error,
     };
   }
 
@@ -207,6 +293,7 @@ export function workspaceAppStateReducer(
       },
       workspaceId: action.workspaceId,
       projection: null,
+      propertyCatalog: null,
       views: [],
       activeViewId: null,
       searchQuery: "",
@@ -214,6 +301,7 @@ export function workspaceAppStateReducer(
       detailOpen: false,
       sourceFolderMissing: false,
       error: null,
+      propertySaveError: null,
     };
   }
 
@@ -344,6 +432,59 @@ export function filterWorkspaceProjectionBySearch(
         ...column,
         projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
       })),
+    },
+  };
+}
+
+function updateProjectionProjectPropertyValue({
+  projectionResponse,
+  projectId,
+  propertyId,
+  value,
+}: {
+  readonly projectionResponse: WorkspaceProjectionResponse;
+  readonly projectId: string;
+  readonly propertyId: string;
+  readonly value: unknown;
+}): WorkspaceProjectionResponse {
+  if (projectionResponse.projection.type === "table") {
+    return {
+      ...projectionResponse,
+      projection: {
+        ...projectionResponse.projection,
+        rows: projectionResponse.projection.rows.map((project) =>
+          updateProjectPropertyValue(project, projectId, propertyId, value),
+        ),
+      },
+    };
+  }
+
+  return {
+    ...projectionResponse,
+    projection: {
+      ...projectionResponse.projection,
+      columns: projectionResponse.projection.columns.map((column) => ({
+        ...column,
+        projects: column.projects.map((project) =>
+          updateProjectPropertyValue(project, projectId, propertyId, value),
+        ),
+      })),
+    },
+  };
+}
+
+function updateProjectPropertyValue(project: unknown, projectId: string, propertyId: string, value: unknown) {
+  if (!isRecord(project) || project.id !== projectId) {
+    return project;
+  }
+
+  const propertyValues = isRecord(project.propertyValues) ? project.propertyValues : {};
+
+  return {
+    ...project,
+    propertyValues: {
+      ...propertyValues,
+      [propertyId]: value,
     },
   };
 }

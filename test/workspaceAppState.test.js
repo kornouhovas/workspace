@@ -96,6 +96,98 @@ test("workspace app state stores loaded service projection responses", async () 
   assert.deepEqual(state.folderRoleTree, folderRoleTree);
 });
 
+test("workspace app state stores custom property catalog responses", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+  const propertiesResponse = {
+    workspaceId: "workspace:ops",
+    properties: [
+      { id: "property:name", name: "Name", propertyType: "text", type: "text", system: true },
+      { id: "property:priority", name: "Priority", propertyType: "select", type: "select", system: false },
+    ],
+    selectValues: [
+      { id: "selectValue:priority-high", propertyId: "property:priority", name: "High", color: "red" },
+    ],
+  };
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "propertiesLoaded",
+    propertiesResponse,
+  });
+
+  assert.deepEqual(state.propertyCatalog, propertiesResponse);
+  assert.equal(state.status, "ready");
+  assert.equal(state.projection, loadedState.projection);
+});
+
+test("workspace app state applies project property value updates without closing details", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: { "property:name": "Alpha Project" },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse: {
+      ...projectionResponse,
+      projection: {
+        type: "board",
+        capabilities: { canMoveBetweenStatuses: false },
+        columns: [
+          { statusValueId: "status:active", name: "Active", projects: [alpha] },
+        ],
+      },
+    },
+    folderRoleTree,
+  });
+  const selectedState = workspaceAppStateReducer(loadedState, {
+    type: "projectSelected",
+    selectedProjectId: "project:alpha",
+  });
+
+  const state = workspaceAppStateReducer(selectedState, {
+    type: "projectPropertyValueUpdated",
+    projectId: "project:alpha",
+    propertyId: "property:budget",
+    value: 12000,
+  });
+  const updatedProject = state.projection.projection.columns[0].projects[0];
+
+  assert.equal(state.selectedProjectId, "project:alpha");
+  assert.equal(state.detailOpen, true);
+  assert.equal(updatedProject.propertyValues["property:budget"], 12000);
+  assert.equal(state.propertySaveError, null);
+});
+
+test("workspace app state stores property save errors without clearing projection data", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "propertySaveFailed",
+    error: "Could not save property value.",
+  });
+
+  assert.equal(state.status, "ready");
+  assert.equal(state.projection, loadedState.projection);
+  assert.equal(state.propertySaveError, "Could not save property value.");
+});
+
 test("workspace app state stores selected root before projection loading completes", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const state = workspaceAppStateReducer(createInitialWorkspaceAppState(), {

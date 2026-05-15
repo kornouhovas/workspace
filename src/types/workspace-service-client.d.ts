@@ -12,6 +12,16 @@ declare module "@/workspaceServiceClient.js" {
     listProjectFileTree(payload: Record<string, unknown>): Promise<unknown>;
     saveProperty(payload: Record<string, unknown>): Promise<unknown>;
     listPropertyValues(payload: Record<string, unknown>): Promise<unknown>;
+    listProperties(payload: Record<string, unknown>): Promise<unknown>;
+    createProperty(payload: Record<string, unknown>): Promise<unknown>;
+    updateProperty(payload: Record<string, unknown>): Promise<unknown>;
+    reorderProperties(payload: Record<string, unknown>): Promise<unknown>;
+    deleteProperty(payload: Record<string, unknown>): Promise<unknown>;
+    createSelectValue(payload: Record<string, unknown>): Promise<unknown>;
+    updateSelectValue(payload: Record<string, unknown>): Promise<unknown>;
+    reorderSelectValues(payload: Record<string, unknown>): Promise<unknown>;
+    deleteSelectValue(payload: Record<string, unknown>): Promise<unknown>;
+    updateProjectPropertyValue(payload: Record<string, unknown>): Promise<unknown>;
     updateFolderRole(payload: Record<string, unknown>): Promise<unknown>;
     listWorkspaces(payload?: Record<string, unknown>): Promise<unknown>;
     createWorkspace(payload: Record<string, unknown>): Promise<unknown>;
