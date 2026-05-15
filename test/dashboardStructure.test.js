@@ -24,6 +24,7 @@ test("renderer composes the workspace product shell", async () => {
     tableViewSource,
     viewTabsSource,
     workspaceCompatibilitySource,
+    propertyControlsSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -41,6 +42,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/table-view.tsx"),
     readProjectFile("src/components/workspace/view-tabs.tsx"),
     readProjectFile("src/workspaceCompatibility.ts"),
+    readProjectFile("src/components/workspace/property-controls.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -177,6 +179,25 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(settingsViewSource, /status/);
   assert.match(settingsViewSource, /project/);
   assert.match(settingsViewSource, /folderRoleTree/);
+  assert.match(settingsViewSource, /WorkspacePropertyControls/);
+  assert.match(settingsViewSource, /properties=\{properties\}/);
+  assert.match(settingsViewSource, /selectValues=\{selectValues\}/);
+  assert.match(settingsViewSource, /onCreateProperty/);
+  assert.match(propertyControlsSource, /WorkspacePropertyControls/);
+  assert.match(propertyControlsSource, /Add property/);
+  assert.match(propertyControlsSource, /Text/);
+  assert.match(propertyControlsSource, /Numbers/);
+  assert.match(propertyControlsSource, /Date/);
+  assert.match(propertyControlsSource, /Select/);
+  assert.match(propertyControlsSource, /Multi-select/);
+  assert.match(propertyControlsSource, /Rename property/);
+  assert.match(propertyControlsSource, /Hide property/);
+  assert.match(propertyControlsSource, /Show property/);
+  assert.match(propertyControlsSource, /Delete property/);
+  assert.match(propertyControlsSource, /GripVerticalIcon/);
+  assert.match(propertyControlsSource, /DropdownMenu/);
+  assert.match(propertyControlsSource, /<Input/);
+  assert.match(propertyControlsSource, /<Select/);
   assert.match(appSource, /onActiveViewChange/);
   assert.match(viewTabsSource, /onCreateView/);
   assert.match(viewTabsSource, /onRenameView/);

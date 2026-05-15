@@ -22,6 +22,9 @@ import {
   filterWorkspaceProjectionBySearch,
   workspaceAppStateReducer,
   type WorkspaceAppState,
+  type WorkspacePropertyCatalogState,
+  type WorkspacePropertyDefinitionState,
+  type WorkspaceSelectValueState,
   type WorkspaceFolderRole,
   type WorkspaceFolderRoleNode,
   type WorkspaceProjectionResponse,
@@ -43,6 +46,7 @@ import {
   type WorkspaceListItem,
   type WorkspaceListState,
 } from "@/workspaceCompatibility";
+import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -99,6 +103,49 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   }
 
   return response as WorkspaceProjectionResponse;
+}
+
+function normalizePropertiesResponse(response: unknown, workspaceId: string): WorkspacePropertyCatalogState {
+  const body = isRecord(response) ? response : {};
+  const properties = Array.isArray(body.properties)
+    ? body.properties.filter(isRecord).map(normalizePropertyDefinition).filter((property) => property.id)
+    : [];
+  const selectValues = Array.isArray(body.selectValues)
+    ? body.selectValues.filter(isRecord).map(normalizeSelectValue).filter((value) => value.id && value.propertyId)
+    : [];
+
+  return {
+    workspaceId: getString(body.workspaceId) || workspaceId,
+    properties,
+    selectValues,
+    usage: isRecord(body.usage) ? body.usage as WorkspacePropertyCatalogState["usage"] : undefined,
+  };
+}
+
+function normalizePropertyDefinition(property: Record<string, unknown>): WorkspacePropertyDefinitionState {
+  const propertyType = getString(property.propertyType) || getString(property.type) || "text";
+
+  return {
+    id: getString(property.id),
+    name: getString(property.name) || "Untitled property",
+    type: getString(property.type) || propertyType,
+    propertyType,
+    system: property.system === true,
+    hidden: property.hidden === true,
+    order: Number.isFinite(Number(property.order)) ? Number(property.order) : undefined,
+  };
+}
+
+function normalizeSelectValue(value: Record<string, unknown>): WorkspaceSelectValueState {
+  return {
+    id: getString(value.id),
+    workspaceId: getString(value.workspaceId) || undefined,
+    propertyId: getString(value.propertyId),
+    name: getString(value.name) || "Untitled value",
+    color: getString(value.color) || undefined,
+    hidden: value.hidden === true,
+    order: Number.isFinite(Number(value.order)) ? Number(value.order) : undefined,
+  };
 }
 
 function normalizeProjectFileTreeNode(node: Record<string, unknown>): WorkspaceMockFileTreeNode | null {
@@ -331,13 +378,15 @@ export default function App() {
 
         dispatch({ type: "rootSelected", root });
 
-        const [scanResponse, viewsRawResponse, workspacesResponse] = await Promise.all([
+        const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] = await Promise.all([
           workspaceClient.scan({ includeCardChildren: activeSurface === "settings" }),
           workspaceClient.listViews({ workspaceId: root.workspaceId }),
           loadWorkspaceList(workspaceClient, root),
+          workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
         ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
+        const propertiesResponse = normalizePropertiesResponse(propertiesRawResponse, root.workspaceId);
         const requestedActiveViewId = activeViewIdRef.current;
         const requestedViewExists = viewsResponse.views.some((view) => view.id === requestedActiveViewId);
         const activeViewId = requestedViewExists
@@ -362,6 +411,10 @@ export default function App() {
             viewsResponse: { ...viewsResponse, activeViewId },
             projectionResponse,
             folderRoleTree,
+          });
+          dispatch({
+            type: "propertiesLoaded",
+            propertiesResponse,
           });
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -741,6 +794,124 @@ export default function App() {
     }
   }
 
+  async function refreshPropertyCatalog() {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    const propertiesResponse = normalizePropertiesResponse(
+      await workspaceClient.listProperties({ workspaceId: state.workspaceId, includeUsage: true }),
+      state.workspaceId,
+    );
+    dispatch({
+      type: "propertiesLoaded",
+      propertiesResponse,
+    });
+  }
+
+  async function handleCreateProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
+    if (!state.workspaceId) {
+      toast.error("Select a source folder before adding properties.");
+      return;
+    }
+
+    try {
+      await workspaceClient.createProperty({
+        workspaceId: state.workspaceId,
+        name: input.name,
+        type: input.type,
+      });
+      await refreshPropertyCatalog();
+      toast.success("Property added");
+    } catch (error) {
+      toast.error("Could not add property", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleRenameProperty(propertyId: string, name: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateProperty({
+        workspaceId: state.workspaceId,
+        propertyId,
+        patch: { name },
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success("Property renamed");
+    } catch (error) {
+      toast.error("Could not rename property", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleHideProperty(propertyId: string, hidden: boolean) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateProperty({
+        workspaceId: state.workspaceId,
+        propertyId,
+        patch: { hidden },
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success(hidden ? "Property hidden" : "Property shown");
+    } catch (error) {
+      toast.error("Could not update property", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleDeleteProperty(propertyId: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.deleteProperty({
+        workspaceId: state.workspaceId,
+        propertyId,
+        confirmDeleteValues: true,
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+      toast.success("Property deleted");
+    } catch (error) {
+      toast.error("Could not delete property", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleReorderProperties(orderedPropertyIds: readonly string[]) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.reorderProperties({
+        workspaceId: state.workspaceId,
+        orderedPropertyIds,
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not reorder properties", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function loadProjectFileTree(project: WorkspaceMockProject) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
@@ -829,6 +1000,8 @@ export default function App() {
       ? serviceProjection.projection
       : mockTableProjectionResponse.projection;
   const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
+  const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
+  const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
 
   return (
     <>
@@ -886,9 +1059,16 @@ export default function App() {
                   <WorkspaceSettingsView
                     sourceFolder={sourceFolder}
                     folderRoleTree={folderRoleTree}
+                    properties={settingsProperties}
+                    selectValues={settingsSelectValues}
                     onSelectFolder={handleSelectFolder}
                     onCloseSettings={openWorkspaceSurface}
                     onFolderRoleChange={handleFolderRoleChange}
+                    onCreateProperty={handleCreateProperty}
+                    onRenameProperty={handleRenameProperty}
+                    onHideProperty={handleHideProperty}
+                    onDeleteProperty={handleDeleteProperty}
+                    onReorderProperties={handleReorderProperties}
                     selectingFolder={selectingFolder}
                   />
                 </>
