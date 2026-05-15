@@ -215,10 +215,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onClick=\{closeProjectDetails\}/);
   assert.match(projectDetailPanelSource, /Close project details backdrop/);
   assert.match(projectDetailPanelSource, /stopPropagation/);
-  assert.match(projectDetailPanelSource, /transition-\[transform,opacity\]/);
-  assert.match(projectDetailPanelSource, /duration-\[320ms\]/);
+  assert.match(projectDetailPanelSource, /transition-transform/);
+  assert.match(projectDetailPanelSource, /duration-\[360ms\]/);
   assert.match(projectDetailPanelSource, /panelVisible \? "translate-x-0" : "translate-x-full"/);
-  assert.match(projectDetailPanelSource, /panelVisible \? "opacity-100" : "opacity-0"/);
+  assert.doesNotMatch(projectDetailPanelSource, /transition-\[transform,opacity\]/);
+  assert.doesNotMatch(projectDetailPanelSource, /opacity-0/);
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.match(projectDetailPanelSource, /Properties/);

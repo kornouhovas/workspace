@@ -27,7 +27,7 @@ const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
 const defaultProjectDetailPanelWidth = 480;
 const minProjectDetailPanelWidth = 360;
 const maxProjectDetailPanelWidth = 760;
-const projectDetailPanelAnimationMs = 320;
+const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
 
 function getMaxProjectDetailPanelWidth() {
@@ -282,9 +282,8 @@ export function WorkspaceProjectDetailPanel({
           }
         }}
         className={[
-          "electron-window-no-drag pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-[transform,opacity] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "electron-window-no-drag pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           panelVisible ? "translate-x-0" : "translate-x-full",
-          panelVisible ? "opacity-100" : "opacity-0",
         ].join(" ")}
         style={{ width: projectDetailPanelWidth }}
       >
