@@ -26,12 +26,62 @@ type RootDocument struct {
 }
 
 type PropertyValueDocument struct {
-	ID          string `json:"id"`
-	WorkspaceID string `json:"workspaceId"`
-	ObjectID    string `json:"objectId"`
-	PropertyID  string `json:"propertyId"`
-	Type        string `json:"type"`
-	Value       any    `json:"value"`
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspaceId"`
+	ObjectID    string  `json:"objectId"`
+	ProjectID   string  `json:"projectId"`
+	PropertyID  string  `json:"propertyId"`
+	Type        string  `json:"type"`
+	Value       any     `json:"value"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   string  `json:"updatedAt"`
+	DeletedAt   *string `json:"deletedAt"`
+}
+
+type PropertyDefinitionDocument struct {
+	ID            string         `json:"id"`
+	Type          string         `json:"type"`
+	SchemaVersion int            `json:"schemaVersion"`
+	WorkspaceID   string         `json:"workspaceId"`
+	Name          string         `json:"name"`
+	PropertyType  string         `json:"propertyType"`
+	System        bool           `json:"system"`
+	Hidden        bool           `json:"hidden"`
+	Order         int            `json:"order"`
+	Config        map[string]any `json:"config"`
+	CreatedAt     string         `json:"createdAt"`
+	UpdatedAt     string         `json:"updatedAt"`
+	DeletedAt     *string        `json:"deletedAt"`
+}
+
+type SelectValueDocument struct {
+	ID            string  `json:"id"`
+	Type          string  `json:"type"`
+	SchemaVersion int     `json:"schemaVersion"`
+	WorkspaceID   string  `json:"workspaceId"`
+	PropertyID    string  `json:"propertyId"`
+	Name          string  `json:"name"`
+	Color         string  `json:"color"`
+	Hidden        bool    `json:"hidden"`
+	Order         int     `json:"order"`
+	CreatedAt     string  `json:"createdAt"`
+	UpdatedAt     string  `json:"updatedAt"`
+	DeletedAt     *string `json:"deletedAt"`
+}
+
+type PropertyHistoryDocument struct {
+	ID            string `json:"id"`
+	Type          string `json:"type"`
+	SchemaVersion int    `json:"schemaVersion"`
+	WorkspaceID   string `json:"workspaceId"`
+	ProjectID     string `json:"projectId"`
+	PropertyID    string `json:"propertyId"`
+	TargetType    string `json:"targetType"`
+	TargetID      string `json:"targetId"`
+	Action        string `json:"action"`
+	PreviousValue any    `json:"previousValue"`
+	NextValue     any    `json:"nextValue"`
+	CreatedAt     string `json:"createdAt"`
 }
 
 type WorkspaceDocument struct {
@@ -327,7 +377,9 @@ func (s *Store) ListPropertyValues(ctx context.Context, workspaceID string) ([]P
 			_ = iter.Close()
 			return nil, err
 		}
-		values = append(values, value)
+		if value.DeletedAt == nil {
+			values = append(values, value)
+		}
 	}
 	if err := iter.Err(); err != nil {
 		_ = iter.Close()
@@ -336,7 +388,186 @@ func (s *Store) ListPropertyValues(ctx context.Context, workspaceID string) ([]P
 	if err := iter.Close(); err != nil {
 		return nil, err
 	}
+	sort.SliceStable(values, func(i, j int) bool {
+		if values[i].PropertyID == values[j].PropertyID {
+			if values[i].ProjectID == values[j].ProjectID {
+				return values[i].ID < values[j].ID
+			}
+			return values[i].ProjectID < values[j].ProjectID
+		}
+		return values[i].PropertyID < values[j].PropertyID
+	})
 	return values, nil
+}
+
+func (s *Store) UpsertPropertyDefinition(ctx context.Context, property PropertyDefinitionDocument) error {
+	if property.Type == "" {
+		property.Type = "propertyDefinition"
+	}
+	if property.SchemaVersion == 0 {
+		property.SchemaVersion = 1
+	}
+	if property.Config == nil {
+		property.Config = map[string]any{}
+	}
+	return s.upsertJSON(ctx, "property_definitions", property)
+}
+
+func (s *Store) ListPropertyDefinitions(ctx context.Context, workspaceID string) ([]PropertyDefinitionDocument, error) {
+	coll, err := s.db.Collection(ctx, "property_definitions")
+	if err != nil {
+		return nil, err
+	}
+
+	iter, err := coll.Find(map[string]any{"workspaceId": workspaceID}).Iter(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var properties []PropertyDefinitionDocument
+	for iter.Next() {
+		doc, err := iter.Doc()
+		if err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+
+		var property PropertyDefinitionDocument
+		if err := json.Unmarshal([]byte(doc.Value().String()), &property); err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+		if property.DeletedAt == nil {
+			properties = append(properties, property)
+		}
+	}
+	if err := iter.Err(); err != nil {
+		_ = iter.Close()
+		return nil, err
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(properties, func(i, j int) bool {
+		if properties[i].Order == properties[j].Order {
+			return properties[i].CreatedAt < properties[j].CreatedAt
+		}
+		return properties[i].Order < properties[j].Order
+	})
+	return properties, nil
+}
+
+func (s *Store) UpsertSelectValue(ctx context.Context, value SelectValueDocument) error {
+	if value.Type == "" {
+		value.Type = "selectValue"
+	}
+	if value.SchemaVersion == 0 {
+		value.SchemaVersion = 1
+	}
+	return s.upsertJSON(ctx, "select_values", value)
+}
+
+func (s *Store) ListSelectValues(ctx context.Context, workspaceID string, propertyID string) ([]SelectValueDocument, error) {
+	coll, err := s.db.Collection(ctx, "select_values")
+	if err != nil {
+		return nil, err
+	}
+
+	query := map[string]any{"workspaceId": workspaceID}
+	if propertyID != "" {
+		query["propertyId"] = propertyID
+	}
+	iter, err := coll.Find(query).Iter(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SelectValueDocument
+	for iter.Next() {
+		doc, err := iter.Doc()
+		if err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+
+		var value SelectValueDocument
+		if err := json.Unmarshal([]byte(doc.Value().String()), &value); err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+		if value.DeletedAt == nil {
+			values = append(values, value)
+		}
+	}
+	if err := iter.Err(); err != nil {
+		_ = iter.Close()
+		return nil, err
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(values, func(i, j int) bool {
+		if values[i].Order == values[j].Order {
+			return values[i].CreatedAt < values[j].CreatedAt
+		}
+		return values[i].Order < values[j].Order
+	})
+	return values, nil
+}
+
+func (s *Store) AppendPropertyHistory(ctx context.Context, history PropertyHistoryDocument) error {
+	if history.Type == "" {
+		history.Type = "propertyHistory"
+	}
+	if history.SchemaVersion == 0 {
+		history.SchemaVersion = 1
+	}
+	return s.upsertJSON(ctx, "property_history", history)
+}
+
+func (s *Store) ListPropertyHistory(ctx context.Context, workspaceID string) ([]PropertyHistoryDocument, error) {
+	coll, err := s.db.Collection(ctx, "property_history")
+	if err != nil {
+		return nil, err
+	}
+
+	iter, err := coll.Find(map[string]any{"workspaceId": workspaceID}).Iter(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var history []PropertyHistoryDocument
+	for iter.Next() {
+		doc, err := iter.Doc()
+		if err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+
+		var item PropertyHistoryDocument
+		if err := json.Unmarshal([]byte(doc.Value().String()), &item); err != nil {
+			_ = iter.Close()
+			return nil, err
+		}
+		history = append(history, item)
+	}
+	if err := iter.Err(); err != nil {
+		_ = iter.Close()
+		return nil, err
+	}
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	sort.SliceStable(history, func(i, j int) bool {
+		if history[i].CreatedAt == history[j].CreatedAt {
+			return history[i].ID < history[j].ID
+		}
+		return history[i].CreatedAt < history[j].CreatedAt
+	})
+	return history, nil
 }
 
 func (s *Store) upsertJSON(ctx context.Context, collectionName string, doc any) error {

@@ -309,6 +309,208 @@ func TestStoreRejectsInvalidViewReorderWithoutMutation(t *testing.T) {
 	}
 }
 
+func TestStorePersistsCustomPropertyDocuments(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	deletedAt := "2026-05-15T10:00:00.000Z"
+	for _, property := range []PropertyDefinitionDocument{
+		{
+			ID:            "property:name",
+			Type:          "propertyDefinition",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			Name:          "Name",
+			PropertyType:  "text",
+			System:        true,
+			Order:         10,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+		{
+			ID:            "property:priority",
+			Type:          "propertyDefinition",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			Name:          "Priority",
+			PropertyType:  "select",
+			Order:         30,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+		{
+			ID:            "property:archived",
+			Type:          "propertyDefinition",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			Name:          "Archived",
+			PropertyType:  "text",
+			Order:         40,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+			DeletedAt:     &deletedAt,
+		},
+		{
+			ID:            "property:foreign",
+			Type:          "propertyDefinition",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:other",
+			Name:          "Foreign",
+			PropertyType:  "text",
+			Order:         10,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+	} {
+		if err := store.UpsertPropertyDefinition(ctx, property); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	properties, err := store.ListPropertyDefinitions(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(properties) != 2 || properties[0].ID != "property:name" || properties[1].ID != "property:priority" {
+		t.Fatalf("expected active properties sorted by order, got %#v", properties)
+	}
+
+	for _, value := range []SelectValueDocument{
+		{
+			ID:            "selectValue:priority:high",
+			Type:          "selectValue",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			PropertyID:    "property:priority",
+			Name:          "High",
+			Color:         "red",
+			Order:         20,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+		{
+			ID:            "selectValue:priority:low",
+			Type:          "selectValue",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			PropertyID:    "property:priority",
+			Name:          "Low",
+			Color:         "green",
+			Order:         10,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+		{
+			ID:            "selectValue:priority:archived",
+			Type:          "selectValue",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			PropertyID:    "property:priority",
+			Name:          "Archived",
+			Order:         30,
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+			UpdatedAt:     "2026-05-15T09:00:00.000Z",
+			DeletedAt:     &deletedAt,
+		},
+	} {
+		if err := store.UpsertSelectValue(ctx, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	selectValues, err := store.ListSelectValues(ctx, "workspace:ops", "property:priority")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(selectValues) != 2 || selectValues[0].ID != "selectValue:priority:low" || selectValues[1].ID != "selectValue:priority:high" {
+		t.Fatalf("expected active select values sorted by order, got %#v", selectValues)
+	}
+
+	for _, value := range []PropertyValueDocument{
+		{
+			ID:          "propertyValue:project-alpha:property-priority",
+			WorkspaceID: "workspace:ops",
+			ObjectID:    "object:project-alpha",
+			ProjectID:   "project:alpha",
+			PropertyID:  "property:priority",
+			Type:        "select",
+			Value:       "selectValue:priority:high",
+			CreatedAt:   "2026-05-15T09:00:00.000Z",
+			UpdatedAt:   "2026-05-15T09:00:00.000Z",
+		},
+		{
+			ID:          "propertyValue:project-beta:property-priority",
+			WorkspaceID: "workspace:ops",
+			ObjectID:    "object:project-beta",
+			ProjectID:   "project:beta",
+			PropertyID:  "property:priority",
+			Type:        "select",
+			Value:       "selectValue:priority:low",
+			CreatedAt:   "2026-05-15T09:00:00.000Z",
+			UpdatedAt:   "2026-05-15T09:00:00.000Z",
+			DeletedAt:   &deletedAt,
+		},
+	} {
+		if err := store.UpsertPropertyValue(ctx, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	propertyValues, err := store.ListPropertyValues(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(propertyValues) != 1 || propertyValues[0].ID != "propertyValue:project-alpha:property-priority" {
+		t.Fatalf("expected active property values only, got %#v", propertyValues)
+	}
+
+	for _, event := range []PropertyHistoryDocument{
+		{
+			ID:            "propertyHistory:2",
+			Type:          "propertyHistory",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			ProjectID:     "project:alpha",
+			PropertyID:    "property:priority",
+			TargetType:    "propertyValue",
+			TargetID:      "propertyValue:project-alpha:property-priority",
+			Action:        "valueChanged",
+			PreviousValue: nil,
+			NextValue:     "selectValue:priority:high",
+			CreatedAt:     "2026-05-15T10:00:00.000Z",
+		},
+		{
+			ID:            "propertyHistory:1",
+			Type:          "propertyHistory",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:ops",
+			PropertyID:    "property:priority",
+			TargetType:    "propertyDefinition",
+			TargetID:      "property:priority",
+			Action:        "created",
+			PreviousValue: nil,
+			NextValue:     "Priority",
+			CreatedAt:     "2026-05-15T09:00:00.000Z",
+		},
+	} {
+		if err := store.AppendPropertyHistory(ctx, event); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	history, err := store.ListPropertyHistory(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(history) != 2 || history[0].ID != "propertyHistory:1" || history[1].ID != "propertyHistory:2" {
+		t.Fatalf("expected property history sorted by createdAt, got %#v", history)
+	}
+}
+
 func stringPtr(value string) *string {
 	return &value
 }
