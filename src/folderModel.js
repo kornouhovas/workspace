@@ -149,8 +149,8 @@ async function listDirectoryTree(directoryHandle, parentPath, rules) {
     const pathParts = [...parentPath, directory.name];
     const path = pathParts.join("/");
     const rule = rules[path] || {};
-    const role = normalizeFolderRole(rule.role);
-    const children = rule.role === "card" ? [] : await listDirectoryTree(directory, pathParts, rules);
+    const role = normalizeFolderRole(rule.role, parentPath.length);
+    const children = role === "card" ? [] : await listDirectoryTree(directory, pathParts, rules);
 
     nodes.push({
       id: createFolderIdFromPath(path),
@@ -205,8 +205,15 @@ function normalizeFolderAccessRules(rules) {
   return rules && typeof rules === "object" ? rules : {};
 }
 
-function normalizeFolderRole(role) {
-  return role === "status" || role === "group" ? role : "card";
+function normalizeFolderRole(role, depth = 0) {
+  if (role === "status" || role === "group") {
+    return role;
+  }
+  if (role === "card") {
+    return "card";
+  }
+
+  return depth === 0 ? "status" : "card";
 }
 
 function createStatusId(name) {

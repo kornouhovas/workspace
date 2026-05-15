@@ -20,6 +20,9 @@ test("renderer composes the workspace product shell", async () => {
     settingsViewSource,
     projectDetailPanelSource,
     lucideIconsSource,
+    boardViewSource,
+    tableViewSource,
+    viewTabsSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -33,6 +36,9 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/settings-view.tsx"),
     readProjectFile("src/components/workspace/project-detail-panel.tsx"),
     readProjectFile("src/lib/lucide-icons.ts"),
+    readProjectFile("src/components/workspace/board-view.tsx"),
+    readProjectFile("src/components/workspace/table-view.tsx"),
+    readProjectFile("src/components/workspace/view-tabs.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -61,11 +67,20 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceViewTabs/);
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
+  assert.match(appSource, /handleCreateView/);
+  assert.match(appSource, /handleRenameView/);
+  assert.match(appSource, /handleDeleteView/);
+  assert.match(appSource, /handleFolderRoleChange/);
   assert.match(appSource, /workspaceClient\.setRoot/);
   assert.match(appSource, /workspaceClient\.scan/);
+  assert.match(appSource, /workspaceClient\.createView/);
+  assert.match(appSource, /workspaceClient\.updateView/);
+  assert.match(appSource, /workspaceClient\.deleteView/);
+  assert.match(appSource, /workspaceClient\.updateFolderRole/);
   assert.match(appSource, /includeCardChildren:\s*true/);
   assert.match(appSource, /normalizeFolderRoleTree/);
   assert.match(appSource, /onSelectFolder/);
+  assert.match(appSource, /onFolderRoleChange/);
   assert.match(appSource, /folderRoleTree=\{folderRoleTree\}/);
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
@@ -73,9 +88,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /useState<WorkspaceMockProject \| null>\(\s*null\s*\)/);
   assert.match(appSource, /activeSurface/);
   assert.match(appSource, /activeSurface === "settings"/);
+  assert.match(appSource, /activeViewType === "board"/);
+  assert.match(appSource, /activeViewType === "table"/);
+  assert.match(appSource, /onProjectOpen=\{handleProjectOpen\}/);
   assert.match(appSource, /searchQueryChanged/);
   assert.match(appSource, /activeViewChanged/);
   assert.match(appSource, /workspaceClient\.setActiveView/);
+  assert.match(appSource, /sidebarCollapsed/);
+  assert.match(appSource, /onToggleCollapsed/);
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);
@@ -91,6 +111,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onSearchQueryChange/);
   assert.match(leftPanelSource, /onWorkspaceOpen/);
   assert.match(leftPanelSource, /onOpenSettings/);
+  assert.match(leftPanelSource, /collapsed/);
+  assert.match(leftPanelSource, /onToggleCollapsed/);
+  assert.match(leftPanelSource, /PanelLeftIcon/);
+  assert.match(leftPanelSource, /pt-7/);
   assert.match(leftPanelSource, /onChange/);
   assert.match(leftPanelSource, /Workspaces/);
   assert.match(leftPanelSource, /Settings/);
@@ -102,11 +126,24 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(settingsViewSource, /Source folder/);
   assert.match(settingsViewSource, /Select folder/);
   assert.match(settingsViewSource, /onSelectFolder/);
+  assert.match(settingsViewSource, /expandedFolderIds/);
+  assert.match(settingsViewSource, /toggleFolderExpanded/);
+  assert.match(settingsViewSource, /ChevronRightIcon/);
+  assert.match(settingsViewSource, /onFolderRoleChange/);
   assert.match(settingsViewSource, /group/);
   assert.match(settingsViewSource, /status/);
   assert.match(settingsViewSource, /project/);
   assert.match(settingsViewSource, /folderRoleTree/);
   assert.match(appSource, /onActiveViewChange/);
+  assert.match(viewTabsSource, /onCreateView/);
+  assert.match(viewTabsSource, /onRenameView/);
+  assert.match(viewTabsSource, /onDeleteView/);
+  assert.match(viewTabsSource, /DropdownMenu/);
+  assert.match(viewTabsSource, /Rename View/);
+  assert.match(viewTabsSource, /Delete View/);
+  assert.match(boardViewSource, /onProjectOpen/);
+  assert.match(tableViewSource, /onProjectOpen/);
+  assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);
   assert.match(projectDetailPanelSource, /Sheet/);
   assert.match(projectDetailPanelSource, /SheetTitle/);

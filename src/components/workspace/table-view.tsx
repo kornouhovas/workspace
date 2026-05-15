@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GripVerticalIcon } from "@/lib/lucide-icons";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 
 type WorkspaceTableProjection = {
@@ -15,6 +16,7 @@ type WorkspaceTableProjection = {
 type WorkspaceTableViewProps = {
   readonly projection: WorkspaceTableProjection;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+  readonly onProjectOpen: (project: WorkspaceMockProject) => void;
 };
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
@@ -29,7 +31,7 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
-export function WorkspaceTableView({ projection, visibleProperties }: WorkspaceTableViewProps) {
+export function WorkspaceTableView({ projection, visibleProperties, onProjectOpen }: WorkspaceTableViewProps) {
   return (
     <section className="flex min-h-0 flex-col gap-3 px-4 pb-4" aria-labelledby="workspace-table-heading">
       <div>
@@ -42,6 +44,7 @@ export function WorkspaceTableView({ projection, visibleProperties }: WorkspaceT
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-9" aria-label="Row reorder" />
               {visibleProperties.map((property) => (
                 <TableHead key={property.id} className="min-w-36">
                   {property.name}
@@ -52,7 +55,22 @@ export function WorkspaceTableView({ projection, visibleProperties }: WorkspaceT
           </TableHeader>
           <TableBody>
             {projection.rows.map((project) => (
-              <TableRow key={project.id}>
+              <TableRow
+                key={project.id}
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer"
+                onClick={() => onProjectOpen(project)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onProjectOpen(project);
+                  }
+                }}
+              >
+                <TableCell className="w-9 text-muted-foreground">
+                  <GripVerticalIcon className="size-4" aria-hidden="true" />
+                </TableCell>
                 {visibleProperties.map((property) => (
                   <TableCell key={property.id} className="max-w-56 truncate">
                     {getPropertyValue(project, property)}

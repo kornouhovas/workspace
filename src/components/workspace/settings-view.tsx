@@ -1,7 +1,10 @@
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ChevronDownIcon, ChevronRightIcon } from "@/lib/lucide-icons";
 import type { WorkspaceFolderRoleNode } from "@/workspaceAppState";
 
 type WorkspaceSourceFolder = {
@@ -15,18 +18,49 @@ type WorkspaceSettingsViewProps = {
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly onSelectFolder: () => void;
   readonly onCloseSettings: () => void;
+  readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
   readonly selectingFolder?: boolean;
 };
 
 const roleOptions = ["group", "status", "project"] as const;
 
-function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceFolderRoleNode; readonly depth?: number }) {
+function FolderRoleNode({
+  node,
+  depth = 0,
+  expandedFolderIds,
+  onToggleFolderExpanded,
+  onFolderRoleChange,
+}: {
+  readonly node: WorkspaceFolderRoleNode;
+  readonly depth?: number;
+  readonly expandedFolderIds: ReadonlySet<string>;
+  readonly onToggleFolderExpanded: (nodeId: string) => void;
+  readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
+}) {
+  const hasChildren = node.children.length > 0;
+  const expanded = expandedFolderIds.has(node.id);
+
   return (
     <li>
       <div
-        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border bg-card px-3 py-2"
         style={{ marginLeft: `${depth * 1.25}rem` }}
       >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          disabled={!hasChildren}
+          aria-label={expanded ? `Collapse ${node.name}` : `Expand ${node.name}`}
+          onClick={() => onToggleFolderExpanded(node.id)}
+        >
+          {expanded ? (
+            <ChevronDownIcon className="size-4" aria-hidden="true" />
+          ) : (
+            <ChevronRightIcon className="size-4" aria-hidden="true" />
+          )}
+        </Button>
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate text-sm font-medium">{node.name}</span>
@@ -36,7 +70,12 @@ function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceFolderRol
         </div>
         <ToggleGroup
           aria-label={`Role for ${node.name}`}
-          defaultValue={node.role}
+          value={node.role}
+          onValueChange={(value) => {
+            if (value === "group" || value === "status" || value === "project") {
+              onFolderRoleChange(node, value);
+            }
+          }}
           size="sm"
           type="single"
           variant="outline"
@@ -48,10 +87,17 @@ function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceFolderRol
           ))}
         </ToggleGroup>
       </div>
-      {node.children.length > 0 ? (
+      {hasChildren && expanded ? (
         <ul className="mt-2 grid gap-2">
           {node.children.map((child) => (
-            <FolderRoleNode key={child.id} node={child} depth={depth + 1} />
+            <FolderRoleNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              expandedFolderIds={expandedFolderIds}
+              onToggleFolderExpanded={onToggleFolderExpanded}
+              onFolderRoleChange={onFolderRoleChange}
+            />
           ))}
         </ul>
       ) : null}
@@ -64,8 +110,24 @@ export function WorkspaceSettingsView({
   folderRoleTree,
   onSelectFolder,
   onCloseSettings,
+  onFolderRoleChange,
   selectingFolder = false,
 }: WorkspaceSettingsViewProps) {
+  const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  function toggleFolderExpanded(nodeId: string) {
+    setExpandedFolderIds((current) => {
+      const next = new Set(current);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+
+      return next;
+    });
+  }
+
   return (
     <section className="grid gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-labelledby="workspace-settings-heading">
       <div className="flex items-center justify-between gap-3 lg:col-span-2">
@@ -113,7 +175,13 @@ export function WorkspaceSettingsView({
         <Separator />
         <ul className="grid max-h-80 gap-2 overflow-auto p-3">
           {folderRoleTree.map((node) => (
-            <FolderRoleNode key={node.id} node={node} />
+            <FolderRoleNode
+              key={node.id}
+              node={node}
+              expandedFolderIds={expandedFolderIds}
+              onToggleFolderExpanded={toggleFolderExpanded}
+              onFolderRoleChange={onFolderRoleChange}
+            />
           ))}
         </ul>
       </div>

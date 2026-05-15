@@ -54,6 +54,10 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     method: "workspace.listPropertyValues",
     payload: { workspaceId: "workspace:root" },
   });
+  assert.deepEqual(await client.updateFolderRole({ path: "Active", role: "status" }), {
+    method: "workspace.updateFolderRole",
+    payload: { path: "Active", role: "status" },
+  });
   assert.deepEqual(await client.listViews({ workspaceId: "workspace:root" }), {
     method: "workspace.listViews",
     payload: { workspaceId: "workspace:root" },
@@ -160,6 +164,7 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
       },
     },
     { method: "workspace.listPropertyValues", payload: { workspaceId: "workspace:root" } },
+    { method: "workspace.updateFolderRole", payload: { path: "Active", role: "status" } },
     { method: "workspace.listViews", payload: { workspaceId: "workspace:root" } },
     {
       method: "workspace.createView",

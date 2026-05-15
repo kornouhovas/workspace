@@ -17,6 +17,7 @@ type WorkspaceBoardProjection = {
 type WorkspaceBoardViewProps = {
   readonly projection: WorkspaceBoardProjection;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+  readonly onProjectOpen: (project: WorkspaceMockProject) => void;
 };
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
@@ -31,7 +32,7 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
-export function WorkspaceBoardView({ projection, visibleProperties }: WorkspaceBoardViewProps) {
+export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpen }: WorkspaceBoardViewProps) {
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
   );
@@ -68,9 +69,11 @@ export function WorkspaceBoardView({ projection, visibleProperties }: WorkspaceB
                   </div>
                 ) : (
                   column.projects.map((project) => (
-                    <article
+                    <button
                       key={project.id}
-                      className="rounded-lg border border-border bg-card p-3 text-card-foreground shadow-xs"
+                      type="button"
+                      className="rounded-lg border border-border bg-card p-3 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                      onClick={() => onProjectOpen(project)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -89,7 +92,7 @@ export function WorkspaceBoardView({ projection, visibleProperties }: WorkspaceB
                           </div>
                         ))}
                       </dl>
-                    </article>
+                    </button>
                   ))
                 )}
               </div>

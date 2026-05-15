@@ -27,7 +27,7 @@ test("workspace IPC handler serves default views and projection for selected sou
   const viewStorePath = join(tempDirectory, "views.json");
 
   try {
-    await mkdir(join(rootPath, "Project Alpha"), { recursive: true });
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
     const handler = createWorkspaceIpcHandler({
       configPath: join(tempDirectory, "settings.json"),
       viewStorePath,
@@ -66,7 +66,7 @@ test("workspace IPC handler tolerates concurrent default workspace initializatio
   const workspaceId = `workspace:${createHash("sha256").update(rootPath).digest("hex").slice(0, 16)}`;
 
   try {
-    await mkdir(join(rootPath, "Project Alpha"), { recursive: true });
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
     await mkdir(join(configPath, ".."), { recursive: true });
     await writeFile(configPath, JSON.stringify({ rootPath }));
 
@@ -91,10 +91,57 @@ test("workspace IPC handler tolerates concurrent default workspace initializatio
     assert.deepEqual(failures, []);
 
     const responses = results.map((result) => result.value);
-    assert.equal(responses[0].tree.some((node) => node.name === "Project Alpha"), true);
+    assert.match(JSON.stringify(responses[0].tree), /Project Alpha/);
     assert.deepEqual(responses[1].views.map((view) => view.viewType), ["board", "table"]);
     assert.equal(responses[2].projection.type, "board");
     assert.deepEqual(responses[4].views.map((view) => view.viewType), ["board", "table"]);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler persists folder role rules for scans and projections", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Archive", "Completed", "Assets"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const defaultScan = await handler(null, "workspace.scan", { includeCardChildren: true });
+    const archiveNode = defaultScan.tree.find((node) => node.name === "Archive");
+    assert.equal(archiveNode.role, "status");
+    assert.equal(archiveNode.children.at(0).role, "card");
+
+    await handler(null, "workspace.updateFolderRole", {
+      path: "Archive",
+      role: "group",
+    });
+    await handler(null, "workspace.updateFolderRole", {
+      path: "Archive/Completed",
+      role: "status",
+    });
+
+    const configuredScan = await handler(null, "workspace.scan", { includeCardChildren: true });
+    const configuredArchiveNode = configuredScan.tree.find((node) => node.name === "Archive");
+    const completedNode = configuredArchiveNode.children.find((node) => node.name === "Completed");
+    assert.equal(configuredArchiveNode.role, "group");
+    assert.equal(completedNode.role, "status");
+
+    const projectionResponse = await handler(null, "workspace.getViewProjection", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewId: "view:default-board",
+    });
+    assert.equal(projectionResponse.projection.type, "board");
+    assert.equal(projectionResponse.projection.columns.at(0).name, "Completed");
+    assert.equal(projectionResponse.projection.columns.at(0).projects.at(0).name, "Assets");
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

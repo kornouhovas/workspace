@@ -285,7 +285,7 @@ test("createScanResponse can include card descendants for settings folder role c
   assert.deepEqual(
     response.payload.folders.map((folder) => [folder.name, folder.status, folder.path]),
     [
-      ["Active", root.split("/").pop(), "Active"],
+      ["Project Alpha", "Active", "Active/Project Alpha"],
       ["Completed", "Archive", "Archive/Completed"],
     ],
   );

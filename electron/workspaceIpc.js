@@ -33,6 +33,7 @@ const supportedMethods = new Set([
   "workspace.listEntries",
   "workspace.saveProperty",
   "workspace.listPropertyValues",
+  "workspace.updateFolderRole",
   "workspace.listViews",
   "workspace.createView",
   "workspace.setActiveView",
@@ -98,7 +99,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         );
       }
 
-      await writeWorkspaceSettings(configPath, { rootPath });
+      await writeWorkspaceSettings(configPath, { rootPath, folderRules: {} });
       const workspaceId = createWorkspaceId(rootPath);
       await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
       return createRootResponse(rootPath);
@@ -114,11 +115,35 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.scan") {
+      const settings = await readWorkspaceSettings(configPath);
       return unwrapBackendResponse(await createScanResponse({
         root: root.root.rootPath,
-        rules: body.rules || {},
+        rules: body.rules || normalizeFolderRules(settings.folderRules),
         includeCardChildren: body.includeCardChildren === true,
       }));
+    }
+
+    if (method === "workspace.updateFolderRole") {
+      const path = requirePayloadString(body, "path");
+      const role = normalizeRequestedFolderRole(body.role);
+      const settings = await readWorkspaceSettings(configPath);
+      const folderRules = normalizeFolderRules(settings.folderRules);
+      folderRules[path] = {
+        ...(folderRules[path] || {}),
+        role,
+      };
+
+      await writeWorkspaceSettings(configPath, {
+        ...settings,
+        rootPath: root.root.rootPath,
+        folderRules,
+      });
+
+      return {
+        path,
+        role: role === "card" ? "project" : role,
+        folderRules,
+      };
     }
 
     if (method === "workspace.listEntries") {
@@ -147,7 +172,12 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (method === "workspace.updateView") {
       const propertyDefinitions = createDefaultPropertySchemas(body.workspaceId);
-      const statusValues = await getStatusValues({ rootPath: root.root.rootPath, workspaceId: body.workspaceId });
+      const settings = await readWorkspaceSettings(configPath);
+      const statusValues = await getStatusValues({
+        rootPath: root.root.rootPath,
+        workspaceId: body.workspaceId,
+        rules: normalizeFolderRules(settings.folderRules),
+      });
       return unwrapBackendResponse(await createUpdateViewResponse({
         body,
         viewStore,
@@ -166,15 +196,25 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.getViewProjection") {
+      const settings = await readWorkspaceSettings(configPath);
+      const rules = normalizeFolderRules(settings.folderRules);
       return unwrapBackendResponse(await createViewProjectionResponse({
         body,
         viewStore,
         projectProvider: async ({ workspaceId }) => {
-          const { projects } = await getProjectsAndStatusValues({ rootPath: root.root.rootPath, workspaceId });
+          const { projects } = await getProjectsAndStatusValues({
+            rootPath: root.root.rootPath,
+            workspaceId,
+            rules,
+          });
           return projects;
         },
         propertyProvider: async ({ workspaceId }) => {
-          const { statusValues } = await getProjectsAndStatusValues({ rootPath: root.root.rootPath, workspaceId });
+          const { statusValues } = await getProjectsAndStatusValues({
+            rootPath: root.root.rootPath,
+            workspaceId,
+            rules,
+          });
           return {
             visibleProperties: createDefaultPropertySchemas(workspaceId).map(toVisibleProperty),
             statusValues,
@@ -271,8 +311,8 @@ async function ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now })
   });
 }
 
-async function getProjectsAndStatusValues({ rootPath, workspaceId }) {
-  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules: {} }));
+async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} }) {
+  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
     workspaceId,
     rootPath,
@@ -300,9 +340,56 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId }) {
   };
 }
 
-async function getStatusValues({ rootPath, workspaceId }) {
-  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId });
+async function getStatusValues({ rootPath, workspaceId, rules = {} }) {
+  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, rules });
   return statusValues;
+}
+
+function requirePayloadString(body, field) {
+  const value = typeof body?.[field] === "string" ? body[field].trim() : "";
+  if (!value) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", `${field} is required.`, field);
+  }
+
+  return value;
+}
+
+function normalizeRequestedFolderRole(role) {
+  if (role === "group" || role === "status") {
+    return role;
+  }
+  if (role === "project" || role === "card") {
+    return "card";
+  }
+
+  throw createWorkspaceServiceError(
+    "VALIDATION_FAILED",
+    "Folder role must be group, status, or project.",
+    "role",
+  );
+}
+
+function normalizeFolderRules(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([path, rule]) => typeof path === "string" && path.trim() && rule && typeof rule === "object")
+      .map(([path, rule]) => {
+        const role = rule.role === "group" || rule.role === "status" || rule.role === "card"
+          ? rule.role
+          : "card";
+        return [
+          path.trim(),
+          {
+            ...rule,
+            role,
+          },
+        ];
+      }),
+  );
 }
 
 function createStatusValues(workspaceId, objects) {

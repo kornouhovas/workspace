@@ -23,6 +23,7 @@ import {
   type WorkspaceFolderRoleNode,
   type WorkspaceProjectionResponse,
   type WorkspaceRootState,
+  type WorkspaceViewState,
   type WorkspaceViewsResponse,
 } from "@/workspaceAppState";
 import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";
@@ -85,12 +86,16 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   return response as WorkspaceProjectionResponse;
 }
 
-function normalizeFolderRole(role: unknown): WorkspaceFolderRole {
+function normalizeFolderRole(role: unknown, depth = 0): WorkspaceFolderRole {
   if (role === "group" || role === "status") {
     return role;
   }
 
-  return "project";
+  if (role === "project" || role === "card") {
+    return "project";
+  }
+
+  return depth === 0 ? "status" : "project";
 }
 
 function getFolderRoleStatus(role: WorkspaceFolderRole, childCount: number) {
@@ -104,7 +109,7 @@ function getFolderRoleStatus(role: WorkspaceFolderRole, childCount: number) {
   return childCount > 0 ? "Contains folders" : "Discovered";
 }
 
-function normalizeFolderRoleNode(node: Record<string, unknown>): WorkspaceFolderRoleNode | null {
+function normalizeFolderRoleNode(node: Record<string, unknown>, depth = 0): WorkspaceFolderRoleNode | null {
   const relativePath = getString(node.path) || getString(node.relativePath);
   const name = getString(node.name) || getNameFromPath(relativePath);
   if (!relativePath && !name) {
@@ -114,10 +119,10 @@ function normalizeFolderRoleNode(node: Record<string, unknown>): WorkspaceFolder
   const children = Array.isArray(node.children)
     ? node.children
         .filter(isRecord)
-        .map(normalizeFolderRoleNode)
+        .map((child) => normalizeFolderRoleNode(child, depth + 1))
         .filter((child): child is WorkspaceFolderRoleNode => child !== null)
     : [];
-  const role = normalizeFolderRole(node.role);
+  const role = normalizeFolderRole(node.role, depth);
 
   return {
     id: getString(node.id) || `folder:${relativePath || name}`,
@@ -178,6 +183,7 @@ export default function App() {
   );
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const workspaceClient = useMemo(
@@ -267,11 +273,107 @@ export default function App() {
     }
   }
 
+  async function handleCreateView(viewType: "board" | "table") {
+    if (!state.workspaceId) {
+      toast.error("Select a source folder before creating views.");
+      return;
+    }
+
+    const label = viewType === "board" ? "Board" : "Table";
+    const currentViews = state.views.length > 0 ? state.views : workspaceMockProjection.views;
+    const nextIndex = currentViews.filter((view) => view.viewType === viewType).length + 1;
+
+    try {
+      await workspaceClient.createView({
+        workspaceId: state.workspaceId,
+        viewType,
+        name: `${label} ${nextIndex}`,
+      });
+      toast.success("View created");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not create view", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleRenameView(viewId: string, name: string) {
+    if (!state.workspaceId) {
+      toast.error("Select a source folder before renaming views.");
+      return;
+    }
+
+    try {
+      await workspaceClient.updateView({
+        workspaceId: state.workspaceId,
+        viewId,
+        patch: { name },
+      });
+      toast.success("View renamed");
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not rename view", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleDeleteView(viewId: string) {
+    if (!state.workspaceId) {
+      toast.error("Select a source folder before deleting views.");
+      return;
+    }
+
+    try {
+      await workspaceClient.deleteView({
+        workspaceId: state.workspaceId,
+        viewId,
+      });
+      toast.success("View deleted");
+      setSelectedProject(null);
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not delete view", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleFolderRoleChange(
+    node: WorkspaceFolderRoleNode,
+    role: WorkspaceFolderRoleNode["role"],
+  ) {
+    if (!state.root) {
+      toast.error("Select a source folder before changing folder roles.");
+      return;
+    }
+
+    try {
+      await workspaceClient.updateFolderRole({
+        path: node.relativePath,
+        role,
+      });
+      toast.success("Folder role updated");
+      setSelectedProject(null);
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not update folder role", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  function handleProjectOpen(project: WorkspaceMockProject) {
+    setSelectedProject(project);
+  }
+
   function openWorkspaceSurface() {
     setActiveSurface("workspace");
   }
 
   function openSettingsSurface() {
+    setSelectedProject(null);
     setActiveSurface("settings");
   }
 
@@ -287,14 +389,19 @@ export default function App() {
       }
     : workspaceMockSettings.sourceFolder;
   const serviceProjection = state.projection;
+  const activeView = viewState.views.find((view) => view.id === viewState.activeViewId) as
+    | WorkspaceViewState
+    | undefined;
+  const activeViewType = activeView?.viewType === "table" ? "table" : "board";
+  const projectionMatchesActiveView = serviceProjection?.view.id === viewState.activeViewId;
   const visibleProperties =
     serviceProjection?.visibleProperties ?? workspaceMockProjection.visibleProperties;
   const boardProjection =
-    serviceProjection?.projection.type === "board"
+    projectionMatchesActiveView && serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
       : workspaceMockProjection.projection;
   const tableProjection =
-    serviceProjection?.projection.type === "table"
+    projectionMatchesActiveView && serviceProjection?.projection.type === "table"
       ? serviceProjection.projection
       : workspaceMockProjection.tableProjection;
   const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
@@ -304,7 +411,9 @@ export default function App() {
       <div className="dark flex h-screen min-h-0 bg-background text-foreground">
         <WorkspaceLeftPanel
           activeSurface={activeSurface}
+          collapsed={sidebarCollapsed}
           searchQuery={state.searchQuery}
+          onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
           onSearchQueryChange={(searchQuery) => {
             dispatch({ type: "searchQueryChanged", searchQuery });
           }}
@@ -329,6 +438,7 @@ export default function App() {
                     folderRoleTree={folderRoleTree}
                     onSelectFolder={handleSelectFolder}
                     onCloseSettings={openWorkspaceSurface}
+                    onFolderRoleChange={handleFolderRoleChange}
                     selectingFolder={selectingFolder}
                   />
                 </>
@@ -352,6 +462,9 @@ export default function App() {
                     });
                   }
                 }}
+                onCreateView={handleCreateView}
+                onRenameView={handleRenameView}
+                onDeleteView={handleDeleteView}
               />
               <div className="min-h-0 flex-1 overflow-auto">
                 {state.status === "loading" || state.status === "idle" ? (
@@ -361,14 +474,20 @@ export default function App() {
                 ) : (
                   <>
                     <WorkspaceServiceError state={state} />
-                    <WorkspaceBoardView
-                      projection={boardProjection as typeof workspaceMockProjection.projection}
-                      visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                    />
-                    <WorkspaceTableView
-                      projection={tableProjection as typeof workspaceMockProjection.tableProjection}
-                      visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                    />
+                    {activeViewType === "board" ? (
+                      <WorkspaceBoardView
+                        projection={boardProjection as typeof workspaceMockProjection.projection}
+                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        onProjectOpen={handleProjectOpen}
+                      />
+                    ) : null}
+                    {activeViewType === "table" ? (
+                      <WorkspaceTableView
+                        projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        onProjectOpen={handleProjectOpen}
+                      />
+                    ) : null}
                   </>
                 )}
               </div>

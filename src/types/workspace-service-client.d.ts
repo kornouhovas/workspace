@@ -8,8 +8,18 @@ declare module "@/workspaceServiceClient.js" {
     getRoot(): Promise<unknown>;
     setRoot(payload: Record<string, unknown>): Promise<unknown>;
     scan(payload: Record<string, unknown>): Promise<unknown>;
+    listEntries(payload: Record<string, unknown>): Promise<unknown>;
+    saveProperty(payload: Record<string, unknown>): Promise<unknown>;
+    listPropertyValues(payload: Record<string, unknown>): Promise<unknown>;
+    updateFolderRole(payload: Record<string, unknown>): Promise<unknown>;
     listViews(payload: Record<string, unknown>): Promise<unknown>;
+    createView(payload: Record<string, unknown>): Promise<unknown>;
     setActiveView(payload: Record<string, unknown>): Promise<unknown>;
+    updateView(payload: Record<string, unknown>): Promise<unknown>;
+    reorderViews(payload: Record<string, unknown>): Promise<unknown>;
+    deleteView(payload: Record<string, unknown>): Promise<unknown>;
     getViewProjection(payload: Record<string, unknown>): Promise<unknown>;
+    reveal(payload: Record<string, unknown>): Promise<unknown>;
+    previewFile(payload: Record<string, unknown>): Promise<unknown>;
   }
 }

@@ -31,6 +31,10 @@ export class WorkspaceServiceClient {
     return this.request("workspace.listPropertyValues", payload);
   }
 
+  updateFolderRole(payload) {
+    return this.request("workspace.updateFolderRole", payload);
+  }
+
   listViews(payload) {
     return this.request("workspace.listViews", payload);
   }

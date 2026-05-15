@@ -508,7 +508,7 @@ async function listWorkspaceAccessTree(root, rules, parentPath = [], options = {
     const pathParts = [...parentPath, entry.name];
     const path = pathParts.join("/");
     const rule = rules?.[path] || {};
-    const role = normalizeFolderRole(rule.role);
+    const role = normalizeFolderRole(rule.role, parentPath.length);
     const children = role === "card" && !options.includeCardChildren
       ? []
       : await listWorkspaceAccessTree(root, rules, pathParts, options);
@@ -610,8 +610,15 @@ function compareFolderEntries(left, right) {
   return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
 }
 
-function normalizeFolderRole(role) {
-  return role === "status" || role === "group" ? role : "card";
+function normalizeFolderRole(role, depth = 0) {
+  if (role === "status" || role === "group") {
+    return role;
+  }
+  if (role === "card") {
+    return "card";
+  }
+
+  return depth === 0 ? "status" : "card";
 }
 
 function createFolderIdFromPath(path) {
