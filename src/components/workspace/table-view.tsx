@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -34,6 +27,11 @@ type WorkspaceTableProjection = {
   readonly rows: readonly WorkspaceMockProject[];
 };
 
+type PropertyTypeOption = {
+  readonly value: WorkspaceCustomPropertyType;
+  readonly label: string;
+};
+
 type WorkspaceTableViewProps = {
   readonly projection: WorkspaceTableProjection;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
@@ -47,12 +45,9 @@ type WorkspaceTableViewProps = {
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
 };
 
-const propertyTypeOptions: readonly {
-  readonly value: WorkspaceCustomPropertyType;
-  readonly label: string;
-}[] = [
+const propertyTypeOptions: readonly PropertyTypeOption[] = [
   { value: "text", label: "Text" },
-  { value: "number", label: "Numbers" },
+  { value: "number", label: "Number" },
   { value: "date", label: "Date" },
   { value: "select", label: "Select" },
   { value: "multi-select", label: "Multi-select" },
@@ -136,12 +131,8 @@ export function WorkspaceTableView({
   onReorderViewProperties,
   onTogglePropertyVisibility,
 }: WorkspaceTableViewProps) {
-  const [newPropertyName, setNewPropertyName] = useState("");
-  const [newPropertyType, setNewPropertyType] = useState<WorkspaceCustomPropertyType>("text");
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
-  const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
-  const [pointerDraggedPropertyId, setPointerDraggedPropertyId] = useState<string | null>(null);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [resizingColumn, setResizingColumn] = useState<{
     readonly propertyId: string;
@@ -214,46 +205,6 @@ export function WorkspaceTableView({
     };
   }, [resizingColumn]);
 
-  useEffect(() => {
-    const activeDraggedPropertyId = pointerDraggedPropertyId;
-
-    if (!activeDraggedPropertyId) {
-      return undefined;
-    }
-
-    const draggedPropertyId: string = activeDraggedPropertyId;
-    const previousCursor = document.body.style.cursor;
-    const previousUserSelect = document.body.style.userSelect;
-
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-
-    function movePointerDraggedColumn(event: PointerEvent) {
-      const targetColumn = document
-        .elementFromPoint(event.clientX, event.clientY)
-        ?.closest<HTMLElement>("[data-property-column-id]");
-      const targetPropertyId = targetColumn?.dataset.propertyColumnId;
-
-      if (targetPropertyId && targetPropertyId !== draggedPropertyId) {
-        reorderColumnFromTo(draggedPropertyId, targetPropertyId);
-      }
-    }
-
-    function finishPointerDraggedColumn() {
-      setPointerDraggedPropertyId(null);
-    }
-
-    window.addEventListener("pointermove", movePointerDraggedColumn);
-    window.addEventListener("pointerup", finishPointerDraggedColumn, { once: true });
-
-    return () => {
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
-      window.removeEventListener("pointermove", movePointerDraggedColumn);
-      window.removeEventListener("pointerup", finishPointerDraggedColumn);
-    };
-  }, [pointerDraggedPropertyId, visibleProperties]);
-
   function beginRenameProperty(property: WorkspaceMockVisibleProperty) {
     if (isSystemProperty(property.id)) {
       return;
@@ -273,24 +224,8 @@ export function WorkspaceTableView({
     }
   }
 
-  function createProperty() {
-    const name = newPropertyName.trim();
-    if (!name) {
-      return;
-    }
-
-    onCreateProperty({ name, type: newPropertyType });
-    setNewPropertyName("");
-    setNewPropertyType("text");
-  }
-
-  function startColumnDrag(
-    event: ReactDragEvent<HTMLTableCellElement>,
-    propertyId: string,
-  ) {
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", propertyId);
-    setDraggedPropertyId(propertyId);
+  function createPropertyFromType(option: PropertyTypeOption) {
+    onCreateProperty({ name: option.label, type: option.value });
   }
 
   function reorderColumnFromTo(sourcePropertyId: string, targetPropertyId: string) {
@@ -310,15 +245,6 @@ export function WorkspaceTableView({
     const [draggedId] = nextPropertyIds.splice(fromIndex, 1);
     nextPropertyIds.splice(toIndex, 0, draggedId);
     onReorderViewProperties(nextPropertyIds);
-  }
-
-  function reorderColumn(targetPropertyId: string) {
-    if (!draggedPropertyId) {
-      return;
-    }
-
-    reorderColumnFromTo(draggedPropertyId, targetPropertyId);
-    setDraggedPropertyId(null);
   }
 
   function startColumnResize(
@@ -341,7 +267,34 @@ export function WorkspaceTableView({
   ) {
     event.preventDefault();
     event.stopPropagation();
-    setPointerDraggedPropertyId(propertyId);
+
+    let lastTargetPropertyId = propertyId;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    function movePointerDraggedColumn(pointerEvent: PointerEvent) {
+      const targetColumn = document
+        .elementFromPoint(pointerEvent.clientX, pointerEvent.clientY)
+        ?.closest<HTMLElement>("[data-property-column-id]");
+      const targetPropertyId = targetColumn?.dataset.propertyColumnId;
+
+      if (targetPropertyId && targetPropertyId !== lastTargetPropertyId) {
+        lastTargetPropertyId = targetPropertyId;
+        reorderColumnFromTo(propertyId, targetPropertyId);
+      }
+    }
+
+    function finishPointerDraggedColumn() {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", movePointerDraggedColumn);
+    }
+
+    window.addEventListener("pointermove", movePointerDraggedColumn);
+    window.addEventListener("pointerup", finishPointerDraggedColumn, { once: true });
   }
 
   return (
@@ -352,7 +305,7 @@ export function WorkspaceTableView({
         </h2>
         <p className="text-xs text-muted-foreground">Rows use the same project set as the Board projection.</p>
       </div>
-      <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border">
+      <div className="min-h-0 w-full flex-1 overflow-auto">
         <Table className="table-fixed" style={{ width: tableWidth }}>
           <colgroup>
             <col style={{ width: rowHandleColumnWidth }} />
@@ -370,19 +323,9 @@ export function WorkspaceTableView({
                 return (
                   <TableHead
                     key={property.id}
-                    className="group/column relative border-r border-border/50"
-                    draggable
+                    className="group/column relative border-r border-border/50 pl-8"
                     data-property-column-id={property.id}
                     style={{ width: propertyColumnWidth }}
-                    onDragStart={(event) => startColumnDrag(event, property.id)}
-                    onDragOver={(event) => {
-                      if (draggedPropertyId) {
-                        event.preventDefault();
-                        event.dataTransfer.dropEffect = "move";
-                      }
-                    }}
-                    onDrop={() => reorderColumn(property.id)}
-                    onDragEnd={() => setDraggedPropertyId(null)}
                   >
                     {editingPropertyId === property.id ? (
                       <Input
@@ -413,7 +356,7 @@ export function WorkspaceTableView({
                             className="group relative flex h-8 w-full min-w-0 cursor-grab items-center rounded-md text-left hover:bg-muted active:cursor-grabbing"
                             aria-label={`${property.name} property actions`}
                           >
-                            <span className="block min-w-0 truncate pr-11">{property.name}</span>
+                            <span className="block min-w-0 truncate pr-7">{property.name}</span>
                             <MoreHorizontalIcon className="absolute right-1 top-1/2 size-3.5 -translate-y-1/2 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" aria-hidden="true" />
                           </button>
                         </DropdownMenuTrigger>
@@ -444,7 +387,7 @@ export function WorkspaceTableView({
                     )}
                     <button
                       type="button"
-                      className="absolute right-6 top-1/2 z-20 flex size-5 -translate-y-1/2 cursor-grab items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground active:cursor-grabbing group-hover/column:opacity-100 focus-visible:opacity-100"
+                      className="absolute left-1 top-1/2 z-20 flex size-5 -translate-y-1/2 cursor-grab items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
                       aria-label={`Drag ${property.name} column`}
                       onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
                     >
@@ -459,56 +402,23 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="sticky right-0 z-20 w-12 border-l border-border bg-card">
+              <TableHead className="w-12 border-l border-border bg-background">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button type="button" variant="ghost" size="icon-sm" aria-label="Add property column">
                       <PlusIcon className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72 p-3">
-                    <div className="grid gap-2">
-                      <p className="text-sm font-medium">New property</p>
-                      <Input
-                        value={newPropertyName}
-                        placeholder="Property name"
-                        aria-label="New property name"
-                        onChange={(event) => setNewPropertyName(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            createProperty();
-                          }
-                        }}
-                      />
-                      <Select
-                        value={newPropertyType}
-                        onValueChange={(value) => {
-                          if (
-                            value === "text" ||
-                            value === "number" ||
-                            value === "date" ||
-                            value === "select" ||
-                            value === "multi-select"
-                          ) {
-                            setNewPropertyType(value);
-                          }
-                        }}
+                  <DropdownMenuContent align="end" className="w-52 p-1">
+                    <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Add property</p>
+                    {propertyTypeOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={() => createPropertyFromType(option)}
                       >
-                        <SelectTrigger aria-label="New property type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {propertyTypeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" onClick={createProperty}>
-                        Add property
-                      </Button>
-                    </div>
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
                     {hiddenViewProperties.length > 0 ? (
                       <>
                         <DropdownMenuSeparator />
@@ -557,7 +467,7 @@ export function WorkspaceTableView({
                     {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                   </TableCell>
                 ))}
-                <TableCell className="sticky right-0 border-l border-border bg-card" aria-hidden="true" />
+                <TableCell className="border-l border-border bg-background" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>
