@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { DragEvent as ReactDragEvent, PointerEvent as ReactPointerEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,28 @@ const propertyTypeOptions: readonly {
   { value: "select", label: "Select" },
   { value: "multi-select", label: "Multi-select" },
 ];
+
+const rowHandleColumnWidth = 40;
+const addPropertyColumnWidth = 48;
+const minimumPropertyColumnWidth = 132;
+const maximumPropertyColumnWidth = 520;
+const defaultCustomPropertyColumnWidth = 180;
+
+function getDefaultPropertyColumnWidth(property: WorkspaceMockVisibleProperty) {
+  if (property.id === "property:name") {
+    return 260;
+  }
+
+  if (property.id === "property:status") {
+    return 180;
+  }
+
+  return defaultCustomPropertyColumnWidth;
+}
+
+function clampPropertyColumnWidth(width: number) {
+  return Math.min(maximumPropertyColumnWidth, Math.max(minimumPropertyColumnWidth, width));
+}
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
   const backendProject = project as WorkspaceMockProject & { readonly folderStatus?: string };
@@ -118,6 +141,13 @@ export function WorkspaceTableView({
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
+  const [pointerDraggedPropertyId, setPointerDraggedPropertyId] = useState<string | null>(null);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [resizingColumn, setResizingColumn] = useState<{
+    readonly propertyId: string;
+    readonly startX: number;
+    readonly startWidth: number;
+  } | null>(null);
   const visiblePropertyIds = useMemo(
     () => new Set(visibleProperties.map((property) => property.id)),
     [visibleProperties],
@@ -130,6 +160,99 @@ export function WorkspaceTableView({
     )),
     [properties, visiblePropertyIds],
   );
+  const visiblePropertyWidths = useMemo(() => (
+    Object.fromEntries(
+      visibleProperties.map((property) => [
+        property.id,
+        columnWidths[property.id] ?? getDefaultPropertyColumnWidth(property),
+      ]),
+    ) as Record<string, number>
+  ), [columnWidths, visibleProperties]);
+  const tableWidth = useMemo(() => (
+    rowHandleColumnWidth +
+    addPropertyColumnWidth +
+    visibleProperties.reduce((totalWidth, property) => totalWidth + visiblePropertyWidths[property.id], 0)
+  ), [visibleProperties, visiblePropertyWidths]);
+
+  useEffect(() => {
+    const activeResize = resizingColumn;
+
+    if (!activeResize) {
+      return undefined;
+    }
+
+    const { propertyId, startX, startWidth } = activeResize;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    function resizePropertyColumn(event: PointerEvent) {
+      const nextWidth = clampPropertyColumnWidth(
+        startWidth + event.clientX - startX,
+      );
+
+      setColumnWidths((currentColumnWidths) => ({
+        ...currentColumnWidths,
+        [propertyId]: nextWidth,
+      }));
+    }
+
+    function finishPropertyColumnResize() {
+      setResizingColumn(null);
+    }
+
+    window.addEventListener("pointermove", resizePropertyColumn);
+    window.addEventListener("pointerup", finishPropertyColumnResize, { once: true });
+
+    return () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", resizePropertyColumn);
+      window.removeEventListener("pointerup", finishPropertyColumnResize);
+    };
+  }, [resizingColumn]);
+
+  useEffect(() => {
+    const activeDraggedPropertyId = pointerDraggedPropertyId;
+
+    if (!activeDraggedPropertyId) {
+      return undefined;
+    }
+
+    const draggedPropertyId: string = activeDraggedPropertyId;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    function movePointerDraggedColumn(event: PointerEvent) {
+      const targetColumn = document
+        .elementFromPoint(event.clientX, event.clientY)
+        ?.closest<HTMLElement>("[data-property-column-id]");
+      const targetPropertyId = targetColumn?.dataset.propertyColumnId;
+
+      if (targetPropertyId && targetPropertyId !== draggedPropertyId) {
+        reorderColumnFromTo(draggedPropertyId, targetPropertyId);
+      }
+    }
+
+    function finishPointerDraggedColumn() {
+      setPointerDraggedPropertyId(null);
+    }
+
+    window.addEventListener("pointermove", movePointerDraggedColumn);
+    window.addEventListener("pointerup", finishPointerDraggedColumn, { once: true });
+
+    return () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", movePointerDraggedColumn);
+      window.removeEventListener("pointerup", finishPointerDraggedColumn);
+    };
+  }, [pointerDraggedPropertyId, visibleProperties]);
 
   function beginRenameProperty(property: WorkspaceMockVisibleProperty) {
     if (isSystemProperty(property.id)) {
@@ -161,26 +284,64 @@ export function WorkspaceTableView({
     setNewPropertyType("text");
   }
 
-  function reorderColumn(targetPropertyId: string) {
-    if (!draggedPropertyId || draggedPropertyId === targetPropertyId) {
-      setDraggedPropertyId(null);
+  function startColumnDrag(
+    event: ReactDragEvent<HTMLTableCellElement>,
+    propertyId: string,
+  ) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", propertyId);
+    setDraggedPropertyId(propertyId);
+  }
+
+  function reorderColumnFromTo(sourcePropertyId: string, targetPropertyId: string) {
+    if (sourcePropertyId === targetPropertyId) {
       return;
     }
 
     const orderedPropertyIds = visibleProperties.map((property) => property.id);
-    const fromIndex = orderedPropertyIds.indexOf(draggedPropertyId);
+    const fromIndex = orderedPropertyIds.indexOf(sourcePropertyId);
     const toIndex = orderedPropertyIds.indexOf(targetPropertyId);
 
     if (fromIndex === -1 || toIndex === -1) {
-      setDraggedPropertyId(null);
       return;
     }
 
     const nextPropertyIds = [...orderedPropertyIds];
     const [draggedId] = nextPropertyIds.splice(fromIndex, 1);
     nextPropertyIds.splice(toIndex, 0, draggedId);
-    setDraggedPropertyId(null);
     onReorderViewProperties(nextPropertyIds);
+  }
+
+  function reorderColumn(targetPropertyId: string) {
+    if (!draggedPropertyId) {
+      return;
+    }
+
+    reorderColumnFromTo(draggedPropertyId, targetPropertyId);
+    setDraggedPropertyId(null);
+  }
+
+  function startColumnResize(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    property: WorkspaceMockVisibleProperty,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setResizingColumn({
+      propertyId: property.id,
+      startX: event.clientX,
+      startWidth: visiblePropertyWidths[property.id],
+    });
+  }
+
+  function startPointerColumnDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    propertyId: string,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPointerDraggedPropertyId(propertyId);
   }
 
   return (
@@ -192,86 +353,112 @@ export function WorkspaceTableView({
         <p className="text-xs text-muted-foreground">Rows use the same project set as the Board projection.</p>
       </div>
       <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border">
-        <Table className="w-full">
+        <Table className="table-fixed" style={{ width: tableWidth }}>
+          <colgroup>
+            <col style={{ width: rowHandleColumnWidth }} />
+            {visibleProperties.map((property) => (
+              <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
+            ))}
+            <col style={{ width: addPropertyColumnWidth }} />
+          </colgroup>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-9" aria-label="Row reorder" />
-              {visibleProperties.map((property) => (
-                <TableHead
-                  key={property.id}
-                  className="min-w-36"
-                  draggable
-                  onDragStart={() => setDraggedPropertyId(property.id)}
-                  onDragOver={(event) => {
-                    if (draggedPropertyId) {
-                      event.preventDefault();
-                    }
-                  }}
-                  onDrop={() => reorderColumn(property.id)}
-                >
-                  {editingPropertyId === property.id ? (
-                    <Input
-                      value={editingPropertyName}
-                      aria-label="Rename property"
-                      className="h-7 min-w-36"
-                      autoFocus
-                      onChange={(event) => setEditingPropertyName(event.target.value)}
-                      onBlur={() => commitRenameProperty(property.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          commitRenameProperty(property.id);
-                        }
+              <TableHead className="w-10" aria-label="Row reorder" />
+              {visibleProperties.map((property) => {
+                const propertyColumnWidth = visiblePropertyWidths[property.id];
 
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          setEditingPropertyId(null);
-                          setEditingPropertyName("");
-                        }
-                      }}
+                return (
+                  <TableHead
+                    key={property.id}
+                    className="group/column relative border-r border-border/50"
+                    draggable
+                    data-property-column-id={property.id}
+                    style={{ width: propertyColumnWidth }}
+                    onDragStart={(event) => startColumnDrag(event, property.id)}
+                    onDragOver={(event) => {
+                      if (draggedPropertyId) {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                      }
+                    }}
+                    onDrop={() => reorderColumn(property.id)}
+                    onDragEnd={() => setDraggedPropertyId(null)}
+                  >
+                    {editingPropertyId === property.id ? (
+                      <Input
+                        value={editingPropertyName}
+                        aria-label="Rename property"
+                        className="h-7 w-full min-w-0 rounded-md px-1.5 text-sm"
+                        autoFocus
+                        onChange={(event) => setEditingPropertyName(event.target.value)}
+                        onBlur={() => commitRenameProperty(property.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            commitRenameProperty(property.id);
+                          }
+
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            setEditingPropertyId(null);
+                            setEditingPropertyName("");
+                          }
+                        }}
+                      />
+                    ) : (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="group relative flex h-8 w-full min-w-0 cursor-grab items-center rounded-md text-left hover:bg-muted active:cursor-grabbing"
+                            aria-label={`${property.name} property actions`}
+                          >
+                            <span className="block min-w-0 truncate pr-11">{property.name}</span>
+                            <MoreHorizontalIcon className="absolute right-1 top-1/2 size-3.5 -translate-y-1/2 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" aria-hidden="true" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="min-w-44">
+                          <DropdownMenuItem disabled={isSystemProperty(property.id)} onSelect={() => beginRenameProperty(property)}>
+                            Rename property
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={isSystemProperty(property.id)}
+                            onSelect={() => onTogglePropertyVisibility(property.id, false)}
+                          >
+                            Hide from view
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            disabled={isSystemProperty(property.id)}
+                            variant="destructive"
+                            onSelect={() => {
+                              if (window.confirm(`Delete property "${property.name}"?`)) {
+                                onDeleteProperty(property.id);
+                              }
+                            }}
+                          >
+                            Delete property
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    <button
+                      type="button"
+                      className="absolute right-6 top-1/2 z-20 flex size-5 -translate-y-1/2 cursor-grab items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground active:cursor-grabbing group-hover/column:opacity-100 focus-visible:opacity-100"
+                      aria-label={`Drag ${property.name} column`}
+                      onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
+                    >
+                      <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 z-10 w-1.5 cursor-col-resize touch-none rounded-sm hover:bg-primary/50"
+                      aria-label={`Resize ${property.name} column`}
+                      onPointerDown={(event) => startColumnResize(event, property)}
                     />
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="group inline-flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-md px-1 text-left hover:bg-muted"
-                          aria-label={`${property.name} property actions`}
-                        >
-                          <span className="flex min-w-0 items-center gap-1.5">
-                            <GripVerticalIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <span className="truncate">{property.name}</span>
-                          </span>
-                          <MoreHorizontalIcon className="size-3.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" aria-hidden="true" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="min-w-44">
-                        <DropdownMenuItem disabled={isSystemProperty(property.id)} onSelect={() => beginRenameProperty(property)}>
-                          Rename property
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={isSystemProperty(property.id)}
-                          onSelect={() => onTogglePropertyVisibility(property.id, false)}
-                        >
-                          Hide from view
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          disabled={isSystemProperty(property.id)}
-                          variant="destructive"
-                          onSelect={() => {
-                            if (window.confirm(`Delete property "${property.name}"?`)) {
-                              onDeleteProperty(property.id);
-                            }
-                          }}
-                        >
-                          Delete property
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </TableHead>
-              ))}
+                  </TableHead>
+                );
+              })}
               <TableHead className="sticky right-0 z-20 w-12 border-l border-border bg-card">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -358,11 +545,15 @@ export function WorkspaceTableView({
                   }
                 }}
               >
-                <TableCell className="w-9 text-muted-foreground">
+                <TableCell className="w-10 text-muted-foreground">
                   <GripVerticalIcon className="size-4" aria-hidden="true" />
                 </TableCell>
                 {visibleProperties.map((property) => (
-                  <TableCell key={property.id} className="max-w-56 truncate">
+                  <TableCell
+                    key={property.id}
+                    className="truncate border-r border-border/40"
+                    style={{ width: visiblePropertyWidths[property.id] }}
+                  >
                     {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                   </TableCell>
                 ))}
