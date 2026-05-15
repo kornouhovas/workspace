@@ -142,6 +142,31 @@ test("workspace app state updates search query without changing service response
   assert.equal(state.activeViewId, "view:board");
 });
 
+test("workspace app state updates projection without returning to loading", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const nextProjection = {
+    ...projectionResponse,
+    view: { id: "view:table", name: "Table", viewType: "table" },
+    projection: { type: "table", rows: [] },
+  };
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "projectionUpdated",
+    projectionResponse: nextProjection,
+  });
+
+  assert.equal(state.status, "ready");
+  assert.deepEqual(state.projection, nextProjection);
+  assert.equal(state.activeViewId, "view:board");
+});
+
 test("workspace app state switches the active view", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
@@ -159,6 +184,51 @@ test("workspace app state switches the active view", async () => {
 
   assert.equal(state.activeViewId, "view:table");
   assert.equal(state.searchQuery, "");
+});
+
+test("workspace app state adds a created view to only the active workspace state", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewCreated",
+    workspaceId: "workspace:ops",
+    activeViewId: "view:board-2",
+    view: { id: "view:board-2", name: "Board 2", viewType: "board" },
+  });
+
+  assert.deepEqual(
+    state.views.map((view) => view.id),
+    ["view:board", "view:table", "view:board-2"],
+  );
+  assert.equal(state.activeViewId, "view:board-2");
+  assert.equal(state.projection, loadedState.projection);
+});
+
+test("workspace app state ignores a created view for another workspace", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewCreated",
+    workspaceId: "workspace:other",
+    activeViewId: "view:other-board",
+    view: { id: "view:other-board", name: "Board", viewType: "board" },
+  });
+
+  assert.equal(state, loadedState);
 });
 
 test("workspace app state renames a loaded view locally", async () => {
@@ -179,4 +249,49 @@ test("workspace app state renames a loaded view locally", async () => {
 
   assert.equal(state.views.find((view) => view.id === "view:board")?.name, "Operations Board");
   assert.equal(state.projection?.view.name, "Operations Board");
+});
+
+test("workspace projection search filter narrows board and table locally by project name", async () => {
+  const { filterWorkspaceProjectionBySearch } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: { "property:name": "Alpha Project" },
+  };
+  const beta = {
+    id: "project:beta",
+    name: "Beta Project",
+    propertyValues: { "property:name": "Beta Project" },
+  };
+  const boardProjection = {
+    ...projectionResponse,
+    projection: {
+      type: "board",
+      capabilities: { canMoveBetweenStatuses: false },
+      columns: [
+        { statusValueId: "status:active", name: "Active", projects: [alpha, beta] },
+        { statusValueId: "status:done", name: "Done", projects: [beta] },
+      ],
+    },
+  };
+  const tableProjection = {
+    ...projectionResponse,
+    projection: {
+      type: "table",
+      rows: [alpha, beta],
+    },
+  };
+
+  const filteredBoard = filterWorkspaceProjectionBySearch(boardProjection, "alpha");
+  const filteredTable = filterWorkspaceProjectionBySearch(tableProjection, "alpha");
+
+  assert.deepEqual(filteredBoard.projection.columns.map((column) => column.projects.map((project) => project.id)), [
+    ["project:alpha"],
+    [],
+  ]);
+  assert.deepEqual(filteredTable.projection.rows.map((project) => project.id), ["project:alpha"]);
+  assert.deepEqual(boardProjection.projection.columns[0].projects.map((project) => project.id), [
+    "project:alpha",
+    "project:beta",
+  ]);
 });

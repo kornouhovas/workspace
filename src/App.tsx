@@ -18,6 +18,7 @@ import {
 } from "@/workspaceMockData";
 import {
   createInitialWorkspaceAppState,
+  filterWorkspaceProjectionBySearch,
   workspaceAppStateReducer,
   type WorkspaceAppState,
   type WorkspaceFolderRole,
@@ -97,6 +98,62 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   }
 
   return response as WorkspaceProjectionResponse;
+}
+
+function normalizeCreatedWorkspaceResponse(
+  response: unknown,
+  fallbackName: string,
+): { activeWorkspaceId: string | null; workspace: WorkspaceListItem | null } {
+  if (!isRecord(response)) {
+    return { activeWorkspaceId: null, workspace: null };
+  }
+
+  const workspace = isRecord(response.workspace) ? response.workspace : null;
+  const id = getString(workspace?.id);
+  if (!id) {
+    return {
+      activeWorkspaceId: getString(response.activeWorkspaceId) || null,
+      workspace: null,
+    };
+  }
+
+  return {
+    activeWorkspaceId: getString(response.activeWorkspaceId) || id,
+    workspace: {
+      id,
+      name: getString(workspace?.name) || fallbackName,
+      order: Number.isFinite(Number(workspace?.order)) ? Number(workspace?.order) : 10,
+    },
+  };
+}
+
+function normalizeCreatedViewResponse(
+  response: unknown,
+  workspaceId: string,
+  fallbackView: WorkspaceViewState,
+): { workspaceId: string; activeViewId: string; view: WorkspaceViewState } {
+  const body = isRecord(response) ? response : {};
+  const view = isRecord(body.view) ? body.view : {};
+  const id = getString(view.id) || fallbackView.id;
+  const viewType = getString(view.viewType) || fallbackView.viewType;
+
+  return {
+    workspaceId: getString(body.workspaceId) || workspaceId,
+    activeViewId: getString(body.activeViewId) || id,
+    view: {
+      id,
+      name: getString(view.name) || fallbackView.name,
+      viewType,
+    },
+  };
+}
+
+function normalizeDeletedViewResponse(response: unknown) {
+  if (!isRecord(response)) {
+    return { activeViewId: null };
+  }
+
+  return { activeViewId: getString(response.activeViewId) || null };
 }
 
 function normalizeFolderRole(role: unknown, depth = 0): WorkspaceFolderRole {
@@ -204,11 +261,16 @@ export default function App() {
   const [reloadToken, setReloadToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
+  const activeViewIdRef = useRef<string | null>(null);
   const folderSelectionPendingRef = useRef(false);
   const workspaceClient = useMemo(
     () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
     [],
   );
+
+  useEffect(() => {
+    activeViewIdRef.current = state.activeViewId;
+  }, [state.activeViewId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -242,9 +304,10 @@ export default function App() {
         ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
-        const requestedViewExists = viewsResponse.views.some((view) => view.id === state.activeViewId);
+        const requestedActiveViewId = activeViewIdRef.current;
+        const requestedViewExists = viewsResponse.views.some((view) => view.id === requestedActiveViewId);
         const activeViewId = requestedViewExists
-          ? state.activeViewId
+          ? requestedActiveViewId
           : viewsResponse.activeViewId || viewsResponse.views[0]?.id;
         if (!activeViewId) {
           throw new Error("Workspace active view is unavailable.");
@@ -254,7 +317,6 @@ export default function App() {
           await workspaceClient.getViewProjection({
             workspaceId: root.workspaceId,
             viewId: activeViewId,
-            searchQuery: state.searchQuery,
           }),
         );
 
@@ -298,7 +360,61 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken, workspaceClient, state.activeViewId, state.searchQuery]);
+  }, [reloadToken, workspaceClient]);
+
+  useEffect(() => {
+    if (
+      state.status !== "ready" ||
+      state.sourceFolderMissing ||
+      !state.workspaceId ||
+      !state.activeViewId ||
+      !state.root ||
+      (
+        state.projection?.workspaceId === state.workspaceId &&
+        state.projection.view.id === state.activeViewId
+      )
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadActiveViewProjection() {
+      try {
+        const projectionResponse = normalizeProjectionResponse(
+          await workspaceClient.getViewProjection({
+            workspaceId: state.workspaceId,
+            viewId: state.activeViewId,
+          }),
+        );
+
+        if (!cancelled) {
+          dispatch({ type: "projectionUpdated", projectionResponse });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error("Could not load view", {
+            description: getServiceErrorMessage(error),
+          });
+        }
+      }
+    }
+
+    void loadActiveViewProjection();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    workspaceClient,
+    state.status,
+    state.sourceFolderMissing,
+    state.root,
+    state.workspaceId,
+    state.activeViewId,
+    state.projection?.workspaceId,
+    state.projection?.view.id,
+  ]);
 
   async function handleSelectFolder() {
     loadRequestIdRef.current += 1;
@@ -334,9 +450,26 @@ export default function App() {
     const workspaceName = `Workspace ${nextIndex}`;
 
     try {
-      await workspaceClient.createWorkspace({
+      const response = await workspaceClient.createWorkspace({
         name: workspaceName,
       });
+      const createdWorkspace = normalizeCreatedWorkspaceResponse(response, workspaceName);
+      if (createdWorkspace.workspace) {
+        const workspace = createdWorkspace.workspace;
+        const activeWorkspaceId = createdWorkspace.activeWorkspaceId || workspace.id;
+        setWorkspaceList((current) => {
+          const existing = current.workspaces.some((item) => item.id === workspace.id);
+          return {
+            activeWorkspaceId,
+            workspaces: existing
+              ? current.workspaces.map((item) => (
+                  item.id === workspace.id ? workspace : item
+                ))
+              : [...current.workspaces, workspace],
+          };
+        });
+        dispatch({ type: "workspaceActivated", workspaceId: activeWorkspaceId });
+      }
       setSelectedProject(null);
       setActiveSurface("workspace");
       toast.success("Workspace added");
@@ -366,6 +499,8 @@ export default function App() {
 
     try {
       await workspaceClient.setActiveWorkspace({ workspaceId });
+      setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
+      dispatch({ type: "workspaceActivated", workspaceId });
       setSelectedProject(null);
       setActiveSurface("workspace");
       setReloadToken((value) => value + 1);
@@ -472,13 +607,24 @@ export default function App() {
     const nextIndex = currentViews.filter((view) => view.viewType === viewType).length + 1;
 
     try {
-      await workspaceClient.createView({
+      const fallbackView = {
+        id: `view:pending-${viewType}-${Date.now()}`,
+        name: `${label} ${nextIndex}`,
+        viewType,
+      };
+      const response = await workspaceClient.createView({
         workspaceId: state.workspaceId,
         viewType,
-        name: `${label} ${nextIndex}`,
+        name: fallbackView.name,
+      });
+      const createdView = normalizeCreatedViewResponse(response, state.workspaceId, fallbackView);
+      dispatch({
+        type: "viewCreated",
+        workspaceId: createdView.workspaceId,
+        activeViewId: createdView.activeViewId,
+        view: createdView.view,
       });
       toast.success("View created");
-      setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error("Could not create view", {
         description: getServiceErrorMessage(error),
@@ -500,7 +646,6 @@ export default function App() {
       });
       dispatch({ type: "viewRenamed", viewId, name });
       toast.success("View renamed");
-      setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
         dispatch({ type: "viewRenamed", viewId, name });
@@ -521,13 +666,18 @@ export default function App() {
     }
 
     try {
-      await workspaceClient.deleteView({
+      const response = await workspaceClient.deleteView({
         workspaceId: state.workspaceId,
         viewId,
       });
+      const deletedView = normalizeDeletedViewResponse(response);
+      dispatch({
+        type: "viewDeleted",
+        viewId,
+        activeViewId: deletedView.activeViewId,
+      });
       toast.success("View deleted");
       setSelectedProject(null);
-      setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error("Could not delete view", {
         description: getServiceErrorMessage(error),
@@ -586,22 +736,48 @@ export default function App() {
         state: "connected",
       }
     : workspaceMockSettings.sourceFolder;
-  const serviceProjection = state.projection;
+  const serviceProjection = useMemo(
+    () => state.projection
+      ? filterWorkspaceProjectionBySearch(state.projection, state.searchQuery)
+      : null,
+    [state.projection, state.searchQuery],
+  );
+  const mockBoardProjectionResponse = useMemo(
+    () => filterWorkspaceProjectionBySearch(
+      workspaceMockProjection as unknown as WorkspaceProjectionResponse,
+      state.searchQuery,
+    ),
+    [state.searchQuery],
+  );
+  const mockTableProjectionResponse = useMemo(
+    () => filterWorkspaceProjectionBySearch(
+      {
+        ...workspaceMockProjection,
+        view: workspaceMockProjection.tableView,
+        projection: workspaceMockProjection.tableProjection,
+      } as unknown as WorkspaceProjectionResponse,
+      state.searchQuery,
+    ),
+    [state.searchQuery],
+  );
   const activeView = viewState.views.find((view) => view.id === viewState.activeViewId) as
     | WorkspaceViewState
     | undefined;
-  const activeViewType = activeView?.viewType === "table" ? "table" : "board";
-  const projectionMatchesActiveView = serviceProjection?.view.id === viewState.activeViewId;
+  const activeViewType = serviceProjection?.projection.type === "table"
+    ? "table"
+    : serviceProjection?.projection.type === "board"
+      ? "board"
+      : activeView?.viewType === "table" ? "table" : "board";
   const visibleProperties =
     serviceProjection?.visibleProperties ?? workspaceMockProjection.visibleProperties;
   const boardProjection =
-    projectionMatchesActiveView && serviceProjection?.projection.type === "board"
+    serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
-      : workspaceMockProjection.projection;
+      : mockBoardProjectionResponse.projection;
   const tableProjection =
-    projectionMatchesActiveView && serviceProjection?.projection.type === "table"
+    serviceProjection?.projection.type === "table"
       ? serviceProjection.projection
-      : workspaceMockProjection.tableProjection;
+      : mockTableProjectionResponse.projection;
   const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
 
   return (

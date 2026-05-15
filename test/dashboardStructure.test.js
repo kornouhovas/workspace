@@ -84,6 +84,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.setRoot/);
   assert.match(appSource, /workspaceClient\.scan/);
   assert.match(appSource, /workspaceClient\.createView/);
+  assert.match(appSource, /viewCreated/);
+  assert.match(appSource, /projectionUpdated/);
   assert.match(appSource, /workspaceClient\.updateView/);
   assert.match(appSource, /workspaceClient\.deleteView/);
   assert.match(appSource, /workspaceClient\.updateFolderRole/);
@@ -107,6 +109,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /activeViewType === "table"/);
   assert.match(appSource, /onProjectOpen=\{handleProjectOpen\}/);
   assert.match(appSource, /searchQueryChanged/);
+  assert.match(appSource, /filterWorkspaceProjectionBySearch/);
+  assert.doesNotMatch(appSource, /searchQuery:\s*state\.searchQuery/);
+  assert.doesNotMatch(appSource, /\[reloadToken, workspaceClient, state\.activeViewId, state\.searchQuery\]/);
   assert.match(appSource, /activeViewChanged/);
   assert.match(appSource, /workspaceClient\.setActiveView/);
   assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
