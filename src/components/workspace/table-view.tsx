@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -18,7 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GripVerticalIcon, MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
+import {
+  CalendarIcon,
+  CircleDotIcon,
+  GripVerticalIcon,
+  HashIcon,
+  ListChecksIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  TypeIcon,
+} from "@/lib/lucide-icons";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspacePropertyDefinitionState, WorkspaceSelectValueState } from "@/workspaceAppState";
@@ -30,6 +41,7 @@ type WorkspaceTableProjection = {
 type PropertyTypeOption = {
   readonly value: WorkspaceCustomPropertyType;
   readonly label: string;
+  readonly description: string;
 };
 
 type ColumnDragPreviewColumn = {
@@ -60,11 +72,11 @@ type WorkspaceTableViewProps = {
 };
 
 const propertyTypeOptions: readonly PropertyTypeOption[] = [
-  { value: "text", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "date", label: "Date" },
-  { value: "select", label: "Select" },
-  { value: "multi-select", label: "Multi-select" },
+  { value: "text", label: "Text", description: "Short notes or free text" },
+  { value: "number", label: "Number", description: "Numeric values and counts" },
+  { value: "date", label: "Date", description: "Deadlines and calendar dates" },
+  { value: "select", label: "Select", description: "One option from a list" },
+  { value: "multi-select", label: "Multi-select", description: "Several options from a list" },
 ];
 
 const rowHandleColumnWidth = 40;
@@ -131,6 +143,28 @@ function formatPropertyValue(
 
 function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
+}
+
+function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
+  const className = "mt-0.5 size-4 text-muted-foreground";
+
+  if (propertyType === "number") {
+    return <HashIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "date") {
+    return <CalendarIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "select") {
+    return <CircleDotIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "multi-select") {
+    return <ListChecksIcon className={className} aria-hidden="true" />;
+  }
+
+  return <TypeIcon className={className} aria-hidden="true" />;
 }
 
 export function WorkspaceTableView({
@@ -571,21 +605,30 @@ export function WorkspaceTableView({
                       <PlusIcon className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52 p-1">
-                    <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Add property</p>
-                    {propertyTypeOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onSelect={() => createPropertyFromType(option)}
-                      >
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
+                  <DropdownMenuContent align="end" className="w-64 p-1.5">
+                    <DropdownMenuLabel>Add property</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {propertyTypeOptions.map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          className="items-start gap-2 py-2"
+                          onSelect={() => createPropertyFromType(option)}
+                        >
+                          {renderPropertyTypeIcon(option.value)}
+                          <span className="grid min-w-0 gap-0.5">
+                            <span className="truncate font-medium">{option.label}</span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {option.description}
+                            </span>
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
                     {hiddenViewProperties.length > 0 ? (
                       <>
                         <DropdownMenuSeparator />
-                        <div className="grid gap-1">
-                          <p className="px-1 text-xs font-medium text-muted-foreground">Hidden in this view</p>
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel>Hidden in this view</DropdownMenuLabel>
                           {hiddenViewProperties.map((property) => (
                             <DropdownMenuItem
                               key={property.id}
@@ -594,7 +637,7 @@ export function WorkspaceTableView({
                               Show {property.name}
                             </DropdownMenuItem>
                           ))}
-                        </div>
+                        </DropdownMenuGroup>
                       </>
                     ) : null}
                   </DropdownMenuContent>

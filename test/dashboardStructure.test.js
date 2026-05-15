@@ -269,6 +269,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /Add property/);
   assert.match(tableViewSource, /createPropertyFromType/);
   assert.match(tableViewSource, /propertyTypeOptions\.map/);
+  assert.match(tableViewSource, /DropdownMenuLabel/);
+  assert.match(tableViewSource, /DropdownMenuGroup/);
+  assert.match(tableViewSource, /renderPropertyTypeIcon/);
+  assert.match(tableViewSource, /Short notes or free text/);
+  assert.match(tableViewSource, /Numeric values and counts/);
   assert.match(tableViewSource, /Hide from view/);
   assert.match(tableViewSource, /Delete property/);
   assert.doesNotMatch(tableViewSource, /newPropertyName/);
