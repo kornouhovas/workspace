@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
+import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
@@ -69,8 +69,22 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
-function FileTreeNode({ node, depth = 0 }: { readonly node: WorkspaceMockFileTreeNode; readonly depth?: number }) {
+type FileTreeNodeProps = {
+  readonly node: WorkspaceMockFileTreeNode;
+  readonly depth?: number;
+  readonly expandedFolderIds: ReadonlySet<string>;
+  readonly onToggleFolder: (folderId: string) => void;
+};
+
+function FileTreeNode({
+  node,
+  depth = 0,
+  expandedFolderIds,
+  onToggleFolder,
+}: FileTreeNodeProps) {
   const isFolder = node.kind === "folder";
+  const hasChildren = isFolder && node.children !== undefined && node.children.length > 0;
+  const isExpanded = isFolder && expandedFolderIds.has(node.id);
 
   return (
     <li>
@@ -80,8 +94,23 @@ function FileTreeNode({ node, depth = 0 }: { readonly node: WorkspaceMockFileTre
         disabled={!node.available}
         className="h-auto w-full justify-start px-2 py-1.5 text-left"
         title={node.relativePath}
+        aria-expanded={isFolder ? isExpanded : undefined}
+        onClick={() => {
+          if (hasChildren) {
+            onToggleFolder(node.id);
+          }
+        }}
       >
-        <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 1}rem` }}>
+        <span className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 1}rem` }}>
+          {hasChildren ? (
+            isExpanded ? (
+              <ChevronDownIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            ) : (
+              <ChevronRightIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            )
+          ) : (
+            <span className="size-4" aria-hidden="true" />
+          )}
           {isFolder ? (
             <FolderIcon className="size-4 text-muted-foreground" aria-hidden="true" />
           ) : (
@@ -94,10 +123,16 @@ function FileTreeNode({ node, depth = 0 }: { readonly node: WorkspaceMockFileTre
           {!node.available ? <Badge variant="destructive">Missing</Badge> : null}
         </span>
       </Button>
-      {isFolder && node.children && node.children.length > 0 ? (
+      {isFolder && isExpanded && node.children && node.children.length > 0 ? (
         <ul className="grid gap-1">
           {node.children.map((child) => (
-            <FileTreeNode key={child.id} node={child} depth={depth + 1} />
+            <FileTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              expandedFolderIds={expandedFolderIds}
+              onToggleFolder={onToggleFolder}
+            />
           ))}
         </ul>
       ) : null}
@@ -114,6 +149,7 @@ export function WorkspaceProjectDetailPanel({
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
   const panelWidthRef = useRef(projectDetailPanelWidth);
   const panelMountedRef = useRef(false);
   const isOpen = open && project !== null;
@@ -121,6 +157,12 @@ export function WorkspaceProjectDetailPanel({
   useEffect(() => {
     panelMountedRef.current = panelProject !== null;
   }, [panelProject]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setExpandedFolderIds(new Set());
+    }
+  }, [isOpen, project?.id]);
 
   useEffect(() => {
     if (!isOpen || !project) {
@@ -250,14 +292,24 @@ export function WorkspaceProjectDetailPanel({
     }
   }
 
+  function toggleProjectFileFolder(folderId: string) {
+    setExpandedFolderIds((currentFolderIds) => {
+      const nextFolderIds = new Set(currentFolderIds);
+      if (nextFolderIds.has(folderId)) {
+        nextFolderIds.delete(folderId);
+      } else {
+        nextFolderIds.add(folderId);
+      }
+
+      return nextFolderIds;
+    });
+  }
+
   if (!panelProject) {
     return null;
   }
 
   const displayedProject = panelProject;
-  const detailProperties = visibleProperties.filter((property) => (
-    property.id !== "property:name" && property.id !== "property:status"
-  ));
 
   return (
     <div
@@ -322,7 +374,7 @@ export function WorkspaceProjectDetailPanel({
                   Properties
                 </h3>
                 <dl className="grid gap-2">
-                  {detailProperties.map((property) => (
+                  {visibleProperties.map((property) => (
                     <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
                       <dt className="truncate text-muted-foreground">{property.name}</dt>
                       <dd className="truncate text-foreground">{getPropertyValue(displayedProject, property)}</dd>
@@ -340,7 +392,12 @@ export function WorkspaceProjectDetailPanel({
                 </div>
                 <ul className="grid gap-1">
                   {displayedProject.fileTree.map((node) => (
-                    <FileTreeNode key={node.id} node={node} />
+                    <FileTreeNode
+                      key={node.id}
+                      node={node}
+                      expandedFolderIds={expandedFolderIds}
+                      onToggleFolder={toggleProjectFileFolder}
+                    />
                   ))}
                 </ul>
               </section>
