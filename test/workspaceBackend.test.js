@@ -9,6 +9,7 @@ import {
   createCreateViewResponse,
   createDeleteViewResponse,
   createListEntriesResponse,
+  createProjectFileTreeResponse,
   createListViewsResponse,
   createPropertiesResponse,
   createReorderViewsResponse,
@@ -284,19 +285,7 @@ test("createScanResponse can include card descendants for settings folder role c
   const completedNode = archiveNode.children.find((node) => node.name === "Completed");
   assert.deepEqual(completedNode.children.map((node) => node.name), ["Assets"]);
   const completedObject = response.payload.workspace.objects.find((object) => object.folderName === "Completed");
-  assert.deepEqual(
-    completedObject.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
-    [
-      ["folder", "Assets", "Archive/Completed/Assets"],
-      ["file", "Archive.zip", "Archive/Completed/Archive.zip"],
-      ["file", "Brief.pdf", "Archive/Completed/Brief.pdf"],
-    ],
-  );
-  assert.deepEqual(
-    completedObject.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
-    [["file", "logo.png", "Archive/Completed/Assets/logo.png"]],
-  );
-  assert.equal(completedObject.fileTree.some((node) => node.name === ".env"), false);
+  assert.equal(Object.hasOwn(completedObject, "fileTree"), false);
   assert.deepEqual(
     response.payload.folders.map((folder) => [folder.name, folder.status, folder.path]),
     [
@@ -332,6 +321,30 @@ test("createScanResponse does not expose legacy text as a default card property"
 
   assert.equal(response.status, 200);
   assert.equal(response.payload.folders[0].text, undefined);
+});
+
+test("createProjectFileTreeResponse returns a selected project folder tree on demand", async () => {
+  const root = await createWorkspaceFixture();
+  const response = await createProjectFileTreeResponse({
+    root,
+    body: { path: "Archive/Completed" },
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.payload.path, "Archive/Completed");
+  assert.deepEqual(
+    response.payload.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
+    [
+      ["folder", "Assets", "Archive/Completed/Assets"],
+      ["file", "Archive.zip", "Archive/Completed/Archive.zip"],
+      ["file", "Brief.pdf", "Archive/Completed/Brief.pdf"],
+    ],
+  );
+  assert.deepEqual(
+    response.payload.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
+    [["file", "logo.png", "Archive/Completed/Assets/logo.png"]],
+  );
+  assert.equal(response.payload.fileTree.some((node) => node.name === ".env"), false);
 });
 
 test("createPropertiesResponse requires an explicit user property id", async () => {

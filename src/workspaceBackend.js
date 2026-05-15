@@ -64,13 +64,14 @@ export async function createScanResponse({
   rules = {},
   propertiesPath = defaultWorkspacePropertiesPath,
   includeCardChildren = false,
+  includeFileTree = false,
 }) {
   try {
     if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
       return createJsonResponse(404, { error: "Workspace root was not found." });
     }
 
-    const tree = await listWorkspaceAccessTree(root, rules, [], { includeCardChildren });
+    const tree = await listWorkspaceAccessTree(root, rules, [], { includeCardChildren, includeFileTree });
     const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) });
     const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
     const workspace = {
@@ -89,6 +90,31 @@ export async function createScanResponse({
     });
   } catch (error) {
     return createJsonResponse(400, { error: error.message || "Could not scan workspace root." });
+  }
+}
+
+export async function createProjectFileTreeResponse({ root, body }) {
+  try {
+    if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
+      return createJsonResponse(404, { error: "Workspace root was not selected." });
+    }
+
+    const folderPath = typeof body?.path === "string" ? body.path.trim() : "";
+    if (!folderPath) {
+      return createJsonResponse(400, { error: "Project folder path is required." });
+    }
+
+    const targetPath = resolveWorkspaceEntryPath(root, folderPath);
+    if (!existsSync(targetPath) || !statSync(targetPath).isDirectory()) {
+      return createJsonResponse(404, { error: "Project folder was not found." });
+    }
+
+    return createJsonResponse(200, {
+      path: folderPath,
+      fileTree: await listProjectFileTree(root, folderPath),
+    });
+  } catch (error) {
+    return createJsonResponse(400, { error: error.message || "Could not list project file tree." });
   }
 }
 
@@ -512,7 +538,7 @@ async function listWorkspaceAccessTree(root, rules, parentPath = [], options = {
     const children = role === "card" && !options.includeCardChildren
       ? []
       : await listWorkspaceAccessTree(root, rules, pathParts, options);
-    const fileTree = role === "card" && options.includeCardChildren
+    const fileTree = role === "card" && options.includeFileTree
       ? await listProjectFileTree(root, path)
       : null;
 

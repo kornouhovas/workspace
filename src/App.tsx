@@ -14,6 +14,7 @@ import { PanelLeftIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
+  type WorkspaceMockFileTreeNode,
   type WorkspaceMockProject,
 } from "@/workspaceMockData";
 import {
@@ -98,6 +99,39 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   }
 
   return response as WorkspaceProjectionResponse;
+}
+
+function normalizeProjectFileTreeNode(node: Record<string, unknown>): WorkspaceMockFileTreeNode | null {
+  const name = getString(node.name);
+  const relativePath = getString(node.relativePath) || getString(node.path);
+  if (!name || !relativePath) {
+    return null;
+  }
+
+  const kind = node.kind === "file" ? "file" : "folder";
+  const children = kind === "folder" && Array.isArray(node.children)
+    ? node.children
+        .filter(isRecord)
+        .map(normalizeProjectFileTreeNode)
+        .filter((child): child is WorkspaceMockFileTreeNode => child !== null)
+    : undefined;
+
+  return {
+    id: getString(node.id) || `${kind}:${relativePath}`,
+    name,
+    kind,
+    relativePath,
+    available: node.available !== false,
+    ...(children ? { children } : {}),
+  };
+}
+
+function normalizeProjectFileTreeResponse(response: unknown): readonly WorkspaceMockFileTreeNode[] {
+  const fileTree = isRecord(response) && Array.isArray(response.fileTree) ? response.fileTree : [];
+  return fileTree
+    .filter(isRecord)
+    .map(normalizeProjectFileTreeNode)
+    .filter((node): node is WorkspaceMockFileTreeNode => node !== null);
 }
 
 function normalizeCreatedWorkspaceResponse(
@@ -298,7 +332,7 @@ export default function App() {
         dispatch({ type: "rootSelected", root });
 
         const [scanResponse, viewsRawResponse, workspacesResponse] = await Promise.all([
-          workspaceClient.scan({ includeCardChildren: true }),
+          workspaceClient.scan({ includeCardChildren: activeSurface === "settings" }),
           workspaceClient.listViews({ workspaceId: root.workspaceId }),
           loadWorkspaceList(workspaceClient, root),
         ]);
@@ -360,7 +394,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [reloadToken, workspaceClient]);
+  }, [activeSurface, reloadToken, workspaceClient]);
 
   useEffect(() => {
     if (
@@ -707,8 +741,26 @@ export default function App() {
     }
   }
 
+  async function loadProjectFileTree(project: WorkspaceMockProject) {
+    try {
+      const fileTree = normalizeProjectFileTreeResponse(
+        await workspaceClient.listProjectFileTree({ path: project.currentRelativePath }),
+      );
+      setSelectedProject((currentProject) => (
+        currentProject?.id === project.id ? { ...currentProject, fileTree } : currentProject
+      ));
+    } catch (error) {
+      toast.error("Could not load project files", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   function handleProjectOpen(project: WorkspaceMockProject) {
     setSelectedProject(project);
+    if (state.status === "ready" && state.root) {
+      void loadProjectFileTree(project);
+    }
   }
 
   function openWorkspaceSurface() {

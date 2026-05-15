@@ -5,6 +5,7 @@ const allowedMethods = new Set([
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",
+  "workspace.listProjectFileTree",
   "workspace.saveProperty",
   "workspace.listPropertyValues",
   "workspace.updateFolderRole",

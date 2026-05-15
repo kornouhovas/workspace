@@ -9,6 +9,7 @@ declare module "@/workspaceServiceClient.js" {
     setRoot(payload: Record<string, unknown>): Promise<unknown>;
     scan(payload: Record<string, unknown>): Promise<unknown>;
     listEntries(payload: Record<string, unknown>): Promise<unknown>;
+    listProjectFileTree(payload: Record<string, unknown>): Promise<unknown>;
     saveProperty(payload: Record<string, unknown>): Promise<unknown>;
     listPropertyValues(payload: Record<string, unknown>): Promise<unknown>;
     updateFolderRole(payload: Record<string, unknown>): Promise<unknown>;

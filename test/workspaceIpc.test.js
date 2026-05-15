@@ -56,15 +56,19 @@ test("workspace IPC handler serves default views and projection for selected sou
     assert.equal(projectionResponse.projection.capabilities.canMoveBetweenStatuses, false);
     const project = projectionResponse.projection.columns.at(0).projects.at(0);
     assert.equal(project.name, "Project Alpha");
+    assert.deepEqual(project.fileTree, []);
+    const fileTreeResponse = await handler(null, "workspace.listProjectFileTree", {
+      path: "Active/Project Alpha",
+    });
     assert.deepEqual(
-      project.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
+      fileTreeResponse.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
       [
         ["folder", "Docs", "Active/Project Alpha/Docs"],
         ["file", "Notes.md", "Active/Project Alpha/Notes.md"],
       ],
     );
     assert.deepEqual(
-      project.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
+      fileTreeResponse.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
       [["file", "Plan.txt", "Active/Project Alpha/Docs/Plan.txt"]],
     );
   } finally {

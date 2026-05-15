@@ -23,6 +23,10 @@ export class WorkspaceServiceClient {
     return this.request("workspace.listEntries", payload);
   }
 
+  listProjectFileTree(payload) {
+    return this.request("workspace.listProjectFileTree", payload);
+  }
+
   saveProperty(payload) {
     return this.request("workspace.saveProperty", payload);
   }

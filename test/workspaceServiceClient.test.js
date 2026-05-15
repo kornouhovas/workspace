@@ -33,6 +33,10 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     method: "workspace.listEntries",
     payload: { path: "Active/Project Alpha" },
   });
+  assert.deepEqual(await client.listProjectFileTree({ path: "Active/Project Alpha" }), {
+    method: "workspace.listProjectFileTree",
+    payload: { path: "Active/Project Alpha" },
+  });
   assert.deepEqual(
     await client.saveProperty({
       path: "Active/Project Alpha",
@@ -194,6 +198,7 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     { method: "workspace.setRoot", payload: { rootPath: "/tmp/workspace" } },
     { method: "workspace.scan", payload: { rules: { Active: { role: "status" } } } },
     { method: "workspace.listEntries", payload: { path: "Active/Project Alpha" } },
+    { method: "workspace.listProjectFileTree", payload: { path: "Active/Project Alpha" } },
     {
       method: "workspace.saveProperty",
       payload: {

@@ -9,6 +9,7 @@ import {
   createDeleteViewResponse,
   createFileResponse,
   createListEntriesResponse,
+  createProjectFileTreeResponse,
   createListViewsResponse,
   createPropertiesResponse,
   createReorderViewsResponse,
@@ -31,6 +32,7 @@ const supportedMethods = new Set([
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",
+  "workspace.listProjectFileTree",
   "workspace.saveProperty",
   "workspace.listPropertyValues",
   "workspace.updateFolderRole",
@@ -164,6 +166,10 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (method === "workspace.listEntries") {
       return unwrapBackendResponse(await createListEntriesResponse({ root: root.root.rootPath, body }));
+    }
+
+    if (method === "workspace.listProjectFileTree") {
+      return unwrapBackendResponse(await createProjectFileTreeResponse({ root: root.root.rootPath, body }));
     }
 
     if (method === "workspace.saveProperty") {
@@ -531,11 +537,7 @@ async function createWorkspaceDocument({
 }
 
 async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} }) {
-  const scan = await unwrapBackendResponse(await createScanResponse({
-    root: rootPath,
-    rules,
-    includeCardChildren: true,
-  }));
+  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
     workspaceId,
     rootPath,
