@@ -200,6 +200,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /panelVisible/);
   assert.match(projectDetailPanelSource, /setPanelVisible\(false\)/);
   assert.match(projectDetailPanelSource, /setPanelVisible\(true\)/);
+  assert.match(projectDetailPanelSource, /requestAnimationFrame/);
+  assert.match(projectDetailPanelSource, /cancelAnimationFrame/);
+  assert.match(projectDetailPanelSource, /projectDetailPanelAnimationMs/);
   assert.match(projectDetailPanelSource, /onTransitionEnd/);
   assert.match(projectDetailPanelSource, /if \(!panelProject\) \{\s+return null;\s+\}/);
   assert.match(projectDetailPanelSource, /electron-window-no-drag/);
@@ -212,7 +215,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onClick=\{closeProjectDetails\}/);
   assert.match(projectDetailPanelSource, /Close project details backdrop/);
   assert.match(projectDetailPanelSource, /stopPropagation/);
+  assert.match(projectDetailPanelSource, /transition-\[transform,opacity\]/);
+  assert.match(projectDetailPanelSource, /duration-\[320ms\]/);
   assert.match(projectDetailPanelSource, /panelVisible \? "translate-x-0" : "translate-x-full"/);
+  assert.match(projectDetailPanelSource, /panelVisible \? "opacity-100" : "opacity-0"/);
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.match(projectDetailPanelSource, /Properties/);
