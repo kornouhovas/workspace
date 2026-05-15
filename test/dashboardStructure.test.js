@@ -269,6 +269,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
   assert.match(tableViewSource, /w-full/);
+  assert.doesNotMatch(tableViewSource, /currentRelativePath/);
+  assert.doesNotMatch(tableViewSource, />Path<\/TableHead>/);
   assert.doesNotMatch(tableViewSource, /px-4/);
   assert.doesNotMatch(tableViewSource, /py-4/);
   assert.match(projectDetailPanelSource, /WorkspaceProjectDetailPanel/);

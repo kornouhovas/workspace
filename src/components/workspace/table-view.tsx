@@ -272,7 +272,6 @@ export function WorkspaceTableView({
                   )}
                 </TableHead>
               ))}
-              <TableHead className="min-w-56">Path</TableHead>
               <TableHead className="sticky right-0 z-20 w-12 border-l border-border bg-card">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -367,9 +366,6 @@ export function WorkspaceTableView({
                     {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                   </TableCell>
                 ))}
-                <TableCell className="max-w-72 truncate text-muted-foreground">
-                  {project.currentRelativePath}
-                </TableCell>
                 <TableCell className="sticky right-0 border-l border-border bg-card" aria-hidden="true" />
               </TableRow>
             ))}
