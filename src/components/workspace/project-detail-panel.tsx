@@ -195,7 +195,7 @@ export function WorkspaceProjectDetailPanel({
   return (
     <div
       className={[
-        "fixed inset-0 z-50 flex justify-end",
+        "electron-window-no-drag fixed inset-0 z-50 flex justify-end",
         isOpen ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
       aria-hidden={!isOpen}
@@ -203,7 +203,7 @@ export function WorkspaceProjectDetailPanel({
       <button
         type="button"
         aria-label="Close project details backdrop"
-        className="absolute inset-0 cursor-default bg-transparent"
+        className="electron-window-no-drag absolute inset-0 cursor-default bg-transparent"
         tabIndex={isOpen ? 0 : -1}
         onClick={closeProjectDetails}
       />
@@ -213,7 +213,7 @@ export function WorkspaceProjectDetailPanel({
         role="dialog"
         onClick={(event) => event.stopPropagation()}
         className={[
-          "pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition-transform duration-200 ease-out",
+          "electron-window-no-drag pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-4 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition-transform duration-200 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         style={{ width: projectDetailPanelWidth }}
@@ -221,7 +221,7 @@ export function WorkspaceProjectDetailPanel({
         <button
           type="button"
           aria-label="Resize project panel"
-          className="absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
+          className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
           onPointerDown={startPanelResize}
         >
           <span className="sr-only">Resize project panel</span>
@@ -230,7 +230,7 @@ export function WorkspaceProjectDetailPanel({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="absolute right-3 top-3 z-10"
+          className="electron-window-no-drag absolute right-3 top-3 z-10"
           aria-label="Close project details"
           onPointerDown={closeProjectDetails}
           onClick={closeProjectDetails}
