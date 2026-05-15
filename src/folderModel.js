@@ -175,13 +175,19 @@ function collectAccessTreeCards(nodes, context) {
     }
 
     if (node.role === "card") {
-      context.cards.push({
+      const card = {
         id: createFolderIdFromPath(node.path),
         name: node.name,
         kind: "directory",
         status: context.parentGroup,
         path: node.path,
-      });
+      };
+
+      if (Array.isArray(node.fileTree)) {
+        card.fileTree = node.fileTree;
+      }
+
+      context.cards.push(card);
       continue;
     }
 

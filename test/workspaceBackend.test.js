@@ -32,6 +32,7 @@ async function createWorkspaceFixture() {
   await mkdir(join(root, "Archive", "Completed", "Assets"), { recursive: true });
   await mkdir(join(root, "Active", "Project Alpha"), { recursive: true });
   await mkdir(join(root, ".hidden"), { recursive: true });
+  await writeFile(join(root, "Archive", "Completed", "Assets", "logo.png"), "png");
   await writeFile(join(root, "Archive", "Completed", "Brief.pdf"), "pdf");
   await writeFile(join(root, "Archive", "Completed", ".env"), "hidden");
   await writeFile(join(root, "Archive", "Completed", "Archive.zip"), "zip");
@@ -282,6 +283,20 @@ test("createScanResponse can include card descendants for settings folder role c
   const archiveNode = response.payload.tree.find((node) => node.name === "Archive");
   const completedNode = archiveNode.children.find((node) => node.name === "Completed");
   assert.deepEqual(completedNode.children.map((node) => node.name), ["Assets"]);
+  const completedObject = response.payload.workspace.objects.find((object) => object.folderName === "Completed");
+  assert.deepEqual(
+    completedObject.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
+    [
+      ["folder", "Assets", "Archive/Completed/Assets"],
+      ["file", "Archive.zip", "Archive/Completed/Archive.zip"],
+      ["file", "Brief.pdf", "Archive/Completed/Brief.pdf"],
+    ],
+  );
+  assert.deepEqual(
+    completedObject.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
+    [["file", "logo.png", "Archive/Completed/Assets/logo.png"]],
+  );
+  assert.equal(completedObject.fileTree.some((node) => node.name === ".env"), false);
   assert.deepEqual(
     response.payload.folders.map((folder) => [folder.name, folder.status, folder.path]),
     [

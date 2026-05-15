@@ -17,6 +17,10 @@ export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folder
       folderStatus: folder.status,
     };
 
+    if (Array.isArray(folder.fileTree)) {
+      object.fileTree = normalizeProjectFileTree(folder.fileTree);
+    }
+
     objects.push(object);
 
     Object.entries(getUserPropertyValues(folder.properties)).forEach(([propertyId, value]) => {
@@ -32,6 +36,31 @@ export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folder
   }
 
   return { objects, propertyValues };
+}
+
+function normalizeProjectFileTree(nodes) {
+  if (!Array.isArray(nodes)) {
+    return [];
+  }
+
+  return nodes
+    .filter((node) => node && typeof node === "object" && typeof node.name === "string")
+    .map((node) => {
+      const kind = node.kind === "file" ? "file" : "folder";
+      const normalizedNode = {
+        id: typeof node.id === "string" && node.id ? node.id : createFolderObjectId("file-tree", node.relativePath || node.name),
+        name: node.name,
+        kind,
+        relativePath: typeof node.relativePath === "string" ? node.relativePath : node.name,
+        available: node.available !== false,
+      };
+
+      if (kind === "folder") {
+        normalizedNode.children = normalizeProjectFileTree(node.children);
+      }
+
+      return normalizedNode;
+    });
 }
 
 function getUserPropertyValues(properties) {

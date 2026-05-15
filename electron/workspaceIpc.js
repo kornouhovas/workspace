@@ -531,7 +531,11 @@ async function createWorkspaceDocument({
 }
 
 async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} }) {
-  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
+  const scan = await unwrapBackendResponse(await createScanResponse({
+    root: rootPath,
+    rules,
+    includeCardChildren: true,
+  }));
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
     workspaceId,
     rootPath,
@@ -553,7 +557,7 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} })
           [PROPERTY_NAME_ID]: object.folderName,
           [PROPERTY_STATUS_ID]: status.id,
         },
-        fileTree: [],
+        fileTree: Array.isArray(object.fileTree) ? object.fileTree : [],
       };
     }),
   };

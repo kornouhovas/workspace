@@ -27,7 +27,9 @@ test("workspace IPC handler serves default views and projection for selected sou
   const viewStorePath = join(tempDirectory, "views.json");
 
   try {
-    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    await mkdir(join(rootPath, "Active", "Project Alpha", "Docs"), { recursive: true });
+    await writeFile(join(rootPath, "Active", "Project Alpha", "Notes.md"), "notes");
+    await writeFile(join(rootPath, "Active", "Project Alpha", "Docs", "Plan.txt"), "plan");
     const handler = createWorkspaceIpcHandler({
       configPath: join(tempDirectory, "settings.json"),
       viewStorePath,
@@ -52,7 +54,19 @@ test("workspace IPC handler serves default views and projection for selected sou
     });
     assert.equal(projectionResponse.projection.type, "board");
     assert.equal(projectionResponse.projection.capabilities.canMoveBetweenStatuses, false);
-    assert.equal(projectionResponse.projection.columns.at(0).projects.at(0).name, "Project Alpha");
+    const project = projectionResponse.projection.columns.at(0).projects.at(0);
+    assert.equal(project.name, "Project Alpha");
+    assert.deepEqual(
+      project.fileTree.map((node) => [node.kind, node.name, node.relativePath]),
+      [
+        ["folder", "Docs", "Active/Project Alpha/Docs"],
+        ["file", "Notes.md", "Active/Project Alpha/Notes.md"],
+      ],
+    );
+    assert.deepEqual(
+      project.fileTree[0].children.map((node) => [node.kind, node.name, node.relativePath]),
+      [["file", "Plan.txt", "Active/Project Alpha/Docs/Plan.txt"]],
+    );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

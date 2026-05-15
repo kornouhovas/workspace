@@ -255,6 +255,9 @@ export function WorkspaceProjectDetailPanel({
   }
 
   const displayedProject = panelProject;
+  const detailProperties = visibleProperties.filter((property) => (
+    property.id !== "property:name" && property.id !== "property:status"
+  ));
 
   return (
     <div
@@ -307,33 +310,19 @@ export function WorkspaceProjectDetailPanel({
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
         <>
-          <header className="grid gap-0.5 p-4 pr-12">
-            <h2 id="project-detail-title" className="font-heading text-base font-medium text-foreground">
+          <header className="p-4 pr-12">
+            <h2 id="project-detail-title" className="font-heading text-xl font-semibold text-foreground">
               {displayedProject.name}
             </h2>
-            <p className="truncate text-sm text-muted-foreground">{displayedProject.currentRelativePath}</p>
           </header>
           <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">
             <div className="grid gap-4">
-              <section className="grid gap-2" aria-labelledby="project-identity-heading">
-                <h3 id="project-identity-heading" className="text-xs font-medium text-muted-foreground">
-                  Name
-                </h3>
-                <div className="grid gap-1">
-                  <p className="truncate text-sm font-medium">{displayedProject.name}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{displayedProject.status.name}</Badge>
-                    <span className="truncate text-xs text-muted-foreground">{displayedProject.currentRelativePath}</span>
-                  </div>
-                </div>
-              </section>
-              <Separator />
               <section className="grid gap-2" aria-labelledby="project-properties-heading">
                 <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
                   Properties
                 </h3>
                 <dl className="grid gap-2">
-                  {visibleProperties.map((property) => (
+                  {detailProperties.map((property) => (
                     <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
                       <dt className="truncate text-muted-foreground">{property.name}</dt>
                       <dd className="truncate text-foreground">{getPropertyValue(displayedProject, property)}</dd>

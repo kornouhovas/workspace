@@ -512,8 +512,11 @@ async function listWorkspaceAccessTree(root, rules, parentPath = [], options = {
     const children = role === "card" && !options.includeCardChildren
       ? []
       : await listWorkspaceAccessTree(root, rules, pathParts, options);
+    const fileTree = role === "card" && options.includeCardChildren
+      ? await listProjectFileTree(root, path)
+      : null;
 
-    nodes.push({
+    const node = {
       id: createFolderIdFromPath(path),
       name: entry.name,
       kind: "directory",
@@ -522,10 +525,51 @@ async function listWorkspaceAccessTree(root, rules, parentPath = [], options = {
       role,
       expanded: rule.expanded === true,
       children,
-    });
+    };
+
+    if (fileTree) {
+      node.fileTree = fileTree;
+    }
+
+    nodes.push(node);
   }
 
   return nodes;
+}
+
+async function listProjectFileTree(root, folderPath) {
+  const targetPath = resolveWorkspaceEntryPath(root, folderPath);
+  const entries = await readVisibleDirectoryEntries(targetPath);
+  const visibleEntries = entries
+    .filter((entry) => entry.isDirectory() || entry.isFile())
+    .map((entry) => {
+      const kind = entry.isDirectory() ? "directory" : "file";
+      const path = [folderPath, entry.name].filter(Boolean).join("/");
+      return {
+        entry,
+        kind,
+        name: entry.name,
+        path,
+      };
+    })
+    .sort(compareFolderEntries);
+
+  return Promise.all(visibleEntries.map(async ({ entry, kind, path }) => {
+    const isDirectory = kind === "directory";
+    const node = {
+      id: createEntryId(kind, path),
+      name: entry.name,
+      kind: isDirectory ? "folder" : "file",
+      relativePath: path,
+      available: true,
+    };
+
+    if (isDirectory) {
+      node.children = await listProjectFileTree(root, path);
+    }
+
+    return node;
+  }));
 }
 
 async function listWorkspaceEntries(root, folderPath) {
