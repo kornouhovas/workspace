@@ -187,6 +187,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /contextMenuViewId/);
   assert.doesNotMatch(leftPanelSource, /window\.prompt/);
   assert.doesNotMatch(viewTabsSource, /window\.prompt/);
+  assert.doesNotMatch(viewTabsSource, /\bcapitalize\b/);
   assert.match(boardViewSource, /onProjectOpen/);
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);

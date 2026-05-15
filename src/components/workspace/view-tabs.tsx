@@ -138,7 +138,6 @@ export function WorkspaceViewTabs({
               <TabsTrigger
                 key={view.id}
                 value={view.id}
-                className="capitalize"
                 onContextMenu={(event) => {
                   event.preventDefault();
                   setContextMenuViewId(view.id);

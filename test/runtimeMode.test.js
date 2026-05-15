@@ -74,6 +74,17 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(preload, /require\("electron"\)/);
   assert.match(preload, /exposeInMainWorld\("workspace"/);
   assert.match(preload, /workspace:request/);
+  for (const method of [
+    "workspace.listWorkspaces",
+    "workspace.createWorkspace",
+    "workspace.updateWorkspace",
+    "workspace.reorderWorkspaces",
+    "workspace.deleteWorkspace",
+    "workspace.setActiveWorkspace",
+    "workspace.updateFolderRole",
+  ]) {
+    assert.match(preload, new RegExp(JSON.stringify(method).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
   await access(new URL("../electron/workspaceIpc.js", import.meta.url));
   await access(new URL("../electron/preload.cjs", import.meta.url));
   await access(new URL("../electron/main.js", import.meta.url));
