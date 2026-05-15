@@ -112,15 +112,18 @@ export function WorkspaceViewTabs({
   }
 
   return (
-    <div className="relative flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2">
-      <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0">
-        <TabsList variant="line" aria-label="Workspace views">
+    <div className="relative flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0 overflow-hidden">
+        <TabsList
+          aria-label="Workspace views"
+          className="max-w-full justify-start overflow-x-auto rounded-2xl bg-muted/80 p-1 shadow-inner ring-1 ring-border/40 group-data-horizontal/tabs:!h-10"
+        >
           {views.map((view) => {
             if (editingViewId === view.id) {
               return (
                 <form
                   key={view.id}
-                  className="h-7 min-w-32"
+                  className="h-8 min-w-32"
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitViewRename(view);
@@ -129,7 +132,7 @@ export function WorkspaceViewTabs({
                   <input
                     ref={editingViewInputRef}
                     aria-label="Rename view"
-                    className="h-full w-full rounded-md border border-ring bg-background px-2 text-sm font-medium text-foreground outline-none ring-3 ring-ring/30"
+                    className="h-full w-full rounded-xl border border-ring bg-background px-3 text-base font-semibold text-foreground outline-none ring-3 ring-ring/30"
                     value={editingViewName}
                     onChange={(event) => setEditingViewName(event.currentTarget.value)}
                     onBlur={() => submitViewRename(view)}
@@ -148,6 +151,7 @@ export function WorkspaceViewTabs({
               <TabsTrigger
                 key={view.id}
                 value={view.id}
+                className="h-8 flex-none rounded-xl px-3 text-base font-semibold text-muted-foreground data-active:border-border data-active:bg-background data-active:text-foreground data-active:shadow-sm dark:data-active:border-border dark:data-active:bg-background/60"
                 onContextMenu={(event) => {
                   event.preventDefault();
                   setContextMenuViewId(view.id);
@@ -172,7 +176,7 @@ export function WorkspaceViewTabs({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="inline-flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Add Board or Table view"
               title="Add view"
             >
@@ -188,7 +192,7 @@ export function WorkspaceViewTabs({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="inline-flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="View actions"
               title="View actions"
             >
