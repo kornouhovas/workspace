@@ -58,6 +58,136 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     method: "workspace.listPropertyValues",
     payload: { workspaceId: "workspace:root" },
   });
+  assert.deepEqual(await client.listProperties({ workspaceId: "workspace:ops", includeUsage: true }), {
+    method: "workspace.listProperties",
+    payload: { workspaceId: "workspace:ops", includeUsage: true },
+  });
+  assert.deepEqual(await client.createProperty({ workspaceId: "workspace:ops", name: "Priority", type: "select" }), {
+    method: "workspace.createProperty",
+    payload: { workspaceId: "workspace:ops", name: "Priority", type: "select" },
+  });
+  assert.deepEqual(
+    await client.updateProperty({
+      workspaceId: "workspace:ops",
+      propertyId: "property:priority",
+      patch: { name: "Urgency" },
+    }),
+    {
+      method: "workspace.updateProperty",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        patch: { name: "Urgency" },
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.reorderProperties({
+      workspaceId: "workspace:ops",
+      orderedPropertyIds: ["property:name", "property:status", "property:priority"],
+    }),
+    {
+      method: "workspace.reorderProperties",
+      payload: {
+        workspaceId: "workspace:ops",
+        orderedPropertyIds: ["property:name", "property:status", "property:priority"],
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.deleteProperty({
+      workspaceId: "workspace:ops",
+      propertyId: "property:priority",
+      confirmDeleteValues: true,
+    }),
+    {
+      method: "workspace.deleteProperty",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        confirmDeleteValues: true,
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.createSelectValue({
+      workspaceId: "workspace:ops",
+      propertyId: "property:priority",
+      name: "High",
+      color: "red",
+    }),
+    {
+      method: "workspace.createSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        name: "High",
+        color: "red",
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.updateSelectValue({
+      workspaceId: "workspace:ops",
+      selectValueId: "selectValue:priority:high",
+      patch: { name: "Critical" },
+    }),
+    {
+      method: "workspace.updateSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        patch: { name: "Critical" },
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.reorderSelectValues({
+      workspaceId: "workspace:ops",
+      propertyId: "property:priority",
+      orderedSelectValueIds: ["selectValue:priority:high"],
+    }),
+    {
+      method: "workspace.reorderSelectValues",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        orderedSelectValueIds: ["selectValue:priority:high"],
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.deleteSelectValue({
+      workspaceId: "workspace:ops",
+      selectValueId: "selectValue:priority:high",
+      confirmDeleteUsages: true,
+    }),
+    {
+      method: "workspace.deleteSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        confirmDeleteUsages: true,
+      },
+    },
+  );
+  assert.deepEqual(
+    await client.updateProjectPropertyValue({
+      workspaceId: "workspace:ops",
+      projectId: "project:alpha",
+      propertyId: "property:priority",
+      value: "selectValue:priority:high",
+    }),
+    {
+      method: "workspace.updateProjectPropertyValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        projectId: "project:alpha",
+        propertyId: "property:priority",
+        value: "selectValue:priority:high",
+      },
+    },
+  );
   assert.deepEqual(await client.updateFolderRole({ path: "Active", role: "status" }), {
     method: "workspace.updateFolderRole",
     payload: { path: "Active", role: "status" },
@@ -209,6 +339,76 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
       },
     },
     { method: "workspace.listPropertyValues", payload: { workspaceId: "workspace:root" } },
+    { method: "workspace.listProperties", payload: { workspaceId: "workspace:ops", includeUsage: true } },
+    {
+      method: "workspace.createProperty",
+      payload: { workspaceId: "workspace:ops", name: "Priority", type: "select" },
+    },
+    {
+      method: "workspace.updateProperty",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        patch: { name: "Urgency" },
+      },
+    },
+    {
+      method: "workspace.reorderProperties",
+      payload: {
+        workspaceId: "workspace:ops",
+        orderedPropertyIds: ["property:name", "property:status", "property:priority"],
+      },
+    },
+    {
+      method: "workspace.deleteProperty",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        confirmDeleteValues: true,
+      },
+    },
+    {
+      method: "workspace.createSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        name: "High",
+        color: "red",
+      },
+    },
+    {
+      method: "workspace.updateSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        patch: { name: "Critical" },
+      },
+    },
+    {
+      method: "workspace.reorderSelectValues",
+      payload: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        orderedSelectValueIds: ["selectValue:priority:high"],
+      },
+    },
+    {
+      method: "workspace.deleteSelectValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        confirmDeleteUsages: true,
+      },
+    },
+    {
+      method: "workspace.updateProjectPropertyValue",
+      payload: {
+        workspaceId: "workspace:ops",
+        projectId: "project:alpha",
+        propertyId: "property:priority",
+        value: "selectValue:priority:high",
+      },
+    },
     { method: "workspace.updateFolderRole", payload: { path: "Active", role: "status" } },
     { method: "workspace.listWorkspaces", payload: {} },
     { method: "workspace.createWorkspace", payload: { name: "Design Ops" } },

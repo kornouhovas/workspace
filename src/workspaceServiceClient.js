@@ -35,6 +35,46 @@ export class WorkspaceServiceClient {
     return this.request("workspace.listPropertyValues", payload);
   }
 
+  listProperties(payload) {
+    return this.request("workspace.listProperties", payload);
+  }
+
+  createProperty(payload) {
+    return this.request("workspace.createProperty", payload);
+  }
+
+  updateProperty(payload) {
+    return this.request("workspace.updateProperty", payload);
+  }
+
+  reorderProperties(payload) {
+    return this.request("workspace.reorderProperties", payload);
+  }
+
+  deleteProperty(payload) {
+    return this.request("workspace.deleteProperty", payload);
+  }
+
+  createSelectValue(payload) {
+    return this.request("workspace.createSelectValue", payload);
+  }
+
+  updateSelectValue(payload) {
+    return this.request("workspace.updateSelectValue", payload);
+  }
+
+  reorderSelectValues(payload) {
+    return this.request("workspace.reorderSelectValues", payload);
+  }
+
+  deleteSelectValue(payload) {
+    return this.request("workspace.deleteSelectValue", payload);
+  }
+
+  updateProjectPropertyValue(payload) {
+    return this.request("workspace.updateProjectPropertyValue", payload);
+  }
+
   updateFolderRole(payload) {
     return this.request("workspace.updateFolderRole", payload);
   }

@@ -83,6 +83,16 @@ test("workspace runs as an Electron-only app shell", async () => {
     "workspace.setActiveWorkspace",
     "workspace.updateFolderRole",
     "workspace.listProjectFileTree",
+    "workspace.listProperties",
+    "workspace.createProperty",
+    "workspace.updateProperty",
+    "workspace.reorderProperties",
+    "workspace.deleteProperty",
+    "workspace.createSelectValue",
+    "workspace.updateSelectValue",
+    "workspace.reorderSelectValues",
+    "workspace.deleteSelectValue",
+    "workspace.updateProjectPropertyValue",
   ]) {
     assert.match(preload, new RegExp(JSON.stringify(method).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
