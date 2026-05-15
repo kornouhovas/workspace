@@ -33,7 +33,7 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
 
 export function WorkspaceTableView({ projection, visibleProperties, onProjectOpen }: WorkspaceTableViewProps) {
   return (
-    <section className="flex h-full min-h-0 w-full flex-col gap-3 px-4 py-4" aria-labelledby="workspace-table-heading">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-labelledby="workspace-table-heading">
       <div>
         <h2 id="workspace-table-heading" className="text-sm font-semibold">
           Table
