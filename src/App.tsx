@@ -29,6 +29,12 @@ import {
 } from "@/workspaceAppState";
 import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";
 import { WorkspaceServiceClient } from "@/workspaceServiceClient.js";
+import {
+  createWorkspaceListFallback,
+  loadWorkspaceList,
+  type WorkspaceListItem,
+  type WorkspaceListState,
+} from "@/workspaceCompatibility";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -176,44 +182,6 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
 
 type WorkspaceSurface = "workspace" | "settings";
 
-type WorkspaceListItem = {
-  readonly id: string;
-  readonly name: string;
-  readonly order: number;
-};
-
-type WorkspaceListState = {
-  readonly activeWorkspaceId: string | null;
-  readonly workspaces: readonly WorkspaceListItem[];
-};
-
-function normalizeWorkspacesResponse(response: unknown, fallbackWorkspaceId: string): WorkspaceListState {
-  if (!isRecord(response)) {
-    return {
-      activeWorkspaceId: fallbackWorkspaceId,
-      workspaces: [{ id: fallbackWorkspaceId, name: "Operations", order: 10 }],
-    };
-  }
-
-  const workspaces = Array.isArray(response.workspaces)
-    ? response.workspaces
-        .filter(isRecord)
-        .map((workspace, index) => ({
-          id: getString(workspace.id),
-          name: getString(workspace.name) || `Workspace ${index + 1}`,
-          order: Number.isFinite(Number(workspace.order)) ? Number(workspace.order) : (index + 1) * 10,
-        }))
-        .filter((workspace) => workspace.id)
-    : [];
-
-  return {
-    activeWorkspaceId: getString(response.activeWorkspaceId) || fallbackWorkspaceId,
-    workspaces: workspaces.length > 0
-      ? workspaces
-      : [{ id: fallbackWorkspaceId, name: "Operations", order: 10 }],
-  };
-}
-
 export default function App() {
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
@@ -261,14 +229,13 @@ export default function App() {
 
         dispatch({ type: "rootSelected", root });
 
-        const [scanResponse, viewsRawResponse, workspacesRawResponse] = await Promise.all([
+        const [scanResponse, viewsRawResponse, workspacesResponse] = await Promise.all([
           workspaceClient.scan({ includeCardChildren: true }),
           workspaceClient.listViews({ workspaceId: root.workspaceId }),
-          workspaceClient.listWorkspaces(),
+          loadWorkspaceList(workspaceClient, root),
         ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
-        const workspacesResponse = normalizeWorkspacesResponse(workspacesRawResponse, root.workspaceId);
         const requestedViewExists = viewsResponse.views.some((view) => view.id === state.activeViewId);
         const activeViewId = requestedViewExists
           ? state.activeViewId
@@ -336,10 +303,7 @@ export default function App() {
       const root = normalizeRootResponse(await workspaceClient.setRoot({}));
       if (root) {
         dispatch({ type: "rootSelected", root });
-        setWorkspaceList({
-          activeWorkspaceId: root.workspaceId,
-          workspaces: [{ id: root.workspaceId, name: "Operations", order: 10 }],
-        });
+        setWorkspaceList(createWorkspaceListFallback(root));
       } else {
         throw new Error("Selected workspace folder response was invalid.");
       }

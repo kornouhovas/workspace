@@ -23,6 +23,7 @@ test("renderer composes the workspace product shell", async () => {
     boardViewSource,
     tableViewSource,
     viewTabsSource,
+    workspaceCompatibilitySource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -39,6 +40,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/board-view.tsx"),
     readProjectFile("src/components/workspace/table-view.tsx"),
     readProjectFile("src/components/workspace/view-tabs.tsx"),
+    readProjectFile("src/workspaceCompatibility.ts"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -69,6 +71,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /loadRequestIdRef/);
   assert.match(appSource, /folderSelectionPendingRef/);
+  assert.match(appSource, /loadWorkspaceList/);
   assert.match(appSource, /rootSelected/);
   assert.match(appSource, /handleCreateView/);
   assert.match(appSource, /handleRenameView/);
@@ -84,7 +87,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.updateView/);
   assert.match(appSource, /workspaceClient\.deleteView/);
   assert.match(appSource, /workspaceClient\.updateFolderRole/);
-  assert.match(appSource, /workspaceClient\.listWorkspaces/);
   assert.match(appSource, /workspaceClient\.createWorkspace/);
   assert.match(appSource, /workspaceClient\.updateWorkspace/);
   assert.match(appSource, /workspaceClient\.deleteWorkspace/);
@@ -116,6 +118,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /data-testid="workspace-main"/);
   assert.match(appSource, /electron-window-drag/);
   assert.match(appSource, /electron-window-no-drag/);
+  assert.match(workspaceCompatibilitySource, /workspace\.listWorkspaces/);
+  assert.match(workspaceCompatibilitySource, /createWorkspaceListFallback/);
   assert.doesNotMatch(appSource, /app\/dashboard\/data\.json/);
   assert.doesNotMatch(appSource, /ChartAreaInteractive/);
   assert.doesNotMatch(appSource, /SectionCards/);
