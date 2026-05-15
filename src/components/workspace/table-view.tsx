@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,20 @@ type WorkspaceTableProjection = {
 type PropertyTypeOption = {
   readonly value: WorkspaceCustomPropertyType;
   readonly label: string;
+};
+
+type ColumnDragPreviewColumn = {
+  readonly propertyId: string;
+  readonly left: number;
+  readonly width: number;
+};
+
+type ColumnDragState = {
+  readonly propertyId: string;
+  readonly startX: number;
+  readonly currentX: number;
+  readonly targetPropertyId: string;
+  readonly columns: readonly ColumnDragPreviewColumn[];
 };
 
 type WorkspaceTableViewProps = {
@@ -133,6 +147,8 @@ export function WorkspaceTableView({
 }: WorkspaceTableViewProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
+  const [openPropertyMenuId, setOpenPropertyMenuId] = useState<string | null>(null);
+  const [columnDrag, setColumnDrag] = useState<ColumnDragState | null>(null);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [resizingColumn, setResizingColumn] = useState<{
     readonly propertyId: string;
@@ -228,9 +244,9 @@ export function WorkspaceTableView({
     onCreateProperty({ name: option.label, type: option.value });
   }
 
-  function reorderColumnFromTo(sourcePropertyId: string, targetPropertyId: string) {
+  function getReorderedPropertyIds(sourcePropertyId: string, targetPropertyId: string) {
     if (sourcePropertyId === targetPropertyId) {
-      return;
+      return null;
     }
 
     const orderedPropertyIds = visibleProperties.map((property) => property.id);
@@ -238,13 +254,21 @@ export function WorkspaceTableView({
     const toIndex = orderedPropertyIds.indexOf(targetPropertyId);
 
     if (fromIndex === -1 || toIndex === -1) {
-      return;
+      return null;
     }
 
     const nextPropertyIds = [...orderedPropertyIds];
     const [draggedId] = nextPropertyIds.splice(fromIndex, 1);
     nextPropertyIds.splice(toIndex, 0, draggedId);
-    onReorderViewProperties(nextPropertyIds);
+    return nextPropertyIds;
+  }
+
+  function reorderColumnFromTo(sourcePropertyId: string, targetPropertyId: string) {
+    const nextPropertyIds = getReorderedPropertyIds(sourcePropertyId, targetPropertyId);
+
+    if (nextPropertyIds) {
+      onReorderViewProperties(nextPropertyIds);
+    }
   }
 
   function startColumnResize(
@@ -261,36 +285,158 @@ export function WorkspaceTableView({
     });
   }
 
+  function getColumnDragPreviewColumns() {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-property-column-id]"))
+      .map((column) => {
+        const propertyId = column.dataset.propertyColumnId;
+        const rect = column.getBoundingClientRect();
+
+        if (!propertyId) {
+          return null;
+        }
+
+        return {
+          propertyId,
+          left: rect.left,
+          width: rect.width,
+        };
+      })
+      .filter((column): column is ColumnDragPreviewColumn => column !== null);
+  }
+
+  function findColumnDragTarget(clientX: number, columns: readonly ColumnDragPreviewColumn[]) {
+    if (columns.length === 0) {
+      return null;
+    }
+
+    let targetPropertyId = columns[0].propertyId;
+
+    for (const column of columns) {
+      if (clientX >= column.left + column.width / 2) {
+        targetPropertyId = column.propertyId;
+      }
+    }
+
+    return targetPropertyId;
+  }
+
+  function findColumnDragTargetFromPoint(clientX: number, clientY: number, sourcePropertyId: string) {
+    for (const element of document.elementsFromPoint(clientX, clientY)) {
+      const column = element.closest<HTMLElement>("[data-property-column-id]");
+      const targetPropertyId = column?.dataset.propertyColumnId;
+
+      if (targetPropertyId && targetPropertyId !== sourcePropertyId) {
+        return targetPropertyId;
+      }
+    }
+
+    return null;
+  }
+
+  function getColumnHeaderDragStyle(propertyId: string): CSSProperties | undefined {
+    if (!columnDrag) {
+      return undefined;
+    }
+
+    const sourceIndex = visibleProperties.findIndex((property) => property.id === columnDrag.propertyId);
+    const targetIndex = visibleProperties.findIndex((property) => property.id === columnDrag.targetPropertyId);
+    const currentIndex = visibleProperties.findIndex((property) => property.id === propertyId);
+    const sourceColumnWidth = columnDrag.columns.find((column) => (
+      column.propertyId === columnDrag.propertyId
+    ))?.width ?? visiblePropertyWidths[columnDrag.propertyId] ?? defaultCustomPropertyColumnWidth;
+
+    if (sourceIndex === -1 || targetIndex === -1 || currentIndex === -1) {
+      return undefined;
+    }
+
+    if (propertyId === columnDrag.propertyId) {
+      return {
+        transform: `translateX(${columnDrag.currentX - columnDrag.startX}px)`,
+        transitionDuration: "0ms",
+        pointerEvents: "none",
+        zIndex: 30,
+      };
+    }
+
+    if (sourceIndex < targetIndex && currentIndex > sourceIndex && currentIndex <= targetIndex) {
+      return {
+        transform: `translateX(${-sourceColumnWidth}px)`,
+        transitionDuration: "160ms",
+      };
+    }
+
+    if (sourceIndex > targetIndex && currentIndex >= targetIndex && currentIndex < sourceIndex) {
+      return {
+        transform: `translateX(${sourceColumnWidth}px)`,
+        transitionDuration: "160ms",
+      };
+    }
+
+    return undefined;
+  }
+
   function startPointerColumnDrag(
     event: ReactPointerEvent<HTMLButtonElement>,
     propertyId: string,
   ) {
+    if (event.button !== 0) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
 
-    let lastTargetPropertyId = propertyId;
+    const columnDragPreviewColumns = getColumnDragPreviewColumns();
     const previousCursor = document.body.style.cursor;
     const previousUserSelect = document.body.style.userSelect;
 
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
-    function movePointerDraggedColumn(pointerEvent: PointerEvent) {
-      const targetColumn = document
-        .elementFromPoint(pointerEvent.clientX, pointerEvent.clientY)
-        ?.closest<HTMLElement>("[data-property-column-id]");
-      const targetPropertyId = targetColumn?.dataset.propertyColumnId;
+    setOpenPropertyMenuId(null);
+    setColumnDrag({
+      propertyId,
+      startX: event.clientX,
+      currentX: event.clientX,
+      targetPropertyId: propertyId,
+      columns: columnDragPreviewColumns,
+    });
 
-      if (targetPropertyId && targetPropertyId !== lastTargetPropertyId) {
-        lastTargetPropertyId = targetPropertyId;
-        reorderColumnFromTo(propertyId, targetPropertyId);
-      }
+    function movePointerDraggedColumn(pointerEvent: PointerEvent) {
+      const targetPropertyId = findColumnDragTargetFromPoint(
+        pointerEvent.clientX,
+        pointerEvent.clientY,
+        propertyId,
+      ) ?? findColumnDragTarget(pointerEvent.clientX, columnDragPreviewColumns) ?? propertyId;
+
+      setColumnDrag((currentColumnDrag) => {
+        if (!currentColumnDrag || currentColumnDrag.propertyId !== propertyId) {
+          return currentColumnDrag;
+        }
+
+        return {
+          ...currentColumnDrag,
+          currentX: pointerEvent.clientX,
+          targetPropertyId,
+        };
+      });
     }
 
-    function finishPointerDraggedColumn() {
+    function finishPointerDraggedColumn(pointerEvent: PointerEvent) {
+      const targetPropertyId = findColumnDragTargetFromPoint(
+        pointerEvent.clientX,
+        pointerEvent.clientY,
+        propertyId,
+      ) ?? findColumnDragTarget(pointerEvent.clientX, columnDragPreviewColumns);
+
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
       window.removeEventListener("pointermove", movePointerDraggedColumn);
+      setColumnDrag(null);
+
+      if (targetPropertyId && Math.abs(pointerEvent.clientX - event.clientX) > 4) {
+        reorderColumnFromTo(propertyId, targetPropertyId);
+      }
     }
 
     window.addEventListener("pointermove", movePointerDraggedColumn);
@@ -323,9 +469,20 @@ export function WorkspaceTableView({
                 return (
                   <TableHead
                     key={property.id}
-                    className="group/column relative border-r border-border/50 pl-8"
+                    className={[
+                      "group/column relative border-r border-border/50",
+                      columnDrag ? "transition-transform ease-out" : "",
+                      columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
+                    ].filter(Boolean).join(" ")}
                     data-property-column-id={property.id}
-                    style={{ width: propertyColumnWidth }}
+                    style={{
+                      width: propertyColumnWidth,
+                      ...getColumnHeaderDragStyle(property.id),
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setOpenPropertyMenuId(property.id);
+                    }}
                   >
                     {editingPropertyId === property.id ? (
                       <Input
@@ -349,17 +506,30 @@ export function WorkspaceTableView({
                         }}
                       />
                     ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                      <DropdownMenu
+                        open={openPropertyMenuId === property.id}
+                        onOpenChange={(open) => setOpenPropertyMenuId(open ? property.id : null)}
+                      >
+                        <div className="flex min-w-0 items-center gap-1">
                           <button
                             type="button"
-                            className="group relative flex h-8 w-full min-w-0 cursor-grab items-center rounded-md text-left hover:bg-muted active:cursor-grabbing"
-                            aria-label={`${property.name} property actions`}
+                            className="flex h-8 min-w-0 flex-1 cursor-grab items-center rounded-md text-left hover:bg-muted active:cursor-grabbing"
+                            aria-label={`Drag ${property.name} column`}
+                            onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
                           >
                             <span className="block min-w-0 truncate pr-7">{property.name}</span>
-                            <MoreHorizontalIcon className="absolute right-1 top-1/2 size-3.5 -translate-y-1/2 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" aria-hidden="true" />
                           </button>
-                        </DropdownMenuTrigger>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                              aria-label={`${property.name} property actions`}
+                              onPointerDown={(event) => event.stopPropagation()}
+                            >
+                              <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                            </button>
+                          </DropdownMenuTrigger>
+                        </div>
                         <DropdownMenuContent align="start" className="min-w-44">
                           <DropdownMenuItem disabled={isSystemProperty(property.id)} onSelect={() => beginRenameProperty(property)}>
                             Rename property
@@ -385,14 +555,6 @@ export function WorkspaceTableView({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
-                    <button
-                      type="button"
-                      className="absolute left-1 top-1/2 z-20 flex size-5 -translate-y-1/2 cursor-grab items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
-                      aria-label={`Drag ${property.name} column`}
-                      onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
-                    >
-                      <GripVerticalIcon className="size-3.5" aria-hidden="true" />
-                    </button>
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 z-10 w-1.5 cursor-col-resize touch-none rounded-sm hover:bg-primary/50"
