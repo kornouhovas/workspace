@@ -96,6 +96,20 @@ test("workspace app state stores loaded service projection responses", async () 
   assert.deepEqual(state.folderRoleTree, folderRoleTree);
 });
 
+test("workspace app state stores selected root before projection loading completes", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const state = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "rootSelected",
+    root,
+  });
+
+  assert.equal(state.status, "loading");
+  assert.deepEqual(state.root, root);
+  assert.equal(state.workspaceId, "workspace:ops");
+  assert.equal(state.sourceFolderMissing, false);
+  assert.equal(state.error, null);
+});
+
 test("workspace app state stores service errors", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const state = workspaceAppStateReducer(createInitialWorkspaceAppState(), {

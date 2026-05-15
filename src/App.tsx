@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { WorkspaceBoardView } from "@/components/workspace/board-view";
@@ -229,6 +229,8 @@ export default function App() {
   });
   const [reloadToken, setReloadToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
+  const loadRequestIdRef = useRef(0);
+  const folderSelectionPendingRef = useRef(false);
   const workspaceClient = useMemo(
     () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
     [],
@@ -236,13 +238,19 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const loadRequestId = loadRequestIdRef.current + 1;
+    loadRequestIdRef.current = loadRequestId;
+
+    function isCurrentLoad() {
+      return !cancelled && loadRequestIdRef.current === loadRequestId;
+    }
 
     async function loadWorkspaceState() {
       dispatch({ type: "loadStarted" });
 
       try {
         const root = normalizeRootResponse(await workspaceClient.getRoot());
-        if (cancelled) {
+        if (!isCurrentLoad()) {
           return;
         }
 
@@ -250,6 +258,8 @@ export default function App() {
           dispatch({ type: "sourceFolderMissing" });
           return;
         }
+
+        dispatch({ type: "rootSelected", root });
 
         const [scanResponse, viewsRawResponse, workspacesRawResponse] = await Promise.all([
           workspaceClient.scan({ includeCardChildren: true }),
@@ -275,7 +285,7 @@ export default function App() {
           }),
         );
 
-        if (!cancelled) {
+        if (isCurrentLoad()) {
           setWorkspaceList(workspacesResponse);
           dispatch({
             type: "projectionLoaded",
@@ -284,15 +294,28 @@ export default function App() {
             projectionResponse,
             folderRoleTree,
           });
+          if (folderSelectionPendingRef.current) {
+            folderSelectionPendingRef.current = false;
+            setSelectingFolder(false);
+            toast.success("Workspace folder selected");
+          }
         }
       } catch (error) {
         const message = getServiceErrorMessage(error);
-        if (!cancelled) {
+        if (isCurrentLoad()) {
           setWorkspaceList({ activeWorkspaceId: null, workspaces: [] });
           dispatch({ type: "serviceError", error: message });
-          toast.error("Workspace service unavailable", {
-            description: "Mock workspace data is shown while the service bridge is unavailable.",
-          });
+          if (folderSelectionPendingRef.current) {
+            folderSelectionPendingRef.current = false;
+            setSelectingFolder(false);
+            toast.error("Could not load selected workspace folder", {
+              description: message,
+            });
+          } else {
+            toast.error("Workspace service unavailable", {
+              description: "Mock workspace data is shown while the service bridge is unavailable.",
+            });
+          }
         }
       }
     }
@@ -305,18 +328,29 @@ export default function App() {
   }, [reloadToken, workspaceClient, state.activeViewId, state.searchQuery]);
 
   async function handleSelectFolder() {
+    loadRequestIdRef.current += 1;
+    folderSelectionPendingRef.current = false;
     setSelectingFolder(true);
 
     try {
-      await workspaceClient.setRoot({});
-      toast.success("Workspace folder selected");
+      const root = normalizeRootResponse(await workspaceClient.setRoot({}));
+      if (root) {
+        dispatch({ type: "rootSelected", root });
+        setWorkspaceList({
+          activeWorkspaceId: root.workspaceId,
+          workspaces: [{ id: root.workspaceId, name: "Operations", order: 10 }],
+        });
+      } else {
+        throw new Error("Selected workspace folder response was invalid.");
+      }
+      folderSelectionPendingRef.current = true;
       setReloadToken((value) => value + 1);
     } catch (error) {
+      folderSelectionPendingRef.current = false;
+      setSelectingFolder(false);
       toast.error("Could not select workspace folder", {
         description: getServiceErrorMessage(error),
       });
-    } finally {
-      setSelectingFolder(false);
     }
   }
 

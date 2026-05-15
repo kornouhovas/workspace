@@ -131,6 +131,59 @@ test("workspace IPC handler tolerates concurrent root selection across process h
   }
 });
 
+test("workspace IPC handler repairs a stale active view when selecting a root", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const firstHandler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => "extra-board",
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await firstHandler(null, "workspace.setRoot", {});
+    const createdView = await firstHandler(null, "workspace.createView", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewType: "board",
+      name: "Board 2",
+    });
+    await firstHandler(null, "workspace.deleteView", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewId: createdView.view.id,
+    });
+
+    const secondHandler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      now: () => "2026-05-15T10:01:00.000Z",
+    });
+
+    await secondHandler(null, "workspace.setRoot", {});
+    const viewsResponse = await secondHandler(null, "workspace.listViews", {
+      workspaceId: rootResponse.root.workspaceId,
+    });
+
+    assert.equal(
+      viewsResponse.views.some((view) => view.id === viewsResponse.activeViewId),
+      true,
+    );
+    const projectionResponse = await secondHandler(null, "workspace.getViewProjection", {
+      workspaceId: rootResponse.root.workspaceId,
+      viewId: viewsResponse.activeViewId,
+    });
+    assert.equal(projectionResponse.projection.type, "board");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler persists folder role rules for scans and projections", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");

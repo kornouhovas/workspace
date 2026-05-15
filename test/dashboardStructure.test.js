@@ -67,6 +67,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceViewTabs/);
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
+  assert.match(appSource, /loadRequestIdRef/);
+  assert.match(appSource, /folderSelectionPendingRef/);
+  assert.match(appSource, /rootSelected/);
   assert.match(appSource, /handleCreateView/);
   assert.match(appSource, /handleRenameView/);
   assert.match(appSource, /handleDeleteView/);

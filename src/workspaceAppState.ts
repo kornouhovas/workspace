@@ -79,6 +79,7 @@ export type WorkspaceAppState = {
 
 export type WorkspaceAppAction =
   | { readonly type: "loadStarted" }
+  | { readonly type: "rootSelected"; readonly root: WorkspaceRootState }
   | { readonly type: "sourceFolderMissing" }
   | {
       readonly type: "projectionLoaded";
@@ -136,6 +137,19 @@ export function workspaceAppStateReducer(
       selectedProjectId: null,
       detailOpen: false,
       sourceFolderMissing: true,
+      error: null,
+    };
+  }
+
+  if (action.type === "rootSelected") {
+    return {
+      ...state,
+      status: "loading",
+      root: action.root,
+      workspaceId: action.root.workspaceId,
+      selectedProjectId: null,
+      detailOpen: false,
+      sourceFolderMissing: false,
       error: null,
     };
   }
