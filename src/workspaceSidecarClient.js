@@ -36,6 +36,41 @@ function getSidecarRoute(method, payload = {}) {
       query: `?workspaceId=${encodeURIComponent(workspaceId)}`,
     };
   }
+  if (method === "workspace.listProperties") {
+    const workspaceId = typeof payload.workspaceId === "string" ? payload.workspaceId : "";
+    return {
+      httpMethod: "GET",
+      path: "/workspace/properties",
+      query: `?workspaceId=${encodeURIComponent(workspaceId)}`,
+    };
+  }
+  if (method === "workspace.createProperty") {
+    return { httpMethod: "POST", path: "/workspace/properties" };
+  }
+  if (method === "workspace.updateProperty") {
+    return { httpMethod: "PATCH", path: "/workspace/properties" };
+  }
+  if (method === "workspace.reorderProperties") {
+    return { httpMethod: "PUT", path: "/workspace/properties/reorder" };
+  }
+  if (method === "workspace.deleteProperty") {
+    return { httpMethod: "DELETE", path: "/workspace/properties" };
+  }
+  if (method === "workspace.createSelectValue") {
+    return { httpMethod: "POST", path: "/workspace/select-values" };
+  }
+  if (method === "workspace.updateSelectValue") {
+    return { httpMethod: "PATCH", path: "/workspace/select-values" };
+  }
+  if (method === "workspace.reorderSelectValues") {
+    return { httpMethod: "PUT", path: "/workspace/select-values/reorder" };
+  }
+  if (method === "workspace.deleteSelectValue") {
+    return { httpMethod: "DELETE", path: "/workspace/select-values" };
+  }
+  if (method === "workspace.updateProjectPropertyValue") {
+    return { httpMethod: "PUT", path: "/workspace/property-values" };
+  }
   if (method === "workspace.listViews") {
     const workspaceId = typeof payload.workspaceId === "string" ? payload.workspaceId : "";
     return {

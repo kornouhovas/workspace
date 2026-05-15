@@ -30,6 +30,53 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     value: "note",
   });
   await transport.request("workspace.listPropertyValues", { workspaceId: "workspace:root" });
+  await transport.request("workspace.listProperties", { workspaceId: "workspace:ops" });
+  await transport.request("workspace.createProperty", {
+    workspaceId: "workspace:ops",
+    name: "Priority",
+    type: "select",
+  });
+  await transport.request("workspace.updateProperty", {
+    workspaceId: "workspace:ops",
+    propertyId: "property:priority",
+    patch: { name: "Urgency" },
+  });
+  await transport.request("workspace.reorderProperties", {
+    workspaceId: "workspace:ops",
+    orderedPropertyIds: ["property:name", "property:status", "property:priority"],
+  });
+  await transport.request("workspace.deleteProperty", {
+    workspaceId: "workspace:ops",
+    propertyId: "property:priority",
+    confirmDeleteValues: true,
+  });
+  await transport.request("workspace.createSelectValue", {
+    workspaceId: "workspace:ops",
+    propertyId: "property:priority",
+    name: "High",
+    color: "red",
+  });
+  await transport.request("workspace.updateSelectValue", {
+    workspaceId: "workspace:ops",
+    selectValueId: "selectValue:priority:high",
+    patch: { name: "Critical" },
+  });
+  await transport.request("workspace.reorderSelectValues", {
+    workspaceId: "workspace:ops",
+    propertyId: "property:priority",
+    orderedSelectValueIds: ["selectValue:priority:high"],
+  });
+  await transport.request("workspace.deleteSelectValue", {
+    workspaceId: "workspace:ops",
+    selectValueId: "selectValue:priority:high",
+    confirmDeleteUsages: true,
+  });
+  await transport.request("workspace.updateProjectPropertyValue", {
+    workspaceId: "workspace:ops",
+    projectId: "project:alpha",
+    propertyId: "property:priority",
+    value: "selectValue:priority:high",
+  });
   await transport.request("workspace.listViews", { workspaceId: "workspace:ops" });
   await transport.request("workspace.upsertView", {
     id: "view:board",
@@ -76,6 +123,103 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
       method: "GET",
       headers: undefined,
       body: null,
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/properties?workspaceId=workspace%3Aops",
+      method: "GET",
+      headers: undefined,
+      body: null,
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/properties",
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        name: "Priority",
+        type: "select",
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/properties",
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        patch: { name: "Urgency" },
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/properties/reorder",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        orderedPropertyIds: ["property:name", "property:status", "property:priority"],
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/properties",
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        confirmDeleteValues: true,
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/select-values",
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        name: "High",
+        color: "red",
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/select-values",
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        patch: { name: "Critical" },
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/select-values/reorder",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        propertyId: "property:priority",
+        orderedSelectValueIds: ["selectValue:priority:high"],
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/select-values",
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        selectValueId: "selectValue:priority:high",
+        confirmDeleteUsages: true,
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/property-values",
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        projectId: "project:alpha",
+        propertyId: "property:priority",
+        value: "selectValue:priority:high",
+      },
     },
     {
       url: "http://127.0.0.1:5000/workspace/views?workspaceId=workspace%3Aops",
