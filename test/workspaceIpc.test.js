@@ -384,3 +384,150 @@ test("workspace IPC handler persists view state outside the process handler inst
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test("workspace IPC handler persists custom properties and projects them into views", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+  const propertyStorePath = join(tempDirectory, "properties.json");
+  const ids = ["priority", "high", "low"][Symbol.iterator]();
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    await mkdir(join(rootPath, "Active", "Project Beta"), { recursive: true });
+
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => ids.next().value,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const workspaceId = rootResponse.root.workspaceId;
+    const createdProperty = await handler(null, "workspace.createProperty", {
+      workspaceId,
+      name: "Priority",
+      type: "select",
+    });
+    const priorityProperty = createdProperty.property;
+    assert.equal(priorityProperty.id, "property:priority");
+    assert.equal(priorityProperty.name, "Priority");
+
+    const highValue = await handler(null, "workspace.createSelectValue", {
+      workspaceId,
+      propertyId: priorityProperty.id,
+      name: "High",
+      color: "red",
+    });
+    const lowValue = await handler(null, "workspace.createSelectValue", {
+      workspaceId,
+      propertyId: priorityProperty.id,
+      name: "Low",
+      color: "gray",
+    });
+
+    const initialProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-board",
+    });
+    const projects = initialProjection.projection.columns.flatMap((column) => column.projects);
+    const alphaProject = projects.find((project) => project.name === "Project Alpha");
+    const betaProject = projects.find((project) => project.name === "Project Beta");
+
+    await handler(null, "workspace.updateProjectPropertyValue", {
+      workspaceId,
+      projectId: alphaProject.id,
+      propertyId: priorityProperty.id,
+      value: highValue.selectValue.id,
+    });
+    await handler(null, "workspace.updateProjectPropertyValue", {
+      workspaceId,
+      projectId: betaProject.id,
+      propertyId: priorityProperty.id,
+      value: lowValue.selectValue.id,
+    });
+
+    await handler(null, "workspace.updateView", {
+      workspaceId,
+      viewId: "view:default-board",
+      patch: {
+        visiblePropertyIds: ["property:name", "property:status", priorityProperty.id],
+        propertyOrder: {
+          "property:name": 10,
+          "property:status": 20,
+          [priorityProperty.id]: 30,
+        },
+        valueVisibility: {
+          [priorityProperty.id]: {
+            valueIds: [highValue.selectValue.id],
+          },
+        },
+      },
+    });
+
+    const propertiesResponse = await handler(null, "workspace.listProperties", { workspaceId });
+    assert.deepEqual(
+      propertiesResponse.properties.map((property) => [property.id, property.name, property.type]),
+      [
+        ["property:name", "Name", "text"],
+        ["property:status", "Status", "select"],
+        [priorityProperty.id, "Priority", "select"],
+      ],
+    );
+    assert.deepEqual(
+      propertiesResponse.selectValues.map((value) => [value.id, value.name, value.propertyId]),
+      [
+        [highValue.selectValue.id, "High", priorityProperty.id],
+        [lowValue.selectValue.id, "Low", priorityProperty.id],
+      ],
+    );
+
+    const filteredProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-board",
+    });
+
+    assert.deepEqual(
+      filteredProjection.visibleProperties.map((property) => [property.id, property.name, property.propertyType]),
+      [
+        ["property:name", "Name", "text"],
+        ["property:status", "Status", "select"],
+        [priorityProperty.id, "Priority", "select"],
+      ],
+    );
+    assert.deepEqual(
+      filteredProjection.projection.columns.flatMap((column) => column.projects).map((project) => [
+        project.name,
+        project.propertyValues[priorityProperty.id],
+      ]),
+      [["Project Alpha", highValue.selectValue.id]],
+    );
+
+    await handler(null, "workspace.updateProperty", {
+      workspaceId,
+      propertyId: priorityProperty.id,
+      patch: {
+        name: "user priority",
+      },
+    });
+    const renamedProperties = await handler(null, "workspace.listProperties", { workspaceId });
+    assert.equal(
+      renamedProperties.properties.find((property) => property.id === priorityProperty.id).name,
+      "user priority",
+    );
+
+    await assert.rejects(
+      handler(null, "workspace.deleteProperty", {
+        workspaceId,
+        propertyId: priorityProperty.id,
+      }),
+      /Property has values/,
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

@@ -17,12 +17,20 @@ import {
   createSetActiveViewResponse,
   createUpdateViewResponse,
   createViewProjectionResponse,
+  defaultWorkspacePropertiesPath,
   defaultWorkspaceSettingsPath,
   readWorkspaceSettings,
   writeWorkspaceSettings,
 } from "../src/workspaceBackend.js";
 import { projectFoldersToWorkspaceObjects } from "../src/workspaceObjects.js";
-import { createDefaultPropertySchemas } from "../src/workspaceProperties.js";
+import { createFilePropertyStore } from "../src/workspacePropertyStore.js";
+import {
+  createDefaultPropertySchemas,
+  isSystemPropertyId,
+  normalizeProjectPropertyValue,
+  normalizePropertyDefinition,
+  normalizeSelectValue,
+} from "../src/workspaceProperties.js";
 import { createDefaultView, NO_STATUS_VALUE_ID, PROPERTY_NAME_ID, PROPERTY_STATUS_ID } from "../src/workspaceViews.js";
 
 const ipcChannel = "workspace:request";
@@ -35,6 +43,16 @@ const supportedMethods = new Set([
   "workspace.listProjectFileTree",
   "workspace.saveProperty",
   "workspace.listPropertyValues",
+  "workspace.listProperties",
+  "workspace.createProperty",
+  "workspace.updateProperty",
+  "workspace.reorderProperties",
+  "workspace.deleteProperty",
+  "workspace.createSelectValue",
+  "workspace.updateSelectValue",
+  "workspace.reorderSelectValues",
+  "workspace.deleteSelectValue",
+  "workspace.updateProjectPropertyValue",
   "workspace.updateFolderRole",
   "workspace.listWorkspaces",
   "workspace.createWorkspace",
@@ -61,6 +79,9 @@ export function createWorkspaceIpcHandler(options = {}) {
   const configPath = options.configPath || defaultWorkspaceSettingsPath;
   const viewStore = options.viewStore || createFileViewStore(
     options.viewStorePath || join(dirname(configPath), "views.json"),
+  );
+  const propertyStore = options.propertyStore || createFilePropertyStore(
+    options.propertyStorePath || defaultWorkspacePropertiesPath,
   );
   const idFactory = options.idFactory || randomUUID;
   const now = options.now || (() => new Date().toISOString());
@@ -177,7 +198,173 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.listPropertyValues") {
-      return { values: [] };
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return {
+        workspaceId,
+        values: await propertyStore.listProjectPropertyValues(workspaceId, {
+          projectId: typeof body.projectId === "string" ? body.projectId.trim() : "",
+          propertyId: typeof body.propertyId === "string" ? body.propertyId.trim() : "",
+        }),
+      };
+    }
+
+    if (method === "workspace.listProperties") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return createListPropertiesResult({
+        body,
+        workspaceId,
+        propertyStore,
+      });
+    }
+
+    if (method === "workspace.createProperty") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return createPropertyResult({
+        body,
+        workspaceId,
+        propertyStore,
+        idFactory,
+        now,
+      });
+    }
+
+    if (method === "workspace.updateProperty") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return updatePropertyResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.reorderProperties") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return reorderPropertiesResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.deleteProperty") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return deletePropertyResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.createSelectValue") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return createSelectValueResult({
+        body,
+        workspaceId,
+        propertyStore,
+        idFactory,
+        now,
+      });
+    }
+
+    if (method === "workspace.updateSelectValue") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return updateSelectValueResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.reorderSelectValues") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return reorderSelectValuesResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.deleteSelectValue") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      return deleteSelectValueResult({
+        body,
+        workspaceId,
+        propertyStore,
+        now,
+      });
+    }
+
+    if (method === "workspace.updateProjectPropertyValue") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath: root.root.rootPath,
+      });
+      const settings = await readWorkspaceSettings(configPath);
+      return updateProjectPropertyValueResult({
+        body,
+        workspaceId,
+        propertyStore,
+        rootPath: root.root.rootPath,
+        rules: normalizeFolderRules(settings.folderRules),
+        now,
+      });
     }
 
     if (method === "workspace.listWorkspaces") {
@@ -344,17 +531,23 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.updateView") {
-      const propertyDefinitions = createDefaultPropertySchemas(body.workspaceId);
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      const propertyDefinitions = await listAllPropertyDefinitions({
+        workspaceId,
+        propertyStore,
+      });
+      const selectValues = await propertyStore.listSelectValues(workspaceId);
       const settings = await readWorkspaceSettings(configPath);
       const statusValues = await getStatusValues({
         rootPath: root.root.rootPath,
-        workspaceId: body.workspaceId,
+        workspaceId,
         rules: normalizeFolderRules(settings.folderRules),
       });
       return unwrapBackendResponse(await createUpdateViewResponse({
         body,
         viewStore,
         propertyDefinitions,
+        selectValues,
         statusValues,
         now,
       }));
@@ -371,25 +564,34 @@ export function createWorkspaceIpcHandler(options = {}) {
     if (method === "workspace.getViewProjection") {
       const settings = await readWorkspaceSettings(configPath);
       const rules = normalizeFolderRules(settings.folderRules);
+      let projectsAndStatusValues = null;
+      const loadProjectsAndStatusValues = (workspaceId) => {
+        projectsAndStatusValues ||= getProjectsAndStatusValues({
+          rootPath: root.root.rootPath,
+          workspaceId,
+          rules,
+        });
+        return projectsAndStatusValues;
+      };
       return unwrapBackendResponse(await createViewProjectionResponse({
         body,
         viewStore,
         projectProvider: async ({ workspaceId }) => {
-          const { projects } = await getProjectsAndStatusValues({
-            rootPath: root.root.rootPath,
-            workspaceId,
-            rules,
-          });
-          return projects;
+          const { projects } = await loadProjectsAndStatusValues(workspaceId);
+          const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId);
+          return attachProjectPropertyValues(projects, propertyValues);
         },
-        propertyProvider: async ({ workspaceId }) => {
-          const { statusValues } = await getProjectsAndStatusValues({
-            rootPath: root.root.rootPath,
+        propertyProvider: async ({ workspaceId, view }) => {
+          const { statusValues } = await loadProjectsAndStatusValues(workspaceId);
+          const propertyDefinitions = await listAllPropertyDefinitions({
             workspaceId,
-            rules,
+            propertyStore,
           });
           return {
-            visibleProperties: createDefaultPropertySchemas(workspaceId).map(toVisibleProperty),
+            visibleProperties: createVisiblePropertiesForView({
+              view,
+              propertyDefinitions,
+            }),
             statusValues,
           };
         },
@@ -570,6 +772,537 @@ async function getStatusValues({ rootPath, workspaceId, rules = {} }) {
   return statusValues;
 }
 
+async function createListPropertiesResult({ body = {}, workspaceId, propertyStore }) {
+  const result = {
+    workspaceId,
+    properties: await listAllPropertyDefinitions({ workspaceId, propertyStore }),
+    selectValues: await propertyStore.listSelectValues(workspaceId),
+  };
+
+  if (body.includeUsage === true) {
+    const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId);
+    result.usage = createPropertyUsageSummary(propertyValues);
+  }
+
+  return result;
+}
+
+async function createPropertyResult({ body, workspaceId, propertyStore, idFactory, now }) {
+  const timestamp = now();
+  const existingProperties = await listAllPropertyDefinitions({ workspaceId, propertyStore });
+  const propertyId = normalizeNewDocumentId({
+    prefix: "property",
+    seed: body.propertyId || body.id || idFactory(),
+  });
+
+  if (isSystemPropertyId(propertyId) || existingProperties.some((property) => property.id === propertyId)) {
+    throw createWorkspaceServiceError("PROPERTY_ALREADY_EXISTS", "Property already exists.", "propertyId");
+  }
+
+  const name = requireNonEmptyText(body.name, "name");
+  const order = Number.isFinite(Number(body.order))
+    ? Number(body.order)
+    : existingProperties.reduce((max, property) => Math.max(max, Number(property.order) || 0), 0) + 10;
+  let property;
+  try {
+    property = normalizePropertyDefinition({
+      id: propertyId,
+      workspaceId,
+      name,
+      type: body.type,
+      hidden: body.hidden === true,
+      order,
+      config: body.config,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    }, { workspaceId, now: timestamp });
+  } catch (error) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "type");
+  }
+
+  if (!property.name) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "Property name is required.", "name");
+  }
+
+  return {
+    workspaceId,
+    property: await propertyStore.saveProperty(property),
+  };
+}
+
+async function updatePropertyResult({ body, workspaceId, propertyStore, now }) {
+  const propertyId = requirePayloadString(body, "propertyId");
+  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  const patch = normalizePatchObject(body.patch);
+
+  if (Object.hasOwn(patch, "type") && patch.type !== property.type) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "Property type cannot be changed.", "type");
+  }
+
+  const timestamp = now();
+  let updatedProperty;
+  try {
+    updatedProperty = normalizePropertyDefinition({
+      ...property,
+      name: Object.hasOwn(patch, "name") ? requireNonEmptyText(patch.name, "name") : property.name,
+      hidden: Object.hasOwn(patch, "hidden") ? patch.hidden === true : property.hidden,
+      order: Object.hasOwn(patch, "order") ? patch.order : property.order,
+      config: Object.hasOwn(patch, "config") ? patch.config : property.config,
+      updatedAt: timestamp,
+    }, { workspaceId, now: timestamp });
+  } catch (error) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "type");
+  }
+
+  return {
+    workspaceId,
+    property: await propertyStore.saveProperty(updatedProperty),
+  };
+}
+
+async function reorderPropertiesResult({ body, workspaceId, propertyStore, now }) {
+  const customProperties = await propertyStore.listProperties(workspaceId);
+  const properties = await listAllPropertyDefinitions({ workspaceId, propertyStore });
+  const orderedPropertyIds = validateCustomDocumentOrder(body.orderedPropertyIds, properties, "orderedPropertyIds");
+  const customPropertyById = new Map(customProperties.map((property) => [property.id, property]));
+  const timestamp = now();
+  const savedProperties = [];
+
+  for (const [index, propertyId] of orderedPropertyIds.entries()) {
+    if (!customPropertyById.has(propertyId)) {
+      continue;
+    }
+
+    savedProperties.push(await propertyStore.saveProperty({
+      ...customPropertyById.get(propertyId),
+      order: (index + 1) * 10,
+      updatedAt: timestamp,
+    }));
+  }
+
+  return {
+    workspaceId,
+    properties: savedProperties.map((property) => ({ id: property.id, order: property.order })),
+  };
+}
+
+async function deletePropertyResult({ body, workspaceId, propertyStore, now }) {
+  const propertyId = requirePayloadString(body, "propertyId");
+  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId, { propertyId });
+
+  if (propertyValues.length > 0 && body.confirmDeleteValues !== true) {
+    throw createWorkspaceServiceError("PROPERTY_IN_USE", "Property has values and needs delete confirmation.", "propertyId");
+  }
+
+  const timestamp = now();
+  await propertyStore.saveProperty({
+    ...property,
+    deletedAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  for (const selectValue of await propertyStore.listSelectValues(workspaceId, { propertyId })) {
+    await propertyStore.saveSelectValue({
+      ...selectValue,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+    });
+  }
+
+  for (const valueDocument of propertyValues) {
+    await propertyStore.saveProjectPropertyValue({
+      ...valueDocument,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+    });
+  }
+
+  return {
+    workspaceId,
+    deletedPropertyId: propertyId,
+  };
+}
+
+async function createSelectValueResult({ body, workspaceId, propertyStore, idFactory, now }) {
+  const propertyId = requirePayloadString(body, "propertyId");
+  const property = await requireSelectableProperty({ workspaceId, propertyId, propertyStore });
+  const existingValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  const selectValueId = normalizeNewDocumentId({
+    prefix: "selectValue",
+    seed: `${property.id}:${body.selectValueId || body.id || idFactory()}`,
+  });
+
+  if (existingValues.some((selectValue) => selectValue.id === selectValueId)) {
+    throw createWorkspaceServiceError("SELECT_VALUE_ALREADY_EXISTS", "Select value already exists.", "selectValueId");
+  }
+
+  const timestamp = now();
+  const order = Number.isFinite(Number(body.order))
+    ? Number(body.order)
+    : existingValues.reduce((max, selectValue) => Math.max(max, Number(selectValue.order) || 0), 0) + 10;
+  const selectValue = normalizeSelectValue({
+    id: selectValueId,
+    workspaceId,
+    propertyId: property.id,
+    name: requireNonEmptyText(body.name, "name"),
+    color: body.color,
+    hidden: body.hidden === true,
+    order,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }, { workspaceId, propertyId, now: timestamp });
+
+  return {
+    workspaceId,
+    selectValue: await propertyStore.saveSelectValue(selectValue),
+  };
+}
+
+async function updateSelectValueResult({ body, workspaceId, propertyStore, now }) {
+  const selectValueId = requirePayloadString(body, "selectValueId");
+  const selectValue = await requireSelectValue({ workspaceId, selectValueId, propertyStore });
+  const property = await requireSelectableProperty({
+    workspaceId,
+    propertyId: selectValue.propertyId,
+    propertyStore,
+  });
+  const patch = normalizePatchObject(body.patch);
+  const timestamp = now();
+  const updatedSelectValue = normalizeSelectValue({
+    ...selectValue,
+    propertyId: property.id,
+    name: Object.hasOwn(patch, "name") ? requireNonEmptyText(patch.name, "name") : selectValue.name,
+    color: Object.hasOwn(patch, "color") ? patch.color : selectValue.color,
+    hidden: Object.hasOwn(patch, "hidden") ? patch.hidden === true : selectValue.hidden,
+    order: Object.hasOwn(patch, "order") ? patch.order : selectValue.order,
+    updatedAt: timestamp,
+  }, { workspaceId, propertyId: property.id, now: timestamp });
+
+  return {
+    workspaceId,
+    selectValue: await propertyStore.saveSelectValue(updatedSelectValue),
+  };
+}
+
+async function reorderSelectValuesResult({ body, workspaceId, propertyStore, now }) {
+  const propertyId = requirePayloadString(body, "propertyId");
+  await requireSelectableProperty({ workspaceId, propertyId, propertyStore });
+  const selectValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  const orderedSelectValueIds = validateCustomDocumentOrder(body.orderedSelectValueIds, selectValues, "orderedSelectValueIds");
+  const byId = new Map(selectValues.map((selectValue) => [selectValue.id, selectValue]));
+  const timestamp = now();
+  const savedSelectValues = [];
+
+  for (const [index, selectValueId] of orderedSelectValueIds.entries()) {
+    savedSelectValues.push(await propertyStore.saveSelectValue({
+      ...byId.get(selectValueId),
+      order: (index + 1) * 10,
+      updatedAt: timestamp,
+    }));
+  }
+
+  return {
+    workspaceId,
+    selectValues: savedSelectValues.map((selectValue) => ({ id: selectValue.id, order: selectValue.order })),
+  };
+}
+
+async function deleteSelectValueResult({ body, workspaceId, propertyStore, now }) {
+  const selectValueId = requirePayloadString(body, "selectValueId");
+  const selectValue = await requireSelectValue({ workspaceId, selectValueId, propertyStore });
+  const property = await requireSelectableProperty({
+    workspaceId,
+    propertyId: selectValue.propertyId,
+    propertyStore,
+  });
+  const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId, {
+    propertyId: property.id,
+  });
+  const valuesUsingSelectValue = propertyValues.filter((valueDocument) =>
+    projectPropertyValueUsesSelectValue(valueDocument.value, selectValue.id),
+  );
+
+  if (valuesUsingSelectValue.length > 0 && body.confirmDeleteUsages !== true) {
+    throw createWorkspaceServiceError(
+      "SELECT_VALUE_IN_USE",
+      "Select value is used by project property values and needs delete confirmation.",
+      "selectValueId",
+    );
+  }
+
+  const timestamp = now();
+  await propertyStore.saveSelectValue({
+    ...selectValue,
+    deletedAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  for (const valueDocument of valuesUsingSelectValue) {
+    const nextValue = property.type === "multi-select"
+      ? valueDocument.value.filter((valueId) => valueId !== selectValue.id)
+      : null;
+    await propertyStore.saveProjectPropertyValue({
+      ...valueDocument,
+      value: nextValue,
+      updatedAt: timestamp,
+    });
+    await propertyStore.appendPropertyHistory(createPropertyHistoryDocument({
+      workspaceId,
+      projectId: valueDocument.projectId,
+      propertyId: property.id,
+      oldValue: valueDocument.value,
+      newValue: nextValue,
+      timestamp,
+      reason: "select-value-deleted",
+    }));
+  }
+
+  return {
+    workspaceId,
+    deletedSelectValueId: selectValue.id,
+  };
+}
+
+async function updateProjectPropertyValueResult({ body, workspaceId, propertyStore, rootPath, rules, now }) {
+  const projectId = requirePayloadString(body, "projectId");
+  const propertyId = requirePayloadString(body, "propertyId");
+  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, rules });
+  const project = projects.find((item) => item.id === projectId);
+
+  if (!project) {
+    throw createWorkspaceServiceError("PROJECT_NOT_FOUND", "Project was not found.", "projectId");
+  }
+
+  const selectValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  let normalizedValue;
+  try {
+    normalizedValue = normalizeProjectPropertyValue({
+      property,
+      value: body.value,
+      selectValues,
+    });
+  } catch (error) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "value");
+  }
+
+  const timestamp = now();
+  const existingValue = await propertyStore.getProjectPropertyValue(workspaceId, projectId, propertyId);
+  const valueDocument = {
+    id: existingValue?.id || createStableDocumentId("propertyValue", workspaceId, projectId, propertyId),
+    type: "projectPropertyValue",
+    schemaVersion: 1,
+    workspaceId,
+    projectId,
+    propertyId,
+    propertyType: normalizedValue.type,
+    value: normalizedValue.value,
+    createdAt: existingValue?.createdAt || timestamp,
+    updatedAt: timestamp,
+    deletedAt: null,
+  };
+
+  const savedValue = await propertyStore.saveProjectPropertyValue(valueDocument);
+  await propertyStore.appendPropertyHistory(createPropertyHistoryDocument({
+    workspaceId,
+    projectId,
+    propertyId,
+    oldValue: existingValue?.value ?? null,
+    newValue: savedValue.value,
+    timestamp,
+    reason: "user-update",
+  }));
+
+  return {
+    workspaceId,
+    projectId,
+    propertyId,
+    value: savedValue.value,
+    updatedAt: savedValue.updatedAt,
+  };
+}
+
+async function listAllPropertyDefinitions({ workspaceId, propertyStore }) {
+  return [
+    ...createDefaultPropertySchemas(workspaceId),
+    ...await propertyStore.listProperties(workspaceId),
+  ].sort(comparePropertyDefinitions);
+}
+
+function createVisiblePropertiesForView({ view, propertyDefinitions }) {
+  const propertyById = new Map(propertyDefinitions.map((property) => [property.id, property]));
+  const visiblePropertyIds = Array.isArray(view?.visiblePropertyIds)
+    ? view.visiblePropertyIds
+    : [PROPERTY_NAME_ID, PROPERTY_STATUS_ID];
+
+  return visiblePropertyIds
+    .map((propertyId) => propertyById.get(propertyId))
+    .filter(Boolean)
+    .filter((property) => !property.deletedAt && !property.hidden)
+    .sort((left, right) => (
+      Number(view?.propertyOrder?.[left.id] ?? left.order ?? 0)
+      - Number(view?.propertyOrder?.[right.id] ?? right.order ?? 0)
+    ))
+    .map(toVisibleProperty);
+}
+
+function attachProjectPropertyValues(projects, propertyValues) {
+  const valuesByProject = new Map();
+
+  for (const valueDocument of propertyValues) {
+    const values = valuesByProject.get(valueDocument.projectId) || {};
+    values[valueDocument.propertyId] = valueDocument.value;
+    valuesByProject.set(valueDocument.projectId, values);
+  }
+
+  return projects.map((project) => ({
+    ...project,
+    propertyValues: {
+      ...project.propertyValues,
+      ...(valuesByProject.get(project.id) || {}),
+    },
+  }));
+}
+
+async function requireCustomProperty({ workspaceId, propertyId, propertyStore }) {
+  if (isSystemPropertyId(propertyId)) {
+    throw createWorkspaceServiceError("SYSTEM_PROPERTY_READONLY", "System properties cannot be changed.", "propertyId");
+  }
+
+  const property = await propertyStore.getProperty(workspaceId, propertyId);
+  if (!property || property.deletedAt) {
+    throw createWorkspaceServiceError("PROPERTY_NOT_FOUND", "Property was not found.", "propertyId");
+  }
+
+  return property;
+}
+
+async function requireSelectableProperty({ workspaceId, propertyId, propertyStore }) {
+  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  if (property.type !== "select" && property.type !== "multi-select") {
+    throw createWorkspaceServiceError("INVALID_PROPERTY_TYPE", "Property must be select or multi-select.", "propertyId");
+  }
+
+  return property;
+}
+
+async function requireSelectValue({ workspaceId, selectValueId, propertyStore }) {
+  const selectValue = await propertyStore.getSelectValue(workspaceId, selectValueId);
+  if (!selectValue || selectValue.deletedAt) {
+    throw createWorkspaceServiceError("SELECT_VALUE_NOT_FOUND", "Select value was not found.", "selectValueId");
+  }
+
+  return selectValue;
+}
+
+function validateCustomDocumentOrder(orderedIds, existingDocuments, field) {
+  if (!Array.isArray(orderedIds)) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", `${field} must be an array.`, field);
+  }
+
+  const existingIds = new Set(existingDocuments.map((document) => document.id));
+  const normalizedIds = orderedIds
+    .filter((item) => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const uniqueIds = new Set(normalizedIds);
+
+  if (normalizedIds.length !== existingDocuments.length || uniqueIds.size !== existingDocuments.length) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", `${field} must include each item once.`, field);
+  }
+
+  for (const id of normalizedIds) {
+    if (!existingIds.has(id)) {
+      throw createWorkspaceServiceError("VALIDATION_FAILED", `${field} references an unknown item.`, field);
+    }
+  }
+
+  return normalizedIds;
+}
+
+function normalizePatchObject(patch) {
+  return patch && typeof patch === "object" && !Array.isArray(patch) ? patch : {};
+}
+
+function requireNonEmptyText(value, field) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", `${field} is required.`, field);
+  }
+
+  return text;
+}
+
+function normalizeNewDocumentId({ prefix, seed }) {
+  const rawSeed = typeof seed === "string" && seed.trim() ? seed : randomUUID();
+  return `${prefix}:${createSlug(rawSeed)}`;
+}
+
+function createStableDocumentId(prefix, ...parts) {
+  return `${prefix}:${createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 24)}`;
+}
+
+function createPropertyHistoryDocument({
+  workspaceId,
+  projectId,
+  propertyId,
+  oldValue,
+  newValue,
+  timestamp,
+  reason,
+}) {
+  return {
+    id: createStableDocumentId("propertyHistory", workspaceId, projectId, propertyId, timestamp, reason),
+    type: "propertyHistory",
+    schemaVersion: 1,
+    workspaceId,
+    projectId,
+    propertyId,
+    oldValue,
+    newValue,
+    reason,
+    createdAt: timestamp,
+  };
+}
+
+function projectPropertyValueUsesSelectValue(value, selectValueId) {
+  return Array.isArray(value) ? value.includes(selectValueId) : value === selectValueId;
+}
+
+function createPropertyUsageSummary(propertyValues) {
+  const propertyValueCounts = {};
+  const selectValueCounts = {};
+
+  for (const valueDocument of propertyValues) {
+    propertyValueCounts[valueDocument.propertyId] = (propertyValueCounts[valueDocument.propertyId] || 0) + 1;
+
+    if (Array.isArray(valueDocument.value)) {
+      for (const valueId of valueDocument.value) {
+        selectValueCounts[valueId] = (selectValueCounts[valueId] || 0) + 1;
+      }
+      continue;
+    }
+
+    if (typeof valueDocument.value === "string" && valueDocument.value) {
+      selectValueCounts[valueDocument.value] = (selectValueCounts[valueDocument.value] || 0) + 1;
+    }
+  }
+
+  return {
+    propertyValueCounts,
+    selectValueCounts,
+  };
+}
+
+function comparePropertyDefinitions(left, right) {
+  return (
+    Number(left.order || 0) - Number(right.order || 0)
+    || String(left.createdAt).localeCompare(String(right.createdAt))
+    || String(left.id).localeCompare(String(right.id))
+  );
+}
+
 function requirePayloadString(body, field) {
   const value = typeof body?.[field] === "string" ? body[field].trim() : "";
   if (!value) {
@@ -698,8 +1431,11 @@ function toVisibleProperty(property) {
   return {
     id: property.id,
     name: property.name,
+    type: property.type,
     propertyType: property.type,
     system: property.system,
+    hidden: property.hidden === true,
+    order: property.order,
   };
 }
 
