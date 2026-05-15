@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import { GripVerticalIcon } from "@/lib/lucide-icons";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
+import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 
 type WorkspaceTableProjection = {
   readonly rows: readonly WorkspaceMockProject[];
@@ -16,6 +17,7 @@ type WorkspaceTableProjection = {
 type WorkspaceTableViewProps = {
   readonly projection: WorkspaceTableProjection;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectOpen: (project: WorkspaceMockProject) => void;
 };
 
@@ -31,7 +33,26 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
-export function WorkspaceTableView({ projection, visibleProperties, onProjectOpen }: WorkspaceTableViewProps) {
+function formatPropertyValue(
+  value: unknown,
+  property: WorkspaceMockVisibleProperty,
+  selectValues: readonly WorkspaceSelectValueState[],
+) {
+  if (property.propertyType === "select") {
+    return selectValues.find((selectValue) => selectValue.id === value)?.name || "";
+  }
+
+  if (property.propertyType === "multi-select" && Array.isArray(value)) {
+    return value
+      .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name)
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return value == null ? "" : String(value);
+}
+
+export function WorkspaceTableView({ projection, visibleProperties, selectValues, onProjectOpen }: WorkspaceTableViewProps) {
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-4 pt-4 pb-0" aria-labelledby="workspace-table-heading">
       <div>
@@ -73,7 +94,7 @@ export function WorkspaceTableView({ projection, visibleProperties, onProjectOpe
                 </TableCell>
                 {visibleProperties.map((property) => (
                   <TableCell key={property.id} className="max-w-56 truncate">
-                    {getPropertyValue(project, property)}
+                    {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                   </TableCell>
                 ))}
                 <TableCell className="max-w-72 truncate text-muted-foreground">

@@ -87,6 +87,31 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
         id: getString(view.id),
         name: getString(view.name) || "Untitled view",
         viewType: getString(view.viewType) || "board",
+        visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
+          ? view.visiblePropertyIds.filter((id): id is string => typeof id === "string")
+          : undefined,
+        propertyOrder: isRecord(view.propertyOrder)
+          ? Object.fromEntries(
+              Object.entries(view.propertyOrder)
+                .filter(([, order]) => Number.isFinite(Number(order)))
+                .map(([propertyId, order]) => [propertyId, Number(order)]),
+            )
+          : undefined,
+        valueVisibility: isRecord(view.valueVisibility)
+          ? Object.fromEntries(
+              Object.entries(view.valueVisibility)
+                .filter(([, setting]) => isRecord(setting))
+                .map(([propertyId, setting]) => [
+                  propertyId,
+                  {
+                    valueIds: Array.isArray(setting.valueIds)
+                      ? setting.valueIds.filter((valueId): valueId is string => typeof valueId === "string")
+                      : [],
+                    includeEmpty: setting.includeEmpty === true,
+                  },
+                ]),
+            )
+          : undefined,
       })).filter((view) => view.id)
     : [];
 
@@ -770,6 +795,95 @@ export default function App() {
     }
   }
 
+  async function refreshActiveViewAfterPatch(viewId: string) {
+    if (!state.workspaceId || !state.root) {
+      return;
+    }
+
+    const [viewsRawResponse, projectionRawResponse] = await Promise.all([
+      workspaceClient.listViews({ workspaceId: state.workspaceId }),
+      workspaceClient.getViewProjection({ workspaceId: state.workspaceId, viewId }),
+    ]);
+    const viewsResponse = normalizeViewsResponse(viewsRawResponse, state.workspaceId);
+    const projectionResponse = normalizeProjectionResponse(projectionRawResponse);
+
+    dispatch({
+      type: "projectionLoaded",
+      root: state.root,
+      viewsResponse: { ...viewsResponse, activeViewId: viewId },
+      projectionResponse,
+      folderRoleTree: state.folderRoleTree,
+    });
+  }
+
+  async function updateActiveViewPatch(patch: Record<string, unknown>) {
+    if (!state.workspaceId || !state.activeViewId) {
+      return;
+    }
+
+    await workspaceClient.updateView({
+      workspaceId: state.workspaceId,
+      viewId: state.activeViewId,
+      patch,
+    });
+    await refreshActiveViewAfterPatch(state.activeViewId);
+  }
+
+  function getActiveViewState() {
+    return state.views.find((view) => view.id === state.activeViewId) || null;
+  }
+
+  function createPropertyOrder(visiblePropertyIds: readonly string[]) {
+    return Object.fromEntries(visiblePropertyIds.map((propertyId, index) => [propertyId, (index + 1) * 10]));
+  }
+
+  async function handleTogglePropertyVisibility(propertyId: string, visible: boolean) {
+    const activeView = getActiveViewState();
+    const currentVisiblePropertyIds = activeView?.visiblePropertyIds
+      || state.projection?.visibleProperties.map((property) => property.id)
+      || ["property:name", "property:status"];
+    const requiredPropertyIds = ["property:name", "property:status"];
+    const nextVisiblePropertyIds = visible
+      ? [...new Set([...requiredPropertyIds, ...currentVisiblePropertyIds, propertyId])]
+      : currentVisiblePropertyIds.filter((id) => requiredPropertyIds.includes(id) || id !== propertyId);
+
+    try {
+      await updateActiveViewPatch({
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+      });
+    } catch (error) {
+      toast.error("Could not update view properties", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
+  async function handleToggleValueFilter(propertyId: string, valueId: string, included: boolean) {
+    const activeView = getActiveViewState();
+    const valueVisibility = { ...(activeView?.valueVisibility || {}) };
+    const existingValueIds = valueVisibility[propertyId]?.valueIds || [];
+    const nextValueIds = included
+      ? [...new Set([...existingValueIds, valueId])]
+      : existingValueIds.filter((id) => id !== valueId);
+
+    if (nextValueIds.length === 0) {
+      delete valueVisibility[propertyId];
+    } else {
+      valueVisibility[propertyId] = {
+        valueIds: nextValueIds,
+      };
+    }
+
+    try {
+      await updateActiveViewPatch({ valueVisibility });
+    } catch (error) {
+      toast.error("Could not update view filter", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function handleFolderRoleChange(
     node: WorkspaceFolderRoleNode,
     role: WorkspaceFolderRoleNode["role"],
@@ -1262,6 +1376,10 @@ export default function App() {
                 onCreateView={handleCreateView}
                 onRenameView={handleRenameView}
                 onDeleteView={handleDeleteView}
+                properties={settingsProperties}
+                selectValues={settingsSelectValues}
+                onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                onToggleValueFilter={handleToggleValueFilter}
               />
               <div className="min-h-0 flex-1 overflow-hidden">
                 {state.status === "loading" || state.status === "idle" ? (
@@ -1275,6 +1393,7 @@ export default function App() {
                       <WorkspaceBoardView
                         projection={boardProjection as typeof workspaceMockProjection.projection}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        selectValues={settingsSelectValues}
                         onProjectOpen={handleProjectOpen}
                       />
                     ) : null}
@@ -1282,6 +1401,7 @@ export default function App() {
                       <WorkspaceTableView
                         projection={tableProjection as typeof workspaceMockProjection.tableProjection}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        selectValues={settingsSelectValues}
                         onProjectOpen={handleProjectOpen}
                       />
                     ) : null}

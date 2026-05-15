@@ -8,13 +8,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
 import { MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
+import type {
+  WorkspacePropertyDefinitionState,
+  WorkspaceSelectValueState,
+  WorkspaceViewState,
+} from "@/workspaceAppState";
 
-type WorkspaceView = {
-  readonly id: string;
-  readonly name: string;
-  readonly viewType: string;
-};
+type WorkspaceView = WorkspaceViewState;
 
 type WorkspaceViewTabsProps = {
   readonly activeViewId: string;
@@ -23,6 +25,10 @@ type WorkspaceViewTabsProps = {
   readonly onCreateView: (viewType: "board" | "table") => void;
   readonly onRenameView: (viewId: string, name: string) => void;
   readonly onDeleteView: (viewId: string) => void;
+  readonly properties: readonly WorkspacePropertyDefinitionState[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
+  readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
 };
 
 export function WorkspaceViewTabs({
@@ -32,6 +38,10 @@ export function WorkspaceViewTabs({
   onCreateView,
   onRenameView,
   onDeleteView,
+  properties,
+  selectValues,
+  onTogglePropertyVisibility,
+  onToggleValueFilter,
 }: WorkspaceViewTabsProps) {
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
@@ -151,6 +161,13 @@ export function WorkspaceViewTabs({
         </TabsList>
       </Tabs>
       <div className="flex shrink-0 items-center gap-1">
+        <WorkspaceViewFilterMenu
+          view={activeView}
+          properties={properties}
+          selectValues={selectValues}
+          onTogglePropertyVisibility={onTogglePropertyVisibility}
+          onToggleValueFilter={onToggleValueFilter}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
+import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
@@ -17,6 +18,7 @@ type WorkspaceBoardProjection = {
 type WorkspaceBoardViewProps = {
   readonly projection: WorkspaceBoardProjection;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectOpen: (project: WorkspaceMockProject) => void;
 };
 
@@ -32,7 +34,26 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
-export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpen }: WorkspaceBoardViewProps) {
+function formatPropertyValue(
+  value: unknown,
+  property: WorkspaceMockVisibleProperty,
+  selectValues: readonly WorkspaceSelectValueState[],
+) {
+  if (property.propertyType === "select") {
+    return selectValues.find((selectValue) => selectValue.id === value)?.name || "";
+  }
+
+  if (property.propertyType === "multi-select" && Array.isArray(value)) {
+    return value
+      .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name)
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return value == null ? "" : String(value);
+}
+
+export function WorkspaceBoardView({ projection, visibleProperties, selectValues, onProjectOpen }: WorkspaceBoardViewProps) {
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
   );
@@ -89,7 +110,9 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
                           {cardProperties.map((property) => (
                             <div key={property.id} className="grid grid-cols-[5rem_1fr] gap-2 text-xs">
                               <dt className="truncate text-muted-foreground">{property.name}</dt>
-                              <dd className="truncate text-foreground">{getPropertyValue(project, property)}</dd>
+                              <dd className="truncate text-foreground">
+                                {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
+                              </dd>
                             </div>
                           ))}
                         </dl>

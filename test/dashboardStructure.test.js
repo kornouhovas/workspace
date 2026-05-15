@@ -25,6 +25,7 @@ test("renderer composes the workspace product shell", async () => {
     viewTabsSource,
     workspaceCompatibilitySource,
     propertyControlsSource,
+    viewFilterMenuSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -43,6 +44,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/view-tabs.tsx"),
     readProjectFile("src/workspaceCompatibility.ts"),
     readProjectFile("src/components/workspace/property-controls.tsx"),
+    readProjectFile("src/components/workspace/view-filter-menu.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -214,6 +216,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onCreateView/);
   assert.match(viewTabsSource, /onRenameView/);
   assert.match(viewTabsSource, /onDeleteView/);
+  assert.match(viewTabsSource, /WorkspaceViewFilterMenu/);
+  assert.match(viewTabsSource, /onTogglePropertyVisibility/);
+  assert.match(viewTabsSource, /onToggleValueFilter/);
+  assert.match(viewFilterMenuSource, /WorkspaceViewFilterMenu/);
+  assert.match(viewFilterMenuSource, /Visible properties/);
+  assert.match(viewFilterMenuSource, /Value filters/);
+  assert.match(viewFilterMenuSource, /Checkbox/);
+  assert.match(viewFilterMenuSource, /valueVisibility/);
   assert.match(viewTabsSource, /DropdownMenu/);
   assert.match(viewTabsSource, /Rename View/);
   assert.match(viewTabsSource, /Delete View/);
@@ -226,6 +236,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(viewTabsSource, /window\.prompt/);
   assert.doesNotMatch(viewTabsSource, /\bcapitalize\b/);
   assert.match(boardViewSource, /onProjectOpen/);
+  assert.match(boardViewSource, /selectValues/);
+  assert.match(boardViewSource, /formatPropertyValue/);
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
@@ -237,6 +249,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(boardViewSource, /pr-4/);
   assert.doesNotMatch(boardViewSource, /Cards are read-only across status columns/);
   assert.match(tableViewSource, /onProjectOpen/);
+  assert.match(tableViewSource, /selectValues/);
+  assert.match(tableViewSource, /formatPropertyValue/);
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
@@ -307,6 +321,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
   assert.match(appSource, /projectPropertyValueUpdated/);
   assert.match(appSource, /propertySaveFailed/);
+  assert.match(appSource, /handleTogglePropertyVisibility/);
+  assert.match(appSource, /handleToggleValueFilter/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);

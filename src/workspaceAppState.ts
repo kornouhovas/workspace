@@ -10,6 +10,9 @@ export type WorkspaceViewState = {
   readonly id: string;
   readonly name: string;
   readonly viewType: string;
+  readonly visiblePropertyIds?: readonly string[];
+  readonly propertyOrder?: Record<string, number>;
+  readonly valueVisibility?: Record<string, { readonly valueIds: readonly string[]; readonly includeEmpty?: boolean }>;
 };
 
 export type WorkspacePropertyDefinitionState = {
