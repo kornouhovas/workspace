@@ -1034,6 +1034,44 @@ export default function App() {
     }
   }
 
+  async function handleProjectPropertyValueChange(projectId: string, propertyId: string, value: unknown) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateProjectPropertyValue({
+        workspaceId: state.workspaceId,
+        projectId,
+        propertyId,
+        value,
+      });
+      dispatch({
+        type: "projectPropertyValueUpdated",
+        projectId,
+        propertyId,
+        value,
+      });
+      setSelectedProject((currentProject) => (
+        currentProject?.id === projectId
+          ? {
+              ...currentProject,
+              propertyValues: {
+                ...currentProject.propertyValues,
+                [propertyId]: value,
+              },
+            }
+          : currentProject
+      ));
+    } catch (error) {
+      const message = getServiceErrorMessage(error);
+      dispatch({ type: "propertySaveFailed", error: message });
+      toast.error("Could not save property value", {
+        description: message,
+      });
+    }
+  }
+
   async function loadProjectFileTree(project: WorkspaceMockProject) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
@@ -1124,6 +1162,7 @@ export default function App() {
   const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
   const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
   const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
+  const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
 
   return (
     <>
@@ -1260,7 +1299,9 @@ export default function App() {
             }
           }}
           project={selectedProject}
-          visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
+          visibleProperties={detailProperties}
+          selectValues={settingsSelectValues}
+          onProjectPropertyValueChange={handleProjectPropertyValueChange}
         />
       </div>
       <Toaster richColors />

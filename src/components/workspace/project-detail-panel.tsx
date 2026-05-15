@@ -8,19 +8,33 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
-  WorkspaceMockVisibleProperty,
 } from "@/workspaceMockData";
+import type {
+  WorkspacePropertyDefinitionState,
+  WorkspaceSelectValueState,
+} from "@/workspaceAppState";
 
 type WorkspaceProjectDetailPanelProps = {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly project: WorkspaceMockProject | null;
-  readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+  readonly visibleProperties: readonly WorkspacePropertyDefinitionState[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
 };
 
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
@@ -57,7 +71,7 @@ function readSavedProjectDetailPanelWidth() {
   return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));
 }
 
-function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
+function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {
   if (property.id === "property:name") {
     return project.name;
   }
@@ -67,6 +81,29 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   }
 
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
+}
+
+function stringifyPropertyValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string").join(", ");
+  }
+
+  if (value == null) {
+    return "";
+  }
+
+  return String(value);
+}
+
+function getSelectValuesForProperty(
+  selectValues: readonly WorkspaceSelectValueState[],
+  propertyId: string,
+) {
+  return selectValues
+    .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
+    .sort((left, right) => (
+      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
+    ));
 }
 
 type FileTreeNodeProps = {
@@ -137,11 +174,139 @@ function FileTreeNode({
   );
 }
 
+function ProjectPropertyValueEditor({
+  project,
+  property,
+  selectValues,
+  onProjectPropertyValueChange,
+}: {
+  readonly project: WorkspaceMockProject;
+  readonly property: WorkspacePropertyDefinitionState;
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+}) {
+  const value = getPropertyValue(project, property);
+
+  if (property.id === "property:name" || property.id === "property:status" || property.system) {
+    return <span className="truncate text-foreground">{stringifyPropertyValue(value)}</span>;
+  }
+
+  if (property.propertyType === "text") {
+    return (
+      <Input
+        key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        defaultValue={stringifyPropertyValue(value)}
+        aria-label={`${property.name} text value`}
+        onBlur={(event) => onProjectPropertyValueChange(project.id, property.id, event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    );
+  }
+
+  if (property.propertyType === "number") {
+    return (
+      <Input
+        key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        type="number"
+        defaultValue={stringifyPropertyValue(value)}
+        aria-label={`${property.name} number value`}
+        onBlur={(event) => {
+          const text = event.target.value.trim();
+          onProjectPropertyValueChange(project.id, property.id, text === "" ? null : Number(text));
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    );
+  }
+
+  if (property.propertyType === "date") {
+    return (
+      <Input
+        key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        type="date"
+        defaultValue={stringifyPropertyValue(value)}
+        aria-label={`${property.name} date value`}
+        onBlur={(event) => onProjectPropertyValueChange(project.id, property.id, event.target.value || null)}
+      />
+    );
+  }
+
+  if (property.propertyType === "select") {
+    const values = getSelectValuesForProperty(selectValues, property.id);
+    const selectedValue = typeof value === "string" && value ? value : "__empty";
+
+    return (
+      <Select
+        value={selectedValue}
+        onValueChange={(nextValue) => {
+          onProjectPropertyValueChange(project.id, property.id, nextValue === "__empty" ? null : nextValue);
+        }}
+      >
+        <SelectTrigger className="w-full" aria-label={`${property.name} select value`}>
+          <SelectValue placeholder="Empty" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__empty">Empty</SelectItem>
+          {values.map((selectValue) => (
+            <SelectItem key={selectValue.id} value={selectValue.id}>
+              {selectValue.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  if (property.propertyType === "multi-select") {
+    const values = getSelectValuesForProperty(selectValues, property.id);
+    const selectedValues = Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+
+    return (
+      <div className="grid gap-2">
+        {values.length === 0 ? (
+          <span className="text-sm text-muted-foreground">No values</span>
+        ) : values.map((selectValue) => {
+          const checked = selectedValues.includes(selectValue.id);
+          return (
+            <label key={selectValue.id} className="flex min-w-0 items-center gap-2 text-sm">
+              <Checkbox
+                checked={checked}
+                aria-label={`${property.name} ${selectValue.name}`}
+                onCheckedChange={(nextChecked) => {
+                  const nextValues = nextChecked === true
+                    ? [...selectedValues, selectValue.id]
+                    : selectedValues.filter((valueId) => valueId !== selectValue.id);
+                  onProjectPropertyValueChange(project.id, property.id, nextValues);
+                }}
+              />
+              <span className="truncate">{selectValue.name}</span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return <span className="truncate text-foreground">{stringifyPropertyValue(value)}</span>;
+}
+
 export function WorkspaceProjectDetailPanel({
   open,
   onOpenChange,
   project,
   visibleProperties,
+  selectValues,
+  onProjectPropertyValueChange,
 }: WorkspaceProjectDetailPanelProps) {
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
@@ -374,7 +539,14 @@ export function WorkspaceProjectDetailPanel({
                   {visibleProperties.map((property) => (
                     <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
                       <dt className="truncate text-muted-foreground">{property.name}</dt>
-                      <dd className="truncate text-foreground">{getPropertyValue(displayedProject, property)}</dd>
+                      <dd className="min-w-0">
+                        <ProjectPropertyValueEditor
+                          project={displayedProject}
+                          property={property}
+                          selectValues={selectValues}
+                          onProjectPropertyValueChange={onProjectPropertyValueChange}
+                        />
+                      </dd>
                     </div>
                   ))}
                 </dl>

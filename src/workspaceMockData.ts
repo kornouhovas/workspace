@@ -26,7 +26,7 @@ export type WorkspaceMockProject = {
   readonly name: string;
   readonly currentRelativePath: string;
   readonly status: WorkspaceMockStatusValue;
-  readonly propertyValues: Record<string, string>;
+  readonly propertyValues: Record<string, unknown>;
   readonly fileTree: readonly WorkspaceMockFileTreeNode[];
 };
 

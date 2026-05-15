@@ -293,6 +293,20 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /FolderIcon/);
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
+  assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
+  assert.match(projectDetailPanelSource, /property\.propertyType === "text"/);
+  assert.match(projectDetailPanelSource, /property\.propertyType === "number"/);
+  assert.match(projectDetailPanelSource, /property\.propertyType === "date"/);
+  assert.match(projectDetailPanelSource, /property\.propertyType === "select"/);
+  assert.match(projectDetailPanelSource, /property\.propertyType === "multi-select"/);
+  assert.match(projectDetailPanelSource, /type="number"/);
+  assert.match(projectDetailPanelSource, /type="date"/);
+  assert.match(projectDetailPanelSource, /Checkbox/);
+  assert.match(projectDetailPanelSource, /onProjectPropertyValueChange/);
+  assert.match(appSource, /handleProjectPropertyValueChange/);
+  assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
+  assert.match(appSource, /projectPropertyValueUpdated/);
+  assert.match(appSource, /propertySaveFailed/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);
