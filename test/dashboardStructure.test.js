@@ -191,7 +191,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /onProjectOpen/);
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);
+  assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
+  assert.match(boardViewSource, /min-h-0 flex-1 overflow-x-auto overflow-y-hidden/);
   assert.match(boardViewSource, /w-full/);
+  assert.doesNotMatch(boardViewSource, /Cards are read-only across status columns/);
   assert.match(tableViewSource, /onProjectOpen/);
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /w-full/);

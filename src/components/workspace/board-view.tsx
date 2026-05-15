@@ -38,7 +38,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
   );
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 px-4 py-4" aria-labelledby="workspace-board-heading">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="workspace-board-heading" className="text-sm font-semibold">
@@ -102,11 +102,6 @@ export function WorkspaceBoardView({ projection, visibleProperties, onProjectOpe
           ))}
         </div>
       </div>
-      {!projection.capabilities.canMoveBetweenStatuses ? (
-        <p className="text-xs text-muted-foreground">
-          Cards are read-only across status columns until move support is wired through workspace services.
-        </p>
-      ) : null}
     </section>
   );
 }
