@@ -44,6 +44,26 @@ const projectionResponse = {
   },
 };
 
+const folderRoleTree = [
+  {
+    id: "folder:active",
+    name: "Active",
+    relativePath: "Active",
+    role: "status",
+    status: "Ready",
+    children: [
+      {
+        id: "folder:alpha",
+        name: "Project Alpha",
+        relativePath: "Active/Project Alpha",
+        role: "project",
+        status: "Discovered",
+        children: [],
+      },
+    ],
+  },
+];
+
 test("workspace app state represents a missing source folder", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const state = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
@@ -54,6 +74,7 @@ test("workspace app state represents a missing source folder", async () => {
   assert.equal(state.root, null);
   assert.equal(state.sourceFolderMissing, true);
   assert.equal(state.error, null);
+  assert.deepEqual(state.folderRoleTree, []);
 });
 
 test("workspace app state stores loaded service projection responses", async () => {
@@ -63,6 +84,7 @@ test("workspace app state stores loaded service projection responses", async () 
     root,
     viewsResponse,
     projectionResponse,
+    folderRoleTree,
   });
 
   assert.equal(state.status, "ready");
@@ -71,6 +93,7 @@ test("workspace app state stores loaded service projection responses", async () 
   assert.equal(state.activeViewId, "view:board");
   assert.deepEqual(state.views, viewsResponse.views);
   assert.deepEqual(state.projection, projectionResponse);
+  assert.deepEqual(state.folderRoleTree, folderRoleTree);
 });
 
 test("workspace app state stores service errors", async () => {
@@ -92,6 +115,7 @@ test("workspace app state updates search query without changing service response
     root,
     viewsResponse,
     projectionResponse,
+    folderRoleTree,
   });
 
   const state = workspaceAppStateReducer(loadedState, {
@@ -111,6 +135,7 @@ test("workspace app state switches the active view", async () => {
     root,
     viewsResponse,
     projectionResponse,
+    folderRoleTree,
   });
 
   const state = workspaceAppStateReducer(loadedState, {

@@ -62,7 +62,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /workspaceClient\.setRoot/);
+  assert.match(appSource, /workspaceClient\.scan/);
+  assert.match(appSource, /normalizeFolderRoleTree/);
   assert.match(appSource, /onSelectFolder/);
+  assert.match(appSource, /folderRoleTree=\{folderRoleTree\}/);
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /selectedProject/);

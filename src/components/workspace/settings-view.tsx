@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { WorkspaceMockFolderRoleNode } from "@/workspaceMockData";
+import type { WorkspaceFolderRoleNode } from "@/workspaceAppState";
 
 type WorkspaceSourceFolder = {
   readonly name: string;
@@ -12,14 +12,14 @@ type WorkspaceSourceFolder = {
 
 type WorkspaceSettingsViewProps = {
   readonly sourceFolder: WorkspaceSourceFolder;
-  readonly folderRoleTree: readonly WorkspaceMockFolderRoleNode[];
+  readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly onSelectFolder: () => void;
   readonly selectingFolder?: boolean;
 };
 
 const roleOptions = ["group", "status", "project"] as const;
 
-function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceMockFolderRoleNode; readonly depth?: number }) {
+function FolderRoleNode({ node, depth = 0 }: { readonly node: WorkspaceFolderRoleNode; readonly depth?: number }) {
   return (
     <li>
       <div

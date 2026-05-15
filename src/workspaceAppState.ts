@@ -12,6 +12,17 @@ export type WorkspaceViewState = {
   readonly viewType: string;
 };
 
+export type WorkspaceFolderRole = "group" | "status" | "project";
+
+export type WorkspaceFolderRoleNode = {
+  readonly id: string;
+  readonly name: string;
+  readonly relativePath: string;
+  readonly role: WorkspaceFolderRole;
+  readonly status: string;
+  readonly children: readonly WorkspaceFolderRoleNode[];
+};
+
 export type WorkspaceProjectionResponse = {
   readonly workspaceId: string;
   readonly view: WorkspaceViewState;
@@ -56,6 +67,7 @@ export type WorkspaceAppState = {
   readonly root: WorkspaceRootState | null;
   readonly workspaceId: string | null;
   readonly projection: WorkspaceProjectionResponse | null;
+  readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly views: readonly WorkspaceViewState[];
   readonly activeViewId: string | null;
   readonly searchQuery: string;
@@ -73,6 +85,7 @@ export type WorkspaceAppAction =
       readonly root: WorkspaceRootState;
       readonly viewsResponse: WorkspaceViewsResponse;
       readonly projectionResponse: WorkspaceProjectionResponse;
+      readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
     }
   | { readonly type: "serviceError"; readonly error: string }
   | { readonly type: "searchQueryChanged"; readonly searchQuery: string }
@@ -86,6 +99,7 @@ export function createInitialWorkspaceAppState(): WorkspaceAppState {
     root: null,
     workspaceId: null,
     projection: null,
+    folderRoleTree: [],
     views: [],
     activeViewId: null,
     searchQuery: "",
@@ -116,6 +130,7 @@ export function workspaceAppStateReducer(
       root: null,
       workspaceId: null,
       projection: null,
+      folderRoleTree: [],
       views: [],
       activeViewId: null,
       selectedProjectId: null,
@@ -138,6 +153,7 @@ export function workspaceAppStateReducer(
       root: action.root,
       workspaceId: action.viewsResponse.workspaceId || action.root.workspaceId,
       projection: action.projectionResponse,
+      folderRoleTree: action.folderRoleTree,
       views: action.viewsResponse.views,
       activeViewId,
       sourceFolderMissing: false,

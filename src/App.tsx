@@ -19,6 +19,8 @@ import {
   createInitialWorkspaceAppState,
   workspaceAppStateReducer,
   type WorkspaceAppState,
+  type WorkspaceFolderRole,
+  type WorkspaceFolderRoleNode,
   type WorkspaceProjectionResponse,
   type WorkspaceRootState,
   type WorkspaceViewsResponse,
@@ -81,6 +83,59 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   }
 
   return response as WorkspaceProjectionResponse;
+}
+
+function normalizeFolderRole(role: unknown): WorkspaceFolderRole {
+  if (role === "group" || role === "status") {
+    return role;
+  }
+
+  return "project";
+}
+
+function getFolderRoleStatus(role: WorkspaceFolderRole, childCount: number) {
+  if (role === "status") {
+    return "Ready";
+  }
+  if (role === "group") {
+    return "Group";
+  }
+
+  return childCount > 0 ? "Contains folders" : "Discovered";
+}
+
+function normalizeFolderRoleNode(node: Record<string, unknown>): WorkspaceFolderRoleNode | null {
+  const relativePath = getString(node.path) || getString(node.relativePath);
+  const name = getString(node.name) || getNameFromPath(relativePath);
+  if (!relativePath && !name) {
+    return null;
+  }
+
+  const children = Array.isArray(node.children)
+    ? node.children
+        .filter(isRecord)
+        .map(normalizeFolderRoleNode)
+        .filter((child): child is WorkspaceFolderRoleNode => child !== null)
+    : [];
+  const role = normalizeFolderRole(node.role);
+
+  return {
+    id: getString(node.id) || `folder:${relativePath || name}`,
+    name,
+    relativePath,
+    role,
+    status: getString(node.status) || getFolderRoleStatus(role, children.length),
+    children,
+  };
+}
+
+function normalizeFolderRoleTree(response: unknown): WorkspaceFolderRoleNode[] {
+  const tree = isRecord(response) && Array.isArray(response.tree) ? response.tree : [];
+
+  return tree
+    .filter(isRecord)
+    .map(normalizeFolderRoleNode)
+    .filter((node): node is WorkspaceFolderRoleNode => node !== null);
 }
 
 function getServiceErrorMessage(error: unknown) {
@@ -146,10 +201,12 @@ export default function App() {
           return;
         }
 
-        const viewsResponse = normalizeViewsResponse(
-          await workspaceClient.listViews({ workspaceId: root.workspaceId }),
-          root.workspaceId,
-        );
+        const [scanResponse, viewsRawResponse] = await Promise.all([
+          workspaceClient.scan({}),
+          workspaceClient.listViews({ workspaceId: root.workspaceId }),
+        ]);
+        const folderRoleTree = normalizeFolderRoleTree(scanResponse);
+        const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
         const requestedViewExists = viewsResponse.views.some((view) => view.id === state.activeViewId);
         const activeViewId = requestedViewExists
           ? state.activeViewId
@@ -172,6 +229,7 @@ export default function App() {
             root,
             viewsResponse: { ...viewsResponse, activeViewId },
             projectionResponse,
+            folderRoleTree,
           });
         }
       } catch (error) {
@@ -230,6 +288,7 @@ export default function App() {
     serviceProjection?.projection.type === "table"
       ? serviceProjection.projection
       : workspaceMockProjection.tableProjection;
+  const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
 
   return (
     <>
@@ -269,7 +328,7 @@ export default function App() {
                 <>
                   <WorkspaceSettingsView
                     sourceFolder={sourceFolder}
-                    folderRoleTree={workspaceMockSettings.folderRoleTree}
+                    folderRoleTree={folderRoleTree}
                     onSelectFolder={handleSelectFolder}
                     selectingFolder={selectingFolder}
                   />
@@ -280,7 +339,7 @@ export default function App() {
                   <WorkspaceServiceError state={state} />
                   <WorkspaceSettingsView
                     sourceFolder={sourceFolder}
-                    folderRoleTree={workspaceMockSettings.folderRoleTree}
+                    folderRoleTree={folderRoleTree}
                     onSelectFolder={handleSelectFolder}
                     selectingFolder={selectingFolder}
                   />
