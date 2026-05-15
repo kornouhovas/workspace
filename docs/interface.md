@@ -237,9 +237,23 @@ Panel behavior:
 
 Panel content order:
 
-1. Project identity: `Name`, `Status`, relative path.
+1. Project identity: project `Name`.
 2. Project properties and values.
 3. File/folder structure for the project folder.
+
+Properties section behavior:
+
+- Always show system `Name` and `Status`.
+- Show every active custom property that belongs to the active Workspace.
+- Supported custom property types are `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
+- `Text` values use a compact text input or textarea depending on configured display density.
+- `Numbers` values use a numeric input and preserve empty value as `null`.
+- `Date` values use a date input or date picker and store `YYYY-MM-DD`.
+- `Select` values use a single-value menu with colored value badges.
+- `Multi-select` values use a multi-value menu with removable colored badges.
+- Editing a value saves through Workspace service methods, not component-local persistence.
+- Saved value changes refresh Board/Table projection and keep the panel open.
+- Failed saves keep the old value visible and show a non-blocking error.
 
 File tree behavior:
 

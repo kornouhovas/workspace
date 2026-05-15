@@ -107,8 +107,14 @@ Rules:
 
 - Use `Sheet` for the desktop right-side panel.
 - Every `Sheet` must include `SheetTitle`; use visually hidden text only when the visible header already names the project.
-- The panel should show project identity first: `Name`, `Status`, and path context.
+- The panel should show project identity first: `Name`.
 - Properties should appear before file structure.
+- Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
+- Use `Input` for short text and numbers, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
+- Use `Badge` for select and multi-select values, including value colors.
+- Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.
+- Board cards should display only the custom properties enabled for the active view.
+- Table should display custom properties as stable-width columns in active view order.
 - File structure should clearly distinguish folders from files.
 - Opening a file or folder must look like an explicit user action.
 - File and folder rows must show disabled/error states when the item no longer exists.
@@ -130,6 +136,9 @@ Rules:
 - Settings tree must make parent/child relationships clear.
 - Role changes should show loading and error states because they affect project discovery.
 - Destructive actions such as deleting properties or values require confirmation.
+- Property management should support create, rename, delete, hide/show, and reorder.
+- Select value management should support create, rename, color, delete, hide/show, and reorder.
+- Settings must show whether a property/value is deleted, hidden globally, hidden in the active view, or filtered by value visibility.
 - Settings must not imply that deleting a Workspace deletes files on disk.
 
 ## Component Rules

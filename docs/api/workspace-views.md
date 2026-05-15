@@ -12,6 +12,7 @@ Related specs:
 - `docs/architecture.md`
 - `docs/data-model.md`
 - `docs/flows/board-table-views.md`
+- `docs/api/workspace-properties.md`
 
 ## Authentication / Authorization
 
@@ -163,6 +164,13 @@ The `No status` value is represented as:
   }
 }
 ```
+
+Custom properties:
+
+- `propertyValues` must include values for custom properties returned in `visibleProperties`.
+- Board cards and Table rows consume the same `propertyValues` object.
+- Project Detail Panel may request or receive all active custom properties, even if some are hidden in the active view.
+- `Select` and `Multi-select` display requires `selectValues` metadata from the property API/projection.
 
 ## Service Methods
 

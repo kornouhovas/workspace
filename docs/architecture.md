@@ -167,6 +167,8 @@ Required future capabilities:
 - property value history documents;
 - migration version documents.
 
+Custom property work must use the contracts in `docs/api/workspace-properties.md`. React UI may render and edit custom properties, but property definition, select value, property value, and history persistence remain backend/sidecar responsibilities.
+
 Rules:
 
 - UI must not call sidecar routes directly.
