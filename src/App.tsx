@@ -389,8 +389,8 @@ export default function App() {
         workspaceId,
         patch: { name },
       });
+      setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
       toast.success("Workspace renamed");
-      setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateWorkspace")) {
         setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
@@ -498,9 +498,16 @@ export default function App() {
         viewId,
         patch: { name },
       });
+      dispatch({ type: "viewRenamed", viewId, name });
       toast.success("View renamed");
       setReloadToken((value) => value + 1);
     } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
+        dispatch({ type: "viewRenamed", viewId, name });
+        toast.success("View renamed locally");
+        return;
+      }
+
       toast.error("Could not rename view", {
         description: getServiceErrorMessage(error),
       });

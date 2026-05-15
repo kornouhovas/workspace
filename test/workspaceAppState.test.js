@@ -160,3 +160,23 @@ test("workspace app state switches the active view", async () => {
   assert.equal(state.activeViewId, "view:table");
   assert.equal(state.searchQuery, "");
 });
+
+test("workspace app state renames a loaded view locally", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewRenamed",
+    viewId: "view:board",
+    name: "Operations Board",
+  });
+
+  assert.equal(state.views.find((view) => view.id === "view:board")?.name, "Operations Board");
+  assert.equal(state.projection?.view.name, "Operations Board");
+});

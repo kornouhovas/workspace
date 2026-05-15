@@ -91,6 +91,7 @@ export type WorkspaceAppAction =
   | { readonly type: "serviceError"; readonly error: string }
   | { readonly type: "searchQueryChanged"; readonly searchQuery: string }
   | { readonly type: "activeViewChanged"; readonly activeViewId: string }
+  | { readonly type: "viewRenamed"; readonly viewId: string; readonly name: string }
   | { readonly type: "projectSelected"; readonly selectedProjectId: string | null }
   | { readonly type: "detailOpenChanged"; readonly open: boolean };
 
@@ -196,6 +197,28 @@ export function workspaceAppStateReducer(
       ...state,
       activeViewId: action.activeViewId,
       searchQuery: "",
+    };
+  }
+
+  if (action.type === "viewRenamed") {
+    const name = action.name.trim();
+    if (!name) {
+      return state;
+    }
+
+    return {
+      ...state,
+      views: state.views.map((view) => (
+        view.id === action.viewId ? { ...view, name } : view
+      )),
+      projection: state.projection
+        ? {
+            ...state.projection,
+            view: state.projection.view.id === action.viewId
+              ? { ...state.projection.view, name }
+              : state.projection.view,
+          }
+        : state.projection,
     };
   }
 

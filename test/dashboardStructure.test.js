@@ -140,6 +140,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onRenameWorkspace/);
   assert.match(leftPanelSource, /onDeleteWorkspace/);
   assert.match(leftPanelSource, /onReorderWorkspace/);
+  assert.match(leftPanelSource, /editingWorkspaceId/);
+  assert.match(leftPanelSource, /aria-label="Rename workspace"/);
+  assert.match(leftPanelSource, /min-w-44/);
   assert.match(leftPanelSource, /draggable/);
   assert.match(leftPanelSource, /onDragStart/);
   assert.match(leftPanelSource, /onDrop/);
@@ -172,8 +175,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /DropdownMenu/);
   assert.match(viewTabsSource, /Rename View/);
   assert.match(viewTabsSource, /Delete View/);
+  assert.match(viewTabsSource, /editingViewId/);
+  assert.match(viewTabsSource, /aria-label="Rename view"/);
+  assert.match(viewTabsSource, /min-w-44/);
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
+  assert.doesNotMatch(leftPanelSource, /window\.prompt/);
+  assert.doesNotMatch(viewTabsSource, /window\.prompt/);
   assert.match(boardViewSource, /onProjectOpen/);
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);

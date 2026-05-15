@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   DropdownMenu,
@@ -36,16 +36,29 @@ export function WorkspaceViewTabs({
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [editingViewId, setEditingViewId] = useState<string | null>(null);
+  const [editingViewName, setEditingViewName] = useState("");
+  const editingViewInputRef = useRef<HTMLInputElement | null>(null);
+  const cancelViewRenameRef = useRef(false);
   const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
 
-  function renameActiveView() {
-    if (!activeView) {
-      return;
+  useEffect(() => {
+    if (editingViewId) {
+      editingViewInputRef.current?.focus();
+      editingViewInputRef.current?.select();
     }
+  }, [editingViewId]);
 
-    const nextName = window.prompt("Rename View", activeView.name);
-    if (nextName?.trim()) {
-      onRenameView(activeView.id, nextName.trim());
+  function startRenameView(view: WorkspaceView) {
+    cancelViewRenameRef.current = false;
+    setContextMenuViewId(null);
+    setEditingViewId(view.id);
+    setEditingViewName(view.name);
+  }
+
+  function renameActiveView() {
+    if (activeView) {
+      startRenameView(activeView);
     }
   }
 
@@ -59,12 +72,26 @@ export function WorkspaceViewTabs({
     }
   }
 
-  function renameView(view: WorkspaceView) {
-    const nextName = window.prompt("Rename View", view.name);
-    if (nextName?.trim()) {
-      onRenameView(view.id, nextName.trim());
+  function submitViewRename(view: WorkspaceView) {
+    if (cancelViewRenameRef.current) {
+      cancelViewRenameRef.current = false;
+      return;
     }
-    setContextMenuViewId(null);
+
+    const nextName = editingViewName.trim();
+    cancelViewRenameRef.current = true;
+    setEditingViewId(null);
+    setEditingViewName("");
+
+    if (nextName && nextName !== view.name) {
+      onRenameView(view.id, nextName);
+    }
+  }
+
+  function cancelViewRename() {
+    cancelViewRenameRef.current = true;
+    setEditingViewId(null);
+    setEditingViewName("");
   }
 
   function deleteView(view: WorkspaceView) {
@@ -78,20 +105,50 @@ export function WorkspaceViewTabs({
     <div className="relative flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2">
       <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0">
         <TabsList variant="line" aria-label="Workspace views">
-          {views.map((view) => (
-            <TabsTrigger
-              key={view.id}
-              value={view.id}
-              className="capitalize"
-              onContextMenu={(event) => {
-                event.preventDefault();
-                setContextMenuViewId(view.id);
-                setContextMenuPosition({ x: event.clientX, y: event.clientY });
-              }}
-            >
-              {view.name}
-            </TabsTrigger>
-          ))}
+          {views.map((view) => {
+            if (editingViewId === view.id) {
+              return (
+                <form
+                  key={view.id}
+                  className="h-7 min-w-32"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submitViewRename(view);
+                  }}
+                >
+                  <input
+                    ref={editingViewInputRef}
+                    aria-label="Rename view"
+                    className="h-full w-full rounded-md border border-ring bg-background px-2 text-sm font-medium text-foreground outline-none ring-3 ring-ring/30"
+                    value={editingViewName}
+                    onChange={(event) => setEditingViewName(event.currentTarget.value)}
+                    onBlur={() => submitViewRename(view)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelViewRename();
+                      }
+                    }}
+                  />
+                </form>
+              );
+            }
+
+            return (
+              <TabsTrigger
+                key={view.id}
+                value={view.id}
+                className="capitalize"
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setContextMenuViewId(view.id);
+                  setContextMenuPosition({ x: event.clientX, y: event.clientY });
+                }}
+              >
+                {view.name}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </Tabs>
       <div className="flex shrink-0 items-center gap-1">
@@ -106,7 +163,7 @@ export function WorkspaceViewTabs({
               <PlusIcon className="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem onSelect={() => onCreateView("board")}>New Board View</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onCreateView("table")}>New Table View</DropdownMenuItem>
           </DropdownMenuContent>
@@ -122,7 +179,7 @@ export function WorkspaceViewTabs({
               <MoreHorizontalIcon className="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem disabled={!activeView} onSelect={renameActiveView}>
               Rename View
             </DropdownMenuItem>
@@ -135,7 +192,7 @@ export function WorkspaceViewTabs({
       </div>
       {contextMenuView ? (
         <div
-          className="fixed z-50 min-w-32 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          className="fixed z-50 min-w-44 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
           role="menu"
           onMouseLeave={() => setContextMenuViewId(null)}
@@ -143,7 +200,7 @@ export function WorkspaceViewTabs({
           <button
             type="button"
             className="flex w-full items-center rounded-md px-2 py-1 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-            onClick={() => renameView(contextMenuView)}
+            onClick={() => startRenameView(contextMenuView)}
           >
             Rename View
           </button>

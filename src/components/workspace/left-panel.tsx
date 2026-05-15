@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   DropdownMenu,
@@ -50,12 +50,45 @@ export function WorkspaceLeftPanel({
 }: WorkspaceLeftPanelProps) {
   const [draggedWorkspaceId, setDraggedWorkspaceId] = useState<string | null>(null);
   const [contextMenuWorkspaceId, setContextMenuWorkspaceId] = useState<string | null>(null);
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
+  const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
+  const editingWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
+  const cancelWorkspaceRenameRef = useRef(false);
 
-  function renameWorkspace(workspace: WorkspaceNavigationItem) {
-    const nextName = window.prompt("Rename Workspace", workspace.name);
-    if (nextName?.trim()) {
-      onRenameWorkspace(workspace.id, nextName.trim());
+  useEffect(() => {
+    if (editingWorkspaceId) {
+      editingWorkspaceInputRef.current?.focus();
+      editingWorkspaceInputRef.current?.select();
     }
+  }, [editingWorkspaceId]);
+
+  function startRenameWorkspace(workspace: WorkspaceNavigationItem) {
+    cancelWorkspaceRenameRef.current = false;
+    setContextMenuWorkspaceId(null);
+    setEditingWorkspaceId(workspace.id);
+    setEditingWorkspaceName(workspace.name);
+  }
+
+  function submitWorkspaceRename(workspace: WorkspaceNavigationItem) {
+    if (cancelWorkspaceRenameRef.current) {
+      cancelWorkspaceRenameRef.current = false;
+      return;
+    }
+
+    const nextName = editingWorkspaceName.trim();
+    cancelWorkspaceRenameRef.current = true;
+    setEditingWorkspaceId(null);
+    setEditingWorkspaceName("");
+
+    if (nextName && nextName !== workspace.name) {
+      onRenameWorkspace(workspace.id, nextName);
+    }
+  }
+
+  function cancelWorkspaceRename() {
+    cancelWorkspaceRenameRef.current = true;
+    setEditingWorkspaceId(null);
+    setEditingWorkspaceName("");
   }
 
   function deleteWorkspace(workspace: WorkspaceNavigationItem) {
@@ -95,11 +128,12 @@ export function WorkspaceLeftPanel({
           <p className="px-2 text-xs font-medium text-muted-foreground">Workspaces</p>
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
+            const editing = editingWorkspaceId === workspace.id;
 
             return (
               <div
                 key={workspace.id}
-                draggable
+                draggable={!editing}
                 onDragStart={() => setDraggedWorkspaceId(workspace.id)}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
@@ -115,43 +149,70 @@ export function WorkspaceLeftPanel({
                 }}
                 className="group/workspace flex items-center gap-1 rounded-lg"
               >
-                <button
-                  type="button"
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "inline-flex h-8 min-w-0 flex-1 items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
-                    active && "bg-sidebar-accent text-sidebar-accent-foreground",
-                  )}
-                  title={workspace.name}
-                  onClick={() => onWorkspaceOpen(workspace.id)}
-                >
-                  <FolderKanbanIcon className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{workspace.name}</span>
-                </button>
-                <DropdownMenu
-                  open={contextMenuWorkspaceId === workspace.id}
-                  onOpenChange={(open) => setContextMenuWorkspaceId(open ? workspace.id : null)}
-                >
-                  <DropdownMenuTrigger asChild>
+                {editing ? (
+                  <form
+                    className="min-w-0 flex-1"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      submitWorkspaceRename(workspace);
+                    }}
+                  >
+                    <input
+                      ref={editingWorkspaceInputRef}
+                      aria-label="Rename workspace"
+                      className="h-8 w-full rounded-lg border border-ring bg-background px-2 text-sm text-foreground outline-none ring-3 ring-ring/30"
+                      value={editingWorkspaceName}
+                      onChange={(event) => setEditingWorkspaceName(event.currentTarget.value)}
+                      onBlur={() => submitWorkspaceRename(workspace)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          cancelWorkspaceRename();
+                        }
+                      }}
+                    />
+                  </form>
+                ) : (
+                  <>
                     <button
                       type="button"
-                      className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100"
-                      aria-label={`Workspace actions for ${workspace.name}`}
-                      title="Workspace actions"
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "inline-flex h-8 min-w-0 flex-1 items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+                        active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                      )}
+                      title={workspace.name}
+                      onClick={() => onWorkspaceOpen(workspace.id)}
                     >
-                      <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                      <FolderKanbanIcon className="size-4 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{workspace.name}</span>
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => renameWorkspace(workspace)}>
-                      Rename Workspace
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onSelect={() => deleteWorkspace(workspace)}>
-                      Delete Workspace
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <DropdownMenu
+                      open={contextMenuWorkspaceId === workspace.id}
+                      onOpenChange={(open) => setContextMenuWorkspaceId(open ? workspace.id : null)}
+                    >
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100"
+                          aria-label={`Workspace actions for ${workspace.name}`}
+                          title="Workspace actions"
+                        >
+                          <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-44">
+                        <DropdownMenuItem onSelect={() => startRenameWorkspace(workspace)}>
+                          Rename Workspace
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onSelect={() => deleteWorkspace(workspace)}>
+                          Delete Workspace
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
               </div>
             );
           })}
