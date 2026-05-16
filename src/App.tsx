@@ -46,6 +46,10 @@ import {
   type WorkspaceListItem,
   type WorkspaceListState,
 } from "@/workspaceCompatibility";
+import {
+  createNextVisiblePropertyIds,
+  createPropertyOrder,
+} from "@/workspaceViewVisibility.js";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -871,19 +875,18 @@ export default function App() {
     return state.views.find((view) => view.id === state.activeViewId) || null;
   }
 
-  function createPropertyOrder(visiblePropertyIds: readonly string[]) {
-    return Object.fromEntries(visiblePropertyIds.map((propertyId, index) => [propertyId, (index + 1) * 10]));
-  }
-
   async function handleTogglePropertyVisibility(propertyId: string, visible: boolean) {
     const activeView = getActiveViewState();
     const currentVisiblePropertyIds = activeView?.visiblePropertyIds
       || state.projection?.visibleProperties.map((property) => property.id)
       || ["property:name", "property:status"];
-    const requiredPropertyIds = ["property:name", "property:status"];
-    const nextVisiblePropertyIds = visible
-      ? [...new Set([...requiredPropertyIds, ...currentVisiblePropertyIds, propertyId])]
-      : currentVisiblePropertyIds.filter((id) => requiredPropertyIds.includes(id) || id !== propertyId);
+    const nextVisiblePropertyIds = createNextVisiblePropertyIds({
+      currentVisiblePropertyIds,
+      fallbackVisiblePropertyIds: state.projection?.visibleProperties.map((property) => property.id) || [],
+      availablePropertyIds: settingsProperties.map((property) => property.id),
+      propertyId,
+      visible,
+    });
 
     try {
       await updateActiveViewPatch({
