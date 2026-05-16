@@ -168,9 +168,15 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /editingWorkspaceId/);
   assert.match(leftPanelSource, /aria-label="Rename workspace"/);
   assert.match(leftPanelSource, /min-w-44/);
-  assert.match(leftPanelSource, /draggable/);
-  assert.match(leftPanelSource, /onDragStart/);
-  assert.match(leftPanelSource, /onDrop/);
+  assert.doesNotMatch(leftPanelSource, /draggable/);
+  assert.doesNotMatch(leftPanelSource, /onDragStart/);
+  assert.doesNotMatch(leftPanelSource, /onDrop/);
+  assert.match(leftPanelSource, /startPointerWorkspaceDrag/);
+  assert.match(leftPanelSource, /getWorkspaceDragPreviewRows/);
+  assert.match(leftPanelSource, /getWorkspaceDragStyle/);
+  assert.match(leftPanelSource, /requestAnimationFrame/);
+  assert.match(leftPanelSource, /transitionDuration: "180ms"/);
+  assert.match(leftPanelSource, /transform: `translateY/);
   assert.match(leftPanelSource, /Rename Workspace/);
   assert.match(leftPanelSource, /Delete Workspace/);
   assert.match(leftPanelSource, /pt-7/);
