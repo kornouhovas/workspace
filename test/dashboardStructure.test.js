@@ -239,6 +239,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /MoreHorizontalIcon/);
   assert.match(viewFilterMenuSource, /actionsPropertyId/);
   assert.doesNotMatch(viewFilterMenuSource, /DropdownMenuSub/);
+  assert.match(viewFilterMenuSource, /grid gap-0\.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border\/60/);
+  assert.doesNotMatch(viewFilterMenuSource, /ml-7 mr-1 mb-1 flex items-center/);
   assert.match(viewFilterMenuSource, /Rename property/);
   assert.match(viewFilterMenuSource, /Delete property/);
   assert.match(viewFilterMenuSource, /editingPropertyId/);
@@ -362,9 +364,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /hiddenViewProperties/);
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /PlusIcon/);
-  assert.match(tableViewSource, /className="h-12"/);
+  assert.match(tableViewSource, /className="h-10"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
-  assert.match(tableViewSource, /className=\{editable \? "h-12 p-1" : "h-12 truncate"\}/);
+  assert.match(tableViewSource, /className=\{editable \? "h-10 p-0\.5" : "h-10 truncate px-2 py-0"\}/);
+  assert.match(tableViewSource, /workspace-table-cell-display flex h-8/);
+  assert.match(tableViewSource, /className="flex h-10 w-full/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);
@@ -455,6 +459,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /DropdownMenuCheckboxItem/);
   assert.match(selectValueEditorSource, /actionsSelectValueId/);
   assert.doesNotMatch(selectValueEditorSource, /DropdownMenuSub/);
+  assert.match(selectValueEditorSource, /grid gap-0\.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border\/60/);
+  assert.doesNotMatch(selectValueEditorSource, /mx-1 mb-1 flex items-center/);
+  assert.doesNotMatch(selectValueEditorSource, /onBlur=\{\(\) => commitRenameSelectValue/);
   assert.match(selectValueEditorSource, /MoreHorizontalIcon/);
   assert.match(selectValueEditorSource, /Rename value/);
   assert.match(selectValueEditorSource, /Delete value/);

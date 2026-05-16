@@ -147,17 +147,17 @@ export function WorkspaceViewFilterMenu({
                     </button>
                   </div>
                   {actionsPropertyId === property.id ? (
-                    <div className="ml-7 mr-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                    <div className="ml-7 mr-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
                       <button
                         type="button"
-                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
                         onClick={() => beginRenameProperty(property)}
                       >
                         Rename property
                       </button>
                       <button
                         type="button"
-                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
                         onClick={() => {
                           setActionsPropertyId(null);
                           if (window.confirm(`Delete property "${property.name}"?`)) {

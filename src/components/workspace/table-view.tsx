@@ -241,7 +241,7 @@ function ProjectTablePropertyValueEditor({
     return (
       <button
         type="button"
-        className="workspace-table-cell-display flex h-9 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="workspace-table-cell-display flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
@@ -262,7 +262,7 @@ function ProjectTablePropertyValueEditor({
         defaultValue={stringifyEditableValue(value)}
         aria-label={`${property.name} number value`}
         autoFocus
-        className="workspace-number-input h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
+        className="workspace-number-input h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
         onBlur={(event) => {
           const text = event.target.value.trim();
@@ -284,7 +284,7 @@ function ProjectTablePropertyValueEditor({
     return (
       <WorkspaceDateValueEditor
         value={value}
-        triggerClassName="h-9 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
       />
     );
@@ -296,7 +296,7 @@ function ProjectTablePropertyValueEditor({
         property={property}
         value={value}
         selectValues={selectValues}
-        triggerClassName="h-9 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
@@ -315,7 +315,7 @@ function ProjectTablePropertyValueEditor({
       defaultValue={stringifyEditableValue(value)}
       aria-label={`${property.name} text value`}
       autoFocus
-      className="h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
+      className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
       onPointerDown={stopCellActivation}
       onBlur={(event) => {
         saveValue(event.target.value);
@@ -870,9 +870,9 @@ export function WorkspaceTableView({
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
-                className="h-12"
+                className="h-10"
               >
-                <TableCell className="w-10 text-muted-foreground">
+                <TableCell className="h-10 w-10 py-0 text-muted-foreground">
                   <GripVerticalIcon className="size-4" aria-hidden="true" />
                 </TableCell>
                 {visibleProperties.map((property) => {
@@ -881,7 +881,7 @@ export function WorkspaceTableView({
                   return (
                     <TableCell
                       key={property.id}
-                      className={editable ? "h-12 p-1" : "h-12 truncate"}
+                      className={editable ? "h-10 p-0.5" : "h-10 truncate px-2 py-0"}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
                       {editable ? (
@@ -900,7 +900,7 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="flex h-12 w-full min-w-0 items-center justify-start px-2 text-left font-medium text-foreground hover:bg-muted/40 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="flex h-10 w-full min-w-0 items-center justify-start px-2 text-left font-medium text-foreground hover:bg-muted/40 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
                           <span className="truncate">
@@ -913,7 +913,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="border-l border-border bg-background" aria-hidden="true" />
+                <TableCell className="h-10 border-l border-border bg-background py-0" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>

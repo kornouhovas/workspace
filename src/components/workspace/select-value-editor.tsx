@@ -187,6 +187,18 @@ export function WorkspaceSelectValueEditor({
     }
   }
 
+  function commitActiveRenameSelectValue() {
+    const selectValue = values.find((valueOption) => valueOption.id === editingSelectValueId);
+
+    if (selectValue) {
+      commitRenameSelectValue(selectValue);
+      return;
+    }
+
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
+  }
+
   function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
     setActionsSelectValueId(null);
     if (window.confirm(`Delete value "${selectValue.name}"?`)) {
@@ -205,11 +217,12 @@ export function WorkspaceSelectValueEditor({
       <DropdownMenu
         open={open}
         onOpenChange={(nextOpen) => {
+          if (!nextOpen && editingSelectValueId) {
+            commitActiveRenameSelectValue();
+          }
           setOpen(nextOpen);
           if (!nextOpen) {
             setActionsSelectValueId(null);
-            setEditingSelectValueId(null);
-            setEditingSelectValueName("");
           }
         }}
       >
@@ -272,7 +285,7 @@ export function WorkspaceSelectValueEditor({
                       aria-label="Rename value"
                       className="h-8"
                       onChange={(event) => setEditingSelectValueName(event.target.value)}
-                      onBlur={() => commitRenameSelectValue(selectValue)}
+                      onPointerMove={stopSelectionEditorActivation}
                       onKeyDown={(event) => {
                         event.stopPropagation();
                         if (event.key === "Enter") {
@@ -319,17 +332,17 @@ export function WorkspaceSelectValueEditor({
                       </button>
                     </div>
                     {actionsSelectValueId === selectValue.id ? (
-                      <div className="mx-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                      <div className="mx-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
                         <button
                           type="button"
-                          className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                          className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
                           onClick={() => beginRenameSelectValue(selectValue)}
                         >
                           Rename value
                         </button>
                         <button
                           type="button"
-                          className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                          className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
                           onClick={() => deleteSelectValue(selectValue)}
                         >
                           Delete value
@@ -363,17 +376,17 @@ export function WorkspaceSelectValueEditor({
                     </button>
                   </div>
                   {actionsSelectValueId === selectValue.id ? (
-                    <div className="mx-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                    <div className="mx-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
                       <button
                         type="button"
-                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
                         onClick={() => beginRenameSelectValue(selectValue)}
                       >
                         Rename value
                       </button>
                       <button
                         type="button"
-                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
                         onClick={() => deleteSelectValue(selectValue)}
                       >
                         Delete value
