@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CircleDotIcon, MoreHorizontalIcon, PlusIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspacePropertyDefinitionState,
@@ -35,6 +36,12 @@ type WorkspaceSelectValueEditorProps = {
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
   event.stopPropagation();
+}
+
+function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; preventDefault: () => void }) {
+  if (event.target instanceof Element && event.target.closest("[data-workspace-actions-popover='true']")) {
+    event.preventDefault();
+  }
 }
 
 function getSelectValuesForProperty(
@@ -206,10 +213,60 @@ export function WorkspaceSelectValueEditor({
     }
   }
 
-  function toggleSelectValueActions(selectValueId: string) {
-    setActionsSelectValueId((currentSelectValueId) => (
-      currentSelectValueId === selectValueId ? null : selectValueId
-    ));
+  function renderSelectValueActions(selectValue: WorkspaceSelectValueState) {
+    return (
+      <Popover
+        open={actionsSelectValueId === selectValue.id}
+        onOpenChange={(nextOpen) => setActionsSelectValueId(nextOpen ? selectValue.id : null)}
+      >
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+            aria-label={`${selectValue.name} value actions`}
+            onClick={stopSelectionEditorActivation}
+            onPointerDown={stopSelectionEditorActivation}
+          >
+            <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          data-workspace-actions-popover="true"
+          role="menu"
+          aria-label={`${selectValue.name} value actions`}
+          side="right"
+          align="start"
+          sideOffset={8}
+          className="w-40 p-1"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onClick={stopSelectionEditorActivation}
+          onPointerDown={stopSelectionEditorActivation}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+            onClick={(event) => {
+              event.stopPropagation();
+              beginRenameSelectValue(selectValue);
+            }}
+          >
+            Rename value
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+            onClick={(event) => {
+              event.stopPropagation();
+              deleteSelectValue(selectValue);
+            }}
+          >
+            Delete value
+          </button>
+        </PopoverContent>
+      </Popover>
+    );
   }
 
   return (
@@ -242,6 +299,7 @@ export function WorkspaceSelectValueEditor({
         <DropdownMenuContent
           align="start"
           className="w-64"
+          onInteractOutside={keepDropdownOpenForActionsPopover}
           onClick={stopSelectionEditorActivation}
           onPointerDown={stopSelectionEditorActivation}
         >
@@ -318,37 +376,8 @@ export function WorkspaceSelectValueEditor({
                           <span className="truncate">{selectValue.name}</span>
                         </span>
                       </DropdownMenuCheckboxItem>
-                      <button
-                        type="button"
-                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                        aria-label={`${selectValue.name} value actions`}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          toggleSelectValueActions(selectValue.id);
-                        }}
-                      >
-                        <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                      </button>
+                      {renderSelectValueActions(selectValue)}
                     </div>
-                    {actionsSelectValueId === selectValue.id ? (
-                      <div className="mx-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
-                        <button
-                          type="button"
-                          className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
-                          onClick={() => beginRenameSelectValue(selectValue)}
-                        >
-                          Rename value
-                        </button>
-                        <button
-                          type="button"
-                          className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
-                          onClick={() => deleteSelectValue(selectValue)}
-                        >
-                          Delete value
-                        </button>
-                      </div>
-                    ) : null}
                   </div>
                 );
               }
@@ -360,39 +389,10 @@ export function WorkspaceSelectValueEditor({
                       <span className="flex min-w-0 items-center gap-2">
                         <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
                         <span className="truncate">{selectValue.name}</span>
-                      </span>
-                    </DropdownMenuItem>
-                    <button
-                      type="button"
-                      className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                      aria-label={`${selectValue.name} value actions`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        toggleSelectValueActions(selectValue.id);
-                      }}
-                    >
-                      <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                    </button>
+                        </span>
+                      </DropdownMenuItem>
+                    {renderSelectValueActions(selectValue)}
                   </div>
-                  {actionsSelectValueId === selectValue.id ? (
-                    <div className="mx-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
-                      <button
-                        type="button"
-                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
-                        onClick={() => beginRenameSelectValue(selectValue)}
-                      >
-                        Rename value
-                      </button>
-                      <button
-                        type="button"
-                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
-                        onClick={() => deleteSelectValue(selectValue)}
-                      >
-                        Delete value
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}

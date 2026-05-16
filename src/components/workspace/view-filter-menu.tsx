@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Columns3Icon, MoreHorizontalIcon } from "@/lib/lucide-icons";
 import type {
@@ -33,6 +34,16 @@ function isSystemProperty(propertyId: string) {
 
 function isFilterableProperty(property: WorkspacePropertyDefinitionState) {
   return property.propertyType === "select" || property.propertyType === "multi-select";
+}
+
+function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; preventDefault: () => void }) {
+  if (event.target instanceof Element && event.target.closest("[data-workspace-actions-popover='true']")) {
+    event.preventDefault();
+  }
+}
+
+function stopActionMenuEvent(event: { stopPropagation: () => void }) {
+  event.stopPropagation();
 }
 
 export function WorkspaceViewFilterMenu({
@@ -71,12 +82,6 @@ export function WorkspaceViewFilterMenu({
     }
   }
 
-  function togglePropertyActions(propertyId: string) {
-    setActionsPropertyId((currentPropertyId) => (
-      currentPropertyId === propertyId ? null : propertyId
-    ));
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -84,7 +89,11 @@ export function WorkspaceViewFilterMenu({
           <Columns3Icon className="size-4" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 p-0">
+      <DropdownMenuContent
+        align="end"
+        className="w-72 p-0"
+        onInteractOutside={keepDropdownOpenForActionsPopover}
+      >
         <div className="grid gap-3 p-3">
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -132,43 +141,62 @@ export function WorkspaceViewFilterMenu({
                       <span className="truncate">{property.name}</span>
                     )}
                     {disabled ? <Badge variant="outline">Required</Badge> : null}
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-                      aria-label={`${property.name} property actions`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        togglePropertyActions(property.id);
-                      }}
+                    <Popover
+                      open={actionsPropertyId === property.id}
+                      onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
                     >
-                      <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                    </button>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
+                          aria-label={`${property.name} property actions`}
+                          onClick={stopActionMenuEvent}
+                          onPointerDown={stopActionMenuEvent}
+                        >
+                          <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        data-workspace-actions-popover="true"
+                        role="menu"
+                        aria-label={`${property.name} property actions`}
+                        side="right"
+                        align="start"
+                        sideOffset={8}
+                        className="w-44 p-1"
+                        onOpenAutoFocus={(event) => event.preventDefault()}
+                        onClick={stopActionMenuEvent}
+                        onPointerDown={stopActionMenuEvent}
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            beginRenameProperty(property);
+                          }}
+                        >
+                          Rename property
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setActionsPropertyId(null);
+                            if (window.confirm(`Delete property "${property.name}"?`)) {
+                              onDeleteProperty(property.id);
+                            }
+                          }}
+                        >
+                          Delete property
+                        </button>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  {actionsPropertyId === property.id ? (
-                    <div className="ml-7 mr-1 mb-1 grid gap-0.5 rounded-md bg-popover p-1 shadow-sm ring-1 ring-border/60">
-                      <button
-                        type="button"
-                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
-                        onClick={() => beginRenameProperty(property)}
-                      >
-                        Rename property
-                      </button>
-                      <button
-                        type="button"
-                        className="flex h-7 w-full items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          setActionsPropertyId(null);
-                          if (window.confirm(`Delete property "${property.name}"?`)) {
-                            onDeleteProperty(property.id);
-                          }
-                        }}
-                      >
-                        Delete property
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
