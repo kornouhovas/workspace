@@ -59,13 +59,8 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
   );
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-labelledby="workspace-board-heading">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 id="workspace-board-heading" className="text-sm font-semibold">
-            Board
-          </h2>
-        </div>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-label="Workspace board">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Badge variant="outline">Move disabled</Badge>
       </div>
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">

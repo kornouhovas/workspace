@@ -738,12 +738,7 @@ export function WorkspaceTableView({
   }
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-4 pt-4 pb-0" aria-labelledby="workspace-table-heading">
-      <div>
-        <h2 id="workspace-table-heading" className="text-sm font-semibold">
-          Table
-        </h2>
-      </div>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-4 pt-4 pb-0" aria-label="Workspace table">
       <div className="min-h-0 w-full flex-1 overflow-auto">
         <Table className="table-fixed" style={{ width: tableWidth }}>
           <colgroup>

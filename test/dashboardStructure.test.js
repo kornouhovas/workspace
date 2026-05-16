@@ -76,6 +76,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /<WorkspaceLeftPanel/);
   assert.match(appSource, /WorkspaceBoardView/);
   assert.match(appSource, /WorkspaceTableView/);
+  assert.doesNotMatch(boardViewSource, /workspace-board-heading/);
+  assert.doesNotMatch(tableViewSource, /workspace-table-heading/);
   assert.doesNotMatch(boardViewSource, /Status columns are fixed for the MVP/);
   assert.doesNotMatch(tableViewSource, /Rows use the same project set as the Board projection/);
   assert.match(appSource, /WorkspaceViewTabs/);
