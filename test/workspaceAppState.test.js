@@ -163,6 +163,92 @@ test("workspace app state refreshes visible property labels from catalog without
   );
 });
 
+test("workspace app state updates visible view properties without clearing projection rows", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: {
+      "property:name": "Alpha Project",
+      "property:status": "status:active",
+      "property:priority": "selectValue:high",
+    },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      ...viewsResponse,
+      views: [
+        {
+          id: "view:table",
+          name: "Table",
+          viewType: "table",
+          visiblePropertyIds: ["property:name", "property:status"],
+          propertyOrder: {
+            "property:name": 10,
+            "property:status": 20,
+          },
+        },
+      ],
+      activeViewId: "view:table",
+    },
+    projectionResponse: {
+      ...projectionResponse,
+      view: { id: "view:table", name: "Table", viewType: "table" },
+      visibleProperties: [
+        { id: "property:name", name: "Name", propertyType: "text", system: true },
+        { id: "property:status", name: "Status", propertyType: "select", system: true },
+      ],
+      projection: {
+        type: "table",
+        rows: [alpha],
+      },
+    },
+    folderRoleTree,
+  });
+  const catalogState = workspaceAppStateReducer(loadedState, {
+    type: "propertiesLoaded",
+    propertiesResponse: {
+      workspaceId: "workspace:ops",
+      properties: [
+        { id: "property:name", name: "Name", propertyType: "text", type: "text", system: true },
+        { id: "property:status", name: "Status", propertyType: "select", type: "select", system: true },
+        { id: "property:priority", name: "Priority", propertyType: "select", type: "select", system: false },
+      ],
+      selectValues: [
+        { id: "selectValue:high", propertyId: "property:priority", name: "High", color: "red" },
+      ],
+    },
+  });
+
+  const state = workspaceAppStateReducer(catalogState, {
+    type: "viewPropertiesUpdated",
+    viewId: "view:table",
+    visiblePropertyIds: ["property:name", "property:status", "property:priority"],
+    propertyOrder: {
+      "property:name": 10,
+      "property:status": 20,
+      "property:priority": 30,
+    },
+  });
+
+  assert.equal(state.status, "ready");
+  assert.deepEqual(
+    state.views[0].visiblePropertyIds,
+    ["property:name", "property:status", "property:priority"],
+  );
+  assert.deepEqual(
+    state.projection.visibleProperties.map((property) => [property.id, property.name]),
+    [
+      ["property:name", "Name"],
+      ["property:status", "Status"],
+      ["property:priority", "Priority"],
+    ],
+  );
+  assert.equal(state.projection.projection.rows[0], alpha);
+});
+
 test("workspace app state removes a deleted property from catalog and projections", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {

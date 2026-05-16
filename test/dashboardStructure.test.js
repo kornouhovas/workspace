@@ -29,6 +29,7 @@ test("renderer composes the workspace product shell", async () => {
     selectValueEditorSource,
     dateValueEditorSource,
     popoverSource,
+    workspaceAppStateSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -51,6 +52,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/select-value-editor.tsx"),
     readProjectFile("src/components/workspace/date-value-editor.tsx"),
     readProjectFile("src/components/ui/popover.tsx"),
+    readProjectFile("src/workspaceAppState.ts"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -551,9 +553,17 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /onValueChange\(nextValues\)/);
   assert.match(appSource, /onRenameSelectValue=\{handleRenameSelectValue\}/);
   assert.match(appSource, /onDeleteSelectValue=\{handleDeleteSelectValue\}/);
+  assert.match(tableViewSource, /readonly onColorSelectValue: \(selectValueId: string, color: string\) => void;/);
+  assert.match(tableViewSource, /onColorSelectValue,\s+onDeleteSelectValue,\s+\}: WorkspaceTableViewProps/);
+  assert.match(tableViewSource, /onColorSelectValue=\{onColorSelectValue\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*onColorSelectValue=\{handleColorSelectValue\}/);
   const renamePropertyHandler = appSource.slice(
     appSource.indexOf("async function handleRenameProperty"),
     appSource.indexOf("async function handleHideProperty"),
+  );
+  const hidePropertyHandler = appSource.slice(
+    appSource.indexOf("async function handleHideProperty"),
+    appSource.indexOf("async function handleDeleteProperty"),
   );
   const deletePropertyHandler = appSource.slice(
     appSource.indexOf("async function handleDeleteProperty"),
@@ -564,8 +574,18 @@ test("renderer composes the workspace product shell", async () => {
     appSource.indexOf("async function handleColorSelectValue"),
   );
   assert.doesNotMatch(renamePropertyHandler, /setReloadToken/);
+  assert.doesNotMatch(hidePropertyHandler, /setReloadToken/);
   assert.doesNotMatch(deletePropertyHandler, /setReloadToken/);
   assert.doesNotMatch(renameSelectValueHandler, /setReloadToken/);
+  assert.match(workspaceAppStateSource, /viewPropertiesUpdated/);
+  const selectValueActionsMarkup = selectValueEditorSource.slice(
+    selectValueEditorSource.indexOf("role=\"menuitem\""),
+    selectValueEditorSource.indexOf("{filteredValues.map"),
+  );
+  assert.ok(
+    selectValueActionsMarkup.indexOf("Delete value") < selectValueActionsMarkup.indexOf("Color"),
+    "select value actions should show rename, delete, then color controls",
+  );
 
   assert.match(dateValueEditorSource, /WorkspaceDateValueEditor/);
   assert.match(dateValueEditorSource, /useEffect/);

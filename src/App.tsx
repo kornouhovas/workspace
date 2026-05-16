@@ -886,17 +886,23 @@ export default function App() {
     });
   }
 
-  async function updateActiveViewPatch(patch: Record<string, unknown>) {
+  async function updateActiveViewPatch(
+    patch: Record<string, unknown>,
+    options: { readonly refreshProjection?: boolean } = { refreshProjection: true },
+  ) {
     if (!state.workspaceId || !state.activeViewId) {
       return;
     }
 
+    const activeViewId = state.activeViewId;
     await workspaceClient.updateView({
       workspaceId: state.workspaceId,
-      viewId: state.activeViewId,
+      viewId: activeViewId,
       patch,
     });
-    await refreshActiveViewAfterPatch(state.activeViewId);
+    if (options.refreshProjection !== false) {
+      await refreshActiveViewAfterPatch(activeViewId);
+    }
   }
 
   function getActiveViewState() {
@@ -904,6 +910,11 @@ export default function App() {
   }
 
   async function handleTogglePropertyVisibility(propertyId: string, visible: boolean) {
+    if (!state.workspaceId || !state.activeViewId) {
+      return;
+    }
+
+    const activeViewId = state.activeViewId;
     const activeView = getActiveViewState();
     const currentVisiblePropertyIds = activeView?.visiblePropertyIds
       || state.projection?.visibleProperties.map((property) => property.id)
@@ -917,9 +928,18 @@ export default function App() {
     });
 
     try {
+      const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
       await updateActiveViewPatch({
         visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+        propertyOrder,
+      }, {
+        refreshProjection: false,
+      });
+      dispatch({
+        type: "viewPropertiesUpdated",
+        viewId: activeViewId,
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder,
       });
     } catch (error) {
       toast.error("Could not update view properties", {
@@ -954,12 +974,26 @@ export default function App() {
   }
 
   async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
+    if (!state.workspaceId || !state.activeViewId) {
+      return;
+    }
+
+    const activeViewId = state.activeViewId;
     const nextVisiblePropertyIds = [...new Set(orderedPropertyIds)];
 
     try {
+      const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
       await updateActiveViewPatch({
         visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+        propertyOrder,
+      }, {
+        refreshProjection: false,
+      });
+      dispatch({
+        type: "viewPropertiesUpdated",
+        viewId: activeViewId,
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder,
       });
     } catch (error) {
       toast.error("Could not reorder view properties", {
@@ -1106,7 +1140,6 @@ export default function App() {
         patch: { hidden },
       });
       await refreshPropertyCatalog();
-      setReloadToken((value) => value + 1);
       toast.success(hidden ? "Property hidden" : "Property shown");
     } catch (error) {
       toast.error("Could not update property", {
@@ -1567,6 +1600,7 @@ export default function App() {
                         onProjectPropertyValueChange={handleProjectPropertyValueChange}
                         onCreateSelectValue={handleCreateSelectValue}
                         onRenameSelectValue={handleRenameSelectValue}
+                        onColorSelectValue={handleColorSelectValue}
                         onDeleteSelectValue={handleDeleteSelectValue}
                         onDismissFloatingMenus={dismissWorkspaceFloatingMenus}
                       />

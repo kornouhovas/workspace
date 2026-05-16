@@ -135,6 +135,12 @@ export type WorkspaceAppAction =
       readonly propertyId: string;
       readonly value: unknown;
     }
+  | {
+      readonly type: "viewPropertiesUpdated";
+      readonly viewId: string;
+      readonly visiblePropertyIds: readonly string[];
+      readonly propertyOrder: Record<string, number>;
+    }
   | { readonly type: "propertySaveFailed"; readonly error: string }
   | { readonly type: "workspaceActivated"; readonly workspaceId: string }
   | { readonly type: "serviceError"; readonly error: string }
@@ -245,6 +251,35 @@ export function workspaceAppStateReducer(
     return {
       ...state,
       projection: action.projectionResponse,
+      error: null,
+    };
+  }
+
+  if (action.type === "viewPropertiesUpdated") {
+    const views = state.views.map((view) => (
+      view.id === action.viewId
+        ? {
+            ...view,
+            visiblePropertyIds: action.visiblePropertyIds,
+            propertyOrder: action.propertyOrder,
+          }
+        : view
+    ));
+
+    return {
+      ...state,
+      views,
+      projection: state.projection?.view.id === action.viewId
+        ? {
+            ...state.projection,
+            view: {
+              ...state.projection.view,
+              visiblePropertyIds: action.visiblePropertyIds,
+              propertyOrder: action.propertyOrder,
+            },
+            visibleProperties: createProjectionVisibleProperties(state, action.visiblePropertyIds),
+          }
+        : state.projection,
       error: null,
     };
   }
@@ -579,6 +614,45 @@ function refreshProjectionVisibleProperties({
     ...projectionResponse,
     visibleProperties,
   } : projectionResponse;
+}
+
+function createProjectionVisibleProperties(
+  state: WorkspaceAppState,
+  visiblePropertyIds: readonly string[],
+): WorkspaceProjectionResponse["visibleProperties"] {
+  const currentPropertiesById = new Map(
+    (state.projection?.visibleProperties || []).map((property) => [property.id, property]),
+  );
+  const catalogPropertiesById = new Map(
+    (state.propertyCatalog?.properties || []).map((property) => [property.id, property]),
+  );
+
+  return visiblePropertyIds
+    .map((propertyId) => {
+      const currentProperty = currentPropertiesById.get(propertyId);
+      const catalogProperty = catalogPropertiesById.get(propertyId);
+
+      if (catalogProperty && currentProperty) {
+        return refreshVisiblePropertyDefinition(currentProperty, catalogProperty);
+      }
+
+      if (catalogProperty) {
+        return {
+          id: catalogProperty.id,
+          name: catalogProperty.name,
+          type: catalogProperty.type,
+          propertyType: catalogProperty.propertyType,
+          system: catalogProperty.system,
+          hidden: catalogProperty.hidden,
+          order: catalogProperty.order,
+        };
+      }
+
+      return currentProperty;
+    })
+    .filter((property): property is WorkspaceProjectionResponse["visibleProperties"][number] => (
+      property !== undefined
+    ));
 }
 
 function refreshVisiblePropertyDefinition(

@@ -78,6 +78,7 @@ type WorkspaceTableViewProps = {
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
   readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onColorSelectValue: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
 
@@ -211,6 +212,7 @@ function ProjectTablePropertyValueEditor({
   onProjectPropertyValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
+  onColorSelectValue,
   onDeleteSelectValue,
   dismissSignal,
   onStartEditingCell,
@@ -227,6 +229,7 @@ function ProjectTablePropertyValueEditor({
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
   readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onColorSelectValue: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
   readonly onStartEditingCell: (cellId: string) => void;
   readonly onStopEditingCell: () => void;
@@ -313,6 +316,7 @@ function ProjectTablePropertyValueEditor({
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
+        onColorSelectValue={onColorSelectValue}
         onDeleteSelectValue={onDeleteSelectValue}
       />
     );
@@ -360,6 +364,7 @@ export function WorkspaceTableView({
   onProjectPropertyValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
+  onColorSelectValue,
   onDeleteSelectValue,
 }: WorkspaceTableViewProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
@@ -930,6 +935,7 @@ export function WorkspaceTableView({
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
                           onRenameSelectValue={onRenameSelectValue}
+                          onColorSelectValue={onColorSelectValue}
                           onDeleteSelectValue={onDeleteSelectValue}
                           onStartEditingCell={setEditingCellId}
                           onStopEditingCell={() => setEditingCellId(null)}

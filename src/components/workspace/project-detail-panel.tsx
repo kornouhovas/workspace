@@ -80,9 +80,9 @@ const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
 const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
 const projectDetailPlainValueClassName =
-  "flex min-h-7 w-full min-w-0 items-center truncate rounded-md px-0 py-1 text-left text-sm font-normal text-foreground";
+  "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-1 text-left text-sm font-normal text-foreground";
 const projectDetailPlainTriggerClassName =
-  "h-7 w-full min-w-0 justify-start gap-2 px-0 py-1 font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+  "h-8 w-full min-w-0 justify-start gap-2 px-0 py-1 font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -193,7 +193,7 @@ function getSelectValuesForProperty(
     ));
 }
 
-function getSelectValueLabel(
+function getSelectedSelectValueItems(
   value: unknown,
   property: WorkspacePropertyDefinitionState,
   selectValues: readonly WorkspaceSelectValueState[],
@@ -205,16 +205,63 @@ function getSelectValueLabel(
       ? value.filter((item): item is string => typeof item === "string")
       : [];
 
-    return selectedValues
-      .map((valueId) => values.find((selectValue) => selectValue.id === valueId)?.name || valueId)
-      .join(", ");
+    return selectedValues.map((valueId) => (
+      values.find((selectValue) => selectValue.id === valueId) || {
+        id: valueId,
+        propertyId: property.id,
+        name: valueId,
+        color: "gray",
+      }
+    ));
   }
 
   if (typeof value !== "string" || !value) {
-    return "";
+    return [];
   }
 
-  return values.find((selectValue) => selectValue.id === value)?.name || value;
+  return [
+    values.find((selectValue) => selectValue.id === value) || {
+      id: value,
+      propertyId: property.id,
+      name: value,
+      color: "gray",
+    },
+  ];
+}
+
+function ProjectSelectValuePills({
+  value,
+  property,
+  selectValues,
+}: {
+  readonly value: unknown;
+  readonly property: WorkspacePropertyDefinitionState;
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+}) {
+  const selectedItems = getSelectedSelectValueItems(value, property, selectValues);
+
+  if (selectedItems.length === 0) {
+    return (
+      <span className="flex min-h-8 min-w-0 items-center gap-2 text-sm text-muted-foreground">
+        <span className="size-2 rounded-full bg-muted-foreground/60" aria-hidden="true" />
+        <span className="truncate">Empty</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex min-h-8 min-w-0 flex-wrap items-center gap-1.5 py-1">
+      {selectedItems.map((selectValue) => (
+        <span
+          key={selectValue.id}
+          className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-secondary/80 px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+        >
+          <span className="size-2 rounded-full" data-color={selectValue.color || "gray"} aria-hidden="true" />
+          <span className="truncate">{selectValue.name}</span>
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function ProjectPropertyValueDisplay({
@@ -255,7 +302,13 @@ function ProjectPropertyValueDisplay({
   }
 
   if (property.propertyType === "select" || property.propertyType === "multi-select") {
-    return <span className={projectDetailPlainValueClassName}>{getSelectValueLabel(value, property, selectValues)}</span>;
+    return (
+      <ProjectSelectValuePills
+        value={value}
+        property={property}
+        selectValues={selectValues}
+      />
+    );
   }
 
   return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
@@ -997,18 +1050,18 @@ export function WorkspaceProjectDetailPanel({
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
         <>
-          <header className="px-5 pb-2 pr-12 pt-5">
-            <h2 id="project-detail-title" className="font-heading text-2xl font-semibold tracking-normal text-foreground">
+          <header className="px-6 pb-3 pr-12 pt-7">
+            <h2 id="project-detail-title" className="font-heading text-3xl font-semibold tracking-normal text-foreground">
               {displayedProject.name}
             </h2>
           </header>
-          <div className="min-h-0 flex-1 overflow-auto px-5 pb-5">
-            <div className="grid gap-4">
-              <section className="grid gap-2" aria-labelledby="project-properties-heading">
+          <div className="min-h-0 flex-1 overflow-auto px-6 pb-6">
+            <div className="grid gap-5">
+              <section className="grid gap-3" aria-labelledby="project-properties-heading">
                 <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
                   Properties
                 </h3>
-                <dl className="grid gap-0.5">
+                <dl className="grid gap-1">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
                     const renamingProperty = renamingPropertyId === property.id;
@@ -1022,12 +1075,12 @@ export function WorkspaceProjectDetailPanel({
                         <div
                           data-card-property-row-id={property.id}
                           className={[
-                            "group/card-property grid min-h-8 items-center gap-2 rounded-md transition-colors duration-150",
+                            "group/card-property grid min-h-10 items-center gap-3 rounded-lg px-1.5 transition-colors duration-150 hover:bg-accent/30",
                             cardPropertyDrag ? "transition-transform ease-out" : "",
                             cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                           ].filter(Boolean).join(" ")}
                           style={{
-                            gridTemplateColumns: "minmax(9.5rem, 11rem) minmax(0, 1fr)",
+                            gridTemplateColumns: "minmax(11rem, 13rem) minmax(0, 1fr)",
                             ...getCardPropertyDragStyle(property.id),
                           }}
                           onContextMenu={(event) => {
@@ -1134,12 +1187,12 @@ export function WorkspaceProjectDetailPanel({
                       <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
                     </button>
                     {hiddenPropertiesExpanded ? (
-                      <dl className="mt-1 grid gap-0.5">
+                      <dl className="mt-1 grid gap-1">
                         {hiddenCardProperties.map((property) => (
                           <div
                             key={property.id}
-                            className="grid min-h-8 items-center gap-2 rounded-md opacity-75"
-                            style={{ gridTemplateColumns: "minmax(9.5rem, 11rem) minmax(0, 1fr)" }}
+                            className="grid min-h-9 items-center gap-3 rounded-lg px-1.5 opacity-75"
+                            style={{ gridTemplateColumns: "minmax(11rem, 13rem) minmax(0, 1fr)" }}
                           >
                             <dt className="flex min-w-0 items-center gap-1 pl-7 text-sm font-medium text-muted-foreground">
                               <span className="min-w-0 truncate">{property.name}</span>

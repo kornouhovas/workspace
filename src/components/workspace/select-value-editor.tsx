@@ -292,7 +292,7 @@ export function WorkspaceSelectValueEditor({
           side="right"
           align="start"
           sideOffset={8}
-          className="w-40 p-1"
+          className="w-52 p-1.5"
           onOpenAutoFocus={(event) => event.preventDefault()}
           onClick={stopSelectionEditorActivation}
           onPointerDown={stopSelectionEditorActivation}
@@ -308,9 +308,21 @@ export function WorkspaceSelectValueEditor({
           >
             Rename value
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+            onClick={(event) => {
+              event.stopPropagation();
+              deleteSelectValue(selectValue);
+            }}
+          >
+            Delete value
+          </button>
           {onColorSelectValue ? (
             <>
-              <div className="px-2 pb-1 pt-2 text-xs font-medium text-muted-foreground">Color</div>
+              <div className="my-1 h-px bg-border" />
+              <div className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">Color</div>
               <div className="grid grid-cols-7 gap-1 px-1 pb-1">
                 {valueColorOptions.map((color) => (
                   <button
@@ -331,17 +343,6 @@ export function WorkspaceSelectValueEditor({
               </div>
             </>
           ) : null}
-          <button
-            type="button"
-            role="menuitem"
-            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
-            onClick={(event) => {
-              event.stopPropagation();
-              deleteSelectValue(selectValue);
-            }}
-          >
-            Delete value
-          </button>
         </PopoverContent>
       </Popover>
     );
