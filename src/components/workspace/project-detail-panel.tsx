@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -36,6 +37,20 @@ type WorkspaceProjectDetailPanelProps = {
   ) => Promise<WorkspaceSelectValueState | null>;
   readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
+};
+
+type CardPropertyDragPreviewRow = {
+  readonly propertyId: string;
+  readonly top: number;
+  readonly height: number;
+};
+
+type CardPropertyDragState = {
+  readonly propertyId: string;
+  readonly startY: number;
+  readonly currentY: number;
+  readonly dropIndex: number;
+  readonly rows: readonly CardPropertyDragPreviewRow[];
 };
 
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
@@ -106,26 +121,18 @@ function createOrderedCardProperties(
   return [...orderedProperties, ...newProperties];
 }
 
-function reorderCardPropertyIds(
+function getCardPropertyDragOrder(
   orderedPropertyIds: readonly string[],
-  draggedPropertyId: string,
-  targetPropertyId: string,
+  sourcePropertyId: string,
+  dropIndex: number,
 ) {
-  if (draggedPropertyId === targetPropertyId) {
-    return orderedPropertyIds;
-  }
-
-  const draggedIndex = orderedPropertyIds.indexOf(draggedPropertyId);
-  const targetIndex = orderedPropertyIds.indexOf(targetPropertyId);
-
-  if (draggedIndex < 0 || targetIndex < 0) {
-    return orderedPropertyIds;
-  }
-
-  const nextPropertyIds = [...orderedPropertyIds];
-  nextPropertyIds.splice(draggedIndex, 1);
-  nextPropertyIds.splice(targetIndex, 0, draggedPropertyId);
-  return nextPropertyIds;
+  const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
+  return [
+    ...remainingPropertyIds.slice(0, boundedDropIndex),
+    sourcePropertyId,
+    ...remainingPropertyIds.slice(boundedDropIndex),
+  ];
 }
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {
@@ -457,7 +464,7 @@ export function WorkspaceProjectDetailPanel({
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
-  const [draggedCardPropertyId, setDraggedCardPropertyId] = useState<string | null>(null);
+  const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
   const panelWidthRef = useRef(projectDetailPanelWidth);
   const panelMountedRef = useRef(false);
   const cardPropertyOrderRef = useRef<readonly string[]>(cardPropertyOrder);
@@ -647,42 +654,187 @@ export function WorkspaceProjectDetailPanel({
     }
   }
 
+  function getCardPropertyDragPreviewRows() {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-card-property-row-id]"))
+      .map((row) => {
+        const propertyId = row.dataset.cardPropertyRowId;
+        const rect = row.getBoundingClientRect();
+
+        if (!propertyId) {
+          return null;
+        }
+
+        return {
+          propertyId,
+          top: rect.top,
+          height: rect.height,
+        };
+      })
+      .filter((row): row is CardPropertyDragPreviewRow => row !== null);
+  }
+
+  function findCardPropertyDragTarget(clientY: number, rows: readonly CardPropertyDragPreviewRow[]) {
+    let dropIndex = 0;
+
+    for (const row of rows) {
+      if (clientY >= row.top + row.height / 2) {
+        dropIndex += 1;
+      }
+    }
+
+    return dropIndex;
+  }
+
+  function findCardPropertyDropIndex(
+    clientY: number,
+    rows: readonly CardPropertyDragPreviewRow[],
+    sourcePropertyId: string,
+  ) {
+    return findCardPropertyDragTarget(
+      clientY,
+      rows.filter((row) => row.propertyId !== sourcePropertyId),
+    );
+  }
+
+  function getCardPropertyDragTops(
+    orderedPropertyIds: readonly string[],
+    rows: readonly CardPropertyDragPreviewRow[],
+  ) {
+    const tops = new Map<string, number>();
+
+    orderedPropertyIds.forEach((propertyId, index) => {
+      const row = rows[index];
+      if (row) {
+        tops.set(propertyId, row.top);
+      }
+    });
+
+    return tops;
+  }
+
+  function getCardPropertyDragStyle(propertyId: string): CSSProperties | undefined {
+    if (!cardPropertyDrag) {
+      return undefined;
+    }
+
+    const orderedPropertyIds = orderedVisibleProperties.map((property) => property.id);
+    const currentRow = cardPropertyDrag.rows.find((row) => row.propertyId === propertyId);
+
+    if (!currentRow || !orderedPropertyIds.includes(propertyId)) {
+      return undefined;
+    }
+
+    if (propertyId === cardPropertyDrag.propertyId) {
+      return {
+        transform: `translateY(${cardPropertyDrag.currentY - cardPropertyDrag.startY}px)`,
+        transitionDuration: "0ms",
+        pointerEvents: "none",
+        zIndex: 30,
+      };
+    }
+
+    const previewOrder = getCardPropertyDragOrder(
+      orderedPropertyIds,
+      cardPropertyDrag.propertyId,
+      cardPropertyDrag.dropIndex,
+    );
+    const previewTops = getCardPropertyDragTops(previewOrder, cardPropertyDrag.rows);
+    const previewTop = previewTops.get(propertyId);
+
+    if (previewTop === undefined) {
+      return undefined;
+    }
+
+    const offset = previewTop - currentRow.top;
+
+    if (Math.abs(offset) < 0.5) {
+      return undefined;
+    }
+
+    return {
+      transform: `translateY(${offset}px)`,
+      transitionDuration: "180ms",
+    };
+  }
+
   function startCardPropertyDrag(event: ReactPointerEvent<HTMLButtonElement>, propertyId: string) {
+    if (event.button !== 0) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
-    setDraggedCardPropertyId(propertyId);
 
+    const cardPropertyDragPreviewRows = getCardPropertyDragPreviewRows();
     const previousCursor = document.body.style.cursor;
     const previousUserSelect = document.body.style.userSelect;
 
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    let frameId = 0;
+    let pendingClientY = event.clientY;
+
+    setEditingPropertyId(null);
+    setCardPropertyDrag({
+      propertyId,
+      startY: event.clientY,
+      currentY: event.clientY,
+      dropIndex: findCardPropertyDropIndex(event.clientY, cardPropertyDragPreviewRows, propertyId),
+      rows: cardPropertyDragPreviewRows,
+    });
+
+    function updateDraggedCardProperty() {
+      frameId = 0;
+
+      const dropIndex = findCardPropertyDropIndex(
+        pendingClientY,
+        cardPropertyDragPreviewRows,
+        propertyId,
+      );
+
+      setCardPropertyDrag((currentDrag) => {
+        if (!currentDrag || currentDrag.propertyId !== propertyId) {
+          return currentDrag;
+        }
+
+        return {
+          ...currentDrag,
+          currentY: pendingClientY,
+          dropIndex,
+        };
+      });
+    }
+
     function moveCardProperty(pointerEvent: PointerEvent) {
-      const element = document.elementFromPoint(pointerEvent.clientX, pointerEvent.clientY);
-      const targetRow = element?.closest("[data-card-property-row-id]");
-      const targetPropertyId = targetRow?.getAttribute("data-card-property-row-id");
+      pendingClientY = pointerEvent.clientY;
 
-      if (!targetPropertyId || targetPropertyId === propertyId) {
-        return;
-      }
-
-      const nextPropertyIds = reorderCardPropertyIds(cardPropertyOrderRef.current, propertyId, targetPropertyId);
-
-      if (nextPropertyIds !== cardPropertyOrderRef.current) {
-        setCardPropertyOrder(nextPropertyIds);
-        cardPropertyOrderRef.current = nextPropertyIds;
+      if (frameId === 0) {
+        frameId = window.requestAnimationFrame(updateDraggedCardProperty);
       }
     }
 
-    function finishCardPropertyDrag() {
+    function finishCardPropertyDrag(pointerEvent: PointerEvent) {
+      const dropIndex = findCardPropertyDropIndex(
+        pointerEvent.clientY,
+        cardPropertyDragPreviewRows,
+        propertyId,
+      );
+      const orderedPropertyIds = cardPropertyDragPreviewRows.map((row) => row.propertyId);
+      const nextPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
       window.removeEventListener("pointermove", moveCardProperty);
+      window.cancelAnimationFrame(frameId);
       window.removeEventListener("pointerup", finishCardPropertyDrag);
-      setDraggedCardPropertyId(null);
-      onReorderCardProperties(cardPropertyOrderRef.current);
+      setCardPropertyDrag(null);
+
+      if (Math.abs(pointerEvent.clientY - event.clientY) > 4) {
+        onReorderCardProperties(nextPropertyIds);
+      }
     }
 
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
     window.addEventListener("pointermove", moveCardProperty);
     window.addEventListener("pointerup", finishCardPropertyDrag, { once: true });
   }
@@ -762,9 +914,13 @@ export function WorkspaceProjectDetailPanel({
                       data-card-property-row-id={property.id}
                       className={[
                         "group/card-property grid min-h-8 items-center gap-2 rounded-md transition-colors duration-150",
-                        draggedCardPropertyId === property.id ? "bg-muted/40" : "",
+                        cardPropertyDrag ? "transition-transform ease-out" : "",
+                        cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                       ].filter(Boolean).join(" ")}
-                      style={{ gridTemplateColumns: "1.25rem minmax(8rem, 10rem) minmax(0, 1fr)" }}
+                      style={{
+                        gridTemplateColumns: "1.25rem minmax(8rem, 10rem) minmax(0, 1fr)",
+                        ...getCardPropertyDragStyle(property.id),
+                      }}
                     >
                       <dt className="contents">
                         <button

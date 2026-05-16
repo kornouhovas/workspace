@@ -473,6 +473,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
   assert.match(projectDetailPanelSource, /orderedVisibleProperties/);
   assert.match(projectDetailPanelSource, /startCardPropertyDrag/);
+  assert.match(projectDetailPanelSource, /getCardPropertyDragPreviewRows/);
+  assert.match(projectDetailPanelSource, /getCardPropertyDragStyle/);
+  assert.match(projectDetailPanelSource, /requestAnimationFrame/);
+  assert.match(projectDetailPanelSource, /transitionDuration: "180ms"/);
+  assert.match(projectDetailPanelSource, /transform: `translateY/);
   assert.match(projectDetailPanelSource, /onReorderCardProperties/);
   assert.match(projectDetailPanelSource, /GripVerticalIcon/);
   assert.match(projectDetailPanelSource, /cursor-grab/);
