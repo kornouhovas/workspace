@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
-import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
+import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, GripVerticalIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
@@ -43,6 +44,11 @@ const minProjectDetailPanelWidth = 360;
 const maxProjectDetailPanelWidth = 760;
 const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
+const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
+const projectDetailPlainValueClassName =
+  "flex min-h-7 w-full min-w-0 items-center truncate rounded-md px-0 py-1 text-left text-sm font-medium text-foreground";
+const projectDetailPlainTriggerClassName =
+  "h-7 w-full min-w-0 justify-start gap-2 px-0 py-1 font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -71,6 +77,57 @@ function readSavedProjectDetailPanelWidth() {
   return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));
 }
 
+function readSavedCardPropertyOrder() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const parsedValue = JSON.parse(window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]");
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function createOrderedCardProperties(
+  properties: readonly WorkspacePropertyDefinitionState[],
+  orderedPropertyIds: readonly string[],
+) {
+  const propertiesById = new Map(properties.map((property) => [property.id, property]));
+  const orderedProperties = orderedPropertyIds
+    .map((propertyId) => propertiesById.get(propertyId))
+    .filter((property): property is WorkspacePropertyDefinitionState => property !== undefined);
+  const orderedPropertyIdSet = new Set(orderedProperties.map((property) => property.id));
+  const newProperties = properties.filter((property) => !orderedPropertyIdSet.has(property.id));
+
+  return [...orderedProperties, ...newProperties];
+}
+
+function reorderCardPropertyIds(
+  orderedPropertyIds: readonly string[],
+  draggedPropertyId: string,
+  targetPropertyId: string,
+) {
+  if (draggedPropertyId === targetPropertyId) {
+    return orderedPropertyIds;
+  }
+
+  const draggedIndex = orderedPropertyIds.indexOf(draggedPropertyId);
+  const targetIndex = orderedPropertyIds.indexOf(targetPropertyId);
+
+  if (draggedIndex < 0 || targetIndex < 0) {
+    return orderedPropertyIds;
+  }
+
+  const nextPropertyIds = [...orderedPropertyIds];
+  nextPropertyIds.splice(draggedIndex, 1);
+  nextPropertyIds.splice(targetIndex, 0, draggedPropertyId);
+  return nextPropertyIds;
+}
+
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {
   if (property.id === "property:name") {
     return project.name;
@@ -93,6 +150,80 @@ function stringifyPropertyValue(value: unknown) {
   }
 
   return String(value);
+}
+
+function getSelectValuesForProperty(
+  selectValues: readonly WorkspaceSelectValueState[],
+  propertyId: string,
+) {
+  return selectValues
+    .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
+    .sort((left, right) => (
+      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
+    ));
+}
+
+function getSelectValueLabel(
+  value: unknown,
+  property: WorkspacePropertyDefinitionState,
+  selectValues: readonly WorkspaceSelectValueState[],
+) {
+  const values = getSelectValuesForProperty(selectValues, property.id);
+
+  if (property.propertyType === "multi-select") {
+    const selectedValues = Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+
+    return selectedValues
+      .map((valueId) => values.find((selectValue) => selectValue.id === valueId)?.name || valueId)
+      .join(", ");
+  }
+
+  if (typeof value !== "string" || !value) {
+    return "";
+  }
+
+  return values.find((selectValue) => selectValue.id === value)?.name || value;
+}
+
+function ProjectPropertyValueDisplay({
+  value,
+  property,
+  selectValues,
+  onStartEditing,
+}: {
+  readonly value: unknown;
+  readonly property: WorkspacePropertyDefinitionState;
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly onStartEditing: () => void;
+}) {
+  if (property.id === "property:name" || property.id === "property:status" || property.system) {
+    return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+  }
+
+  if (property.propertyType === "text" || property.propertyType === "number") {
+    return (
+      <button
+        type="button"
+        aria-label={`Edit ${property.name}`}
+        className={projectDetailPlainValueClassName}
+        onClick={onStartEditing}
+      >
+        <span className="min-w-0 truncate">{stringifyPropertyValue(value)}</span>
+      </button>
+    );
+  }
+
+  if (property.propertyType === "date") {
+    return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+  }
+
+  if (property.propertyType === "select" || property.propertyType === "multi-select") {
+    return <span className={projectDetailPlainValueClassName}>{getSelectValueLabel(value, property, selectValues)}</span>;
+  }
+
+  return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
 }
 
 type FileTreeNodeProps = {
@@ -167,6 +298,9 @@ function ProjectPropertyValueEditor({
   project,
   property,
   selectValues,
+  editing,
+  onStartEditing,
+  onStopEditing,
   onProjectPropertyValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
@@ -175,6 +309,9 @@ function ProjectPropertyValueEditor({
   readonly project: WorkspaceMockProject;
   readonly property: WorkspacePropertyDefinitionState;
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly editing: boolean;
+  readonly onStartEditing: () => void;
+  readonly onStopEditing: () => void;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
@@ -186,19 +323,45 @@ function ProjectPropertyValueEditor({
   const value = getPropertyValue(project, property);
 
   if (property.id === "property:name" || property.id === "property:status" || property.system) {
-    return <span className="truncate text-foreground">{stringifyPropertyValue(value)}</span>;
+    return (
+      <ProjectPropertyValueDisplay
+        value={value}
+        property={property}
+        selectValues={selectValues}
+        onStartEditing={onStartEditing}
+      />
+    );
   }
 
   if (property.propertyType === "text") {
+    if (!editing) {
+      return (
+        <ProjectPropertyValueDisplay
+          value={value}
+          property={property}
+          selectValues={selectValues}
+          onStartEditing={onStartEditing}
+        />
+      );
+    }
+
     return (
       <Input
         key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        autoFocus
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} text value`}
-        onBlur={(event) => onProjectPropertyValueChange(project.id, property.id, event.target.value)}
+        className="h-8 border-border bg-background px-2 shadow-none"
+        onBlur={(event) => {
+          onProjectPropertyValueChange(project.id, property.id, event.target.value);
+          onStopEditing();
+        }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.currentTarget.blur();
+          }
+          if (event.key === "Escape") {
+            onStopEditing();
           }
         }}
       />
@@ -206,20 +369,36 @@ function ProjectPropertyValueEditor({
   }
 
   if (property.propertyType === "number") {
+    if (!editing) {
+      return (
+        <ProjectPropertyValueDisplay
+          value={value}
+          property={property}
+          selectValues={selectValues}
+          onStartEditing={onStartEditing}
+        />
+      );
+    }
+
     return (
       <Input
         key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        autoFocus
         type="number"
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} number value`}
-        className="workspace-number-input"
+        className="workspace-number-input h-8 border-border bg-background px-2 shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();
           onProjectPropertyValueChange(project.id, property.id, text === "" ? null : Number(text));
+          onStopEditing();
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.currentTarget.blur();
+          }
+          if (event.key === "Escape") {
+            onStopEditing();
           }
         }}
       />
@@ -230,7 +409,7 @@ function ProjectPropertyValueEditor({
     return (
       <WorkspaceDateValueEditor
         value={value}
-        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName={projectDetailPlainTriggerClassName}
         onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
       />
     );
@@ -242,7 +421,7 @@ function ProjectPropertyValueEditor({
         property={property}
         value={value}
         selectValues={selectValues}
-        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName={projectDetailPlainTriggerClassName}
         onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
@@ -251,7 +430,14 @@ function ProjectPropertyValueEditor({
     );
   }
 
-  return <span className="truncate text-foreground">{stringifyPropertyValue(value)}</span>;
+  return (
+    <ProjectPropertyValueDisplay
+      value={value}
+      property={property}
+      selectValues={selectValues}
+      onStartEditing={onStartEditing}
+    />
+  );
 }
 
 export function WorkspaceProjectDetailPanel({
@@ -269,19 +455,47 @@ export function WorkspaceProjectDetailPanel({
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
+  const [draggedCardPropertyId, setDraggedCardPropertyId] = useState<string | null>(null);
   const panelWidthRef = useRef(projectDetailPanelWidth);
   const panelMountedRef = useRef(false);
+  const cardPropertyOrderRef = useRef<readonly string[]>(cardPropertyOrder);
   const isOpen = open && project !== null;
+  const orderedVisibleProperties = useMemo(
+    () => createOrderedCardProperties(visibleProperties, cardPropertyOrder),
+    [visibleProperties, cardPropertyOrder],
+  );
 
   useEffect(() => {
     panelMountedRef.current = panelProject !== null;
   }, [panelProject]);
 
   useEffect(() => {
+    cardPropertyOrderRef.current = cardPropertyOrder;
+  }, [cardPropertyOrder]);
+
+  useEffect(() => {
     if (isOpen) {
       setExpandedFolderIds(new Set());
+      setEditingPropertyId(null);
     }
   }, [isOpen, project?.id]);
+
+  useEffect(() => {
+    const visiblePropertyIdSet = new Set(visibleProperties.map((property) => property.id));
+    const mergedPropertyIds = [
+      ...cardPropertyOrder.filter((propertyId) => visiblePropertyIdSet.has(propertyId)),
+      ...visibleProperties.map((property) => property.id).filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
+    ];
+
+    if (
+      mergedPropertyIds.length !== cardPropertyOrder.length ||
+      mergedPropertyIds.some((propertyId, index) => propertyId !== cardPropertyOrder[index])
+    ) {
+      setCardPropertyOrder(mergedPropertyIds);
+    }
+  }, [visibleProperties, cardPropertyOrder]);
 
   useEffect(() => {
     if (!isOpen || !project) {
@@ -424,6 +638,55 @@ export function WorkspaceProjectDetailPanel({
     });
   }
 
+  function onReorderCardProperties(nextPropertyIds: readonly string[]) {
+    setCardPropertyOrder(nextPropertyIds);
+    cardPropertyOrderRef.current = nextPropertyIds;
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(cardPropertyOrderStorageKey, JSON.stringify(nextPropertyIds));
+    }
+  }
+
+  function startCardPropertyDrag(event: ReactPointerEvent<HTMLButtonElement>, propertyId: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDraggedCardPropertyId(propertyId);
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    function moveCardProperty(pointerEvent: PointerEvent) {
+      const element = document.elementFromPoint(pointerEvent.clientX, pointerEvent.clientY);
+      const targetRow = element?.closest("[data-card-property-row-id]");
+      const targetPropertyId = targetRow?.getAttribute("data-card-property-row-id");
+
+      if (!targetPropertyId || targetPropertyId === propertyId) {
+        return;
+      }
+
+      const nextPropertyIds = reorderCardPropertyIds(cardPropertyOrderRef.current, propertyId, targetPropertyId);
+
+      if (nextPropertyIds !== cardPropertyOrderRef.current) {
+        setCardPropertyOrder(nextPropertyIds);
+        cardPropertyOrderRef.current = nextPropertyIds;
+      }
+    }
+
+    function finishCardPropertyDrag() {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", moveCardProperty);
+      window.removeEventListener("pointerup", finishCardPropertyDrag);
+      setDraggedCardPropertyId(null);
+      onReorderCardProperties(cardPropertyOrderRef.current);
+    }
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", moveCardProperty);
+    window.addEventListener("pointerup", finishCardPropertyDrag, { once: true });
+  }
+
   if (!panelProject) {
     return null;
   }
@@ -492,15 +755,36 @@ export function WorkspaceProjectDetailPanel({
                 <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
                   Properties
                 </h3>
-                <dl className="grid gap-2">
-                  {visibleProperties.map((property) => (
-                    <div key={property.id} className="grid grid-cols-[6rem_1fr] gap-3 text-sm">
-                      <dt className="truncate text-muted-foreground">{property.name}</dt>
-                      <dd className="min-w-0">
+                <dl className="grid gap-1.5">
+                  {orderedVisibleProperties.map((property) => (
+                    <div
+                      key={property.id}
+                      data-card-property-row-id={property.id}
+                      className={[
+                        "group/card-property grid min-h-8 items-center gap-2 rounded-md transition-colors duration-150",
+                        draggedCardPropertyId === property.id ? "bg-muted/40" : "",
+                      ].filter(Boolean).join(" ")}
+                      style={{ gridTemplateColumns: "1.25rem minmax(8rem, 10rem) minmax(0, 1fr)" }}
+                    >
+                      <dt className="contents">
+                        <button
+                          type="button"
+                          aria-label={`Reorder ${property.name} card property order`}
+                          className="flex size-7 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground active:cursor-grabbing group-hover/card-property:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/30"
+                          onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                        >
+                          <GripVerticalIcon className="size-4" aria-hidden="true" />
+                        </button>
+                        <span className="min-w-0 truncate text-sm font-medium text-muted-foreground">{property.name}</span>
+                      </dt>
+                      <dd className="min-w-0 text-sm">
                         <ProjectPropertyValueEditor
                           project={displayedProject}
                           property={property}
                           selectValues={selectValues}
+                          editing={editingPropertyId === property.id}
+                          onStartEditing={() => setEditingPropertyId(property.id)}
+                          onStopEditing={() => setEditingPropertyId(null)}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
                           onRenameSelectValue={onRenameSelectValue}

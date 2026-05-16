@@ -441,7 +441,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /duration-\[360ms\]/);
   assert.match(projectDetailPanelSource, /panelVisible \? "translate-x-0" : "translate-x-full"/);
   assert.doesNotMatch(projectDetailPanelSource, /transition-\[transform,opacity\]/);
-  assert.doesNotMatch(projectDetailPanelSource, /opacity-0/);
+  assert.doesNotMatch(projectDetailPanelSource, /panelVisible \? "opacity-100" : "opacity-0"/);
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.doesNotMatch(projectDetailPanelSource, /project-identity-heading/);
@@ -468,6 +468,15 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
   assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
+  assert.match(projectDetailPanelSource, /ProjectPropertyValueDisplay/);
+  assert.match(projectDetailPanelSource, /editingPropertyId/);
+  assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
+  assert.match(projectDetailPanelSource, /orderedVisibleProperties/);
+  assert.match(projectDetailPanelSource, /startCardPropertyDrag/);
+  assert.match(projectDetailPanelSource, /onReorderCardProperties/);
+  assert.match(projectDetailPanelSource, /GripVerticalIcon/);
+  assert.match(projectDetailPanelSource, /cursor-grab/);
+  assert.match(projectDetailPanelSource, /card property order/);
   assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
   assert.match(projectDetailPanelSource, /WorkspaceDateValueEditor/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "text"/);
