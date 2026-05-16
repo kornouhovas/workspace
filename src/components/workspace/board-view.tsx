@@ -65,9 +65,6 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
           <h2 id="workspace-board-heading" className="text-sm font-semibold">
             Board
           </h2>
-          <p className="text-xs text-muted-foreground">
-            Status columns are fixed for the MVP; cross-status drag and drop is disabled.
-          </p>
         </div>
         <Badge variant="outline">Move disabled</Badge>
       </div>

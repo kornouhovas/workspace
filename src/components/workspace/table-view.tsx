@@ -743,7 +743,6 @@ export function WorkspaceTableView({
         <h2 id="workspace-table-heading" className="text-sm font-semibold">
           Table
         </h2>
-        <p className="text-xs text-muted-foreground">Rows use the same project set as the Board projection.</p>
       </div>
       <div className="min-h-0 w-full flex-1 overflow-auto">
         <Table className="table-fixed" style={{ width: tableWidth }}>
