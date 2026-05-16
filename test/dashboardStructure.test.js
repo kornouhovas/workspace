@@ -177,6 +177,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /requestAnimationFrame/);
   assert.match(leftPanelSource, /transitionDuration: "180ms"/);
   assert.match(leftPanelSource, /transform: `translateY/);
+  assert.doesNotMatch(leftPanelSource, /dragging && "bg-sidebar-accent/);
   assert.match(leftPanelSource, /Rename Workspace/);
   assert.match(leftPanelSource, /Delete Workspace/);
   assert.match(leftPanelSource, /pt-7/);

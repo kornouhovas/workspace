@@ -368,7 +368,6 @@ export function WorkspaceLeftPanel({
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
             const editing = editingWorkspaceId === workspace.id;
-            const dragging = workspaceDragState?.workspaceId === workspace.id;
 
             return (
               <div
@@ -381,7 +380,6 @@ export function WorkspaceLeftPanel({
                 className={cn(
                   "group/workspace relative flex items-center gap-1 rounded-lg transition-colors duration-100",
                   workspaceDragState && "transition-transform ease-out",
-                  dragging && "bg-sidebar-accent/70 shadow-sm",
                 )}
                 style={getWorkspaceDragStyle(workspace.id)}
               >
