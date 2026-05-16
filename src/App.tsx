@@ -1450,6 +1450,8 @@ export default function App() {
       : activeView?.viewType === "table" ? "table" : "board";
   const visibleProperties =
     serviceProjection?.visibleProperties ?? workspaceMockProjection.visibleProperties;
+  const statusValues =
+    serviceProjection?.statusValues ?? workspaceMockProjection.statusValues;
   const boardProjection =
     serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
@@ -1564,6 +1566,7 @@ export default function App() {
                 dismissSignal={workspaceFloatingDismissToken}
                 properties={settingsProperties}
                 selectValues={settingsSelectValues}
+                statusValues={statusValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
                 onToggleValueFilter={handleToggleValueFilter}
                 onRenameProperty={handleRenameProperty}

@@ -251,6 +251,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onToggleValueFilter/);
   assert.match(viewTabsSource, /onRenameProperty/);
   assert.match(viewTabsSource, /onDeleteProperty/);
+  assert.match(viewTabsSource, /statusValues/);
+  assert.match(appSource, /statusValues=\{statusValues\}/);
   assert.match(viewFilterMenuSource, /WorkspaceViewFilterMenu/);
   assert.match(viewFilterMenuSource, /dismissSignal/);
   assert.match(viewFilterMenuSource, /const \[open, setOpen\] = useState\(false\)/);
@@ -260,6 +262,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /onOpenChange=\{setOpen\}/);
   assert.match(viewFilterMenuSource, /Visible properties/);
   assert.match(viewFilterMenuSource, /Value filters/);
+  assert.match(viewFilterMenuSource, /statusValues/);
+  assert.match(viewFilterMenuSource, /property\.id === "property:status"/);
+  assert.match(viewFilterMenuSource, /expandedFilterPropertyIds/);
+  assert.match(viewFilterMenuSource, /ChevronDownIcon/);
+  assert.match(viewFilterMenuSource, /ChevronRightIcon/);
+  assert.match(viewFilterMenuSource, /grid-cols-\[auto_minmax\(0,1fr\)_minmax\(5\.75rem,auto\)_1\.75rem\]/);
   assert.match(viewFilterMenuSource, /Checkbox/);
   assert.match(viewFilterMenuSource, /valueVisibility/);
   assert.match(viewFilterMenuSource, /MoreHorizontalIcon/);

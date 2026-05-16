@@ -12,6 +12,7 @@ import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu
 import { MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
 import type {
   WorkspacePropertyDefinitionState,
+  WorkspaceProjectionResponse,
   WorkspaceSelectValueState,
   WorkspaceViewState,
 } from "@/workspaceAppState";
@@ -28,6 +29,7 @@ type WorkspaceViewTabsProps = {
   readonly dismissSignal?: number;
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
@@ -44,6 +46,7 @@ export function WorkspaceViewTabs({
   dismissSignal,
   properties,
   selectValues,
+  statusValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
   onRenameProperty,
@@ -184,6 +187,7 @@ export function WorkspaceViewTabs({
           dismissSignal={dismissSignal}
           properties={properties}
           selectValues={selectValues}
+          statusValues={statusValues}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
           onToggleValueFilter={onToggleValueFilter}
           onRenameProperty={onRenameProperty}

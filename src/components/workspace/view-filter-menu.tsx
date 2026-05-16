@@ -11,9 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Columns3Icon, MoreHorizontalIcon } from "@/lib/lucide-icons";
+import { ChevronDownIcon, ChevronRightIcon, Columns3Icon, MoreHorizontalIcon } from "@/lib/lucide-icons";
 import type {
   WorkspacePropertyDefinitionState,
+  WorkspaceProjectionResponse,
   WorkspaceSelectValueState,
   WorkspaceViewState,
 } from "@/workspaceAppState";
@@ -23,10 +24,16 @@ type WorkspaceViewFilterMenuProps = {
   readonly dismissSignal?: number;
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
+};
+
+type WorkspaceFilterValue = {
+  readonly id: string;
+  readonly name: string;
 };
 
 function isSystemProperty(propertyId: string) {
@@ -34,7 +41,29 @@ function isSystemProperty(propertyId: string) {
 }
 
 function isFilterableProperty(property: WorkspacePropertyDefinitionState) {
-  return property.propertyType === "select" || property.propertyType === "multi-select";
+  return property.id === "property:status"
+    || property.propertyType === "select"
+    || property.propertyType === "multi-select";
+}
+
+function getFilterValues(
+  property: WorkspacePropertyDefinitionState,
+  selectValues: readonly WorkspaceSelectValueState[],
+  statusValues: WorkspaceProjectionResponse["statusValues"],
+): readonly WorkspaceFilterValue[] {
+  if (property.id === "property:status") {
+    return statusValues.map((statusValue) => ({
+      id: statusValue.id,
+      name: statusValue.name,
+    }));
+  }
+
+  return selectValues
+    .filter((selectValue) => selectValue.propertyId === property.id && !selectValue.hidden)
+    .map((selectValue) => ({
+      id: selectValue.id,
+      name: selectValue.name,
+    }));
 }
 
 function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; preventDefault: () => void }) {
@@ -52,6 +81,7 @@ export function WorkspaceViewFilterMenu({
   dismissSignal,
   properties,
   selectValues,
+  statusValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
   onRenameProperty,
@@ -61,6 +91,7 @@ export function WorkspaceViewFilterMenu({
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
+  const [expandedFilterPropertyIds, setExpandedFilterPropertyIds] = useState<ReadonlySet<string>>(() => new Set());
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
@@ -70,7 +101,14 @@ export function WorkspaceViewFilterMenu({
     setActionsPropertyId(null);
     setEditingPropertyId(null);
     setEditingPropertyName("");
+    setExpandedFilterPropertyIds(new Set());
   }, [dismissSignal]);
+
+  useEffect(() => {
+    if (open) {
+      setExpandedFilterPropertyIds(new Set(filterableProperties.map((property) => property.id)));
+    }
+  }, [open]);
 
   function beginRenameProperty(property: WorkspacePropertyDefinitionState) {
     if (isSystemProperty(property.id)) {
@@ -92,6 +130,20 @@ export function WorkspaceViewFilterMenu({
     }
   }
 
+  function toggleFilterPropertyExpanded(propertyId: string) {
+    setExpandedFilterPropertyIds((currentPropertyIds) => {
+      const nextPropertyIds = new Set(currentPropertyIds);
+
+      if (nextPropertyIds.has(propertyId)) {
+        nextPropertyIds.delete(propertyId);
+      } else {
+        nextPropertyIds.add(propertyId);
+      }
+
+      return nextPropertyIds;
+    });
+  }
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -101,7 +153,7 @@ export function WorkspaceViewFilterMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-72 p-0"
+        className="w-80 p-0"
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
         <div className="grid gap-3 p-3">
@@ -119,7 +171,7 @@ export function WorkspaceViewFilterMenu({
 
               return (
                 <div key={property.id} className="grid min-w-0 gap-1">
-                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50">
+                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(5.75rem,auto)_1.75rem] items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50">
                     <Checkbox
                       checked={checked}
                       disabled={disabled}
@@ -150,62 +202,67 @@ export function WorkspaceViewFilterMenu({
                     ) : (
                       <span className="truncate">{property.name}</span>
                     )}
-                    {disabled ? <Badge variant="outline">Required</Badge> : null}
-                    <Popover
-                      open={actionsPropertyId === property.id}
-                      onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
-                    >
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-                          aria-label={`${property.name} property actions`}
-                          onClick={stopActionMenuEvent}
-                          onPointerDown={stopActionMenuEvent}
+                    <div className="flex min-w-0 justify-end">
+                      {disabled ? <Badge variant="outline">Required</Badge> : null}
+                    </div>
+                    <div className="flex size-7 items-center justify-center">
+                      {disabled ? null : (
+                        <Popover
+                          open={actionsPropertyId === property.id}
+                          onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
                         >
-                          <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        data-workspace-actions-popover="true"
-                        role="menu"
-                        aria-label={`${property.name} property actions`}
-                        side="right"
-                        align="start"
-                        sideOffset={8}
-                        className="w-44 p-1"
-                        onOpenAutoFocus={(event) => event.preventDefault()}
-                        onClick={stopActionMenuEvent}
-                        onPointerDown={stopActionMenuEvent}
-                      >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            beginRenameProperty(property);
-                          }}
-                        >
-                          Rename property
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setActionsPropertyId(null);
-                            if (window.confirm(`Delete property "${property.name}"?`)) {
-                              onDeleteProperty(property.id);
-                            }
-                          }}
-                        >
-                          Delete property
-                        </button>
-                      </PopoverContent>
-                    </Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                              aria-label={`${property.name} property actions`}
+                              onClick={stopActionMenuEvent}
+                              onPointerDown={stopActionMenuEvent}
+                            >
+                              <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            data-workspace-actions-popover="true"
+                            role="menu"
+                            aria-label={`${property.name} property actions`}
+                            side="right"
+                            align="start"
+                            sideOffset={8}
+                            className="w-44 p-1"
+                            onOpenAutoFocus={(event) => event.preventDefault()}
+                            onClick={stopActionMenuEvent}
+                            onPointerDown={stopActionMenuEvent}
+                          >
+                            <button
+                              type="button"
+                              role="menuitem"
+                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                beginRenameProperty(property);
+                              }}
+                            >
+                              Rename property
+                            </button>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setActionsPropertyId(null);
+                                if (window.confirm(`Delete property "${property.name}"?`)) {
+                                  onDeleteProperty(property.id);
+                                }
+                              }}
+                            >
+                              Delete property
+                            </button>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -223,24 +280,46 @@ export function WorkspaceViewFilterMenu({
               <p className="text-sm text-muted-foreground">No select properties</p>
             ) : filterableProperties.map((property) => {
               const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
-              const propertyValues = selectValues.filter((selectValue) => (
-                selectValue.propertyId === property.id && !selectValue.hidden
-              ));
+              const propertyValues = getFilterValues(property, selectValues, statusValues);
+              const expanded = expandedFilterPropertyIds.has(property.id);
 
               return (
-                <div key={property.id} className="grid gap-2">
-                  <p className="truncate text-xs font-medium text-muted-foreground">{property.name}</p>
-                  {propertyValues.map((selectValue) => (
-                    <label key={selectValue.id} className="flex min-w-0 items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={selectedValueIds.has(selectValue.id)}
-                        onCheckedChange={(value) =>
-                          onToggleValueFilter(property.id, selectValue.id, value === true)
-                        }
-                      />
-                      <span className="truncate">{selectValue.name}</span>
-                    </label>
-                  ))}
+                <div key={property.id} className="grid gap-1">
+                  <button
+                    type="button"
+                    className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    aria-expanded={expanded}
+                    onClick={() => toggleFilterPropertyExpanded(property.id)}
+                  >
+                    {expanded ? (
+                      <ChevronDownIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                    ) : (
+                      <ChevronRightIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                    )}
+                    <span className="truncate">{property.name}</span>
+                    {selectedValueIds.size > 0 ? (
+                      <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-[11px]">
+                        {selectedValueIds.size}
+                      </Badge>
+                    ) : null}
+                  </button>
+                  {expanded ? (
+                    <div className="grid gap-1 pl-6">
+                      {propertyValues.length > 0 ? propertyValues.map((selectValue) => (
+                        <label key={selectValue.id} className="flex min-w-0 items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/40">
+                          <Checkbox
+                            checked={selectedValueIds.has(selectValue.id)}
+                            onCheckedChange={(value) =>
+                              onToggleValueFilter(property.id, selectValue.id, value === true)
+                            }
+                          />
+                          <span className="truncate">{selectValue.name}</span>
+                        </label>
+                      )) : (
+                        <p className="px-1 py-0.5 text-xs text-muted-foreground">No values</p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
