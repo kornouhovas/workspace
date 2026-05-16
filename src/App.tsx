@@ -1131,7 +1131,6 @@ export default function App() {
         currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject
       ));
       await refreshPropertyCatalog();
-      setReloadToken((value) => value + 1);
       toast.success("Property deleted");
     } catch (error) {
       toast.error("Could not delete property", {
@@ -1200,7 +1199,6 @@ export default function App() {
         patch: { name },
       });
       await refreshPropertyCatalog();
-      setReloadToken((value) => value + 1);
       toast.success("Select value renamed");
     } catch (error) {
       toast.error("Could not rename select value", {
