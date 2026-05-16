@@ -1,17 +1,13 @@
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Columns3Icon, MoreHorizontalIcon } from "@/lib/lucide-icons";
@@ -50,6 +46,7 @@ export function WorkspaceViewFilterMenu({
 }: WorkspaceViewFilterMenuProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
+  const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
@@ -61,6 +58,7 @@ export function WorkspaceViewFilterMenu({
 
     setEditingPropertyId(property.id);
     setEditingPropertyName(property.name);
+    setActionsPropertyId(null);
   }
 
   function commitRenameProperty(property: WorkspacePropertyDefinitionState) {
@@ -71,6 +69,12 @@ export function WorkspaceViewFilterMenu({
     if (name && name !== property.name) {
       onRenameProperty(property.id, name);
     }
+  }
+
+  function togglePropertyActions(propertyId: string) {
+    setActionsPropertyId((currentPropertyId) => (
+      currentPropertyId === propertyId ? null : propertyId
+    ));
   }
 
   return (
@@ -95,62 +99,76 @@ export function WorkspaceViewFilterMenu({
               const disabled = isSystemProperty(property.id);
 
               return (
-                <div key={property.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50">
-                  <Checkbox
-                    checked={checked}
-                    disabled={disabled}
-                    aria-label={`${property.name} visible`}
-                    onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
-                  />
-                  {editingPropertyId === property.id ? (
-                    <Input
-                      value={editingPropertyName}
-                      autoFocus
-                      aria-label="Rename property"
-                      className="h-7 min-w-0"
-                      onChange={(event) => setEditingPropertyName(event.target.value)}
-                      onBlur={() => commitRenameProperty(property)}
-                      onKeyDown={(event) => {
-                        event.stopPropagation();
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          commitRenameProperty(property);
-                        }
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          setEditingPropertyId(null);
-                          setEditingPropertyName("");
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span className="truncate">{property.name}</span>
-                  )}
-                  {disabled ? <Badge variant="outline">Required</Badge> : null}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger
+                <div key={property.id} className="grid min-w-0 gap-1">
+                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50">
+                    <Checkbox
+                      checked={checked}
                       disabled={disabled}
-                      className="h-7 w-7 justify-center px-0"
+                      aria-label={`${property.name} visible`}
+                      onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
+                    />
+                    {editingPropertyId === property.id ? (
+                      <Input
+                        value={editingPropertyName}
+                        autoFocus
+                        aria-label="Rename property"
+                        className="h-7 min-w-0"
+                        onChange={(event) => setEditingPropertyName(event.target.value)}
+                        onBlur={() => commitRenameProperty(property)}
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            commitRenameProperty(property);
+                          }
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            setEditingPropertyId(null);
+                            setEditingPropertyName("");
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="truncate">{property.name}</span>
+                    )}
+                    {disabled ? <Badge variant="outline">Required</Badge> : null}
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
                       aria-label={`${property.name} property actions`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        togglePropertyActions(property.id);
+                      }}
                     >
                       <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-44">
-                      <DropdownMenuItem onSelect={() => beginRenameProperty(property)}>
+                    </button>
+                  </div>
+                  {actionsPropertyId === property.id ? (
+                    <div className="ml-7 mr-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => beginRenameProperty(property)}
+                      >
                         Rename property
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => {
+                      </button>
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setActionsPropertyId(null);
                           if (window.confirm(`Delete property "${property.name}"?`)) {
                             onDeleteProperty(property.id);
                           }
                         }}
                       >
                         Delete property
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

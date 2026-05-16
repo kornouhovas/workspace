@@ -10,9 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -102,6 +99,7 @@ export function WorkspaceSelectValueEditor({
   const [creating, setCreating] = useState(false);
   const [editingSelectValueId, setEditingSelectValueId] = useState<string | null>(null);
   const [editingSelectValueName, setEditingSelectValueName] = useState("");
+  const [actionsSelectValueId, setActionsSelectValueId] = useState<string | null>(null);
   const isMultiSelect = property.propertyType === "multi-select";
   const values = useMemo(
     () => getSelectValuesForProperty(selectValues, property.id),
@@ -174,6 +172,7 @@ export function WorkspaceSelectValueEditor({
   }
 
   function beginRenameSelectValue(selectValue: WorkspaceSelectValueState) {
+    setActionsSelectValueId(null);
     setEditingSelectValueId(selectValue.id);
     setEditingSelectValueName(selectValue.name);
   }
@@ -189,14 +188,31 @@ export function WorkspaceSelectValueEditor({
   }
 
   function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
+    setActionsSelectValueId(null);
     if (window.confirm(`Delete value "${selectValue.name}"?`)) {
       onDeleteSelectValue(selectValue.id);
     }
   }
 
+  function toggleSelectValueActions(selectValueId: string) {
+    setActionsSelectValueId((currentSelectValueId) => (
+      currentSelectValueId === selectValueId ? null : selectValueId
+    ));
+  }
+
   return (
     <div onClick={stopSelectionEditorActivation} onPointerDown={stopSelectionEditorActivation}>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setActionsSelectValueId(null);
+            setEditingSelectValueId(null);
+            setEditingSelectValueName("");
+          }
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
@@ -276,56 +292,94 @@ export function WorkspaceSelectValueEditor({
 
               if (isMultiSelect) {
                 return (
-                  <div key={selectValue.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
-                    <DropdownMenuCheckboxItem
-                      checked={selected}
-                      className="min-w-0"
-                      onSelect={(event) => event.preventDefault()}
-                      onCheckedChange={(checked) => toggleMultiValue(selectValue.id, checked === true)}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
-                        <span className="truncate">{selectValue.name}</span>
-                      </span>
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="h-7 w-7 justify-center px-0" aria-label={`${selectValue.name} value actions`}>
+                  <div key={selectValue.id} className="grid gap-1">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
+                      <DropdownMenuCheckboxItem
+                        checked={selected}
+                        className="min-w-0"
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(checked) => toggleMultiValue(selectValue.id, checked === true)}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
+                          <span className="truncate">{selectValue.name}</span>
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                      <button
+                        type="button"
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                        aria-label={`${selectValue.name} value actions`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleSelectValueActions(selectValue.id);
+                        }}
+                      >
                         <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-40">
-                        <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                      </button>
+                    </div>
+                    {actionsSelectValueId === selectValue.id ? (
+                      <div className="mx-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                        <button
+                          type="button"
+                          className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                          onClick={() => beginRenameSelectValue(selectValue)}
+                        >
                           Rename value
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onSelect={() => deleteSelectValue(selectValue)}>
+                        </button>
+                        <button
+                          type="button"
+                          className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                          onClick={() => deleteSelectValue(selectValue)}
+                        >
                           Delete value
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 );
               }
 
               return (
-                <div key={selectValue.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
-                  <DropdownMenuItem className="min-w-0" onSelect={() => selectSingleValue(selectValue.id)}>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
-                      <span className="truncate">{selectValue.name}</span>
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="h-7 w-7 justify-center px-0" aria-label={`${selectValue.name} value actions`}>
+                <div key={selectValue.id} className="grid gap-1">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
+                    <DropdownMenuItem className="min-w-0" onSelect={() => selectSingleValue(selectValue.id)}>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
+                        <span className="truncate">{selectValue.name}</span>
+                      </span>
+                    </DropdownMenuItem>
+                    <button
+                      type="button"
+                      className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                      aria-label={`${selectValue.name} value actions`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleSelectValueActions(selectValue.id);
+                      }}
+                    >
                       <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-40">
-                      <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                    </button>
+                  </div>
+                  {actionsSelectValueId === selectValue.id ? (
+                    <div className="mx-1 mb-1 flex items-center gap-1 rounded-md bg-muted/60 p-1">
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => beginRenameSelectValue(selectValue)}
+                      >
                         Rename value
-                      </DropdownMenuItem>
-                      <DropdownMenuItem variant="destructive" onSelect={() => deleteSelectValue(selectValue)}>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex h-7 flex-1 items-center rounded-sm px-2 text-left text-xs text-destructive hover:bg-destructive/10"
+                        onClick={() => deleteSelectValue(selectValue)}
+                      >
                         Delete value
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

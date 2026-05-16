@@ -245,7 +245,7 @@ function ProjectTablePropertyValueEditor({
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
-        <span className="truncate">{label || "Empty"}</span>
+        <span className="truncate">{label}</span>
       </button>
     );
   }
@@ -261,6 +261,7 @@ function ProjectTablePropertyValueEditor({
         type="number"
         defaultValue={stringifyEditableValue(value)}
         aria-label={`${property.name} number value`}
+        autoFocus
         className="workspace-number-input h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
         onBlur={(event) => {
@@ -313,6 +314,7 @@ function ProjectTablePropertyValueEditor({
       key={editorKey}
       defaultValue={stringifyEditableValue(value)}
       aria-label={`${property.name} text value`}
+      autoFocus
       className="h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
       onPointerDown={stopCellActivation}
       onBlur={(event) => {
@@ -444,6 +446,10 @@ export function WorkspaceTableView({
 
   function createPropertyFromType(option: PropertyTypeOption) {
     onCreateProperty({ name: option.label, type: option.value });
+  }
+
+  function openProjectFromNameCell(project: WorkspaceMockProject) {
+    onProjectOpen(project);
   }
 
   function getReorderedPropertyIds(sourcePropertyId: string, dropIndex: number) {
@@ -864,16 +870,7 @@ export function WorkspaceTableView({
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
-                role="button"
-                tabIndex={0}
-                className="h-12 cursor-pointer"
-                onClick={() => onProjectOpen(project)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onProjectOpen(project);
-                  }
-                }}
+                className="h-12"
               >
                 <TableCell className="w-10 text-muted-foreground">
                   <GripVerticalIcon className="size-4" aria-hidden="true" />
@@ -900,6 +897,16 @@ export function WorkspaceTableView({
                           onStartEditingCell={setEditingCellId}
                           onStopEditingCell={() => setEditingCellId(null)}
                         />
+                      ) : property.id === "property:name" ? (
+                        <button
+                          type="button"
+                          className="flex h-12 w-full min-w-0 items-center justify-start px-2 text-left font-medium text-foreground hover:bg-muted/40 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          onClick={() => openProjectFromNameCell(project)}
+                        >
+                          <span className="truncate">
+                            {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
+                          </span>
+                        </button>
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
                       )}
