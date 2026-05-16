@@ -69,6 +69,7 @@ type WorkspaceTableViewProps = {
   readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
+  readonly onDismissFloatingMenus: () => void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
@@ -353,6 +354,7 @@ export function WorkspaceTableView({
   onCreateProperty,
   onRenameProperty,
   onDeleteProperty,
+  onDismissFloatingMenus,
   onReorderViewProperties,
   onTogglePropertyVisibility,
   onProjectPropertyValueChange,
@@ -482,6 +484,7 @@ export function WorkspaceTableView({
     setOpenPropertyMenuId(null);
     setOpenAddPropertyMenu(false);
     setDropdownDismissToken((currentToken) => currentToken + 1);
+    onDismissFloatingMenus();
   }
 
   function openProjectFromNameCell(project: WorkspaceMockProject) {

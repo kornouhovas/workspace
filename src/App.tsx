@@ -419,6 +419,7 @@ export default function App() {
     workspaces: [],
   });
   const [reloadToken, setReloadToken] = useState(0);
+  const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
@@ -1355,6 +1356,10 @@ export default function App() {
     }
   }
 
+  function dismissWorkspaceFloatingMenus() {
+    setWorkspaceFloatingDismissToken((currentToken) => currentToken + 1);
+  }
+
   function openWorkspaceSurface() {
     setActiveSurface("workspace");
   }
@@ -1523,6 +1528,7 @@ export default function App() {
                 onCreateView={handleCreateView}
                 onRenameView={handleRenameView}
                 onDeleteView={handleDeleteView}
+                dismissSignal={workspaceFloatingDismissToken}
                 properties={settingsProperties}
                 selectValues={settingsSelectValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
@@ -1562,6 +1568,7 @@ export default function App() {
                         onCreateSelectValue={handleCreateSelectValue}
                         onRenameSelectValue={handleRenameSelectValue}
                         onDeleteSelectValue={handleDeleteSelectValue}
+                        onDismissFloatingMenus={dismissWorkspaceFloatingMenus}
                       />
                     ) : null}
                   </>

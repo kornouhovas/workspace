@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import type {
 
 type WorkspaceViewFilterMenuProps = {
   readonly view: WorkspaceViewState | null;
+  readonly dismissSignal?: number;
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
@@ -48,6 +49,7 @@ function stopActionMenuEvent(event: { stopPropagation: () => void }) {
 
 export function WorkspaceViewFilterMenu({
   view,
+  dismissSignal,
   properties,
   selectValues,
   onTogglePropertyVisibility,
@@ -55,12 +57,20 @@ export function WorkspaceViewFilterMenu({
   onRenameProperty,
   onDeleteProperty,
 }: WorkspaceViewFilterMenuProps) {
+  const [open, setOpen] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
+
+  useEffect(() => {
+    setOpen(false);
+    setActionsPropertyId(null);
+    setEditingPropertyId(null);
+    setEditingPropertyName("");
+  }, [dismissSignal]);
 
   function beginRenameProperty(property: WorkspacePropertyDefinitionState) {
     if (isSystemProperty(property.id)) {
@@ -83,7 +93,7 @@ export function WorkspaceViewFilterMenu({
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon" aria-label="View property visibility and filters">
           <Columns3Icon className="size-4" aria-hidden="true" />

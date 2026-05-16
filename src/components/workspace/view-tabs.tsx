@@ -25,6 +25,7 @@ type WorkspaceViewTabsProps = {
   readonly onCreateView: (viewType: "board" | "table") => void;
   readonly onRenameView: (viewId: string, name: string) => void;
   readonly onDeleteView: (viewId: string) => void;
+  readonly dismissSignal?: number;
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
@@ -40,6 +41,7 @@ export function WorkspaceViewTabs({
   onCreateView,
   onRenameView,
   onDeleteView,
+  dismissSignal,
   properties,
   selectValues,
   onTogglePropertyVisibility,
@@ -52,6 +54,8 @@ export function WorkspaceViewTabs({
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
   const [editingViewName, setEditingViewName] = useState("");
+  const [openCreateViewMenu, setOpenCreateViewMenu] = useState(false);
+  const [openViewActionsMenu, setOpenViewActionsMenu] = useState(false);
   const editingViewInputRef = useRef<HTMLInputElement | null>(null);
   const cancelViewRenameRef = useRef(false);
   const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
@@ -62,6 +66,12 @@ export function WorkspaceViewTabs({
       editingViewInputRef.current?.select();
     }
   }, [editingViewId]);
+
+  useEffect(() => {
+    setContextMenuViewId(null);
+    setOpenCreateViewMenu(false);
+    setOpenViewActionsMenu(false);
+  }, [dismissSignal]);
 
   function startRenameView(view: WorkspaceView) {
     cancelViewRenameRef.current = false;
@@ -171,6 +181,7 @@ export function WorkspaceViewTabs({
       <div className="flex shrink-0 items-center gap-1">
         <WorkspaceViewFilterMenu
           view={activeView}
+          dismissSignal={dismissSignal}
           properties={properties}
           selectValues={selectValues}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
@@ -178,7 +189,7 @@ export function WorkspaceViewTabs({
           onRenameProperty={onRenameProperty}
           onDeleteProperty={onDeleteProperty}
         />
-        <DropdownMenu>
+        <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -194,7 +205,7 @@ export function WorkspaceViewTabs({
             <DropdownMenuItem onSelect={() => onCreateView("table")}>New Table View</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DropdownMenu>
+        <DropdownMenu open={openViewActionsMenu} onOpenChange={setOpenViewActionsMenu}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
