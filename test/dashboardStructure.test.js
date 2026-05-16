@@ -261,6 +261,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /property\.id === "property:status"/);
   assert.match(tableViewSource, /backendProject\.folderStatus/);
   assert.match(tableViewSource, /onCreateProperty/);
+  assert.match(appSource, /createClientDocumentId\("property"\)/);
   assert.match(tableViewSource, /onRenameProperty/);
   assert.match(tableViewSource, /onDeleteProperty/);
   assert.match(tableViewSource, /onReorderViewProperties/);

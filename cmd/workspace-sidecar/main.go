@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"workspace/internal/workspacestore"
@@ -154,7 +159,10 @@ func main() {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 				return
 			}
-			normalizePropertyDocumentType(&property)
+			if err := normalizeCreatedPropertyDocument(r.Context(), store, &property); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+				return
+			}
 			writeResult(w, map[string]any{"ok": true, "property": property}, store.UpsertPropertyDefinition(r.Context(), property))
 		case http.MethodPatch:
 			var payload struct {
@@ -457,6 +465,86 @@ func normalizePropertyDocumentType(property *workspacestore.PropertyDefinitionDo
 		property.PropertyType = property.Type
 		property.Type = "propertyDefinition"
 	}
+	if property.Type == "" {
+		property.Type = "propertyDefinition"
+	}
+}
+
+func normalizeCreatedPropertyDocument(ctx context.Context, store *workspacestore.Store, property *workspacestore.PropertyDefinitionDocument) error {
+	property.ID = strings.TrimSpace(property.ID)
+	property.WorkspaceID = strings.TrimSpace(property.WorkspaceID)
+	property.Name = strings.TrimSpace(property.Name)
+	property.PropertyType = strings.TrimSpace(property.PropertyType)
+	normalizePropertyDocumentType(property)
+
+	if property.WorkspaceID == "" {
+		return errors.New("workspaceId is required")
+	}
+	if property.Name == "" {
+		return errors.New("name is required")
+	}
+	if !isSupportedPropertyType(property.PropertyType) {
+		return fmt.Errorf("unsupported property type: %s", property.PropertyType)
+	}
+	if property.ID == "" {
+		id, err := createRandomDocumentID("property")
+		if err != nil {
+			return err
+		}
+		property.ID = id
+	}
+
+	properties, err := store.ListPropertyDefinitions(ctx, property.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	for _, existingProperty := range properties {
+		if existingProperty.ID == property.ID {
+			return errors.New("property already exists")
+		}
+	}
+
+	if property.SchemaVersion == 0 {
+		property.SchemaVersion = 1
+	}
+	if property.Order == 0 {
+		maxOrder := 0
+		for _, existingProperty := range properties {
+			if existingProperty.Order > maxOrder {
+				maxOrder = existingProperty.Order
+			}
+		}
+		property.Order = maxOrder + 10
+	}
+	if property.Config == nil {
+		property.Config = map[string]any{}
+	}
+
+	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+	if property.CreatedAt == "" {
+		property.CreatedAt = timestamp
+	}
+	if property.UpdatedAt == "" {
+		property.UpdatedAt = timestamp
+	}
+	return nil
+}
+
+func isSupportedPropertyType(propertyType string) bool {
+	switch propertyType {
+	case "text", "number", "date", "select", "multi-select":
+		return true
+	default:
+		return false
+	}
+}
+
+func createRandomDocumentID(prefix string) (string, error) {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(bytes)), nil
 }
 
 func findPropertyDefinition(ctx context.Context, store *workspacestore.Store, workspaceID string, propertyID string) (workspacestore.PropertyDefinitionDocument, bool, error) {

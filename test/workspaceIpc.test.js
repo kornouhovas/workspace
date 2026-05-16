@@ -570,3 +570,76 @@ test("workspace IPC handler persists custom properties and projects them into vi
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test("workspace IPC handler creates duplicate property names as distinct id-backed properties", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+  const propertyStorePath = join(tempDirectory, "properties.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const workspaceId = rootResponse.root.workspaceId;
+    const firstProperty = await handler(null, "workspace.createProperty", {
+      id: "property:client-text-a",
+      workspaceId,
+      name: "Text",
+      type: "text",
+    });
+    const secondProperty = await handler(null, "workspace.createProperty", {
+      id: "property:client-text-b",
+      workspaceId,
+      name: "Text",
+      type: "text",
+    });
+
+    assert.equal(firstProperty.property.id, "property:client-text-a");
+    assert.equal(secondProperty.property.id, "property:client-text-b");
+
+    await handler(null, "workspace.updateView", {
+      workspaceId,
+      viewId: "view:default-table",
+      patch: {
+        visiblePropertyIds: [
+          "property:name",
+          "property:status",
+          firstProperty.property.id,
+          secondProperty.property.id,
+        ],
+        propertyOrder: {
+          "property:name": 10,
+          "property:status": 20,
+          [firstProperty.property.id]: 30,
+          [secondProperty.property.id]: 40,
+        },
+      },
+    });
+
+    const projection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-table",
+    });
+
+    assert.deepEqual(
+      projection.visibleProperties.map((property) => [property.id, property.name, property.propertyType]),
+      [
+        ["property:name", "Name", "text"],
+        ["property:status", "Status", "select"],
+        ["property:client-text-a", "Text", "text"],
+        ["property:client-text-b", "Text", "text"],
+      ],
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});

@@ -1241,6 +1241,11 @@ function requireNonEmptyText(value, field) {
 
 function normalizeNewDocumentId({ prefix, seed }) {
   const rawSeed = typeof seed === "string" && seed.trim() ? seed : randomUUID();
+  const prefixText = `${prefix}:`;
+  if (rawSeed.startsWith(prefixText)) {
+    return `${prefixText}${createSlug(rawSeed.slice(prefixText.length))}`;
+  }
+
   return `${prefix}:${createSlug(rawSeed)}`;
 }
 

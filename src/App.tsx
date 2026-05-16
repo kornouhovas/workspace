@@ -355,6 +355,11 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
 
 type WorkspaceSurface = "workspace" | "settings";
 
+function createClientDocumentId(prefix: string) {
+  const randomId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}:${randomId}`;
+}
+
 export default function App() {
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
@@ -911,6 +916,7 @@ export default function App() {
 
     try {
       const response = await workspaceClient.createProperty({
+        id: createClientDocumentId("property"),
         workspaceId: state.workspaceId,
         name: input.name,
         type: input.type,
@@ -994,6 +1000,7 @@ export default function App() {
 
     try {
       await workspaceClient.createProperty({
+        id: createClientDocumentId("property"),
         workspaceId: state.workspaceId,
         name: input.name,
         type: input.type,
