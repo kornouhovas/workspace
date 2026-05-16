@@ -256,6 +256,12 @@ export function workspaceAppStateReducer(
 
     return {
       ...state,
+      projection: state.projection
+        ? refreshProjectionVisibleProperties({
+            projectionResponse: state.projection,
+            properties: action.propertiesResponse.properties,
+          })
+        : state.projection,
       propertyCatalog: action.propertiesResponse,
       propertySaveError: null,
     };
@@ -545,6 +551,83 @@ function removeProjectionProperty({
       })),
     },
   };
+}
+
+function refreshProjectionVisibleProperties({
+  projectionResponse,
+  properties,
+}: {
+  readonly projectionResponse: WorkspaceProjectionResponse;
+  readonly properties: readonly WorkspacePropertyDefinitionState[];
+}): WorkspaceProjectionResponse {
+  const propertiesById = new Map(properties.map((property) => [property.id, property]));
+  let changed = false;
+  const visibleProperties = projectionResponse.visibleProperties.map((property) => {
+    const nextProperty = propertiesById.get(property.id);
+    if (!nextProperty) {
+      return property;
+    }
+
+    const refreshedProperty = refreshVisiblePropertyDefinition(property, nextProperty);
+    if (refreshedProperty !== property) {
+      changed = true;
+    }
+    return refreshedProperty;
+  });
+
+  return changed ? {
+    ...projectionResponse,
+    visibleProperties,
+  } : projectionResponse;
+}
+
+function refreshVisiblePropertyDefinition(
+  property: WorkspaceProjectionResponse["visibleProperties"][number],
+  nextProperty: WorkspacePropertyDefinitionState,
+): WorkspaceProjectionResponse["visibleProperties"][number] {
+  let changed = false;
+  const refreshedProperty = { ...property };
+
+  if (property.name !== nextProperty.name) {
+    refreshedProperty.name = nextProperty.name;
+    changed = true;
+  }
+
+  if (property.propertyType !== nextProperty.propertyType) {
+    refreshedProperty.propertyType = nextProperty.propertyType;
+    changed = true;
+  }
+
+  if (property.system !== nextProperty.system) {
+    refreshedProperty.system = nextProperty.system;
+    changed = true;
+  }
+
+  if (
+    (Object.hasOwn(property, "type") || nextProperty.type !== nextProperty.propertyType) &&
+    property.type !== nextProperty.type
+  ) {
+    refreshedProperty.type = nextProperty.type;
+    changed = true;
+  }
+
+  if (
+    (Object.hasOwn(property, "hidden") || nextProperty.hidden !== undefined) &&
+    property.hidden !== nextProperty.hidden
+  ) {
+    refreshedProperty.hidden = nextProperty.hidden;
+    changed = true;
+  }
+
+  if (
+    (Object.hasOwn(property, "order") || nextProperty.order !== undefined) &&
+    property.order !== nextProperty.order
+  ) {
+    refreshedProperty.order = nextProperty.order;
+    changed = true;
+  }
+
+  return changed ? refreshedProperty : property;
 }
 
 function removeProjectPropertyValue(project: unknown, propertyId: string) {

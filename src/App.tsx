@@ -1085,7 +1085,6 @@ export default function App() {
         patch: { name },
       });
       await refreshPropertyCatalog();
-      setReloadToken((value) => value + 1);
       toast.success("Property renamed");
     } catch (error) {
       toast.error("Could not rename property", {

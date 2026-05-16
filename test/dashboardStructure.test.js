@@ -472,6 +472,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /onValueChange\(nextValues\)/);
   assert.match(appSource, /onRenameSelectValue=\{handleRenameSelectValue\}/);
   assert.match(appSource, /onDeleteSelectValue=\{handleDeleteSelectValue\}/);
+  const renamePropertyHandler = appSource.slice(
+    appSource.indexOf("async function handleRenameProperty"),
+    appSource.indexOf("async function handleHideProperty"),
+  );
   const deletePropertyHandler = appSource.slice(
     appSource.indexOf("async function handleDeleteProperty"),
     appSource.indexOf("async function handleReorderProperties"),
@@ -480,6 +484,7 @@ test("renderer composes the workspace product shell", async () => {
     appSource.indexOf("async function handleRenameSelectValue"),
     appSource.indexOf("async function handleColorSelectValue"),
   );
+  assert.doesNotMatch(renamePropertyHandler, /setReloadToken/);
   assert.doesNotMatch(deletePropertyHandler, /setReloadToken/);
   assert.doesNotMatch(renameSelectValueHandler, /setReloadToken/);
 

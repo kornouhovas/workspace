@@ -126,6 +126,43 @@ test("workspace app state stores custom property catalog responses", async () =>
   assert.equal(state.projection, loadedState.projection);
 });
 
+test("workspace app state refreshes visible property labels from catalog without clearing projection", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse: {
+      ...projectionResponse,
+      visibleProperties: [
+        { id: "property:name", name: "Name", propertyType: "text", system: true },
+        { id: "property:priority", name: "Priority", propertyType: "select", system: false },
+      ],
+    },
+    folderRoleTree,
+  });
+  const propertiesResponse = {
+    workspaceId: "workspace:ops",
+    properties: [
+      { id: "property:name", name: "Name", propertyType: "text", type: "text", system: true },
+      { id: "property:priority", name: "Urgency", propertyType: "select", type: "select", system: false },
+    ],
+    selectValues: [],
+  };
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "propertiesLoaded",
+    propertiesResponse,
+  });
+
+  assert.equal(state.status, "ready");
+  assert.equal(state.projection.projection, loadedState.projection.projection);
+  assert.equal(
+    state.projection.visibleProperties.find((property) => property.id === "property:priority")?.name,
+    "Urgency",
+  );
+});
+
 test("workspace app state removes a deleted property from catalog and projections", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {
