@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ type WorkspaceSelectValueEditorProps = {
   readonly property: Pick<WorkspacePropertyDefinitionState, "id" | "name" | "propertyType">;
   readonly value: unknown;
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly dismissSignal?: number;
   readonly triggerClassName?: string;
   readonly onValueChange: (value: unknown) => void;
   readonly onCreateSelectValue: (
@@ -95,6 +96,7 @@ export function WorkspaceSelectValueEditor({
   property,
   value,
   selectValues,
+  dismissSignal,
   triggerClassName,
   onValueChange,
   onCreateSelectValue,
@@ -128,6 +130,13 @@ export function WorkspaceSelectValueEditor({
     selectedValues,
     selectValues: values,
   });
+
+  useEffect(() => {
+    setOpen(false);
+    setActionsSelectValueId(null);
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
+  }, [dismissSignal]);
 
   function clearSingleSelectValue() {
     onValueChange(null);

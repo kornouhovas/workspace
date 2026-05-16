@@ -211,6 +211,7 @@ function ProjectTablePropertyValueEditor({
   onCreateSelectValue,
   onRenameSelectValue,
   onDeleteSelectValue,
+  dismissSignal,
   onStartEditingCell,
   onStopEditingCell,
 }: {
@@ -218,6 +219,7 @@ function ProjectTablePropertyValueEditor({
   readonly property: WorkspaceMockVisibleProperty;
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly editing: boolean;
+  readonly dismissSignal: number;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
@@ -292,6 +294,7 @@ function ProjectTablePropertyValueEditor({
     return (
       <WorkspaceDateValueEditor
         value={value}
+        dismissSignal={dismissSignal}
         triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
       />
@@ -304,6 +307,7 @@ function ProjectTablePropertyValueEditor({
         property={property}
         value={value}
         selectValues={selectValues}
+        dismissSignal={dismissSignal}
         triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
@@ -360,6 +364,8 @@ export function WorkspaceTableView({
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [editingCellId, setEditingCellId] = useState<string | null>(null);
   const [openPropertyMenuId, setOpenPropertyMenuId] = useState<string | null>(null);
+  const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
+  const [dropdownDismissToken, setDropdownDismissToken] = useState(0);
   const [columnDrag, setColumnDrag] = useState<ColumnDragState | null>(null);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [resizingColumn, setResizingColumn] = useState<{
@@ -469,6 +475,13 @@ export function WorkspaceTableView({
     }
 
     setEditingCellId(null);
+  }
+
+  function dismissHeaderTransientState() {
+    blurActiveEditingCell();
+    setOpenPropertyMenuId(null);
+    setOpenAddPropertyMenu(false);
+    setDropdownDismissToken((currentToken) => currentToken + 1);
   }
 
   function openProjectFromNameCell(project: WorkspaceMockProject) {
@@ -738,7 +751,7 @@ export function WorkspaceTableView({
             ))}
             <col style={{ width: addPropertyColumnWidth }} />
           </colgroup>
-          <TableHeader onPointerDownCapture={blurActiveEditingCell}>
+          <TableHeader onPointerDownCapture={dismissHeaderTransientState}>
             <TableRow>
               <TableHead className="w-10" aria-label="Row reorder" />
               {visibleProperties.map((property) => {
@@ -843,7 +856,10 @@ export function WorkspaceTableView({
                 );
               })}
               <TableHead className="w-12 border-l border-border bg-background">
-                <DropdownMenu>
+                <DropdownMenu
+                  open={openAddPropertyMenu}
+                  onOpenChange={setOpenAddPropertyMenu}
+                >
                   <DropdownMenuTrigger asChild>
                     <Button type="button" variant="ghost" size="icon-sm" aria-label="Add property column">
                       <PlusIcon className="size-4" aria-hidden="true" />
@@ -913,6 +929,7 @@ export function WorkspaceTableView({
                           property={property}
                           selectValues={selectValues}
                           editing={editingCellId === getProjectPropertyCellId(project.id, property.id)}
+                          dismissSignal={dropdownDismissToken}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
                           onRenameSelectValue={onRenameSelectValue}

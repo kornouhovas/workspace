@@ -314,10 +314,18 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
   assert.match(tableViewSource, /editingCellId/);
   assert.match(tableViewSource, /startCellEditing/);
+  assert.match(tableViewSource, /openAddPropertyMenu/);
+  assert.match(tableViewSource, /dropdownDismissToken/);
   assert.match(tableViewSource, /function blurActiveEditingCell/);
+  assert.match(tableViewSource, /function dismissHeaderTransientState/);
   assert.match(tableViewSource, /document\.activeElement/);
   assert.match(tableViewSource, /activeElement\.blur\(\)/);
-  assert.match(tableViewSource, /onPointerDownCapture=\{blurActiveEditingCell\}/);
+  assert.match(tableViewSource, /setOpenPropertyMenuId\(null\)/);
+  assert.match(tableViewSource, /setOpenAddPropertyMenu\(false\)/);
+  assert.match(tableViewSource, /setDropdownDismissToken/);
+  assert.match(tableViewSource, /onPointerDownCapture=\{dismissHeaderTransientState\}/);
+  assert.match(tableViewSource, /dismissSignal=\{dropdownDismissToken\}/);
+  assert.match(tableViewSource, /open=\{openAddPropertyMenu\}/);
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
   assert.match(tableViewSource, /openProjectFromNameCell/);
@@ -461,6 +469,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleReorderViewProperties/);
 
   assert.match(selectValueEditorSource, /WorkspaceSelectValueEditor/);
+  assert.match(selectValueEditorSource, /useEffect/);
+  assert.match(selectValueEditorSource, /dismissSignal/);
+  assert.match(selectValueEditorSource, /setOpen\(false\)/);
+  assert.match(selectValueEditorSource, /setActionsSelectValueId\(null\)/);
   assert.match(selectValueEditorSource, /Search values/);
   assert.match(selectValueEditorSource, /Clear selection/);
   assert.match(selectValueEditorSource, /Create/);
@@ -503,6 +515,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(renameSelectValueHandler, /setReloadToken/);
 
   assert.match(dateValueEditorSource, /WorkspaceDateValueEditor/);
+  assert.match(dateValueEditorSource, /useEffect/);
+  assert.match(dateValueEditorSource, /dismissSignal/);
+  assert.match(dateValueEditorSource, /setOpen\(false\)/);
   assert.match(dateValueEditorSource, /Popover/);
   assert.match(dateValueEditorSource, /Pick date/);
   assert.match(dateValueEditorSource, /Clear date/);

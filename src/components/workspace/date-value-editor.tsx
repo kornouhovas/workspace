@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lu
 
 type WorkspaceDateValueEditorProps = {
   readonly value: unknown;
+  readonly dismissSignal?: number;
   readonly triggerClassName?: string;
   readonly onValueChange: (value: string | null) => void;
 };
@@ -65,6 +66,7 @@ function getMonthLabel(monthDate: Date) {
 
 export function WorkspaceDateValueEditor({
   value,
+  dismissSignal,
   triggerClassName,
   onValueChange,
 }: WorkspaceDateValueEditorProps) {
@@ -73,6 +75,10 @@ export function WorkspaceDateValueEditor({
   const [monthDate, setMonthDate] = useState(() => getMonthStart(dateValue));
   const [typedDate, setTypedDate] = useState(dateValue);
   const monthDays = useMemo(() => getMonthDays(monthDate), [monthDate]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [dismissSignal]);
 
   function moveMonth(offset: number) {
     setMonthDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
