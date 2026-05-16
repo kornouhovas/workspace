@@ -99,6 +99,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.createWorkspace/);
   assert.match(appSource, /workspaceClient\.updateWorkspace/);
   assert.match(appSource, /workspaceClient\.deleteWorkspace/);
+  assert.match(appSource, /deleteWorkspaceListFallback\(current,\s*workspaceId\)/);
+  assert.match(appSource, /responseActiveWorkspaceId/);
   assert.match(appSource, /workspaceClient\.reorderWorkspaces/);
   assert.match(appSource, /workspaceClient\.setActiveWorkspace/);
   assert.doesNotMatch(appSource, /includeCardChildren:\s*true/);

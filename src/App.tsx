@@ -662,8 +662,23 @@ export default function App() {
 
   async function handleDeleteWorkspace(workspaceId: string) {
     try {
-      await workspaceClient.deleteWorkspace({ workspaceId });
+      const response = await workspaceClient.deleteWorkspace({ workspaceId });
+      const responseActiveWorkspaceId = isRecord(response) ? getString(response.activeWorkspaceId) : "";
+      const currentActiveWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+      const wasActiveWorkspace = workspaceId === currentActiveWorkspaceId;
+      const fallbackActiveWorkspaceId = workspaceList.workspaces.find((workspace) => workspace.id !== workspaceId)?.id || null;
+      const nextActiveWorkspaceId = responseActiveWorkspaceId || fallbackActiveWorkspaceId;
+
+      setWorkspaceList((current) => {
+        const nextWorkspaceList = deleteWorkspaceListFallback(current, workspaceId);
+        return responseActiveWorkspaceId
+          ? { ...nextWorkspaceList, activeWorkspaceId: responseActiveWorkspaceId }
+          : nextWorkspaceList;
+      });
       setSelectedProject(null);
+      if (wasActiveWorkspace && nextActiveWorkspaceId) {
+        dispatch({ type: "workspaceActivated", workspaceId: nextActiveWorkspaceId });
+      }
       toast.success("Workspace deleted");
       setReloadToken((value) => value + 1);
     } catch (error) {

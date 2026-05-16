@@ -159,10 +159,13 @@ export function createWorkspaceIpcHandler(options = {}) {
       throw createWorkspaceServiceError("SOURCE_FOLDER_MISSING", "Workspace source folder is not selected.", "rootPath");
     }
 
+    const rootPath = root.root.rootPath;
+    const sourceFolderId = createWorkspaceId(rootPath);
+
     if (method === "workspace.scan") {
       const settings = await readWorkspaceSettings(configPath);
       return unwrapBackendResponse(await createScanResponse({
-        root: root.root.rootPath,
+        root: rootPath,
         rules: body.rules || normalizeFolderRules(settings.folderRules),
         includeCardChildren: body.includeCardChildren === true,
       }));
@@ -180,7 +183,7 @@ export function createWorkspaceIpcHandler(options = {}) {
 
       await writeWorkspaceSettings(configPath, {
         ...settings,
-        rootPath: root.root.rootPath,
+        rootPath,
         folderRules,
       });
 
@@ -192,15 +195,15 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.listEntries") {
-      return unwrapBackendResponse(await createListEntriesResponse({ root: root.root.rootPath, body }));
+      return unwrapBackendResponse(await createListEntriesResponse({ root: rootPath, body }));
     }
 
     if (method === "workspace.listProjectFileTree") {
-      return unwrapBackendResponse(await createProjectFileTreeResponse({ root: root.root.rootPath, body }));
+      return unwrapBackendResponse(await createProjectFileTreeResponse({ root: rootPath, body }));
     }
 
     if (method === "workspace.saveProperty") {
-      return unwrapBackendResponse(await createPropertiesResponse({ root: root.root.rootPath, body }));
+      return unwrapBackendResponse(await createPropertiesResponse({ root: rootPath, body }));
     }
 
     if (method === "workspace.listPropertyValues") {
@@ -208,11 +211,11 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return {
         workspaceId,
-        values: await propertyStore.listProjectPropertyValues(workspaceId, {
+        values: await propertyStore.listProjectPropertyValues(sourceFolderId, {
           projectId: typeof body.projectId === "string" ? body.projectId.trim() : "",
           propertyId: typeof body.propertyId === "string" ? body.propertyId.trim() : "",
         }),
@@ -224,11 +227,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return createListPropertiesResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
       });
     }
@@ -238,11 +242,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return createPropertyResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         idFactory,
         now,
@@ -254,11 +259,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return updatePropertyResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -269,11 +275,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return reorderPropertiesResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -284,11 +291,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return deletePropertyResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -299,11 +307,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return createSelectValueResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         idFactory,
         now,
@@ -315,11 +324,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return updateSelectValueResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -330,11 +340,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return reorderSelectValuesResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -345,11 +356,12 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       return deleteSelectValueResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
         now,
       });
@@ -360,21 +372,21 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       const settings = await readWorkspaceSettings(configPath);
       return updateProjectPropertyValueResult({
         body,
         workspaceId,
+        propertyScopeId: sourceFolderId,
         propertyStore,
-        rootPath: root.root.rootPath,
+        rootPath,
         rules: normalizeFolderRules(settings.folderRules),
         now,
       });
     }
 
     if (method === "workspace.listWorkspaces") {
-      const sourceFolderId = createWorkspaceId(root.root.rootPath);
       const settings = await readWorkspaceSettings(configPath);
       const workspaces = await viewStore.listWorkspaces(sourceFolderId);
       const activeWorkspaceId = workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
@@ -388,7 +400,6 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.createWorkspace") {
-      const sourceFolderId = createWorkspaceId(root.root.rootPath);
       const settings = await readWorkspaceSettings(configPath);
       const workspaces = await viewStore.listWorkspaces(sourceFolderId);
       const timestamp = now();
@@ -409,7 +420,7 @@ export function createWorkspaceIpcHandler(options = {}) {
 
       await writeWorkspaceSettings(configPath, {
         ...settings,
-        rootPath: root.root.rootPath,
+        rootPath,
         activeWorkspaceId: workspace.id,
       });
 
@@ -424,7 +435,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       const workspace = await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       const patch = body.patch && typeof body.patch === "object" && !Array.isArray(body.patch)
         ? body.patch
@@ -444,7 +455,6 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.reorderWorkspaces") {
-      const sourceFolderId = createWorkspaceId(root.root.rootPath);
       const workspaces = await viewStore.listWorkspaces(sourceFolderId);
       const orderedWorkspaceIds = validateWorkspaceOrder(body.orderedWorkspaceIds, workspaces);
       const workspacesById = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
@@ -467,7 +477,6 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (method === "workspace.deleteWorkspace") {
       const workspaceId = requirePayloadString(body, "workspaceId");
-      const sourceFolderId = createWorkspaceId(root.root.rootPath);
       const settings = await readWorkspaceSettings(configPath);
       const workspaces = await viewStore.listWorkspaces(sourceFolderId);
       const workspace = workspaces.find((item) => item.id === workspaceId);
@@ -495,7 +504,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         : settings.activeWorkspaceId || remainingWorkspaces[0]?.id || null;
       await writeWorkspaceSettings(configPath, {
         ...settings,
-        rootPath: root.root.rootPath,
+        rootPath,
         activeWorkspaceId,
       });
 
@@ -511,11 +520,11 @@ export function createWorkspaceIpcHandler(options = {}) {
       await requireSourceWorkspace({
         viewStore,
         workspaceId,
-        rootPath: root.root.rootPath,
+        rootPath,
       });
       await writeWorkspaceSettings(configPath, {
         ...settings,
-        rootPath: root.root.rootPath,
+        rootPath,
         activeWorkspaceId: workspaceId,
       });
 
@@ -539,13 +548,13 @@ export function createWorkspaceIpcHandler(options = {}) {
     if (method === "workspace.updateView") {
       const workspaceId = requirePayloadString(body, "workspaceId");
       const propertyDefinitions = await listAllPropertyDefinitions({
-        workspaceId,
+        workspaceId: sourceFolderId,
         propertyStore,
       });
-      const selectValues = await propertyStore.listSelectValues(workspaceId);
+      const selectValues = await propertyStore.listSelectValues(sourceFolderId);
       const settings = await readWorkspaceSettings(configPath);
       const statusValues = await getStatusValues({
-        rootPath: root.root.rootPath,
+        rootPath,
         workspaceId,
         rules: normalizeFolderRules(settings.folderRules),
       });
@@ -573,7 +582,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       let projectsAndStatusValues = null;
       const loadProjectsAndStatusValues = (workspaceId) => {
         projectsAndStatusValues ||= getProjectsAndStatusValues({
-          rootPath: root.root.rootPath,
+          rootPath,
           workspaceId,
           rules,
         });
@@ -584,13 +593,13 @@ export function createWorkspaceIpcHandler(options = {}) {
         viewStore,
         projectProvider: async ({ workspaceId }) => {
           const { projects } = await loadProjectsAndStatusValues(workspaceId);
-          const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId);
+          const propertyValues = await propertyStore.listProjectPropertyValues(sourceFolderId);
           return attachProjectPropertyValues(projects, propertyValues);
         },
         propertyProvider: async ({ workspaceId, view }) => {
           const { statusValues } = await loadProjectsAndStatusValues(workspaceId);
           const propertyDefinitions = await listAllPropertyDefinitions({
-            workspaceId,
+            workspaceId: sourceFolderId,
             propertyStore,
           });
           return {
@@ -605,11 +614,11 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.reveal") {
-      return unwrapBackendResponse(await createRevealResponse({ body, root: root.root.rootPath }));
+      return unwrapBackendResponse(await createRevealResponse({ body, root: rootPath }));
     }
 
     if (method === "workspace.previewFile") {
-      const response = await createFileResponse({ root: root.root.rootPath, path: body.path });
+      const response = await createFileResponse({ root: rootPath, path: body.path });
       if (response.status >= 400) {
         return unwrapBackendResponse(response);
       }
@@ -746,12 +755,13 @@ async function createWorkspaceDocument({
 
 async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} }) {
   const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
+  const sourceFolderId = createWorkspaceId(rootPath);
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
-    workspaceId,
+    workspaceId: sourceFolderId,
     rootPath,
     folders: scan.folders || [],
   });
-  const statusValues = createStatusValues(workspaceId, workspaceObjects.objects || []);
+  const statusValues = createStatusValues(sourceFolderId, workspaceObjects.objects || []);
   const statusValueByName = new Map(statusValues.map((statusValue) => [statusValue.name, statusValue]));
 
   return {
@@ -778,24 +788,24 @@ async function getStatusValues({ rootPath, workspaceId, rules = {} }) {
   return statusValues;
 }
 
-async function createListPropertiesResult({ body = {}, workspaceId, propertyStore }) {
+async function createListPropertiesResult({ body = {}, workspaceId, propertyScopeId, propertyStore }) {
   const result = {
     workspaceId,
-    properties: await listAllPropertyDefinitions({ workspaceId, propertyStore }),
-    selectValues: await propertyStore.listSelectValues(workspaceId),
+    properties: await listAllPropertyDefinitions({ workspaceId: propertyScopeId, propertyStore }),
+    selectValues: await propertyStore.listSelectValues(propertyScopeId),
   };
 
   if (body.includeUsage === true) {
-    const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId);
+    const propertyValues = await propertyStore.listProjectPropertyValues(propertyScopeId);
     result.usage = createPropertyUsageSummary(propertyValues);
   }
 
   return result;
 }
 
-async function createPropertyResult({ body, workspaceId, propertyStore, idFactory, now }) {
+async function createPropertyResult({ body, workspaceId, propertyScopeId, propertyStore, idFactory, now }) {
   const timestamp = now();
-  const existingProperties = await listAllPropertyDefinitions({ workspaceId, propertyStore });
+  const existingProperties = await listAllPropertyDefinitions({ workspaceId: propertyScopeId, propertyStore });
   const propertyId = normalizeNewDocumentId({
     prefix: "property",
     seed: body.propertyId || body.id || idFactory(),
@@ -813,7 +823,7 @@ async function createPropertyResult({ body, workspaceId, propertyStore, idFactor
   try {
     property = normalizePropertyDefinition({
       id: propertyId,
-      workspaceId,
+      workspaceId: propertyScopeId,
       name,
       type: body.type,
       hidden: body.hidden === true,
@@ -821,7 +831,7 @@ async function createPropertyResult({ body, workspaceId, propertyStore, idFactor
       config: body.config,
       createdAt: timestamp,
       updatedAt: timestamp,
-    }, { workspaceId, now: timestamp });
+    }, { workspaceId: propertyScopeId, now: timestamp });
   } catch (error) {
     throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "type");
   }
@@ -836,9 +846,9 @@ async function createPropertyResult({ body, workspaceId, propertyStore, idFactor
   };
 }
 
-async function updatePropertyResult({ body, workspaceId, propertyStore, now }) {
+async function updatePropertyResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
-  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
   const patch = normalizePatchObject(body.patch);
 
   if (Object.hasOwn(patch, "type") && patch.type !== property.type) {
@@ -855,7 +865,7 @@ async function updatePropertyResult({ body, workspaceId, propertyStore, now }) {
       order: Object.hasOwn(patch, "order") ? patch.order : property.order,
       config: Object.hasOwn(patch, "config") ? patch.config : property.config,
       updatedAt: timestamp,
-    }, { workspaceId, now: timestamp });
+    }, { workspaceId: propertyScopeId, now: timestamp });
   } catch (error) {
     throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "type");
   }
@@ -866,9 +876,9 @@ async function updatePropertyResult({ body, workspaceId, propertyStore, now }) {
   };
 }
 
-async function reorderPropertiesResult({ body, workspaceId, propertyStore, now }) {
-  const customProperties = await propertyStore.listProperties(workspaceId);
-  const properties = await listAllPropertyDefinitions({ workspaceId, propertyStore });
+async function reorderPropertiesResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
+  const customProperties = await propertyStore.listProperties(propertyScopeId);
+  const properties = await listAllPropertyDefinitions({ workspaceId: propertyScopeId, propertyStore });
   const orderedPropertyIds = validateCustomDocumentOrder(body.orderedPropertyIds, properties, "orderedPropertyIds");
   const customPropertyById = new Map(customProperties.map((property) => [property.id, property]));
   const timestamp = now();
@@ -892,10 +902,10 @@ async function reorderPropertiesResult({ body, workspaceId, propertyStore, now }
   };
 }
 
-async function deletePropertyResult({ body, workspaceId, propertyStore, now }) {
+async function deletePropertyResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
-  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
-  const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId, { propertyId });
+  const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
+  const propertyValues = await propertyStore.listProjectPropertyValues(propertyScopeId, { propertyId });
 
   if (propertyValues.length > 0 && body.confirmDeleteValues !== true) {
     throw createWorkspaceServiceError("PROPERTY_IN_USE", "Property has values and needs delete confirmation.", "propertyId");
@@ -908,7 +918,7 @@ async function deletePropertyResult({ body, workspaceId, propertyStore, now }) {
     updatedAt: timestamp,
   });
 
-  for (const selectValue of await propertyStore.listSelectValues(workspaceId, { propertyId })) {
+  for (const selectValue of await propertyStore.listSelectValues(propertyScopeId, { propertyId })) {
     await propertyStore.saveSelectValue({
       ...selectValue,
       deletedAt: timestamp,
@@ -930,10 +940,10 @@ async function deletePropertyResult({ body, workspaceId, propertyStore, now }) {
   };
 }
 
-async function createSelectValueResult({ body, workspaceId, propertyStore, idFactory, now }) {
+async function createSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, idFactory, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
-  const property = await requireSelectableProperty({ workspaceId, propertyId, propertyStore });
-  const existingValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  const property = await requireSelectableProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
+  const existingValues = await propertyStore.listSelectValues(propertyScopeId, { propertyId });
   const selectValueId = normalizeNewDocumentId({
     prefix: "selectValue",
     seed: `${property.id}:${body.selectValueId || body.id || idFactory()}`,
@@ -949,7 +959,7 @@ async function createSelectValueResult({ body, workspaceId, propertyStore, idFac
     : existingValues.reduce((max, selectValue) => Math.max(max, Number(selectValue.order) || 0), 0) + 10;
   const selectValue = normalizeSelectValue({
     id: selectValueId,
-    workspaceId,
+    workspaceId: propertyScopeId,
     propertyId: property.id,
     name: requireNonEmptyText(body.name, "name"),
     color: body.color,
@@ -957,7 +967,7 @@ async function createSelectValueResult({ body, workspaceId, propertyStore, idFac
     order,
     createdAt: timestamp,
     updatedAt: timestamp,
-  }, { workspaceId, propertyId, now: timestamp });
+  }, { workspaceId: propertyScopeId, propertyId, now: timestamp });
 
   return {
     workspaceId,
@@ -965,11 +975,11 @@ async function createSelectValueResult({ body, workspaceId, propertyStore, idFac
   };
 }
 
-async function updateSelectValueResult({ body, workspaceId, propertyStore, now }) {
+async function updateSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const selectValueId = requirePayloadString(body, "selectValueId");
-  const selectValue = await requireSelectValue({ workspaceId, selectValueId, propertyStore });
+  const selectValue = await requireSelectValue({ workspaceId: propertyScopeId, selectValueId, propertyStore });
   const property = await requireSelectableProperty({
-    workspaceId,
+    workspaceId: propertyScopeId,
     propertyId: selectValue.propertyId,
     propertyStore,
   });
@@ -983,7 +993,7 @@ async function updateSelectValueResult({ body, workspaceId, propertyStore, now }
     hidden: Object.hasOwn(patch, "hidden") ? patch.hidden === true : selectValue.hidden,
     order: Object.hasOwn(patch, "order") ? patch.order : selectValue.order,
     updatedAt: timestamp,
-  }, { workspaceId, propertyId: property.id, now: timestamp });
+  }, { workspaceId: propertyScopeId, propertyId: property.id, now: timestamp });
 
   return {
     workspaceId,
@@ -991,10 +1001,10 @@ async function updateSelectValueResult({ body, workspaceId, propertyStore, now }
   };
 }
 
-async function reorderSelectValuesResult({ body, workspaceId, propertyStore, now }) {
+async function reorderSelectValuesResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
-  await requireSelectableProperty({ workspaceId, propertyId, propertyStore });
-  const selectValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  await requireSelectableProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
+  const selectValues = await propertyStore.listSelectValues(propertyScopeId, { propertyId });
   const orderedSelectValueIds = validateCustomDocumentOrder(body.orderedSelectValueIds, selectValues, "orderedSelectValueIds");
   const byId = new Map(selectValues.map((selectValue) => [selectValue.id, selectValue]));
   const timestamp = now();
@@ -1014,15 +1024,15 @@ async function reorderSelectValuesResult({ body, workspaceId, propertyStore, now
   };
 }
 
-async function deleteSelectValueResult({ body, workspaceId, propertyStore, now }) {
+async function deleteSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const selectValueId = requirePayloadString(body, "selectValueId");
-  const selectValue = await requireSelectValue({ workspaceId, selectValueId, propertyStore });
+  const selectValue = await requireSelectValue({ workspaceId: propertyScopeId, selectValueId, propertyStore });
   const property = await requireSelectableProperty({
-    workspaceId,
+    workspaceId: propertyScopeId,
     propertyId: selectValue.propertyId,
     propertyStore,
   });
-  const propertyValues = await propertyStore.listProjectPropertyValues(workspaceId, {
+  const propertyValues = await propertyStore.listProjectPropertyValues(propertyScopeId, {
     propertyId: property.id,
   });
   const valuesUsingSelectValue = propertyValues.filter((valueDocument) =>
@@ -1054,7 +1064,7 @@ async function deleteSelectValueResult({ body, workspaceId, propertyStore, now }
       updatedAt: timestamp,
     });
     await propertyStore.appendPropertyHistory(createPropertyHistoryDocument({
-      workspaceId,
+      workspaceId: propertyScopeId,
       projectId: valueDocument.projectId,
       propertyId: property.id,
       oldValue: valueDocument.value,
@@ -1070,10 +1080,10 @@ async function deleteSelectValueResult({ body, workspaceId, propertyStore, now }
   };
 }
 
-async function updateProjectPropertyValueResult({ body, workspaceId, propertyStore, rootPath, rules, now }) {
+async function updateProjectPropertyValueResult({ body, workspaceId, propertyScopeId, propertyStore, rootPath, rules, now }) {
   const projectId = requirePayloadString(body, "projectId");
   const propertyId = requirePayloadString(body, "propertyId");
-  const property = await requireCustomProperty({ workspaceId, propertyId, propertyStore });
+  const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
   const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, rules });
   const project = projects.find((item) => item.id === projectId);
 
@@ -1081,7 +1091,7 @@ async function updateProjectPropertyValueResult({ body, workspaceId, propertySto
     throw createWorkspaceServiceError("PROJECT_NOT_FOUND", "Project was not found.", "projectId");
   }
 
-  const selectValues = await propertyStore.listSelectValues(workspaceId, { propertyId });
+  const selectValues = await propertyStore.listSelectValues(propertyScopeId, { propertyId });
   let normalizedValue;
   try {
     normalizedValue = normalizeProjectPropertyValue({
@@ -1094,12 +1104,12 @@ async function updateProjectPropertyValueResult({ body, workspaceId, propertySto
   }
 
   const timestamp = now();
-  const existingValue = await propertyStore.getProjectPropertyValue(workspaceId, projectId, propertyId);
+  const existingValue = await propertyStore.getProjectPropertyValue(propertyScopeId, projectId, propertyId);
   const valueDocument = {
-    id: existingValue?.id || createStableDocumentId("propertyValue", workspaceId, projectId, propertyId),
+    id: existingValue?.id || createStableDocumentId("propertyValue", propertyScopeId, projectId, propertyId),
     type: "projectPropertyValue",
     schemaVersion: 1,
-    workspaceId,
+    workspaceId: propertyScopeId,
     projectId,
     propertyId,
     propertyType: normalizedValue.type,
@@ -1111,7 +1121,7 @@ async function updateProjectPropertyValueResult({ body, workspaceId, propertySto
 
   const savedValue = await propertyStore.saveProjectPropertyValue(valueDocument);
   await propertyStore.appendPropertyHistory(createPropertyHistoryDocument({
-    workspaceId,
+    workspaceId: propertyScopeId,
     projectId,
     propertyId,
     oldValue: existingValue?.value ?? null,

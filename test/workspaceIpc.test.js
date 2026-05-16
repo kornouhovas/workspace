@@ -643,3 +643,104 @@ test("workspace IPC handler creates duplicate property names as distinct id-back
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test("workspace IPC handler shares object properties across workspaces for the same source folder", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+  const propertyStorePath = join(tempDirectory, "properties.json");
+  let idCounter = 0;
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => `seed-${idCounter += 1}`,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const sourceWorkspaceId = rootResponse.root.workspaceId;
+    const propertyResponse = await handler(null, "workspace.createProperty", {
+      id: "property:shared-note",
+      workspaceId: sourceWorkspaceId,
+      name: "Text",
+      type: "text",
+    });
+    const sourceProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId: sourceWorkspaceId,
+      viewId: "view:default-table",
+    });
+    const sourceProject = sourceProjection.projection.rows.find((project) => project.name === "Project Alpha");
+
+    await handler(null, "workspace.updateProjectPropertyValue", {
+      workspaceId: sourceWorkspaceId,
+      projectId: sourceProject.id,
+      propertyId: propertyResponse.property.id,
+      value: "Shared object note",
+    });
+
+    const createdWorkspace = await handler(null, "workspace.createWorkspace", {
+      name: "Planning",
+    });
+    const workspaceId = createdWorkspace.workspace.id;
+    const workspaceProperties = await handler(null, "workspace.listProperties", { workspaceId });
+
+    assert.deepEqual(
+      workspaceProperties.properties.map((property) => [property.id, property.name, property.type]),
+      [
+        ["property:name", "Name", "text"],
+        ["property:status", "Status", "select"],
+        ["property:shared-note", "Text", "text"],
+      ],
+    );
+
+    const workspaceViews = await handler(null, "workspace.listViews", { workspaceId });
+    const tableView = workspaceViews.views.find((view) => view.viewType === "table");
+    const hiddenProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: tableView.id,
+    });
+
+    assert.deepEqual(
+      hiddenProjection.visibleProperties.map((property) => property.id),
+      ["property:name", "property:status"],
+    );
+    assert.equal(hiddenProjection.projection.rows[0].id, sourceProject.id);
+    assert.equal(hiddenProjection.projection.rows[0].propertyValues["property:shared-note"], "Shared object note");
+
+    await handler(null, "workspace.updateView", {
+      workspaceId,
+      viewId: tableView.id,
+      patch: {
+        visiblePropertyIds: ["property:name", "property:status", "property:shared-note"],
+        propertyOrder: {
+          "property:name": 10,
+          "property:status": 20,
+          "property:shared-note": 30,
+        },
+      },
+    });
+
+    const visibleProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: tableView.id,
+    });
+
+    assert.deepEqual(
+      visibleProjection.visibleProperties.map((property) => [property.id, property.name]),
+      [
+        ["property:name", "Name"],
+        ["property:status", "Status"],
+        ["property:shared-note", "Text"],
+      ],
+    );
+    assert.equal(visibleProjection.projection.rows[0].propertyValues["property:shared-note"], "Shared object note");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
