@@ -369,9 +369,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /PlusIcon/);
   assert.match(tableViewSource, /className="h-10"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
-  assert.match(tableViewSource, /className=\{editable \? "h-10 p-0\.5" : "h-10 truncate px-2 py-0"\}/);
+  assert.match(tableViewSource, /function getBodyCellClassName/);
+  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 p-0\.5";/);
+  assert.match(tableViewSource, /return editable \? "h-10 p-0\.5" : "h-10 truncate px-2 py-0";/);
+  assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display flex h-8/);
-  assert.match(tableViewSource, /className="flex h-10 w-full/);
+  assert.match(tableViewSource, /className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted\/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
+  assert.doesNotMatch(tableViewSource, /className="flex h-10 w-full/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);

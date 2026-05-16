@@ -158,6 +158,14 @@ function isEditableProperty(property: WorkspaceMockVisibleProperty) {
   return !isSystemProperty(property.id) && property.system !== true;
 }
 
+function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
+  if (property.id === "property:name") {
+    return "h-10 p-0.5";
+  }
+
+  return editable ? "h-10 p-0.5" : "h-10 truncate px-2 py-0";
+}
+
 function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
   const className = "mt-0.5 size-4 text-muted-foreground";
 
@@ -881,7 +889,7 @@ export function WorkspaceTableView({
                   return (
                     <TableCell
                       key={property.id}
-                      className={editable ? "h-10 p-0.5" : "h-10 truncate px-2 py-0"}
+                      className={getBodyCellClassName(property, editable)}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
                       {editable ? (
@@ -900,7 +908,7 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="flex h-10 w-full min-w-0 items-center justify-start px-2 text-left font-medium text-foreground hover:bg-muted/40 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
                           <span className="truncate">
