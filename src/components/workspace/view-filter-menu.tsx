@@ -164,14 +164,14 @@ export function WorkspaceViewFilterMenu({
             </div>
             <Badge variant="outline">{visiblePropertyIds.size}</Badge>
           </div>
-          <div className="grid max-h-52 gap-1 overflow-auto pr-1">
+          <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
             {properties.map((property) => {
               const checked = visiblePropertyIds.has(property.id);
               const disabled = isSystemProperty(property.id);
 
               return (
-                <div key={property.id} className="grid min-w-0 gap-1">
-                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(5.75rem,auto)_1.75rem] items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50">
+                <div key={property.id} className="grid min-w-0">
+                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(5.75rem,auto)_1.75rem] items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/50">
                     <Checkbox
                       checked={checked}
                       disabled={disabled}
@@ -183,7 +183,7 @@ export function WorkspaceViewFilterMenu({
                         value={editingPropertyName}
                         autoFocus
                         aria-label="Rename property"
-                        className="h-7 min-w-0"
+                        className="h-6 min-w-0"
                         onChange={(event) => setEditingPropertyName(event.target.value)}
                         onBlur={() => commitRenameProperty(property)}
                         onKeyDown={(event) => {
@@ -205,7 +205,7 @@ export function WorkspaceViewFilterMenu({
                     <div className="flex min-w-0 justify-end">
                       {disabled ? <Badge variant="outline">Required</Badge> : null}
                     </div>
-                    <div className="flex size-7 items-center justify-center">
+                    <div className="flex size-6 items-center justify-center justify-self-center">
                       {disabled ? null : (
                         <Popover
                           open={actionsPropertyId === property.id}
@@ -214,7 +214,7 @@ export function WorkspaceViewFilterMenu({
                           <PopoverTrigger asChild>
                             <button
                               type="button"
-                              className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
                               aria-label={`${property.name} property actions`}
                               onClick={stopActionMenuEvent}
                               onPointerDown={stopActionMenuEvent}
@@ -270,12 +270,12 @@ export function WorkspaceViewFilterMenu({
           </div>
         </div>
         <Separator />
-        <div className="grid gap-3 p-3">
+        <div className="grid gap-2 p-3">
           <div>
             <p className="text-sm font-medium">Value filters</p>
             <p className="text-xs text-muted-foreground">Limit visible projects by select values</p>
           </div>
-          <div className="grid max-h-60 gap-3 overflow-auto pr-1">
+          <div className="grid max-h-60 gap-1 overflow-auto pr-1">
             {filterableProperties.length === 0 ? (
               <p className="text-sm text-muted-foreground">No select properties</p>
             ) : filterableProperties.map((property) => {
@@ -287,7 +287,7 @@ export function WorkspaceViewFilterMenu({
                 <div key={property.id} className="grid gap-1">
                   <button
                     type="button"
-                    className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    className="flex h-6 min-w-0 items-center gap-1.5 rounded-md px-1 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     aria-expanded={expanded}
                     onClick={() => toggleFilterPropertyExpanded(property.id)}
                   >
