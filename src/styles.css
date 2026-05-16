@@ -214,6 +214,34 @@
   -webkit-appearance: none;
 }
 
+[data-color="gray"] {
+  background-color: oklch(0.66 0 0);
+}
+
+[data-color="red"] {
+  background-color: oklch(0.64 0.22 25);
+}
+
+[data-color="orange"] {
+  background-color: oklch(0.72 0.17 55);
+}
+
+[data-color="yellow"] {
+  background-color: oklch(0.82 0.16 88);
+}
+
+[data-color="green"] {
+  background-color: oklch(0.68 0.16 145);
+}
+
+[data-color="blue"] {
+  background-color: oklch(0.64 0.17 250);
+}
+
+[data-color="purple"] {
+  background-color: oklch(0.66 0.18 310);
+}
+
 * {
   scrollbar-color: oklch(1 0 0 / 22%) transparent;
   scrollbar-width: thin;

@@ -471,6 +471,15 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /ChevronDownIcon/);
   assert.match(projectDetailPanelSource, /Properties/);
   assert.match(projectDetailPanelSource, /File tree/);
+  assert.match(projectDetailPanelSource, /Hidden properties/);
+  assert.match(projectDetailPanelSource, /hiddenCardProperties/);
+  assert.match(projectDetailPanelSource, /onRenameProperty/);
+  assert.match(projectDetailPanelSource, /onHideProperty/);
+  assert.match(projectDetailPanelSource, /onDeleteProperty/);
+  assert.match(projectDetailPanelSource, /Rename property/);
+  assert.match(projectDetailPanelSource, /Hide property/);
+  assert.match(projectDetailPanelSource, /Delete property/);
+  assert.match(projectDetailPanelSource, /property actions/);
   assert.match(projectDetailPanelSource, /FolderIcon/);
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
@@ -490,6 +499,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /cursor-grab/);
   assert.match(projectDetailPanelSource, /card property order/);
   assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
+  assert.match(projectDetailPanelSource, /onColorSelectValue/);
   assert.match(projectDetailPanelSource, /WorkspaceDateValueEditor/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "text"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "number"/);
@@ -519,6 +529,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /onCreateSelectValue/);
   assert.match(selectValueEditorSource, /onRenameSelectValue/);
   assert.match(selectValueEditorSource, /onDeleteSelectValue/);
+  assert.match(selectValueEditorSource, /onColorSelectValue/);
+  assert.match(selectValueEditorSource, /valueColorOptions/);
+  assert.match(selectValueEditorSource, /Color/);
   assert.match(selectValueEditorSource, /DropdownMenuCheckboxItem/);
   assert.match(selectValueEditorSource, /actionsSelectValueId/);
   assert.match(selectValueEditorSource, /Popover/);

@@ -1590,7 +1590,11 @@ export default function App() {
           onProjectPropertyValueChange={handleProjectPropertyValueChange}
           onCreateSelectValue={handleCreateSelectValue}
           onRenameSelectValue={handleRenameSelectValue}
+          onColorSelectValue={handleColorSelectValue}
           onDeleteSelectValue={handleDeleteSelectValue}
+          onRenameProperty={handleRenameProperty}
+          onHideProperty={handleHideProperty}
+          onDeleteProperty={handleDeleteProperty}
         />
       </div>
       <Toaster richColors />

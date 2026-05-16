@@ -32,8 +32,11 @@ type WorkspaceSelectValueEditorProps = {
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
   readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onColorSelectValue?: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
+
+const valueColorOptions = ["gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
   event.stopPropagation();
@@ -66,6 +69,42 @@ function getSelectedValues(value: unknown) {
 
 function getSelectValueName(selectValues: readonly WorkspaceSelectValueState[], valueId: string) {
   return selectValues.find((selectValue) => selectValue.id === valueId)?.name || valueId;
+}
+
+function getSelectedSelectValueItems({
+  isMultiSelect,
+  selectedValueId,
+  selectedValues,
+  selectValues,
+}: {
+  readonly isMultiSelect: boolean;
+  readonly selectedValueId: string | null;
+  readonly selectedValues: readonly string[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+}) {
+  if (isMultiSelect) {
+    return selectedValues.map((valueId) => (
+      selectValues.find((selectValue) => selectValue.id === valueId) || {
+        id: valueId,
+        propertyId: "",
+        name: valueId,
+        color: "gray",
+      }
+    ));
+  }
+
+  if (!selectedValueId) {
+    return [];
+  }
+
+  return [
+    selectValues.find((selectValue) => selectValue.id === selectedValueId) || {
+      id: selectedValueId,
+      propertyId: "",
+      name: selectedValueId,
+      color: "gray",
+    },
+  ];
 }
 
 function getSelectValueLabel({
@@ -101,6 +140,7 @@ export function WorkspaceSelectValueEditor({
   onValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
+  onColorSelectValue,
   onDeleteSelectValue,
 }: WorkspaceSelectValueEditorProps) {
   const [open, setOpen] = useState(false);
@@ -125,6 +165,12 @@ export function WorkspaceSelectValueEditor({
     : false;
   const canCreateValue = normalizedQuery.length > 0 && !exactValueExists;
   const label = getSelectValueLabel({
+    isMultiSelect,
+    selectedValueId,
+    selectedValues,
+    selectValues: values,
+  });
+  const selectedValueItems = getSelectedSelectValueItems({
     isMultiSelect,
     selectedValueId,
     selectedValues,
@@ -262,6 +308,29 @@ export function WorkspaceSelectValueEditor({
           >
             Rename value
           </button>
+          {onColorSelectValue ? (
+            <>
+              <div className="px-2 pb-1 pt-2 text-xs font-medium text-muted-foreground">Color</div>
+              <div className="grid grid-cols-7 gap-1 px-1 pb-1">
+                {valueColorOptions.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`Color ${color}`}
+                    title={color}
+                    className="flex size-6 items-center justify-center rounded-md hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onColorSelectValue(selectValue.id, color);
+                      setActionsSelectValueId(null);
+                    }}
+                  >
+                    <span className="size-3 rounded-full" data-color={color} />
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
           <button
             type="button"
             role="menuitem"
@@ -299,10 +368,24 @@ export function WorkspaceSelectValueEditor({
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
             aria-label={`${property.name} select value`}
           >
-            <span className="flex min-w-0 items-center gap-2">
-              <CircleDotIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="truncate">{label}</span>
-            </span>
+            {selectedValueItems.length > 0 ? (
+              <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+                {selectedValueItems.map((selectValue) => (
+                  <span
+                    key={selectValue.id}
+                    className="inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
+                  >
+                    <span className="size-2 shrink-0 rounded-full" data-color={selectValue.color || "gray"} />
+                    <span className="truncate">{selectValue.name}</span>
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                <CircleDotIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">{label}</span>
+              </span>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
