@@ -29,6 +29,8 @@ type WorkspaceViewTabsProps = {
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onRenameProperty: (propertyId: string, name: string) => void;
+  readonly onDeleteProperty: (propertyId: string) => void;
 };
 
 export function WorkspaceViewTabs({
@@ -42,6 +44,8 @@ export function WorkspaceViewTabs({
   selectValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  onRenameProperty,
+  onDeleteProperty,
 }: WorkspaceViewTabsProps) {
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
@@ -171,6 +175,8 @@ export function WorkspaceViewTabs({
           selectValues={selectValues}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
           onToggleValueFilter={onToggleValueFilter}
+          onRenameProperty={onRenameProperty}
+          onDeleteProperty={onDeleteProperty}
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

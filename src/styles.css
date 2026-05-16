@@ -204,6 +204,16 @@
   -webkit-app-region: no-drag;
 }
 
+.workspace-number-input {
+  -moz-appearance: textfield;
+}
+
+.workspace-number-input::-webkit-outer-spin-button,
+.workspace-number-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 * {
   scrollbar-color: oklch(1 0 0 / 22%) transparent;
   scrollbar-width: thin;

@@ -10,10 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { CircleDotIcon, PlusIcon, XIcon } from "@/lib/lucide-icons";
+import { CircleDotIcon, MoreHorizontalIcon, PlusIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
@@ -29,6 +32,8 @@ type WorkspaceSelectValueEditorProps = {
     propertyId: string,
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
@@ -89,10 +94,14 @@ export function WorkspaceSelectValueEditor({
   triggerClassName,
   onValueChange,
   onCreateSelectValue,
+  onRenameSelectValue,
+  onDeleteSelectValue,
 }: WorkspaceSelectValueEditorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editingSelectValueId, setEditingSelectValueId] = useState<string | null>(null);
+  const [editingSelectValueName, setEditingSelectValueName] = useState("");
   const isMultiSelect = property.propertyType === "multi-select";
   const values = useMemo(
     () => getSelectValuesForProperty(selectValues, property.id),
@@ -164,6 +173,27 @@ export function WorkspaceSelectValueEditor({
     setOpen(false);
   }
 
+  function beginRenameSelectValue(selectValue: WorkspaceSelectValueState) {
+    setEditingSelectValueId(selectValue.id);
+    setEditingSelectValueName(selectValue.name);
+  }
+
+  function commitRenameSelectValue(selectValue: WorkspaceSelectValueState) {
+    const name = editingSelectValueName.trim();
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
+
+    if (name && name !== selectValue.name) {
+      onRenameSelectValue(selectValue.id, name);
+    }
+  }
+
+  function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
+    if (window.confirm(`Delete value "${selectValue.name}"?`)) {
+      onDeleteSelectValue(selectValue.id);
+    }
+  }
+
   return (
     <div onClick={stopSelectionEditorActivation} onPointerDown={stopSelectionEditorActivation}>
       <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -217,29 +247,86 @@ export function WorkspaceSelectValueEditor({
                 ? selectedValues.includes(selectValue.id)
                 : selectedValueId === selectValue.id;
 
+              if (editingSelectValueId === selectValue.id) {
+                return (
+                  <div key={selectValue.id} className="px-1 py-1">
+                    <Input
+                      value={editingSelectValueName}
+                      autoFocus
+                      aria-label="Rename value"
+                      className="h-8"
+                      onChange={(event) => setEditingSelectValueName(event.target.value)}
+                      onBlur={() => commitRenameSelectValue(selectValue)}
+                      onKeyDown={(event) => {
+                        event.stopPropagation();
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitRenameSelectValue(selectValue);
+                        }
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          setEditingSelectValueId(null);
+                          setEditingSelectValueName("");
+                        }
+                      }}
+                    />
+                  </div>
+                );
+              }
+
               if (isMultiSelect) {
                 return (
-                  <DropdownMenuCheckboxItem
-                    key={selectValue.id}
-                    checked={selected}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(checked) => toggleMultiValue(selectValue.id, checked === true)}
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
-                      <span className="truncate">{selectValue.name}</span>
-                    </span>
-                  </DropdownMenuCheckboxItem>
+                  <div key={selectValue.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
+                    <DropdownMenuCheckboxItem
+                      checked={selected}
+                      className="min-w-0"
+                      onSelect={(event) => event.preventDefault()}
+                      onCheckedChange={(checked) => toggleMultiValue(selectValue.id, checked === true)}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
+                        <span className="truncate">{selectValue.name}</span>
+                      </span>
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="h-7 w-7 justify-center px-0" aria-label={`${selectValue.name} value actions`}>
+                        <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-40">
+                        <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                          Rename value
+                        </DropdownMenuItem>
+                        <DropdownMenuItem variant="destructive" onSelect={() => deleteSelectValue(selectValue)}>
+                          Delete value
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  </div>
                 );
               }
 
               return (
-                <DropdownMenuItem key={selectValue.id} onSelect={() => selectSingleValue(selectValue.id)}>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
-                    <span className="truncate">{selectValue.name}</span>
-                  </span>
-                </DropdownMenuItem>
+                <div key={selectValue.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
+                  <DropdownMenuItem className="min-w-0" onSelect={() => selectSingleValue(selectValue.id)}>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
+                      <span className="truncate">{selectValue.name}</span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="h-7 w-7 justify-center px-0" aria-label={`${selectValue.name} value actions`}>
+                      <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="min-w-40">
+                      <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                        Rename value
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onSelect={() => deleteSelectValue(selectValue)}>
+                        Delete value
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                </div>
               );
             })}
             {filteredValues.length === 0 && !canCreateValue ? (

@@ -228,6 +228,33 @@ function removeProjectPropertyValue(project: WorkspaceMockProject, propertyId: s
   };
 }
 
+function removeProjectSelectValue(
+  project: WorkspaceMockProject,
+  propertyId: string,
+  selectValueId: string,
+): WorkspaceMockProject {
+  const currentValue = project.propertyValues[propertyId as keyof typeof project.propertyValues];
+
+  if (currentValue === selectValueId) {
+    const propertyValues = { ...project.propertyValues };
+    delete propertyValues[propertyId as keyof typeof project.propertyValues];
+    return { ...project, propertyValues };
+  }
+
+  if (!Array.isArray(currentValue) || !currentValue.includes(selectValueId)) {
+    return project;
+  }
+
+  return {
+    ...project,
+    propertyValues: {
+      ...project.propertyValues,
+      [propertyId]: currentValue.filter((valueId) => valueId !== selectValueId),
+    },
+  };
+}
+
+
 function normalizeCreatedWorkspaceResponse(
   response: unknown,
   fallbackName: string,
@@ -1227,12 +1254,21 @@ export default function App() {
       return;
     }
 
+    const selectValue = state.propertyCatalog?.selectValues.find((value) => value.id === selectValueId) || null;
+
     try {
       await workspaceClient.deleteSelectValue({
         workspaceId: state.workspaceId,
         selectValueId,
         confirmDeleteUsages: true,
       });
+      if (selectValue) {
+        setSelectedProject((currentProject) => (
+          currentProject
+            ? removeProjectSelectValue(currentProject, selectValue.propertyId, selectValue.id)
+            : currentProject
+        ));
+      }
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
       toast.success("Select value deleted");
@@ -1494,6 +1530,8 @@ export default function App() {
                 selectValues={settingsSelectValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
                 onToggleValueFilter={handleToggleValueFilter}
+                onRenameProperty={handleRenameProperty}
+                onDeleteProperty={handleDeleteProperty}
               />
               <div className="min-h-0 flex-1 overflow-hidden">
                 {state.status === "loading" || state.status === "idle" ? (
@@ -1525,6 +1563,8 @@ export default function App() {
                         onTogglePropertyVisibility={handleTogglePropertyVisibility}
                         onProjectPropertyValueChange={handleProjectPropertyValueChange}
                         onCreateSelectValue={handleCreateSelectValue}
+                        onRenameSelectValue={handleRenameSelectValue}
+                        onDeleteSelectValue={handleDeleteSelectValue}
                       />
                     ) : null}
                   </>
@@ -1545,6 +1585,8 @@ export default function App() {
           selectValues={settingsSelectValues}
           onProjectPropertyValueChange={handleProjectPropertyValueChange}
           onCreateSelectValue={handleCreateSelectValue}
+          onRenameSelectValue={handleRenameSelectValue}
+          onDeleteSelectValue={handleDeleteSelectValue}
         />
       </div>
       <Toaster richColors />

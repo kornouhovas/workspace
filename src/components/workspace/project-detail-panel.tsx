@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
 import type {
@@ -32,6 +33,8 @@ type WorkspaceProjectDetailPanelProps = {
     propertyId: string,
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
 
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
@@ -166,6 +169,8 @@ function ProjectPropertyValueEditor({
   selectValues,
   onProjectPropertyValueChange,
   onCreateSelectValue,
+  onRenameSelectValue,
+  onDeleteSelectValue,
 }: {
   readonly project: WorkspaceMockProject;
   readonly property: WorkspacePropertyDefinitionState;
@@ -175,6 +180,8 @@ function ProjectPropertyValueEditor({
     propertyId: string,
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
 }) {
   const value = getPropertyValue(project, property);
 
@@ -205,6 +212,7 @@ function ProjectPropertyValueEditor({
         type="number"
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} number value`}
+        className="workspace-number-input"
         onBlur={(event) => {
           const text = event.target.value.trim();
           onProjectPropertyValueChange(project.id, property.id, text === "" ? null : Number(text));
@@ -220,12 +228,10 @@ function ProjectPropertyValueEditor({
 
   if (property.propertyType === "date") {
     return (
-      <Input
-        key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
-        type="date"
-        defaultValue={stringifyPropertyValue(value)}
-        aria-label={`${property.name} date value`}
-        onBlur={(event) => onProjectPropertyValueChange(project.id, property.id, event.target.value || null)}
+      <WorkspaceDateValueEditor
+        value={value}
+        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
       />
     );
   }
@@ -239,6 +245,8 @@ function ProjectPropertyValueEditor({
         triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
         onCreateSelectValue={onCreateSelectValue}
+        onRenameSelectValue={onRenameSelectValue}
+        onDeleteSelectValue={onDeleteSelectValue}
       />
     );
   }
@@ -254,6 +262,8 @@ export function WorkspaceProjectDetailPanel({
   selectValues,
   onProjectPropertyValueChange,
   onCreateSelectValue,
+  onRenameSelectValue,
+  onDeleteSelectValue,
 }: WorkspaceProjectDetailPanelProps) {
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
@@ -493,6 +503,8 @@ export function WorkspaceProjectDetailPanel({
                           selectValues={selectValues}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
+                          onRenameSelectValue={onRenameSelectValue}
+                          onDeleteSelectValue={onDeleteSelectValue}
                         />
                       </dd>
                     </div>

@@ -27,6 +27,8 @@ test("renderer composes the workspace product shell", async () => {
     propertyControlsSource,
     viewFilterMenuSource,
     selectValueEditorSource,
+    dateValueEditorSource,
+    popoverSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -47,6 +49,8 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/property-controls.tsx"),
     readProjectFile("src/components/workspace/view-filter-menu.tsx"),
     readProjectFile("src/components/workspace/select-value-editor.tsx"),
+    readProjectFile("src/components/workspace/date-value-editor.tsx"),
+    readProjectFile("src/components/ui/popover.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -225,11 +229,20 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /WorkspaceViewFilterMenu/);
   assert.match(viewTabsSource, /onTogglePropertyVisibility/);
   assert.match(viewTabsSource, /onToggleValueFilter/);
+  assert.match(viewTabsSource, /onRenameProperty/);
+  assert.match(viewTabsSource, /onDeleteProperty/);
   assert.match(viewFilterMenuSource, /WorkspaceViewFilterMenu/);
   assert.match(viewFilterMenuSource, /Visible properties/);
   assert.match(viewFilterMenuSource, /Value filters/);
   assert.match(viewFilterMenuSource, /Checkbox/);
   assert.match(viewFilterMenuSource, /valueVisibility/);
+  assert.match(viewFilterMenuSource, /MoreHorizontalIcon/);
+  assert.match(viewFilterMenuSource, /DropdownMenuSub/);
+  assert.match(viewFilterMenuSource, /Rename property/);
+  assert.match(viewFilterMenuSource, /Delete property/);
+  assert.match(viewFilterMenuSource, /editingPropertyId/);
+  assert.match(viewFilterMenuSource, /onRenameProperty/);
+  assert.match(viewFilterMenuSource, /onDeleteProperty/);
   assert.match(viewTabsSource, /DropdownMenu/);
   assert.match(viewTabsSource, /Rename View/);
   assert.match(viewTabsSource, /Delete View/);
@@ -289,10 +302,15 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(tableViewSource, /New property type/);
   assert.match(tableViewSource, /ProjectTablePropertyValueEditor/);
   assert.match(tableViewSource, /WorkspaceSelectValueEditor/);
+  assert.match(tableViewSource, /WorkspaceDateValueEditor/);
   assert.match(tableViewSource, /isEditableProperty/);
   assert.match(tableViewSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
-  assert.match(tableViewSource, /onClick=\{stopCellActivation\}/);
+  assert.match(tableViewSource, /editingCellId/);
+  assert.match(tableViewSource, /startCellEditing/);
+  assert.match(tableViewSource, /workspace-table-cell-display/);
+  assert.doesNotMatch(tableViewSource, /hover:bg-muted\/50 focus-visible:border-ring focus-visible:bg-background/);
+  assert.doesNotMatch(tableViewSource, /type="date"/);
   assert.match(tableViewSource, /onPointerDown=\{stopCellActivation\}/);
   assert.match(appSource, /onProjectPropertyValueChange=\{handleProjectPropertyValueChange\}/);
   assert.match(appSource, /"property:name"/);
@@ -337,6 +355,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /hiddenViewProperties/);
   assert.match(tableViewSource, /GripVerticalIcon/);
   assert.match(tableViewSource, /PlusIcon/);
+  assert.match(tableViewSource, /h-12 cursor-pointer/);
+  assert.match(tableViewSource, /className=\{editable \? "h-12 p-1" : "h-12 truncate"\}/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /pl-4 pr-4 pt-4 pb-0/);
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);
@@ -399,13 +419,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onOpenChange/);
   assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
   assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
+  assert.match(projectDetailPanelSource, /WorkspaceDateValueEditor/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "text"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "number"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "date"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "select"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "multi-select"/);
   assert.match(projectDetailPanelSource, /type="number"/);
-  assert.match(projectDetailPanelSource, /type="date"/);
+  assert.doesNotMatch(projectDetailPanelSource, /type="date"/);
   assert.match(projectDetailPanelSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /handleProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
@@ -421,11 +442,29 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /Clear selection/);
   assert.match(selectValueEditorSource, /Create/);
   assert.match(selectValueEditorSource, /onCreateSelectValue/);
+  assert.match(selectValueEditorSource, /onRenameSelectValue/);
+  assert.match(selectValueEditorSource, /onDeleteSelectValue/);
   assert.match(selectValueEditorSource, /DropdownMenuCheckboxItem/);
+  assert.match(selectValueEditorSource, /DropdownMenuSub/);
+  assert.match(selectValueEditorSource, /MoreHorizontalIcon/);
+  assert.match(selectValueEditorSource, /Rename value/);
+  assert.match(selectValueEditorSource, /Delete value/);
+  assert.match(selectValueEditorSource, /editingSelectValueId/);
   assert.match(selectValueEditorSource, /selectedValues/);
   assert.match(selectValueEditorSource, /setSearchQuery/);
   assert.match(selectValueEditorSource, /onValueChange\(createdValue\.id\)/);
   assert.match(selectValueEditorSource, /onValueChange\(nextValues\)/);
+  assert.match(appSource, /onRenameSelectValue=\{handleRenameSelectValue\}/);
+  assert.match(appSource, /onDeleteSelectValue=\{handleDeleteSelectValue\}/);
+
+  assert.match(dateValueEditorSource, /WorkspaceDateValueEditor/);
+  assert.match(dateValueEditorSource, /Popover/);
+  assert.match(dateValueEditorSource, /Pick date/);
+  assert.match(dateValueEditorSource, /Clear date/);
+  assert.match(dateValueEditorSource, /ChevronLeftIcon/);
+  assert.match(dateValueEditorSource, /ChevronRightIcon/);
+  assert.doesNotMatch(dateValueEditorSource, /type="date"/);
+  assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);
@@ -435,5 +474,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/settings\.mjs/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
+  assert.match(cssSource, /workspace-number-input/);
+  assert.match(cssSource, /-webkit-inner-spin-button/);
+  assert.match(cssSource, /-moz-appearance:\s*textfield/);
   assert.match(cssSource, /::-webkit-scrollbar-thumb/);
 });

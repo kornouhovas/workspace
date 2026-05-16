@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import {
   CalendarIcon,
@@ -75,6 +76,8 @@ type WorkspaceTableViewProps = {
     propertyId: string,
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
 
 const propertyTypeOptions: readonly PropertyTypeOption[] = [
@@ -187,24 +190,39 @@ function stringifyEditableValue(value: unknown) {
     : String(value);
 }
 
+function getProjectPropertyCellId(projectId: string, propertyId: string) {
+  return `${projectId}:${propertyId}`;
+}
+
 function ProjectTablePropertyValueEditor({
   project,
   property,
   selectValues,
+  editing,
   onProjectPropertyValueChange,
   onCreateSelectValue,
+  onRenameSelectValue,
+  onDeleteSelectValue,
+  onStartEditingCell,
+  onStopEditingCell,
 }: {
   readonly project: WorkspaceMockProject;
   readonly property: WorkspaceMockVisibleProperty;
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly editing: boolean;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
     input: { readonly name: string; readonly color: string },
   ) => Promise<WorkspaceSelectValueState | null>;
+  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+  readonly onDeleteSelectValue: (selectValueId: string) => void;
+  readonly onStartEditingCell: (cellId: string) => void;
+  readonly onStopEditingCell: () => void;
 }) {
   const value = getPropertyValue(project, property);
   const editorKey = `${project.id}:${property.id}:${stringifyEditableValue(value)}`;
+  const cellId = getProjectPropertyCellId(project.id, property.id);
 
   function stopCellActivation(event: { stopPropagation: () => void }) {
     event.stopPropagation();
@@ -214,19 +232,41 @@ function ProjectTablePropertyValueEditor({
     onProjectPropertyValueChange(project.id, property.id, nextValue);
   }
 
+  function startCellEditing(event: { stopPropagation: () => void }) {
+    event.stopPropagation();
+    onStartEditingCell(cellId);
+  }
+
+  function renderCellDisplay(label: string) {
+    return (
+      <button
+        type="button"
+        className="workspace-table-cell-display flex h-9 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        onClick={startCellEditing}
+        onPointerDown={stopCellActivation}
+      >
+        <span className="truncate">{label || "Empty"}</span>
+      </button>
+    );
+  }
+
   if (property.propertyType === "number") {
+    if (!editing) {
+      return renderCellDisplay(stringifyEditableValue(value));
+    }
+
     return (
       <Input
         key={editorKey}
         type="number"
         defaultValue={stringifyEditableValue(value)}
         aria-label={`${property.name} number value`}
-        className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
-        onClick={stopCellActivation}
+        className="workspace-number-input h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
         onBlur={(event) => {
           const text = event.target.value.trim();
           saveValue(text === "" ? null : Number(text));
+          onStopEditingCell();
         }}
         onKeyDown={(event) => {
           event.stopPropagation();
@@ -241,16 +281,10 @@ function ProjectTablePropertyValueEditor({
 
   if (property.propertyType === "date") {
     return (
-      <Input
-        key={editorKey}
-        type="date"
-        defaultValue={stringifyEditableValue(value)}
-        aria-label={`${property.name} date value`}
-        className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
-        onClick={stopCellActivation}
-        onPointerDown={stopCellActivation}
-        onBlur={(event) => saveValue(event.target.value || null)}
-        onKeyDown={(event) => event.stopPropagation()}
+      <WorkspaceDateValueEditor
+        value={value}
+        triggerClassName="h-9 w-full min-w-0 justify-start px-2 font-normal"
+        onValueChange={saveValue}
       />
     );
   }
@@ -261,11 +295,17 @@ function ProjectTablePropertyValueEditor({
         property={property}
         value={value}
         selectValues={selectValues}
-        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal hover:bg-muted/50"
+        triggerClassName="h-9 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
+        onRenameSelectValue={onRenameSelectValue}
+        onDeleteSelectValue={onDeleteSelectValue}
       />
     );
+  }
+
+  if (!editing) {
+    return renderCellDisplay(stringifyEditableValue(value));
   }
 
   return (
@@ -273,10 +313,12 @@ function ProjectTablePropertyValueEditor({
       key={editorKey}
       defaultValue={stringifyEditableValue(value)}
       aria-label={`${property.name} text value`}
-      className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
-      onClick={stopCellActivation}
+      className="h-9 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
       onPointerDown={stopCellActivation}
-      onBlur={(event) => saveValue(event.target.value)}
+      onBlur={(event) => {
+        saveValue(event.target.value);
+        onStopEditingCell();
+      }}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
@@ -301,9 +343,12 @@ export function WorkspaceTableView({
   onTogglePropertyVisibility,
   onProjectPropertyValueChange,
   onCreateSelectValue,
+  onRenameSelectValue,
+  onDeleteSelectValue,
 }: WorkspaceTableViewProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
+  const [editingCellId, setEditingCellId] = useState<string | null>(null);
   const [openPropertyMenuId, setOpenPropertyMenuId] = useState<string | null>(null);
   const [columnDrag, setColumnDrag] = useState<ColumnDragState | null>(null);
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
@@ -821,7 +866,7 @@ export function WorkspaceTableView({
                 key={project.id}
                 role="button"
                 tabIndex={0}
-                className="cursor-pointer"
+                className="h-12 cursor-pointer"
                 onClick={() => onProjectOpen(project)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -839,10 +884,7 @@ export function WorkspaceTableView({
                   return (
                     <TableCell
                       key={property.id}
-                      className={[
-                        "border-r border-border/40",
-                        editable ? "p-1" : "truncate",
-                      ].join(" ")}
+                      className={editable ? "h-12 p-1" : "h-12 truncate"}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
                       {editable ? (
@@ -850,8 +892,13 @@ export function WorkspaceTableView({
                           project={project}
                           property={property}
                           selectValues={selectValues}
+                          editing={editingCellId === getProjectPropertyCellId(project.id, property.id)}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
+                          onRenameSelectValue={onRenameSelectValue}
+                          onDeleteSelectValue={onDeleteSelectValue}
+                          onStartEditingCell={setEditingCellId}
+                          onStopEditingCell={() => setEditingCellId(null)}
                         />
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
