@@ -210,6 +210,20 @@ function normalizeProjectFileTreeResponse(response: unknown): readonly Workspace
     .filter((node): node is WorkspaceMockFileTreeNode => node !== null);
 }
 
+function removeProjectPropertyValue(project: WorkspaceMockProject, propertyId: string): WorkspaceMockProject {
+  if (!Object.hasOwn(project.propertyValues, propertyId)) {
+    return project;
+  }
+
+  const propertyValues = { ...project.propertyValues };
+  delete propertyValues[propertyId];
+
+  return {
+    ...project,
+    propertyValues,
+  };
+}
+
 function normalizeCreatedWorkspaceResponse(
   response: unknown,
   fallbackName: string,
@@ -1082,6 +1096,10 @@ export default function App() {
         propertyId,
         confirmDeleteValues: true,
       });
+      dispatch({ type: "propertyDeleted", propertyId });
+      setSelectedProject((currentProject) => (
+        currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject
+      ));
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
       toast.success("Property deleted");

@@ -126,6 +126,94 @@ test("workspace app state stores custom property catalog responses", async () =>
   assert.equal(state.projection, loadedState.projection);
 });
 
+test("workspace app state removes a deleted property from catalog and projections", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: {
+      "property:name": "Alpha Project",
+      "property:status": "status:active",
+      "property:priority": "High",
+    },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      ...viewsResponse,
+      views: [
+        {
+          id: "view:board",
+          name: "Board",
+          viewType: "board",
+          visiblePropertyIds: ["property:name", "property:status", "property:priority"],
+          propertyOrder: {
+            "property:name": 10,
+            "property:status": 20,
+            "property:priority": 30,
+          },
+          valueVisibility: {
+            "property:priority": { valueIds: ["selectValue:high"] },
+          },
+        },
+      ],
+    },
+    projectionResponse: {
+      ...projectionResponse,
+      visibleProperties: [
+        { id: "property:name", name: "Name", propertyType: "text", system: true },
+        { id: "property:status", name: "Status", propertyType: "select", system: true },
+        { id: "property:priority", name: "Priority", propertyType: "select", system: false },
+      ],
+      projection: {
+        type: "board",
+        capabilities: { canMoveBetweenStatuses: false },
+        columns: [
+          { statusValueId: "status:active", name: "Active", projects: [alpha] },
+        ],
+      },
+    },
+    folderRoleTree,
+  });
+  const catalogState = workspaceAppStateReducer(loadedState, {
+    type: "propertiesLoaded",
+    propertiesResponse: {
+      workspaceId: "workspace:ops",
+      properties: [
+        { id: "property:name", name: "Name", propertyType: "text", type: "text", system: true },
+        { id: "property:status", name: "Status", propertyType: "select", type: "select", system: true },
+        { id: "property:priority", name: "Priority", propertyType: "select", type: "select", system: false },
+      ],
+      selectValues: [
+        { id: "selectValue:high", propertyId: "property:priority", name: "High", color: "red" },
+      ],
+    },
+  });
+
+  const state = workspaceAppStateReducer(catalogState, {
+    type: "propertyDeleted",
+    propertyId: "property:priority",
+  });
+
+  assert.deepEqual(
+    state.propertyCatalog.properties.map((property) => property.id),
+    ["property:name", "property:status"],
+  );
+  assert.deepEqual(state.propertyCatalog.selectValues, []);
+  assert.deepEqual(
+    state.projection.visibleProperties.map((property) => property.id),
+    ["property:name", "property:status"],
+  );
+  assert.equal(
+    Object.hasOwn(state.projection.projection.columns[0].projects[0].propertyValues, "property:priority"),
+    false,
+  );
+  assert.deepEqual(state.views[0].visiblePropertyIds, ["property:name", "property:status"]);
+  assert.equal(Object.hasOwn(state.views[0].propertyOrder, "property:priority"), false);
+  assert.deepEqual(state.views[0].valueVisibility, {});
+});
+
 test("workspace app state applies project property value updates without closing details", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {

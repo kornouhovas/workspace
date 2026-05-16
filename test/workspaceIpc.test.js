@@ -385,6 +385,48 @@ test("workspace IPC handler creates renames reorders and deletes workspaces", as
   }
 });
 
+test("workspace IPC handler does not recreate a deleted default source workspace", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "Объекты");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "В работе", "Адонис"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => "planning",
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const defaultWorkspaceId = rootResponse.root.workspaceId;
+    await handler(null, "workspace.updateWorkspace", {
+      workspaceId: defaultWorkspaceId,
+      patch: { name: "Объекты" },
+    });
+    const createdWorkspace = await handler(null, "workspace.createWorkspace", {
+      name: "Planning",
+    });
+
+    await handler(null, "workspace.deleteWorkspace", {
+      workspaceId: defaultWorkspaceId,
+    });
+    await handler(null, "workspace.getRoot", {});
+    const workspaces = await handler(null, "workspace.listWorkspaces", {});
+
+    assert.deepEqual(
+      workspaces.workspaces.map((workspace) => [workspace.id, workspace.name]),
+      [[createdWorkspace.workspace.id, "Planning"]],
+    );
+    assert.equal(workspaces.activeWorkspaceId, createdWorkspace.workspace.id);
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler persists view state outside the process handler instance", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");
@@ -740,6 +782,113 @@ test("workspace IPC handler shares object properties across workspaces for the s
       ],
     );
     assert.equal(visibleProjection.projection.rows[0].propertyValues["property:shared-note"], "Shared object note");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler deletes custom properties from values and source views", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+  const propertyStorePath = join(tempDirectory, "properties.json");
+  let idCounter = 0;
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => `seed-${idCounter += 1}`,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const sourceWorkspaceId = rootResponse.root.workspaceId;
+    const propertyResponse = await handler(null, "workspace.createProperty", {
+      id: "property:shared-note",
+      workspaceId: sourceWorkspaceId,
+      name: "Note",
+      type: "text",
+    });
+    const createdWorkspace = await handler(null, "workspace.createWorkspace", {
+      name: "Planning",
+    });
+    const secondWorkspaceId = createdWorkspace.workspace.id;
+    const secondViews = await handler(null, "workspace.listViews", { workspaceId: secondWorkspaceId });
+    const secondTableView = secondViews.views.find((view) => view.viewType === "table");
+    const sourceProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId: sourceWorkspaceId,
+      viewId: "view:default-table",
+    });
+    const sourceProject = sourceProjection.projection.rows.find((project) => project.name === "Project Alpha");
+
+    for (const [workspaceId, viewId] of [
+      [sourceWorkspaceId, "view:default-table"],
+      [secondWorkspaceId, secondTableView.id],
+    ]) {
+      await handler(null, "workspace.updateView", {
+        workspaceId,
+        viewId,
+        patch: {
+          visiblePropertyIds: ["property:name", "property:status", propertyResponse.property.id],
+          propertyOrder: {
+            "property:name": 10,
+            "property:status": 20,
+            [propertyResponse.property.id]: 30,
+          },
+        },
+      });
+    }
+
+    await handler(null, "workspace.updateProjectPropertyValue", {
+      workspaceId: sourceWorkspaceId,
+      projectId: sourceProject.id,
+      propertyId: propertyResponse.property.id,
+      value: "Remove me",
+    });
+
+    await handler(null, "workspace.deleteProperty", {
+      workspaceId: secondWorkspaceId,
+      propertyId: propertyResponse.property.id,
+      confirmDeleteValues: true,
+    });
+
+    const propertiesResponse = await handler(null, "workspace.listProperties", { workspaceId: sourceWorkspaceId });
+    assert.equal(
+      propertiesResponse.properties.some((property) => property.id === propertyResponse.property.id),
+      false,
+    );
+    assert.deepEqual(
+      await handler(null, "workspace.listPropertyValues", {
+        workspaceId: sourceWorkspaceId,
+        propertyId: propertyResponse.property.id,
+      }),
+      { workspaceId: sourceWorkspaceId, values: [] },
+    );
+
+    for (const [workspaceId, viewId] of [
+      [sourceWorkspaceId, "view:default-table"],
+      [secondWorkspaceId, secondTableView.id],
+    ]) {
+      const views = await handler(null, "workspace.listViews", { workspaceId });
+      const view = views.views.find((item) => item.id === viewId);
+      assert.equal(view.visiblePropertyIds.includes(propertyResponse.property.id), false);
+      assert.equal(Object.hasOwn(view.propertyOrder, propertyResponse.property.id), false);
+
+      const projection = await handler(null, "workspace.getViewProjection", { workspaceId, viewId });
+      assert.equal(
+        projection.visibleProperties.some((property) => property.id === propertyResponse.property.id),
+        false,
+      );
+      assert.equal(
+        Object.hasOwn(projection.projection.rows[0].propertyValues, propertyResponse.property.id),
+        false,
+      );
+    }
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

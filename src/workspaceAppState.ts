@@ -128,6 +128,7 @@ export type WorkspaceAppAction =
     }
   | { readonly type: "projectionUpdated"; readonly projectionResponse: WorkspaceProjectionResponse }
   | { readonly type: "propertiesLoaded"; readonly propertiesResponse: WorkspacePropertyCatalogState }
+  | { readonly type: "propertyDeleted"; readonly propertyId: string }
   | {
       readonly type: "projectPropertyValueUpdated";
       readonly projectId: string;
@@ -256,6 +257,34 @@ export function workspaceAppStateReducer(
     return {
       ...state,
       propertyCatalog: action.propertiesResponse,
+      propertySaveError: null,
+    };
+  }
+
+  if (action.type === "propertyDeleted") {
+    const deletedSelectValueIds = new Set(
+      state.propertyCatalog?.selectValues
+        .filter((value) => value.propertyId === action.propertyId)
+        .map((value) => value.id) || [],
+    );
+
+    return {
+      ...state,
+      projection: state.projection
+        ? removeProjectionProperty({
+            projectionResponse: state.projection,
+            propertyId: action.propertyId,
+          })
+        : state.projection,
+      propertyCatalog: state.propertyCatalog
+        ? {
+            ...state.propertyCatalog,
+            properties: state.propertyCatalog.properties.filter((property) => property.id !== action.propertyId),
+            selectValues: state.propertyCatalog.selectValues.filter((value) => value.propertyId !== action.propertyId),
+            usage: removePropertyUsage(state.propertyCatalog.usage, action.propertyId, deletedSelectValueIds),
+          }
+        : state.propertyCatalog,
+      views: state.views.map((view) => removeViewPropertyReference(view, action.propertyId)),
       propertySaveError: null,
     };
   }
@@ -436,6 +465,99 @@ export function filterWorkspaceProjectionBySearch(
         projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
       })),
     },
+  };
+}
+
+function removeViewPropertyReference(
+  view: WorkspaceViewState,
+  propertyId: string,
+): WorkspaceViewState {
+  const propertyOrder = { ...(view.propertyOrder || {}) };
+  const valueVisibility = { ...(view.valueVisibility || {}) };
+  delete propertyOrder[propertyId];
+  delete valueVisibility[propertyId];
+
+  return {
+    ...view,
+    visiblePropertyIds: view.visiblePropertyIds?.filter((id) => id !== propertyId),
+    propertyOrder,
+    valueVisibility,
+  };
+}
+
+function removePropertyUsage(
+  usage: WorkspacePropertyCatalogState["usage"],
+  propertyId: string,
+  selectValueIds: ReadonlySet<string>,
+): WorkspacePropertyCatalogState["usage"] {
+  if (!usage) {
+    return usage;
+  }
+
+  const propertyValueCounts = { ...(usage.propertyValueCounts || {}) };
+  const selectValueCounts = { ...(usage.selectValueCounts || {}) };
+  delete propertyValueCounts[propertyId];
+  for (const selectValueId of selectValueIds) {
+    delete selectValueCounts[selectValueId];
+  }
+
+  return {
+    ...usage,
+    propertyValueCounts,
+    selectValueCounts,
+  };
+}
+
+function removeProjectionProperty({
+  projectionResponse,
+  propertyId,
+}: {
+  readonly projectionResponse: WorkspaceProjectionResponse;
+  readonly propertyId: string;
+}): WorkspaceProjectionResponse {
+  const nextProjectionResponse = {
+    ...projectionResponse,
+    visibleProperties: projectionResponse.visibleProperties.filter((property) => property.id !== propertyId),
+    view: removeViewPropertyReference(projectionResponse.view, propertyId),
+  };
+
+  if (projectionResponse.projection.type === "table") {
+    return {
+      ...nextProjectionResponse,
+      projection: {
+        ...projectionResponse.projection,
+        rows: projectionResponse.projection.rows.map((project) =>
+          removeProjectPropertyValue(project, propertyId),
+        ),
+      },
+    };
+  }
+
+  return {
+    ...nextProjectionResponse,
+    projection: {
+      ...projectionResponse.projection,
+      columns: projectionResponse.projection.columns.map((column) => ({
+        ...column,
+        projects: column.projects.map((project) =>
+          removeProjectPropertyValue(project, propertyId),
+        ),
+      })),
+    },
+  };
+}
+
+function removeProjectPropertyValue(project: unknown, propertyId: string) {
+  if (!isRecord(project) || !isRecord(project.propertyValues) || !Object.hasOwn(project.propertyValues, propertyId)) {
+    return project;
+  }
+
+  const propertyValues = { ...project.propertyValues };
+  delete propertyValues[propertyId];
+
+  return {
+    ...project,
+    propertyValues,
   };
 }
 

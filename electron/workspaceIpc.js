@@ -141,13 +141,25 @@ export function createWorkspaceIpcHandler(options = {}) {
       }
 
       const workspaceId = createWorkspaceId(rootPath);
+      const sourceFolderId = workspaceId;
       await writeWorkspaceSettings(configPath, {
         rootPath,
         activeWorkspaceId: workspaceId,
         folderRules: {},
       });
       await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
-      return createRootResponse(rootPath, workspaceId);
+      const activeWorkspaceId = await getActiveWorkspaceId({
+        configPath,
+        viewStore,
+        rootPath,
+        fallbackWorkspaceId: sourceFolderId,
+      });
+      await writeWorkspaceSettings(configPath, {
+        rootPath,
+        activeWorkspaceId,
+        folderRules: {},
+      });
+      return createRootResponse(rootPath, activeWorkspaceId);
     }
 
     const root = await getRootState();
@@ -298,6 +310,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         workspaceId,
         propertyScopeId: sourceFolderId,
         propertyStore,
+        viewStore,
         now,
       });
     }
@@ -665,6 +678,13 @@ function createWorkspaceId(rootPath) {
 
 async function ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now }) {
   const existingWorkspace = await viewStore.getWorkspace(workspaceId);
+  const sourceFolderId = createWorkspaceId(rootPath);
+  const existingSourceWorkspaces = await viewStore.listWorkspaces(sourceFolderId);
+
+  if (existingWorkspace?.deletedAt && existingSourceWorkspaces.length > 0) {
+    return;
+  }
+
   const existingViews = await viewStore.listViews(workspaceId);
   const timestamp = now();
 
@@ -691,7 +711,7 @@ async function ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now })
     id: workspaceId,
     type: "workspace",
     schemaVersion: 1,
-    sourceFolderId: createWorkspaceId(rootPath),
+    sourceFolderId,
     name: existingWorkspace?.name || "Operations",
     order: Number.isFinite(Number(existingWorkspace?.order)) ? Number(existingWorkspace.order) : 10,
     activeViewId: existingWorkspace?.activeViewId || existingViews[0]?.id || "view:default-board",
@@ -707,7 +727,7 @@ async function getActiveWorkspaceId({ configPath, viewStore, rootPath, fallbackW
   const workspaces = await viewStore.listWorkspaces(sourceFolderId);
   return workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
     ? settings.activeWorkspaceId
-    : fallbackWorkspaceId;
+    : workspaces[0]?.id || fallbackWorkspaceId;
 }
 
 async function createWorkspaceDocument({
@@ -902,7 +922,7 @@ async function reorderPropertiesResult({ body, workspaceId, propertyScopeId, pro
   };
 }
 
-async function deletePropertyResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
+async function deletePropertyResult({ body, workspaceId, propertyScopeId, propertyStore, viewStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
   const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
   const propertyValues = await propertyStore.listProjectPropertyValues(propertyScopeId, { propertyId });
@@ -934,10 +954,66 @@ async function deletePropertyResult({ body, workspaceId, propertyScopeId, proper
     });
   }
 
+  if (viewStore) {
+    await removePropertyFromSourceViews({
+      viewStore,
+      sourceFolderId: propertyScopeId,
+      propertyId,
+      now: timestamp,
+    });
+  }
+
   return {
     workspaceId,
     deletedPropertyId: propertyId,
   };
+}
+
+async function removePropertyFromSourceViews({ viewStore, sourceFolderId, propertyId, now }) {
+  const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+
+  for (const workspace of workspaces) {
+    const views = await viewStore.listViews(workspace.id);
+
+    for (const view of views) {
+      const visiblePropertyIds = Array.isArray(view.visiblePropertyIds)
+        ? view.visiblePropertyIds.filter((id) => id !== propertyId)
+        : view.visiblePropertyIds;
+      const hiddenPropertyIds = Array.isArray(view.hiddenPropertyIds)
+        ? view.hiddenPropertyIds.filter((id) => id !== propertyId)
+        : view.hiddenPropertyIds;
+      const propertyOrder = view.propertyOrder && typeof view.propertyOrder === "object"
+        ? { ...view.propertyOrder }
+        : {};
+      const valueVisibility = view.valueVisibility && typeof view.valueVisibility === "object"
+        ? { ...view.valueVisibility }
+        : {};
+
+      const hadPropertyOrder = Object.hasOwn(propertyOrder, propertyId);
+      const hadValueVisibility = Object.hasOwn(valueVisibility, propertyId);
+      delete propertyOrder[propertyId];
+      delete valueVisibility[propertyId];
+
+      const changed =
+        visiblePropertyIds !== view.visiblePropertyIds ||
+        hiddenPropertyIds !== view.hiddenPropertyIds ||
+        hadPropertyOrder ||
+        hadValueVisibility;
+
+      if (!changed) {
+        continue;
+      }
+
+      await viewStore.saveView({
+        ...view,
+        visiblePropertyIds,
+        hiddenPropertyIds,
+        propertyOrder,
+        valueVisibility,
+        updatedAt: now,
+      });
+    }
+  }
 }
 
 async function createSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, idFactory, now }) {
