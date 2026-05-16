@@ -206,7 +206,6 @@ export function WorkspaceLeftPanel({
       return {
         transform: `translateY(${workspaceDragState.currentY - workspaceDragState.startY}px)`,
         transitionDuration: "0ms",
-        pointerEvents: "none",
         zIndex: 30,
       };
     }

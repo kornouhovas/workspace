@@ -62,3 +62,21 @@ test("addWorkspaceListFallback appends and activates a local workspace", async (
     },
   );
 });
+
+test("addWorkspaceListFallback uses plain Workspace as the default local name", async () => {
+  const { addWorkspaceListFallback } = await importCompatibilityModule();
+
+  assert.deepEqual(
+    addWorkspaceListFallback({
+      activeWorkspaceId: "workspace:root",
+      workspaces: [{ id: "workspace:root", name: "Operations", order: 10 }],
+    }, ""),
+    {
+      activeWorkspaceId: "workspace:local:workspace",
+      workspaces: [
+        { id: "workspace:root", name: "Operations", order: 10 },
+        { id: "workspace:local:workspace", name: "Workspace", order: 20 },
+      ],
+    },
+  );
+});

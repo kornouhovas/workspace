@@ -385,6 +385,31 @@ test("workspace IPC handler creates renames reorders and deletes workspaces", as
   }
 });
 
+test("workspace IPC handler uses plain Workspace as the default created workspace name", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => "workspace-two",
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    await handler(null, "workspace.setRoot", {});
+    const createdWorkspace = await handler(null, "workspace.createWorkspace", {});
+
+    assert.equal(createdWorkspace.workspace.name, "Workspace");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler does not recreate a deleted default source workspace", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "Объекты");

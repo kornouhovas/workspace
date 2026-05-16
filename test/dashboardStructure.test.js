@@ -93,6 +93,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleRenameView/);
   assert.match(appSource, /handleDeleteView/);
   assert.match(appSource, /handleAddWorkspace/);
+  assert.match(appSource, /const workspaceName = "Workspace"/);
+  assert.doesNotMatch(appSource, /Workspace \$\{nextIndex\}/);
   assert.match(appSource, /handleRenameWorkspace/);
   assert.match(appSource, /handleDeleteWorkspace/);
   assert.match(appSource, /handleReorderWorkspaces/);
@@ -178,6 +180,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /getWorkspaceDragStyle/);
   assert.match(leftPanelSource, /requestAnimationFrame/);
   assert.match(leftPanelSource, /transitionDuration: "180ms"/);
+  assert.doesNotMatch(leftPanelSource, /pointerEvents: "none"/);
   assert.match(leftPanelSource, /transform: `translateY/);
   assert.doesNotMatch(leftPanelSource, /dragging && "bg-sidebar-accent/);
   assert.match(leftPanelSource, /Rename Workspace/);

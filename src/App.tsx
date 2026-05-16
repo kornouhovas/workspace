@@ -613,8 +613,7 @@ export default function App() {
       return;
     }
 
-    const nextIndex = workspaceList.workspaces.length + 1;
-    const workspaceName = `Workspace ${nextIndex}`;
+    const workspaceName = "Workspace";
 
     try {
       const response = await workspaceClient.createWorkspace({

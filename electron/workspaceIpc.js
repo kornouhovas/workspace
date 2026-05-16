@@ -425,7 +425,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         sourceFolderId,
         name: typeof body.name === "string" && body.name.trim()
           ? body.name.trim()
-          : `Workspace ${workspaces.length + 1}`,
+          : "Workspace",
         order: workspaces.length === 0 ? 10 : maxOrder + 10,
         viewIdSeed: idSeed,
         now: timestamp,

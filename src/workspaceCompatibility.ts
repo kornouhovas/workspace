@@ -87,7 +87,7 @@ export function normalizeWorkspacesResponse(response: unknown, fallbackWorkspace
 }
 
 export function addWorkspaceListFallback(current: WorkspaceListState, name: string): WorkspaceListState {
-  const nextName = name.trim() || `Workspace ${current.workspaces.length + 1}`;
+  const nextName = name.trim() || "Workspace";
   const nextOrder = current.workspaces.reduce(
     (highestOrder, workspace) => Math.max(highestOrder, workspace.order),
     0,
