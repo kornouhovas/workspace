@@ -26,6 +26,7 @@ test("renderer composes the workspace product shell", async () => {
     workspaceCompatibilitySource,
     propertyControlsSource,
     viewFilterMenuSource,
+    selectValueEditorSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -45,6 +46,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/workspaceCompatibility.ts"),
     readProjectFile("src/components/workspace/property-controls.tsx"),
     readProjectFile("src/components/workspace/view-filter-menu.tsx"),
+    readProjectFile("src/components/workspace/select-value-editor.tsx"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -211,6 +213,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(propertyControlsSource, /valueColorOptions/);
   assert.match(propertyControlsSource, /isSelectProperty/);
   assert.match(appSource, /workspaceClient\.createSelectValue/);
+  assert.match(appSource, /normalizeSelectValue\(response\.selectValue/);
+  assert.match(appSource, /onCreateSelectValue=\{handleCreateSelectValue\}/);
   assert.match(appSource, /workspaceClient\.updateSelectValue/);
   assert.match(appSource, /workspaceClient\.deleteSelectValue/);
   assert.match(appSource, /workspaceClient\.reorderSelectValues/);
@@ -284,12 +288,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(tableViewSource, /New property name/);
   assert.doesNotMatch(tableViewSource, /New property type/);
   assert.match(tableViewSource, /ProjectTablePropertyValueEditor/);
+  assert.match(tableViewSource, /WorkspaceSelectValueEditor/);
   assert.match(tableViewSource, /isEditableProperty/);
   assert.match(tableViewSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
-  assert.match(tableViewSource, /SelectTrigger/);
-  assert.match(tableViewSource, /SelectContent/);
-  assert.match(tableViewSource, /DropdownMenuCheckboxItem/);
   assert.match(tableViewSource, /onClick=\{stopCellActivation\}/);
   assert.match(tableViewSource, /onPointerDown=\{stopCellActivation\}/);
   assert.match(appSource, /onProjectPropertyValueChange=\{handleProjectPropertyValueChange\}/);
@@ -396,6 +398,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
   assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
+  assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "text"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "number"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "date"/);
@@ -403,7 +406,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /property\.propertyType === "multi-select"/);
   assert.match(projectDetailPanelSource, /type="number"/);
   assert.match(projectDetailPanelSource, /type="date"/);
-  assert.match(projectDetailPanelSource, /Checkbox/);
   assert.match(projectDetailPanelSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /handleProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
@@ -413,6 +415,17 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleToggleValueFilter/);
   assert.match(appSource, /handleCreateVisibleProperty/);
   assert.match(appSource, /handleReorderViewProperties/);
+
+  assert.match(selectValueEditorSource, /WorkspaceSelectValueEditor/);
+  assert.match(selectValueEditorSource, /Search values/);
+  assert.match(selectValueEditorSource, /Clear selection/);
+  assert.match(selectValueEditorSource, /Create/);
+  assert.match(selectValueEditorSource, /onCreateSelectValue/);
+  assert.match(selectValueEditorSource, /DropdownMenuCheckboxItem/);
+  assert.match(selectValueEditorSource, /selectedValues/);
+  assert.match(selectValueEditorSource, /setSearchQuery/);
+  assert.match(selectValueEditorSource, /onValueChange\(createdValue\.id\)/);
+  assert.match(selectValueEditorSource, /onValueChange\(nextValues\)/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);

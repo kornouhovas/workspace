@@ -8,16 +8,9 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, XIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceMockFileTreeNode,
@@ -35,6 +28,10 @@ type WorkspaceProjectDetailPanelProps = {
   readonly visibleProperties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onCreateSelectValue: (
+    propertyId: string,
+    input: { readonly name: string; readonly color: string },
+  ) => Promise<WorkspaceSelectValueState | null>;
 };
 
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
@@ -93,17 +90,6 @@ function stringifyPropertyValue(value: unknown) {
   }
 
   return String(value);
-}
-
-function getSelectValuesForProperty(
-  selectValues: readonly WorkspaceSelectValueState[],
-  propertyId: string,
-) {
-  return selectValues
-    .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
-    .sort((left, right) => (
-      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
-    ));
 }
 
 type FileTreeNodeProps = {
@@ -179,11 +165,16 @@ function ProjectPropertyValueEditor({
   property,
   selectValues,
   onProjectPropertyValueChange,
+  onCreateSelectValue,
 }: {
   readonly project: WorkspaceMockProject;
   readonly property: WorkspacePropertyDefinitionState;
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onCreateSelectValue: (
+    propertyId: string,
+    input: { readonly name: string; readonly color: string },
+  ) => Promise<WorkspaceSelectValueState | null>;
 }) {
   const value = getPropertyValue(project, property);
 
@@ -239,61 +230,16 @@ function ProjectPropertyValueEditor({
     );
   }
 
-  if (property.propertyType === "select") {
-    const values = getSelectValuesForProperty(selectValues, property.id);
-    const selectedValue = typeof value === "string" && value ? value : "__empty";
-
+  if (property.propertyType === "select" || property.propertyType === "multi-select") {
     return (
-      <Select
-        value={selectedValue}
-        onValueChange={(nextValue) => {
-          onProjectPropertyValueChange(project.id, property.id, nextValue === "__empty" ? null : nextValue);
-        }}
-      >
-        <SelectTrigger className="w-full" aria-label={`${property.name} select value`}>
-          <SelectValue placeholder="Empty" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__empty">Empty</SelectItem>
-          {values.map((selectValue) => (
-            <SelectItem key={selectValue.id} value={selectValue.id}>
-              {selectValue.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
-
-  if (property.propertyType === "multi-select") {
-    const values = getSelectValuesForProperty(selectValues, property.id);
-    const selectedValues = Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string")
-      : [];
-
-    return (
-      <div className="grid gap-2">
-        {values.length === 0 ? (
-          <span className="text-sm text-muted-foreground">No values</span>
-        ) : values.map((selectValue) => {
-          const checked = selectedValues.includes(selectValue.id);
-          return (
-            <label key={selectValue.id} className="flex min-w-0 items-center gap-2 text-sm">
-              <Checkbox
-                checked={checked}
-                aria-label={`${property.name} ${selectValue.name}`}
-                onCheckedChange={(nextChecked) => {
-                  const nextValues = nextChecked === true
-                    ? [...selectedValues, selectValue.id]
-                    : selectedValues.filter((valueId) => valueId !== selectValue.id);
-                  onProjectPropertyValueChange(project.id, property.id, nextValues);
-                }}
-              />
-              <span className="truncate">{selectValue.name}</span>
-            </label>
-          );
-        })}
-      </div>
+      <WorkspaceSelectValueEditor
+        property={property}
+        value={value}
+        selectValues={selectValues}
+        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
+        onCreateSelectValue={onCreateSelectValue}
+      />
     );
   }
 
@@ -307,6 +253,7 @@ export function WorkspaceProjectDetailPanel({
   visibleProperties,
   selectValues,
   onProjectPropertyValueChange,
+  onCreateSelectValue,
 }: WorkspaceProjectDetailPanelProps) {
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
@@ -545,6 +492,7 @@ export function WorkspaceProjectDetailPanel({
                           property={property}
                           selectValues={selectValues}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
+                          onCreateSelectValue={onCreateSelectValue}
                         />
                       </dd>
                     </div>

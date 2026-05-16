@@ -1129,24 +1129,32 @@ export default function App() {
     }
   }
 
-  async function handleCreateSelectValue(propertyId: string, input: { name: string; color: string }) {
+  async function handleCreateSelectValue(
+    propertyId: string,
+    input: { name: string; color: string },
+  ): Promise<WorkspaceSelectValueState | null> {
     if (!state.workspaceId) {
-      return;
+      return null;
     }
 
     try {
-      await workspaceClient.createSelectValue({
+      const response = await workspaceClient.createSelectValue({
         workspaceId: state.workspaceId,
         propertyId,
         name: input.name,
         color: input.color,
       });
+      const selectValue = isRecord(response) && isRecord(response.selectValue)
+        ? normalizeSelectValue(response.selectValue)
+        : null;
       await refreshPropertyCatalog();
       toast.success("Select value added");
+      return selectValue;
     } catch (error) {
       toast.error("Could not add select value", {
         description: getServiceErrorMessage(error),
       });
+      return null;
     }
   }
 
@@ -1513,6 +1521,7 @@ export default function App() {
                         onReorderViewProperties={handleReorderViewProperties}
                         onTogglePropertyVisibility={handleTogglePropertyVisibility}
                         onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                        onCreateSelectValue={handleCreateSelectValue}
                       />
                     ) : null}
                   </>
@@ -1532,6 +1541,7 @@ export default function App() {
           visibleProperties={detailProperties}
           selectValues={settingsSelectValues}
           onProjectPropertyValueChange={handleProjectPropertyValueChange}
+          onCreateSelectValue={handleCreateSelectValue}
         />
       </div>
       <Toaster richColors />

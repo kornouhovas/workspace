@@ -4,7 +4,6 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -14,13 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import {
   CalendarIcon,
   CircleDotIcon,
@@ -78,6 +71,10 @@ type WorkspaceTableViewProps = {
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onCreateSelectValue: (
+    propertyId: string,
+    input: { readonly name: string; readonly color: string },
+  ) => Promise<WorkspaceSelectValueState | null>;
 };
 
 const propertyTypeOptions: readonly PropertyTypeOption[] = [
@@ -190,27 +187,21 @@ function stringifyEditableValue(value: unknown) {
     : String(value);
 }
 
-function getSelectValuesForProperty(
-  selectValues: readonly WorkspaceSelectValueState[],
-  propertyId: string,
-) {
-  return selectValues
-    .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
-    .sort((left, right) => (
-      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
-    ));
-}
-
 function ProjectTablePropertyValueEditor({
   project,
   property,
   selectValues,
   onProjectPropertyValueChange,
+  onCreateSelectValue,
 }: {
   readonly project: WorkspaceMockProject;
   readonly property: WorkspaceMockVisibleProperty;
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onCreateSelectValue: (
+    propertyId: string,
+    input: { readonly name: string; readonly color: string },
+  ) => Promise<WorkspaceSelectValueState | null>;
 }) {
   const value = getPropertyValue(project, property);
   const editorKey = `${project.id}:${property.id}:${stringifyEditableValue(value)}`;
@@ -264,82 +255,16 @@ function ProjectTablePropertyValueEditor({
     );
   }
 
-  if (property.propertyType === "select") {
-    const values = getSelectValuesForProperty(selectValues, property.id);
-    const selectedValue = typeof value === "string" && value ? value : "__empty";
-
+  if (property.propertyType === "select" || property.propertyType === "multi-select") {
     return (
-      <div onClick={stopCellActivation} onPointerDown={stopCellActivation}>
-        <Select
-          value={selectedValue}
-          onValueChange={(nextValue) => saveValue(nextValue === "__empty" ? null : nextValue)}
-        >
-          <SelectTrigger
-            className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none hover:bg-muted/50 focus-visible:border-ring focus-visible:bg-background"
-            aria-label={`${property.name} select value`}
-          >
-            <SelectValue placeholder="Empty" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__empty">Empty</SelectItem>
-            {values.map((selectValue) => (
-              <SelectItem key={selectValue.id} value={selectValue.id}>
-                {selectValue.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }
-
-  if (property.propertyType === "multi-select") {
-    const values = getSelectValuesForProperty(selectValues, property.id);
-    const selectedValues = Array.isArray(value)
-      ? value.filter((item): item is string => typeof item === "string")
-      : [];
-    const selectedLabel = formatPropertyValue(selectedValues, property, selectValues) || "Empty";
-
-    return (
-      <div onClick={stopCellActivation} onPointerDown={stopCellActivation}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-8 w-full min-w-0 justify-start px-2 font-normal"
-              aria-label={`${property.name} multi-select value`}
-            >
-              <span className="truncate">{selectedLabel}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>{property.name}</DropdownMenuLabel>
-            <DropdownMenuGroup>
-              {values.length === 0 ? (
-                <DropdownMenuItem disabled>No values</DropdownMenuItem>
-              ) : values.map((selectValue) => {
-                const checked = selectedValues.includes(selectValue.id);
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={selectValue.id}
-                    checked={checked}
-                    onSelect={(event) => event.preventDefault()}
-                    onCheckedChange={(nextChecked) => {
-                      const nextValues = nextChecked === true
-                        ? [...selectedValues, selectValue.id]
-                        : selectedValues.filter((valueId) => valueId !== selectValue.id);
-                      saveValue(nextValues);
-                    }}
-                  >
-                    {selectValue.name}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <WorkspaceSelectValueEditor
+        property={property}
+        value={value}
+        selectValues={selectValues}
+        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal hover:bg-muted/50"
+        onValueChange={saveValue}
+        onCreateSelectValue={onCreateSelectValue}
+      />
     );
   }
 
@@ -375,6 +300,7 @@ export function WorkspaceTableView({
   onReorderViewProperties,
   onTogglePropertyVisibility,
   onProjectPropertyValueChange,
+  onCreateSelectValue,
 }: WorkspaceTableViewProps) {
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
@@ -925,6 +851,7 @@ export function WorkspaceTableView({
                           property={property}
                           selectValues={selectValues}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
+                          onCreateSelectValue={onCreateSelectValue}
                         />
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
