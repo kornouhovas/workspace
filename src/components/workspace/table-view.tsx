@@ -456,6 +456,21 @@ export function WorkspaceTableView({
     onCreateProperty({ name: option.label, type: option.value });
   }
 
+  function blurActiveEditingCell() {
+    if (!editingCellId) {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+
+    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+      activeElement.blur();
+      return;
+    }
+
+    setEditingCellId(null);
+  }
+
   function openProjectFromNameCell(project: WorkspaceMockProject) {
     onProjectOpen(project);
   }
@@ -723,7 +738,7 @@ export function WorkspaceTableView({
             ))}
             <col style={{ width: addPropertyColumnWidth }} />
           </colgroup>
-          <TableHeader>
+          <TableHeader onPointerDownCapture={blurActiveEditingCell}>
             <TableRow>
               <TableHead className="w-10" aria-label="Row reorder" />
               {visibleProperties.map((property) => {

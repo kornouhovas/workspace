@@ -314,6 +314,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
   assert.match(tableViewSource, /editingCellId/);
   assert.match(tableViewSource, /startCellEditing/);
+  assert.match(tableViewSource, /function blurActiveEditingCell/);
+  assert.match(tableViewSource, /document\.activeElement/);
+  assert.match(tableViewSource, /activeElement\.blur\(\)/);
+  assert.match(tableViewSource, /onPointerDownCapture=\{blurActiveEditingCell\}/);
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
   assert.match(tableViewSource, /openProjectFromNameCell/);
