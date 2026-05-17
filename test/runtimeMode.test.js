@@ -15,7 +15,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.scripts.preview, undefined);
   assert.equal(packageJson.scripts.electron, "electron electron/main.js");
   assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && electron electron/main.js");
-  assert.equal(packageJson.scripts["build:renderer"], "vite build");
+  assert.equal(packageJson.scripts["build:renderer"], "node scripts/build-renderer.mjs");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
   assert.equal(packageJson.devDependencies?.typescript, "5.9.3");
   assert.deepEqual(tsconfig.compilerOptions.paths, { "@/*": ["./src/*"] });

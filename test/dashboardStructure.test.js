@@ -30,6 +30,8 @@ test("renderer composes the workspace product shell", async () => {
     dateValueEditorSource,
     popoverSource,
     workspaceAppStateSource,
+    buildRendererSource,
+    disableFsEventsLoaderSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -53,6 +55,8 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/date-value-editor.tsx"),
     readProjectFile("src/components/ui/popover.tsx"),
     readProjectFile("src/workspaceAppState.ts"),
+    readProjectFile("scripts/build-renderer.mjs"),
+    readProjectFile("scripts/disable-fsevents-loader.mjs"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -72,6 +76,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.ok(packageJson.dependencies["react-dom"]);
   assert.ok(packageJson.dependencies.shadcn);
   assert.ok(packageJson.dependencies["lucide-react"]);
+  assert.equal(packageJson.scripts["build:renderer"], "node scripts/build-renderer.mjs");
+  assert.match(cssSource, /@import "tailwindcss" source\(none\);/);
+  assert.match(cssSource, /@source "\.";/);
+  assert.match(cssSource, /@source "\.\.\/index\.html";/);
+  assert.match(buildRendererSource, /register\(new URL\("\.\/disable-fsevents-loader\.mjs"/);
+  assert.match(buildRendererSource, /await import\("vite"\)/);
+  assert.match(disableFsEventsLoaderSource, /specifier === "fsevents"/);
+  assert.match(disableFsEventsLoaderSource, /export default undefined/);
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
   assert.match(appSource, /Workspace Project Board/);

@@ -9,7 +9,7 @@
     "verify": "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar",
     "test:go": "GOFLAGS=-buildvcs=false go test ./...",
     "typecheck": "tsc --noEmit",
-    "build:renderer": "vite build",
+    "build:renderer": "node scripts/build-renderer.mjs",
     "electron": "electron electron/main.js",
     "electron:build": "npm run build:renderer && electron electron/main.js",
     "build:sidecar": "mkdir -p build/sidecar/local && GOFLAGS=-buildvcs=false go build -o build/sidecar/local/workspace-sidecar ./cmd/workspace-sidecar",
