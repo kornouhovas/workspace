@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
 import { spawn } from "node:child_process";
@@ -434,7 +434,7 @@ export async function readWorkspaceSettings(configPath = defaultWorkspaceSetting
   }
 
   if (!settings.missing) {
-    return {};
+    throw createStorageCorruptionError(configPath, settings.error);
   }
 
   const resolvedLegacyConfigPath =
@@ -462,7 +462,7 @@ export async function readWorkspaceProperties(
   }
 
   if (!properties.missing) {
-    return { roots: {} };
+    throw createStorageCorruptionError(propertiesPath, properties.error);
   }
 
   const resolvedLegacyPropertiesPath =
@@ -483,13 +483,11 @@ export async function readWorkspaceProperties(
 }
 
 export async function writeWorkspaceProperties(propertiesPath, properties) {
-  await mkdir(dirname(propertiesPath), { recursive: true });
-  await writeFile(propertiesPath, `${JSON.stringify(normalizeWorkspaceProperties(properties), null, 2)}\n`);
+  await writeJsonFileAtomically(propertiesPath, normalizeWorkspaceProperties(properties));
 }
 
 export async function writeWorkspaceSettings(configPath, settings) {
-  await mkdir(dirname(configPath), { recursive: true });
-  await writeFile(configPath, `${JSON.stringify(settings, null, 2)}\n`);
+  await writeJsonFileAtomically(configPath, settings);
 }
 
 export async function chooseMacWorkspaceRoot() {
@@ -508,6 +506,47 @@ async function readJsonFile(filePath) {
 
     return { ok: false, error };
   }
+}
+
+async function writeJsonFileAtomically(filePath, value) {
+  const directory = dirname(filePath);
+  const tempPath = join(directory, `.${basename(filePath)}.${randomUUID()}.tmp`);
+  await mkdir(directory, { recursive: true });
+  await preserveCorruptJsonBeforeWrite(filePath);
+
+  try {
+    await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`);
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await rm(tempPath, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+async function preserveCorruptJsonBeforeWrite(filePath) {
+  try {
+    JSON.parse(await readFile(filePath, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return;
+    }
+    if (error instanceof SyntaxError) {
+      const backupPath = `${filePath}.corrupt-${Date.now()}-${randomUUID()}.bak`;
+      await rename(filePath, backupPath);
+      return;
+    }
+
+    throw error;
+  }
+}
+
+function createStorageCorruptionError(filePath, cause) {
+  const error = new Error(`Workspace storage JSON is corrupt: ${filePath}`);
+  error.code = "WORKSPACE_STORAGE_CORRUPT";
+  error.field = "storage";
+  error.filePath = filePath;
+  error.cause = cause;
+  return error;
 }
 
 function resolveLegacyWorkspacePath(filePath, defaultPath, legacyDefaultPath) {

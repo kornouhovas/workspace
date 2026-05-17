@@ -1612,8 +1612,11 @@ async function readViewStoreData(filePath) {
       views: data?.views && typeof data.views === "object" ? data.views : {},
     };
   } catch (error) {
-    if (error.code === "ENOENT" || error instanceof SyntaxError) {
+    if (error.code === "ENOENT") {
       return { workspaces: {}, views: {} };
+    }
+    if (error instanceof SyntaxError) {
+      throw createStorageCorruptionError(filePath, error);
     }
 
     throw error;
@@ -1649,6 +1652,15 @@ function unwrapBackendResponse(response) {
   }
 
   return response.payload;
+}
+
+function createStorageCorruptionError(filePath, cause) {
+  const error = new Error(`Workspace storage JSON is corrupt: ${filePath}`);
+  error.code = "WORKSPACE_STORAGE_CORRUPT";
+  error.field = "storage";
+  error.filePath = filePath;
+  error.cause = cause;
+  return error;
 }
 
 function createWorkspaceServiceError(code, message, field) {

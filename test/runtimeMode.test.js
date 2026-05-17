@@ -27,9 +27,13 @@ test("workspace runs as an Electron-only app shell", async () => {
     "src/components/workspace/**/*.tsx",
     "src/types/**/*.d.ts",
   ]);
-  assert.equal(packageJson.scripts["build:sidecar"], "go build -o workspace-sidecar ./cmd/workspace-sidecar");
-  assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOOS=darwin GOARCH=arm64"), true);
-  assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOOS=windows GOARCH=amd64"), true);
+  assert.equal(packageJson.scripts.verify, "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar");
+  assert.equal(packageJson.scripts["test:go"], "GOFLAGS=-buildvcs=false go test ./...");
+  assert.equal(packageJson.scripts["build:sidecar"].includes("GOFLAGS=-buildvcs=false"), true);
+  assert.equal(packageJson.scripts["build:sidecar"].includes("-o build/sidecar/local/workspace-sidecar"), true);
+  assert.equal(packageJson.scripts["build:sidecar"].includes("-o workspace-sidecar"), false);
+  assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOFLAGS=-buildvcs=false GOOS=darwin GOARCH=arm64"), true);
+  assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOFLAGS=-buildvcs=false GOOS=windows GOARCH=amd64"), true);
   assert.equal(packageJson.scripts["prepare:electron:mac"], undefined);
   assert.equal(packageJson.scripts["dist:mac"], undefined);
   assert.equal(packageJson.scripts["dist:win"], undefined);

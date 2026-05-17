@@ -21,6 +21,55 @@ test("workspace IPC handler returns null when source folder is not selected", as
   }
 });
 
+test("workspace IPC handler surfaces corrupt settings JSON without overwriting it", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const configPath = join(tempDirectory, "settings.json");
+  const rootPath = join(tempDirectory, "projects");
+
+  try {
+    await mkdir(rootPath, { recursive: true });
+    await writeFile(configPath, "{not json");
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      chooseRoot: async () => rootPath,
+    });
+
+    await assert.rejects(
+      handler(null, "workspace.getRoot", {}),
+      { code: "WORKSPACE_STORAGE_CORRUPT" },
+    );
+    assert.equal(await readFile(configPath, "utf8"), "{not json");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
+test("workspace IPC handler surfaces corrupt views JSON without overwriting it", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+
+  try {
+    await mkdir(rootPath, { recursive: true });
+    await writeFile(configPath, JSON.stringify({ rootPath }));
+    await writeFile(viewStorePath, "{not json");
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      chooseRoot: async () => rootPath,
+    });
+
+    await assert.rejects(
+      handler(null, "workspace.getRoot", {}),
+      { code: "WORKSPACE_STORAGE_CORRUPT" },
+    );
+    assert.equal(await readFile(viewStorePath, "utf8"), "{not json");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler serves default views and projection for selected source folder", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");

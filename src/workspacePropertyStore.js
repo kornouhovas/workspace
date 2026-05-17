@@ -141,8 +141,11 @@ async function readPropertyStoreData(filePath) {
       history: Array.isArray(data?.history) ? data.history : [],
     };
   } catch (error) {
-    if (error.code === "ENOENT" || error instanceof SyntaxError) {
+    if (error.code === "ENOENT") {
       return createEmptyPropertyStoreData();
+    }
+    if (error instanceof SyntaxError) {
+      throw createStorageCorruptionError(filePath, error);
     }
 
     throw error;
@@ -177,4 +180,13 @@ function compareStoreDocuments(left, right) {
 
 function clone(value) {
   return value == null ? value : structuredClone(value);
+}
+
+function createStorageCorruptionError(filePath, cause) {
+  const error = new Error(`Workspace storage JSON is corrupt: ${filePath}`);
+  error.code = "WORKSPACE_STORAGE_CORRUPT";
+  error.field = "storage";
+  error.filePath = filePath;
+  error.cause = cause;
+  return error;
 }
