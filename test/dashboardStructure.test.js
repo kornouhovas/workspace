@@ -339,6 +339,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
   assert.match(tableViewSource, /border-r border-border/);
   assert.match(tableViewSource, /group\/column relative border-r border-border/);
+  assert.match(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-20 after:w-px after:bg-border after:content-\[''\]/);
   assert.match(tableViewSource, /<TableBody className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45">/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
   assert.match(tableViewSource, /onCreateProperty/);

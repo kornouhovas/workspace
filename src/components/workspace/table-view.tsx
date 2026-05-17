@@ -94,6 +94,7 @@ const addPropertyColumnWidth = 48;
 const minimumPropertyColumnWidth = 132;
 const maximumPropertyColumnWidth = 520;
 const defaultCustomPropertyColumnWidth = 180;
+const tableHeaderDividerClassName = "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-20 after:w-px after:bg-border after:content-['']";
 
 function getDefaultPropertyColumnWidth(property: WorkspaceMockVisibleProperty) {
   if (property.id === "property:name") {
@@ -781,6 +782,7 @@ export function WorkspaceTableView({
                     key={property.id}
                     className={[
                       "group/column relative border-r border-border bg-background/95 px-1",
+                      tableHeaderDividerClassName,
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
                     ].filter(Boolean).join(" ")}
