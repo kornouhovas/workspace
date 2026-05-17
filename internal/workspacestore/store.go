@@ -26,16 +26,18 @@ type RootDocument struct {
 }
 
 type PropertyValueDocument struct {
-	ID          string  `json:"id"`
-	WorkspaceID string  `json:"workspaceId"`
-	ObjectID    string  `json:"objectId"`
-	ProjectID   string  `json:"projectId"`
-	PropertyID  string  `json:"propertyId"`
-	Type        string  `json:"type"`
-	Value       any     `json:"value"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt"`
-	DeletedAt   *string `json:"deletedAt"`
+	ID            string  `json:"id"`
+	WorkspaceID   string  `json:"workspaceId"`
+	ObjectID      string  `json:"objectId"`
+	ProjectID     string  `json:"projectId"`
+	PropertyID    string  `json:"propertyId"`
+	Type          string  `json:"type"`
+	SchemaVersion int     `json:"schemaVersion"`
+	PropertyType  string  `json:"propertyType"`
+	Value         any     `json:"value"`
+	CreatedAt     string  `json:"createdAt"`
+	UpdatedAt     string  `json:"updatedAt"`
+	DeletedAt     *string `json:"deletedAt"`
 }
 
 type PropertyDefinitionDocument struct {

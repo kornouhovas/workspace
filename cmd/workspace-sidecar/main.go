@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +31,16 @@ func main() {
 	}
 	defer store.Close()
 
+	mux := newWorkspaceMux(store)
+	listener, err := net.Listen("tcp", *addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("workspace-sidecar listening on %s", listener.Addr().String())
+	log.Fatal(http.Serve(listener, mux))
+}
+
+func newWorkspaceMux(store *workspacestore.Store) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -69,12 +81,24 @@ func main() {
 			return
 		}
 
-		var value workspacestore.PropertyValueDocument
-		if err := json.NewDecoder(r.Body).Decode(&value); err != nil {
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 			return
 		}
-		writeResult(w, map[string]any{"ok": true}, store.UpsertPropertyValue(r.Context(), value))
+		value, err := normalizeProjectPropertyValueDocument(r.Context(), store, payload)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
+		writeResult(w, map[string]any{
+			"ok":          true,
+			"workspaceId": value.WorkspaceID,
+			"projectId":   value.ProjectID,
+			"propertyId":  value.PropertyID,
+			"value":       value.Value,
+			"updatedAt":   value.UpdatedAt,
+		}, store.UpsertPropertyValue(r.Context(), value))
 	})
 	mux.HandleFunc("/workspace/properties/reorder", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -108,15 +132,15 @@ func main() {
 		for _, property := range properties {
 			propertiesByID[property.ID] = property
 		}
+		if err := validateCompleteDocumentOrder(payload.OrderedPropertyIDs, propertiesByID); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
 
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
 		reordered := make([]workspacestore.PropertyDefinitionDocument, 0, len(payload.OrderedPropertyIDs))
 		for index, propertyID := range payload.OrderedPropertyIDs {
-			property, ok := propertiesByID[propertyID]
-			if !ok {
-				writeJSON(w, http.StatusBadRequest, map[string]any{"error": "property was not found"})
-				return
-			}
+			property := propertiesByID[propertyID]
 			property.Order = (index + 1) * 10
 			property.UpdatedAt = timestamp
 			if err := store.UpsertPropertyDefinition(r.Context(), property); err != nil {
@@ -187,8 +211,9 @@ func main() {
 			writeResult(w, map[string]any{"ok": true, "property": property}, store.UpsertPropertyDefinition(r.Context(), property))
 		case http.MethodDelete:
 			var payload struct {
-				WorkspaceID string `json:"workspaceId"`
-				PropertyID  string `json:"propertyId"`
+				WorkspaceID         string `json:"workspaceId"`
+				PropertyID          string `json:"propertyId"`
+				ConfirmDeleteValues bool   `json:"confirmDeleteValues"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
@@ -206,7 +231,11 @@ func main() {
 			timestamp := time.Now().UTC().Format(time.RFC3339Nano)
 			property.DeletedAt = &timestamp
 			property.UpdatedAt = timestamp
-			writeResult(w, map[string]any{"ok": true}, store.UpsertPropertyDefinition(r.Context(), property))
+			if err := cascadeDeleteProperty(r.Context(), store, property, timestamp, payload.ConfirmDeleteValues); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "workspaceId": payload.WorkspaceID, "deletedPropertyId": payload.PropertyID})
 		default:
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		}
@@ -240,15 +269,15 @@ func main() {
 		for _, value := range values {
 			valuesByID[value.ID] = value
 		}
+		if err := validateCompleteDocumentOrder(payload.OrderedSelectValueIDs, valuesByID); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+			return
+		}
 
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
 		reordered := make([]workspacestore.SelectValueDocument, 0, len(payload.OrderedSelectValueIDs))
 		for index, valueID := range payload.OrderedSelectValueIDs {
-			value, ok := valuesByID[valueID]
-			if !ok {
-				writeJSON(w, http.StatusBadRequest, map[string]any{"error": "select value was not found"})
-				return
-			}
+			value := valuesByID[valueID]
 			value.Order = (index + 1) * 10
 			value.UpdatedAt = timestamp
 			if err := store.UpsertSelectValue(r.Context(), value); err != nil {
@@ -263,8 +292,13 @@ func main() {
 	mux.HandleFunc("/workspace/select-values", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			var value workspacestore.SelectValueDocument
-			if err := json.NewDecoder(r.Body).Decode(&value); err != nil {
+			var payload map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+				return
+			}
+			value, err := normalizeCreatedSelectValueDocument(r.Context(), store, payload)
+			if err != nil {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
 				return
 			}
@@ -292,8 +326,9 @@ func main() {
 			writeResult(w, map[string]any{"ok": true, "selectValue": value}, store.UpsertSelectValue(r.Context(), value))
 		case http.MethodDelete:
 			var payload struct {
-				WorkspaceID   string `json:"workspaceId"`
-				SelectValueID string `json:"selectValueId"`
+				WorkspaceID         string `json:"workspaceId"`
+				SelectValueID       string `json:"selectValueId"`
+				ConfirmDeleteUsages bool   `json:"confirmDeleteUsages"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
@@ -311,7 +346,11 @@ func main() {
 			timestamp := time.Now().UTC().Format(time.RFC3339Nano)
 			value.DeletedAt = &timestamp
 			value.UpdatedAt = timestamp
-			writeResult(w, map[string]any{"ok": true}, store.UpsertSelectValue(r.Context(), value))
+			if err := cascadeDeleteSelectValue(r.Context(), store, value, timestamp, payload.ConfirmDeleteUsages); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "workspaceId": payload.WorkspaceID, "deletedSelectValueId": value.ID})
 		default:
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"error": "method not allowed"})
 		}
@@ -452,12 +491,7 @@ func main() {
 		writeResult(w, map[string]any{"ok": true}, store.UpsertWorkspace(r.Context(), workspace))
 	})
 
-	listener, err := net.Listen("tcp", *addr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("workspace-sidecar listening on %s", listener.Addr().String())
-	log.Fatal(http.Serve(listener, mux))
+	return mux
 }
 
 func normalizePropertyDocumentType(property *workspacestore.PropertyDefinitionDocument) {
@@ -537,6 +571,435 @@ func isSupportedPropertyType(propertyType string) bool {
 	default:
 		return false
 	}
+}
+
+func normalizeCreatedSelectValueDocument(ctx context.Context, store *workspacestore.Store, payload map[string]any) (workspacestore.SelectValueDocument, error) {
+	workspaceID := getStringPayload(payload, "workspaceId")
+	propertyID := getStringPayload(payload, "propertyId")
+	name := strings.TrimSpace(getStringPayload(payload, "name"))
+	if workspaceID == "" || propertyID == "" {
+		return workspacestore.SelectValueDocument{}, errors.New("workspaceId and propertyId are required")
+	}
+	if name == "" {
+		return workspacestore.SelectValueDocument{}, errors.New("name is required")
+	}
+	property, ok, err := findPropertyDefinition(ctx, store, workspaceID, propertyID)
+	if err != nil {
+		return workspacestore.SelectValueDocument{}, err
+	}
+	if !ok {
+		return workspacestore.SelectValueDocument{}, errors.New("property was not found")
+	}
+	propertyType := getPropertyDefinitionType(property)
+	if propertyType != "select" && propertyType != "multi-select" {
+		return workspacestore.SelectValueDocument{}, errors.New("property must be select or multi-select")
+	}
+	existingValues, err := store.ListSelectValues(ctx, workspaceID, propertyID)
+	if err != nil {
+		return workspacestore.SelectValueDocument{}, err
+	}
+
+	id := getStringPayload(payload, "selectValueId")
+	if id == "" {
+		id = getStringPayload(payload, "id")
+	}
+	if id == "" {
+		generatedID, err := createRandomDocumentID("selectValue")
+		if err != nil {
+			return workspacestore.SelectValueDocument{}, err
+		}
+		id = generatedID
+	}
+	id = normalizeDocumentID("selectValue", id)
+	for _, existingValue := range existingValues {
+		if existingValue.ID == id {
+			return workspacestore.SelectValueDocument{}, errors.New("select value already exists")
+		}
+	}
+
+	order := getNumberPayload(payload, "order", 0)
+	if order == 0 {
+		for _, existingValue := range existingValues {
+			if existingValue.Order > order {
+				order = existingValue.Order
+			}
+		}
+		order += 10
+	}
+	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+	return workspacestore.SelectValueDocument{
+		ID:            id,
+		Type:          "selectValue",
+		SchemaVersion: 1,
+		WorkspaceID:   workspaceID,
+		PropertyID:    propertyID,
+		Name:          name,
+		Color:         getStringPayload(payload, "color"),
+		Hidden:        getBoolPayload(payload, "hidden"),
+		Order:         order,
+		CreatedAt:     timestamp,
+		UpdatedAt:     timestamp,
+	}, nil
+}
+
+func normalizeProjectPropertyValueDocument(ctx context.Context, store *workspacestore.Store, payload map[string]any) (workspacestore.PropertyValueDocument, error) {
+	workspaceID := getStringPayload(payload, "workspaceId")
+	projectID := getStringPayload(payload, "projectId")
+	propertyID := getStringPayload(payload, "propertyId")
+	if workspaceID == "" {
+		return workspacestore.PropertyValueDocument{}, errors.New("workspaceId is required")
+	}
+	if projectID == "" {
+		return workspacestore.PropertyValueDocument{}, errors.New("projectId is required")
+	}
+	if propertyID == "" {
+		return workspacestore.PropertyValueDocument{}, errors.New("propertyId is required")
+	}
+	property, ok, err := findPropertyDefinition(ctx, store, workspaceID, propertyID)
+	if err != nil {
+		return workspacestore.PropertyValueDocument{}, err
+	}
+	if !ok {
+		return workspacestore.PropertyValueDocument{}, errors.New("property was not found")
+	}
+	propertyType := getPropertyDefinitionType(property)
+	normalizedValue, err := normalizePropertyValueByType(ctx, store, workspaceID, propertyID, propertyType, payload["value"])
+	if err != nil {
+		return workspacestore.PropertyValueDocument{}, err
+	}
+
+	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+	existingValues, err := store.ListPropertyValues(ctx, workspaceID)
+	if err != nil {
+		return workspacestore.PropertyValueDocument{}, err
+	}
+	id := createStableDocumentID("propertyValue", workspaceID, projectID, propertyID)
+	createdAt := timestamp
+	for _, existingValue := range existingValues {
+		if existingValue.ProjectID == projectID && existingValue.PropertyID == propertyID {
+			id = existingValue.ID
+			if existingValue.CreatedAt != "" {
+				createdAt = existingValue.CreatedAt
+			}
+			break
+		}
+	}
+
+	return workspacestore.PropertyValueDocument{
+		ID:            id,
+		WorkspaceID:   workspaceID,
+		ObjectID:      projectID,
+		ProjectID:     projectID,
+		PropertyID:    propertyID,
+		Type:          "projectPropertyValue",
+		SchemaVersion: 1,
+		PropertyType:  propertyType,
+		Value:         normalizedValue,
+		CreatedAt:     createdAt,
+		UpdatedAt:     timestamp,
+	}, nil
+}
+
+func normalizePropertyValueByType(ctx context.Context, store *workspacestore.Store, workspaceID string, propertyID string, propertyType string, value any) (any, error) {
+	switch propertyType {
+	case "number":
+		return normalizeNumberPropertyValue(value), nil
+	case "date":
+		return normalizeDatePropertyValue(value), nil
+	case "select":
+		valueID := normalizeSelectValueID(value)
+		if valueID == nil {
+			return nil, nil
+		}
+		if err := validateSelectValueReference(ctx, store, workspaceID, propertyID, *valueID); err != nil {
+			return nil, err
+		}
+		return *valueID, nil
+	case "multi-select":
+		valueIDs := normalizeMultiSelectValueIDs(value)
+		for _, valueID := range valueIDs {
+			if err := validateSelectValueReference(ctx, store, workspaceID, propertyID, valueID); err != nil {
+				return nil, err
+			}
+		}
+		values := make([]any, len(valueIDs))
+		for index, valueID := range valueIDs {
+			values[index] = valueID
+		}
+		return values, nil
+	case "text":
+		if value == nil {
+			return "", nil
+		}
+		return fmt.Sprint(value), nil
+	default:
+		return nil, fmt.Errorf("unsupported property type: %s", propertyType)
+	}
+}
+
+func normalizeNumberPropertyValue(value any) any {
+	if value == nil {
+		return nil
+	}
+	switch typedValue := value.(type) {
+	case float64:
+		return typedValue
+	case string:
+		trimmedValue := strings.TrimSpace(typedValue)
+		if trimmedValue == "" {
+			return nil
+		}
+		number, err := strconv.ParseFloat(trimmedValue, 64)
+		if err != nil {
+			return nil
+		}
+		return number
+	default:
+		return nil
+	}
+}
+
+func normalizeDatePropertyValue(value any) any {
+	text, ok := value.(string)
+	if !ok {
+		return nil
+	}
+	if _, err := time.Parse("2006-01-02", text); err != nil {
+		return nil
+	}
+	return text
+}
+
+func normalizeSelectValueID(value any) *string {
+	text, ok := value.(string)
+	if !ok {
+		return nil
+	}
+	trimmedValue := strings.TrimSpace(text)
+	if trimmedValue == "" {
+		return nil
+	}
+	return &trimmedValue
+}
+
+func normalizeMultiSelectValueIDs(value any) []string {
+	var rawValues []any
+	if values, ok := value.([]any); ok {
+		rawValues = values
+	} else {
+		rawValues = []any{value}
+	}
+	seen := map[string]bool{}
+	normalizedValues := []string{}
+	for _, rawValue := range rawValues {
+		valueID := normalizeSelectValueID(rawValue)
+		if valueID == nil || seen[*valueID] {
+			continue
+		}
+		seen[*valueID] = true
+		normalizedValues = append(normalizedValues, *valueID)
+	}
+	return normalizedValues
+}
+
+func validateSelectValueReference(ctx context.Context, store *workspacestore.Store, workspaceID string, propertyID string, valueID string) error {
+	values, err := store.ListSelectValues(ctx, workspaceID, propertyID)
+	if err != nil {
+		return err
+	}
+	for _, value := range values {
+		if value.ID == valueID {
+			return nil
+		}
+	}
+	return fmt.Errorf("select value does not exist for property: %s", valueID)
+}
+
+func cascadeDeleteProperty(ctx context.Context, store *workspacestore.Store, property workspacestore.PropertyDefinitionDocument, timestamp string, confirmDeleteValues bool) error {
+	propertyValues, err := store.ListPropertyValues(ctx, property.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	valuesForProperty := []workspacestore.PropertyValueDocument{}
+	for _, value := range propertyValues {
+		if value.PropertyID == property.ID {
+			valuesForProperty = append(valuesForProperty, value)
+		}
+	}
+	if len(valuesForProperty) > 0 && !confirmDeleteValues {
+		return errors.New("property has values and needs delete confirmation")
+	}
+	if err := store.UpsertPropertyDefinition(ctx, property); err != nil {
+		return err
+	}
+	selectValues, err := store.ListSelectValues(ctx, property.WorkspaceID, property.ID)
+	if err != nil {
+		return err
+	}
+	for _, value := range selectValues {
+		value.DeletedAt = &timestamp
+		value.UpdatedAt = timestamp
+		if err := store.UpsertSelectValue(ctx, value); err != nil {
+			return err
+		}
+	}
+	for _, value := range valuesForProperty {
+		value.DeletedAt = &timestamp
+		value.UpdatedAt = timestamp
+		if err := store.UpsertPropertyValue(ctx, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cascadeDeleteSelectValue(ctx context.Context, store *workspacestore.Store, selectValue workspacestore.SelectValueDocument, timestamp string, confirmDeleteUsages bool) error {
+	property, ok, err := findPropertyDefinition(ctx, store, selectValue.WorkspaceID, selectValue.PropertyID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("property was not found")
+	}
+	propertyValues, err := store.ListPropertyValues(ctx, selectValue.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	valuesUsingSelectValue := []workspacestore.PropertyValueDocument{}
+	for _, value := range propertyValues {
+		if value.PropertyID == selectValue.PropertyID && propertyValueUsesSelectValue(value.Value, selectValue.ID) {
+			valuesUsingSelectValue = append(valuesUsingSelectValue, value)
+		}
+	}
+	if len(valuesUsingSelectValue) > 0 && !confirmDeleteUsages {
+		return errors.New("select value is used by project property values and needs delete confirmation")
+	}
+	if err := store.UpsertSelectValue(ctx, selectValue); err != nil {
+		return err
+	}
+	for _, value := range valuesUsingSelectValue {
+		if getPropertyDefinitionType(property) == "multi-select" {
+			value.Value = removeSelectValueFromMultiSelect(value.Value, selectValue.ID)
+		} else {
+			value.Value = nil
+		}
+		value.UpdatedAt = timestamp
+		if err := store.UpsertPropertyValue(ctx, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func propertyValueUsesSelectValue(value any, selectValueID string) bool {
+	if values, ok := value.([]any); ok {
+		for _, item := range values {
+			if item == selectValueID {
+				return true
+			}
+		}
+		return false
+	}
+	return value == selectValueID
+}
+
+func removeSelectValueFromMultiSelect(value any, selectValueID string) []any {
+	values, ok := value.([]any)
+	if !ok {
+		return []any{}
+	}
+	nextValues := []any{}
+	for _, item := range values {
+		if item != selectValueID {
+			nextValues = append(nextValues, item)
+		}
+	}
+	return nextValues
+}
+
+func validateCompleteDocumentOrder[T any](orderedIDs []string, documentsByID map[string]T) error {
+	seen := make(map[string]bool, len(orderedIDs))
+	for _, id := range orderedIDs {
+		trimmedID := strings.TrimSpace(id)
+		if trimmedID == "" || seen[trimmedID] {
+			return errors.New("ordered ids must include each item once")
+		}
+		if _, ok := documentsByID[trimmedID]; !ok {
+			return errors.New("ordered ids reference an unknown item")
+		}
+		seen[trimmedID] = true
+	}
+	if len(seen) != len(documentsByID) {
+		return errors.New("ordered ids must include each item once")
+	}
+	return nil
+}
+
+func getPropertyDefinitionType(property workspacestore.PropertyDefinitionDocument) string {
+	if property.PropertyType != "" {
+		return property.PropertyType
+	}
+	if property.Type != "propertyDefinition" {
+		return property.Type
+	}
+	return ""
+}
+
+func normalizeDocumentID(prefix string, rawID string) string {
+	trimmedID := strings.TrimSpace(rawID)
+	prefixText := prefix + ":"
+	if strings.HasPrefix(trimmedID, prefixText) {
+		return prefixText + createSlug(trimmedID[len(prefixText):])
+	}
+	return prefixText + createSlug(trimmedID)
+}
+
+func createStableDocumentID(prefix string, parts ...string) string {
+	hash := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	return fmt.Sprintf("%s:%s", prefix, hex.EncodeToString(hash[:])[:24])
+}
+
+func createSlug(value string) string {
+	lowerValue := strings.ToLower(strings.TrimSpace(value))
+	var builder strings.Builder
+	lastWasSeparator := false
+	for _, char := range lowerValue {
+		isAllowed := (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9')
+		if isAllowed {
+			builder.WriteRune(char)
+			lastWasSeparator = false
+			continue
+		}
+		if !lastWasSeparator && builder.Len() > 0 {
+			builder.WriteByte('-')
+			lastWasSeparator = true
+		}
+	}
+	return strings.Trim(builder.String(), "-")
+}
+
+func getStringPayload(payload map[string]any, key string) string {
+	if value, ok := payload[key].(string); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
+}
+
+func getBoolPayload(payload map[string]any, key string) bool {
+	value, _ := payload[key].(bool)
+	return value
+}
+
+func getNumberPayload(payload map[string]any, key string, fallback int) int {
+	switch value := payload[key].(type) {
+	case float64:
+		return int(value)
+	case string:
+		if number, err := strconv.Atoi(strings.TrimSpace(value)); err == nil {
+			return number
+		}
+	}
+	return fallback
 }
 
 func createRandomDocumentID(prefix string) (string, error) {
