@@ -25,6 +25,31 @@ Always read:
 
 For architecture-changing work, read existing ADRs in `docs/adr/`.
 
+## Workflow Evidence
+
+For every project task, Codex must infer the request mode before acting:
+
+- `Feature Intake` for new capabilities or product behavior.
+- `Bug Diagnosis` for broken behavior, regressions, or "does not work" reports.
+- `Implementation Slice` for an existing backlog item or plan.
+- `Review` for review, audit, or "check whether this is correct" requests.
+
+If the request is ambiguous, state the most likely mode and ask only the blocking clarification. Do not ask the user to choose the mode when the wording and repository context make it clear.
+
+Every non-trivial project response must include a `Workflow Evidence` block:
+
+```text
+Workflow Evidence:
+- Mode:
+- Docs read:
+- Branch:
+- Acceptance criteria or expected behavior:
+- Quality gates:
+- Handoff state:
+```
+
+Update the block as work moves through `Backlog`, `Ready`, `Agent Working`, `Agent Review`, `Human Review`, `Done`, or `Blocked`.
+
 ## Current Product Boundaries
 
 The app is a local-first Electron desktop app:
@@ -201,4 +226,3 @@ Avoid stale docs. If implementation and docs disagree, either fix the implementa
 - Add tests before or with behavior changes.
 - Do not broaden scope while fixing nearby code.
 - Do not introduce abstractions unless they reduce real duplication or clarify a boundary.
-

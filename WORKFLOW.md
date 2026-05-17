@@ -99,6 +99,29 @@ Blocking examples:
 
 ## Default Request Handling
 
+### Mode Detection
+
+Codex should infer the request mode from the user's wording and repository context:
+
+- new capability or product behavior: `Feature Intake`;
+- broken behavior, regression, or "does not work": `Bug Diagnosis`;
+- referenced backlog item, plan, or approved slice: `Existing Plan`;
+- review, audit, or correctness check: `Review`.
+
+If more than one mode fits, choose the safest mode and state the assumption. Ask only for blocking details that cannot be discovered from docs, code, or verification.
+
+Every project task must expose this in a `Workflow Evidence` block:
+
+```text
+Workflow Evidence:
+- Mode:
+- Docs read:
+- Branch:
+- Acceptance criteria or expected behavior:
+- Quality gates:
+- Handoff state:
+```
+
 ### New Feature
 
 When the user describes a new feature, Codex should:
@@ -222,6 +245,14 @@ npm run electron
 Final handoff for completed work:
 
 ```markdown
+Workflow Evidence:
+- Mode:
+- Docs read:
+- Branch:
+- Acceptance criteria:
+- Quality gates:
+- Handoff state: Human Review
+
 Done: <one sentence>
 
 Changed:
@@ -237,6 +268,14 @@ Notes:
 For bugs:
 
 ```markdown
+Workflow Evidence:
+- Mode: Bug Diagnosis
+- Docs read:
+- Branch:
+- Expected behavior:
+- Quality gates:
+- Handoff state: Human Review
+
 Root cause: <one sentence>
 Fix: <one sentence>
 Regression coverage: <test>

@@ -2,6 +2,15 @@
 
 Use this template when the user reports broken behavior.
 
+## Workflow Evidence
+
+- Mode: Bug Diagnosis
+- Docs read:
+- Branch:
+- Expected behavior:
+- Quality gates:
+- Handoff state: Backlog
+
 ## Status
 
 Backlog

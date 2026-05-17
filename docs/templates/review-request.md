@@ -1,5 +1,14 @@
 # Review Request Template
 
+## Workflow Evidence
+
+- Mode: Review
+- Docs read:
+- Branch:
+- Acceptance criteria or expected behavior:
+- Quality gates:
+- Handoff state:
+
 ## Review Scope
 
 Describe what should be reviewed.

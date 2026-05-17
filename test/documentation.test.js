@@ -23,6 +23,11 @@ test("agent instructions define the spec-first Codex workflow", async () => {
   assert.match(agents, /Bug Diagnosis/);
   assert.match(agents, /Implementation Slice/);
   assert.match(agents, /Review/);
+  assert.match(agents, /Workflow Evidence/);
+  assert.match(agents, /infer the request mode/);
+  assert.match(agents, /Handoff state/);
+  assert.match(workflow, /Mode Detection/);
+  assert.match(workflow, /Workflow Evidence/);
   assert.match(agents, /local store: Go sidecar using `any-store` on SQLite/);
   assert.match(agents, /React must stay thin/);
   assert.match(agents, /Electron preload IPC/);

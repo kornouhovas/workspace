@@ -2,6 +2,15 @@
 
 Use this when a task spans multiple sessions or another agent needs to continue.
 
+## Workflow Evidence
+
+- Mode:
+- Docs read:
+- Branch:
+- Acceptance criteria or expected behavior:
+- Quality gates:
+- Handoff state:
+
 ## Current Objective
 
 State the active objective.

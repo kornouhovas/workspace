@@ -2,6 +2,15 @@
 
 Use this template when the user describes a new capability.
 
+## Workflow Evidence
+
+- Mode: Feature Intake
+- Docs read:
+- Branch:
+- Acceptance criteria:
+- Quality gates:
+- Handoff state: Backlog
+
 ## Status
 
 Backlog
