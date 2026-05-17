@@ -496,7 +496,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /Rename property/);
   assert.match(projectDetailPanelSource, /Hide property/);
   assert.match(projectDetailPanelSource, /Delete property/);
-  assert.match(projectDetailPanelSource, /property actions/);
+  assert.match(projectDetailPanelSource, /property menu/);
   assert.match(projectDetailPanelSource, /FolderIcon/);
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
@@ -514,6 +514,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onReorderCardProperties/);
   assert.match(projectDetailPanelSource, /GripVerticalIcon/);
   assert.match(projectDetailPanelSource, /cursor-grab/);
+  assert.match(projectDetailPanelSource, /openActionsOnClick/);
+  assert.match(projectDetailPanelSource, /cardPropertyPressMoved/);
+  assert.match(projectDetailPanelSource, /Open \$\{property\.name\} property menu/);
+  assert.doesNotMatch(projectDetailPanelSource, /MoreHorizontalIcon/);
   assert.match(projectDetailPanelSource, /card property order/);
   assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
   assert.match(projectDetailPanelSource, /onColorSelectValue/);

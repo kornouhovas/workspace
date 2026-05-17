@@ -27,7 +27,6 @@ import {
   FileIcon,
   FolderIcon,
   GripVerticalIcon,
-  MoreHorizontalIcon,
   XIcon,
 } from "@/lib/lucide-icons";
 import type {
@@ -70,6 +69,10 @@ type CardPropertyDragState = {
   readonly currentY: number;
   readonly dropIndex: number;
   readonly rows: readonly CardPropertyDragPreviewRow[];
+};
+
+type CardPropertyDragOptions = {
+  readonly openActionsOnClick?: boolean;
 };
 
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
@@ -561,6 +564,7 @@ export function WorkspaceProjectDetailPanel({
   const panelWidthRef = useRef(projectDetailPanelWidth);
   const panelMountedRef = useRef(false);
   const cardPropertyOrderRef = useRef<readonly string[]>(cardPropertyOrder);
+  const cardPropertyPressMoved = useRef(false);
   const isOpen = open && project !== null;
   const orderedCardProperties = useMemo(
     () => createOrderedCardProperties(visibleProperties, cardPropertyOrder),
@@ -911,7 +915,11 @@ export function WorkspaceProjectDetailPanel({
     };
   }
 
-  function startCardPropertyDrag(event: ReactPointerEvent<HTMLButtonElement>, propertyId: string) {
+  function startCardPropertyDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    propertyId: string,
+    options: CardPropertyDragOptions = {},
+  ) {
     if (event.button !== 0) {
       return;
     }
@@ -925,11 +933,14 @@ export function WorkspaceProjectDetailPanel({
 
     document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
+    cardPropertyPressMoved.current = false;
 
     let frameId = 0;
+    let pendingClientX = event.clientX;
     let pendingClientY = event.clientY;
 
     setEditingPropertyId(null);
+    setPropertyActionsId(null);
     setCardPropertyDrag({
       propertyId,
       startY: event.clientY,
@@ -961,7 +972,12 @@ export function WorkspaceProjectDetailPanel({
     }
 
     function moveCardProperty(pointerEvent: PointerEvent) {
+      pendingClientX = pointerEvent.clientX;
       pendingClientY = pointerEvent.clientY;
+      cardPropertyPressMoved.current = Math.hypot(
+        pendingClientX - event.clientX,
+        pendingClientY - event.clientY,
+      ) > 4;
 
       if (frameId === 0) {
         frameId = window.requestAnimationFrame(updateDraggedCardProperty);
@@ -976,6 +992,10 @@ export function WorkspaceProjectDetailPanel({
       );
       const orderedPropertyIds = cardPropertyDragPreviewRows.map((row) => row.propertyId);
       const nextPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+      const moved = cardPropertyPressMoved.current || Math.hypot(
+        pointerEvent.clientX - event.clientX,
+        pointerEvent.clientY - event.clientY,
+      ) > 4;
 
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
@@ -984,9 +1004,13 @@ export function WorkspaceProjectDetailPanel({
       window.removeEventListener("pointerup", finishCardPropertyDrag);
       setCardPropertyDrag(null);
 
-      if (Math.abs(pointerEvent.clientY - event.clientY) > 4) {
+      if (moved) {
         onReorderCardProperties(nextPropertyIds);
+      } else if (options.openActionsOnClick) {
+        setPropertyActionsId(propertyId);
       }
+
+      cardPropertyPressMoved.current = false;
     }
 
     window.addEventListener("pointermove", moveCardProperty);
@@ -1092,15 +1116,7 @@ export function WorkspaceProjectDetailPanel({
                             setPropertyActionsId(property.id);
                           }}
                         >
-                          <dt className="flex min-w-0 items-center gap-1">
-                            <button
-                              type="button"
-                              aria-label={`Reorder ${property.name} card property order`}
-                              className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground active:cursor-grabbing group-hover/card-property:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/30"
-                              onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
-                            >
-                              <GripVerticalIcon className="size-3.5" aria-hidden="true" />
-                            </button>
+                          <dt className="flex min-w-0 items-center">
                             {renamingProperty ? (
                               <Input
                                 ref={renamingPropertyInputRef}
@@ -1120,20 +1136,35 @@ export function WorkspaceProjectDetailPanel({
                                   }
                                 }}
                               />
-                            ) : (
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">{property.name}</span>
-                            )}
-                            {!propertyProtected && !renamingProperty ? (
+                            ) : !propertyProtected ? (
                               <DropdownMenuTrigger asChild>
                                 <button
                                   type="button"
-                                  aria-label={`${property.name} property actions`}
-                                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-accent-foreground group-hover/card-property:opacity-100 focus:opacity-100 data-[state=open]:opacity-100"
+                                  aria-label={`Open ${property.name} property menu`}
+                                  className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  onPointerDown={(event) => (
+                                    startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
+                                  )}
                                 >
-                                  <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                    <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                  </span>
+                                  <span className="min-w-0 flex-1 truncate">{property.name}</span>
                                 </button>
                               </DropdownMenuTrigger>
-                            ) : null}
+                            ) : (
+                              <button
+                                type="button"
+                                aria-label={`Reorder ${property.name} card property order`}
+                                className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                              >
+                                <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                  <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">{property.name}</span>
+                              </button>
+                            )}
                           </dt>
                           <dd className="min-w-0 text-sm">
                             <ProjectPropertyValueEditor
