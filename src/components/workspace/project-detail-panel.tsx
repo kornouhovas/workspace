@@ -11,12 +11,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
@@ -86,6 +84,10 @@ const projectDetailPlainValueClassName =
   "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-1 text-left text-sm font-normal text-foreground";
 const projectDetailPlainTriggerClassName =
   "h-8 w-full min-w-0 justify-start gap-2 px-0 py-1 font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+const projectDetailPropertyMenuItemClassName =
+  "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-popover-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground";
+const projectDetailPropertyMenuDangerItemClassName =
+  "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-destructive outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive";
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -1135,7 +1137,7 @@ export function WorkspaceProjectDetailPanel({
                     const renamingProperty = renamingPropertyId === property.id;
 
                     return (
-                      <DropdownMenu
+                      <Popover
                         key={property.id}
                         open={propertyActionsId === property.id}
                         onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
@@ -1185,7 +1187,7 @@ export function WorkspaceProjectDetailPanel({
                                 }}
                               />
                             ) : !propertyProtected ? (
-                              <DropdownMenuTrigger asChild>
+                              <PopoverAnchor asChild>
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
@@ -1217,7 +1219,7 @@ export function WorkspaceProjectDetailPanel({
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{property.name}</span>
                                 </button>
-                              </DropdownMenuTrigger>
+                              </PopoverAnchor>
                             ) : (
                               <button
                                 type="button"
@@ -1249,20 +1251,47 @@ export function WorkspaceProjectDetailPanel({
                           </dd>
                         </div>
                         {!propertyProtected ? (
-                          <DropdownMenuContent align="start" className="min-w-44">
-                            <DropdownMenuItem onSelect={() => beginRenameProperty(property)}>
-                              Rename property
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => hideProperty(property)}>
-                              Hide property
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" onSelect={() => deleteProperty(property)}>
-                              Delete property
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
+                          <PopoverContent
+                            align="start"
+                            className="w-44 p-1"
+                            onOpenAutoFocus={(event) => event.preventDefault()}
+                          >
+                            <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={projectDetailPropertyMenuItemClassName}
+                                onClick={() => beginRenameProperty(property)}
+                              >
+                                Rename property
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={projectDetailPropertyMenuItemClassName}
+                                onClick={() => {
+                                  setPropertyActionsId(null);
+                                  hideProperty(property);
+                                }}
+                              >
+                                Hide property
+                              </button>
+                              <div className="-mx-1 my-1 h-px bg-border" />
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={projectDetailPropertyMenuDangerItemClassName}
+                                onClick={() => {
+                                  setPropertyActionsId(null);
+                                  deleteProperty(property);
+                                }}
+                              >
+                                Delete property
+                              </button>
+                            </div>
+                          </PopoverContent>
                         ) : null}
-                      </DropdownMenu>
+                      </Popover>
                     );
                   })}
                 </dl>

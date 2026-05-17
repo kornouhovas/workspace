@@ -524,11 +524,16 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /cardPropertyPressMoved/);
   assert.match(projectDetailPanelSource, /suppressCardPropertyClickRef/);
   assert.match(projectDetailPanelSource, /openCardPropertyMenu/);
-  assert.match(projectDetailPanelSource, /DropdownMenuTrigger asChild/);
+  assert.match(popoverSource, /PopoverAnchor/);
+  assert.match(projectDetailPanelSource, /PopoverAnchor asChild/);
+  assert.match(projectDetailPanelSource, /PopoverContent/);
+  assert.doesNotMatch(projectDetailPanelSource, /DropdownMenuTrigger asChild/);
   assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
   assert.match(projectDetailPanelSource, /aria-label=\{`Open \$\{property\.name\} property menu`\}\s+className="[^"]*cursor-grab[^"]*"\s+onPointerDown=\{\(event\) =>\s*\(\s*startCardPropertyDrag\(event, property\.id, \{ openActionsOnClick: true \}\)\s*\)\}/);
   assert.match(projectDetailPanelSource, /onClick=\{\(event\) => \{\s*event\.preventDefault\(\);[\s\S]*suppressCardPropertyClickRef[\s\S]*openCardPropertyMenu\(property\.id\);/);
+  assert.match(projectDetailPanelSource, /role="menu"/);
+  assert.match(projectDetailPanelSource, /role="menuitem"/);
   assert.match(projectDetailPanelSource, /Open \$\{property\.name\} property menu/);
   assert.doesNotMatch(projectDetailPanelSource, /MoreHorizontalIcon/);
   assert.match(projectDetailPanelSource, /card property order/);
