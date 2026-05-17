@@ -12,24 +12,29 @@ test("third party notices document any-store MIT license", async () => {
   assert.match(notices, /https:\/\/raw\.githubusercontent\.com\/anyproto\/any-store\/main\/LICENSE\.md/);
 });
 
-test("agent instructions are backend and local any-store focused", async () => {
+test("agent instructions define the spec-first Codex workflow", async () => {
   const agents = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
+  const workflow = await readFile(new URL("../WORKFLOW.md", import.meta.url), "utf8");
   const removedStyleGuidePath = ["style", "guideline.md"].join("");
   const removedStyleGuidePattern = new RegExp(removedStyleGuidePath.replace(".", "\\."));
 
-  assert.match(agents, /backend and local storage work/);
-  assert.match(agents, /local `any-store` sidecar/);
-  assert.match(agents, /SQLite-backed workspace storage/);
-  assert.match(agents, /Workspace backend modules/);
+  assert.match(agents, /spec-first, agent-ready workflow/);
+  assert.match(agents, /Feature Intake/);
+  assert.match(agents, /Bug Diagnosis/);
+  assert.match(agents, /Implementation Slice/);
+  assert.match(agents, /Review/);
+  assert.match(agents, /local store: Go sidecar using `any-store` on SQLite/);
+  assert.match(agents, /React must stay thin/);
+  assert.match(agents, /Electron preload IPC/);
+  assert.match(workflow, /Backlog/);
+  assert.match(workflow, /Agent Working/);
+  assert.match(workflow, /Human Review/);
+  assert.match(workflow, /Future Symphony Compatibility/);
   assert.doesNotMatch(agents, removedStyleGuidePattern);
-  assert.doesNotMatch(agents, /Electron/i);
-  assert.doesNotMatch(agents, /Preload IPC contracts/);
-  assert.doesNotMatch(agents, /frontend/i);
-  assert.doesNotMatch(agents, /shadcn/i);
-  assert.doesNotMatch(agents, /UI and UX rules/);
-  assert.doesNotMatch(agents, /Visual style/);
-  assert.doesNotMatch(agents, /Component reuse/);
   await assert.rejects(access(new URL(`../${removedStyleGuidePath}`, import.meta.url)), {
     code: "ENOENT",
   });
+  await access(new URL("../docs/workflow/codex-chat-workflow.md", import.meta.url));
+  await access(new URL("../docs/templates/feature-intake.md", import.meta.url));
+  await access(new URL("../docs/templates/bug-intake.md", import.meta.url));
 });
