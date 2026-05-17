@@ -245,6 +245,7 @@ Properties section behavior:
 
 - Always show system `Name` and `Status`.
 - Show every active custom property that belongs to the active Workspace.
+- Render properties as a compact two-column table: drag handle and property name on the left, editable value on the right, row separators, and a vertical divider between name and value.
 - Supported custom property types are `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - `Text` values use a compact text input or textarea depending on configured display density.
 - `Numbers` values use a numeric input and preserve empty value as `null`.
@@ -258,6 +259,7 @@ Properties section behavior:
 File tree behavior:
 
 - Folders and files use distinct icons.
+- Folder/file rows use compact spacing; folders and known file types may use color-coded icons for faster scanning.
 - Folder/file rows are clickable actions.
 - Opening a file or folder goes through Workspace service methods.
 - Unavailable files/folders show disabled/error state.
