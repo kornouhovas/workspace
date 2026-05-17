@@ -487,7 +487,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /toggleProjectFileFolder/);
   assert.match(projectDetailPanelSource, /aria-expanded=\{isFolder \? isExpanded : undefined\}/);
   assert.match(projectDetailPanelSource, /isFolder && isExpanded && node\.children/);
-  assert.match(projectDetailPanelSource, /className="h-7 w-full justify-start px-2 py-1 text-left"/);
+  assert.match(projectDetailPanelSource, /projectDetailPropertiesGridTemplateColumns/);
+  assert.match(projectDetailPanelSource, /getFileTreeNodeIconClassName/);
+  assert.match(projectDetailPanelSource, /className="h-7 w-full justify-start px-1\.5 py-0 text-left/);
+  assert.match(projectDetailPanelSource, /text-amber-300/);
+  assert.match(projectDetailPanelSource, /text-emerald-300/);
+  assert.match(projectDetailPanelSource, /text-rose-300/);
+  assert.match(projectDetailPanelSource, /text-sky-300/);
+  assert.match(projectDetailPanelSource, /text-\[13px\] font-medium/);
   assert.match(projectDetailPanelSource, /<ul className="grid gap-0\.5">/);
   assert.doesNotMatch(projectDetailPanelSource, /block truncate text-xs font-normal text-muted-foreground">\{node\.relativePath\}<\/span>/);
   assert.match(projectDetailPanelSource, /ChevronRightIcon/);

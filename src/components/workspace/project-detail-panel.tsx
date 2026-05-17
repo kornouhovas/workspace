@@ -80,14 +80,16 @@ const maxProjectDetailPanelWidth = 760;
 const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
 const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
+const projectDetailPropertiesGridTemplateColumns = "minmax(8.75rem, 10.25rem) minmax(0, 1fr)";
 const projectDetailPlainValueClassName =
-  "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-1 text-left text-sm font-normal text-foreground";
+  "flex min-h-7 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-medium text-foreground";
 const projectDetailPlainTriggerClassName =
-  "h-8 w-full min-w-0 justify-start gap-2 px-0 py-1 font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+  "h-7 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 const projectDetailPropertyMenuItemClassName =
   "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-popover-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground";
 const projectDetailPropertyMenuDangerItemClassName =
   "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-destructive outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive";
+const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -187,6 +189,39 @@ function isProtectedCardProperty(property: WorkspacePropertyDefinitionState) {
   return property.system || property.id === "property:name" || property.id === "property:status";
 }
 
+function getFileExtension(fileName: string) {
+  const extensionMatch = /\.([^.]+)$/.exec(fileName);
+  return extensionMatch ? extensionMatch[1].toLowerCase() : "";
+}
+
+function getFileTreeNodeIconClassName(node: WorkspaceMockFileTreeNode) {
+  if (node.kind === "folder") {
+    return "size-4 text-amber-300";
+  }
+
+  const extension = getFileExtension(node.name);
+
+  if (extension === "pdf") {
+    return "size-4 text-rose-300";
+  }
+
+  if (spreadsheetFileExtensions.has(extension)) {
+    return "size-4 text-emerald-300";
+  }
+
+  if (extension === "md" || extension === "markdown") {
+    return "size-4 text-sky-300";
+  }
+
+  return "size-4 text-muted-foreground";
+}
+
+function getFileTreeNodeNameClassName(node: WorkspaceMockFileTreeNode) {
+  return node.kind === "folder"
+    ? "min-w-0 truncate text-[13px] font-semibold leading-5 text-foreground"
+    : "min-w-0 truncate text-[13px] font-medium leading-5 text-foreground/90";
+}
+
 function getSelectValuesForProperty(
   selectValues: readonly WorkspaceSelectValueState[],
   propertyId: string,
@@ -247,15 +282,15 @@ function ProjectSelectValuePills({
 
   if (selectedItems.length === 0) {
     return (
-      <span className="flex min-h-8 min-w-0 items-center gap-2 text-sm text-muted-foreground">
-        <span className="size-2 rounded-full bg-muted-foreground/60" aria-hidden="true" />
+      <span className="flex min-h-7 min-w-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+        <span className="size-2 rounded-full bg-muted-foreground/50" aria-hidden="true" />
         <span className="truncate">Empty</span>
       </span>
     );
   }
 
   return (
-    <span className="flex min-h-8 min-w-0 flex-wrap items-center gap-1.5 py-1">
+    <span className="flex min-h-7 min-w-0 flex-wrap items-center gap-1.5 py-0.5">
       {selectedItems.map((selectValue) => (
         <span
           key={selectValue.id}
@@ -282,7 +317,9 @@ function ProjectPropertyValueDisplay({
 }) {
   if (property.id === "property:status") {
     const label = stringifyPropertyValue(value);
-    return label ? <Badge variant="secondary">{label}</Badge> : <span className={projectDetailPlainValueClassName} />;
+    return label
+      ? <Badge variant="secondary" className="h-6 px-2 text-[13px]">{label}</Badge>
+      : <span className={projectDetailPlainValueClassName} />;
   }
 
   if (property.id === "property:name" || property.system) {
@@ -342,7 +379,7 @@ function FileTreeNode({
         type="button"
         variant="ghost"
         disabled={!node.available}
-        className="h-7 w-full justify-start px-2 py-1 text-left"
+        className="h-7 w-full justify-start px-1.5 py-0 text-left text-muted-foreground hover:bg-accent/35 hover:text-foreground"
         title={node.relativePath}
         aria-expanded={isFolder ? isExpanded : undefined}
         onClick={() => {
@@ -351,22 +388,22 @@ function FileTreeNode({
           }
         }}
       >
-        <span className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 1}rem` }}>
+        <span className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 0.9}rem` }}>
           {hasChildren ? (
             isExpanded ? (
-              <ChevronDownIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <ChevronDownIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
             ) : (
-              <ChevronRightIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <ChevronRightIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
             )
           ) : (
-            <span className="size-4" aria-hidden="true" />
+            <span className="size-3.5" aria-hidden="true" />
           )}
           {isFolder ? (
-            <FolderIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            <FolderIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
           ) : (
-            <FileIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            <FileIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
           )}
-          <span className="min-w-0 truncate text-sm">{node.name}</span>
+          <span className={getFileTreeNodeNameClassName(node)}>{node.name}</span>
           {!node.available ? <Badge variant="destructive">Missing</Badge> : null}
         </span>
       </Button>
@@ -446,7 +483,7 @@ function ProjectPropertyValueEditor({
         autoFocus
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} text value`}
-        className="h-8 border-border bg-background px-2 shadow-none"
+        className="h-7 border-border bg-background px-2 text-[13px] shadow-none"
         onBlur={(event) => {
           onProjectPropertyValueChange(project.id, property.id, event.target.value);
           onStopEditing();
@@ -482,7 +519,7 @@ function ProjectPropertyValueEditor({
         type="number"
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} number value`}
-        className="workspace-number-input h-8 border-border bg-background px-2 shadow-none"
+        className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();
           onProjectPropertyValueChange(project.id, property.id, text === "" ? null : Number(text));
@@ -1120,18 +1157,18 @@ export function WorkspaceProjectDetailPanel({
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
         <>
-          <header className="px-6 pb-3 pr-12 pt-7">
-            <h2 id="project-detail-title" className="font-heading text-3xl font-semibold tracking-normal text-foreground">
+          <header className="px-7 pb-2 pr-12 pt-7">
+            <h2 id="project-detail-title" className="font-heading text-2xl font-semibold tracking-normal text-foreground">
               {displayedProject.name}
             </h2>
           </header>
-          <div className="min-h-0 flex-1 overflow-auto px-6 pb-6">
-            <div className="grid gap-5">
-              <section className="grid gap-3" aria-labelledby="project-properties-heading">
-                <h3 id="project-properties-heading" className="text-xs font-medium text-muted-foreground">
+          <div className="min-h-0 flex-1 overflow-auto px-7 pb-6">
+            <div className="grid gap-4">
+              <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
+                <h3 id="project-properties-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/85">
                   Properties
                 </h3>
-                <dl className="grid gap-1">
+                <dl className="grid gap-0.5">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
                     const renamingProperty = renamingPropertyId === property.id;
@@ -1145,12 +1182,12 @@ export function WorkspaceProjectDetailPanel({
                         <div
                           data-card-property-row-id={property.id}
                           className={[
-                            "group/card-property grid min-h-10 items-center gap-3 rounded-lg px-1.5 transition-colors duration-150 hover:bg-accent/30",
+                            "group/card-property grid min-h-8 items-center gap-4 rounded-md px-1.5 transition-colors duration-150 hover:bg-accent/25",
                             cardPropertyDrag ? "transition-transform ease-out" : "",
                             cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                           ].filter(Boolean).join(" ")}
                           style={{
-                            gridTemplateColumns: "minmax(11rem, 13rem) minmax(0, 1fr)",
+                            gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                             ...getCardPropertyDragStyle(property.id),
                           }}
                           onContextMenu={(event) => {
@@ -1191,7 +1228,7 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
-                                  className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                   onPointerDown={(event) => (
                                     startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
                                   )}
@@ -1214,7 +1251,7 @@ export function WorkspaceProjectDetailPanel({
                                     openCardPropertyMenu(property.id);
                                   }}
                                 >
-                                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                  <span className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
                                     <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{property.name}</span>
@@ -1224,17 +1261,17 @@ export function WorkspaceProjectDetailPanel({
                               <button
                                 type="button"
                                 aria-label={`Reorder ${property.name} card property order`}
-                                className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                 onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
                               >
-                                <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
                                   <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                 </span>
                                 <span className="min-w-0 flex-1 truncate">{property.name}</span>
                               </button>
                             )}
                           </dt>
-                          <dd className="min-w-0 text-sm">
+                          <dd className="min-w-0 text-[13px]">
                             <ProjectPropertyValueEditor
                               project={displayedProject}
                               property={property}
@@ -1317,13 +1354,13 @@ export function WorkspaceProjectDetailPanel({
                         {hiddenCardProperties.map((property) => (
                           <div
                             key={property.id}
-                            className="grid min-h-9 items-center gap-3 rounded-lg px-1.5 opacity-75"
-                            style={{ gridTemplateColumns: "minmax(11rem, 13rem) minmax(0, 1fr)" }}
+                            className="grid min-h-8 items-center gap-4 rounded-md px-1.5 opacity-75"
+                            style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
                           >
-                            <dt className="flex min-w-0 items-center gap-1 pl-7 text-sm font-medium text-muted-foreground">
+                            <dt className="flex min-w-0 items-center gap-1 pl-6 text-[13px] font-medium text-muted-foreground">
                               <span className="min-w-0 truncate">{property.name}</span>
                             </dt>
-                            <dd className="flex min-w-0 items-center justify-between gap-2 text-sm text-muted-foreground">
+                            <dd className="flex min-w-0 items-center justify-between gap-2 text-[13px] text-muted-foreground">
                               <span className="truncate">Hidden</span>
                               <Button
                                 type="button"
@@ -1342,13 +1379,13 @@ export function WorkspaceProjectDetailPanel({
                   </div>
                 ) : null}
               </section>
-              <Separator />
+              <Separator className="my-1" />
               <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 id="project-file-tree-heading" className="text-xs font-medium text-muted-foreground">
+                  <h3 id="project-file-tree-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/85">
                     File tree
                   </h3>
-                  <Badge variant="secondary">{displayedProject.fileTree.length} items</Badge>
+                  <Badge variant="secondary" className="h-6 px-2 text-xs">{displayedProject.fileTree.length} items</Badge>
                 </div>
                 <ul className="grid gap-0.5">
                   {displayedProject.fileTree.map((node) => (
