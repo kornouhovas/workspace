@@ -337,8 +337,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /renderTableStatusValue/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
-  assert.match(tableViewSource, /border-r border-border\/55/);
-  assert.match(tableViewSource, /group\/column relative border-r border-border\/55/);
+  assert.match(tableViewSource, /border-r border-border\/60/);
+  assert.match(tableViewSource, /group\/column relative border-r border-border\/60/);
   assert.match(tableViewSource, /<TableBody className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45">/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
   assert.match(tableViewSource, /onCreateProperty/);
@@ -444,8 +444,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /className="h-10 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
-  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 border-r border-border\/55 p-0\.5";/);
-  assert.match(tableViewSource, /return editable \? "h-10 border-r border-border\/55 p-0\.5" : "h-10 border-r border-border\/55 truncate px-3 py-0";/);
+  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 border-r border-border\/60 p-0\.5";/);
+  assert.match(tableViewSource, /return editable \? "h-10 border-r border-border\/60 p-0\.5" : "h-10 border-r border-border\/60 truncate px-3 py-0";/);
   assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display flex h-8/);
   assert.match(tableViewSource, /className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted\/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
@@ -455,6 +455,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);
   assert.match(tableViewSource, /w-full/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45/);
+  assert.match(viewFilterMenuSource, /Customize Columns/);
+  assert.match(viewFilterMenuSource, /ChevronDownIcon data-icon="inline-end"/);
+  assert.match(viewTabsSource, /from "@\/components\/ui\/button"/);
+  assert.match(viewTabsSource, /Add View/);
+  assert.match(viewTabsSource, /PlusIcon data-icon="inline-start"/);
   assert.doesNotMatch(tableViewSource, /sticky right-0/);
   assert.doesNotMatch(tableViewSource, /currentRelativePath/);
   assert.doesNotMatch(tableViewSource, />Path<\/TableHead>/);

@@ -166,6 +166,7 @@ Required behavior:
 
 - Only one view is active at a time.
 - View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
+- View-level actions should follow the framework toolbar pattern: segmented view tabs on the left, labeled outline buttons such as `Customize Columns` and `Add View` on the right.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
 - The `+` action creates a new view.

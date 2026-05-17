@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
 import { MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
@@ -129,7 +130,7 @@ export function WorkspaceViewTabs({
   }
 
   return (
-    <div className="relative flex min-w-0 items-center justify-between gap-3 px-4 py-2.5">
+    <div className="relative flex min-w-0 items-center justify-between gap-4 px-4 py-3">
       <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0 overflow-hidden">
         <TabsList
           aria-label="Workspace views"
@@ -181,7 +182,7 @@ export function WorkspaceViewTabs({
           })}
         </TabsList>
       </Tabs>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-2">
         <WorkspaceViewFilterMenu
           view={activeView}
           dismissSignal={dismissSignal}
@@ -195,14 +196,15 @@ export function WorkspaceViewTabs({
         />
         <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               type="button"
-              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              variant="outline"
               aria-label="Add Board or Table view"
               title="Add view"
             >
-              <PlusIcon className="size-4" aria-hidden="true" />
-            </button>
+              <PlusIcon data-icon="inline-start" aria-hidden="true" />
+              <span>Add View</span>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuItem onSelect={() => onCreateView("board")}>New Board View</DropdownMenuItem>

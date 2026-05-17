@@ -147,8 +147,10 @@ export function WorkspaceViewFilterMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" aria-label="View property visibility and filters">
-          <Columns3Icon className="size-4" aria-hidden="true" />
+        <Button type="button" variant="outline" aria-label="View property visibility and filters">
+          <Columns3Icon data-icon="inline-start" aria-hidden="true" />
+          <span>Customize Columns</span>
+          <ChevronDownIcon data-icon="inline-end" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
