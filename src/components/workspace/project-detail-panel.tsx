@@ -928,6 +928,11 @@ export function WorkspaceProjectDetailPanel({
     return true;
   }
 
+  function openCardPropertyMenu(propertyId: string) {
+    setPropertyActionsId(null);
+    window.setTimeout(() => setPropertyActionsId(propertyId), 0);
+  }
+
   function startCardPropertyDrag(
     event: ReactPointerEvent<HTMLButtonElement>,
     propertyId: string,
@@ -1024,7 +1029,7 @@ export function WorkspaceProjectDetailPanel({
       if (moved) {
         onReorderCardProperties(nextPropertyIds);
       } else if (options.openActionsOnClick) {
-        setPropertyActionsId(propertyId);
+        openCardPropertyMenu(propertyId);
       }
 
       cardPropertyPressMoved.current = false;
@@ -1134,7 +1139,7 @@ export function WorkspaceProjectDetailPanel({
                             }
 
                             event.preventDefault();
-                            setPropertyActionsId(property.id);
+                            openCardPropertyMenu(property.id);
                           }}
                         >
                           <dt className="flex min-w-0 items-center">

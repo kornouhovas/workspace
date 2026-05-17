@@ -516,6 +516,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /cursor-grab/);
   assert.match(projectDetailPanelSource, /openActionsOnClick/);
   assert.match(projectDetailPanelSource, /cardPropertyPressMoved/);
+  assert.match(projectDetailPanelSource, /openCardPropertyMenu/);
+  assert.match(projectDetailPanelSource, /window\.setTimeout\(\(\) => setPropertyActionsId\(propertyId\), 0\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
   assert.match(projectDetailPanelSource, /propertyActionsId === property\.id \? "cursor-default" : "cursor-grab active:cursor-grabbing"/);
   assert.match(projectDetailPanelSource, /Open \$\{property\.name\} property menu/);
