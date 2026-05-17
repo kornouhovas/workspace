@@ -71,6 +71,10 @@ type CardPropertyDragState = {
   readonly rows: readonly CardPropertyDragPreviewRow[];
 };
 
+type CardPropertyDragOptions = {
+  readonly openActionsOnClick?: boolean;
+};
+
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
 const defaultProjectDetailPanelWidth = 480;
 const minProjectDetailPanelWidth = 360;
@@ -561,6 +565,7 @@ export function WorkspaceProjectDetailPanel({
   const panelMountedRef = useRef(false);
   const cardPropertyOrderRef = useRef<readonly string[]>(cardPropertyOrder);
   const cardPropertyPressMoved = useRef(false);
+  const suppressCardPropertyClickRef = useRef(false);
   const isOpen = open && project !== null;
   const orderedCardProperties = useMemo(
     () => createOrderedCardProperties(visibleProperties, cardPropertyOrder),
@@ -931,6 +936,7 @@ export function WorkspaceProjectDetailPanel({
   function startCardPropertyDrag(
     event: ReactPointerEvent<HTMLElement>,
     propertyId: string,
+    options: CardPropertyDragOptions = {},
   ) {
     if (event.button !== 0) {
       return;
@@ -947,23 +953,31 @@ export function WorkspaceProjectDetailPanel({
     const previousCursor = document.body.style.cursor;
     const previousUserSelect = document.body.style.userSelect;
 
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
     cardPropertyPressMoved.current = false;
 
     let frameId = 0;
     let pendingClientX = event.clientX;
     let pendingClientY = event.clientY;
+    let dragActive = false;
 
-    setEditingPropertyId(null);
-    setPropertyActionsId(null);
-    setCardPropertyDrag({
-      propertyId,
-      startY: event.clientY,
-      currentY: event.clientY,
-      dropIndex: findCardPropertyDropIndex(event.clientY, cardPropertyDragPreviewRows, propertyId),
-      rows: cardPropertyDragPreviewRows,
-    });
+    function beginCardPropertyDrag() {
+      if (dragActive) {
+        return;
+      }
+
+      dragActive = true;
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+      setEditingPropertyId(null);
+      setPropertyActionsId(null);
+      setCardPropertyDrag({
+        propertyId,
+        startY: event.clientY,
+        currentY: pendingClientY,
+        dropIndex: findCardPropertyDropIndex(pendingClientY, cardPropertyDragPreviewRows, propertyId),
+        rows: cardPropertyDragPreviewRows,
+      });
+    }
 
     function updateDraggedCardProperty() {
       frameId = 0;
@@ -995,6 +1009,13 @@ export function WorkspaceProjectDetailPanel({
         pendingClientY - event.clientY,
       ) > 4;
 
+      if (!cardPropertyPressMoved.current) {
+        return;
+      }
+
+      pointerEvent.preventDefault();
+      beginCardPropertyDrag();
+
       if (frameId === 0) {
         frameId = window.requestAnimationFrame(updateDraggedCardProperty);
       }
@@ -1013,15 +1034,24 @@ export function WorkspaceProjectDetailPanel({
         pointerEvent.clientY - event.clientY,
       ) > 4;
 
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
       window.removeEventListener("pointermove", moveCardProperty);
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("pointerup", finishCardPropertyDrag);
-      setCardPropertyDrag(null);
+
+      if (dragActive) {
+        document.body.style.cursor = previousCursor;
+        document.body.style.userSelect = previousUserSelect;
+        setCardPropertyDrag(null);
+      }
 
       if (moved) {
+        suppressCardPropertyClickRef.current = true;
+        window.setTimeout(() => {
+          suppressCardPropertyClickRef.current = false;
+        }, 0);
         onReorderCardProperties(nextPropertyIds);
+      } else if (options.openActionsOnClick) {
+        openCardPropertyMenu(propertyId);
       }
 
       cardPropertyPressMoved.current = false;
@@ -1159,9 +1189,18 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
-                                  className="flex min-w-0 flex-1 cursor-default select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  onPointerDown={(event) => (
+                                    startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
+                                  )}
                                   onClick={(event) => {
                                     event.preventDefault();
+                                    if (suppressCardPropertyClickRef.current) {
+                                      event.stopPropagation();
+                                      suppressCardPropertyClickRef.current = false;
+                                      return;
+                                    }
+
                                     openCardPropertyMenu(property.id);
                                   }}
                                   onContextMenu={(event) => {
@@ -1173,36 +1212,24 @@ export function WorkspaceProjectDetailPanel({
                                     openCardPropertyMenu(property.id);
                                   }}
                                 >
-                                  <span
-                                    className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity active:cursor-grabbing group-hover/card-property:opacity-100"
-                                    onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
-                                    onClick={(event) => {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                    }}
-                                  >
+                                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
                                     <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{property.name}</span>
                                 </button>
                               </DropdownMenuTrigger>
                             ) : (
-                              <div
+                              <button
+                                type="button"
                                 aria-label={`Reorder ${property.name} card property order`}
-                                className="flex min-w-0 flex-1 cursor-default select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground"
+                                className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
                               >
-                                <span
-                                  className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity active:cursor-grabbing group-hover/card-property:opacity-100"
-                                  onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                  }}
-                                >
+                                <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
                                   <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                 </span>
                                 <span className="min-w-0 flex-1 truncate">{property.name}</span>
-                              </div>
+                              </button>
                             )}
                           </dt>
                           <dd className="min-w-0 text-sm">
