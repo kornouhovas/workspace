@@ -7,6 +7,7 @@
 - Branch:
 - Acceptance criteria or expected behavior:
 - Quality gates:
+- Commit:
 - Handoff state:
 
 ## Review Scope

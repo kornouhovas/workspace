@@ -143,6 +143,7 @@ Every completed code change must report:
 - what changed;
 - files touched;
 - tests/checks run and exact outcome;
+- commit hash for completed file-changing work;
 - known risks;
 - any docs updated;
 - any follow-up tasks.
@@ -198,7 +199,8 @@ The repository may be dirty because another agent or the user is working.
 - If unrelated changes exist, leave them alone.
 - If related files have user/agent edits, read carefully and work with them.
 - Do not use destructive commands such as `git reset --hard` or `git checkout --`.
-- Commit only when the user asked for commits or the current workflow explicitly requires it.
+- Commit every completed file-changing implementation before handoff.
+- If a commit cannot be created safely because unrelated user/agent changes are present, or because the user explicitly asked not to commit, report the blocker and leave the handoff state as `Human Review` or `Blocked`, not `Done`.
 
 ## Documentation Rules
 

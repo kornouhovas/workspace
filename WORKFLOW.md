@@ -66,7 +66,8 @@ Required checks:
 - check architecture boundaries;
 - check tests and visual evidence;
 - check docs changed when needed;
-- run appropriate quality gates.
+- run appropriate quality gates;
+- commit completed file-changing work before handoff.
 
 ### Human Review
 
@@ -77,6 +78,7 @@ Codex must provide:
 - summary;
 - files changed;
 - verification results;
+- commit hash, or why no commit was safely possible;
 - risks;
 - follow-up suggestions;
 - whether commit/merge/release is recommended.
@@ -251,6 +253,7 @@ Workflow Evidence:
 - Branch:
 - Acceptance criteria:
 - Quality gates:
+- Commit:
 - Handoff state: Human Review
 
 Done: <one sentence>
@@ -274,6 +277,7 @@ Workflow Evidence:
 - Branch:
 - Expected behavior:
 - Quality gates:
+- Commit:
 - Handoff state: Human Review
 
 Root cause: <one sentence>

@@ -9,6 +9,7 @@ Use this when a task spans multiple sessions or another agent needs to continue.
 - Branch:
 - Acceptance criteria or expected behavior:
 - Quality gates:
+- Commit:
 - Handoff state:
 
 ## Current Objective
@@ -38,6 +39,10 @@ One of:
 ## Verification Run
 
 - Command: result.
+
+## Commit
+
+Commit hash, or why no commit was safely possible.
 
 ## Known Issues
 

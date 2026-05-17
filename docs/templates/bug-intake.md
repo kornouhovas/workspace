@@ -9,6 +9,7 @@ Use this template when the user reports broken behavior.
 - Branch:
 - Expected behavior:
 - Quality gates:
+- Commit:
 - Handoff state: Backlog
 
 ## Status

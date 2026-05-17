@@ -9,6 +9,7 @@ Use this template when the user describes a new capability.
 - Branch:
 - Acceptance criteria:
 - Quality gates:
+- Commit:
 - Handoff state: Backlog
 
 ## Status

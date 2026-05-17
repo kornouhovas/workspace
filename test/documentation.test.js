@@ -26,6 +26,8 @@ test("agent instructions define the spec-first Codex workflow", async () => {
   assert.match(agents, /Workflow Evidence/);
   assert.match(agents, /infer the request mode/);
   assert.match(agents, /Handoff state/);
+  assert.match(agents, /Commit every completed file-changing implementation before handoff/);
+  assert.match(workflow, /commit completed file-changing work before handoff/);
   assert.match(workflow, /Mode Detection/);
   assert.match(workflow, /Workflow Evidence/);
   assert.match(agents, /local store: Go sidecar using `any-store` on SQLite/);
