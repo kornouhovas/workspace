@@ -161,10 +161,10 @@ function isEditableProperty(property: WorkspaceMockVisibleProperty) {
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
   if (property.id === "property:name") {
-    return "h-10 border-r border-border/60 p-0.5";
+    return "h-10 border-r border-border p-0.5";
   }
 
-  return editable ? "h-10 border-r border-border/60 p-0.5" : "h-10 border-r border-border/60 truncate px-3 py-0";
+  return editable ? "h-10 border-r border-border p-0.5" : "h-10 border-r border-border truncate px-3 py-0";
 }
 
 function renderTableStatusValue(value: unknown) {
@@ -780,7 +780,7 @@ export function WorkspaceTableView({
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative border-r border-border/60 bg-background/95 px-1",
+                      "group/column relative border-r border-border bg-background/95 px-1",
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
                     ].filter(Boolean).join(" ")}
@@ -874,7 +874,7 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="min-w-12 border-l border-border/60 bg-background/95">
+              <TableHead className="min-w-12 border-l border-border bg-background/95">
                 <DropdownMenu
                   open={openAddPropertyMenu}
                   onOpenChange={setOpenAddPropertyMenu}
@@ -972,7 +972,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-10 min-w-12 border-l border-border/60 bg-background/30 py-0" aria-hidden="true" />
+                <TableCell className="h-10 min-w-12 border-l border-border bg-background/30 py-0" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>
