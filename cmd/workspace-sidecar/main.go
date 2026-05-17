@@ -143,11 +143,11 @@ func newWorkspaceMux(store *workspacestore.Store) *http.ServeMux {
 			property := propertiesByID[propertyID]
 			property.Order = (index + 1) * 10
 			property.UpdatedAt = timestamp
-			if err := store.UpsertPropertyDefinition(r.Context(), property); err != nil {
-				writeResult(w, nil, err)
-				return
-			}
 			reordered = append(reordered, property)
+		}
+		if err := store.UpsertPropertyDefinitions(r.Context(), reordered); err != nil {
+			writeResult(w, nil, err)
+			return
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{"properties": reordered})
@@ -280,11 +280,11 @@ func newWorkspaceMux(store *workspacestore.Store) *http.ServeMux {
 			value := valuesByID[valueID]
 			value.Order = (index + 1) * 10
 			value.UpdatedAt = timestamp
-			if err := store.UpsertSelectValue(r.Context(), value); err != nil {
-				writeResult(w, nil, err)
-				return
-			}
 			reordered = append(reordered, value)
+		}
+		if err := store.UpsertSelectValues(r.Context(), reordered); err != nil {
+			writeResult(w, nil, err)
+			return
 		}
 
 		writeJSON(w, http.StatusOK, map[string]any{"selectValues": reordered})

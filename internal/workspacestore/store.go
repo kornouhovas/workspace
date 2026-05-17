@@ -403,6 +403,11 @@ func (s *Store) ListPropertyValues(ctx context.Context, workspaceID string) ([]P
 }
 
 func (s *Store) UpsertPropertyDefinition(ctx context.Context, property PropertyDefinitionDocument) error {
+	property = normalizePropertyDefinitionDocument(property)
+	return s.upsertJSON(ctx, "property_definitions", property)
+}
+
+func normalizePropertyDefinitionDocument(property PropertyDefinitionDocument) PropertyDefinitionDocument {
 	if property.Type == "" {
 		property.Type = "propertyDefinition"
 	}
@@ -412,7 +417,19 @@ func (s *Store) UpsertPropertyDefinition(ctx context.Context, property PropertyD
 	if property.Config == nil {
 		property.Config = map[string]any{}
 	}
-	return s.upsertJSON(ctx, "property_definitions", property)
+	return property
+}
+
+func (s *Store) UpsertPropertyDefinitions(ctx context.Context, properties []PropertyDefinitionDocument) error {
+	values := make([]*anyenc.Value, 0, len(properties))
+	for _, property := range properties {
+		value, err := marshalJSONValue(normalizePropertyDefinitionDocument(property))
+		if err != nil {
+			return err
+		}
+		values = append(values, value)
+	}
+	return s.upsertJSONValues(ctx, "property_definitions", values)
 }
 
 func (s *Store) ListPropertyDefinitions(ctx context.Context, workspaceID string) ([]PropertyDefinitionDocument, error) {
@@ -461,13 +478,30 @@ func (s *Store) ListPropertyDefinitions(ctx context.Context, workspaceID string)
 }
 
 func (s *Store) UpsertSelectValue(ctx context.Context, value SelectValueDocument) error {
+	value = normalizeSelectValueDocument(value)
+	return s.upsertJSON(ctx, "select_values", value)
+}
+
+func normalizeSelectValueDocument(value SelectValueDocument) SelectValueDocument {
 	if value.Type == "" {
 		value.Type = "selectValue"
 	}
 	if value.SchemaVersion == 0 {
 		value.SchemaVersion = 1
 	}
-	return s.upsertJSON(ctx, "select_values", value)
+	return value
+}
+
+func (s *Store) UpsertSelectValues(ctx context.Context, selectValues []SelectValueDocument) error {
+	values := make([]*anyenc.Value, 0, len(selectValues))
+	for _, selectValue := range selectValues {
+		value, err := marshalJSONValue(normalizeSelectValueDocument(selectValue))
+		if err != nil {
+			return err
+		}
+		values = append(values, value)
+	}
+	return s.upsertJSONValues(ctx, "select_values", values)
 }
 
 func (s *Store) ListSelectValues(ctx context.Context, workspaceID string, propertyID string) ([]SelectValueDocument, error) {
@@ -577,12 +611,30 @@ func (s *Store) upsertJSON(ctx context.Context, collectionName string, doc any) 
 	if err != nil {
 		return err
 	}
+	return s.upsertJSONValues(ctx, collectionName, []*anyenc.Value{value})
+}
 
+func (s *Store) upsertJSONValues(ctx context.Context, collectionName string, values []*anyenc.Value) error {
 	coll, err := s.db.Collection(ctx, collectionName)
 	if err != nil {
 		return err
 	}
-	return coll.UpsertOne(ctx, value)
+	tx, err := s.db.WriteTx(ctx)
+	if err != nil {
+		return err
+	}
+	for _, value := range values {
+		if err := coll.UpsertOne(tx.Context(), value); err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				return errors.Join(err, rollbackErr)
+			}
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func marshalJSONValue(doc any) (*anyenc.Value, error) {

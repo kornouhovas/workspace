@@ -413,7 +413,7 @@ test("workspace app state stores selected root before projection loading complet
   assert.equal(state.error, null);
 });
 
-test("workspace app state keeps the current projection while reloading another workspace for the same folder", async () => {
+test("workspace app state clears the current projection while reloading another workspace for the same folder", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
     type: "projectionLoaded",
@@ -443,8 +443,8 @@ test("workspace app state keeps the current projection while reloading another w
   assert.equal(reloadingState.status, "ready");
   assert.equal(reloadingState.projection, projectionResponse);
   assert.equal(rootRefreshState.status, "ready");
-  assert.equal(rootRefreshState.workspaceId, "workspace:ops");
-  assert.equal(rootRefreshState.projection, projectionResponse);
+  assert.equal(rootRefreshState.workspaceId, "workspace:design");
+  assert.equal(rootRefreshState.projection, null);
 
   const switchedState = workspaceAppStateReducer(rootRefreshState, {
     type: "projectionLoaded",
@@ -502,19 +502,92 @@ test("workspace app state updates projection without returning to loading", asyn
     folderRoleTree,
   });
 
+  const viewSwitchState = workspaceAppStateReducer(loadedState, {
+    type: "activeViewChanged",
+    activeViewId: "view:table",
+  });
   const nextProjection = {
     ...projectionResponse,
     view: { id: "view:table", name: "Table", viewType: "table" },
     projection: { type: "table", rows: [] },
   };
-  const state = workspaceAppStateReducer(loadedState, {
+  const state = workspaceAppStateReducer(viewSwitchState, {
     type: "projectionUpdated",
     projectionResponse: nextProjection,
   });
 
   assert.equal(state.status, "ready");
   assert.deepEqual(state.projection, nextProjection);
-  assert.equal(state.activeViewId, "view:board");
+  assert.equal(state.activeViewId, "view:table");
+});
+
+test("workspace app state ignores projection updates for stale workspace or view", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const staleViewProjection = {
+    ...projectionResponse,
+    view: { id: "view:table", name: "Table", viewType: "table" },
+    projection: { type: "table", rows: [] },
+  };
+  const staleWorkspaceProjection = {
+    ...projectionResponse,
+    workspaceId: "workspace:archive",
+  };
+
+  const staleViewState = workspaceAppStateReducer(loadedState, {
+    type: "projectionUpdated",
+    projectionResponse: staleViewProjection,
+  });
+  const staleWorkspaceState = workspaceAppStateReducer(loadedState, {
+    type: "projectionUpdated",
+    projectionResponse: staleWorkspaceProjection,
+  });
+
+  assert.equal(staleViewState, loadedState);
+  assert.equal(staleWorkspaceState, loadedState);
+});
+
+test("workspace app state ignores full projection loads after workspace or view changes", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+  const switchedViewState = workspaceAppStateReducer(loadedState, {
+    type: "activeViewChanged",
+    activeViewId: "view:table",
+  });
+  const staleViewState = workspaceAppStateReducer(switchedViewState, {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+  const switchedWorkspaceState = workspaceAppStateReducer(loadedState, {
+    type: "workspaceActivated",
+    workspaceId: "workspace:archive",
+  });
+  const staleWorkspaceState = workspaceAppStateReducer(switchedWorkspaceState, {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  assert.equal(staleViewState, switchedViewState);
+  assert.equal(staleWorkspaceState, switchedWorkspaceState);
 });
 
 test("workspace app state switches the active view", async () => {
@@ -534,6 +607,57 @@ test("workspace app state switches the active view", async () => {
 
   assert.equal(state.activeViewId, "view:table");
   assert.equal(state.searchQuery, "");
+  assert.equal(state.projection, null);
+});
+
+test("workspace app state ignores older property save completions for the same cell", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: { "property:budget": 1000 },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse: {
+      ...projectionResponse,
+      projection: {
+        type: "table",
+        rows: [alpha],
+      },
+    },
+    folderRoleTree,
+  });
+  const firstPendingState = workspaceAppStateReducer(loadedState, {
+    type: "projectPropertyValueSaveStarted",
+    projectId: "project:alpha",
+    propertyId: "property:budget",
+    requestVersion: 1,
+  });
+  const secondPendingState = workspaceAppStateReducer(firstPendingState, {
+    type: "projectPropertyValueSaveStarted",
+    projectId: "project:alpha",
+    propertyId: "property:budget",
+    requestVersion: 2,
+  });
+  const secondCompletedState = workspaceAppStateReducer(secondPendingState, {
+    type: "projectPropertyValueUpdated",
+    projectId: "project:alpha",
+    propertyId: "property:budget",
+    value: 3000,
+    requestVersion: 2,
+  });
+  const firstCompletedState = workspaceAppStateReducer(secondCompletedState, {
+    type: "projectPropertyValueUpdated",
+    projectId: "project:alpha",
+    propertyId: "property:budget",
+    value: 2000,
+    requestVersion: 1,
+  });
+
+  assert.equal(firstCompletedState.projection.projection.rows[0].propertyValues["property:budget"], 3000);
 });
 
 test("workspace app state adds a created view to only the active workspace state", async () => {

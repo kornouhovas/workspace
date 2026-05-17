@@ -113,6 +113,7 @@ export type WorkspaceAppState = {
   readonly sourceFolderMissing: boolean;
   readonly error: string | null;
   readonly propertySaveError: string | null;
+  readonly propertySaveVersions: Readonly<Record<string, number>>;
 };
 
 export type WorkspaceAppAction =
@@ -130,10 +131,17 @@ export type WorkspaceAppAction =
   | { readonly type: "propertiesLoaded"; readonly propertiesResponse: WorkspacePropertyCatalogState }
   | { readonly type: "propertyDeleted"; readonly propertyId: string }
   | {
+      readonly type: "projectPropertyValueSaveStarted";
+      readonly projectId: string;
+      readonly propertyId: string;
+      readonly requestVersion: number;
+    }
+  | {
       readonly type: "projectPropertyValueUpdated";
       readonly projectId: string;
       readonly propertyId: string;
       readonly value: unknown;
+      readonly requestVersion?: number;
     }
   | {
       readonly type: "viewPropertiesUpdated";
@@ -141,7 +149,13 @@ export type WorkspaceAppAction =
       readonly visiblePropertyIds: readonly string[];
       readonly propertyOrder: Record<string, number>;
     }
-  | { readonly type: "propertySaveFailed"; readonly error: string }
+  | {
+      readonly type: "propertySaveFailed";
+      readonly error: string;
+      readonly projectId?: string;
+      readonly propertyId?: string;
+      readonly requestVersion?: number;
+    }
   | { readonly type: "workspaceActivated"; readonly workspaceId: string }
   | { readonly type: "serviceError"; readonly error: string }
   | { readonly type: "searchQueryChanged"; readonly searchQuery: string }
@@ -173,6 +187,7 @@ export function createInitialWorkspaceAppState(): WorkspaceAppState {
     sourceFolderMissing: false,
     error: null,
     propertySaveError: null,
+    propertySaveVersions: {},
   };
 }
 
@@ -213,6 +228,7 @@ export function workspaceAppStateReducer(
       sourceFolderMissing: true,
       error: null,
       propertySaveError: null,
+      propertySaveVersions: {},
     };
   }
 
@@ -223,14 +239,23 @@ export function workspaceAppStateReducer(
       state.root?.path &&
       state.root.path === action.root.path
     ) {
+      const workspaceChanged = state.workspaceId !== action.root.workspaceId;
+
       return {
         ...state,
-        root: state.root,
+        root: action.root,
+        workspaceId: action.root.workspaceId,
+        projection: workspaceChanged ? null : state.projection,
+        propertyCatalog: workspaceChanged ? null : state.propertyCatalog,
+        views: workspaceChanged ? [] : state.views,
+        activeViewId: workspaceChanged ? null : state.activeViewId,
+        searchQuery: workspaceChanged ? "" : state.searchQuery,
         selectedProjectId: null,
         detailOpen: false,
         sourceFolderMissing: false,
         error: null,
         propertySaveError: null,
+        propertySaveVersions: workspaceChanged ? {} : state.propertySaveVersions,
       };
     }
 
@@ -253,14 +278,30 @@ export function workspaceAppStateReducer(
       action.projectionResponse.view.id ||
       action.viewsResponse.views[0]?.id ||
       null;
+    const workspaceId = action.viewsResponse.workspaceId || action.root.workspaceId;
+
+    if (state.workspaceId && state.workspaceId !== workspaceId) {
+      return state;
+    }
+
+    if (state.activeViewId && state.activeViewId !== activeViewId) {
+      return state;
+    }
+
+    if (
+      action.projectionResponse.workspaceId !== workspaceId ||
+      action.projectionResponse.view.id !== activeViewId
+    ) {
+      return state;
+    }
 
     return {
       ...state,
       status: "ready",
       root: action.root,
-      workspaceId: action.viewsResponse.workspaceId || action.root.workspaceId,
+      workspaceId,
       projection: action.projectionResponse,
-      propertyCatalog: state.propertyCatalog?.workspaceId === (action.viewsResponse.workspaceId || action.root.workspaceId)
+      propertyCatalog: state.propertyCatalog?.workspaceId === workspaceId
         ? state.propertyCatalog
         : null,
       folderRoleTree: action.folderRoleTree,
@@ -273,6 +314,13 @@ export function workspaceAppStateReducer(
   }
 
   if (action.type === "projectionUpdated") {
+    if (
+      action.projectionResponse.workspaceId !== state.workspaceId ||
+      action.projectionResponse.view.id !== state.activeViewId
+    ) {
+      return state;
+    }
+
     return {
       ...state,
       projection: action.projectionResponse,
@@ -355,7 +403,21 @@ export function workspaceAppStateReducer(
     };
   }
 
+  if (action.type === "projectPropertyValueSaveStarted") {
+    return {
+      ...state,
+      propertySaveVersions: {
+        ...state.propertySaveVersions,
+        [createPropertySaveKey(action.projectId, action.propertyId)]: action.requestVersion,
+      },
+    };
+  }
+
   if (action.type === "projectPropertyValueUpdated") {
+    if (!isCurrentPropertySaveVersion(state, action)) {
+      return state;
+    }
+
     return {
       ...state,
       projection: state.projection
@@ -371,6 +433,10 @@ export function workspaceAppStateReducer(
   }
 
   if (action.type === "propertySaveFailed") {
+    if (!isCurrentPropertySaveVersion(state, action)) {
+      return state;
+    }
+
     return {
       ...state,
       propertySaveError: action.error,
@@ -400,6 +466,7 @@ export function workspaceAppStateReducer(
       sourceFolderMissing: false,
       error: null,
       propertySaveError: null,
+      propertySaveVersions: {},
     };
   }
 
@@ -423,7 +490,12 @@ export function workspaceAppStateReducer(
     return {
       ...state,
       activeViewId: action.activeViewId,
+      projection: state.projection?.view.id === action.activeViewId
+        ? state.projection
+        : null,
       searchQuery: "",
+      selectedProjectId: null,
+      detailOpen: false,
     };
   }
 
@@ -532,6 +604,27 @@ export function filterWorkspaceProjectionBySearch(
       })),
     },
   };
+}
+
+function createPropertySaveKey(projectId: string, propertyId: string) {
+  return `${projectId}\0${propertyId}`;
+}
+
+function isCurrentPropertySaveVersion(
+  state: WorkspaceAppState,
+  action: {
+    readonly projectId?: string;
+    readonly propertyId?: string;
+    readonly requestVersion?: number;
+  },
+) {
+  if (action.requestVersion === undefined || !action.projectId || !action.propertyId) {
+    return true;
+  }
+
+  return (
+    state.propertySaveVersions[createPropertySaveKey(action.projectId, action.propertyId)] === action.requestVersion
+  );
 }
 
 function removeViewPropertyReference(

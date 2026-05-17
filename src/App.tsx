@@ -423,6 +423,7 @@ export default function App() {
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
+  const propertySaveRequestVersionsRef = useRef(new Map<string, number>());
   const folderSelectionPendingRef = useRef(false);
   const workspaceClient = useMemo(
     () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
@@ -432,6 +433,23 @@ export default function App() {
   useEffect(() => {
     activeViewIdRef.current = state.activeViewId;
   }, [state.activeViewId]);
+
+  function createPropertySaveKey(projectId: string, propertyId: string) {
+    return `${projectId}\0${propertyId}`;
+  }
+
+  function createPropertySaveRequestVersion(projectId: string, propertyId: string) {
+    const key = createPropertySaveKey(projectId, propertyId);
+    const requestVersion = (propertySaveRequestVersionsRef.current.get(key) || 0) + 1;
+    propertySaveRequestVersionsRef.current.set(key, requestVersion);
+    return requestVersion;
+  }
+
+  function isCurrentPropertySaveRequest(projectId: string, propertyId: string, requestVersion: number) {
+    return (
+      propertySaveRequestVersionsRef.current.get(createPropertySaveKey(projectId, propertyId)) === requestVersion
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -1332,6 +1350,14 @@ export default function App() {
       return;
     }
 
+    const requestVersion = createPropertySaveRequestVersion(projectId, propertyId);
+    dispatch({
+      type: "projectPropertyValueSaveStarted",
+      projectId,
+      propertyId,
+      requestVersion,
+    });
+
     try {
       await workspaceClient.updateProjectPropertyValue({
         workspaceId: state.workspaceId,
@@ -1344,24 +1370,29 @@ export default function App() {
         projectId,
         propertyId,
         value,
+        requestVersion,
       });
-      setSelectedProject((currentProject) => (
-        currentProject?.id === projectId
-          ? {
-              ...currentProject,
-              propertyValues: {
-                ...currentProject.propertyValues,
-                [propertyId]: value,
-              },
-            }
-          : currentProject
-      ));
+      if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+        setSelectedProject((currentProject) => (
+          currentProject?.id === projectId
+            ? {
+                ...currentProject,
+                propertyValues: {
+                  ...currentProject.propertyValues,
+                  [propertyId]: value,
+                },
+              }
+            : currentProject
+        ));
+      }
     } catch (error) {
       const message = getServiceErrorMessage(error);
-      dispatch({ type: "propertySaveFailed", error: message });
-      toast.error("Could not save property value", {
-        description: message,
-      });
+      dispatch({ type: "propertySaveFailed", error: message, projectId, propertyId, requestVersion });
+      if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+        toast.error("Could not save property value", {
+          description: message,
+        });
+      }
     }
   }
 
@@ -1415,10 +1446,18 @@ export default function App() {
       }
     : workspaceMockSettings.sourceFolder;
   const serviceProjection = useMemo(
-    () => state.projection
-      ? filterWorkspaceProjectionBySearch(state.projection, state.searchQuery)
-      : null,
-    [state.projection, state.searchQuery],
+    () => {
+      if (
+        !state.projection ||
+        state.projection.workspaceId !== state.workspaceId ||
+        state.projection.view.id !== state.activeViewId
+      ) {
+        return null;
+      }
+
+      return filterWorkspaceProjectionBySearch(state.projection, state.searchQuery);
+    },
+    [state.activeViewId, state.projection, state.searchQuery, state.workspaceId],
   );
   const mockBoardProjectionResponse = useMemo(
     () => filterWorkspaceProjectionBySearch(
@@ -1571,7 +1610,9 @@ export default function App() {
                 onDeleteProperty={handleDeleteProperty}
               />
               <div className="min-h-0 flex-1 overflow-hidden">
-                {state.status === "loading" || state.status === "idle" ? (
+                {state.status === "loading" ||
+                state.status === "idle" ||
+                (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection) ? (
                   <WorkspaceLoadingState />
                 ) : state.sourceFolderMissing ? (
                   <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
