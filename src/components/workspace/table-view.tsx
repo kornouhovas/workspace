@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -162,10 +163,28 @@ function isEditableProperty(property: WorkspaceMockVisibleProperty) {
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
   if (property.id === "property:name") {
-    return "h-10 p-0.5";
+    return "h-10 border-r border-border/45 p-0.5";
   }
 
-  return editable ? "h-10 p-0.5" : "h-10 truncate px-2 py-0";
+  return editable ? "h-10 border-r border-border/45 p-0.5" : "h-10 border-r border-border/45 truncate px-3 py-0";
+}
+
+function renderTableStatusValue(value: unknown) {
+  const label = value == null ? "" : String(value);
+
+  if (!label) {
+    return "";
+  }
+
+  return (
+    <Badge
+      variant="secondary"
+      className="h-6 max-w-full gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+    >
+      <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+      <span className="truncate">{label}</span>
+    </Badge>
+  );
 }
 
 function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
@@ -743,8 +762,8 @@ export function WorkspaceTableView({
   }
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-4 pt-4 pb-0" aria-label="Workspace table">
-      <div className="min-h-0 w-full flex-1 overflow-auto">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-0 pt-4" aria-label="Workspace table">
+      <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
         <Table className="table-fixed" style={{ width: tableWidth }}>
           <colgroup>
             <col style={{ width: rowHandleColumnWidth }} />
@@ -753,9 +772,12 @@ export function WorkspaceTableView({
             ))}
             <col style={{ width: addPropertyColumnWidth }} />
           </colgroup>
-          <TableHeader onPointerDownCapture={dismissHeaderTransientState}>
-            <TableRow>
-              <TableHead className="w-10" aria-label="Row reorder" />
+          <TableHeader
+            className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+            onPointerDownCapture={dismissHeaderTransientState}
+          >
+            <TableRow className="h-11 hover:bg-transparent">
+              <TableHead className="w-10 border-r border-border/45 bg-background/95" aria-label="Row reorder" />
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
 
@@ -763,7 +785,7 @@ export function WorkspaceTableView({
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative border-r border-border/50 px-1",
+                      "group/column relative border-r border-border/45 bg-background/95 px-1",
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
                     ].filter(Boolean).join(" ")}
@@ -857,7 +879,7 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="w-12 border-l border-border bg-background">
+              <TableHead className="w-12 border-l border-border/45 bg-background/95">
                 <DropdownMenu
                   open={openAddPropertyMenu}
                   onOpenChange={setOpenAddPropertyMenu}
@@ -911,9 +933,9 @@ export function WorkspaceTableView({
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
-                className="h-10"
+                className="h-10 hover:bg-accent/15"
               >
-                <TableCell className="h-10 w-10 py-0 text-muted-foreground">
+                <TableCell className="h-10 w-10 border-r border-border/45 py-0 text-muted-foreground/80">
                   <GripVerticalIcon className="size-4" aria-hidden="true" />
                 </TableCell>
                 {visibleProperties.map((property) => {
@@ -950,13 +972,15 @@ export function WorkspaceTableView({
                             {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                           </span>
                         </button>
+                      ) : property.id === "property:status" ? (
+                        renderTableStatusValue(getPropertyValue(project, property))
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
                       )}
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-10 border-l border-border bg-background py-0" aria-hidden="true" />
+                <TableCell className="h-10 border-l border-border/45 bg-background/30 py-0" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>
