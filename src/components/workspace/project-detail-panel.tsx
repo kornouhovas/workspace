@@ -915,12 +915,29 @@ export function WorkspaceProjectDetailPanel({
     };
   }
 
+  function closePropertyMenuBeforeAction(
+    event: ReactPointerEvent<HTMLButtonElement> | ReactMouseEvent<HTMLElement>,
+  ) {
+    if (!propertyActionsId) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setPropertyActionsId(null);
+    return true;
+  }
+
   function startCardPropertyDrag(
     event: ReactPointerEvent<HTMLButtonElement>,
     propertyId: string,
     options: CardPropertyDragOptions = {},
   ) {
     if (event.button !== 0) {
+      return;
+    }
+
+    if (closePropertyMenuBeforeAction(event)) {
       return;
     }
 
@@ -1112,6 +1129,10 @@ export function WorkspaceProjectDetailPanel({
                               return;
                             }
 
+                            if (closePropertyMenuBeforeAction(event)) {
+                              return;
+                            }
+
                             event.preventDefault();
                             setPropertyActionsId(property.id);
                           }}
@@ -1141,7 +1162,10 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
-                                  className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className={[
+                                    "flex min-w-0 flex-1 select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                                    propertyActionsId === property.id ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+                                  ].join(" ")}
                                   onPointerDown={(event) => (
                                     startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
                                   )}
@@ -1156,7 +1180,10 @@ export function WorkspaceProjectDetailPanel({
                               <button
                                 type="button"
                                 aria-label={`Reorder ${property.name} card property order`}
-                                className="flex min-w-0 flex-1 cursor-grab select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                className={[
+                                  "flex min-w-0 flex-1 select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+                                  propertyActionsId ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+                                ].join(" ")}
                                 onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
                               >
                                 <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
