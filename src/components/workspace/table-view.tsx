@@ -26,7 +26,6 @@ import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-
 import {
   CalendarIcon,
   CircleDotIcon,
-  GripVerticalIcon,
   HashIcon,
   ListChecksIcon,
   MoreHorizontalIcon,
@@ -91,7 +90,6 @@ const propertyTypeOptions: readonly PropertyTypeOption[] = [
   { value: "multi-select", label: "Multi-select", description: "Several options from a list" },
 ];
 
-const rowHandleColumnWidth = 40;
 const addPropertyColumnWidth = 48;
 const minimumPropertyColumnWidth = 132;
 const maximumPropertyColumnWidth = 520;
@@ -420,7 +418,6 @@ export function WorkspaceTableView({
     ) as Record<string, number>
   ), [columnWidths, visibleProperties]);
   const tableWidth = useMemo(() => (
-    rowHandleColumnWidth +
     addPropertyColumnWidth +
     visibleProperties.reduce((totalWidth, property) => totalWidth + visiblePropertyWidths[property.id], 0)
   ), [visibleProperties, visiblePropertyWidths]);
@@ -764,20 +761,18 @@ export function WorkspaceTableView({
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-0 pt-4" aria-label="Workspace table">
       <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
-        <Table className="table-fixed" style={{ width: tableWidth }}>
+        <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
-            <col style={{ width: rowHandleColumnWidth }} />
             {visibleProperties.map((property) => (
               <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
             ))}
-            <col style={{ width: addPropertyColumnWidth }} />
+            <col aria-label="Add property filler column" />
           </colgroup>
           <TableHeader
             className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
             onPointerDownCapture={dismissHeaderTransientState}
           >
             <TableRow className="h-11 hover:bg-transparent">
-              <TableHead className="w-10 border-r border-border/45 bg-background/95" aria-label="Row reorder" />
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
 
@@ -879,7 +874,7 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="w-12 border-l border-border/45 bg-background/95">
+              <TableHead className="min-w-12 border-l border-border/45 bg-background/95">
                 <DropdownMenu
                   open={openAddPropertyMenu}
                   onOpenChange={setOpenAddPropertyMenu}
@@ -935,9 +930,6 @@ export function WorkspaceTableView({
                 key={project.id}
                 className="h-10 hover:bg-accent/15"
               >
-                <TableCell className="h-10 w-10 border-r border-border/45 py-0 text-muted-foreground/80">
-                  <GripVerticalIcon className="size-4" aria-hidden="true" />
-                </TableCell>
                 {visibleProperties.map((property) => {
                   const editable = isEditableProperty(property);
 
@@ -980,7 +972,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-10 border-l border-border/45 bg-background/30 py-0" aria-hidden="true" />
+                <TableCell className="h-10 min-w-12 border-l border-border/45 bg-background/30 py-0" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>

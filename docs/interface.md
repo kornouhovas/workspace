@@ -220,11 +220,10 @@ Table requirements:
 - Rows are stable in height.
 - Long text truncates inside stable column widths.
 - Clicking a row opens the right Project Detail Panel.
-- Table should include a row drag handle, similar to the original dashboard/table template.
 - Table should render as a compact bordered grid with subtle row separators and vertical dividers aligned between headers and values.
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
-- The drag handle is for row ordering/reordering UI affordance, not for moving projects between filesystem statuses.
-- If row reorder is not yet persisted in MVP, the UI should not imply a saved order unless persistence exists.
+- Table should not show a dedicated row drag-handle column while row ordering is not persisted.
+- The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
 
 ## Project Detail Panel
 
