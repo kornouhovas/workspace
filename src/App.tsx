@@ -1533,7 +1533,7 @@ export default function App() {
         <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header
             className={[
-              "electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4",
+              "electron-window-drag flex h-12 shrink-0 items-center gap-2 pr-4",
               sidebarCollapsed ? "pl-24" : "pl-4",
             ].join(" ")}
           >

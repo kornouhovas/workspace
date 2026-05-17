@@ -129,7 +129,7 @@ export function WorkspaceViewTabs({
   }
 
   return (
-    <div className="relative flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
+    <div className="relative flex min-w-0 items-center justify-between gap-3 px-4 py-2.5">
       <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0 overflow-hidden">
         <TabsList
           aria-label="Workspace views"

@@ -83,6 +83,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(boardViewSource, /Status columns are fixed for the MVP/);
   assert.doesNotMatch(tableViewSource, /Rows use the same project set as the Board projection/);
   assert.match(appSource, /WorkspaceViewTabs/);
+  assert.doesNotMatch(appSource, /electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4/);
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /loadRequestIdRef/);
@@ -304,6 +305,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /rounded-xl bg-muted\/80/);
   assert.match(viewTabsSource, /group-data-horizontal\/tabs:!h-9/);
   assert.match(viewTabsSource, /text-sm font-medium/);
+  assert.doesNotMatch(viewTabsSource, /justify-between gap-3 border-b border-border px-4 py-2\.5/);
   assert.match(viewTabsSource, /data-active:border-border/);
   assert.match(viewTabsSource, /data-active:bg-background/);
   assert.doesNotMatch(viewTabsSource, /text-base font-semibold/);
@@ -335,7 +337,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /renderTableStatusValue/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
-  assert.match(tableViewSource, /border-r border-border\/45/);
+  assert.match(tableViewSource, /border-r border-border\/55/);
+  assert.match(tableViewSource, /group\/column relative border-r border-border\/55/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
   assert.match(tableViewSource, /onCreateProperty/);
   assert.match(appSource, /createClientDocumentId\("property"\)/);
@@ -440,8 +443,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /className="h-10 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
-  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 border-r border-border\/45 p-0\.5";/);
-  assert.match(tableViewSource, /return editable \? "h-10 border-r border-border\/45 p-0\.5" : "h-10 border-r border-border\/45 truncate px-3 py-0";/);
+  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 border-r border-border\/55 p-0\.5";/);
+  assert.match(tableViewSource, /return editable \? "h-10 border-r border-border\/55 p-0\.5" : "h-10 border-r border-border\/55 truncate px-3 py-0";/);
   assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display flex h-8/);
   assert.match(tableViewSource, /className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted\/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);

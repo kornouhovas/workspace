@@ -165,6 +165,7 @@ The view switcher shows saved views for the active Workspace.
 Required behavior:
 
 - Only one view is active at a time.
+- View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
 - The `+` action creates a new view.
@@ -221,6 +222,7 @@ Table requirements:
 - Long text truncates inside stable column widths.
 - Clicking a row opens the right Project Detail Panel.
 - Table should render as a compact bordered grid with subtle row separators and vertical dividers aligned between headers and values.
+- Header vertical dividers should visually match the body dividers instead of fading on the first table row.
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
 - Table should not show a dedicated row drag-handle column while row ordering is not persisted.
 - The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
