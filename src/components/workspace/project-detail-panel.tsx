@@ -71,10 +71,6 @@ type CardPropertyDragState = {
   readonly rows: readonly CardPropertyDragPreviewRow[];
 };
 
-type CardPropertyDragOptions = {
-  readonly openActionsOnClick?: boolean;
-};
-
 const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
 const defaultProjectDetailPanelWidth = 480;
 const minProjectDetailPanelWidth = 360;
@@ -916,7 +912,7 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function closePropertyMenuBeforeAction(
-    event: ReactPointerEvent<HTMLButtonElement> | ReactMouseEvent<HTMLElement>,
+    event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>,
   ) {
     if (!propertyActionsId) {
       return false;
@@ -929,14 +925,12 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function openCardPropertyMenu(propertyId: string) {
-    setPropertyActionsId(null);
-    window.setTimeout(() => setPropertyActionsId(propertyId), 0);
+    setPropertyActionsId(propertyId);
   }
 
   function startCardPropertyDrag(
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLElement>,
     propertyId: string,
-    options: CardPropertyDragOptions = {},
   ) {
     if (event.button !== 0) {
       return;
@@ -1028,8 +1022,6 @@ export function WorkspaceProjectDetailPanel({
 
       if (moved) {
         onReorderCardProperties(nextPropertyIds);
-      } else if (options.openActionsOnClick) {
-        openCardPropertyMenu(propertyId);
       }
 
       cardPropertyPressMoved.current = false;
@@ -1167,35 +1159,50 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
-                                  className={[
-                                    "flex min-w-0 flex-1 select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-                                    propertyActionsId === property.id ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-                                  ].join(" ")}
-                                  onPointerDown={(event) => (
-                                    startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
-                                  )}
+                                  className="flex min-w-0 flex-1 cursor-default select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    openCardPropertyMenu(property.id);
+                                  }}
+                                  onContextMenu={(event) => {
+                                    if (closePropertyMenuBeforeAction(event)) {
+                                      return;
+                                    }
+
+                                    event.preventDefault();
+                                    openCardPropertyMenu(property.id);
+                                  }}
                                 >
-                                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                  <span
+                                    className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity active:cursor-grabbing group-hover/card-property:opacity-100"
+                                    onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                    }}
+                                  >
                                     <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                   </span>
                                   <span className="min-w-0 flex-1 truncate">{property.name}</span>
                                 </button>
                               </DropdownMenuTrigger>
                             ) : (
-                              <button
-                                type="button"
+                              <div
                                 aria-label={`Reorder ${property.name} card property order`}
-                                className={[
-                                  "flex min-w-0 flex-1 select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-                                  propertyActionsId ? "cursor-default" : "cursor-grab active:cursor-grabbing",
-                                ].join(" ")}
-                                onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                                className="flex min-w-0 flex-1 cursor-default select-none items-center gap-1 rounded-md text-left text-sm font-medium text-muted-foreground"
                               >
-                                <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/card-property:opacity-100">
+                                <span
+                                  className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity active:cursor-grabbing group-hover/card-property:opacity-100"
+                                  onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                >
                                   <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                 </span>
                                 <span className="min-w-0 flex-1 truncate">{property.name}</span>
-                              </button>
+                              </div>
                             )}
                           </dt>
                           <dd className="min-w-0 text-sm">

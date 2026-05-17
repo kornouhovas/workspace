@@ -520,12 +520,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onReorderCardProperties/);
   assert.match(projectDetailPanelSource, /GripVerticalIcon/);
   assert.match(projectDetailPanelSource, /cursor-grab/);
-  assert.match(projectDetailPanelSource, /openActionsOnClick/);
+  assert.doesNotMatch(projectDetailPanelSource, /openActionsOnClick/);
   assert.match(projectDetailPanelSource, /cardPropertyPressMoved/);
   assert.match(projectDetailPanelSource, /openCardPropertyMenu/);
-  assert.match(projectDetailPanelSource, /window\.setTimeout\(\(\) => setPropertyActionsId\(propertyId\), 0\)/);
+  assert.match(projectDetailPanelSource, /DropdownMenuTrigger asChild/);
+  assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
-  assert.match(projectDetailPanelSource, /propertyActionsId === property\.id \? "cursor-default" : "cursor-grab active:cursor-grabbing"/);
+  assert.match(projectDetailPanelSource, /onClick=\{\(event\) => \{\s*event\.preventDefault\(\);\s*openCardPropertyMenu\(property\.id\);/);
+  assert.match(projectDetailPanelSource, /onPointerDown=\{\(event\) => startCardPropertyDrag\(event, property\.id\)\}/);
   assert.match(projectDetailPanelSource, /Open \$\{property\.name\} property menu/);
   assert.doesNotMatch(projectDetailPanelSource, /MoreHorizontalIcon/);
   assert.match(projectDetailPanelSource, /card property order/);
