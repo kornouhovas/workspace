@@ -924,7 +924,7 @@ export function WorkspaceTableView({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
