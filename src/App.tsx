@@ -666,7 +666,6 @@ export default function App() {
     try {
       await workspaceClient.setActiveWorkspace({ workspaceId });
       setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
-      dispatch({ type: "workspaceActivated", workspaceId });
       setSelectedProject(null);
       setActiveSurface("workspace");
       setReloadToken((value) => value + 1);

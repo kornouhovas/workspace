@@ -181,6 +181,14 @@ export function workspaceAppStateReducer(
   action: WorkspaceAppAction,
 ): WorkspaceAppState {
   if (action.type === "loadStarted") {
+    if (state.status === "ready" && state.projection) {
+      return {
+        ...state,
+        error: null,
+        sourceFolderMissing: false,
+      };
+    }
+
     return {
       ...state,
       status: "loading",
@@ -209,6 +217,23 @@ export function workspaceAppStateReducer(
   }
 
   if (action.type === "rootSelected") {
+    if (
+      state.status === "ready" &&
+      state.projection &&
+      state.root?.path &&
+      state.root.path === action.root.path
+    ) {
+      return {
+        ...state,
+        root: state.root,
+        selectedProjectId: null,
+        detailOpen: false,
+        sourceFolderMissing: false,
+        error: null,
+        propertySaveError: null,
+      };
+    }
+
     return {
       ...state,
       status: "loading",

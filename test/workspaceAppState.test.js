@@ -413,6 +413,53 @@ test("workspace app state stores selected root before projection loading complet
   assert.equal(state.error, null);
 });
 
+test("workspace app state keeps the current projection while reloading another workspace for the same folder", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+  const nextRoot = { ...root, workspaceId: "workspace:design" };
+  const nextProjectionResponse = {
+    ...projectionResponse,
+    workspaceId: "workspace:design",
+    view: { id: "view:design-board", name: "Board", viewType: "board" },
+  };
+  const nextViewsResponse = {
+    workspaceId: "workspace:design",
+    activeViewId: "view:design-board",
+    views: [{ id: "view:design-board", name: "Board", viewType: "board" }],
+  };
+
+  const reloadingState = workspaceAppStateReducer(loadedState, { type: "loadStarted" });
+  const rootRefreshState = workspaceAppStateReducer(reloadingState, {
+    type: "rootSelected",
+    root: nextRoot,
+  });
+
+  assert.equal(reloadingState.status, "ready");
+  assert.equal(reloadingState.projection, projectionResponse);
+  assert.equal(rootRefreshState.status, "ready");
+  assert.equal(rootRefreshState.workspaceId, "workspace:ops");
+  assert.equal(rootRefreshState.projection, projectionResponse);
+
+  const switchedState = workspaceAppStateReducer(rootRefreshState, {
+    type: "projectionLoaded",
+    root: nextRoot,
+    viewsResponse: nextViewsResponse,
+    projectionResponse: nextProjectionResponse,
+    folderRoleTree,
+  });
+
+  assert.equal(switchedState.status, "ready");
+  assert.equal(switchedState.workspaceId, "workspace:design");
+  assert.deepEqual(switchedState.projection, nextProjectionResponse);
+  assert.deepEqual(switchedState.views, nextViewsResponse.views);
+});
+
 test("workspace app state stores service errors", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const state = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
