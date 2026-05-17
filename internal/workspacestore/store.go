@@ -122,6 +122,13 @@ type ViewDocument struct {
 	DeletedAt          *string                            `json:"deletedAt"`
 }
 
+type WorkspaceDocumentBatch struct {
+	PropertyDefinitions []PropertyDefinitionDocument `json:"propertyDefinitions"`
+	SelectValues        []SelectValueDocument        `json:"selectValues"`
+	PropertyValues      []PropertyValueDocument      `json:"propertyValues"`
+	Views               []ViewDocument               `json:"views"`
+}
+
 func Open(ctx context.Context, path string) (*Store, error) {
 	db, err := anystore.Open(ctx, path, nil)
 	if err != nil {
@@ -352,7 +359,17 @@ func (s *Store) ReorderViews(ctx context.Context, workspaceID string, orderedVie
 }
 
 func (s *Store) UpsertPropertyValue(ctx context.Context, value PropertyValueDocument) error {
-	return s.upsertJSON(ctx, "property_values", value)
+	return s.upsertJSON(ctx, "property_values", normalizePropertyValueDocument(value))
+}
+
+func normalizePropertyValueDocument(value PropertyValueDocument) PropertyValueDocument {
+	if value.Type == "" {
+		value.Type = "projectPropertyValue"
+	}
+	if value.SchemaVersion == 0 {
+		value.SchemaVersion = 1
+	}
+	return value
 }
 
 func (s *Store) ListPropertyValues(ctx context.Context, workspaceID string) ([]PropertyValueDocument, error) {
@@ -430,6 +447,60 @@ func (s *Store) UpsertPropertyDefinitions(ctx context.Context, properties []Prop
 		values = append(values, value)
 	}
 	return s.upsertJSONValues(ctx, "property_definitions", values)
+}
+
+func (s *Store) UpsertWorkspaceDocumentBatch(ctx context.Context, batch WorkspaceDocumentBatch) error {
+	batches := make([]jsonCollectionValueBatch, 0, 4)
+
+	if len(batch.PropertyDefinitions) > 0 {
+		values := make([]*anyenc.Value, 0, len(batch.PropertyDefinitions))
+		for _, property := range batch.PropertyDefinitions {
+			value, err := marshalJSONValue(normalizePropertyDefinitionDocument(property))
+			if err != nil {
+				return err
+			}
+			values = append(values, value)
+		}
+		batches = append(batches, jsonCollectionValueBatch{collectionName: "property_definitions", values: values})
+	}
+
+	if len(batch.SelectValues) > 0 {
+		values := make([]*anyenc.Value, 0, len(batch.SelectValues))
+		for _, selectValue := range batch.SelectValues {
+			value, err := marshalJSONValue(normalizeSelectValueDocument(selectValue))
+			if err != nil {
+				return err
+			}
+			values = append(values, value)
+		}
+		batches = append(batches, jsonCollectionValueBatch{collectionName: "select_values", values: values})
+	}
+
+	if len(batch.PropertyValues) > 0 {
+		values := make([]*anyenc.Value, 0, len(batch.PropertyValues))
+		for _, propertyValue := range batch.PropertyValues {
+			value, err := marshalJSONValue(normalizePropertyValueDocument(propertyValue))
+			if err != nil {
+				return err
+			}
+			values = append(values, value)
+		}
+		batches = append(batches, jsonCollectionValueBatch{collectionName: "property_values", values: values})
+	}
+
+	if len(batch.Views) > 0 {
+		values := make([]*anyenc.Value, 0, len(batch.Views))
+		for _, view := range batch.Views {
+			value, err := marshalJSONValue(normalizeViewDocument(view))
+			if err != nil {
+				return err
+			}
+			values = append(values, value)
+		}
+		batches = append(batches, jsonCollectionValueBatch{collectionName: "views", values: values})
+	}
+
+	return s.upsertJSONCollectionValues(ctx, batches)
 }
 
 func (s *Store) ListPropertyDefinitions(ctx context.Context, workspaceID string) ([]PropertyDefinitionDocument, error) {
@@ -615,20 +686,51 @@ func (s *Store) upsertJSON(ctx context.Context, collectionName string, doc any) 
 }
 
 func (s *Store) upsertJSONValues(ctx context.Context, collectionName string, values []*anyenc.Value) error {
-	coll, err := s.db.Collection(ctx, collectionName)
-	if err != nil {
-		return err
+	return s.upsertJSONCollectionValues(ctx, []jsonCollectionValueBatch{{
+		collectionName: collectionName,
+		values:         values,
+	}})
+}
+
+type jsonCollectionValueBatch struct {
+	collectionName string
+	values         []*anyenc.Value
+}
+
+type resolvedJSONCollectionValueBatch struct {
+	collection anystore.Collection
+	values     []*anyenc.Value
+}
+
+func (s *Store) upsertJSONCollectionValues(ctx context.Context, batches []jsonCollectionValueBatch) error {
+	if len(batches) == 0 {
+		return nil
 	}
+
+	resolvedBatches := make([]resolvedJSONCollectionValueBatch, 0, len(batches))
+	for _, batch := range batches {
+		coll, err := s.db.Collection(ctx, batch.collectionName)
+		if err != nil {
+			return err
+		}
+		resolvedBatches = append(resolvedBatches, resolvedJSONCollectionValueBatch{
+			collection: coll,
+			values:     batch.values,
+		})
+	}
+
 	tx, err := s.db.WriteTx(ctx)
 	if err != nil {
 		return err
 	}
-	for _, value := range values {
-		if err := coll.UpsertOne(tx.Context(), value); err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				return errors.Join(err, rollbackErr)
+	for _, batch := range resolvedBatches {
+		for _, value := range batch.values {
+			if err := batch.collection.UpsertOne(tx.Context(), value); err != nil {
+				if rollbackErr := tx.Rollback(); rollbackErr != nil {
+					return errors.Join(err, rollbackErr)
+				}
+				return err
 			}
-			return err
 		}
 	}
 	if err := tx.Commit(); err != nil {

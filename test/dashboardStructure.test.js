@@ -117,6 +117,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /responseActiveWorkspaceId/);
   assert.match(appSource, /workspaceClient\.reorderWorkspaces/);
   assert.match(appSource, /workspaceClient\.setActiveWorkspace/);
+  const workspaceOpenHandler = appSource.slice(
+    appSource.indexOf("async function handleWorkspaceOpen"),
+    appSource.indexOf("async function handleRenameWorkspace"),
+  );
+  assert.match(workspaceOpenHandler, /dispatch\(\{\s*type: "workspaceActivated",\s*workspaceId\s*\}\)/);
+  assert.match(workspaceOpenHandler, /isUnsupportedWorkspaceMethodError\(error, "workspace\.setActiveWorkspace"\)[\s\S]*dispatch\(\{\s*type: "workspaceActivated",\s*workspaceId\s*\}\)/);
   assert.doesNotMatch(appSource, /includeCardChildren:\s*true/);
   assert.match(appSource, /normalizeFolderRoleTree/);
   assert.match(appSource, /onSelectFolder/);

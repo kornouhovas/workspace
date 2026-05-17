@@ -829,28 +829,39 @@ func cascadeDeleteProperty(ctx context.Context, store *workspacestore.Store, pro
 	if len(valuesForProperty) > 0 && !confirmDeleteValues {
 		return errors.New("property has values and needs delete confirmation")
 	}
-	if err := store.UpsertPropertyDefinition(ctx, property); err != nil {
-		return err
-	}
 	selectValues, err := store.ListSelectValues(ctx, property.WorkspaceID, property.ID)
 	if err != nil {
 		return err
 	}
-	for _, value := range selectValues {
-		value.DeletedAt = &timestamp
-		value.UpdatedAt = timestamp
-		if err := store.UpsertSelectValue(ctx, value); err != nil {
-			return err
-		}
+	deletedSelectValues := make([]workspacestore.SelectValueDocument, 0, len(selectValues))
+	for _, selectValue := range selectValues {
+		selectValue.DeletedAt = &timestamp
+		selectValue.UpdatedAt = timestamp
+		deletedSelectValues = append(deletedSelectValues, selectValue)
 	}
+	deletedPropertyValues := make([]workspacestore.PropertyValueDocument, 0, len(valuesForProperty))
 	for _, value := range valuesForProperty {
 		value.DeletedAt = &timestamp
 		value.UpdatedAt = timestamp
-		if err := store.UpsertPropertyValue(ctx, value); err != nil {
-			return err
+		deletedPropertyValues = append(deletedPropertyValues, value)
+	}
+	views, err := store.ListViews(ctx, property.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	updatedViews := []workspacestore.ViewDocument{}
+	for _, view := range views {
+		nextView, changed := removePropertyFromView(view, property.ID, timestamp)
+		if changed {
+			updatedViews = append(updatedViews, nextView)
 		}
 	}
-	return nil
+	return store.UpsertWorkspaceDocumentBatch(ctx, workspacestore.WorkspaceDocumentBatch{
+		PropertyDefinitions: []workspacestore.PropertyDefinitionDocument{property},
+		SelectValues:        deletedSelectValues,
+		PropertyValues:      deletedPropertyValues,
+		Views:               updatedViews,
+	})
 }
 
 func cascadeDeleteSelectValue(ctx context.Context, store *workspacestore.Store, selectValue workspacestore.SelectValueDocument, timestamp string, confirmDeleteUsages bool) error {
@@ -874,9 +885,7 @@ func cascadeDeleteSelectValue(ctx context.Context, store *workspacestore.Store, 
 	if len(valuesUsingSelectValue) > 0 && !confirmDeleteUsages {
 		return errors.New("select value is used by project property values and needs delete confirmation")
 	}
-	if err := store.UpsertSelectValue(ctx, selectValue); err != nil {
-		return err
-	}
+	updatedPropertyValues := make([]workspacestore.PropertyValueDocument, 0, len(valuesUsingSelectValue))
 	for _, value := range valuesUsingSelectValue {
 		if getPropertyDefinitionType(property) == "multi-select" {
 			value.Value = removeSelectValueFromMultiSelect(value.Value, selectValue.ID)
@@ -884,11 +893,118 @@ func cascadeDeleteSelectValue(ctx context.Context, store *workspacestore.Store, 
 			value.Value = nil
 		}
 		value.UpdatedAt = timestamp
-		if err := store.UpsertPropertyValue(ctx, value); err != nil {
-			return err
+		updatedPropertyValues = append(updatedPropertyValues, value)
+	}
+	views, err := store.ListViews(ctx, selectValue.WorkspaceID)
+	if err != nil {
+		return err
+	}
+	updatedViews := []workspacestore.ViewDocument{}
+	for _, view := range views {
+		nextView, changed := removeSelectValueFromView(view, selectValue.PropertyID, selectValue.ID, timestamp)
+		if changed {
+			updatedViews = append(updatedViews, nextView)
 		}
 	}
-	return nil
+	return store.UpsertWorkspaceDocumentBatch(ctx, workspacestore.WorkspaceDocumentBatch{
+		SelectValues:   []workspacestore.SelectValueDocument{selectValue},
+		PropertyValues: updatedPropertyValues,
+		Views:          updatedViews,
+	})
+}
+
+func removePropertyFromView(view workspacestore.ViewDocument, propertyID string, timestamp string) (workspacestore.ViewDocument, bool) {
+	nextView := view
+	changed := false
+
+	visiblePropertyIDs := removeString(nextView.VisiblePropertyIDs, propertyID)
+	if len(visiblePropertyIDs) != len(nextView.VisiblePropertyIDs) {
+		nextView.VisiblePropertyIDs = visiblePropertyIDs
+		changed = true
+	}
+
+	hiddenPropertyIDs := removeString(nextView.HiddenPropertyIDs, propertyID)
+	if len(hiddenPropertyIDs) != len(nextView.HiddenPropertyIDs) {
+		nextView.HiddenPropertyIDs = hiddenPropertyIDs
+		changed = true
+	}
+
+	if nextView.PropertyOrder != nil {
+		if _, ok := nextView.PropertyOrder[propertyID]; ok {
+			propertyOrder := make(map[string]int, len(nextView.PropertyOrder))
+			for key, value := range nextView.PropertyOrder {
+				if key != propertyID {
+					propertyOrder[key] = value
+				}
+			}
+			nextView.PropertyOrder = propertyOrder
+			changed = true
+		}
+	}
+
+	if nextView.ValueVisibility != nil {
+		if _, ok := nextView.ValueVisibility[propertyID]; ok {
+			valueVisibility := make(map[string]workspacestore.ValueVisibilityDocument, len(nextView.ValueVisibility))
+			for key, value := range nextView.ValueVisibility {
+				if key != propertyID {
+					valueVisibility[key] = value
+				}
+			}
+			nextView.ValueVisibility = valueVisibility
+			changed = true
+		}
+	}
+
+	if changed {
+		nextView.UpdatedAt = timestamp
+	}
+	return nextView, changed
+}
+
+func removeSelectValueFromView(view workspacestore.ViewDocument, propertyID string, selectValueID string, timestamp string) (workspacestore.ViewDocument, bool) {
+	if view.ValueVisibility == nil {
+		return view, false
+	}
+
+	setting, ok := view.ValueVisibility[propertyID]
+	if !ok {
+		return view, false
+	}
+
+	nextValueIDs := removeString(setting.ValueIDs, selectValueID)
+	if len(nextValueIDs) == len(setting.ValueIDs) {
+		return view, false
+	}
+
+	nextView := view
+	nextValueVisibility := make(map[string]workspacestore.ValueVisibilityDocument, len(view.ValueVisibility))
+	for key, value := range view.ValueVisibility {
+		nextValueVisibility[key] = value
+	}
+
+	if len(nextValueIDs) == 0 && !setting.IncludeEmpty {
+		delete(nextValueVisibility, propertyID)
+	} else {
+		setting.ValueIDs = nextValueIDs
+		nextValueVisibility[propertyID] = setting
+	}
+
+	nextView.ValueVisibility = nextValueVisibility
+	nextView.UpdatedAt = timestamp
+	return nextView, true
+}
+
+func removeString(values []string, valueToRemove string) []string {
+	if len(values) == 0 {
+		return values
+	}
+	nextValues := make([]string, 0, len(values))
+	for _, value := range values {
+		if value != valueToRemove {
+			nextValues = append(nextValues, value)
+		}
+	}
+	return nextValues
 }
 
 func propertyValueUsesSelectValue(value any, selectValueID string) bool {

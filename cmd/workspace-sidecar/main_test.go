@@ -225,6 +225,23 @@ func TestSelectReferencesAreValidatedAndClearedOnDelete(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.UpsertView(ctx, workspacestore.ViewDocument{
+		ID:          "view:table",
+		WorkspaceID: "workspace:ops",
+		Name:        "Table",
+		ViewType:    "table",
+		Order:       10,
+		ValueVisibility: map[string]workspacestore.ValueVisibilityDocument{
+			"property:tags": {
+				Mode:     "include",
+				ValueIDs: []string{"selectValue:tags:bug"},
+			},
+		},
+		CreatedAt: "2026-05-15T09:00:00.000Z",
+		UpdatedAt: "2026-05-15T09:00:00.000Z",
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	mux := newWorkspaceMux(store)
 	missing := performJSONRequest(t, mux, http.MethodPut, "/workspace/property-values", map[string]any{
@@ -264,6 +281,13 @@ func TestSelectReferencesAreValidatedAndClearedOnDelete(t *testing.T) {
 	}
 	if selected, ok := values[0].Value.([]any); !ok || len(selected) != 0 {
 		t.Fatalf("expected deleted multi-select reference to be cleared, got %#v", values[0].Value)
+	}
+	views, err := store.ListViews(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := views[0].ValueVisibility["property:tags"]; ok {
+		t.Fatalf("expected deleted select value to clear empty view filter, got %#v", views[0].ValueVisibility)
 	}
 }
 
@@ -306,6 +330,29 @@ func TestDeletePropertyCascadesValuesAndSelectValues(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.UpsertView(ctx, workspacestore.ViewDocument{
+		ID:                 "view:table",
+		WorkspaceID:        "workspace:ops",
+		Name:               "Table",
+		ViewType:           "table",
+		Order:              10,
+		VisiblePropertyIDs: []string{"property:name", "property:priority"},
+		HiddenPropertyIDs:  []string{"property:priority"},
+		PropertyOrder: map[string]int{
+			"property:name":     10,
+			"property:priority": 20,
+		},
+		ValueVisibility: map[string]workspacestore.ValueVisibilityDocument{
+			"property:priority": {
+				Mode:     "include",
+				ValueIDs: []string{"selectValue:priority:high"},
+			},
+		},
+		CreatedAt: "2026-05-15T09:00:00.000Z",
+		UpdatedAt: "2026-05-15T09:00:00.000Z",
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	recorder := performJSONRequest(t, newWorkspaceMux(store), http.MethodDelete, "/workspace/properties", map[string]any{
 		"workspaceId":         "workspace:ops",
@@ -335,6 +382,22 @@ func TestDeletePropertyCascadesValuesAndSelectValues(t *testing.T) {
 	}
 	if len(values) != 0 {
 		t.Fatalf("expected property values to be hidden from active list, got %#v", values)
+	}
+	views, err := store.ListViews(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(views) != 1 {
+		t.Fatalf("expected one view after property delete, got %#v", views)
+	}
+	if containsString(views[0].VisiblePropertyIDs, "property:priority") || containsString(views[0].HiddenPropertyIDs, "property:priority") {
+		t.Fatalf("expected deleted property to be removed from view property lists, got %#v", views[0])
+	}
+	if _, ok := views[0].PropertyOrder["property:priority"]; ok {
+		t.Fatalf("expected deleted property to be removed from view property order, got %#v", views[0].PropertyOrder)
+	}
+	if _, ok := views[0].ValueVisibility["property:priority"]; ok {
+		t.Fatalf("expected deleted property to be removed from view value visibility, got %#v", views[0].ValueVisibility)
 	}
 }
 
@@ -398,4 +461,13 @@ func decodeResponse(t *testing.T, recorder *httptest.ResponseRecorder, target an
 	if err := json.NewDecoder(recorder.Body).Decode(target); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
 }
