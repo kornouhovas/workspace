@@ -335,6 +335,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /onProjectOpen/);
   assert.match(boardViewSource, /selectValues/);
   assert.match(boardViewSource, /formatPropertyValue/);
+  assert.match(boardViewSource, /renderBoardStatusValue/);
+  assert.match(boardViewSource, /className="h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-medium"/);
+  assert.match(boardViewSource, /size-2 rounded-full bg-muted-foreground\/70/);
   assert.match(boardViewSource, /auto-cols-\[minmax\(20rem,1fr\)\]/);
   assert.match(boardViewSource, /min-h-24/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);

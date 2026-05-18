@@ -53,6 +53,24 @@ function formatPropertyValue(
   return value == null ? "" : String(value);
 }
 
+function renderBoardStatusValue(value: unknown) {
+  const label = value == null ? "" : String(value);
+
+  if (!label) {
+    return null;
+  }
+
+  return (
+    <Badge
+      variant="secondary"
+      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+    >
+      <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+      <span className="truncate">{label}</span>
+    </Badge>
+  );
+}
+
 export function WorkspaceBoardView({ projection, visibleProperties, selectValues, onProjectOpen }: WorkspaceBoardViewProps) {
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
@@ -92,7 +110,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
                         <div className="min-w-0">
                           <h4 className="truncate text-sm font-medium leading-snug">{project.name}</h4>
                         </div>
-                        <Badge variant="outline" className="max-w-28 shrink-0 truncate">{project.status.name}</Badge>
+                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status.name)}</div>
                       </div>
                       {cardProperties.length > 0 ? (
                         <dl className="grid gap-2">
