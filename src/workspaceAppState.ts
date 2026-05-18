@@ -150,6 +150,11 @@ export type WorkspaceAppAction =
       readonly propertyOrder: Record<string, number>;
     }
   | {
+      readonly type: "viewValueVisibilityUpdated";
+      readonly viewId: string;
+      readonly valueVisibility: NonNullable<WorkspaceViewState["valueVisibility"]>;
+    }
+  | {
       readonly type: "propertySaveFailed";
       readonly error: string;
       readonly projectId?: string;
@@ -351,6 +356,32 @@ export function workspaceAppStateReducer(
               propertyOrder: action.propertyOrder,
             },
             visibleProperties: createProjectionVisibleProperties(state, action.visiblePropertyIds),
+          }
+        : state.projection,
+      error: null,
+    };
+  }
+
+  if (action.type === "viewValueVisibilityUpdated") {
+    const views = state.views.map((view) => (
+      view.id === action.viewId
+        ? {
+            ...view,
+            valueVisibility: action.valueVisibility,
+          }
+        : view
+    ));
+
+    return {
+      ...state,
+      views,
+      projection: state.projection?.view.id === action.viewId
+        ? {
+            ...state.projection,
+            view: {
+              ...state.projection.view,
+              valueVisibility: action.valueVisibility,
+            },
           }
         : state.projection,
       error: null,

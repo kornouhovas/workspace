@@ -32,6 +32,7 @@ test("renderer composes the workspace product shell", async () => {
     workspaceAppStateSource,
     buildRendererSource,
     disableFsEventsLoaderSource,
+    lucideIconTypesSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -57,6 +58,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/workspaceAppState.ts"),
     readProjectFile("scripts/build-renderer.mjs"),
     readProjectFile("scripts/disable-fsevents-loader.mjs"),
+    readProjectFile("src/types/lucide-react-icons.d.ts"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -84,8 +86,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(buildRendererSource, /await import\("vite"\)/);
   assert.match(disableFsEventsLoaderSource, /specifier === "fsevents"/);
   assert.match(disableFsEventsLoaderSource, /export default undefined/);
-  assert.match(lucideIconsSource, /from "lucide-react"/);
-  assert.doesNotMatch(lucideIconsSource, /lucide-react\/dist\/esm\/icons/);
+  assert.doesNotMatch(lucideIconsSource, /from "lucide-react"/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/check\.mjs/);
+  assert.match(lucideIconTypesSource, /lucide-react\/dist\/esm\/icons\/\*\.mjs/);
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
   assert.match(appSource, /Workspace Project Board/);
@@ -351,9 +354,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /renderTableStatusValue/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
-  assert.match(tableViewSource, /border-r border-border/);
-  assert.match(tableViewSource, /group\/column relative border-r border-border/);
-  assert.match(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-20 after:w-px after:bg-border after:content-\[''\]/);
+  assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
+  assert.match(tableViewSource, /group\/column relative bg-background\/95 px-1/);
+  assert.doesNotMatch(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0/);
   assert.match(tableViewSource, /<TableBody className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45">/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
   assert.match(tableViewSource, /onCreateProperty/);
@@ -362,6 +365,29 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /onDeleteProperty/);
   assert.match(tableViewSource, /onReorderViewProperties/);
   assert.match(tableViewSource, /onTogglePropertyVisibility/);
+  assert.match(tableViewSource, /readonly view: WorkspaceViewState \| null;/);
+  assert.match(tableViewSource, /readonly statusValues: WorkspaceProjectionResponse\["statusValues"\];/);
+  assert.match(tableViewSource, /readonly onToggleValueFilter: \(propertyId: string, valueId: string, included: boolean\) => void;/);
+  assert.match(tableViewSource, /function isFilterableProperty/);
+  assert.match(tableViewSource, /function getFilterValues/);
+  assert.match(tableViewSource, /Value filters/);
+  assert.match(tableViewSource, /No values/);
+  assert.match(tableViewSource, /data-workspace-property-menu="true"/);
+  assert.match(tableViewSource, /data-workspace-property-menu-trigger="true"/);
+  assert.match(tableViewSource, /closePropertyMenuOnOutsidePointerDown/);
+  assert.match(tableViewSource, /from "react-dom"/);
+  assert.match(tableViewSource, /createPortal/);
+  assert.match(tableViewSource, /propertyMenuAnchor/);
+  assert.match(tableViewSource, /className="fixed z-50 w-52/);
+  assert.match(tableViewSource, /style=\{\{ left: propertyMenuAnchor\.left, top: propertyMenuAnchor\.top \}\}/);
+  assert.doesNotMatch(tableViewSource, /PopoverContent/);
+  assert.doesNotMatch(tableViewSource, /DropdownMenuCheckboxItem/);
+  assert.match(tableViewSource, /import \{ Checkbox \} from "@\/components\/ui\/checkbox";/);
+  assert.doesNotMatch(tableViewSource, /suppressNextPropertyMenuCloseRef/);
+  assert.match(tableViewSource, /grid-cols-\[auto_minmax\(0,1fr\)\] items-center gap-2 rounded-md px-1 py-0\.5 text-sm hover:bg-muted\/40/);
+  assert.match(tableViewSource, /<Checkbox[\s\S]*checked=\{filterValueChecked\}/);
+  assert.match(tableViewSource, /onCheckedChange=\{\(value\) => onToggleValueFilter\(property\.id, filterValue\.id, value === true\)\}/);
+  assert.match(tableViewSource, /const selectedValueIds = new Set\(valueVisibility\[property\.id\]\?\.valueIds \|\| \[\]\);/);
   assert.match(tableViewSource, /Add property column/);
   assert.match(tableViewSource, /Add property/);
   assert.match(tableViewSource, /createPropertyFromType/);
@@ -459,8 +485,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /className="h-10 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
-  assert.match(tableViewSource, /property\.id === "property:name"\)\s*\{\s+return "h-10 border-r border-border p-0\.5";/);
-  assert.match(tableViewSource, /return editable \? "h-10 border-r border-border p-0\.5" : "h-10 border-r border-border truncate px-3 py-0";/);
+  assert.match(tableViewSource, /return `h-10 \$\{tableColumnDividerClassName\} p-0\.5`;/);
+  assert.match(tableViewSource, /\? `h-10 \$\{tableColumnDividerClassName\} p-0\.5`/);
+  assert.match(tableViewSource, /: `h-10 \$\{tableColumnDividerClassName\} truncate px-3 py-0`;/);
   assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display flex h-8/);
   assert.match(tableViewSource, /className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted\/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
@@ -637,6 +664,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /readonly onColorSelectValue: \(selectValueId: string, color: string\) => void;/);
   assert.match(tableViewSource, /onColorSelectValue,\s+onDeleteSelectValue,\s+\}: WorkspaceTableViewProps/);
   assert.match(tableViewSource, /onColorSelectValue=\{onColorSelectValue\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*view=\{activeView \?\? null\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*statusValues=\{statusValues\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*onToggleValueFilter=\{handleToggleValueFilter\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*onColorSelectValue=\{handleColorSelectValue\}/);
   const renamePropertyHandler = appSource.slice(
     appSource.indexOf("async function handleRenameProperty"),
@@ -686,7 +716,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(lucideIconsSource, /FileIcon/);
   assert.match(lucideIconsSource, /SearchIcon/);
   assert.match(lucideIconsSource, /SettingsIcon/);
-  assert.doesNotMatch(lucideIconsSource, /dist\/esm\/icons/);
+  assert.doesNotMatch(lucideIconsSource, /from "lucide-react"/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
   assert.match(cssSource, /workspace-number-input/);

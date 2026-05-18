@@ -228,6 +228,7 @@ Table requirements:
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
 - Table should not show a dedicated row drag-handle column while row ordering is not persisted.
 - The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
+- Column property menus for `Status`, `Select`, and `Multi-select` should include `Value filters` for the current property, using the same view-level `valueVisibility` settings as `Customize Columns`.
 
 ## Project Detail Panel
 

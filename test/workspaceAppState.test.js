@@ -249,6 +249,64 @@ test("workspace app state updates visible view properties without clearing proje
   assert.equal(state.projection.projection.rows[0], alpha);
 });
 
+test("workspace app state updates view value visibility without clearing projection rows", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: {
+      "property:name": "Alpha Project",
+      "property:status": "status:active",
+    },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      workspaceId: "workspace:ops",
+      activeViewId: "view:table",
+      views: [
+        {
+          id: "view:table",
+          name: "Table",
+          viewType: "table",
+          valueVisibility: {},
+        },
+      ],
+    },
+    projectionResponse: {
+      ...projectionResponse,
+      view: {
+        id: "view:table",
+        name: "Table",
+        viewType: "table",
+        valueVisibility: {},
+      },
+      projection: {
+        type: "table",
+        rows: [alpha],
+      },
+    },
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewValueVisibilityUpdated",
+    viewId: "view:table",
+    valueVisibility: {
+      "property:status": { valueIds: ["status:active"] },
+    },
+  });
+
+  assert.deepEqual(state.views[0].valueVisibility, {
+    "property:status": { valueIds: ["status:active"] },
+  });
+  assert.deepEqual(state.projection.view.valueVisibility, {
+    "property:status": { valueIds: ["status:active"] },
+  });
+  assert.equal(state.projection.projection.rows[0], alpha);
+});
+
 test("workspace app state removes a deleted property from catalog and projections", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {

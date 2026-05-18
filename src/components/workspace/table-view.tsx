@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +36,12 @@ import {
 } from "@/lib/lucide-icons";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
-import type { WorkspacePropertyDefinitionState, WorkspaceSelectValueState } from "@/workspaceAppState";
+import type {
+  WorkspaceProjectionResponse,
+  WorkspacePropertyDefinitionState,
+  WorkspaceSelectValueState,
+  WorkspaceViewState,
+} from "@/workspaceAppState";
 
 type WorkspaceTableProjection = {
   readonly rows: readonly WorkspaceMockProject[];
@@ -60,11 +67,23 @@ type ColumnDragState = {
   readonly columns: readonly ColumnDragPreviewColumn[];
 };
 
+type PropertyMenuAnchorState = {
+  readonly left: number;
+  readonly top: number;
+};
+
+type WorkspaceFilterValue = {
+  readonly id: string;
+  readonly name: string;
+};
+
 type WorkspaceTableViewProps = {
   readonly projection: WorkspaceTableProjection;
+  readonly view: WorkspaceViewState | null;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onProjectOpen: (project: WorkspaceMockProject) => void;
   readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
@@ -72,6 +91,7 @@ type WorkspaceTableViewProps = {
   readonly onDismissFloatingMenus: () => void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
+  readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
@@ -94,7 +114,10 @@ const addPropertyColumnWidth = 48;
 const minimumPropertyColumnWidth = 132;
 const maximumPropertyColumnWidth = 520;
 const defaultCustomPropertyColumnWidth = 180;
-const tableHeaderDividerClassName = "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-20 after:w-px after:bg-border after:content-['']";
+const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border)]";
+const propertyMenuWidth = 208;
+const propertyMenuOffset = 4;
+const propertyMenuViewportMargin = 8;
 
 function getDefaultPropertyColumnWidth(property: WorkspaceMockVisibleProperty) {
   if (property.id === "property:name") {
@@ -156,16 +179,73 @@ function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
 }
 
+function isPropertyMenuTarget(target: EventTarget | null) {
+  return target instanceof Element
+    && Boolean(target.closest("[data-workspace-property-menu='true'], [data-workspace-property-menu-trigger='true']"));
+}
+
+function clampPropertyMenuLeft(left: number) {
+  const viewportWidth = window.innerWidth || propertyMenuWidth;
+  const maxLeft = Math.max(
+    propertyMenuViewportMargin,
+    viewportWidth - propertyMenuWidth - propertyMenuViewportMargin,
+  );
+
+  return Math.min(Math.max(left, propertyMenuViewportMargin), maxLeft);
+}
+
+function createPropertyMenuAnchor(rect: DOMRect): PropertyMenuAnchorState {
+  return {
+    left: clampPropertyMenuLeft(rect.left),
+    top: Math.max(rect.bottom + propertyMenuOffset, propertyMenuViewportMargin),
+  };
+}
+
+function createPropertyMenuAnchorFromPoint(clientX: number, clientY: number): PropertyMenuAnchorState {
+  return {
+    left: clampPropertyMenuLeft(clientX),
+    top: Math.max(clientY + propertyMenuOffset, propertyMenuViewportMargin),
+  };
+}
+
 function isEditableProperty(property: WorkspaceMockVisibleProperty) {
   return !isSystemProperty(property.id) && property.system !== true;
 }
 
-function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
-  if (property.id === "property:name") {
-    return "h-10 border-r border-border p-0.5";
+function isFilterableProperty(property: WorkspaceMockVisibleProperty) {
+  return property.id === "property:status"
+    || property.propertyType === "select"
+    || property.propertyType === "multi-select";
+}
+
+function getFilterValues(
+  property: WorkspaceMockVisibleProperty,
+  selectValues: readonly WorkspaceSelectValueState[],
+  statusValues: WorkspaceProjectionResponse["statusValues"],
+): readonly WorkspaceFilterValue[] {
+  if (property.id === "property:status") {
+    return statusValues.map((statusValue) => ({
+      id: statusValue.id,
+      name: statusValue.name,
+    }));
   }
 
-  return editable ? "h-10 border-r border-border p-0.5" : "h-10 border-r border-border truncate px-3 py-0";
+  return selectValues
+    .filter((selectValue) => selectValue.propertyId === property.id && !selectValue.hidden)
+    .map((selectValue) => ({
+      id: selectValue.id,
+      name: selectValue.name,
+    }));
+}
+
+function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
+  if (property.id === "property:name") {
+    return `h-10 ${tableColumnDividerClassName} p-0.5`;
+  }
+
+  return editable
+    ? `h-10 ${tableColumnDividerClassName} p-0.5`
+    : `h-10 ${tableColumnDividerClassName} truncate px-3 py-0`;
 }
 
 function renderTableStatusValue(value: unknown) {
@@ -369,9 +449,11 @@ function ProjectTablePropertyValueEditor({
 
 export function WorkspaceTableView({
   projection,
+  view,
   visibleProperties,
   properties,
   selectValues,
+  statusValues,
   onProjectOpen,
   onCreateProperty,
   onRenameProperty,
@@ -379,6 +461,7 @@ export function WorkspaceTableView({
   onDismissFloatingMenus,
   onReorderViewProperties,
   onTogglePropertyVisibility,
+  onToggleValueFilter,
   onProjectPropertyValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
@@ -389,6 +472,7 @@ export function WorkspaceTableView({
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [editingCellId, setEditingCellId] = useState<string | null>(null);
   const [openPropertyMenuId, setOpenPropertyMenuId] = useState<string | null>(null);
+  const [propertyMenuAnchor, setPropertyMenuAnchor] = useState<PropertyMenuAnchorState | null>(null);
   const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
   const [dropdownDismissToken, setDropdownDismissToken] = useState(0);
   const [columnDrag, setColumnDrag] = useState<ColumnDragState | null>(null);
@@ -398,6 +482,7 @@ export function WorkspaceTableView({
     readonly startX: number;
     readonly startWidth: number;
   } | null>(null);
+  const valueVisibility = view?.valueVisibility || {};
   const visiblePropertyIds = useMemo(
     () => new Set(visibleProperties.map((property) => property.id)),
     [visibleProperties],
@@ -463,6 +548,36 @@ export function WorkspaceTableView({
     };
   }, [resizingColumn]);
 
+  useEffect(() => {
+    if (!openPropertyMenuId) {
+      return undefined;
+    }
+
+    function closePropertyMenuOnOutsidePointerDown(event: PointerEvent) {
+      if (isPropertyMenuTarget(event.target)) {
+        return;
+      }
+
+      setOpenPropertyMenuId(null);
+      setPropertyMenuAnchor(null);
+    }
+
+    function closePropertyMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenPropertyMenuId(null);
+        setPropertyMenuAnchor(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", closePropertyMenuOnOutsidePointerDown, true);
+    document.addEventListener("keydown", closePropertyMenuOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closePropertyMenuOnOutsidePointerDown, true);
+      document.removeEventListener("keydown", closePropertyMenuOnEscape);
+    };
+  }, [openPropertyMenuId]);
+
   function beginRenameProperty(property: WorkspaceMockVisibleProperty) {
     if (isSystemProperty(property.id)) {
       return;
@@ -486,6 +601,21 @@ export function WorkspaceTableView({
     onCreateProperty({ name: option.label, type: option.value });
   }
 
+  function closePropertyMenu() {
+    setOpenPropertyMenuId(null);
+    setPropertyMenuAnchor(null);
+  }
+
+  function openPropertyMenuFromElement(propertyId: string, element: HTMLElement) {
+    setOpenPropertyMenuId(propertyId);
+    setPropertyMenuAnchor(createPropertyMenuAnchor(element.getBoundingClientRect()));
+  }
+
+  function openPropertyMenuFromPoint(propertyId: string, clientX: number, clientY: number) {
+    setOpenPropertyMenuId(propertyId);
+    setPropertyMenuAnchor(createPropertyMenuAnchorFromPoint(clientX, clientY));
+  }
+
   function blurActiveEditingCell() {
     if (!editingCellId) {
       return;
@@ -501,9 +631,13 @@ export function WorkspaceTableView({
     setEditingCellId(null);
   }
 
-  function dismissHeaderTransientState() {
+  function dismissHeaderTransientState(event: ReactPointerEvent<HTMLElement>) {
+    if (isPropertyMenuTarget(event.target)) {
+      return;
+    }
+
     blurActiveEditingCell();
-    setOpenPropertyMenuId(null);
+    closePropertyMenu();
     setOpenAddPropertyMenu(false);
     setDropdownDismissToken((currentToken) => currentToken + 1);
     onDismissFloatingMenus();
@@ -698,7 +832,7 @@ export function WorkspaceTableView({
     let frameId = 0;
     let pendingClientX = event.clientX;
 
-    setOpenPropertyMenuId(null);
+    closePropertyMenu();
     setColumnDrag({
       propertyId,
       startX: event.clientX,
@@ -776,13 +910,16 @@ export function WorkspaceTableView({
             <TableRow className="h-11 hover:bg-transparent">
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
+                const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
+                const propertyFilterValues = getFilterValues(property, selectValues, statusValues);
+                const showValueFilters = isFilterableProperty(property);
 
                 return (
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative border-r border-border bg-background/95 px-1",
-                      tableHeaderDividerClassName,
+                      "group/column relative bg-background/95 px-1",
+                      tableColumnDividerClassName,
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
                     ].filter(Boolean).join(" ")}
@@ -793,7 +930,7 @@ export function WorkspaceTableView({
                     }}
                     onContextMenu={(event) => {
                       event.preventDefault();
-                      setOpenPropertyMenuId(property.id);
+                      openPropertyMenuFromPoint(property.id, event.clientX, event.clientY);
                     }}
                   >
                     {editingPropertyId === property.id ? (
@@ -818,10 +955,7 @@ export function WorkspaceTableView({
                         }}
                       />
                     ) : (
-                      <DropdownMenu
-                        open={openPropertyMenuId === property.id}
-                        onOpenChange={(open) => setOpenPropertyMenuId(open ? property.id : null)}
-                      >
+                      <>
                         <div className="flex min-w-0 items-center gap-1">
                           <button
                             type="button"
@@ -831,41 +965,109 @@ export function WorkspaceTableView({
                           >
                             <span className="block min-w-0 truncate">{property.name}</span>
                           </button>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus-visible:ring-1 focus-visible:ring-ring/40 group-hover/column:opacity-100 group-focus-within/column:opacity-100 data-[state=open]:opacity-100"
-                              aria-label={`${property.name} property actions`}
-                              onPointerDown={(event) => event.stopPropagation()}
-                            >
-                              <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                            </button>
-                          </DropdownMenuTrigger>
-                        </div>
-                        <DropdownMenuContent align="start" className="min-w-44">
-                          <DropdownMenuItem disabled={isSystemProperty(property.id)} onSelect={() => beginRenameProperty(property)}>
-                            Rename property
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={isSystemProperty(property.id)}
-                            onSelect={() => onTogglePropertyVisibility(property.id, false)}
-                          >
-                            Hide from view
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            disabled={isSystemProperty(property.id)}
-                            variant="destructive"
-                            onSelect={() => {
-                              if (window.confirm(`Delete property "${property.name}"?`)) {
-                                onDeleteProperty(property.id);
+                          <button
+                            type="button"
+                            data-workspace-property-menu-trigger="true"
+                            className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus-visible:ring-1 focus-visible:ring-ring/40 group-hover/column:opacity-100 group-focus-within/column:opacity-100 data-[state=open]:opacity-100"
+                            aria-label={`${property.name} property actions`}
+                            data-state={openPropertyMenuId === property.id ? "open" : "closed"}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (openPropertyMenuId === property.id) {
+                                closePropertyMenu();
+                                return;
                               }
+
+                              openPropertyMenuFromElement(property.id, event.currentTarget);
                             }}
                           >
-                            Delete property
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                        {openPropertyMenuId === property.id && propertyMenuAnchor ? createPortal((
+                          <div
+                            data-workspace-property-menu="true"
+                            role="menu"
+                            aria-label={`${property.name} property actions`}
+                            className="fixed z-50 w-52 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+                            style={{ left: propertyMenuAnchor.left, top: propertyMenuAnchor.top }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <div className="grid gap-0.5">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                disabled={isSystemProperty(property.id)}
+                                className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                                onClick={() => {
+                                  beginRenameProperty(property);
+                                  closePropertyMenu();
+                                }}
+                              >
+                                Rename property
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                disabled={isSystemProperty(property.id)}
+                                className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                                onClick={() => {
+                                  onTogglePropertyVisibility(property.id, false);
+                                  closePropertyMenu();
+                                }}
+                              >
+                                Hide from view
+                              </button>
+                            </div>
+                            {showValueFilters ? (
+                              <>
+                                <div className="-mx-1 my-1 h-px bg-border" />
+                                <div className="grid gap-1" aria-label={`${property.name} value filters`}>
+                                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">Value filters</p>
+                                  <div className="grid max-h-52 gap-0.5 overflow-auto px-1 pb-1">
+                                    {propertyFilterValues.length > 0 ? propertyFilterValues.map((filterValue) => {
+                                      const filterValueChecked = selectedValueIds.has(filterValue.id);
+
+                                      return (
+                                        <label
+                                          key={filterValue.id}
+                                          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/40"
+                                        >
+                                          <Checkbox
+                                            checked={filterValueChecked}
+                                            aria-label={`${filterValue.name} visible in ${property.name}`}
+                                            onCheckedChange={(value) => onToggleValueFilter(property.id, filterValue.id, value === true)}
+                                          />
+                                          <span className="truncate">{filterValue.name}</span>
+                                        </label>
+                                      );
+                                    }) : (
+                                      <p className="px-1.5 py-1 text-xs text-muted-foreground">No values</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            ) : null}
+                            <div className="-mx-1 my-1 h-px bg-border" />
+                            <button
+                              type="button"
+                              role="menuitem"
+                              disabled={isSystemProperty(property.id)}
+                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                              onClick={() => {
+                                closePropertyMenu();
+                                if (window.confirm(`Delete property "${property.name}"?`)) {
+                                  onDeleteProperty(property.id);
+                                }
+                              }}
+                            >
+                              Delete property
+                            </button>
+                          </div>
+                        ), document.body) : null}
+                      </>
                     )}
                     <button
                       type="button"
@@ -876,7 +1078,7 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="min-w-12 border-l border-border bg-background/95">
+              <TableHead className="min-w-12 bg-background/95 shadow-[inset_1px_0_0_var(--border)]">
                 <DropdownMenu
                   open={openAddPropertyMenu}
                   onOpenChange={setOpenAddPropertyMenu}
@@ -974,7 +1176,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-10 min-w-12 border-l border-border bg-background/30 py-0" aria-hidden="true" />
+                <TableCell className="h-10 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>

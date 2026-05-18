@@ -967,7 +967,13 @@ export default function App() {
   }
 
   async function handleToggleValueFilter(propertyId: string, valueId: string, included: boolean) {
+    if (!state.activeViewId) {
+      return;
+    }
+
+    const activeViewId = state.activeViewId;
     const activeView = getActiveViewState();
+    const previousValueVisibility = activeView?.valueVisibility || {};
     const valueVisibility = { ...(activeView?.valueVisibility || {}) };
     const existingValueIds = valueVisibility[propertyId]?.valueIds || [];
     const nextValueIds = included
@@ -982,9 +988,20 @@ export default function App() {
       };
     }
 
+    dispatch({
+      type: "viewValueVisibilityUpdated",
+      viewId: activeViewId,
+      valueVisibility,
+    });
+
     try {
       await updateActiveViewPatch({ valueVisibility });
     } catch (error) {
+      dispatch({
+        type: "viewValueVisibilityUpdated",
+        viewId: activeViewId,
+        valueVisibility: previousValueVisibility,
+      });
       toast.error("Could not update view filter", {
         description: getServiceErrorMessage(error),
       });
@@ -1632,15 +1649,18 @@ export default function App() {
                     {activeViewType === "table" ? (
                       <WorkspaceTableView
                         projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                        view={activeView ?? null}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
                         properties={settingsProperties}
                         selectValues={settingsSelectValues}
+                        statusValues={statusValues}
                         onProjectOpen={handleProjectOpen}
                         onCreateProperty={handleCreateVisibleProperty}
                         onRenameProperty={handleRenameProperty}
                         onDeleteProperty={handleDeleteProperty}
                         onReorderViewProperties={handleReorderViewProperties}
                         onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                        onToggleValueFilter={handleToggleValueFilter}
                         onProjectPropertyValueChange={handleProjectPropertyValueChange}
                         onCreateSelectValue={handleCreateSelectValue}
                         onRenameSelectValue={handleRenameSelectValue}

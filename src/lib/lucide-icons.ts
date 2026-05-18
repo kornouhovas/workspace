@@ -1,34 +1,32 @@
-export {
-  CalendarIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronUpIcon,
-  ChevronsLeftIcon,
-  ChevronsRightIcon,
-  CircleCheckIcon,
-  CircleDotIcon,
-  Columns3Icon,
-  EllipsisVerticalIcon,
-  FileIcon,
-  FolderIcon,
-  FolderKanbanIcon,
-  GripVerticalIcon,
-  HashIcon,
-  InfoIcon,
-  ListChecksIcon,
-  Loader2Icon,
-  LoaderIcon,
-  MoreHorizontalIcon,
-  OctagonXIcon,
-  PanelLeftIcon,
-  PlusIcon,
-  SearchIcon,
-  SettingsIcon,
-  TrendingDownIcon,
-  TrendingUpIcon,
-  TriangleAlertIcon,
-  TypeIcon,
-  XIcon,
-} from "lucide-react";
+export { default as CalendarIcon } from "lucide-react/dist/esm/icons/calendar.mjs";
+export { default as CheckIcon } from "lucide-react/dist/esm/icons/check.mjs";
+export { default as ChevronDownIcon } from "lucide-react/dist/esm/icons/chevron-down.mjs";
+export { default as ChevronLeftIcon } from "lucide-react/dist/esm/icons/chevron-left.mjs";
+export { default as ChevronRightIcon } from "lucide-react/dist/esm/icons/chevron-right.mjs";
+export { default as ChevronUpIcon } from "lucide-react/dist/esm/icons/chevron-up.mjs";
+export { default as ChevronsLeftIcon } from "lucide-react/dist/esm/icons/chevrons-left.mjs";
+export { default as ChevronsRightIcon } from "lucide-react/dist/esm/icons/chevrons-right.mjs";
+export { default as CircleCheckIcon } from "lucide-react/dist/esm/icons/circle-check.mjs";
+export { default as CircleDotIcon } from "lucide-react/dist/esm/icons/circle-dot.mjs";
+export { default as Columns3Icon } from "lucide-react/dist/esm/icons/columns-3.mjs";
+export { default as EllipsisVerticalIcon } from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
+export { default as FileIcon } from "lucide-react/dist/esm/icons/file.mjs";
+export { default as FolderIcon } from "lucide-react/dist/esm/icons/folder.mjs";
+export { default as FolderKanbanIcon } from "lucide-react/dist/esm/icons/folder-kanban.mjs";
+export { default as GripVerticalIcon } from "lucide-react/dist/esm/icons/grip-vertical.mjs";
+export { default as HashIcon } from "lucide-react/dist/esm/icons/hash.mjs";
+export { default as InfoIcon } from "lucide-react/dist/esm/icons/info.mjs";
+export { default as ListChecksIcon } from "lucide-react/dist/esm/icons/list-checks.mjs";
+export { default as Loader2Icon } from "lucide-react/dist/esm/icons/loader-2.mjs";
+export { default as LoaderIcon } from "lucide-react/dist/esm/icons/loader.mjs";
+export { default as MoreHorizontalIcon } from "lucide-react/dist/esm/icons/more-horizontal.mjs";
+export { default as OctagonXIcon } from "lucide-react/dist/esm/icons/octagon-x.mjs";
+export { default as PanelLeftIcon } from "lucide-react/dist/esm/icons/panel-left.mjs";
+export { default as PlusIcon } from "lucide-react/dist/esm/icons/plus.mjs";
+export { default as SearchIcon } from "lucide-react/dist/esm/icons/search.mjs";
+export { default as SettingsIcon } from "lucide-react/dist/esm/icons/settings.mjs";
+export { default as TrendingDownIcon } from "lucide-react/dist/esm/icons/trending-down.mjs";
+export { default as TrendingUpIcon } from "lucide-react/dist/esm/icons/trending-up.mjs";
+export { default as TriangleAlertIcon } from "lucide-react/dist/esm/icons/triangle-alert.mjs";
+export { default as TypeIcon } from "lucide-react/dist/esm/icons/type.mjs";
+export { default as XIcon } from "lucide-react/dist/esm/icons/x.mjs";
