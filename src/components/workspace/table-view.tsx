@@ -266,7 +266,7 @@ function renderTableStatusValue(value: unknown) {
   return (
     <Badge
       variant="secondary"
-      className="h-6 max-w-full gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
     >
       <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
       <span className="truncate">{label}</span>

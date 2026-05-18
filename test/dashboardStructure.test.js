@@ -352,6 +352,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /property\.id === "property:status"/);
   assert.match(tableViewSource, /backendProject\.folderStatus/);
   assert.match(tableViewSource, /renderTableStatusValue/);
+  assert.match(tableViewSource, /className="h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-medium"/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
   assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
