@@ -17,6 +17,7 @@ export { default as GripVerticalIcon } from "lucide-react/dist/esm/icons/grip-ve
 export { default as HashIcon } from "lucide-react/dist/esm/icons/hash.mjs";
 export { default as InfoIcon } from "lucide-react/dist/esm/icons/info.mjs";
 export { default as ListChecksIcon } from "lucide-react/dist/esm/icons/list-checks.mjs";
+export { default as ListFilterIcon } from "lucide-react/dist/esm/icons/list-filter.mjs";
 export { default as Loader2Icon } from "lucide-react/dist/esm/icons/loader-2.mjs";
 export { default as LoaderIcon } from "lucide-react/dist/esm/icons/loader.mjs";
 export { default as MoreHorizontalIcon } from "lucide-react/dist/esm/icons/more-horizontal.mjs";

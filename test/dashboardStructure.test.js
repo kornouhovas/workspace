@@ -370,6 +370,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /readonly onToggleValueFilter: \(propertyId: string, valueId: string, included: boolean\) => void;/);
   assert.match(tableViewSource, /function isFilterableProperty/);
   assert.match(tableViewSource, /function getFilterValues/);
+  assert.match(tableViewSource, /function hasActiveValueFilter/);
+  assert.match(tableViewSource, /ListFilterIcon/);
+  assert.match(tableViewSource, /\$\{property\.name\} value filter active/);
+  assert.match(tableViewSource, /hasActiveValueFilter\(property\.id, valueVisibility\)/);
+  assert.match(lucideIconsSource, /ListFilterIcon/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/list-filter\.mjs/);
   assert.match(tableViewSource, /Value filters/);
   assert.match(tableViewSource, /No values/);
   assert.match(tableViewSource, /data-workspace-property-menu="true"/);

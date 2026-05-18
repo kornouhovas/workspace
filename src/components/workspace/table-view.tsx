@@ -30,6 +30,7 @@ import {
   CircleDotIcon,
   HashIcon,
   ListChecksIcon,
+  ListFilterIcon,
   MoreHorizontalIcon,
   PlusIcon,
   TypeIcon,
@@ -236,6 +237,13 @@ function getFilterValues(
       id: selectValue.id,
       name: selectValue.name,
     }));
+}
+
+function hasActiveValueFilter(
+  propertyId: string,
+  valueVisibility: WorkspaceViewState["valueVisibility"] | undefined,
+) {
+  return (valueVisibility?.[propertyId]?.valueIds?.length ?? 0) > 0;
 }
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
@@ -913,6 +921,7 @@ export function WorkspaceTableView({
                 const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
                 const propertyFilterValues = getFilterValues(property, selectValues, statusValues);
                 const showValueFilters = isFilterableProperty(property);
+                const valueFilterActive = hasActiveValueFilter(property.id, valueVisibility);
 
                 return (
                   <TableHead
@@ -956,15 +965,24 @@ export function WorkspaceTableView({
                       />
                     ) : (
                       <>
-                        <div className="flex min-w-0 items-center gap-1">
+                        <div className="flex h-8 min-w-0 items-center gap-1 rounded-md px-2 transition-colors hover:bg-muted/60 focus-within:bg-muted/60">
                           <button
                             type="button"
-                            className="flex h-8 min-w-0 flex-1 cursor-grab items-center rounded-md px-2 text-left transition-colors hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring/40 active:cursor-grabbing"
+                            className="flex h-full min-w-0 flex-1 cursor-grab items-center text-left focus-visible:ring-1 focus-visible:ring-ring/40 active:cursor-grabbing"
                             aria-label={`Drag ${property.name} column`}
                             onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
                           >
                             <span className="block min-w-0 truncate">{property.name}</span>
                           </button>
+                          {valueFilterActive ? (
+                            <span
+                              className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground"
+                              aria-label={`${property.name} value filter active`}
+                              title={`${property.name} value filter active`}
+                            >
+                              <ListFilterIcon className="size-3.5" aria-hidden="true" />
+                            </span>
+                          ) : null}
                           <button
                             type="button"
                             data-workspace-property-menu-trigger="true"
