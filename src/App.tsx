@@ -551,12 +551,14 @@ export default function App() {
     if (
       state.status !== "ready" ||
       state.sourceFolderMissing ||
+      state.workspaceSwitchPending ||
       !state.workspaceId ||
       !state.activeViewId ||
       !state.root ||
       (
         state.projection?.workspaceId === state.workspaceId &&
-        state.projection.view.id === state.activeViewId
+        state.projection.view.id === state.activeViewId &&
+        !state.projectionRefreshing
       )
     ) {
       return;
@@ -594,9 +596,11 @@ export default function App() {
     workspaceClient,
     state.status,
     state.sourceFolderMissing,
+    state.workspaceSwitchPending,
     state.root,
     state.workspaceId,
     state.activeViewId,
+    state.projectionRefreshing,
     state.projection?.workspaceId,
     state.projection?.view.id,
   ]);

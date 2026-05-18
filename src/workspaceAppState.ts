@@ -103,6 +103,8 @@ export type WorkspaceAppState = {
   readonly root: WorkspaceRootState | null;
   readonly workspaceId: string | null;
   readonly projection: WorkspaceProjectionResponse | null;
+  readonly projectionRefreshing: boolean;
+  readonly workspaceSwitchPending: boolean;
   readonly propertyCatalog: WorkspacePropertyCatalogState | null;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly views: readonly WorkspaceViewState[];
@@ -182,6 +184,8 @@ export function createInitialWorkspaceAppState(): WorkspaceAppState {
     root: null,
     workspaceId: null,
     projection: null,
+    projectionRefreshing: false,
+    workspaceSwitchPending: false,
     propertyCatalog: null,
     folderRoleTree: [],
     views: [],
@@ -224,6 +228,8 @@ export function workspaceAppStateReducer(
       root: null,
       workspaceId: null,
       projection: null,
+      projectionRefreshing: false,
+      workspaceSwitchPending: false,
       propertyCatalog: null,
       folderRoleTree: [],
       views: [],
@@ -245,15 +251,20 @@ export function workspaceAppStateReducer(
       state.root.path === action.root.path
     ) {
       const workspaceChanged = state.workspaceId !== action.root.workspaceId;
+      const transitionProjection = workspaceChanged
+        ? createTransitionProjectionForWorkspace(state.projection, action.root.workspaceId)
+        : state.projection;
 
       return {
         ...state,
         root: action.root,
         workspaceId: action.root.workspaceId,
-        projection: workspaceChanged ? null : state.projection,
-        propertyCatalog: workspaceChanged ? null : state.propertyCatalog,
-        views: workspaceChanged ? [] : state.views,
-        activeViewId: workspaceChanged ? null : state.activeViewId,
+        projection: transitionProjection,
+        projectionRefreshing: workspaceChanged && transitionProjection !== null,
+        workspaceSwitchPending: workspaceChanged,
+        propertyCatalog: state.propertyCatalog,
+        views: state.views,
+        activeViewId: state.activeViewId,
         searchQuery: workspaceChanged ? "" : state.searchQuery,
         selectedProjectId: null,
         detailOpen: false,
@@ -269,6 +280,8 @@ export function workspaceAppStateReducer(
       status: "loading",
       root: action.root,
       workspaceId: action.root.workspaceId,
+      projectionRefreshing: false,
+      workspaceSwitchPending: false,
       selectedProjectId: null,
       detailOpen: false,
       sourceFolderMissing: false,
@@ -289,7 +302,7 @@ export function workspaceAppStateReducer(
       return state;
     }
 
-    if (state.activeViewId && state.activeViewId !== activeViewId) {
+    if (state.activeViewId && state.activeViewId !== activeViewId && !state.workspaceSwitchPending) {
       return state;
     }
 
@@ -306,6 +319,8 @@ export function workspaceAppStateReducer(
       root: action.root,
       workspaceId,
       projection: action.projectionResponse,
+      projectionRefreshing: false,
+      workspaceSwitchPending: false,
       propertyCatalog: state.propertyCatalog?.workspaceId === workspaceId
         ? state.propertyCatalog
         : null,
@@ -329,6 +344,8 @@ export function workspaceAppStateReducer(
     return {
       ...state,
       projection: action.projectionResponse,
+      projectionRefreshing: false,
+      workspaceSwitchPending: false,
       error: null,
     };
   }
@@ -479,18 +496,22 @@ export function workspaceAppStateReducer(
       return state;
     }
 
+    const transitionProjection = createTransitionProjectionForWorkspace(state.projection, action.workspaceId);
+
     return {
       ...state,
-      status: "loading",
+      status: transitionProjection ? "ready" : "loading",
       root: {
         ...state.root,
         workspaceId: action.workspaceId,
       },
       workspaceId: action.workspaceId,
-      projection: null,
-      propertyCatalog: null,
-      views: [],
-      activeViewId: null,
+      projection: transitionProjection,
+      projectionRefreshing: transitionProjection !== null,
+      workspaceSwitchPending: true,
+      propertyCatalog: state.propertyCatalog,
+      views: state.views,
+      activeViewId: state.activeViewId,
       searchQuery: "",
       selectedProjectId: null,
       detailOpen: false,
@@ -507,6 +528,8 @@ export function workspaceAppStateReducer(
       status: "error",
       sourceFolderMissing: false,
       error: action.error,
+      projectionRefreshing: false,
+      workspaceSwitchPending: false,
     };
   }
 
@@ -518,12 +541,15 @@ export function workspaceAppStateReducer(
   }
 
   if (action.type === "activeViewChanged") {
+    const transitionProjection = createTransitionProjectionForView(state, action.activeViewId);
+
     return {
       ...state,
       activeViewId: action.activeViewId,
-      projection: state.projection?.view.id === action.activeViewId
-        ? state.projection
-        : null,
+      projection: transitionProjection,
+      projectionRefreshing: transitionProjection?.view.id === action.activeViewId &&
+        transitionProjection !== state.projection,
+      workspaceSwitchPending: false,
       searchQuery: "",
       selectedProjectId: null,
       detailOpen: false,
@@ -538,11 +564,17 @@ export function workspaceAppStateReducer(
     const views = state.views.some((view) => view.id === action.view.id)
       ? state.views.map((view) => (view.id === action.view.id ? action.view : view))
       : [...state.views, action.view];
+    const activeViewId = action.activeViewId || action.view.id;
+    const transitionProjection = activeViewId === state.activeViewId
+      ? state.projection
+      : createTransitionProjectionForView({ ...state, views, activeViewId }, activeViewId);
 
     return {
       ...state,
       views,
-      activeViewId: action.activeViewId || action.view.id,
+      activeViewId,
+      projection: transitionProjection,
+      projectionRefreshing: transitionProjection !== state.projection,
       searchQuery: "",
       selectedProjectId: null,
       detailOpen: false,
@@ -581,7 +613,10 @@ export function workspaceAppStateReducer(
       ...state,
       views,
       activeViewId,
-      projection: state.projection?.view.id === action.viewId ? null : state.projection,
+      projection: state.projection?.view.id === action.viewId && activeViewId
+        ? createTransitionProjectionForView({ ...state, views, activeViewId }, activeViewId)
+        : state.projection,
+      projectionRefreshing: state.projection?.view.id === action.viewId && activeViewId !== null,
       selectedProjectId: null,
       detailOpen: false,
     };
@@ -604,6 +639,126 @@ export function workspaceAppStateReducer(
   }
 
   return state;
+}
+
+function createTransitionProjectionForWorkspace(
+  projectionResponse: WorkspaceProjectionResponse | null,
+  workspaceId: string,
+): WorkspaceProjectionResponse | null {
+  if (!projectionResponse) {
+    return null;
+  }
+
+  return {
+    ...projectionResponse,
+    workspaceId,
+  };
+}
+
+function createTransitionProjectionForView(
+  state: WorkspaceAppState,
+  viewId: string,
+): WorkspaceProjectionResponse | null {
+  if (!state.projection) {
+    return null;
+  }
+
+  const view = state.views.find((candidate) => candidate.id === viewId);
+  if (!view) {
+    return state.projection.view.id === viewId ? state.projection : null;
+  }
+
+  const visiblePropertyIds = view.visiblePropertyIds || state.projection.visibleProperties.map((property) => property.id);
+  const transitionBase = {
+    ...state.projection,
+    view,
+    visibleProperties: createProjectionVisibleProperties(state, visiblePropertyIds),
+  };
+
+  if (view.viewType === "table") {
+    return {
+      ...transitionBase,
+      projection: {
+        type: "table",
+        rows: getProjectsFromProjection(state.projection),
+      },
+    };
+  }
+
+  if (view.viewType === "board") {
+    return {
+      ...transitionBase,
+      projection: {
+        type: "board",
+        capabilities: { canMoveBetweenStatuses: false },
+        columns: createBoardColumnsFromProjects({
+          projects: getProjectsFromProjection(state.projection),
+          statusValues: state.projection.statusValues,
+        }),
+      },
+    };
+  }
+
+  return transitionBase;
+}
+
+function getProjectsFromProjection(
+  projectionResponse: WorkspaceProjectionResponse,
+): readonly unknown[] {
+  if (projectionResponse.projection.type === "table") {
+    return projectionResponse.projection.rows;
+  }
+
+  return projectionResponse.projection.columns.flatMap((column) => column.projects);
+}
+
+function createBoardColumnsFromProjects({
+  projects,
+  statusValues,
+}: {
+  readonly projects: readonly unknown[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+}): Extract<WorkspaceProjectionResponse["projection"], { readonly type: "board" }>["columns"] {
+  const noStatusValue = statusValues.find((statusValue) => statusValue.source === "no-status") || {
+    id: "statusValue:no-status",
+    name: "No status",
+    relativePath: null,
+    source: "no-status",
+  };
+  const columnsByStatusValueId = new Map(
+    [...statusValues, noStatusValue].map((statusValue) => [
+      statusValue.id,
+      {
+        statusValueId: statusValue.id,
+        name: statusValue.name,
+        projects: [] as unknown[],
+      },
+    ]),
+  );
+
+  for (const project of projects) {
+    const statusValueId = getProjectStatusValueId(project);
+    const column = statusValueId ? columnsByStatusValueId.get(statusValueId) : undefined;
+    (column || columnsByStatusValueId.get(noStatusValue.id))?.projects.push(project);
+  }
+
+  return Array.from(columnsByStatusValueId.values());
+}
+
+function getProjectStatusValueId(project: unknown) {
+  if (!isRecord(project)) {
+    return null;
+  }
+
+  if (isRecord(project.status) && typeof project.status.id === "string") {
+    return project.status.id;
+  }
+
+  if (isRecord(project.propertyValues) && typeof project.propertyValues["property:status"] === "string") {
+    return project.propertyValues["property:status"];
+  }
+
+  return null;
 }
 
 export function filterWorkspaceProjectionBySearch(

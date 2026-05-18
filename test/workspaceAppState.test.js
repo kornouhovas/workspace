@@ -471,7 +471,7 @@ test("workspace app state stores selected root before projection loading complet
   assert.equal(state.error, null);
 });
 
-test("workspace app state clears the current projection while reloading another workspace for the same folder", async () => {
+test("workspace app state keeps a transition projection while loading another workspace for the same folder", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
     type: "projectionLoaded",
@@ -502,7 +502,9 @@ test("workspace app state clears the current projection while reloading another 
   assert.equal(reloadingState.projection, projectionResponse);
   assert.equal(rootRefreshState.status, "ready");
   assert.equal(rootRefreshState.workspaceId, "workspace:design");
-  assert.equal(rootRefreshState.projection, null);
+  assert.equal(rootRefreshState.projection.workspaceId, "workspace:design");
+  assert.equal(rootRefreshState.projection.view.id, "view:board");
+  assert.deepEqual(rootRefreshState.views, viewsResponse.views);
 
   const switchedState = workspaceAppStateReducer(rootRefreshState, {
     type: "projectionLoaded",
@@ -665,7 +667,9 @@ test("workspace app state switches the active view", async () => {
 
   assert.equal(state.activeViewId, "view:table");
   assert.equal(state.searchQuery, "");
-  assert.equal(state.projection, null);
+  assert.equal(state.projection.workspaceId, "workspace:ops");
+  assert.equal(state.projection.view.id, "view:table");
+  assert.equal(state.projection.projection.type, "table");
 });
 
 test("workspace app state ignores older property save completions for the same cell", async () => {
@@ -740,7 +744,9 @@ test("workspace app state adds a created view to only the active workspace state
     ["view:board", "view:table", "view:board-2"],
   );
   assert.equal(state.activeViewId, "view:board-2");
-  assert.equal(state.projection, loadedState.projection);
+  assert.equal(state.projection.view.id, "view:board-2");
+  assert.equal(state.projection.projection.type, "board");
+  assert.equal(state.projectionRefreshing, true);
 });
 
 test("workspace app state ignores a created view for another workspace", async () => {
