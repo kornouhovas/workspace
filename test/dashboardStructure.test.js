@@ -577,6 +577,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);
+  const hiddenPropertiesMarkup = projectDetailPanelSource.slice(
+    projectDetailPanelSource.indexOf("{hiddenPropertiesExpanded ? ("),
+    projectDetailPanelSource.indexOf("<section className=\"grid gap-2\" aria-labelledby=\"project-file-tree-heading\">"),
+  );
+  assert.doesNotMatch(hiddenPropertiesMarkup, /hover:bg-accent\/15/);
   assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Hidden<\/span>/);
   assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
   assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);

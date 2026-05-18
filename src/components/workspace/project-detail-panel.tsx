@@ -1360,7 +1360,7 @@ export function WorkspaceProjectDetailPanel({
                         {hiddenCardProperties.map((property) => (
                           <div
                             key={property.id}
-                            className="grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0 hover:bg-accent/15"
+                            className="grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0"
                             style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
                           >
                             <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
