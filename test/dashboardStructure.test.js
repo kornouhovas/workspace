@@ -355,7 +355,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
   assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
-  assert.match(tableViewSource, /group\/column relative bg-background\/95 px-1/);
+  assert.match(tableViewSource, /group\/column relative cursor-default select-none bg-background\/95 px-1/);
   assert.doesNotMatch(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0/);
   assert.match(tableViewSource, /<TableBody className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45">/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
@@ -575,6 +575,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /hiddenCardProperties/);
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
+  assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);
+  assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Hidden<\/span>/);
   assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
   assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);
   assert.match(projectDetailPanelSource, /onRenameProperty/);

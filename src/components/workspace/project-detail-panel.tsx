@@ -1371,8 +1371,20 @@ export function WorkspaceProjectDetailPanel({
                                 {property.name}
                               </span>
                             </dt>
-                            <dd className="flex min-w-0 items-center justify-between gap-2 px-4 py-1 text-[13px] text-muted-foreground">
-                              <span className="truncate">Hidden</span>
+                            <dd className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-1 text-[13px] text-muted-foreground">
+                              <ProjectPropertyValueEditor
+                                project={displayedProject}
+                                property={property}
+                                selectValues={selectValues}
+                                editing={editingPropertyId === property.id}
+                                onStartEditing={() => setEditingPropertyId(property.id)}
+                                onStopEditing={() => setEditingPropertyId(null)}
+                                onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                onCreateSelectValue={onCreateSelectValue}
+                                onRenameSelectValue={onRenameSelectValue}
+                                onColorSelectValue={onColorSelectValue}
+                                onDeleteSelectValue={onDeleteSelectValue}
+                              />
                               <Button
                                 type="button"
                                 variant="ghost"

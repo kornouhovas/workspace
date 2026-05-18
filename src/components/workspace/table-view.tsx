@@ -927,7 +927,7 @@ export function WorkspaceTableView({
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative bg-background/95 px-1",
+                      "group/column relative cursor-default select-none bg-background/95 px-1",
                       tableColumnDividerClassName,
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
