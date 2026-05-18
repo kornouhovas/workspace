@@ -84,6 +84,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(buildRendererSource, /await import\("vite"\)/);
   assert.match(disableFsEventsLoaderSource, /specifier === "fsevents"/);
   assert.match(disableFsEventsLoaderSource, /export default undefined/);
+  assert.match(lucideIconsSource, /from "lucide-react"/);
+  assert.doesNotMatch(lucideIconsSource, /lucide-react\/dist\/esm\/icons/);
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
   assert.match(appSource, /Workspace Project Board/);
@@ -679,11 +681,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
-  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder-kanban\.mjs/);
-  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/folder\.mjs/);
-  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/file\.mjs/);
-  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/search\.mjs/);
-  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/settings\.mjs/);
+  assert.match(lucideIconsSource, /FolderKanbanIcon/);
+  assert.match(lucideIconsSource, /FolderIcon/);
+  assert.match(lucideIconsSource, /FileIcon/);
+  assert.match(lucideIconsSource, /SearchIcon/);
+  assert.match(lucideIconsSource, /SettingsIcon/);
+  assert.doesNotMatch(lucideIconsSource, /dist\/esm\/icons/);
   assert.match(cssSource, /@import "shadcn\/tailwind\.css"/);
   assert.match(cssSource, /-webkit-app-region:\s*drag/);
   assert.match(cssSource, /workspace-number-input/);
