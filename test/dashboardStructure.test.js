@@ -572,6 +572,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /ChevronDownIcon/);
   assert.match(projectDetailPanelSource, /Properties/);
   assert.match(projectDetailPanelSource, /File tree/);
+  assert.doesNotMatch(projectDetailPanelSource, /<header className="border-b border-border\/60/);
   assert.match(projectDetailPanelSource, /Hidden properties/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties/);
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);

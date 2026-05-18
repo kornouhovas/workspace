@@ -1161,7 +1161,7 @@ export function WorkspaceProjectDetailPanel({
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
         <>
-          <header className="border-b border-border/60 px-6 pb-5 pr-12 pt-6">
+          <header className="px-6 pb-5 pr-12 pt-6">
             <h2 id="project-detail-title" className="text-[22px] font-semibold leading-8 tracking-normal text-foreground">
               {displayedProject.name}
             </h2>
