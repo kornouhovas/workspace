@@ -573,6 +573,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /File tree/);
   assert.match(projectDetailPanelSource, /Hidden properties/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties/);
+  assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
+  assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
+  assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
+  assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);
   assert.match(projectDetailPanelSource, /onRenameProperty/);
   assert.match(projectDetailPanelSource, /onHideProperty/);
   assert.match(projectDetailPanelSource, /onDeleteProperty/);

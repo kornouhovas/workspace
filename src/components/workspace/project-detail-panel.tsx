@@ -16,7 +16,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import {
@@ -1340,7 +1339,7 @@ export function WorkspaceProjectDetailPanel({
                   })}
                 </dl>
                 {hiddenCardProperties.length > 0 ? (
-                  <div className="mt-2 border-t border-border/70 pt-2">
+                  <div className="grid gap-2">
                     <button
                       type="button"
                       className="flex h-8 w-full items-center justify-between rounded-md px-1 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
@@ -1357,17 +1356,22 @@ export function WorkspaceProjectDetailPanel({
                       <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
                     </button>
                     {hiddenPropertiesExpanded ? (
-                      <dl className="mt-1 grid gap-1">
+                      <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                         {hiddenCardProperties.map((property) => (
                           <div
                             key={property.id}
-                            className="grid min-h-8 items-center gap-4 rounded-md px-1.5 opacity-75"
+                            className="grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0 hover:bg-accent/15"
                             style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
                           >
-                            <dt className="flex min-w-0 items-center gap-1 pl-6 text-[13px] font-medium text-muted-foreground">
-                              <span className="min-w-0 truncate">{property.name}</span>
+                            <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                              <span className="flex h-full items-center justify-center text-muted-foreground/40">
+                                <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                              </span>
+                              <span className="flex min-w-0 items-center truncate pr-3 text-[13px] font-medium text-muted-foreground">
+                                {property.name}
+                              </span>
                             </dt>
-                            <dd className="flex min-w-0 items-center justify-between gap-2 text-[13px] text-muted-foreground">
+                            <dd className="flex min-w-0 items-center justify-between gap-2 px-4 py-1 text-[13px] text-muted-foreground">
                               <span className="truncate">Hidden</span>
                               <Button
                                 type="button"
@@ -1386,7 +1390,6 @@ export function WorkspaceProjectDetailPanel({
                   </div>
                 ) : null}
               </section>
-              <Separator className="my-0" />
               <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
                   <h3 id="project-file-tree-heading" className="text-sm font-medium text-muted-foreground">

@@ -259,6 +259,8 @@ Properties section behavior:
 - `Date` values use a date input or date picker and store `YYYY-MM-DD`.
 - `Select` values use a single-value menu with colored value badges.
 - `Multi-select` values use a multi-value menu with removable colored badges.
+- Hidden properties, when expanded, use the same compact bordered table styling as visible properties.
+- Do not place horizontal divider lines between visible properties, hidden properties, and the file tree section.
 - Editing a value saves through Workspace service methods, not component-local persistence.
 - Saved value changes refresh Board/Table projection and keep the panel open.
 - Failed saves keep the old value visible and show a non-blocking error.
