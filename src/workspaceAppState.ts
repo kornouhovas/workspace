@@ -256,13 +256,17 @@ export function workspaceAppStateReducer(
         return clearWorkspaceScopedStateForSwitch(state, action.root);
       }
 
+      const keepStaleWorkspaceSurface = state.workspaceSwitchPending &&
+        state.projection !== null &&
+        state.projection.workspaceId !== action.root.workspaceId;
+
       return {
         ...state,
         root: action.root,
         workspaceId: action.root.workspaceId,
         projection: state.projection,
         projectionRefreshing: false,
-        workspaceSwitchPending: false,
+        workspaceSwitchPending: keepStaleWorkspaceSurface,
         propertyCatalog: state.propertyCatalog,
         views: state.views,
         activeViewId: state.activeViewId,
@@ -696,17 +700,19 @@ function clearWorkspaceScopedStateForSwitch(
   state: WorkspaceAppState,
   root: WorkspaceRootState | null,
 ): WorkspaceAppState {
+  const hasRenderableWorkspaceState = state.status === "ready" && state.projection !== null;
+
   return {
     ...state,
-    status: "loading",
+    status: hasRenderableWorkspaceState ? "ready" : "loading",
     root,
     workspaceId: root?.workspaceId || null,
-    projection: null,
+    projection: hasRenderableWorkspaceState ? state.projection : null,
     projectionRefreshing: false,
     workspaceSwitchPending: true,
-    propertyCatalog: null,
-    views: [],
-    activeViewId: null,
+    propertyCatalog: hasRenderableWorkspaceState ? state.propertyCatalog : null,
+    views: hasRenderableWorkspaceState ? state.views : [],
+    activeViewId: hasRenderableWorkspaceState ? state.activeViewId : null,
     searchQuery: "",
     selectedProjectId: null,
     detailOpen: false,
