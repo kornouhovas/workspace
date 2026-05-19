@@ -342,8 +342,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /select-none/);
   assert.match(viewFilterMenuSource, /valueFilterGroupButtonClassName/);
   assert.match(viewFilterMenuSource, /valueFilterItemClassName/);
+  assert.match(viewFilterMenuSource, /grid h-7 min-w-0 cursor-default select-none grid-cols-\[1rem_minmax\(0,1fr\)\] items-center gap-1\.5 rounded-lg px-1\.5 text-sm transition-colors hover:bg-accent\/55/);
   assert.match(viewFilterMenuSource, /className="h-6 min-w-0"/);
   assert.match(viewFilterMenuSource, /max-h-60 gap-1/);
+  assert.match(viewFilterMenuSource, /<div className="grid gap-0\.5">/);
+  assert.doesNotMatch(viewFilterMenuSource, /className="grid gap-0\.5 pl-6"/);
   assert.match(viewFilterMenuSource, /Checkbox/);
   assert.match(viewFilterMenuSource, /workspaceMenuCheckboxClassName/);
   assert.match(viewFilterMenuSource, /valueVisibility/);

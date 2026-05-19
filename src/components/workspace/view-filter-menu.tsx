@@ -100,7 +100,7 @@ const valueFilterGroupButtonClassName =
   "flex h-7 min-w-0 select-none items-center gap-1.5 rounded-lg px-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground";
 
 const valueFilterItemClassName =
-  "flex h-8 min-w-0 cursor-default select-none items-center gap-2 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
+  "grid h-7 min-w-0 cursor-default select-none grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
 
 export function WorkspaceViewFilterMenu({
   view,
@@ -347,7 +347,7 @@ export function WorkspaceViewFilterMenu({
                     ) : null}
                   </button>
                   {expanded ? (
-                    <div className="grid gap-0.5 pl-6">
+                    <div className="grid gap-0.5">
                       {propertyValues.length > 0 ? propertyValues.map((selectValue) => (
                         <label key={selectValue.id} className={valueFilterItemClassName}>
                           <Checkbox
