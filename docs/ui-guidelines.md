@@ -111,6 +111,7 @@ Rules:
 - Properties should appear before file structure.
 - Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - Project Detail Panel may create a new custom property from the Properties table through a compact `Add property` row using the same property types and service path as Table view.
+- Hidden properties in Project Detail Panel should keep the same row affordances as visible properties: property-name menu, rename/delete/show actions, value editing, and drag reorder within the hidden group.
 - Use `Input` for short text and numbers, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
 - Use `Badge` for select and multi-select values, including value colors.
 - Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.

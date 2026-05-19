@@ -42,6 +42,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CircleDotIcon,
+  EyeIcon,
   EyeOffIcon,
   FileIcon,
   FolderIcon,
@@ -96,8 +97,11 @@ type CardPropertyDragPreviewRow = {
   readonly height: number;
 };
 
+type CardPropertyGroup = "visible" | "hidden";
+
 type CardPropertyDragState = {
   readonly propertyId: string;
+  readonly group: CardPropertyGroup;
   readonly startY: number;
   readonly currentY: number;
   readonly dropIndex: number;
@@ -105,6 +109,7 @@ type CardPropertyDragState = {
 };
 
 type CardPropertyDragOptions = {
+  readonly group?: CardPropertyGroup;
   readonly openActionsOnClick?: boolean;
 };
 
@@ -891,12 +896,6 @@ export function WorkspaceProjectDetailPanel({
     setRenamingPropertyName("");
   }
 
-  function hideProperty(property: WorkspacePropertyDefinitionState) {
-    if (!isProtectedCardProperty(property)) {
-      onHideProperty(property.id, true);
-    }
-  }
-
   function showProperty(property: WorkspacePropertyDefinitionState) {
     if (!isProtectedCardProperty(property)) {
       onHideProperty(property.id, false);
@@ -922,8 +921,27 @@ export function WorkspaceProjectDetailPanel({
     }
   }
 
-  function getCardPropertyDragPreviewRows() {
-    return Array.from(document.querySelectorAll<HTMLElement>("[data-card-property-row-id]"))
+  function getCardPropertiesForGroup(group: CardPropertyGroup) {
+    return group === "hidden" ? hiddenCardProperties : orderedVisibleProperties;
+  }
+
+  function mergeCardPropertyGroupOrder(group: CardPropertyGroup, nextGroupPropertyIds: readonly string[]) {
+    const groupPropertyIds = new Set(getCardPropertiesForGroup(group).map((property) => property.id));
+    const nextGroupOrder = [...nextGroupPropertyIds];
+    const completePropertyOrder = createOrderedCardProperties(visibleProperties, cardPropertyOrderRef.current)
+      .map((property) => property.id);
+
+    return completePropertyOrder.map((propertyId) => {
+      if (!groupPropertyIds.has(propertyId)) {
+        return propertyId;
+      }
+
+      return nextGroupOrder.shift() || propertyId;
+    });
+  }
+
+  function getCardPropertyDragPreviewRows(group: CardPropertyGroup) {
+    return Array.from(document.querySelectorAll<HTMLElement>(`[data-card-property-row-group="${group}"]`))
       .map((row) => {
         const propertyId = row.dataset.cardPropertyRowId;
         const rect = row.getBoundingClientRect();
@@ -980,12 +998,19 @@ export function WorkspaceProjectDetailPanel({
     return tops;
   }
 
-  function getCardPropertyDragStyle(propertyId: string): CSSProperties | undefined {
+  function getCardPropertyDragStyle(
+    propertyId: string,
+    group: CardPropertyGroup,
+  ): CSSProperties | undefined {
     if (!cardPropertyDrag) {
       return undefined;
     }
 
-    const orderedPropertyIds = orderedVisibleProperties.map((property) => property.id);
+    if (cardPropertyDrag.group !== group) {
+      return undefined;
+    }
+
+    const orderedPropertyIds = getCardPropertiesForGroup(group).map((property) => property.id);
     const currentRow = cardPropertyDrag.rows.find((row) => row.propertyId === propertyId);
 
     if (!currentRow || !orderedPropertyIds.includes(propertyId)) {
@@ -1058,7 +1083,8 @@ export function WorkspaceProjectDetailPanel({
     event.preventDefault();
     event.stopPropagation();
 
-    const cardPropertyDragPreviewRows = getCardPropertyDragPreviewRows();
+    const group = options.group ?? "visible";
+    const cardPropertyDragPreviewRows = getCardPropertyDragPreviewRows(group);
     const previousCursor = document.body.style.cursor;
     const previousUserSelect = document.body.style.userSelect;
 
@@ -1081,6 +1107,7 @@ export function WorkspaceProjectDetailPanel({
       setPropertyActionsId(null);
       setCardPropertyDrag({
         propertyId,
+        group,
         startY: event.clientY,
         currentY: pendingClientY,
         dropIndex: findCardPropertyDropIndex(pendingClientY, cardPropertyDragPreviewRows, propertyId),
@@ -1137,7 +1164,7 @@ export function WorkspaceProjectDetailPanel({
         propertyId,
       );
       const orderedPropertyIds = cardPropertyDragPreviewRows.map((row) => row.propertyId);
-      const nextPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+      const nextGroupPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
       const moved = cardPropertyPressMoved.current || Math.hypot(
         pointerEvent.clientX - event.clientX,
         pointerEvent.clientY - event.clientY,
@@ -1158,7 +1185,7 @@ export function WorkspaceProjectDetailPanel({
         window.setTimeout(() => {
           suppressCardPropertyClickRef.current = false;
         }, 0);
-        onReorderCardProperties(nextPropertyIds);
+        onReorderCardProperties(mergeCardPropertyGroupOrder(group, nextGroupPropertyIds));
       } else if (options.openActionsOnClick) {
         openCardPropertyMenu(propertyId);
       }
@@ -1168,6 +1195,59 @@ export function WorkspaceProjectDetailPanel({
 
     window.addEventListener("pointermove", moveCardProperty);
     window.addEventListener("pointerup", finishCardPropertyDrag, { once: true });
+  }
+
+  function renderCardPropertyActionsMenu(
+    property: WorkspacePropertyDefinitionState,
+    visibilityAction: "hide" | "show",
+  ) {
+    const visibilityLabel = visibilityAction === "hide" ? "Hide property" : "Show property";
+    const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
+
+    return (
+      <PopoverContent
+        align="start"
+        className={`${workspaceMenuContentClassName} w-52`}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
+        <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
+          <button
+            type="button"
+            role="menuitem"
+            className={workspaceMenuItemClassName}
+            onClick={() => beginRenameProperty(property)}
+          >
+            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+            Rename property
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={workspaceMenuItemClassName}
+            onClick={() => {
+              setPropertyActionsId(null);
+              onHideProperty(property.id, visibilityAction === "hide");
+            }}
+          >
+            <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+            {visibilityLabel}
+          </button>
+          <div className={workspaceMenuSeparatorClassName} />
+          <button
+            type="button"
+            role="menuitem"
+            className={workspaceMenuDangerItemClassName}
+            onClick={() => {
+              setPropertyActionsId(null);
+              deleteProperty(property);
+            }}
+          >
+            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+            Delete property
+          </button>
+        </div>
+      </PopoverContent>
+    );
   }
 
   if (!panelProject) {
@@ -1251,6 +1331,7 @@ export function WorkspaceProjectDetailPanel({
                       >
                         <div
                           data-card-property-row-id={property.id}
+                          data-card-property-row-group="visible"
                           className={[
                             "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
                             cardPropertyDrag ? "transition-transform ease-out" : "",
@@ -1258,7 +1339,7 @@ export function WorkspaceProjectDetailPanel({
                           ].filter(Boolean).join(" ")}
                           style={{
                             gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
-                            ...getCardPropertyDragStyle(property.id),
+                            ...getCardPropertyDragStyle(property.id, "visible"),
                           }}
                           onContextMenu={(event) => {
                             if (propertyProtected) {
@@ -1360,94 +1441,53 @@ export function WorkspaceProjectDetailPanel({
                           </dd>
                         </div>
                         {!propertyProtected ? (
-                          <PopoverContent
-                            align="start"
-                            className={`${workspaceMenuContentClassName} w-52`}
-                            onOpenAutoFocus={(event) => event.preventDefault()}
-                          >
-                            <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
-                              <button
-                                type="button"
-                                role="menuitem"
-                                className={workspaceMenuItemClassName}
-                                onClick={() => beginRenameProperty(property)}
-                              >
-                                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                                Rename property
-                              </button>
-                              <button
-                                type="button"
-                                role="menuitem"
-                                className={workspaceMenuItemClassName}
-                                onClick={() => {
-                                  setPropertyActionsId(null);
-                                  hideProperty(property);
-                                }}
-                              >
-                                <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                                Hide property
-                              </button>
-                              <div className={workspaceMenuSeparatorClassName} />
-                              <button
-                                type="button"
-                                role="menuitem"
-                                className={workspaceMenuDangerItemClassName}
-                                onClick={() => {
-                                  setPropertyActionsId(null);
-                                  deleteProperty(property);
-                                }}
-                              >
-                                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                                Delete property
-                              </button>
-                            </div>
-                          </PopoverContent>
+                          renderCardPropertyActionsMenu(property, "hide")
                         ) : null}
                       </Popover>
-                        );
-                      })}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="grid min-h-10 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                            style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
+                    );
+                  })}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="grid min-h-10 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                        style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
+                      >
+                        <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
+                          <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                            <PlusIcon className="size-3.5" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 truncate pr-3 text-[13px] font-medium text-muted-foreground">
+                            Add property
+                          </span>
+                        </span>
+                        <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
+                          Choose type
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className={`${workspaceMenuContentClassName} w-64`}>
+                      <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
+                      <DropdownMenuGroup>
+                        {propertyTypeOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            className={workspaceMenuOptionItemClassName}
+                            onSelect={() => createPropertyFromType(option)}
                           >
-                            <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
-                              <span className="flex h-full items-center justify-center text-muted-foreground/70">
-                                <PlusIcon className="size-3.5" aria-hidden="true" />
-                              </span>
-                              <span className="min-w-0 truncate pr-3 text-[13px] font-medium text-muted-foreground">
-                                Add property
+                            {renderPropertyTypeIcon(option.value)}
+                            <span className="grid min-w-0 gap-0.5">
+                              <span className="truncate font-medium">{option.label}</span>
+                              <span className={workspaceMenuDescriptionClassName}>
+                                {option.description}
                               </span>
                             </span>
-                            <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
-                              Choose type
-                            </span>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className={`${workspaceMenuContentClassName} w-64`}>
-                          <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
-                          <DropdownMenuGroup>
-                            {propertyTypeOptions.map((option) => (
-                              <DropdownMenuItem
-                                key={option.value}
-                                className={workspaceMenuOptionItemClassName}
-                                onSelect={() => createPropertyFromType(option)}
-                              >
-                                {renderPropertyTypeIcon(option.value)}
-                                <span className="grid min-w-0 gap-0.5">
-                                  <span className="truncate font-medium">{option.label}</span>
-                                  <span className={workspaceMenuDescriptionClassName}>
-                                    {option.description}
-                                  </span>
-                                </span>
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </dl>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </dl>
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
                     <button
@@ -1467,46 +1507,145 @@ export function WorkspaceProjectDetailPanel({
                     </button>
                     {hiddenPropertiesExpanded ? (
                       <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
-                        {hiddenCardProperties.map((property) => (
-                          <div
-                            key={property.id}
-                            className="grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0"
-                            style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
-                          >
-                            <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
-                              <span className="flex h-full items-center justify-center text-muted-foreground/40">
-                                <GripVerticalIcon className="size-3.5" aria-hidden="true" />
-                              </span>
-                              <span className="flex min-w-0 items-center truncate pr-3 text-[13px] font-medium text-muted-foreground">
-                                {property.name}
-                              </span>
-                            </dt>
-                            <dd className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-1 text-[13px] text-muted-foreground">
-                              <ProjectPropertyValueEditor
-                                project={displayedProject}
-                                property={property}
-                                selectValues={selectValues}
-                                editing={editingPropertyId === property.id}
-                                onStartEditing={() => setEditingPropertyId(property.id)}
-                                onStopEditing={() => setEditingPropertyId(null)}
-                                onProjectPropertyValueChange={onProjectPropertyValueChange}
-                                onCreateSelectValue={onCreateSelectValue}
-                                onRenameSelectValue={onRenameSelectValue}
-                                onColorSelectValue={onColorSelectValue}
-                                onDeleteSelectValue={onDeleteSelectValue}
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2"
-                                onClick={() => showProperty(property)}
+                        {hiddenCardProperties.map((property) => {
+                          const propertyProtected = isProtectedCardProperty(property);
+                          const renamingProperty = renamingPropertyId === property.id;
+
+                          return (
+                            <Popover
+                              key={property.id}
+                              open={propertyActionsId === property.id}
+                              onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
+                            >
+                              <div
+                                data-card-property-row-id={property.id}
+                                data-card-property-row-group="hidden"
+                                className={[
+                                  "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
+                                  cardPropertyDrag ? "transition-transform ease-out" : "",
+                                  cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
+                                ].filter(Boolean).join(" ")}
+                                style={{
+                                  gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
+                                  ...getCardPropertyDragStyle(property.id, "hidden"),
+                                }}
+                                onContextMenu={(event) => {
+                                  if (propertyProtected) {
+                                    return;
+                                  }
+
+                                  if (closePropertyMenuBeforeAction(event)) {
+                                    return;
+                                  }
+
+                                  event.preventDefault();
+                                  openCardPropertyMenu(property.id);
+                                }}
                               >
-                                Show
-                              </Button>
-                            </dd>
-                          </div>
-                        ))}
+                                <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                                  {renamingProperty ? (
+                                    <span className="col-span-2 flex min-w-0 items-center px-2">
+                                      <Input
+                                        ref={renamingPropertyInputRef}
+                                        value={renamingPropertyName}
+                                        aria-label="Rename property"
+                                        className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
+                                        onChange={(event) => setRenamingPropertyName(event.target.value)}
+                                        onBlur={() => commitRenameProperty(property)}
+                                        onKeyDown={(event) => {
+                                          if (event.key === "Enter") {
+                                            event.preventDefault();
+                                            event.currentTarget.blur();
+                                          }
+                                          if (event.key === "Escape") {
+                                            event.preventDefault();
+                                            cancelRenameProperty();
+                                          }
+                                        }}
+                                      />
+                                    </span>
+                                  ) : !propertyProtected ? (
+                                    <PopoverAnchor asChild>
+                                      <button
+                                        type="button"
+                                        aria-label={`Open ${property.name} property menu`}
+                                        className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                        onPointerDown={(event) => (
+                                          startCardPropertyDrag(event, property.id, {
+                                            group: "hidden",
+                                            openActionsOnClick: true,
+                                          })
+                                        )}
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          if (suppressCardPropertyClickRef.current) {
+                                            event.stopPropagation();
+                                            suppressCardPropertyClickRef.current = false;
+                                            return;
+                                          }
+
+                                          openCardPropertyMenu(property.id);
+                                        }}
+                                        onContextMenu={(event) => {
+                                          if (closePropertyMenuBeforeAction(event)) {
+                                            return;
+                                          }
+
+                                          event.preventDefault();
+                                          openCardPropertyMenu(property.id);
+                                        }}
+                                      >
+                                        <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                          <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                        </span>
+                                        <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                      </button>
+                                    </PopoverAnchor>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      aria-label={`Reorder ${property.name} card property order`}
+                                      className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      onPointerDown={(event) =>
+                                        startCardPropertyDrag(event, property.id, { group: "hidden" })
+                                      }
+                                    >
+                                      <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                        <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                      </span>
+                                      <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                    </button>
+                                  )}
+                                </dt>
+                                <dd className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-1 text-[13px] text-muted-foreground">
+                                  <ProjectPropertyValueEditor
+                                    project={displayedProject}
+                                    property={property}
+                                    selectValues={selectValues}
+                                    editing={editingPropertyId === property.id}
+                                    onStartEditing={() => setEditingPropertyId(property.id)}
+                                    onStopEditing={() => setEditingPropertyId(null)}
+                                    onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                    onCreateSelectValue={onCreateSelectValue}
+                                    onRenameSelectValue={onRenameSelectValue}
+                                    onColorSelectValue={onColorSelectValue}
+                                    onDeleteSelectValue={onDeleteSelectValue}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2"
+                                    onClick={() => showProperty(property)}
+                                  >
+                                    Show
+                                  </Button>
+                                </dd>
+                              </div>
+                              {!propertyProtected ? renderCardPropertyActionsMenu(property, "show") : null}
+                            </Popover>
+                          );
+                        })}
                       </dl>
                     ) : null}
                   </div>

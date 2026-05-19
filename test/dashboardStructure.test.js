@@ -632,7 +632,11 @@ test("renderer composes the workspace product shell", async () => {
     projectDetailPanelSource.indexOf("{hiddenPropertiesExpanded ? ("),
     projectDetailPanelSource.indexOf("<section className=\"grid gap-2\" aria-labelledby=\"project-file-tree-heading\">"),
   );
-  assert.doesNotMatch(hiddenPropertiesMarkup, /hover:bg-accent\/15/);
+  assert.match(hiddenPropertiesMarkup, /hover:bg-accent\/15/);
+  assert.match(hiddenPropertiesMarkup, /data-card-property-row-group="hidden"/);
+  assert.match(hiddenPropertiesMarkup, /PopoverAnchor asChild/);
+  assert.match(hiddenPropertiesMarkup, /startCardPropertyDrag\(event, property\.id, \{\s+group: "hidden",\s+openActionsOnClick: true,\s+\}\)/);
+  assert.match(hiddenPropertiesMarkup, /renderCardPropertyActionsMenu\(property, "show"\)/);
   assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Hidden<\/span>/);
   assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
   assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);
@@ -642,6 +646,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onCreateProperty/);
   assert.match(projectDetailPanelSource, /Rename property/);
   assert.match(projectDetailPanelSource, /Hide property/);
+  assert.match(projectDetailPanelSource, /Show property/);
   assert.match(projectDetailPanelSource, /Delete property/);
   assert.match(projectDetailPanelSource, /Add property/);
   assert.match(projectDetailPanelSource, /propertyTypeOptions/);
@@ -658,6 +663,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /editingPropertyId/);
   assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
   assert.match(projectDetailPanelSource, /orderedVisibleProperties/);
+  assert.match(projectDetailPanelSource, /type CardPropertyGroup = "visible" \| "hidden";/);
+  assert.match(projectDetailPanelSource, /data-card-property-row-group="visible"/);
+  assert.match(projectDetailPanelSource, /mergeCardPropertyGroupOrder/);
   assert.match(projectDetailPanelSource, /startCardPropertyDrag/);
   assert.match(projectDetailPanelSource, /getCardPropertyDragPreviewRows/);
   assert.match(projectDetailPanelSource, /getCardPropertyDragStyle/);
