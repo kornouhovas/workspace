@@ -185,14 +185,17 @@ export function WorkspaceViewFilterMenu({
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
         <div className="grid gap-2.5 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold leading-none">Visible properties</p>
-              <p className="text-xs text-muted-foreground">Choose fields for this view</p>
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+                <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                Visible properties
+              </p>
+              <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
+                {visiblePropertyIds.size}
+              </Badge>
             </div>
-            <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
-              {visiblePropertyIds.size}
-            </Badge>
+            <p className="pl-6 text-xs text-muted-foreground">Choose fields for this view</p>
           </div>
           <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
             {properties.map((property) => {
@@ -307,12 +310,12 @@ export function WorkspaceViewFilterMenu({
         </div>
         <Separator className={workspaceMenuSeparatorClassName} />
         <div className="grid gap-2.5 p-3">
-          <div>
+          <div className="grid gap-1.5">
             <p className="flex items-center gap-2 text-sm font-semibold leading-none">
               <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />
               Value filters
             </p>
-            <p className="text-xs text-muted-foreground">Limit visible projects by select values</p>
+            <p className="pl-6 text-xs text-muted-foreground">Limit visible projects by select values</p>
           </div>
           <div className="grid max-h-60 gap-1 overflow-auto pr-1">
             {filterableProperties.length === 0 ? (

@@ -319,7 +319,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /open=\{open\}/);
   assert.match(viewFilterMenuSource, /onOpenChange=\{setOpen\}/);
   assert.match(viewFilterMenuSource, /Visible properties/);
+  assert.match(viewFilterMenuSource, /Columns3Icon className="size-4 text-muted-foreground"/);
+  assert.match(viewFilterMenuSource, /h-6 min-w-6 justify-center rounded-full px-2/);
+  assert.match(viewFilterMenuSource, /pl-6 text-xs text-muted-foreground">Choose fields for this view/);
   assert.match(viewFilterMenuSource, /Value filters/);
+  assert.match(viewFilterMenuSource, /grid gap-1\.5/);
+  assert.match(viewFilterMenuSource, /pl-6 text-xs text-muted-foreground">Limit visible projects by select values/);
   assert.match(viewFilterMenuSource, /statusValues/);
   assert.match(viewFilterMenuSource, /property\.id === "property:status"/);
   assert.match(viewFilterMenuSource, /expandedFilterPropertyIds/);
