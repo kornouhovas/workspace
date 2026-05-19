@@ -1725,6 +1725,7 @@ export default function App() {
           onRenameSelectValue={handleRenameSelectValue}
           onColorSelectValue={handleColorSelectValue}
           onDeleteSelectValue={handleDeleteSelectValue}
+          onCreateProperty={handleCreateVisibleProperty}
           onRenameProperty={handleRenameProperty}
           onHideProperty={handleHideProperty}
           onDeleteProperty={handleDeleteProperty}

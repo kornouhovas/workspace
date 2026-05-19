@@ -11,6 +11,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Popover,
   PopoverAnchor,
   PopoverContent,
@@ -19,13 +27,20 @@ import { Input } from "@/components/ui/input";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import {
+  CalendarIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CircleDotIcon,
   FileIcon,
   FolderIcon,
   GripVerticalIcon,
+  HashIcon,
+  ListChecksIcon,
+  PlusIcon,
+  TypeIcon,
   XIcon,
 } from "@/lib/lucide-icons";
+import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type {
   WorkspaceMockFileTreeNode,
   WorkspaceMockProject,
@@ -49,9 +64,16 @@ type WorkspaceProjectDetailPanelProps = {
   readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
   readonly onColorSelectValue: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
+  readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onHideProperty: (propertyId: string, hidden: boolean) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
+};
+
+type ProjectDetailPropertyTypeOption = {
+  readonly value: WorkspaceCustomPropertyType;
+  readonly label: string;
+  readonly description: string;
 };
 
 type CardPropertyDragPreviewRow = {
@@ -89,6 +111,13 @@ const projectDetailPropertyMenuItemClassName =
 const projectDetailPropertyMenuDangerItemClassName =
   "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-destructive outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
+const propertyTypeOptions: readonly ProjectDetailPropertyTypeOption[] = [
+  { value: "text", label: "Text", description: "Short notes or free text" },
+  { value: "number", label: "Number", description: "Numeric values and counts" },
+  { value: "date", label: "Date", description: "Deadlines and calendar dates" },
+  { value: "select", label: "Select", description: "One option from a list" },
+  { value: "multi-select", label: "Multi-select", description: "Several options from a list" },
+];
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -219,6 +248,28 @@ function getFileTreeNodeNameClassName(node: WorkspaceMockFileTreeNode) {
   return node.kind === "folder"
     ? "min-w-0 truncate text-sm font-normal leading-5 text-foreground"
     : "min-w-0 truncate text-sm font-normal leading-5 text-foreground/90";
+}
+
+function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
+  const className = "mt-0.5 size-4 text-muted-foreground";
+
+  if (propertyType === "number") {
+    return <HashIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "date") {
+    return <CalendarIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "select") {
+    return <CircleDotIcon className={className} aria-hidden="true" />;
+  }
+
+  if (propertyType === "multi-select") {
+    return <ListChecksIcon className={className} aria-hidden="true" />;
+  }
+
+  return <TypeIcon className={className} aria-hidden="true" />;
 }
 
 function getSelectValuesForProperty(
@@ -588,6 +639,7 @@ export function WorkspaceProjectDetailPanel({
   onRenameSelectValue,
   onColorSelectValue,
   onDeleteSelectValue,
+  onCreateProperty,
   onRenameProperty,
   onHideProperty,
   onDeleteProperty,
@@ -845,6 +897,10 @@ export function WorkspaceProjectDetailPanel({
     if (!isProtectedCardProperty(property) && window.confirm(`Delete property "${property.name}"?`)) {
       onDeleteProperty(property.id);
     }
+  }
+
+  function createPropertyFromType(option: ProjectDetailPropertyTypeOption) {
+    onCreateProperty({ name: option.label, type: option.value });
   }
 
   function onReorderCardProperties(nextPropertyIds: readonly string[]) {
@@ -1335,9 +1391,50 @@ export function WorkspaceProjectDetailPanel({
                           </PopoverContent>
                         ) : null}
                       </Popover>
-                    );
-                  })}
-                </dl>
+                        );
+                      })}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="grid min-h-10 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                            style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
+                          >
+                            <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
+                              <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                <PlusIcon className="size-3.5" aria-hidden="true" />
+                              </span>
+                              <span className="min-w-0 truncate pr-3 text-[13px] font-medium text-muted-foreground">
+                                Add property
+                              </span>
+                            </span>
+                            <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
+                              Choose type
+                            </span>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-64 p-1.5">
+                          <DropdownMenuLabel>Add property</DropdownMenuLabel>
+                          <DropdownMenuGroup>
+                            {propertyTypeOptions.map((option) => (
+                              <DropdownMenuItem
+                                key={option.value}
+                                className="items-start gap-2 py-2"
+                                onSelect={() => createPropertyFromType(option)}
+                              >
+                                {renderPropertyTypeIcon(option.value)}
+                                <span className="grid min-w-0 gap-0.5">
+                                  <span className="truncate font-medium">{option.label}</span>
+                                  <span className="truncate text-xs text-muted-foreground">
+                                    {option.description}
+                                  </span>
+                                </span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </dl>
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
                     <button

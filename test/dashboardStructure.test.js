@@ -603,9 +603,16 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onRenameProperty/);
   assert.match(projectDetailPanelSource, /onHideProperty/);
   assert.match(projectDetailPanelSource, /onDeleteProperty/);
+  assert.match(projectDetailPanelSource, /onCreateProperty/);
   assert.match(projectDetailPanelSource, /Rename property/);
   assert.match(projectDetailPanelSource, /Hide property/);
   assert.match(projectDetailPanelSource, /Delete property/);
+  assert.match(projectDetailPanelSource, /Add property/);
+  assert.match(projectDetailPanelSource, /propertyTypeOptions/);
+  assert.match(projectDetailPanelSource, /createPropertyFromType/);
+  assert.match(projectDetailPanelSource, /DropdownMenuContent/);
+  assert.match(projectDetailPanelSource, /PlusIcon/);
+  assert.match(appSource, /<WorkspaceProjectDetailPanel[\s\S]*onCreateProperty=\{handleCreateVisibleProperty\}/);
   assert.match(projectDetailPanelSource, /property menu/);
   assert.match(projectDetailPanelSource, /FolderIcon/);
   assert.match(projectDetailPanelSource, /FileIcon/);
@@ -631,7 +638,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(popoverSource, /PopoverAnchor/);
   assert.match(projectDetailPanelSource, /PopoverAnchor asChild/);
   assert.match(projectDetailPanelSource, /PopoverContent/);
-  assert.doesNotMatch(projectDetailPanelSource, /DropdownMenuTrigger asChild/);
+  assert.match(projectDetailPanelSource, /DropdownMenuTrigger asChild[\s\S]*Add property/);
   assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
   assert.match(projectDetailPanelSource, /aria-label=\{`Open \$\{property\.name\} property menu`\}\s+className="[^"]*cursor-grab[^"]*"\s+onPointerDown=\{\(event\) =>\s*\(\s*startCardPropertyDrag\(event, property\.id, \{ openActionsOnClick: true \}\)\s*\)\}/);
