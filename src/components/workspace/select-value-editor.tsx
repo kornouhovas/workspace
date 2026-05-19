@@ -396,7 +396,7 @@ export function WorkspaceSelectValueEditor({
                 {selectedValueItems.map((selectValue) => (
                   <span
                     key={selectValue.id}
-                    className="inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
+                    className="workspace-table-value-chip inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
                   >
                     <span className="size-2 shrink-0 rounded-full" data-color={selectValue.color || "gray"} />
                     <span className="truncate">{selectValue.name}</span>
@@ -404,7 +404,7 @@ export function WorkspaceSelectValueEditor({
                 ))}
               </span>
             ) : (
-              <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+              <span className="workspace-table-empty-value -mx-1 flex min-w-0 items-center gap-2 rounded-md px-1 py-0.5 text-muted-foreground">
                 <CircleDotIcon className="size-3.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">{label}</span>
               </span>

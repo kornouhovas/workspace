@@ -267,6 +267,10 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
     return `h-10 ${tableColumnDividerClassName} p-0.5`;
   }
 
+  if (property.id === "property:status") {
+    return `h-10 ${tableColumnDividerClassName} p-0.5`;
+  }
+
   return editable
     ? `h-10 ${tableColumnDividerClassName} p-0.5`
     : `h-10 ${tableColumnDividerClassName} truncate px-3 py-0`;
@@ -280,13 +284,15 @@ function renderTableStatusValue(value: unknown) {
   }
 
   return (
-    <Badge
-      variant="secondary"
-      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
-    >
-      <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
-      <span className="truncate">{label}</span>
-    </Badge>
+    <div className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors">
+      <Badge
+        variant="secondary"
+        className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+      >
+        <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+        <span className="truncate">{label}</span>
+      </Badge>
+    </div>
   );
 }
 
@@ -377,11 +383,11 @@ function ProjectTablePropertyValueEditor({
     return (
       <button
         type="button"
-        className="workspace-table-cell-display flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="workspace-table-cell-display workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
-        <span className="truncate">{label}</span>
+        <span className="workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0.5">{label}</span>
       </button>
     );
   }
@@ -421,7 +427,7 @@ function ProjectTablePropertyValueEditor({
       <WorkspaceDateValueEditor
         value={value}
         dismissSignal={dismissSignal}
-        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
       />
     );
@@ -434,7 +440,7 @@ function ProjectTablePropertyValueEditor({
         value={value}
         selectValues={selectValues}
         dismissSignal={dismissSignal}
-        triggerClassName="h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
@@ -1228,10 +1234,10 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors hover:bg-muted/60 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
-                          <span className="truncate">
+                          <span className="workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0.5">
                             {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                           </span>
                         </button>

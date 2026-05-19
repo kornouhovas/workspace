@@ -133,7 +133,14 @@ export function WorkspaceDateValueEditor({
             aria-label="Pick date"
           >
             <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className="truncate">{dateValue || "Empty"}</span>
+            <span
+              className={[
+                dateValue ? "workspace-table-text-value" : "workspace-table-empty-value",
+                "-mx-1 min-w-0 truncate rounded-md px-1 py-0.5",
+              ].join(" ")}
+            >
+              {dateValue || "Empty"}
+            </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent

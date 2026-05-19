@@ -216,6 +216,35 @@
   -webkit-appearance: none;
 }
 
+.workspace-table-cell-control {
+  cursor: default;
+}
+
+.workspace-table-cell-control:hover {
+  background-color: color-mix(in oklch, var(--muted) 58%, transparent);
+}
+
+.workspace-table-cell-control:has(.workspace-table-value-chip:hover):hover,
+.workspace-table-cell-control:has(.workspace-table-empty-value:hover):hover,
+.workspace-table-cell-control:has(.workspace-table-text-value:hover):hover {
+  background-color: transparent;
+}
+
+.workspace-table-cell-control .workspace-table-value-chip,
+.workspace-table-cell-control .workspace-table-empty-value,
+.workspace-table-cell-control .workspace-table-text-value {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.workspace-table-cell-control .workspace-table-value-chip:hover,
+.workspace-table-cell-control .workspace-table-empty-value:hover,
+.workspace-table-cell-control .workspace-table-text-value:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
 [data-color="gray"] {
   background-color: oklch(0.66 0 0);
 }
