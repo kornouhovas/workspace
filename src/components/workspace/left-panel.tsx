@@ -9,6 +9,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -16,10 +17,20 @@ import {
 import {
   FolderKanbanIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  Trash2Icon,
 } from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavigationItem = {
@@ -435,14 +446,27 @@ export function WorkspaceLeftPanel({
                           <MoreHorizontalIcon className="size-4" aria-hidden="true" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-44">
-                        <DropdownMenuItem onSelect={() => startRenameWorkspace(workspace)}>
-                          Rename Workspace
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" onSelect={() => deleteWorkspace(workspace)}>
-                          Delete Workspace
-                        </DropdownMenuItem>
+                      <DropdownMenuContent align="end" className={cn(workspaceMenuContentClassName, "min-w-52")}>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            className={workspaceMenuItemClassName}
+                            onSelect={() => startRenameWorkspace(workspace)}
+                          >
+                            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                            Rename Workspace
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            className={workspaceMenuDangerItemClassName}
+                            variant="destructive"
+                            onSelect={() => deleteWorkspace(workspace)}
+                          >
+                            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                            Delete Workspace
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </>

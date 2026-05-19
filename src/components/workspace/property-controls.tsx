@@ -18,7 +18,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { GripVerticalIcon, MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
+import {
+  EyeIcon,
+  EyeOffIcon,
+  GripVerticalIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
@@ -334,22 +350,35 @@ export function WorkspacePropertyControls({
                         <MoreHorizontalIcon className="size-4" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-44">
-                      <DropdownMenuItem disabled={isSystem} onSelect={() => beginRenameProperty(property)}>
+                    <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-52`}>
+                      <DropdownMenuItem
+                        className={workspaceMenuItemClassName}
+                        disabled={isSystem}
+                        onSelect={() => beginRenameProperty(property)}
+                      >
+                        <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                         Rename property
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        className={workspaceMenuItemClassName}
                         disabled={isSystem}
                         onSelect={() => onHideProperty(property.id, !property.hidden)}
                       >
+                        {property.hidden ? (
+                          <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                        ) : (
+                          <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                        )}
                         {property.hidden ? "Show property" : "Hide property"}
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
                       <DropdownMenuItem
+                        className={workspaceMenuDangerItemClassName}
                         disabled={isSystem}
                         variant="destructive"
                         onSelect={() => onDeleteProperty(property.id)}
                       >
+                        <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
                         Delete property
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -464,15 +493,32 @@ export function WorkspacePropertyControls({
                                     <MoreHorizontalIcon className="size-4" aria-hidden="true" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="min-w-44">
-                                  <DropdownMenuItem onSelect={() => beginRenameSelectValue(selectValue)}>
+                                <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-56`}>
+                                  <DropdownMenuItem
+                                    className={workspaceMenuItemClassName}
+                                    onSelect={() => beginRenameSelectValue(selectValue)}
+                                  >
+                                    <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                     Rename select value
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => onHideSelectValue(selectValue.id, !selectValue.hidden)}>
+                                  <DropdownMenuItem
+                                    className={workspaceMenuItemClassName}
+                                    onSelect={() => onHideSelectValue(selectValue.id, !selectValue.hidden)}
+                                  >
+                                    {selectValue.hidden ? (
+                                      <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                                    ) : (
+                                      <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                                    )}
                                     {selectValue.hidden ? "Show select value" : "Hide select value"}
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem variant="destructive" onSelect={() => onDeleteSelectValue(selectValue.id)}>
+                                  <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
+                                  <DropdownMenuItem
+                                    className={workspaceMenuDangerItemClassName}
+                                    variant="destructive"
+                                    onSelect={() => onDeleteSelectValue(selectValue.id)}
+                                  >
+                                    <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
                                     Delete select value
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>

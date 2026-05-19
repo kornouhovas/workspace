@@ -14,7 +14,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CircleDotIcon, MoreHorizontalIcon, PlusIcon, XIcon } from "@/lib/lucide-icons";
+import {
+  CircleDotIcon,
+  MoreHorizontalIcon,
+  PaletteIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  XIcon,
+} from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuLabelClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
@@ -292,7 +309,7 @@ export function WorkspaceSelectValueEditor({
           side="right"
           align="start"
           sideOffset={8}
-          className="w-52 p-1.5"
+          className={`${workspaceMenuContentClassName} w-56`}
           onOpenAutoFocus={(event) => event.preventDefault()}
           onClick={stopSelectionEditorActivation}
           onPointerDown={stopSelectionEditorActivation}
@@ -300,29 +317,34 @@ export function WorkspaceSelectValueEditor({
           <button
             type="button"
             role="menuitem"
-            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+            className={workspaceMenuItemClassName}
             onClick={(event) => {
               event.stopPropagation();
               beginRenameSelectValue(selectValue);
             }}
           >
+            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
             Rename value
           </button>
           <button
             type="button"
             role="menuitem"
-            className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+            className={workspaceMenuDangerItemClassName}
             onClick={(event) => {
               event.stopPropagation();
               deleteSelectValue(selectValue);
             }}
           >
+            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
             Delete value
           </button>
           {onColorSelectValue ? (
             <>
-              <div className="my-1 h-px bg-border" />
-              <div className="px-2 pb-1 pt-1 text-xs font-medium text-muted-foreground">Color</div>
+              <div className={workspaceMenuSeparatorClassName} />
+              <div className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
+                <PaletteIcon className="size-3.5" aria-hidden="true" />
+                Color
+              </div>
               <div className="grid grid-cols-7 gap-1 px-1 pb-1">
                 {valueColorOptions.map((color) => (
                   <button
@@ -391,12 +413,12 @@ export function WorkspaceSelectValueEditor({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
-          className="w-64"
+          className={`${workspaceMenuContentClassName} w-64`}
           onInteractOutside={keepDropdownOpenForActionsPopover}
           onClick={stopSelectionEditorActivation}
           onPointerDown={stopSelectionEditorActivation}
         >
-          <DropdownMenuLabel>{property.name}</DropdownMenuLabel>
+          <DropdownMenuLabel className={workspaceMenuLabelClassName}>{property.name}</DropdownMenuLabel>
           <div className="p-1">
             <Input
               value={searchQuery}
@@ -414,11 +436,11 @@ export function WorkspaceSelectValueEditor({
               }}
             />
           </div>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
           <DropdownMenuGroup>
             {!isMultiSelect && selectedValueId ? (
-              <DropdownMenuItem onSelect={clearSingleSelectValue}>
-                <XIcon className="size-3.5" aria-hidden="true" />
+              <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={clearSingleSelectValue}>
+                <XIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                 Clear selection
               </DropdownMenuItem>
             ) : null}
@@ -478,31 +500,37 @@ export function WorkspaceSelectValueEditor({
               return (
                 <div key={selectValue.id} className="grid gap-1">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
-                    <DropdownMenuItem className="min-w-0" onSelect={() => selectSingleValue(selectValue.id)}>
+                    <DropdownMenuItem
+                      className={`${workspaceMenuItemClassName} min-w-0`}
+                      onSelect={() => selectSingleValue(selectValue.id)}
+                    >
                       <span className="flex min-w-0 items-center gap-2">
                         <Badge variant="secondary" className="size-2.5 rounded-full p-0" data-color={selectValue.color || "gray"} />
                         <span className="truncate">{selectValue.name}</span>
-                        </span>
-                      </DropdownMenuItem>
+                      </span>
+                    </DropdownMenuItem>
                     {renderSelectValueActions(selectValue)}
                   </div>
                 </div>
               );
             })}
             {filteredValues.length === 0 && !canCreateValue ? (
-              <DropdownMenuItem disabled>No matching values</DropdownMenuItem>
+              <DropdownMenuItem className={workspaceMenuItemClassName} disabled>
+                No matching values
+              </DropdownMenuItem>
             ) : null}
             {canCreateValue ? (
               <>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
                 <DropdownMenuItem
+                  className={workspaceMenuItemClassName}
                   disabled={creating}
                   onSelect={(event) => {
                     event.preventDefault();
                     void createValueFromSearch();
                   }}
                 >
-                  <PlusIcon className="size-3.5" aria-hidden="true" />
+                  <PlusIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                   Create "{searchQuery.trim()}"
                 </DropdownMenuItem>
               </>

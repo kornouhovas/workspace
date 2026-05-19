@@ -11,7 +11,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { ChevronDownIcon, ChevronRightIcon, Columns3Icon, MoreHorizontalIcon } from "@/lib/lucide-icons";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  Columns3Icon,
+  ListFilterIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+} from "@/components/workspace/menu-styles";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -155,7 +170,7 @@ export function WorkspaceViewFilterMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-80 p-0"
+        className={`${workspaceMenuContentClassName} w-80 p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
         <div className="grid gap-3 p-3">
@@ -231,7 +246,7 @@ export function WorkspaceViewFilterMenu({
                             side="right"
                             align="start"
                             sideOffset={8}
-                            className="w-44 p-1"
+                            className={`${workspaceMenuContentClassName} w-52`}
                             onOpenAutoFocus={(event) => event.preventDefault()}
                             onClick={stopActionMenuEvent}
                             onPointerDown={stopActionMenuEvent}
@@ -239,18 +254,19 @@ export function WorkspaceViewFilterMenu({
                             <button
                               type="button"
                               role="menuitem"
-                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+                              className={workspaceMenuItemClassName}
                               onClick={(event) => {
                                 event.stopPropagation();
                                 beginRenameProperty(property);
                               }}
                             >
+                              <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                               Rename property
                             </button>
                             <button
                               type="button"
                               role="menuitem"
-                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none"
+                              className={workspaceMenuDangerItemClassName}
                               onClick={(event) => {
                                 event.stopPropagation();
                                 setActionsPropertyId(null);
@@ -259,6 +275,7 @@ export function WorkspaceViewFilterMenu({
                                 }
                               }}
                             >
+                              <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
                               Delete property
                             </button>
                           </PopoverContent>
@@ -274,7 +291,10 @@ export function WorkspaceViewFilterMenu({
         <Separator />
         <div className="grid gap-2 p-3">
           <div>
-            <p className="text-sm font-medium">Value filters</p>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              Value filters
+            </p>
             <p className="text-xs text-muted-foreground">Limit visible projects by select values</p>
           </div>
           <div className="grid max-h-60 gap-1 overflow-auto pr-1">

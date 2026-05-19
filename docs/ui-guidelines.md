@@ -179,6 +179,7 @@ Rules:
 - Use `Badge` for status, select values, and small state indicators.
 - Use `sonner` for non-blocking success and error notifications.
 - Use `Tooltip` for icon-only actions whose meaning is not immediately obvious.
+- Workspace dropdowns, popovers, and context menus must use the shared menu tokens from `src/components/workspace/menu-styles.ts`; action rows should include a leading lucide icon, destructive actions should use the destructive menu style, and property-type menus should include a short secondary description.
 
 ## shadcn Composition Rules
 

@@ -88,7 +88,29 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(disableFsEventsLoaderSource, /export default undefined/);
   assert.doesNotMatch(lucideIconsSource, /from "lucide-react"/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/check\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/pencil\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/trash-2\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/eye-off\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/eye\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/palette\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/kanban\.mjs/);
+  assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/table\.mjs/);
   assert.match(lucideIconTypesSource, /lucide-react\/dist\/esm\/icons\/\*\.mjs/);
+
+  for (const menuSource of [
+    leftPanelSource,
+    viewTabsSource,
+    tableViewSource,
+    viewFilterMenuSource,
+    selectValueEditorSource,
+    projectDetailPanelSource,
+    propertyControlsSource,
+  ]) {
+    assert.match(menuSource, /from "@\/components\/workspace\/menu-styles"/);
+    assert.match(menuSource, /workspaceMenuContentClassName/);
+    assert.match(menuSource, /workspaceMenuItemClassName/);
+    assert.match(menuSource, /workspaceMenuIconClassName/);
+  }
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
   assert.match(appSource, /Workspace Project Board/);
@@ -204,7 +226,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onReorderWorkspaces/);
   assert.match(leftPanelSource, /editingWorkspaceId/);
   assert.match(leftPanelSource, /aria-label="Rename workspace"/);
-  assert.match(leftPanelSource, /min-w-44/);
+  assert.match(leftPanelSource, /min-w-52/);
   assert.doesNotMatch(leftPanelSource, /draggable/);
   assert.doesNotMatch(leftPanelSource, /onDragStart/);
   assert.doesNotMatch(leftPanelSource, /onDrop/);
@@ -335,7 +357,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /data-active:border-border/);
   assert.match(viewTabsSource, /data-active:bg-background/);
   assert.doesNotMatch(viewTabsSource, /text-base font-semibold/);
-  assert.match(viewTabsSource, /min-w-44/);
+  assert.match(viewTabsSource, /min-w-56/);
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
   assert.doesNotMatch(leftPanelSource, /window\.prompt/);
@@ -397,7 +419,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /from "react-dom"/);
   assert.match(tableViewSource, /createPortal/);
   assert.match(tableViewSource, /propertyMenuAnchor/);
-  assert.match(tableViewSource, /className="fixed z-50 w-52/);
+  assert.match(tableViewSource, /fixed z-50 w-60/);
   assert.match(tableViewSource, /style=\{\{ left: propertyMenuAnchor\.left, top: propertyMenuAnchor\.top \}\}/);
   assert.doesNotMatch(tableViewSource, /PopoverContent/);
   assert.doesNotMatch(tableViewSource, /DropdownMenuCheckboxItem/);

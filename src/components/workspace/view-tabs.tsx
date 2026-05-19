@@ -3,14 +3,32 @@ import { useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
-import { MoreHorizontalIcon, PlusIcon } from "@/lib/lucide-icons";
+import {
+  KanbanIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlusIcon,
+  TableIcon,
+  Trash2Icon,
+} from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuLabelClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -206,9 +224,18 @@ export function WorkspaceViewTabs({
               <span>Add View</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-44">
-            <DropdownMenuItem onSelect={() => onCreateView("board")}>New Board View</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onCreateView("table")}>New Table View</DropdownMenuItem>
+          <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-56`}>
+            <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add view</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("board")}>
+                <KanbanIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                New Board View
+              </DropdownMenuItem>
+              <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("table")}>
+                <TableIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                New Table View
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu open={openViewActionsMenu} onOpenChange={setOpenViewActionsMenu}>
@@ -222,37 +249,57 @@ export function WorkspaceViewTabs({
               <MoreHorizontalIcon className="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-44">
-            <DropdownMenuItem disabled={!activeView} onSelect={renameActiveView}>
+          <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-56`}>
+            <DropdownMenuLabel className={workspaceMenuLabelClassName}>
+              {activeView?.name || "View"}
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className={workspaceMenuItemClassName}
+                disabled={!activeView}
+                onSelect={renameActiveView}
+              >
+                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
               Rename View
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={!activeView || views.length <= 1} variant="destructive" onSelect={deleteActiveView}>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className={workspaceMenuDangerItemClassName}
+                disabled={!activeView || views.length <= 1}
+                variant="destructive"
+                onSelect={deleteActiveView}
+              >
+                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
               Delete View
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       {contextMenuView ? (
         <div
-          className="fixed z-50 min-w-44 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          className={`fixed z-50 min-w-56 ${workspaceMenuContentClassName}`}
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
           role="menu"
           onMouseLeave={() => setContextMenuViewId(null)}
         >
           <button
             type="button"
-            className="flex w-full items-center rounded-md px-2 py-1 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            className={workspaceMenuItemClassName}
             onClick={() => startRenameView(contextMenuView)}
           >
+            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
             Rename View
           </button>
           <button
             type="button"
-            className="flex w-full items-center rounded-md px-2 py-1 text-left text-sm text-destructive hover:bg-destructive/10"
+            className={workspaceMenuDangerItemClassName}
             disabled={views.length <= 1}
             onClick={() => deleteView(contextMenuView)}
           >
+            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
             Delete View
           </button>
         </div>

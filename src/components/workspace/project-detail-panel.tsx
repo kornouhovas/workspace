@@ -19,6 +19,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuDescriptionClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuLabelClassName,
+  workspaceMenuOptionItemClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
+import {
   Popover,
   PopoverAnchor,
   PopoverContent,
@@ -31,12 +42,15 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CircleDotIcon,
+  EyeOffIcon,
   FileIcon,
   FolderIcon,
   GripVerticalIcon,
   HashIcon,
   ListChecksIcon,
+  PencilIcon,
   PlusIcon,
+  Trash2Icon,
   TypeIcon,
   XIcon,
 } from "@/lib/lucide-icons";
@@ -106,10 +120,6 @@ const projectDetailPlainValueClassName =
   "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-medium text-foreground";
 const projectDetailPlainTriggerClassName =
   "h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
-const projectDetailPropertyMenuItemClassName =
-  "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-popover-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground";
-const projectDetailPropertyMenuDangerItemClassName =
-  "flex h-8 w-full cursor-default items-center rounded-md px-2 text-left text-sm text-destructive outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
 const propertyTypeOptions: readonly ProjectDetailPropertyTypeOption[] = [
   { value: "text", label: "Text", description: "Short notes or free text" },
@@ -1352,39 +1362,42 @@ export function WorkspaceProjectDetailPanel({
                         {!propertyProtected ? (
                           <PopoverContent
                             align="start"
-                            className="w-44 p-1"
+                            className={`${workspaceMenuContentClassName} w-52`}
                             onOpenAutoFocus={(event) => event.preventDefault()}
                           >
                             <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
                               <button
                                 type="button"
                                 role="menuitem"
-                                className={projectDetailPropertyMenuItemClassName}
+                                className={workspaceMenuItemClassName}
                                 onClick={() => beginRenameProperty(property)}
                               >
+                                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                 Rename property
                               </button>
                               <button
                                 type="button"
                                 role="menuitem"
-                                className={projectDetailPropertyMenuItemClassName}
+                                className={workspaceMenuItemClassName}
                                 onClick={() => {
                                   setPropertyActionsId(null);
                                   hideProperty(property);
                                 }}
                               >
+                                <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                 Hide property
                               </button>
-                              <div className="-mx-1 my-1 h-px bg-border" />
+                              <div className={workspaceMenuSeparatorClassName} />
                               <button
                                 type="button"
                                 role="menuitem"
-                                className={projectDetailPropertyMenuDangerItemClassName}
+                                className={workspaceMenuDangerItemClassName}
                                 onClick={() => {
                                   setPropertyActionsId(null);
                                   deleteProperty(property);
                                 }}
                               >
+                                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
                                 Delete property
                               </button>
                             </div>
@@ -1413,19 +1426,19 @@ export function WorkspaceProjectDetailPanel({
                             </span>
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-64 p-1.5">
-                          <DropdownMenuLabel>Add property</DropdownMenuLabel>
+                        <DropdownMenuContent align="start" className={`${workspaceMenuContentClassName} w-64`}>
+                          <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
                           <DropdownMenuGroup>
                             {propertyTypeOptions.map((option) => (
                               <DropdownMenuItem
                                 key={option.value}
-                                className="items-start gap-2 py-2"
+                                className={workspaceMenuOptionItemClassName}
                                 onSelect={() => createPropertyFromType(option)}
                               >
                                 {renderPropertyTypeIcon(option.value)}
                                 <span className="grid min-w-0 gap-0.5">
                                   <span className="truncate font-medium">{option.label}</span>
-                                  <span className="truncate text-xs text-muted-foreground">
+                                  <span className={workspaceMenuDescriptionClassName}>
                                     {option.description}
                                   </span>
                                 </span>

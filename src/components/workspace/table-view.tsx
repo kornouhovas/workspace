@@ -28,13 +28,28 @@ import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-
 import {
   CalendarIcon,
   CircleDotIcon,
+  EyeIcon,
+  EyeOffIcon,
   HashIcon,
   ListChecksIcon,
   ListFilterIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PlusIcon,
+  Trash2Icon,
   TypeIcon,
 } from "@/lib/lucide-icons";
+import {
+  workspaceMenuContentClassName,
+  workspaceMenuDangerIconClassName,
+  workspaceMenuDangerItemClassName,
+  workspaceMenuDescriptionClassName,
+  workspaceMenuIconClassName,
+  workspaceMenuItemClassName,
+  workspaceMenuLabelClassName,
+  workspaceMenuOptionItemClassName,
+  workspaceMenuSeparatorClassName,
+} from "@/components/workspace/menu-styles";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type {
@@ -116,7 +131,7 @@ const minimumPropertyColumnWidth = 132;
 const maximumPropertyColumnWidth = 520;
 const defaultCustomPropertyColumnWidth = 180;
 const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border)]";
-const propertyMenuWidth = 208;
+const propertyMenuWidth = 240;
 const propertyMenuOffset = 4;
 const propertyMenuViewportMargin = 8;
 
@@ -1008,7 +1023,7 @@ export function WorkspaceTableView({
                             data-workspace-property-menu="true"
                             role="menu"
                             aria-label={`${property.name} property actions`}
-                            className="fixed z-50 w-52 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+                            className={`fixed z-50 w-60 ${workspaceMenuContentClassName}`}
                             style={{ left: propertyMenuAnchor.left, top: propertyMenuAnchor.top }}
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => event.stopPropagation()}
@@ -1018,32 +1033,37 @@ export function WorkspaceTableView({
                                 type="button"
                                 role="menuitem"
                                 disabled={isSystemProperty(property.id)}
-                                className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                                className={workspaceMenuItemClassName}
                                 onClick={() => {
                                   beginRenameProperty(property);
                                   closePropertyMenu();
                                 }}
                               >
+                                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                 Rename property
                               </button>
                               <button
                                 type="button"
                                 role="menuitem"
                                 disabled={isSystemProperty(property.id)}
-                                className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                                className={workspaceMenuItemClassName}
                                 onClick={() => {
                                   onTogglePropertyVisibility(property.id, false);
                                   closePropertyMenu();
                                 }}
                               >
+                                <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                 Hide from view
                               </button>
                             </div>
                             {showValueFilters ? (
                               <>
-                                <div className="-mx-1 my-1 h-px bg-border" />
+                                <div className={workspaceMenuSeparatorClassName} />
                                 <div className="grid gap-1" aria-label={`${property.name} value filters`}>
-                                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">Value filters</p>
+                                  <p className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
+                                    <ListFilterIcon className="size-3.5" aria-hidden="true" />
+                                    Value filters
+                                  </p>
                                   <div className="grid max-h-52 gap-0.5 overflow-auto px-1 pb-1">
                                     {propertyFilterValues.length > 0 ? propertyFilterValues.map((filterValue) => {
                                       const filterValueChecked = selectedValueIds.has(filterValue.id);
@@ -1068,12 +1088,12 @@ export function WorkspaceTableView({
                                 </div>
                               </>
                             ) : null}
-                            <div className="-mx-1 my-1 h-px bg-border" />
+                            <div className={workspaceMenuSeparatorClassName} />
                             <button
                               type="button"
                               role="menuitem"
                               disabled={isSystemProperty(property.id)}
-                              className="flex h-8 w-full items-center rounded-md px-2 text-left text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:text-destructive focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                              className={workspaceMenuDangerItemClassName}
                               onClick={() => {
                                 closePropertyMenu();
                                 if (window.confirm(`Delete property "${property.name}"?`)) {
@@ -1081,6 +1101,7 @@ export function WorkspaceTableView({
                                 }
                               }}
                             >
+                              <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
                               Delete property
                             </button>
                           </div>
@@ -1106,19 +1127,19 @@ export function WorkspaceTableView({
                       <PlusIcon className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 p-1.5">
-                    <DropdownMenuLabel>Add property</DropdownMenuLabel>
+                  <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} w-64`}>
+                    <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       {propertyTypeOptions.map((option) => (
                         <DropdownMenuItem
                           key={option.value}
-                          className="items-start gap-2 py-2"
+                          className={workspaceMenuOptionItemClassName}
                           onSelect={() => createPropertyFromType(option)}
                         >
                           {renderPropertyTypeIcon(option.value)}
                           <span className="grid min-w-0 gap-0.5">
                             <span className="truncate font-medium">{option.label}</span>
-                            <span className="truncate text-xs text-muted-foreground">
+                            <span className={workspaceMenuDescriptionClassName}>
                               {option.description}
                             </span>
                           </span>
@@ -1127,14 +1148,18 @@ export function WorkspaceTableView({
                     </DropdownMenuGroup>
                     {hiddenViewProperties.length > 0 ? (
                       <>
-                        <DropdownMenuSeparator />
+                        <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
                         <DropdownMenuGroup>
-                          <DropdownMenuLabel>Hidden in this view</DropdownMenuLabel>
+                          <DropdownMenuLabel className={workspaceMenuLabelClassName}>
+                            Hidden in this view
+                          </DropdownMenuLabel>
                           {hiddenViewProperties.map((property) => (
                             <DropdownMenuItem
                               key={property.id}
+                              className={workspaceMenuItemClassName}
                               onSelect={() => onTogglePropertyVisibility(property.id, true)}
                             >
+                              <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                               Show {property.name}
                             </DropdownMenuItem>
                           ))}
