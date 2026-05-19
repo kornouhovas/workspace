@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { DragEvent as ReactDragEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   Columns3Icon,
+  EyeOffIcon,
   ListFilterIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -44,6 +46,7 @@ type WorkspaceViewFilterMenuProps = {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
 };
@@ -52,6 +55,8 @@ type WorkspaceFilterValue = {
   readonly id: string;
   readonly name: string;
 };
+
+type PropertyDropPosition = "before" | "after";
 
 function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
@@ -110,6 +115,7 @@ export function WorkspaceViewFilterMenu({
   statusValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
 }: WorkspaceViewFilterMenuProps) {
@@ -117,14 +123,22 @@ export function WorkspaceViewFilterMenu({
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
+  const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
+  const [dragOverPropertyId, setDragOverPropertyId] = useState<string | null>(null);
+  const [dragOverPropertyPosition, setDragOverPropertyPosition] = useState<PropertyDropPosition>("before");
   const [expandedFilterPropertyIds, setExpandedFilterPropertyIds] = useState<ReadonlySet<string>>(() => new Set());
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
+  const visibleViewProperties = properties.filter((property) => visiblePropertyIds.has(property.id));
+  const hiddenViewProperties = properties.filter((property) => !visiblePropertyIds.has(property.id));
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
 
   useEffect(() => {
     setOpen(false);
     setActionsPropertyId(null);
+    setDraggedPropertyId(null);
+    setDragOverPropertyId(null);
+    setDragOverPropertyPosition("before");
     setEditingPropertyId(null);
     setEditingPropertyName("");
     setExpandedFilterPropertyIds(new Set());
@@ -170,6 +184,232 @@ export function WorkspaceViewFilterMenu({
     });
   }
 
+  function resetPropertyDragState() {
+    setDraggedPropertyId(null);
+    setDragOverPropertyId(null);
+    setDragOverPropertyPosition("before");
+  }
+
+  function getReorderedVisiblePropertyIds(
+    sourcePropertyId: string,
+    targetPropertyId: string,
+    position: PropertyDropPosition,
+  ) {
+    const orderedPropertyIds = visibleViewProperties.map((property) => property.id);
+
+    if (sourcePropertyId === targetPropertyId) {
+      return null;
+    }
+
+    if (!orderedPropertyIds.includes(sourcePropertyId) || !orderedPropertyIds.includes(targetPropertyId)) {
+      return null;
+    }
+
+    const nextPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+    const targetIndex = nextPropertyIds.indexOf(targetPropertyId);
+
+    if (targetIndex === -1) {
+      return null;
+    }
+
+    const insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
+    nextPropertyIds.splice(insertionIndex, 0, sourcePropertyId);
+
+    if (nextPropertyIds.every((propertyId, index) => propertyId === orderedPropertyIds[index])) {
+      return null;
+    }
+
+    return nextPropertyIds;
+  }
+
+  function handlePropertyDragStart(
+    event: ReactDragEvent<HTMLDivElement>,
+    property: WorkspacePropertyDefinitionState,
+    canDragProperty: boolean,
+  ) {
+    if (!canDragProperty) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", property.id);
+    setDraggedPropertyId(property.id);
+    setDragOverPropertyId(property.id);
+    setDragOverPropertyPosition("before");
+  }
+
+  function handlePropertyDragOver(
+    event: ReactDragEvent<HTMLDivElement>,
+    property: WorkspacePropertyDefinitionState,
+    canDragProperty: boolean,
+  ) {
+    if (!draggedPropertyId || !canDragProperty) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    const position = event.clientY > rowRect.top + rowRect.height / 2 ? "after" : "before";
+    setDragOverPropertyId(property.id);
+    setDragOverPropertyPosition(position);
+  }
+
+  function handlePropertyDrop(
+    event: ReactDragEvent<HTMLDivElement>,
+    property: WorkspacePropertyDefinitionState,
+    canDragProperty: boolean,
+  ) {
+    event.preventDefault();
+
+    if (!canDragProperty) {
+      resetPropertyDragState();
+      return;
+    }
+
+    const sourcePropertyId = draggedPropertyId || event.dataTransfer.getData("text/plain");
+    const nextPropertyIds = getReorderedVisiblePropertyIds(
+      sourcePropertyId,
+      property.id,
+      dragOverPropertyPosition,
+    );
+
+    resetPropertyDragState();
+
+    if (nextPropertyIds) {
+      onReorderViewProperties(nextPropertyIds);
+    }
+  }
+
+  function renderPropertyVisibilityRow(
+    property: WorkspacePropertyDefinitionState,
+    checked: boolean,
+    section: "visible" | "hidden",
+  ) {
+    const disabled = isSystemProperty(property.id);
+    const canDragProperty = section === "visible" && editingPropertyId !== property.id;
+    const isDropTarget = dragOverPropertyId === property.id && draggedPropertyId !== property.id;
+    const dragTargetClassName = isDropTarget ? "bg-accent/35 ring-1 ring-ring/40" : "";
+
+    return (
+      <div key={property.id} className="grid min-w-0">
+        <div
+          className={`${visiblePropertyRowClassName} ${canDragProperty ? "cursor-grab active:cursor-grabbing" : ""} ${draggedPropertyId === property.id ? "bg-accent/40 opacity-80" : ""} ${dragTargetClassName}`}
+          draggable={canDragProperty}
+          onDragStart={(event) => handlePropertyDragStart(event, property, canDragProperty)}
+          onDragOver={(event) => handlePropertyDragOver(event, property, canDragProperty)}
+          onDrop={(event) => handlePropertyDrop(event, property, canDragProperty)}
+          onDragEnd={resetPropertyDragState}
+        >
+          <Checkbox
+            checked={checked}
+            disabled={disabled}
+            aria-label={`${property.name} visible`}
+            className={workspaceMenuCheckboxClassName}
+            onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
+          />
+          {editingPropertyId === property.id ? (
+            <Input
+              value={editingPropertyName}
+              autoFocus
+              aria-label="Rename property"
+              className="h-6 min-w-0"
+              onChange={(event) => setEditingPropertyName(event.target.value)}
+              onBlur={() => commitRenameProperty(property)}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitRenameProperty(property);
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setEditingPropertyId(null);
+                  setEditingPropertyName("");
+                }
+              }}
+            />
+          ) : (
+            <span className="truncate font-medium">{property.name}</span>
+          )}
+          <div className="flex min-w-0 justify-end pr-1">
+            {disabled ? (
+              <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
+                Required
+              </Badge>
+            ) : section === "hidden" ? (
+              <Badge variant="secondary" className="h-6 rounded-full px-2 text-xs">
+                Hidden
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex size-6 items-center justify-center justify-self-center">
+            {disabled ? null : (
+              <Popover
+                open={actionsPropertyId === property.id}
+                onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                    aria-label={`${property.name} property actions`}
+                    onClick={stopActionMenuEvent}
+                    onPointerDown={stopActionMenuEvent}
+                  >
+                    <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  data-workspace-actions-popover="true"
+                  role="menu"
+                  aria-label={`${property.name} property actions`}
+                  side="right"
+                  align="start"
+                  sideOffset={8}
+                  className={`${workspaceMenuContentClassName} w-52`}
+                  onOpenAutoFocus={(event) => event.preventDefault()}
+                  onClick={stopActionMenuEvent}
+                  onPointerDown={stopActionMenuEvent}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={workspaceMenuItemClassName}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      beginRenameProperty(property);
+                    }}
+                  >
+                    <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    Rename property
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={workspaceMenuDangerItemClassName}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActionsPropertyId(null);
+                      if (window.confirm(`Delete property "${property.name}"?`)) {
+                        onDeleteProperty(property.id);
+                      }
+                    }}
+                  >
+                    <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                    Delete property
+                  </button>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -192,122 +432,30 @@ export function WorkspaceViewFilterMenu({
                 Visible properties
               </p>
               <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
-                {visiblePropertyIds.size}
+                {visibleViewProperties.length}
               </Badge>
             </div>
             <p className="pl-6 text-xs text-muted-foreground">Choose fields for this view</p>
           </div>
           <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
-            {properties.map((property) => {
-              const checked = visiblePropertyIds.has(property.id);
-              const disabled = isSystemProperty(property.id);
-
-              return (
-                <div key={property.id} className="grid min-w-0">
-                  <div className={visiblePropertyRowClassName}>
-                    <Checkbox
-                      checked={checked}
-                      disabled={disabled}
-                      aria-label={`${property.name} visible`}
-                      className={workspaceMenuCheckboxClassName}
-                      onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
-                    />
-                    {editingPropertyId === property.id ? (
-                      <Input
-                        value={editingPropertyName}
-                        autoFocus
-                        aria-label="Rename property"
-                        className="h-6 min-w-0"
-                        onChange={(event) => setEditingPropertyName(event.target.value)}
-                        onBlur={() => commitRenameProperty(property)}
-                        onKeyDown={(event) => {
-                          event.stopPropagation();
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            commitRenameProperty(property);
-                          }
-                          if (event.key === "Escape") {
-                            event.preventDefault();
-                            setEditingPropertyId(null);
-                            setEditingPropertyName("");
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="truncate font-medium">{property.name}</span>
-                    )}
-                    <div className="flex min-w-0 justify-end pr-1">
-                      {disabled ? (
-                        <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
-                          Required
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="flex size-6 items-center justify-center justify-self-center">
-                      {disabled ? null : (
-                        <Popover
-                          open={actionsPropertyId === property.id}
-                          onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
-                        >
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                              aria-label={`${property.name} property actions`}
-                              onClick={stopActionMenuEvent}
-                              onPointerDown={stopActionMenuEvent}
-                            >
-                              <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            data-workspace-actions-popover="true"
-                            role="menu"
-                            aria-label={`${property.name} property actions`}
-                            side="right"
-                            align="start"
-                            sideOffset={8}
-                            className={`${workspaceMenuContentClassName} w-52`}
-                            onOpenAutoFocus={(event) => event.preventDefault()}
-                            onClick={stopActionMenuEvent}
-                            onPointerDown={stopActionMenuEvent}
-                          >
-                            <button
-                              type="button"
-                              role="menuitem"
-                              className={workspaceMenuItemClassName}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                beginRenameProperty(property);
-                              }}
-                            >
-                              <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                              Rename property
-                            </button>
-                            <button
-                              type="button"
-                              role="menuitem"
-                              className={workspaceMenuDangerItemClassName}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setActionsPropertyId(null);
-                                if (window.confirm(`Delete property "${property.name}"?`)) {
-                                  onDeleteProperty(property.id);
-                                }
-                              }}
-                            >
-                              <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                              Delete property
-                            </button>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {visibleViewProperties.map((property) => renderPropertyVisibilityRow(property, true, "visible"))}
           </div>
+          {hiddenViewProperties.length > 0 ? (
+            <div className="grid gap-1 border-t border-border/70 pt-2">
+              <div className="flex h-7 items-center justify-between gap-2 px-1.5 text-sm font-semibold text-muted-foreground">
+                <span className="flex min-w-0 items-center gap-2">
+                  <EyeOffIcon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">Hidden properties</span>
+                </span>
+                <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">
+                  {hiddenViewProperties.length}
+                </Badge>
+              </div>
+              <div className="grid max-h-32 gap-0.5 overflow-auto pr-1">
+                {hiddenViewProperties.map((property) => renderPropertyVisibilityRow(property, false, "hidden"))}
+              </div>
+            </div>
+          ) : null}
         </div>
         <Separator className={workspaceMenuSeparatorClassName} />
         <div className="grid gap-2.5 p-3">

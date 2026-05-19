@@ -313,6 +313,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /dismissSignal=\{dismissSignal\}/);
   assert.match(viewTabsSource, /onTogglePropertyVisibility/);
   assert.match(viewTabsSource, /onToggleValueFilter/);
+  assert.match(viewTabsSource, /onReorderViewProperties/);
   assert.match(viewTabsSource, /onRenameProperty/);
   assert.match(viewTabsSource, /onDeleteProperty/);
   assert.match(viewTabsSource, /statusValues/);
@@ -339,6 +340,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /visiblePropertyRowClassName/);
   assert.match(viewFilterMenuSource, /grid-cols-\[auto_minmax\(0,1fr\)_minmax\(5rem,auto\)_1\.5rem\]/);
   assert.match(viewFilterMenuSource, /max-h-52 gap-0\.5/);
+  assert.match(viewFilterMenuSource, /visibleViewProperties/);
+  assert.match(viewFilterMenuSource, /hiddenViewProperties/);
+  assert.match(viewFilterMenuSource, /onReorderViewProperties/);
+  assert.match(viewFilterMenuSource, /draggedPropertyId/);
+  assert.match(viewFilterMenuSource, /handlePropertyDrop/);
+  assert.match(viewFilterMenuSource, /draggable=\{canDragProperty\}/);
+  assert.match(viewFilterMenuSource, /Hidden properties/);
   assert.match(viewFilterMenuSource, /select-none/);
   assert.match(viewFilterMenuSource, /valueFilterGroupButtonClassName/);
   assert.match(viewFilterMenuSource, /valueFilterItemClassName/);

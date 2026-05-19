@@ -51,6 +51,7 @@ type WorkspaceViewTabsProps = {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
 };
@@ -68,6 +69,7 @@ export function WorkspaceViewTabs({
   statusValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
 }: WorkspaceViewTabsProps) {
@@ -209,6 +211,7 @@ export function WorkspaceViewTabs({
           statusValues={statusValues}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
           onToggleValueFilter={onToggleValueFilter}
+          onReorderViewProperties={onReorderViewProperties}
           onRenameProperty={onRenameProperty}
           onDeleteProperty={onDeleteProperty}
         />

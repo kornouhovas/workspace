@@ -957,22 +957,29 @@ export default function App() {
       propertyId,
       visible,
     });
+    const previousPropertyOrder = activeView?.propertyOrder || createPropertyOrder(currentVisiblePropertyIds);
+    const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
 
     try {
-      const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
-      await updateActiveViewPatch({
-        visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder,
-      }, {
-        refreshProjection: false,
-      });
       dispatch({
         type: "viewPropertiesUpdated",
         viewId: activeViewId,
         visiblePropertyIds: nextVisiblePropertyIds,
         propertyOrder,
       });
+      await updateActiveViewPatch({
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder,
+      }, {
+        refreshProjection: false,
+      });
     } catch (error) {
+      dispatch({
+        type: "viewPropertiesUpdated",
+        viewId: activeViewId,
+        visiblePropertyIds: currentVisiblePropertyIds,
+        propertyOrder: previousPropertyOrder,
+      });
       toast.error("Could not update view properties", {
         description: getServiceErrorMessage(error),
       });
@@ -1028,22 +1035,33 @@ export default function App() {
 
     const activeViewId = state.activeViewId;
     const nextVisiblePropertyIds = [...new Set(orderedPropertyIds)];
+    const activeView = getActiveViewState();
+    const previousVisiblePropertyIds = activeView?.visiblePropertyIds
+      || state.projection?.visibleProperties.map((property) => property.id)
+      || ["property:name", "property:status"];
+    const previousPropertyOrder = activeView?.propertyOrder || createPropertyOrder(previousVisiblePropertyIds);
+    const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
 
     try {
-      const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
-      await updateActiveViewPatch({
-        visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder,
-      }, {
-        refreshProjection: false,
-      });
       dispatch({
         type: "viewPropertiesUpdated",
         viewId: activeViewId,
         visiblePropertyIds: nextVisiblePropertyIds,
         propertyOrder,
       });
+      await updateActiveViewPatch({
+        visiblePropertyIds: nextVisiblePropertyIds,
+        propertyOrder,
+      }, {
+        refreshProjection: false,
+      });
     } catch (error) {
+      dispatch({
+        type: "viewPropertiesUpdated",
+        viewId: activeViewId,
+        visiblePropertyIds: previousVisiblePropertyIds,
+        propertyOrder: previousPropertyOrder,
+      });
       toast.error("Could not reorder view properties", {
         description: getServiceErrorMessage(error),
       });
@@ -1662,6 +1680,7 @@ export default function App() {
                 statusValues={statusValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
                 onToggleValueFilter={handleToggleValueFilter}
+                onReorderViewProperties={handleReorderViewProperties}
                 onRenameProperty={handleRenameProperty}
                 onDeleteProperty={handleDeleteProperty}
               />
