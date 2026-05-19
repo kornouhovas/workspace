@@ -40,6 +40,7 @@ import {
   TypeIcon,
 } from "@/lib/lucide-icons";
 import {
+  workspaceMenuCheckboxClassName,
   workspaceMenuContentClassName,
   workspaceMenuDangerIconClassName,
   workspaceMenuDangerItemClassName,
@@ -1076,6 +1077,7 @@ export function WorkspaceTableView({
                                           <Checkbox
                                             checked={filterValueChecked}
                                             aria-label={`${filterValue.name} visible in ${property.name}`}
+                                            className={workspaceMenuCheckboxClassName}
                                             onCheckedChange={(value) => onToggleValueFilter(property.id, filterValue.id, value === true)}
                                           />
                                           <span className="truncate">{filterValue.name}</span>

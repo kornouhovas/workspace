@@ -10,6 +10,9 @@ export const workspaceMenuDangerItemClassName =
 export const workspaceMenuIconClassName =
   "size-4 shrink-0 text-muted-foreground";
 
+export const workspaceMenuCheckboxClassName =
+  "!size-5 !rounded-full !border-border !bg-transparent text-background shadow-none dark:!bg-transparent disabled:!opacity-100 data-checked:!border-muted-foreground data-checked:!bg-muted-foreground data-checked:!text-background dark:data-checked:!bg-muted-foreground";
+
 export const workspaceMenuDangerIconClassName =
   "size-4 shrink-0 text-destructive";
 

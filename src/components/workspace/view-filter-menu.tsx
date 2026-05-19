@@ -11,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -22,6 +21,7 @@ import {
   Trash2Icon,
 } from "@/lib/lucide-icons";
 import {
+  workspaceMenuCheckboxClassName,
   workspaceMenuContentClassName,
   workspaceMenuDangerIconClassName,
   workspaceMenuDangerItemClassName,
@@ -209,6 +209,7 @@ export function WorkspaceViewFilterMenu({
                       checked={checked}
                       disabled={disabled}
                       aria-label={`${property.name} visible`}
+                      className={workspaceMenuCheckboxClassName}
                       onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
                     />
                     {editingPropertyId === property.id ? (
@@ -351,11 +352,7 @@ export function WorkspaceViewFilterMenu({
                         <label key={selectValue.id} className={valueFilterItemClassName}>
                           <Checkbox
                             checked={selectedValueIds.has(selectValue.id)}
-                            className={cn(
-                              selectedValueIds.has(selectValue.id)
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border bg-transparent",
-                            )}
+                            className={workspaceMenuCheckboxClassName}
                             onCheckedChange={(value) =>
                               onToggleValueFilter(property.id, selectValue.id, value === true)
                             }

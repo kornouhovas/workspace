@@ -33,6 +33,7 @@ test("renderer composes the workspace product shell", async () => {
     buildRendererSource,
     disableFsEventsLoaderSource,
     lucideIconTypesSource,
+    menuStylesSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -59,6 +60,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("scripts/build-renderer.mjs"),
     readProjectFile("scripts/disable-fsevents-loader.mjs"),
     readProjectFile("src/types/lucide-react-icons.d.ts"),
+    readProjectFile("src/components/workspace/menu-styles.ts"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -96,6 +98,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/kanban\.mjs/);
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/table\.mjs/);
   assert.match(lucideIconTypesSource, /lucide-react\/dist\/esm\/icons\/\*\.mjs/);
+  assert.match(menuStylesSource, /workspaceMenuCheckboxClassName/);
+  assert.match(menuStylesSource, /!rounded-full/);
 
   for (const menuSource of [
     leftPanelSource,
@@ -339,6 +343,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /className="h-6 min-w-0"/);
   assert.match(viewFilterMenuSource, /max-h-60 gap-1/);
   assert.match(viewFilterMenuSource, /Checkbox/);
+  assert.match(viewFilterMenuSource, /workspaceMenuCheckboxClassName/);
   assert.match(viewFilterMenuSource, /valueVisibility/);
   assert.match(viewFilterMenuSource, /MoreHorizontalIcon/);
   assert.match(viewFilterMenuSource, /actionsPropertyId/);
@@ -432,6 +437,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(tableViewSource, /PopoverContent/);
   assert.doesNotMatch(tableViewSource, /DropdownMenuCheckboxItem/);
   assert.match(tableViewSource, /import \{ Checkbox \} from "@\/components\/ui\/checkbox";/);
+  assert.match(tableViewSource, /workspaceMenuCheckboxClassName/);
   assert.doesNotMatch(tableViewSource, /suppressNextPropertyMenuCloseRef/);
   assert.match(tableViewSource, /grid-cols-\[auto_minmax\(0,1fr\)\] items-center gap-2 rounded-md px-1 py-0\.5 text-sm hover:bg-muted\/40/);
   assert.match(tableViewSource, /<Checkbox[\s\S]*checked=\{filterValueChecked\}/);
