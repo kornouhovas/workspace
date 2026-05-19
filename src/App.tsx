@@ -423,6 +423,7 @@ export default function App() {
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
+  const workspaceIdRef = useRef<string | null>(null);
   const propertySaveRequestVersionsRef = useRef(new Map<string, number>());
   const folderSelectionPendingRef = useRef(false);
   const workspaceClient = useMemo(
@@ -433,6 +434,10 @@ export default function App() {
   useEffect(() => {
     activeViewIdRef.current = state.activeViewId;
   }, [state.activeViewId]);
+
+  useEffect(() => {
+    workspaceIdRef.current = state.workspaceId;
+  }, [state.workspaceId]);
 
   function createPropertySaveKey(projectId: string, propertyId: string) {
     return `${projectId}\0${propertyId}`;
@@ -474,6 +479,7 @@ export default function App() {
           return;
         }
 
+        const previousWorkspaceId = workspaceIdRef.current;
         dispatch({ type: "rootSelected", root });
 
         const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] = await Promise.all([
@@ -485,7 +491,10 @@ export default function App() {
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
         const propertiesResponse = normalizePropertiesResponse(propertiesRawResponse, root.workspaceId);
-        const requestedActiveViewId = activeViewIdRef.current;
+        const requestedActiveViewId = workspaceIdRef.current === root.workspaceId ||
+          previousWorkspaceId === root.workspaceId
+          ? activeViewIdRef.current
+          : null;
         const requestedViewExists = viewsResponse.views.some((view) => view.id === requestedActiveViewId);
         const activeViewId = requestedViewExists
           ? requestedActiveViewId
@@ -1454,13 +1463,16 @@ export default function App() {
     setActiveSurface("settings");
   }
 
+  const shouldUseMockViews = !state.root && !state.workspaceId;
   const viewState = {
-    activeViewId: state.activeViewId || workspaceMockProjection.activeViewId,
-    views: state.views.length > 0 ? state.views : workspaceMockProjection.views,
+    activeViewId: state.activeViewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
+    views: state.views.length > 0 ? state.views : shouldUseMockViews ? workspaceMockProjection.views : [],
   };
   const navigationWorkspaces = workspaceList.workspaces.length > 0
     ? workspaceList.workspaces
-    : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
+    : state.root
+      ? [{ id: state.workspaceId || state.root.workspaceId, name: state.root.name || "Workspace", order: 10 }]
+      : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
   const sourceFolder = state.root
     ? {
         name: state.root.name,

@@ -471,7 +471,7 @@ test("workspace app state stores selected root before projection loading complet
   assert.equal(state.error, null);
 });
 
-test("workspace app state keeps a transition projection while loading another workspace for the same folder", async () => {
+test("workspace app state clears stale view settings while loading another workspace for the same folder", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
     type: "projectionLoaded",
@@ -500,11 +500,13 @@ test("workspace app state keeps a transition projection while loading another wo
 
   assert.equal(reloadingState.status, "ready");
   assert.equal(reloadingState.projection, projectionResponse);
-  assert.equal(rootRefreshState.status, "ready");
+  assert.equal(rootRefreshState.status, "loading");
   assert.equal(rootRefreshState.workspaceId, "workspace:design");
-  assert.equal(rootRefreshState.projection.workspaceId, "workspace:design");
-  assert.equal(rootRefreshState.projection.view.id, "view:board");
-  assert.deepEqual(rootRefreshState.views, viewsResponse.views);
+  assert.equal(rootRefreshState.projection, null);
+  assert.deepEqual(rootRefreshState.views, []);
+  assert.equal(rootRefreshState.activeViewId, null);
+  assert.equal(rootRefreshState.propertyCatalog, null);
+  assert.equal(rootRefreshState.workspaceSwitchPending, true);
 
   const switchedState = workspaceAppStateReducer(rootRefreshState, {
     type: "projectionLoaded",
@@ -518,6 +520,31 @@ test("workspace app state keeps a transition projection while loading another wo
   assert.equal(switchedState.workspaceId, "workspace:design");
   assert.deepEqual(switchedState.projection, nextProjectionResponse);
   assert.deepEqual(switchedState.views, nextViewsResponse.views);
+});
+
+test("workspace app state clears active view state when a different workspace is activated", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse,
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "workspaceActivated",
+    workspaceId: "workspace:design",
+  });
+
+  assert.equal(state.status, "loading");
+  assert.equal(state.workspaceId, "workspace:design");
+  assert.deepEqual(state.root, { ...root, workspaceId: "workspace:design" });
+  assert.equal(state.projection, null);
+  assert.deepEqual(state.views, []);
+  assert.equal(state.activeViewId, null);
+  assert.equal(state.propertyCatalog, null);
+  assert.equal(state.workspaceSwitchPending, true);
 });
 
 test("workspace app state stores service errors", async () => {

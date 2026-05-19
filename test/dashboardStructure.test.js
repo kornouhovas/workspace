@@ -105,6 +105,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /loadRequestIdRef/);
   assert.match(appSource, /folderSelectionPendingRef/);
+  assert.match(appSource, /workspaceIdRef/);
+  assert.match(appSource, /workspaceIdRef\.current === root\.workspaceId/);
   assert.match(appSource, /loadWorkspaceList/);
   assert.match(appSource, /rootSelected/);
   assert.match(appSource, /handleCreateView/);
@@ -157,6 +159,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /onProjectOpen=\{handleProjectOpen\}/);
   assert.match(appSource, /searchQueryChanged/);
   assert.match(appSource, /filterWorkspaceProjectionBySearch/);
+  assert.match(appSource, /const shouldUseMockViews = !state\.root && !state\.workspaceId/);
   assert.doesNotMatch(appSource, /searchQuery:\s*state\.searchQuery/);
   assert.doesNotMatch(appSource, /\[reloadToken, workspaceClient, state\.activeViewId, state\.searchQuery\]/);
   assert.match(appSource, /activeViewChanged/);

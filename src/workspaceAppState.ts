@@ -251,27 +251,28 @@ export function workspaceAppStateReducer(
       state.root.path === action.root.path
     ) {
       const workspaceChanged = state.workspaceId !== action.root.workspaceId;
-      const transitionProjection = workspaceChanged
-        ? createTransitionProjectionForWorkspace(state.projection, action.root.workspaceId)
-        : state.projection;
+
+      if (workspaceChanged) {
+        return clearWorkspaceScopedStateForSwitch(state, action.root);
+      }
 
       return {
         ...state,
         root: action.root,
         workspaceId: action.root.workspaceId,
-        projection: transitionProjection,
-        projectionRefreshing: workspaceChanged && transitionProjection !== null,
-        workspaceSwitchPending: workspaceChanged,
+        projection: state.projection,
+        projectionRefreshing: false,
+        workspaceSwitchPending: false,
         propertyCatalog: state.propertyCatalog,
         views: state.views,
         activeViewId: state.activeViewId,
-        searchQuery: workspaceChanged ? "" : state.searchQuery,
+        searchQuery: state.searchQuery,
         selectedProjectId: null,
         detailOpen: false,
         sourceFolderMissing: false,
         error: null,
         propertySaveError: null,
-        propertySaveVersions: workspaceChanged ? {} : state.propertySaveVersions,
+        propertySaveVersions: state.propertySaveVersions,
       };
     }
 
@@ -496,18 +497,21 @@ export function workspaceAppStateReducer(
       return state;
     }
 
-    const transitionProjection = createTransitionProjectionForWorkspace(state.projection, action.workspaceId);
+    const nextRoot = {
+      ...state.root,
+      workspaceId: action.workspaceId,
+    };
+
+    if (state.workspaceId !== action.workspaceId) {
+      return clearWorkspaceScopedStateForSwitch(state, nextRoot);
+    }
 
     return {
       ...state,
-      status: transitionProjection ? "ready" : "loading",
-      root: {
-        ...state.root,
-        workspaceId: action.workspaceId,
-      },
+      root: nextRoot,
       workspaceId: action.workspaceId,
-      projection: transitionProjection,
-      projectionRefreshing: transitionProjection !== null,
+      projection: state.projection,
+      projectionRefreshing: false,
       workspaceSwitchPending: true,
       propertyCatalog: state.propertyCatalog,
       views: state.views,
@@ -641,20 +645,6 @@ export function workspaceAppStateReducer(
   return state;
 }
 
-function createTransitionProjectionForWorkspace(
-  projectionResponse: WorkspaceProjectionResponse | null,
-  workspaceId: string,
-): WorkspaceProjectionResponse | null {
-  if (!projectionResponse) {
-    return null;
-  }
-
-  return {
-    ...projectionResponse,
-    workspaceId,
-  };
-}
-
 function createTransitionProjectionForView(
   state: WorkspaceAppState,
   viewId: string,
@@ -700,6 +690,31 @@ function createTransitionProjectionForView(
   }
 
   return transitionBase;
+}
+
+function clearWorkspaceScopedStateForSwitch(
+  state: WorkspaceAppState,
+  root: WorkspaceRootState | null,
+): WorkspaceAppState {
+  return {
+    ...state,
+    status: "loading",
+    root,
+    workspaceId: root?.workspaceId || null,
+    projection: null,
+    projectionRefreshing: false,
+    workspaceSwitchPending: true,
+    propertyCatalog: null,
+    views: [],
+    activeViewId: null,
+    searchQuery: "",
+    selectedProjectId: null,
+    detailOpen: false,
+    sourceFolderMissing: false,
+    error: null,
+    propertySaveError: null,
+    propertySaveVersions: {},
+  };
 }
 
 function getProjectsFromProjection(
