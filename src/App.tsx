@@ -52,6 +52,19 @@ import {
 } from "@/workspaceViewVisibility.js";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 
+type WorkspaceRenderSnapshot = {
+  readonly workspaceId: string;
+  readonly activeViewId: string;
+  readonly views: readonly WorkspaceViewState[];
+  readonly activeView: WorkspaceViewState | null;
+  readonly activeViewType: "board" | "table";
+  readonly projection: WorkspaceProjectionResponse;
+  readonly visibleProperties: WorkspaceProjectionResponse["visibleProperties"];
+  readonly properties: readonly WorkspacePropertyDefinitionState[];
+  readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -418,6 +431,7 @@ export default function App() {
     activeWorkspaceId: null,
     workspaces: [],
   });
+  const [workspacePreview, setWorkspacePreview] = useState<WorkspaceRenderSnapshot | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
@@ -1536,6 +1550,68 @@ export default function App() {
   const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
   const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
   const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
+  const currentWorkspaceSnapshot = useMemo<WorkspaceRenderSnapshot | null>(() => {
+    if (!state.workspaceId || !serviceProjection) {
+      return null;
+    }
+
+    return {
+      workspaceId: state.workspaceId,
+      activeViewId: viewState.activeViewId,
+      views: viewState.views,
+      activeView: activeView ?? null,
+      activeViewType,
+      projection: serviceProjection,
+      visibleProperties,
+      properties: settingsProperties,
+      selectValues: settingsSelectValues,
+      statusValues,
+    };
+  }, [
+    activeView,
+    activeViewType,
+    serviceProjection,
+    settingsProperties,
+    settingsSelectValues,
+    state.workspaceId,
+    statusValues,
+    viewState.activeViewId,
+    viewState.views,
+    visibleProperties,
+  ]);
+
+  useEffect(() => {
+    if (state.status === "ready" && currentWorkspaceSnapshot) {
+      setWorkspacePreview(currentWorkspaceSnapshot);
+    }
+  }, [currentWorkspaceSnapshot, state.status]);
+
+  const isWorkspaceSwitchPreview = activeSurface === "workspace" &&
+    state.status === "loading" &&
+    state.workspaceSwitchPending &&
+    workspacePreview !== null &&
+    workspacePreview.workspaceId !== state.workspaceId;
+  const renderedWorkspace = isWorkspaceSwitchPreview ? workspacePreview : currentWorkspaceSnapshot;
+  const renderedActiveViewId = renderedWorkspace?.activeViewId ?? viewState.activeViewId;
+  const renderedViews = renderedWorkspace?.views ?? viewState.views;
+  const renderedActiveView = renderedWorkspace?.activeView ?? activeView ?? null;
+  const renderedActiveViewType = renderedWorkspace?.activeViewType ?? activeViewType;
+  const renderedVisibleProperties = renderedWorkspace?.visibleProperties ?? visibleProperties;
+  const renderedSettingsProperties = renderedWorkspace?.properties ?? settingsProperties;
+  const renderedSettingsSelectValues = renderedWorkspace?.selectValues ?? settingsSelectValues;
+  const renderedStatusValues = renderedWorkspace?.statusValues ?? statusValues;
+  const renderedBoardProjection = renderedWorkspace?.projection.projection.type === "board"
+    ? renderedWorkspace.projection.projection
+    : boardProjection;
+  const renderedTableProjection = renderedWorkspace?.projection.projection.type === "table"
+    ? renderedWorkspace.projection.projection
+    : tableProjection;
+  const shouldShowWorkspaceLoadingState = !isWorkspaceSwitchPreview &&
+    (
+      state.status === "loading" ||
+      state.status === "idle" ||
+      (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection)
+    );
 
   return (
     <>
@@ -1615,10 +1691,16 @@ export default function App() {
               )}
             </div>
           ) : (
-            <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              aria-busy={isWorkspaceSwitchPreview || undefined}
+              className={[
+                "electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden transition-[opacity,transform] duration-200 ease-out",
+                isWorkspaceSwitchPreview ? "pointer-events-none select-none scale-[0.998] opacity-[0.65]" : "scale-100 opacity-100",
+              ].join(" ")}
+            >
               <WorkspaceViewTabs
-                activeViewId={viewState.activeViewId}
-                views={viewState.views}
+                activeViewId={renderedActiveViewId}
+                views={renderedViews}
                 onActiveViewChange={(activeViewId) => {
                   dispatch({ type: "activeViewChanged", activeViewId });
                   if (state.workspaceId) {
@@ -1636,40 +1718,43 @@ export default function App() {
                 onRenameView={handleRenameView}
                 onDeleteView={handleDeleteView}
                 dismissSignal={workspaceFloatingDismissToken}
-                properties={settingsProperties}
-                selectValues={settingsSelectValues}
-                statusValues={statusValues}
+                properties={renderedSettingsProperties}
+                selectValues={renderedSettingsSelectValues}
+                statusValues={renderedStatusValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
                 onToggleValueFilter={handleToggleValueFilter}
                 onRenameProperty={handleRenameProperty}
                 onDeleteProperty={handleDeleteProperty}
               />
+              {isWorkspaceSwitchPreview ? (
+                <div className="mx-4 h-px shrink-0 overflow-hidden rounded-full bg-border/50">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-foreground/30" />
+                </div>
+              ) : null}
               <div className="min-h-0 flex-1 overflow-hidden">
-                {state.status === "loading" ||
-                state.status === "idle" ||
-                (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection) ? (
+                {shouldShowWorkspaceLoadingState ? (
                   <WorkspaceLoadingState />
                 ) : state.sourceFolderMissing ? (
                   <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
                 ) : (
                   <>
                     <WorkspaceServiceError state={state} />
-                    {activeViewType === "board" ? (
+                    {renderedActiveViewType === "board" ? (
                       <WorkspaceBoardView
-                        projection={boardProjection as typeof workspaceMockProjection.projection}
-                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                        selectValues={settingsSelectValues}
+                        projection={renderedBoardProjection as typeof workspaceMockProjection.projection}
+                        visibleProperties={renderedVisibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        selectValues={renderedSettingsSelectValues}
                         onProjectOpen={handleProjectOpen}
                       />
                     ) : null}
-                    {activeViewType === "table" ? (
+                    {renderedActiveViewType === "table" ? (
                       <WorkspaceTableView
-                        projection={tableProjection as typeof workspaceMockProjection.tableProjection}
-                        view={activeView ?? null}
-                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                        properties={settingsProperties}
-                        selectValues={settingsSelectValues}
-                        statusValues={statusValues}
+                        projection={renderedTableProjection as typeof workspaceMockProjection.tableProjection}
+                        view={renderedActiveView}
+                        visibleProperties={renderedVisibleProperties as typeof workspaceMockProjection.visibleProperties}
+                        properties={renderedSettingsProperties}
+                        selectValues={renderedSettingsSelectValues}
+                        statusValues={renderedStatusValues}
                         onProjectOpen={handleProjectOpen}
                         onCreateProperty={handleCreateVisibleProperty}
                         onRenameProperty={handleRenameProperty}

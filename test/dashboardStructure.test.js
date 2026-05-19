@@ -107,6 +107,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /folderSelectionPendingRef/);
   assert.match(appSource, /workspaceIdRef/);
   assert.match(appSource, /workspaceIdRef\.current === root\.workspaceId/);
+  assert.match(appSource, /workspacePreview/);
+  assert.match(appSource, /isWorkspaceSwitchPreview/);
+  assert.match(appSource, /pointer-events-none select-none/);
+  assert.match(appSource, /transition-\[opacity,transform\]/);
   assert.match(appSource, /loadWorkspaceList/);
   assert.match(appSource, /rootSelected/);
   assert.match(appSource, /handleCreateView/);
@@ -154,8 +158,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /useState<WorkspaceMockProject \| null>\(\s*null\s*\)/);
   assert.match(appSource, /activeSurface/);
   assert.match(appSource, /activeSurface === "settings"/);
-  assert.match(appSource, /activeViewType === "board"/);
-  assert.match(appSource, /activeViewType === "table"/);
+  assert.match(appSource, /renderedActiveViewType === "board"/);
+  assert.match(appSource, /renderedActiveViewType === "table"/);
   assert.match(appSource, /onProjectOpen=\{handleProjectOpen\}/);
   assert.match(appSource, /searchQueryChanged/);
   assert.match(appSource, /filterWorkspaceProjectionBySearch/);
@@ -282,7 +286,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onRenameProperty/);
   assert.match(viewTabsSource, /onDeleteProperty/);
   assert.match(viewTabsSource, /statusValues/);
-  assert.match(appSource, /statusValues=\{statusValues\}/);
+  assert.match(appSource, /statusValues=\{renderedStatusValues\}/);
   assert.match(viewFilterMenuSource, /WorkspaceViewFilterMenu/);
   assert.match(viewFilterMenuSource, /dismissSignal/);
   assert.match(viewFilterMenuSource, /const \[open, setOpen\] = useState\(false\)/);
@@ -691,8 +695,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /readonly onColorSelectValue: \(selectValueId: string, color: string\) => void;/);
   assert.match(tableViewSource, /onColorSelectValue,\s+onDeleteSelectValue,\s+\}: WorkspaceTableViewProps/);
   assert.match(tableViewSource, /onColorSelectValue=\{onColorSelectValue\}/);
-  assert.match(appSource, /<WorkspaceTableView[\s\S]*view=\{activeView \?\? null\}/);
-  assert.match(appSource, /<WorkspaceTableView[\s\S]*statusValues=\{statusValues\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*view=\{renderedActiveView\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*statusValues=\{renderedStatusValues\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*onToggleValueFilter=\{handleToggleValueFilter\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*onColorSelectValue=\{handleColorSelectValue\}/);
   const renamePropertyHandler = appSource.slice(

@@ -142,6 +142,7 @@ UI expectations:
 - Board uses stable skeleton columns and card placeholders.
 - Table uses skeleton rows and columns.
 - View tabs remain visible when possible.
+- Workspace switching may keep a non-interactive visual preview of the previous ready Workspace while the new Workspace loads; this preview must not become active Workspace state.
 - Avoid layout jumps between loading and loaded states.
 
 ## Empty State
