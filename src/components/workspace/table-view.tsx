@@ -496,6 +496,7 @@ export function WorkspaceTableView({
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [editingCellId, setEditingCellId] = useState<string | null>(null);
   const [openPropertyMenuId, setOpenPropertyMenuId] = useState<string | null>(null);
+  const [hoveredPropertyMenuTriggerId, setHoveredPropertyMenuTriggerId] = useState<string | null>(null);
   const [propertyMenuAnchor, setPropertyMenuAnchor] = useState<PropertyMenuAnchorState | null>(null);
   const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
   const [dropdownDismissToken, setDropdownDismissToken] = useState(0);
@@ -628,6 +629,16 @@ export function WorkspaceTableView({
   function closePropertyMenu() {
     setOpenPropertyMenuId(null);
     setPropertyMenuAnchor(null);
+  }
+
+  function setPropertyMenuTriggerHovered(propertyId: string, hovered: boolean) {
+    setHoveredPropertyMenuTriggerId((currentPropertyId) => {
+      if (hovered) {
+        return propertyId;
+      }
+
+      return currentPropertyId === propertyId ? null : currentPropertyId;
+    });
   }
 
   function openPropertyMenuFromElement(propertyId: string, element: HTMLElement) {
@@ -938,6 +949,8 @@ export function WorkspaceTableView({
                 const propertyFilterValues = getFilterValues(property, selectValues, statusValues);
                 const showValueFilters = isFilterableProperty(property);
                 const valueFilterActive = hasActiveValueFilter(property.id, valueVisibility);
+                const propertyMenuTriggerActive = hoveredPropertyMenuTriggerId === property.id
+                  || openPropertyMenuId === property.id;
 
                 return (
                   <TableHead
@@ -981,7 +994,12 @@ export function WorkspaceTableView({
                       />
                     ) : (
                       <>
-                        <div className="flex h-8 min-w-0 items-center gap-1 rounded-md px-2 transition-colors hover:bg-muted/60 focus-within:bg-muted/60">
+                        <div
+                          className={[
+                            "flex h-8 min-w-0 items-center gap-1 rounded-md px-2 transition-colors",
+                            propertyMenuTriggerActive ? "" : "hover:bg-muted/60 focus-within:bg-muted/60",
+                          ].filter(Boolean).join(" ")}
+                        >
                           <button
                             type="button"
                             className="flex h-full min-w-0 flex-1 cursor-grab items-center text-left focus-visible:ring-1 focus-visible:ring-ring/40 active:cursor-grabbing"
@@ -1005,6 +1023,10 @@ export function WorkspaceTableView({
                             className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus-visible:ring-1 focus-visible:ring-ring/40 group-hover/column:opacity-100 group-focus-within/column:opacity-100 data-[state=open]:opacity-100"
                             aria-label={`${property.name} property actions`}
                             data-state={openPropertyMenuId === property.id ? "open" : "closed"}
+                            onPointerEnter={() => setPropertyMenuTriggerHovered(property.id, true)}
+                            onPointerLeave={() => setPropertyMenuTriggerHovered(property.id, false)}
+                            onFocus={() => setPropertyMenuTriggerHovered(property.id, true)}
+                            onBlur={() => setPropertyMenuTriggerHovered(property.id, false)}
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => {
                               event.stopPropagation();

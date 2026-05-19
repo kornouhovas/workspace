@@ -428,6 +428,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /No values/);
   assert.match(tableViewSource, /data-workspace-property-menu="true"/);
   assert.match(tableViewSource, /data-workspace-property-menu-trigger="true"/);
+  assert.match(tableViewSource, /hoveredPropertyMenuTriggerId/);
+  assert.match(tableViewSource, /setPropertyMenuTriggerHovered/);
+  assert.match(tableViewSource, /propertyMenuTriggerActive \? "" : "hover:bg-muted\/60 focus-within:bg-muted\/60"/);
+  assert.match(tableViewSource, /onPointerEnter=\{\(\) => setPropertyMenuTriggerHovered\(property\.id, true\)\}/);
+  assert.match(tableViewSource, /onPointerLeave=\{\(\) => setPropertyMenuTriggerHovered\(property\.id, false\)\}/);
   assert.match(tableViewSource, /closePropertyMenuOnOutsidePointerDown/);
   assert.match(tableViewSource, /from "react-dom"/);
   assert.match(tableViewSource, /createPortal/);
