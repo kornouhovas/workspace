@@ -1161,12 +1161,12 @@ export function WorkspaceProjectDetailPanel({
           <XIcon className="size-4" aria-hidden="true" />
         </Button>
         <>
-          <header className="px-6 pb-5 pr-12 pt-6">
+          <header className="px-6 pb-3 pr-12 pt-6">
             <h2 id="project-detail-title" className="text-[22px] font-semibold leading-8 tracking-normal text-foreground">
               {displayedProject.name}
             </h2>
           </header>
-          <div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-3">
+          <div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">
             <div className="grid gap-5">
               <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
                 <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">

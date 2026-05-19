@@ -544,6 +544,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.doesNotMatch(projectDetailPanelSource, /project-identity-heading/);
+  assert.match(projectDetailPanelSource, /<header className="px-6 pb-3 pr-12 pt-6">/);
+  assert.match(projectDetailPanelSource, /<div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">/);
   assert.doesNotMatch(projectDetailPanelSource, /displayedProject\.currentRelativePath/);
   assert.doesNotMatch(projectDetailPanelSource, /<Badge variant="outline">\{displayedProject\.status\.name\}<\/Badge>/);
   assert.doesNotMatch(projectDetailPanelSource, /detailProperties/);
