@@ -325,9 +325,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /expandedFilterPropertyIds/);
   assert.match(viewFilterMenuSource, /ChevronDownIcon/);
   assert.match(viewFilterMenuSource, /ChevronRightIcon/);
-  assert.match(viewFilterMenuSource, /grid-cols-\[auto_minmax\(0,1fr\)_minmax\(5\.75rem,auto\)_1\.75rem\]/);
+  assert.match(viewFilterMenuSource, /visiblePropertyRowClassName/);
+  assert.match(viewFilterMenuSource, /grid-cols-\[auto_minmax\(0,1fr\)_minmax\(5rem,auto\)_1\.5rem\]/);
   assert.match(viewFilterMenuSource, /max-h-52 gap-0\.5/);
-  assert.match(viewFilterMenuSource, /py-0\.5 text-sm/);
+  assert.match(viewFilterMenuSource, /select-none/);
+  assert.match(viewFilterMenuSource, /valueFilterGroupButtonClassName/);
+  assert.match(viewFilterMenuSource, /valueFilterItemClassName/);
   assert.match(viewFilterMenuSource, /className="h-6 min-w-0"/);
   assert.match(viewFilterMenuSource, /max-h-60 gap-1/);
   assert.match(viewFilterMenuSource, /Checkbox/);

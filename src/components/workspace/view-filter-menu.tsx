@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -26,6 +27,7 @@ import {
   workspaceMenuDangerItemClassName,
   workspaceMenuIconClassName,
   workspaceMenuItemClassName,
+  workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import type {
   WorkspacePropertyDefinitionState,
@@ -90,6 +92,15 @@ function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; 
 function stopActionMenuEvent(event: { stopPropagation: () => void }) {
   event.stopPropagation();
 }
+
+const visiblePropertyRowClassName =
+  "grid h-8 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/60";
+
+const valueFilterGroupButtonClassName =
+  "flex h-7 min-w-0 select-none items-center gap-1.5 rounded-lg px-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground";
+
+const valueFilterItemClassName =
+  "flex h-8 min-w-0 cursor-default select-none items-center gap-2 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
 
 export function WorkspaceViewFilterMenu({
   view,
@@ -170,16 +181,18 @@ export function WorkspaceViewFilterMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className={`${workspaceMenuContentClassName} w-80 p-0`}
+        className={`${workspaceMenuContentClassName} w-80 overflow-hidden p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
-        <div className="grid gap-3 p-3">
+        <div className="grid gap-2.5 p-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-medium">Visible properties</p>
+              <p className="text-sm font-semibold leading-none">Visible properties</p>
               <p className="text-xs text-muted-foreground">Choose fields for this view</p>
             </div>
-            <Badge variant="outline">{visiblePropertyIds.size}</Badge>
+            <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
+              {visiblePropertyIds.size}
+            </Badge>
           </div>
           <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
             {properties.map((property) => {
@@ -188,7 +201,7 @@ export function WorkspaceViewFilterMenu({
 
               return (
                 <div key={property.id} className="grid min-w-0">
-                  <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(5.75rem,auto)_1.75rem] items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/50">
+                  <div className={visiblePropertyRowClassName}>
                     <Checkbox
                       checked={checked}
                       disabled={disabled}
@@ -217,10 +230,14 @@ export function WorkspaceViewFilterMenu({
                         }}
                       />
                     ) : (
-                      <span className="truncate">{property.name}</span>
+                      <span className="truncate font-medium">{property.name}</span>
                     )}
-                    <div className="flex min-w-0 justify-end">
-                      {disabled ? <Badge variant="outline">Required</Badge> : null}
+                    <div className="flex min-w-0 justify-end pr-1">
+                      {disabled ? (
+                        <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
+                          Required
+                        </Badge>
+                      ) : null}
                     </div>
                     <div className="flex size-6 items-center justify-center justify-self-center">
                       {disabled ? null : (
@@ -288,10 +305,10 @@ export function WorkspaceViewFilterMenu({
             })}
           </div>
         </div>
-        <Separator />
-        <div className="grid gap-2 p-3">
+        <Separator className={workspaceMenuSeparatorClassName} />
+        <div className="grid gap-2.5 p-3">
           <div>
-            <p className="flex items-center gap-2 text-sm font-medium">
+            <p className="flex items-center gap-2 text-sm font-semibold leading-none">
               <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />
               Value filters
             </p>
@@ -306,10 +323,10 @@ export function WorkspaceViewFilterMenu({
               const expanded = expandedFilterPropertyIds.has(property.id);
 
               return (
-                <div key={property.id} className="grid gap-1">
+                <div key={property.id} className="grid gap-0.5">
                   <button
                     type="button"
-                    className="flex h-6 min-w-0 items-center gap-1.5 rounded-md px-1 text-left text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    className={valueFilterGroupButtonClassName}
                     aria-expanded={expanded}
                     onClick={() => toggleFilterPropertyExpanded(property.id)}
                   >
@@ -326,19 +343,24 @@ export function WorkspaceViewFilterMenu({
                     ) : null}
                   </button>
                   {expanded ? (
-                    <div className="grid gap-1 pl-6">
+                    <div className="grid gap-0.5 pl-6">
                       {propertyValues.length > 0 ? propertyValues.map((selectValue) => (
-                        <label key={selectValue.id} className="flex min-w-0 items-center gap-2 rounded-md px-1 py-0.5 text-sm hover:bg-muted/40">
+                        <label key={selectValue.id} className={valueFilterItemClassName}>
                           <Checkbox
                             checked={selectedValueIds.has(selectValue.id)}
+                            className={cn(
+                              selectedValueIds.has(selectValue.id)
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-transparent",
+                            )}
                             onCheckedChange={(value) =>
                               onToggleValueFilter(property.id, selectValue.id, value === true)
                             }
                           />
-                          <span className="truncate">{selectValue.name}</span>
+                          <span className="truncate font-medium">{selectValue.name}</span>
                         </label>
                       )) : (
-                        <p className="px-1 py-0.5 text-xs text-muted-foreground">No values</p>
+                        <p className="px-1.5 py-1 text-xs text-muted-foreground">No values</p>
                       )}
                     </div>
                   ) : null}
