@@ -11,7 +11,7 @@ export const workspaceMenuIconClassName =
   "size-4 shrink-0 text-muted-foreground";
 
 export const workspaceMenuCheckboxClassName =
-  "!size-4 !rounded-full !border-border !bg-transparent text-background shadow-none dark:!bg-transparent disabled:!opacity-100 data-checked:!border-muted-foreground data-checked:!bg-muted-foreground data-checked:!text-background dark:data-checked:!bg-muted-foreground [&_[data-slot=checkbox-indicator]>svg]:!size-3";
+  "!size-3.5 !rounded-full !border-border !bg-transparent text-background shadow-none dark:!bg-transparent disabled:!opacity-100 data-checked:!border-muted-foreground data-checked:!bg-muted-foreground data-checked:!text-background dark:data-checked:!bg-muted-foreground [&_[data-slot=checkbox-indicator]>svg]:!size-2.5";
 
 export const workspaceMenuDangerIconClassName =
   "size-4 shrink-0 text-destructive";
