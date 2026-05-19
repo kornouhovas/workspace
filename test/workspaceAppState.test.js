@@ -814,6 +814,35 @@ test("workspace app state renames a loaded view locally", async () => {
   assert.equal(state.projection?.view.name, "Operations Board");
 });
 
+test("workspace app state reorders loaded views locally", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      ...viewsResponse,
+      views: [
+        ...viewsResponse.views,
+        { id: "view:board-2", name: "Board 2", viewType: "board" },
+      ],
+    },
+    projectionResponse,
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewsReordered",
+    orderedViewIds: ["view:table", "view:board-2", "view:board"],
+  });
+
+  assert.deepEqual(
+    state.views.map((view) => view.id),
+    ["view:table", "view:board-2", "view:board"],
+  );
+  assert.equal(state.activeViewId, "view:board");
+  assert.equal(state.projection, loadedState.projection);
+});
+
 test("workspace projection search filter narrows board and table locally by project name", async () => {
   const { filterWorkspaceProjectionBySearch } = await importAppStateModule();
   const alpha = {

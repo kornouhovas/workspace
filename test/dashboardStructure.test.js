@@ -146,6 +146,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleCreateView/);
   assert.match(appSource, /handleRenameView/);
   assert.match(appSource, /handleDeleteView/);
+  assert.match(appSource, /handleReorderViews/);
+  assert.match(appSource, /workspaceClient\.reorderViews/);
+  assert.match(appSource, /onReorderViews=\{handleReorderViews\}/);
   assert.match(appSource, /handleAddWorkspace/);
   assert.match(appSource, /const workspaceName = "Workspace"/);
   assert.doesNotMatch(appSource, /Workspace \$\{nextIndex\}/);
@@ -308,6 +311,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onCreateView/);
   assert.match(viewTabsSource, /onRenameView/);
   assert.match(viewTabsSource, /onDeleteView/);
+  assert.match(viewTabsSource, /onReorderViews/);
   assert.match(viewTabsSource, /dismissSignal/);
   assert.match(viewTabsSource, /WorkspaceViewFilterMenu/);
   assert.match(viewTabsSource, /dismissSignal=\{dismissSignal\}/);
@@ -382,6 +386,17 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(viewTabsSource, /justify-between gap-3 border-b border-border px-4 py-2\.5/);
   assert.match(viewTabsSource, /data-active:border-border/);
   assert.match(viewTabsSource, /data-active:bg-background/);
+  assert.match(viewTabsSource, /renderViewIcon/);
+  assert.match(viewTabsSource, /KanbanIcon/);
+  assert.match(viewTabsSource, /TableIcon/);
+  assert.match(viewTabsSource, /data-view-tab-id/);
+  assert.match(viewTabsSource, /startPointerViewTabDrag/);
+  assert.match(viewTabsSource, /getViewTabDragPreviewItems/);
+  assert.match(viewTabsSource, /getViewTabDragStyle/);
+  assert.match(viewTabsSource, /getViewTabDragOrder/);
+  assert.match(viewTabsSource, /requestAnimationFrame/);
+  assert.match(viewTabsSource, /transitionDuration: "180ms"/);
+  assert.match(viewTabsSource, /aria-label=\{`Drag \$\{view\.name\} view tab`\}/);
   assert.doesNotMatch(viewTabsSource, /text-base font-semibold/);
   assert.match(viewTabsSource, /min-w-56/);
   assert.match(viewTabsSource, /onContextMenu/);

@@ -87,7 +87,7 @@ Rules:
 3. App creates the view with default visible properties: `Name`, `Status`, and other Workspace defaults.
 4. New view becomes active.
 5. User renames the view if needed.
-6. User reorders views if needed.
+6. User reorders views by dragging view tabs if needed.
 7. User deletes a view only if at least one other view remains.
 
 Rules:
@@ -95,6 +95,7 @@ Rules:
 - Deleting a view does not delete projects, properties, values, or folder roles.
 - The app must prevent deleting the last view.
 - View changes persist after restart.
+- View tab order persists per Workspace and does not change project data.
 
 ## View Property And Value Filter Path
 

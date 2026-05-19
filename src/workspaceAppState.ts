@@ -174,6 +174,7 @@ export type WorkspaceAppAction =
       readonly view: WorkspaceViewState;
     }
   | { readonly type: "viewRenamed"; readonly viewId: string; readonly name: string }
+  | { readonly type: "viewsReordered"; readonly orderedViewIds: readonly string[] }
   | { readonly type: "viewDeleted"; readonly viewId: string; readonly activeViewId: string | null }
   | { readonly type: "projectSelected"; readonly selectedProjectId: string | null }
   | { readonly type: "detailOpenChanged"; readonly open: boolean };
@@ -608,6 +609,20 @@ export function workspaceAppStateReducer(
               : state.projection.view,
           }
         : state.projection,
+    };
+  }
+
+  if (action.type === "viewsReordered") {
+    const viewsById = new Map(state.views.map((view) => [view.id, view]));
+    const reorderedViews = action.orderedViewIds
+      .map((viewId) => viewsById.get(viewId))
+      .filter((view): view is WorkspaceViewState => view !== undefined);
+    const reorderedViewIds = new Set(reorderedViews.map((view) => view.id));
+    const remainingViews = state.views.filter((view) => !reorderedViewIds.has(view.id));
+
+    return {
+      ...state,
+      views: [...reorderedViews, ...remainingViews],
     };
   }
 

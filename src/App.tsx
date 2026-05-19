@@ -896,6 +896,47 @@ export default function App() {
     }
   }
 
+  async function handleReorderViews(orderedViewIds: readonly string[]) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    const currentViewIds = state.views.map((view) => view.id);
+    const currentViewIdSet = new Set(currentViewIds);
+    const nextOrderedViewIds = orderedViewIds.filter((viewId) => currentViewIdSet.has(viewId));
+
+    for (const viewId of currentViewIds) {
+      if (!nextOrderedViewIds.includes(viewId)) {
+        nextOrderedViewIds.push(viewId);
+      }
+    }
+
+    if (
+      nextOrderedViewIds.length !== currentViewIds.length ||
+      nextOrderedViewIds.join("\0") === currentViewIds.join("\0")
+    ) {
+      return;
+    }
+
+    dispatch({ type: "viewsReordered", orderedViewIds: nextOrderedViewIds });
+
+    try {
+      await workspaceClient.reorderViews({
+        workspaceId: state.workspaceId,
+        orderedViewIds: nextOrderedViewIds,
+      });
+    } catch (error) {
+      if (isUnsupportedWorkspaceMethodError(error, "workspace.reorderViews")) {
+        return;
+      }
+
+      dispatch({ type: "viewsReordered", orderedViewIds: currentViewIds });
+      toast.error("Could not reorder views", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function refreshActiveViewAfterPatch(viewId: string) {
     if (!state.workspaceId || !state.root) {
       return;
@@ -1674,6 +1715,7 @@ export default function App() {
                 onCreateView={handleCreateView}
                 onRenameView={handleRenameView}
                 onDeleteView={handleDeleteView}
+                onReorderViews={handleReorderViews}
                 dismissSignal={workspaceFloatingDismissToken}
                 properties={settingsProperties}
                 selectValues={settingsSelectValues}

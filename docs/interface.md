@@ -166,6 +166,7 @@ Required behavior:
 
 - Only one view is active at a time.
 - View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
+- View tabs show their view type with a compact icon, such as Board or Table.
 - View-level actions should follow the framework toolbar pattern: segmented view tabs on the left, labeled outline buttons such as `Customize Columns` and `Add View` on the right.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
@@ -183,7 +184,7 @@ View menu rules:
 - Deleting a view deletes only app metadata, never files or projects.
 - Deleting the last remaining view is blocked.
 - Rename should update the view name in the tab and persist locally.
-- View order should support drag reorder or an equivalent reorder interaction.
+- View order should support drag reorder by dragging the view tab; the order persists locally.
 
 ## Board View
 
