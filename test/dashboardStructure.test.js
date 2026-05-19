@@ -99,7 +99,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(lucideIconsSource, /lucide-react\/dist\/esm\/icons\/table\.mjs/);
   assert.match(lucideIconTypesSource, /lucide-react\/dist\/esm\/icons\/\*\.mjs/);
   assert.match(menuStylesSource, /workspaceMenuCheckboxClassName/);
+  assert.match(menuStylesSource, /!size-4/);
   assert.match(menuStylesSource, /!rounded-full/);
+  assert.match(menuStylesSource, /\[&_\[data-slot=checkbox-indicator\]>svg\]:!size-3/);
 
   for (const menuSource of [
     leftPanelSource,
