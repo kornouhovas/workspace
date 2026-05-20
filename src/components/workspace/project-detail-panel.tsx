@@ -391,12 +391,7 @@ function ProjectSelectValuePills({
   const selectedItems = getSelectedSelectValueItems(value, property, selectValues);
 
   if (selectedItems.length === 0) {
-    return (
-      <span className="flex min-h-7 min-w-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
-        <span className="size-2 rounded-full bg-muted-foreground/50" aria-hidden="true" />
-        <span className="truncate">Empty</span>
-      </span>
-    );
+    return <span className="flex min-h-7 min-w-0 items-center" aria-hidden="true" />;
   }
 
   return (

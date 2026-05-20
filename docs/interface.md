@@ -219,6 +219,14 @@ Board constraints:
 - Board may horizontally scroll when there are many statuses.
 - Empty status columns stay visible with compact empty state.
 
+## Empty Property Values
+
+For editable project values in Table view and the Project Detail Panel:
+
+- empty `Text` and `Numbers` values render as blank content;
+- empty `Date`, `Select`, and `Multi-select` values also render blank, not as `Empty` placeholder text;
+- the blank cell or property row remains clickable and opens the same editor as a filled value.
+
 ## Table View
 
 When the active view type is Table:

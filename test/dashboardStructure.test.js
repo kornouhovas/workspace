@@ -893,6 +893,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(dateValueEditorSource, /ChevronLeftIcon/);
   assert.match(dateValueEditorSource, /ChevronRightIcon/);
   assert.doesNotMatch(dateValueEditorSource, /type="date"/);
+  assert.doesNotMatch(dateValueEditorSource, /dateValue \|\| "Empty"/);
+  assert.doesNotMatch(selectValueEditorSource, /: "Empty"/);
+  assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Empty<\/span>/);
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);

@@ -103,6 +103,7 @@ Rules:
 - `Text` property values should preserve manual line breaks in stored values. In Table, `Text` columns should stay compact and truncate by default; a Text column menu can enable `Wrap content` to preserve line breaks visually, wrap inside stable column widths, and allow row height to expand. Non-text values stay compact and truncate where needed.
 - Table row click opens the Project Detail Panel.
 - Do not duplicate edit controls in every cell if that makes the table noisy; prefer focused inline controls or the detail panel.
+- Empty `Date`, `Select`, and `Multi-select` values should render as blank cells, not as `Empty` placeholder text.
 
 ### Project Detail Panel
 
@@ -118,6 +119,7 @@ Rules:
 - Hidden properties in Project Detail Panel should keep the same row affordances as visible properties: property-name menu, rename/delete/show actions, value editing, and drag reorder within the hidden group.
 - Use autosizing multiline text controls for `Text`, text-like inline inputs for `Numbers` so arithmetic expressions can start with `=`, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
 - Use `Badge` for select and multi-select values, including value colors.
+- Empty `Date`, `Select`, and `Multi-select` values should keep their editable row affordance but render visually blank instead of showing `Empty`.
 - Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.
 - Board cards should display only the custom properties enabled for the active view.
 - Table should display custom properties as stable-width columns in active view order.

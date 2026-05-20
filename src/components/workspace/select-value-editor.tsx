@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  CircleDotIcon,
   MoreHorizontalIcon,
   PaletteIcon,
   PencilIcon,
@@ -124,26 +123,6 @@ function getSelectedSelectValueItems({
   ];
 }
 
-function getSelectValueLabel({
-  isMultiSelect,
-  selectedValueId,
-  selectedValues,
-  selectValues,
-}: {
-  readonly isMultiSelect: boolean;
-  readonly selectedValueId: string | null;
-  readonly selectedValues: readonly string[];
-  readonly selectValues: readonly WorkspaceSelectValueState[];
-}) {
-  if (isMultiSelect) {
-    return selectedValues.length > 0
-      ? selectedValues.map((valueId) => getSelectValueName(selectValues, valueId)).join(", ")
-      : "Empty";
-  }
-
-  return selectedValueId ? getSelectValueName(selectValues, selectedValueId) : "Empty";
-}
-
 function normalizeSearchText(value: string) {
   return value.trim().toLocaleLowerCase();
 }
@@ -181,12 +160,6 @@ export function WorkspaceSelectValueEditor({
     ? values.some((selectValue) => normalizeSearchText(selectValue.name) === normalizedQuery)
     : false;
   const canCreateValue = normalizedQuery.length > 0 && !exactValueExists;
-  const label = getSelectValueLabel({
-    isMultiSelect,
-    selectedValueId,
-    selectedValues,
-    selectValues: values,
-  });
   const selectedValueItems = getSelectedSelectValueItems({
     isMultiSelect,
     selectedValueId,
@@ -404,10 +377,7 @@ export function WorkspaceSelectValueEditor({
                 ))}
               </span>
             ) : (
-              <span className="workspace-table-empty-value -mx-1 flex min-w-0 items-center gap-2 rounded-md px-1 py-0.5 text-muted-foreground">
-                <CircleDotIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate">{label}</span>
-              </span>
+              <span className="workspace-table-empty-value min-h-5 flex-1" aria-hidden="true" />
             )}
           </Button>
         </DropdownMenuTrigger>

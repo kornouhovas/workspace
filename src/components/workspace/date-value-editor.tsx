@@ -132,15 +132,16 @@ export function WorkspaceDateValueEditor({
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
             aria-label="Pick date"
           >
-            <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span
-              className={[
-                dateValue ? "workspace-table-text-value" : "workspace-table-empty-value",
-                "-mx-1 min-w-0 truncate rounded-md px-1 py-0.5",
-              ].join(" ")}
-            >
-              {dateValue || "Empty"}
-            </span>
+            {dateValue ? (
+              <>
+                <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span className="workspace-table-text-value -mx-1 min-w-0 truncate rounded-md px-1 py-0.5">
+                  {dateValue}
+                </span>
+              </>
+            ) : (
+              <span className="workspace-table-empty-value min-h-5 flex-1" aria-hidden="true" />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent
