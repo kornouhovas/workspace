@@ -236,10 +236,18 @@ function isProtectedCardProperty(property: WorkspacePropertyDefinitionState) {
   return property.system || property.id === "property:name" || property.id === "property:status";
 }
 
+function isProjectDetailProperty(property: WorkspacePropertyDefinitionState) {
+  return property.id !== "property:name";
+}
+
 function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {
   return property.id === "property:name"
     || property.id === "property:status"
     || !isProtectedCardProperty(property);
+}
+
+function canHideCardProperty(property: WorkspacePropertyDefinitionState) {
+  return property.id === "property:status" || !isProtectedCardProperty(property);
 }
 
 function getFileExtension(fileName: string) {
@@ -691,9 +699,13 @@ export function WorkspaceProjectDetailPanel({
   const cardPropertyPressMoved = useRef(false);
   const suppressCardPropertyClickRef = useRef(false);
   const isOpen = open && project !== null;
+  const detailVisibleProperties = useMemo(
+    () => visibleProperties.filter(isProjectDetailProperty),
+    [visibleProperties],
+  );
   const orderedCardProperties = useMemo(
-    () => createOrderedCardProperties(visibleProperties, cardPropertyOrder),
-    [visibleProperties, cardPropertyOrder],
+    () => createOrderedCardProperties(detailVisibleProperties, cardPropertyOrder),
+    [detailVisibleProperties, cardPropertyOrder],
   );
   const orderedVisibleProperties = useMemo(
     () => orderedCardProperties.filter((property) => !property.hidden),
@@ -730,10 +742,10 @@ export function WorkspaceProjectDetailPanel({
   }, [isOpen, project?.id]);
 
   useEffect(() => {
-    const visiblePropertyIdSet = new Set(visibleProperties.map((property) => property.id));
+    const visiblePropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
     const mergedPropertyIds = [
       ...cardPropertyOrder.filter((propertyId) => visiblePropertyIdSet.has(propertyId)),
-      ...visibleProperties.map((property) => property.id).filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
+      ...detailVisibleProperties.map((property) => property.id).filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
     ];
 
     if (
@@ -742,7 +754,7 @@ export function WorkspaceProjectDetailPanel({
     ) {
       setCardPropertyOrder(mergedPropertyIds);
     }
-  }, [visibleProperties, cardPropertyOrder]);
+  }, [detailVisibleProperties, cardPropertyOrder]);
 
   useEffect(() => {
     if (!isOpen || !project) {
@@ -911,7 +923,7 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function showProperty(property: WorkspacePropertyDefinitionState) {
-    if (!isProtectedCardProperty(property)) {
+    if (canHideCardProperty(property)) {
       onHideProperty(property.id, false);
     }
   }
@@ -942,7 +954,7 @@ export function WorkspaceProjectDetailPanel({
   function mergeCardPropertyGroupOrder(group: CardPropertyGroup, nextGroupPropertyIds: readonly string[]) {
     const groupPropertyIds = new Set(getCardPropertiesForGroup(group).map((property) => property.id));
     const nextGroupOrder = [...nextGroupPropertyIds];
-    const completePropertyOrder = createOrderedCardProperties(visibleProperties, cardPropertyOrderRef.current)
+    const completePropertyOrder = createOrderedCardProperties(detailVisibleProperties, cardPropertyOrderRef.current)
       .map((property) => property.id);
 
     return completePropertyOrder.map((propertyId) => {
@@ -1219,6 +1231,7 @@ export function WorkspaceProjectDetailPanel({
     const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
     const propertyProtected = isProtectedCardProperty(property);
     const renameableProperty = canRenameCardProperty(property);
+    const hideableProperty = canHideCardProperty(property);
 
     return (
       <PopoverContent
@@ -1238,7 +1251,7 @@ export function WorkspaceProjectDetailPanel({
               Rename property
             </button>
           ) : null}
-          {!propertyProtected ? (
+          {hideableProperty ? (
             <>
               <button
                 type="button"
@@ -1252,19 +1265,23 @@ export function WorkspaceProjectDetailPanel({
                 <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                 {visibilityLabel}
               </button>
-              <div className={workspaceMenuSeparatorClassName} />
-              <button
-                type="button"
-                role="menuitem"
-                className={workspaceMenuDangerItemClassName}
-                onClick={() => {
-                  setPropertyActionsId(null);
-                  deleteProperty(property);
-                }}
-              >
-                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                Delete property
-              </button>
+              {!propertyProtected ? (
+                <>
+                  <div className={workspaceMenuSeparatorClassName} />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={workspaceMenuDangerItemClassName}
+                    onClick={() => {
+                      setPropertyActionsId(null);
+                      deleteProperty(property);
+                    }}
+                  >
+                    <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                    Delete property
+                  </button>
+                </>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -1343,7 +1360,9 @@ export function WorkspaceProjectDetailPanel({
                 <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
-                    const propertyMenuAvailable = canRenameCardProperty(property) || !propertyProtected;
+                    const propertyMenuAvailable = canRenameCardProperty(property)
+                      || canHideCardProperty(property)
+                      || !propertyProtected;
                     const renamingProperty = renamingPropertyId === property.id;
 
                     return (
@@ -1532,7 +1551,9 @@ export function WorkspaceProjectDetailPanel({
                       <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                         {hiddenCardProperties.map((property) => {
                           const propertyProtected = isProtectedCardProperty(property);
-                          const propertyMenuAvailable = canRenameCardProperty(property) || !propertyProtected;
+                          const propertyMenuAvailable = canRenameCardProperty(property)
+                            || canHideCardProperty(property)
+                            || !propertyProtected;
                           const renamingProperty = renamingPropertyId === property.id;
 
                           return (

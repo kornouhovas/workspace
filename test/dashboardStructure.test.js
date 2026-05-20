@@ -660,10 +660,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /<div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">/);
   assert.doesNotMatch(projectDetailPanelSource, /displayedProject\.currentRelativePath/);
   assert.doesNotMatch(projectDetailPanelSource, /<Badge variant="outline">\{displayedProject\.status\.name\}<\/Badge>/);
-  assert.doesNotMatch(projectDetailPanelSource, /detailProperties/);
-  assert.doesNotMatch(projectDetailPanelSource, /property\.id !== "property:name"/);
   assert.doesNotMatch(projectDetailPanelSource, /property\.id !== "property:status"/);
-  assert.match(projectDetailPanelSource, /visibleProperties\.map/);
+  assert.match(projectDetailPanelSource, /detailVisibleProperties/);
+  assert.match(projectDetailPanelSource, /property\.id !== "property:name"/);
+  assert.match(projectDetailPanelSource, /detailVisibleProperties\.map/);
   assert.match(projectDetailPanelSource, /property\.id === "property:name"/);
   assert.match(projectDetailPanelSource, /property\.id === "property:status"/);
   assert.match(projectDetailPanelSource, /function canRenameCardProperty/);
@@ -694,6 +694,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(projectDetailPanelSource, /<header className="border-b border-border\/60/);
   assert.match(projectDetailPanelSource, /Hidden properties/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties/);
+  assert.match(projectDetailPanelSource, /function isProjectDetailProperty/);
+  assert.match(projectDetailPanelSource, /property\.id !== "property:name"/);
+  assert.match(projectDetailPanelSource, /const detailVisibleProperties = useMemo\(\s+\(\) => visibleProperties\.filter\(isProjectDetailProperty\),/);
+  assert.match(projectDetailPanelSource, /function canHideCardProperty/);
+  assert.match(projectDetailPanelSource, /property\.id === "property:status"/);
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);

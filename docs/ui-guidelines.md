@@ -110,8 +110,9 @@ Rules:
 
 - Use `Sheet` for the desktop right-side panel.
 - Every `Sheet` must include `SheetTitle`; use visually hidden text only when the visible header already names the project.
-- The panel should show project identity first: `Name`.
+- The panel header should show project identity first: `Name`. Do not repeat `Name` inside the Properties table.
 - Properties should appear before file structure.
+- `Status` should appear in the Properties table by default and may be hidden or shown from the Project Detail property menu.
 - Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - Project Detail Panel may create a new custom property from the Properties table through a compact `Add property` row using the same property types and service path as Table view.
 - Hidden properties in Project Detail Panel should keep the same row affordances as visible properties: property-name menu, rename/delete/show actions, value editing, and drag reorder within the hidden group.
