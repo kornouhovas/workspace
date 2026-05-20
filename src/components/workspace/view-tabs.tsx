@@ -2,7 +2,9 @@ import {
   useEffect,
   useRef,
   useState,
-  type DragEvent as ReactDragEvent,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import {
@@ -62,7 +64,19 @@ type WorkspaceViewTabsProps = {
   readonly onDeleteProperty: (propertyId: string) => void;
 };
 
-type ViewDropPosition = "before" | "after";
+type ViewTabDragPreviewItem = {
+  readonly viewId: string;
+  readonly left: number;
+  readonly width: number;
+};
+
+type ViewTabPointerDragState = {
+  readonly viewId: string;
+  readonly startX: number;
+  readonly currentX: number;
+  readonly dropIndex: number;
+  readonly tabs: readonly ViewTabDragPreviewItem[];
+};
 
 function renderViewIcon(view: WorkspaceView) {
   const iconClassName = "size-3.5 shrink-0";
@@ -77,32 +91,16 @@ function renderViewIcon(view: WorkspaceView) {
 function getViewTabDragOrder(
   orderedViewIds: readonly string[],
   sourceViewId: string,
-  targetViewId: string,
-  position: ViewDropPosition,
+  dropIndex: number,
 ) {
-  if (sourceViewId === targetViewId) {
-    return null;
-  }
-
-  if (!orderedViewIds.includes(sourceViewId) || !orderedViewIds.includes(targetViewId)) {
-    return null;
-  }
-
   const remainingViewIds = orderedViewIds.filter((viewId) => viewId !== sourceViewId);
-  const targetIndex = remainingViewIds.indexOf(targetViewId);
+  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingViewIds.length);
 
-  if (targetIndex === -1) {
-    return null;
-  }
-
-  const insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
-  remainingViewIds.splice(insertionIndex, 0, sourceViewId);
-
-  if (remainingViewIds.every((viewId, index) => viewId === orderedViewIds[index])) {
-    return null;
-  }
-
-  return remainingViewIds;
+  return [
+    ...remainingViewIds.slice(0, boundedDropIndex),
+    sourceViewId,
+    ...remainingViewIds.slice(boundedDropIndex),
+  ];
 }
 
 export function WorkspaceViewTabs({
@@ -124,9 +122,7 @@ export function WorkspaceViewTabs({
   onDeleteProperty,
 }: WorkspaceViewTabsProps) {
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
-  const [draggedViewId, setDraggedViewId] = useState<string | null>(null);
-  const [dragOverViewId, setDragOverViewId] = useState<string | null>(null);
-  const [dragOverViewPosition, setDragOverViewPosition] = useState<ViewDropPosition>("before");
+  const [viewTabDragState, setViewTabDragState] = useState<ViewTabPointerDragState | null>(null);
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
@@ -135,6 +131,7 @@ export function WorkspaceViewTabs({
   const [openViewActionsMenu, setOpenViewActionsMenu] = useState(false);
   const editingViewInputRef = useRef<HTMLInputElement | null>(null);
   const cancelViewRenameRef = useRef(false);
+  const suppressViewClickRef = useRef<string | null>(null);
   const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
 
   useEffect(() => {
@@ -148,7 +145,8 @@ export function WorkspaceViewTabs({
     setContextMenuViewId(null);
     setOpenCreateViewMenu(false);
     setOpenViewActionsMenu(false);
-    resetViewDragState();
+    setViewTabDragState(null);
+    suppressViewClickRef.current = null;
   }, [dismissSignal]);
 
   function startRenameView(view: WorkspaceView) {
@@ -203,75 +201,216 @@ export function WorkspaceViewTabs({
     setContextMenuViewId(null);
   }
 
-  function resetViewDragState() {
-    setDraggedViewId(null);
-    setDragOverViewId(null);
-    setDragOverViewPosition("before");
+  function getViewTabDragPreviewItems() {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-view-tab-id]"))
+      .map((tab) => {
+        const viewId = tab.dataset.viewTabId;
+        const rect = tab.getBoundingClientRect();
+
+        if (!viewId) {
+          return null;
+        }
+
+        return {
+          viewId,
+          left: rect.left,
+          width: rect.width,
+        };
+      })
+      .filter((tab): tab is ViewTabDragPreviewItem => tab !== null);
   }
 
-  function handleViewDragStart(
-    event: ReactDragEvent<HTMLButtonElement>,
-    view: WorkspaceView,
-    canDragView: boolean,
+  function findViewTabDragTarget(clientX: number, tabs: readonly ViewTabDragPreviewItem[]) {
+    let dropIndex = 0;
+
+    for (const tab of tabs) {
+      if (clientX >= tab.left + tab.width / 2) {
+        dropIndex += 1;
+      }
+    }
+
+    return dropIndex;
+  }
+
+  function findViewTabDropIndex(
+    clientX: number,
+    tabs: readonly ViewTabDragPreviewItem[],
+    sourceViewId: string,
   ) {
-    if (!canDragView) {
-      event.preventDefault();
+    return findViewTabDragTarget(
+      clientX,
+      tabs.filter((tab) => tab.viewId !== sourceViewId),
+    );
+  }
+
+  function getViewTabDragLefts(
+    orderedViewIds: readonly string[],
+    tabs: readonly ViewTabDragPreviewItem[],
+  ) {
+    const lefts = new Map<string, number>();
+
+    orderedViewIds.forEach((viewId, index) => {
+      const tab = tabs[index];
+      if (tab) {
+        lefts.set(viewId, tab.left);
+      }
+    });
+
+    return lefts;
+  }
+
+  function getViewTabDragStyle(viewId: string): CSSProperties | undefined {
+    if (!viewTabDragState) {
+      return undefined;
+    }
+
+    const orderedViewIds = views.map((view) => view.id);
+    const currentTab = viewTabDragState.tabs.find((tab) => tab.viewId === viewId);
+
+    if (!currentTab || !orderedViewIds.includes(viewId)) {
+      return undefined;
+    }
+
+    if (viewId === viewTabDragState.viewId) {
+      return {
+        transform: `translateX(${viewTabDragState.currentX - viewTabDragState.startX}px)`,
+        transitionDuration: "0ms",
+        zIndex: 30,
+      };
+    }
+
+    const previewOrder = getViewTabDragOrder(
+      orderedViewIds,
+      viewTabDragState.viewId,
+      viewTabDragState.dropIndex,
+    );
+    const previewLefts = getViewTabDragLefts(previewOrder, viewTabDragState.tabs);
+    const previewLeft = previewLefts.get(viewId);
+
+    if (previewLeft === undefined) {
+      return undefined;
+    }
+
+    const offset = previewLeft - currentTab.left;
+
+    if (Math.abs(offset) < 0.5) {
+      return undefined;
+    }
+
+    return {
+      transform: `translateX(${offset}px)`,
+      transitionDuration: "180ms",
+    };
+  }
+
+  function startPointerViewTabDrag(event: ReactPointerEvent<HTMLButtonElement>, viewId: string) {
+    if (event.button !== 0 || editingViewId === viewId) {
       return;
     }
 
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", view.id);
+    const viewTabDragPreviewItems = getViewTabDragPreviewItems();
+    if (viewTabDragPreviewItems.length <= 1) {
+      return;
+    }
+
+    event.stopPropagation();
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    let frameId = 0;
+    let pendingClientX = event.clientX;
+    let moved = false;
+
     setContextMenuViewId(null);
     setOpenCreateViewMenu(false);
     setOpenViewActionsMenu(false);
-    setDraggedViewId(view.id);
-    setDragOverViewId(view.id);
-    setDragOverViewPosition("before");
+    setViewTabDragState({
+      viewId,
+      startX: event.clientX,
+      currentX: event.clientX,
+      dropIndex: findViewTabDropIndex(event.clientX, viewTabDragPreviewItems, viewId),
+      tabs: viewTabDragPreviewItems,
+    });
+
+    function updateDraggedViewTab() {
+      frameId = 0;
+
+      const dropIndex = findViewTabDropIndex(
+        pendingClientX,
+        viewTabDragPreviewItems,
+        viewId,
+      );
+
+      setViewTabDragState((currentDrag) => {
+        if (!currentDrag || currentDrag.viewId !== viewId) {
+          return currentDrag;
+        }
+
+        return {
+          ...currentDrag,
+          currentX: pendingClientX,
+          dropIndex,
+        };
+      });
+    }
+
+    function moveViewTab(pointerEvent: PointerEvent) {
+      pendingClientX = pointerEvent.clientX;
+      moved ||= Math.abs(pointerEvent.clientX - event.clientX) > 4;
+
+      if (frameId === 0) {
+        frameId = window.requestAnimationFrame(updateDraggedViewTab);
+      }
+    }
+
+    function finishViewTabDrag(pointerEvent: PointerEvent) {
+      const dropIndex = findViewTabDropIndex(
+        pointerEvent.clientX,
+        viewTabDragPreviewItems,
+        viewId,
+      );
+      const orderedViewIds = viewTabDragPreviewItems.map((tab) => tab.viewId);
+      const nextViewIds = getViewTabDragOrder(orderedViewIds, viewId, dropIndex);
+
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", moveViewTab);
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("pointerup", finishViewTabDrag);
+      setViewTabDragState(null);
+
+      if (!moved) {
+        return;
+      }
+
+      suppressViewClickRef.current = viewId;
+      window.setTimeout(() => {
+        if (suppressViewClickRef.current === viewId) {
+          suppressViewClickRef.current = null;
+        }
+      }, 0);
+
+      if (nextViewIds.join("\0") !== views.map((view) => view.id).join("\0")) {
+        onReorderViews(nextViewIds);
+      }
+    }
+
+    window.addEventListener("pointermove", moveViewTab);
+    window.addEventListener("pointerup", finishViewTabDrag, { once: true });
   }
 
-  function handleViewDragOver(
-    event: ReactDragEvent<HTMLButtonElement>,
-    view: WorkspaceView,
-    canDragView: boolean,
-  ) {
-    if (!draggedViewId || !canDragView) {
+  function handleViewTabClick(event: ReactMouseEvent<HTMLButtonElement>, viewId: string) {
+    if (suppressViewClickRef.current !== viewId) {
       return;
     }
 
+    suppressViewClickRef.current = null;
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-
-    const tabRect = event.currentTarget.getBoundingClientRect();
-    const position = event.clientX > tabRect.left + tabRect.width / 2 ? "after" : "before";
-    setDragOverViewId(view.id);
-    setDragOverViewPosition(position);
-  }
-
-  function handleViewDrop(
-    event: ReactDragEvent<HTMLButtonElement>,
-    view: WorkspaceView,
-    canDragView: boolean,
-  ) {
-    event.preventDefault();
-
-    if (!canDragView) {
-      resetViewDragState();
-      return;
-    }
-
-    const sourceViewId = draggedViewId || event.dataTransfer.getData("text/plain");
-    const nextViewIds = getViewTabDragOrder(
-      views.map((item) => item.id),
-      sourceViewId,
-      view.id,
-      dragOverViewPosition,
-    );
-
-    resetViewDragState();
-
-    if (nextViewIds) {
-      onReorderViews(nextViewIds);
-    }
+    event.stopPropagation();
   }
 
   return (
@@ -310,25 +449,17 @@ export function WorkspaceViewTabs({
               );
             }
 
-            const canDragView = views.length > 1 && editingViewId !== view.id;
-            const isDropTarget = dragOverViewId === view.id && draggedViewId !== view.id;
-            const dragTargetClassName = isDropTarget ? "bg-accent/35 ring-1 ring-ring/40" : "";
-
             return (
               <TabsTrigger
                 key={view.id}
                 value={view.id}
+                data-view-tab-id={view.id}
                 className={[
-                  "h-7 flex-none rounded-lg px-2.5 text-sm font-medium text-muted-foreground data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60",
-                  canDragView ? "cursor-grab active:cursor-grabbing" : "",
-                  draggedViewId === view.id ? "bg-accent/40 opacity-80" : "",
-                  dragTargetClassName,
+                  "h-7 flex-none cursor-grab rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60",
                 ].join(" ")}
-                draggable={canDragView}
-                onDragStart={(event) => handleViewDragStart(event, view, canDragView)}
-                onDragOver={(event) => handleViewDragOver(event, view, canDragView)}
-                onDrop={(event) => handleViewDrop(event, view, canDragView)}
-                onDragEnd={resetViewDragState}
+                style={getViewTabDragStyle(view.id)}
+                onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}
+                onClick={(event) => handleViewTabClick(event, view.id)}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   setContextMenuViewId(view.id);

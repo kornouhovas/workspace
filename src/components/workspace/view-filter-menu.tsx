@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
-import type { DragEvent as ReactDragEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +60,19 @@ type WorkspaceFilterValue = {
   readonly name: string;
 };
 
-type PropertyDropPosition = "before" | "after";
+type PropertyDragPreviewRow = {
+  readonly propertyId: string;
+  readonly top: number;
+  readonly height: number;
+};
+
+type PropertyPointerDragState = {
+  readonly propertyId: string;
+  readonly startY: number;
+  readonly currentY: number;
+  readonly dropIndex: number;
+  readonly rows: readonly PropertyDragPreviewRow[];
+};
 
 function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
@@ -98,6 +114,21 @@ function stopActionMenuEvent(event: { stopPropagation: () => void }) {
   event.stopPropagation();
 }
 
+function getPropertyDragOrder(
+  orderedPropertyIds: readonly string[],
+  sourcePropertyId: string,
+  dropIndex: number,
+) {
+  const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
+
+  return [
+    ...remainingPropertyIds.slice(0, boundedDropIndex),
+    sourcePropertyId,
+    ...remainingPropertyIds.slice(boundedDropIndex),
+  ];
+}
+
 const visiblePropertyRowClassName =
   "grid h-8 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/60";
 
@@ -123,9 +154,7 @@ export function WorkspaceViewFilterMenu({
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
-  const [draggedPropertyId, setDraggedPropertyId] = useState<string | null>(null);
-  const [dragOverPropertyId, setDragOverPropertyId] = useState<string | null>(null);
-  const [dragOverPropertyPosition, setDragOverPropertyPosition] = useState<PropertyDropPosition>("before");
+  const [propertyDragState, setPropertyDragState] = useState<PropertyPointerDragState | null>(null);
   const [expandedFilterPropertyIds, setExpandedFilterPropertyIds] = useState<ReadonlySet<string>>(() => new Set());
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const visibleViewProperties = properties.filter((property) => visiblePropertyIds.has(property.id));
@@ -136,9 +165,7 @@ export function WorkspaceViewFilterMenu({
   useEffect(() => {
     setOpen(false);
     setActionsPropertyId(null);
-    setDraggedPropertyId(null);
-    setDragOverPropertyId(null);
-    setDragOverPropertyPosition("before");
+    setPropertyDragState(null);
     setEditingPropertyId(null);
     setEditingPropertyName("");
     setExpandedFilterPropertyIds(new Set());
@@ -184,103 +211,200 @@ export function WorkspaceViewFilterMenu({
     });
   }
 
-  function resetPropertyDragState() {
-    setDraggedPropertyId(null);
-    setDragOverPropertyId(null);
-    setDragOverPropertyPosition("before");
+  function getPropertyDragPreviewRows() {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-view-property-row-id]"))
+      .map((row) => {
+        const propertyId = row.dataset.viewPropertyRowId;
+        const rect = row.getBoundingClientRect();
+
+        if (!propertyId) {
+          return null;
+        }
+
+        return {
+          propertyId,
+          top: rect.top,
+          height: rect.height,
+        };
+      })
+      .filter((row): row is PropertyDragPreviewRow => row !== null);
   }
 
-  function getReorderedVisiblePropertyIds(
+  function findPropertyDragTarget(clientY: number, rows: readonly PropertyDragPreviewRow[]) {
+    let dropIndex = 0;
+
+    for (const row of rows) {
+      if (clientY >= row.top + row.height / 2) {
+        dropIndex += 1;
+      }
+    }
+
+    return dropIndex;
+  }
+
+  function findPropertyDropIndex(
+    clientY: number,
+    rows: readonly PropertyDragPreviewRow[],
     sourcePropertyId: string,
-    targetPropertyId: string,
-    position: PropertyDropPosition,
   ) {
-    const orderedPropertyIds = visibleViewProperties.map((property) => property.id);
-
-    if (sourcePropertyId === targetPropertyId) {
-      return null;
-    }
-
-    if (!orderedPropertyIds.includes(sourcePropertyId) || !orderedPropertyIds.includes(targetPropertyId)) {
-      return null;
-    }
-
-    const nextPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
-    const targetIndex = nextPropertyIds.indexOf(targetPropertyId);
-
-    if (targetIndex === -1) {
-      return null;
-    }
-
-    const insertionIndex = position === "after" ? targetIndex + 1 : targetIndex;
-    nextPropertyIds.splice(insertionIndex, 0, sourcePropertyId);
-
-    if (nextPropertyIds.every((propertyId, index) => propertyId === orderedPropertyIds[index])) {
-      return null;
-    }
-
-    return nextPropertyIds;
-  }
-
-  function handlePropertyDragStart(
-    event: ReactDragEvent<HTMLDivElement>,
-    property: WorkspacePropertyDefinitionState,
-    canDragProperty: boolean,
-  ) {
-    if (!canDragProperty) {
-      event.preventDefault();
-      return;
-    }
-
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", property.id);
-    setDraggedPropertyId(property.id);
-    setDragOverPropertyId(property.id);
-    setDragOverPropertyPosition("before");
-  }
-
-  function handlePropertyDragOver(
-    event: ReactDragEvent<HTMLDivElement>,
-    property: WorkspacePropertyDefinitionState,
-    canDragProperty: boolean,
-  ) {
-    if (!draggedPropertyId || !canDragProperty) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-
-    const rowRect = event.currentTarget.getBoundingClientRect();
-    const position = event.clientY > rowRect.top + rowRect.height / 2 ? "after" : "before";
-    setDragOverPropertyId(property.id);
-    setDragOverPropertyPosition(position);
-  }
-
-  function handlePropertyDrop(
-    event: ReactDragEvent<HTMLDivElement>,
-    property: WorkspacePropertyDefinitionState,
-    canDragProperty: boolean,
-  ) {
-    event.preventDefault();
-
-    if (!canDragProperty) {
-      resetPropertyDragState();
-      return;
-    }
-
-    const sourcePropertyId = draggedPropertyId || event.dataTransfer.getData("text/plain");
-    const nextPropertyIds = getReorderedVisiblePropertyIds(
-      sourcePropertyId,
-      property.id,
-      dragOverPropertyPosition,
+    return findPropertyDragTarget(
+      clientY,
+      rows.filter((row) => row.propertyId !== sourcePropertyId),
     );
+  }
 
-    resetPropertyDragState();
+  function getPropertyDragTops(
+    orderedPropertyIds: readonly string[],
+    rows: readonly PropertyDragPreviewRow[],
+  ) {
+    const tops = new Map<string, number>();
 
-    if (nextPropertyIds) {
-      onReorderViewProperties(nextPropertyIds);
+    orderedPropertyIds.forEach((propertyId, index) => {
+      const row = rows[index];
+      if (row) {
+        tops.set(propertyId, row.top);
+      }
+    });
+
+    return tops;
+  }
+
+  function getPropertyDragStyle(propertyId: string): CSSProperties | undefined {
+    if (!propertyDragState) {
+      return undefined;
     }
+
+    const orderedPropertyIds = visibleViewProperties.map((property) => property.id);
+    const currentRow = propertyDragState.rows.find((row) => row.propertyId === propertyId);
+
+    if (!currentRow || !orderedPropertyIds.includes(propertyId)) {
+      return undefined;
+    }
+
+    if (propertyId === propertyDragState.propertyId) {
+      return {
+        transform: `translateY(${propertyDragState.currentY - propertyDragState.startY}px)`,
+        transitionDuration: "0ms",
+        zIndex: 30,
+      };
+    }
+
+    const previewOrder = getPropertyDragOrder(
+      orderedPropertyIds,
+      propertyDragState.propertyId,
+      propertyDragState.dropIndex,
+    );
+    const previewTops = getPropertyDragTops(previewOrder, propertyDragState.rows);
+    const previewTop = previewTops.get(propertyId);
+
+    if (previewTop === undefined) {
+      return undefined;
+    }
+
+    const offset = previewTop - currentRow.top;
+
+    if (Math.abs(offset) < 0.5) {
+      return undefined;
+    }
+
+    return {
+      transform: `translateY(${offset}px)`,
+      transitionDuration: "180ms",
+    };
+  }
+
+  function startPointerPropertyDrag(
+    event: ReactPointerEvent<HTMLDivElement>,
+    propertyId: string,
+    canDragProperty: boolean,
+  ) {
+    if (event.button !== 0 || !canDragProperty) {
+      return;
+    }
+
+    const propertyDragPreviewRows = getPropertyDragPreviewRows();
+    if (propertyDragPreviewRows.length <= 1) {
+      return;
+    }
+
+    event.stopPropagation();
+
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = "grabbing";
+    document.body.style.userSelect = "none";
+
+    let frameId = 0;
+    let pendingClientY = event.clientY;
+    let moved = false;
+
+    setActionsPropertyId(null);
+    setPropertyDragState({
+      propertyId,
+      startY: event.clientY,
+      currentY: event.clientY,
+      dropIndex: findPropertyDropIndex(event.clientY, propertyDragPreviewRows, propertyId),
+      rows: propertyDragPreviewRows,
+    });
+
+    function updateDraggedProperty() {
+      frameId = 0;
+
+      const dropIndex = findPropertyDropIndex(
+        pendingClientY,
+        propertyDragPreviewRows,
+        propertyId,
+      );
+
+      setPropertyDragState((currentDrag) => {
+        if (!currentDrag || currentDrag.propertyId !== propertyId) {
+          return currentDrag;
+        }
+
+        return {
+          ...currentDrag,
+          currentY: pendingClientY,
+          dropIndex,
+        };
+      });
+    }
+
+    function moveProperty(pointerEvent: PointerEvent) {
+      pendingClientY = pointerEvent.clientY;
+      moved ||= Math.abs(pointerEvent.clientY - event.clientY) > 4;
+
+      if (frameId === 0) {
+        frameId = window.requestAnimationFrame(updateDraggedProperty);
+      }
+    }
+
+    function finishPropertyDrag(pointerEvent: PointerEvent) {
+      const dropIndex = findPropertyDropIndex(
+        pointerEvent.clientY,
+        propertyDragPreviewRows,
+        propertyId,
+      );
+      const orderedPropertyIds = propertyDragPreviewRows.map((row) => row.propertyId);
+      const nextPropertyIds = getPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", moveProperty);
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("pointerup", finishPropertyDrag);
+      setPropertyDragState(null);
+
+      if (
+        moved
+        && nextPropertyIds.join("\0") !== visibleViewProperties.map((property) => property.id).join("\0")
+      ) {
+        onReorderViewProperties(nextPropertyIds);
+      }
+    }
+
+    window.addEventListener("pointermove", moveProperty);
+    window.addEventListener("pointerup", finishPropertyDrag, { once: true });
   }
 
   function renderPropertyVisibilityRow(
@@ -290,24 +414,21 @@ export function WorkspaceViewFilterMenu({
   ) {
     const disabled = isSystemProperty(property.id);
     const canDragProperty = section === "visible" && editingPropertyId !== property.id;
-    const isDropTarget = dragOverPropertyId === property.id && draggedPropertyId !== property.id;
-    const dragTargetClassName = isDropTarget ? "bg-accent/35 ring-1 ring-ring/40" : "";
 
     return (
       <div key={property.id} className="grid min-w-0">
         <div
-          className={`${visiblePropertyRowClassName} ${canDragProperty ? "cursor-grab active:cursor-grabbing" : ""} ${draggedPropertyId === property.id ? "bg-accent/40 opacity-80" : ""} ${dragTargetClassName}`}
-          draggable={canDragProperty}
-          onDragStart={(event) => handlePropertyDragStart(event, property, canDragProperty)}
-          onDragOver={(event) => handlePropertyDragOver(event, property, canDragProperty)}
-          onDrop={(event) => handlePropertyDrop(event, property, canDragProperty)}
-          onDragEnd={resetPropertyDragState}
+          data-view-property-row-id={canDragProperty ? property.id : undefined}
+          className={`${visiblePropertyRowClassName} ${canDragProperty ? "cursor-grab active:cursor-grabbing" : ""} ${propertyDragState ? "transition-transform ease-out" : ""}`}
+          style={getPropertyDragStyle(property.id)}
+          onPointerDown={(event) => startPointerPropertyDrag(event, property.id, canDragProperty)}
         >
           <Checkbox
             checked={checked}
             disabled={disabled}
             aria-label={`${property.name} visible`}
             className={workspaceMenuCheckboxClassName}
+            onPointerDown={stopActionMenuEvent}
             onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
           />
           {editingPropertyId === property.id ? (
