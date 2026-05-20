@@ -342,6 +342,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /ChevronDownIcon/);
   assert.match(viewFilterMenuSource, /ChevronRightIcon/);
   assert.match(viewFilterMenuSource, /visiblePropertyRowClassName/);
+  assert.match(viewFilterMenuSource, /workspace-customize-property-row/);
+  assert.match(viewFilterMenuSource, /workspace-customize-property-action/);
+  assert.match(cssSource, /\.workspace-customize-property-row:has\(\.workspace-customize-property-action:hover\):hover/);
   assert.match(viewFilterMenuSource, /grid-cols-\[auto_minmax\(0,1fr\)_minmax\(5rem,auto\)_1\.5rem\]/);
   assert.match(viewFilterMenuSource, /max-h-52 gap-0\.5/);
   assert.match(viewFilterMenuSource, /visibleViewProperties/);

@@ -135,7 +135,7 @@ function getPropertyDragOrder(
 }
 
 const visiblePropertyRowClassName =
-  "grid h-8 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/60";
+  "workspace-customize-property-row grid h-8 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-lg px-1.5 text-sm transition-colors";
 
 const valueFilterGroupButtonClassName =
   "flex h-7 min-w-0 select-none items-center gap-1.5 rounded-lg px-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground";
@@ -502,7 +502,7 @@ export function WorkspaceViewFilterMenu({
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                    className="workspace-customize-property-action flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
                     aria-label={`${property.name} property actions`}
                     onClick={stopActionMenuEvent}
                     onPointerDown={stopActionMenuEvent}
