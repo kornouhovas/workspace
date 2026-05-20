@@ -962,12 +962,6 @@ export function WorkspaceProjectDetailPanel({
     setRenamingPropertyName("");
   }
 
-  function showProperty(property: WorkspacePropertyDefinitionState) {
-    if (canHideCardProperty(property)) {
-      setCardPropertyHidden(property, false);
-    }
-  }
-
   function deleteProperty(property: WorkspacePropertyDefinitionState) {
     if (!isProtectedCardProperty(property) && window.confirm(`Delete property "${property.name}"?`)) {
       onDeleteProperty(property.id);
@@ -1722,7 +1716,7 @@ export function WorkspaceProjectDetailPanel({
                                     </button>
                                   )}
                                 </dt>
-                                <dd className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-1 text-[13px] text-muted-foreground">
+                                <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
                                   <ProjectPropertyValueEditor
                                     project={displayedProject}
                                     property={property}
@@ -1736,15 +1730,6 @@ export function WorkspaceProjectDetailPanel({
                                     onColorSelectValue={onColorSelectValue}
                                     onDeleteSelectValue={onDeleteSelectValue}
                                   />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2"
-                                    onClick={() => showProperty(property)}
-                                  >
-                                    Show
-                                  </Button>
                                 </dd>
                               </div>
                               {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}

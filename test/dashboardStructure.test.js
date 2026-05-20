@@ -717,6 +717,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(hiddenPropertiesMarkup, /PopoverAnchor asChild/);
   assert.match(hiddenPropertiesMarkup, /startCardPropertyDrag\(event, property\.id, \{\s+group: "hidden",\s+openActionsOnClick: true,\s+\}\)/);
   assert.match(hiddenPropertiesMarkup, /renderCardPropertyActionsMenu\(property, "show"\)/);
+  assert.doesNotMatch(hiddenPropertiesMarkup, /onClick=\{\(\) => showProperty\(property\)\}/);
+  assert.doesNotMatch(hiddenPropertiesMarkup, />\s*Show\s*<\/Button>/);
   assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Hidden<\/span>/);
   assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
   assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);
