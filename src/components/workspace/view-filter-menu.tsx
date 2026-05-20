@@ -42,6 +42,10 @@ import type {
   WorkspaceSelectValueState,
   WorkspaceViewState,
 } from "@/workspaceAppState";
+import {
+  mergeFixedIdsWithReorderedIds,
+  reorderIdsByDropIndex,
+} from "@/workspaceDrag";
 
 type WorkspaceViewFilterMenuProps = {
   readonly view: WorkspaceViewState | null;
@@ -117,21 +121,6 @@ function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; 
 
 function stopActionMenuEvent(event: { stopPropagation: () => void }) {
   event.stopPropagation();
-}
-
-function getPropertyDragOrder(
-  orderedPropertyIds: readonly string[],
-  sourcePropertyId: string,
-  dropIndex: number,
-) {
-  const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
-  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
-
-  return [
-    ...remainingPropertyIds.slice(0, boundedDropIndex),
-    sourcePropertyId,
-    ...remainingPropertyIds.slice(boundedDropIndex),
-  ];
 }
 
 const visiblePropertyRowClassName =
@@ -281,7 +270,9 @@ export function WorkspaceViewFilterMenu({
       return undefined;
     }
 
-    const orderedPropertyIds = visibleViewProperties.map((property) => property.id);
+    const orderedPropertyIds = visibleViewProperties
+      .filter((property) => !isRequiredViewProperty(property.id))
+      .map((property) => property.id);
     const currentRow = propertyDragState.rows.find((row) => row.propertyId === propertyId);
 
     if (!currentRow || !orderedPropertyIds.includes(propertyId)) {
@@ -296,7 +287,7 @@ export function WorkspaceViewFilterMenu({
       };
     }
 
-    const previewOrder = getPropertyDragOrder(
+    const previewOrder = reorderIdsByDropIndex(
       orderedPropertyIds,
       propertyDragState.propertyId,
       propertyDragState.dropIndex,
@@ -409,7 +400,14 @@ export function WorkspaceViewFilterMenu({
         propertyId,
       );
       const orderedPropertyIds = propertyDragPreviewRows.map((row) => row.propertyId);
-      const nextPropertyIds = getPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+      const nextMovablePropertyIds = reorderIdsByDropIndex(orderedPropertyIds, propertyId, dropIndex);
+      const previousVisiblePropertyIds = visibleViewProperties.map((property) => property.id);
+      const fixedPropertyIds = previousVisiblePropertyIds.filter(isRequiredViewProperty);
+      const nextPropertyIds = mergeFixedIdsWithReorderedIds(
+        previousVisiblePropertyIds,
+        fixedPropertyIds,
+        nextMovablePropertyIds,
+      );
 
       if (dragStarted) {
         document.body.style.cursor = previousCursor;
@@ -423,7 +421,7 @@ export function WorkspaceViewFilterMenu({
       if (
         dragStarted
         && moved
-        && nextPropertyIds.join("\0") !== visibleViewProperties.map((property) => property.id).join("\0")
+        && nextPropertyIds.join("\0") !== previousVisiblePropertyIds.join("\0")
       ) {
         onReorderViewProperties(nextPropertyIds);
       }

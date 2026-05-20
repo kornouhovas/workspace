@@ -21,3 +21,39 @@ export function reorderWorkspaceIdsForDrag(
 
   return nextWorkspaceIds;
 }
+
+export function reorderIdsByDropIndex(
+  ids: readonly string[],
+  sourceId: string,
+  dropIndex: number,
+) {
+  const remainingIds = ids.filter((id) => id !== sourceId);
+  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingIds.length);
+
+  return [
+    ...remainingIds.slice(0, boundedDropIndex),
+    sourceId,
+    ...remainingIds.slice(boundedDropIndex),
+  ];
+}
+
+export function mergeFixedIdsWithReorderedIds(
+  allIds: readonly string[],
+  fixedIds: readonly string[],
+  reorderedMovableIds: readonly string[],
+) {
+  const fixedIdSet = new Set(fixedIds);
+  const movableIds = [...reorderedMovableIds];
+  let movableIndex = 0;
+
+  return allIds.map((id) => {
+    if (fixedIdSet.has(id)) {
+      return id;
+    }
+
+    const movableId = movableIds[movableIndex];
+    movableIndex += 1;
+
+    return movableId ?? id;
+  });
+}

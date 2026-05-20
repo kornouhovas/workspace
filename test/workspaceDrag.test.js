@@ -41,3 +41,24 @@ test("reorderWorkspaceIdsForDrag keeps the current order for invalid drag target
   assert.deepEqual(reorderWorkspaceIdsForDrag(order, "workspace:missing", "workspace:c", "before"), order);
   assert.deepEqual(reorderWorkspaceIdsForDrag(order, "workspace:a", "workspace:missing", "before"), order);
 });
+
+test("mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews", async () => {
+  const { mergeFixedIdsWithReorderedIds } = await importDragModule();
+
+  assert.deepEqual(
+    mergeFixedIdsWithReorderedIds(
+      ["property:name", "property:status", "property:multi", "property:text"],
+      ["property:name"],
+      ["property:status", "property:multi", "property:text"],
+    ),
+    ["property:name", "property:status", "property:multi", "property:text"],
+  );
+  assert.deepEqual(
+    mergeFixedIdsWithReorderedIds(
+      ["property:name", "property:status", "property:multi", "property:text"],
+      ["property:name"],
+      ["property:multi", "property:status", "property:text"],
+    ),
+    ["property:name", "property:multi", "property:status", "property:text"],
+  );
+});
