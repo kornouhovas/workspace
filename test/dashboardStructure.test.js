@@ -699,6 +699,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /const detailVisibleProperties = useMemo\(\s+\(\) => visibleProperties\.filter\(isProjectDetailProperty\),/);
   assert.match(projectDetailPanelSource, /function canHideCardProperty/);
   assert.match(projectDetailPanelSource, /property\.id === "property:status"/);
+  assert.match(projectDetailPanelSource, /cardHiddenPropertyIdsStorageKey/);
+  assert.match(projectDetailPanelSource, /function isCardPropertyHidden/);
+  assert.match(projectDetailPanelSource, /property\.hidden \|\| cardHiddenPropertyIds\.includes\(property\.id\)/);
+  assert.match(projectDetailPanelSource, /function setCardPropertyHidden/);
+  assert.match(projectDetailPanelSource, /setCardPropertyHidden\(property, visibilityAction === "hide"\)/);
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);

@@ -120,6 +120,7 @@ const maxProjectDetailPanelWidth = 760;
 const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
 const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
+const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";
 const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";
 const projectDetailPlainValueClassName =
   "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-medium text-foreground";
@@ -168,6 +169,21 @@ function readSavedCardPropertyOrder() {
 
   try {
     const parsedValue = JSON.parse(window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]");
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function readSavedCardHiddenPropertyIds() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const parsedValue = JSON.parse(window.localStorage.getItem(cardHiddenPropertyIdsStorageKey) || "[]");
     return Array.isArray(parsedValue)
       ? parsedValue.filter((item): item is string => typeof item === "string")
       : [];
@@ -248,6 +264,13 @@ function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {
 
 function canHideCardProperty(property: WorkspacePropertyDefinitionState) {
   return property.id === "property:status" || !isProtectedCardProperty(property);
+}
+
+function isCardPropertyHidden(
+  property: WorkspacePropertyDefinitionState,
+  cardHiddenPropertyIds: readonly string[],
+) {
+  return property.hidden || cardHiddenPropertyIds.includes(property.id);
 }
 
 function getFileExtension(fileName: string) {
@@ -691,6 +714,7 @@ export function WorkspaceProjectDetailPanel({
   const [renamingPropertyName, setRenamingPropertyName] = useState("");
   const [hiddenPropertiesExpanded, setHiddenPropertiesExpanded] = useState(true);
   const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
+  const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(readSavedCardHiddenPropertyIds);
   const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
   const renamingPropertyInputRef = useRef<HTMLInputElement | null>(null);
   const panelWidthRef = useRef(projectDetailPanelWidth);
@@ -708,12 +732,12 @@ export function WorkspaceProjectDetailPanel({
     [detailVisibleProperties, cardPropertyOrder],
   );
   const orderedVisibleProperties = useMemo(
-    () => orderedCardProperties.filter((property) => !property.hidden),
-    [orderedCardProperties],
+    () => orderedCardProperties.filter((property) => !isCardPropertyHidden(property, cardHiddenPropertyIds)),
+    [orderedCardProperties, cardHiddenPropertyIds],
   );
   const hiddenCardProperties = useMemo(
-    () => orderedCardProperties.filter((property) => property.hidden),
-    [orderedCardProperties],
+    () => orderedCardProperties.filter((property) => isCardPropertyHidden(property, cardHiddenPropertyIds)),
+    [orderedCardProperties, cardHiddenPropertyIds],
   );
 
   useEffect(() => {
@@ -730,6 +754,22 @@ export function WorkspaceProjectDetailPanel({
       renamingPropertyInputRef.current?.select();
     }
   }, [renamingPropertyId]);
+
+  useEffect(() => {
+    const detailPropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
+    const nextHiddenPropertyIds = cardHiddenPropertyIds.filter((propertyId) => detailPropertyIdSet.has(propertyId));
+
+    if (
+      nextHiddenPropertyIds.length !== cardHiddenPropertyIds.length ||
+      nextHiddenPropertyIds.some((propertyId, index) => propertyId !== cardHiddenPropertyIds[index])
+    ) {
+      setCardHiddenPropertyIds(nextHiddenPropertyIds);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+      }
+    }
+  }, [detailVisibleProperties, cardHiddenPropertyIds]);
 
   useEffect(() => {
     if (isOpen) {
@@ -924,7 +964,7 @@ export function WorkspaceProjectDetailPanel({
 
   function showProperty(property: WorkspacePropertyDefinitionState) {
     if (canHideCardProperty(property)) {
-      onHideProperty(property.id, false);
+      setCardPropertyHidden(property, false);
     }
   }
 
@@ -944,6 +984,26 @@ export function WorkspaceProjectDetailPanel({
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(cardPropertyOrderStorageKey, JSON.stringify(nextPropertyIds));
+    }
+  }
+
+  function setCardPropertyHidden(property: WorkspacePropertyDefinitionState, hidden: boolean) {
+    if (property.id === "property:status") {
+      const nextHiddenPropertyIds = hidden
+        ? [...cardHiddenPropertyIds.filter((propertyId) => propertyId !== property.id), property.id]
+        : cardHiddenPropertyIds.filter((propertyId) => propertyId !== property.id);
+
+      setCardHiddenPropertyIds(nextHiddenPropertyIds);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+      }
+
+      return;
+    }
+
+    if (!isProtectedCardProperty(property)) {
+      onHideProperty(property.id, hidden);
     }
   }
 
@@ -1259,7 +1319,7 @@ export function WorkspaceProjectDetailPanel({
                 className={workspaceMenuItemClassName}
                 onClick={() => {
                   setPropertyActionsId(null);
-                  onHideProperty(property.id, visibilityAction === "hide");
+                  setCardPropertyHidden(property, visibilityAction === "hide");
                 }}
               >
                 <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
