@@ -539,7 +539,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
   assert.match(tableViewSource, /function renderTextCellDisplay/);
-  assert.match(tableViewSource, /workspace-table-text-value min-w-0 whitespace-pre-wrap break-words rounded-md px-1 py-0\.5/);
+  assert.match(tableViewSource, /property\.propertyType === "text"[\s\S]*whitespace-normal align-top/);
+  assert.match(tableViewSource, /workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words \[overflow-wrap:anywhere\] rounded-md px-1 py-0\.5/);
   assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
   assert.match(tableViewSource, /openProjectFromNameCell/);

@@ -280,6 +280,10 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
     return `h-10 ${tableColumnDividerClassName} p-0.5`;
   }
 
+  if (property.propertyType === "text") {
+    return `h-10 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
+  }
+
   return editable
     ? `h-10 ${tableColumnDividerClassName} p-0.5`
     : `h-10 ${tableColumnDividerClassName} truncate px-3 py-0`;
@@ -413,7 +417,7 @@ function ProjectTablePropertyValueEditor({
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
-        <span className="workspace-table-text-value min-w-0 whitespace-pre-wrap break-words rounded-md px-1 py-0.5">{label}</span>
+        <span className="workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md px-1 py-0.5">{label}</span>
       </button>
     );
   }
