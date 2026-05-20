@@ -485,10 +485,6 @@ export function WorkspaceViewFilterMenu({
               <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
                 Required
               </Badge>
-            ) : section === "hidden" ? (
-              <Badge variant="secondary" className="h-6 rounded-full px-2 text-xs">
-                Hidden
-              </Badge>
             ) : null}
           </div>
           <div className="flex size-6 items-center justify-center justify-self-center">

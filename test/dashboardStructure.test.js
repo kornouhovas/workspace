@@ -369,6 +369,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(viewFilterMenuSource, /draggable=\{canDragProperty\}/);
   assert.doesNotMatch(viewFilterMenuSource, /onDragStart=\{\(event\) => handlePropertyDragStart/);
   assert.match(viewFilterMenuSource, /Hidden properties/);
+  assert.doesNotMatch(viewFilterMenuSource, /variant="secondary"[\s\S]*>\s*Hidden\s*<\/Badge>/);
   assert.match(viewFilterMenuSource, /select-none/);
   assert.match(viewFilterMenuSource, /valueFilterGroupButtonClassName/);
   assert.match(viewFilterMenuSource, /valueFilterItemClassName/);
