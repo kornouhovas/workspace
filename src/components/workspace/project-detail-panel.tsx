@@ -236,6 +236,12 @@ function isProtectedCardProperty(property: WorkspacePropertyDefinitionState) {
   return property.system || property.id === "property:name" || property.id === "property:status";
 }
 
+function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {
+  return property.id === "property:name"
+    || property.id === "property:status"
+    || !isProtectedCardProperty(property);
+}
+
 function getFileExtension(fileName: string) {
   const extensionMatch = /\.([^.]+)$/.exec(fileName);
   return extensionMatch ? extensionMatch[1].toLowerCase() : "";
@@ -880,7 +886,7 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function beginRenameProperty(property: WorkspacePropertyDefinitionState) {
-    if (isProtectedCardProperty(property)) {
+    if (!canRenameCardProperty(property)) {
       return;
     }
 
@@ -1211,6 +1217,8 @@ export function WorkspaceProjectDetailPanel({
   ) {
     const visibilityLabel = visibilityAction === "hide" ? "Hide property" : "Show property";
     const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
+    const propertyProtected = isProtectedCardProperty(property);
+    const renameableProperty = canRenameCardProperty(property);
 
     return (
       <PopoverContent
@@ -1219,40 +1227,46 @@ export function WorkspaceProjectDetailPanel({
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
-          <button
-            type="button"
-            role="menuitem"
-            className={workspaceMenuItemClassName}
-            onClick={() => beginRenameProperty(property)}
-          >
-            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-            Rename property
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className={workspaceMenuItemClassName}
-            onClick={() => {
-              setPropertyActionsId(null);
-              onHideProperty(property.id, visibilityAction === "hide");
-            }}
-          >
-            <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-            {visibilityLabel}
-          </button>
-          <div className={workspaceMenuSeparatorClassName} />
-          <button
-            type="button"
-            role="menuitem"
-            className={workspaceMenuDangerItemClassName}
-            onClick={() => {
-              setPropertyActionsId(null);
-              deleteProperty(property);
-            }}
-          >
-            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-            Delete property
-          </button>
+          {renameableProperty ? (
+            <button
+              type="button"
+              role="menuitem"
+              className={workspaceMenuItemClassName}
+              onClick={() => beginRenameProperty(property)}
+            >
+              <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+              Rename property
+            </button>
+          ) : null}
+          {!propertyProtected ? (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className={workspaceMenuItemClassName}
+                onClick={() => {
+                  setPropertyActionsId(null);
+                  onHideProperty(property.id, visibilityAction === "hide");
+                }}
+              >
+                <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                {visibilityLabel}
+              </button>
+              <div className={workspaceMenuSeparatorClassName} />
+              <button
+                type="button"
+                role="menuitem"
+                className={workspaceMenuDangerItemClassName}
+                onClick={() => {
+                  setPropertyActionsId(null);
+                  deleteProperty(property);
+                }}
+              >
+                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                Delete property
+              </button>
+            </>
+          ) : null}
         </div>
       </PopoverContent>
     );
@@ -1329,6 +1343,7 @@ export function WorkspaceProjectDetailPanel({
                 <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
+                    const propertyMenuAvailable = canRenameCardProperty(property) || !propertyProtected;
                     const renamingProperty = renamingPropertyId === property.id;
 
                     return (
@@ -1350,7 +1365,7 @@ export function WorkspaceProjectDetailPanel({
                             ...getCardPropertyDragStyle(property.id, "visible"),
                           }}
                           onContextMenu={(event) => {
-                            if (propertyProtected) {
+                            if (!propertyMenuAvailable) {
                               return;
                             }
 
@@ -1384,7 +1399,7 @@ export function WorkspaceProjectDetailPanel({
                                   }}
                                 />
                               </span>
-                            ) : !propertyProtected ? (
+                            ) : propertyMenuAvailable ? (
                               <PopoverAnchor asChild>
                                 <button
                                   type="button"
@@ -1448,7 +1463,7 @@ export function WorkspaceProjectDetailPanel({
                             />
                           </dd>
                         </div>
-                        {!propertyProtected ? (
+                        {propertyMenuAvailable ? (
                           renderCardPropertyActionsMenu(property, "hide")
                         ) : null}
                       </Popover>
@@ -1517,6 +1532,7 @@ export function WorkspaceProjectDetailPanel({
                       <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                         {hiddenCardProperties.map((property) => {
                           const propertyProtected = isProtectedCardProperty(property);
+                          const propertyMenuAvailable = canRenameCardProperty(property) || !propertyProtected;
                           const renamingProperty = renamingPropertyId === property.id;
 
                           return (
@@ -1538,7 +1554,7 @@ export function WorkspaceProjectDetailPanel({
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
                                 }}
                                 onContextMenu={(event) => {
-                                  if (propertyProtected) {
+                                  if (!propertyMenuAvailable) {
                                     return;
                                   }
 
@@ -1572,7 +1588,7 @@ export function WorkspaceProjectDetailPanel({
                                         }}
                                       />
                                     </span>
-                                  ) : !propertyProtected ? (
+                                  ) : propertyMenuAvailable ? (
                                     <PopoverAnchor asChild>
                                       <button
                                         type="button"
@@ -1650,7 +1666,7 @@ export function WorkspaceProjectDetailPanel({
                                   </Button>
                                 </dd>
                               </div>
-                              {!propertyProtected ? renderCardPropertyActionsMenu(property, "show") : null}
+                              {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}
                             </Popover>
                           );
                         })}

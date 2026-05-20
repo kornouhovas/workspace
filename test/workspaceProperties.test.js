@@ -176,7 +176,7 @@ test("normalizePropertyDefinition rejects unsupported custom property types", ()
   );
 });
 
-test("normalizePropertyDefinition marks system properties immutable", () => {
+test("normalizePropertyDefinition marks system properties immutable but preserves display names", () => {
   assert.deepEqual(
     normalizePropertyDefinition({
       id: "property:name",
@@ -189,7 +189,7 @@ test("normalizePropertyDefinition marks system properties immutable", () => {
     {
       id: "property:name",
       workspaceId: "workspace-1",
-      name: "Name",
+      name: "Renamed",
       type: "text",
       system: true,
       immutable: true,

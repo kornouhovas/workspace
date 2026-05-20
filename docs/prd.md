@@ -166,6 +166,7 @@ MVP включает:
 
 - Системные properties `Name` и `Status` доступны для каждого проекта.
 - `Name` остаётся обязательной property в каждом view; `Status` является системной property, включается по умолчанию и может быть скрыт в конкретном view.
+- Пользователь может переименовать display label системных properties `Name` и `Status` стандартными property menus; это не меняет их id, тип, derived values и системное поведение.
 - Settings показывает только системную property `Status`, её derived values из folder roles и позволяет менять цвет точки у каждого status value.
 - Settings не создаёт, не переименовывает, не удаляет, не скрывает и не перемещает кастомные properties.
 - Кастомные properties и их values управляются из Table, Project Detail Panel, `Customize Columns` и property menus.

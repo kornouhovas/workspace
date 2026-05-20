@@ -36,7 +36,7 @@ Canonical service/storage type ids:
 Rules:
 
 - `property:name` and `property:status` are system properties.
-- System properties are returned by property list methods but cannot be renamed, deleted, reordered below custom properties, or edited as stored custom values.
+- System properties are returned by property list methods. Their display labels can be renamed, but their ids, types, order, derived values, delete behavior, and stored-value behavior remain locked.
 - `property:status` may persist color metadata for derived status values through `workspace.updateStatusValueColor`; the status values themselves remain derived from folder roles.
 - Custom property definitions are Workspace-scoped.
 - Custom property values are project-scoped and Workspace-scoped.
@@ -210,7 +210,7 @@ Validation:
 
 ### `workspace.updateProperty`
 
-Renames, hides, shows, or updates custom property configuration.
+Renames, hides, shows, or updates custom property configuration. For system properties, only the display label `name` may be renamed.
 
 Request:
 
@@ -241,7 +241,7 @@ Response:
 Validation:
 
 - `workspaceId`, `propertyId`, and `patch` are required.
-- System properties reject rename, hide, delete, and type changes.
+- System properties accept only `patch.name`; hide, delete, type, order, and config changes are rejected with `PROPERTY_SYSTEM_LOCKED`.
 - `type` cannot be changed after creation in MVP.
 - Updating a property writes a `propertyHistory` record.
 

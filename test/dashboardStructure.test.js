@@ -332,6 +332,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /visiblePropertyRowClassName/);
   assert.match(viewFilterMenuSource, /workspace-customize-property-row/);
   assert.match(viewFilterMenuSource, /workspace-customize-property-action/);
+  assert.match(viewFilterMenuSource, /function canRenameProperty/);
+  assert.match(viewFilterMenuSource, /const canOpenActions = canRenameProperty\(property\) \|\| !required;/);
   assert.match(cssSource, /\.workspace-customize-property-row:has\(\.workspace-customize-property-action:hover\):hover/);
   assert.match(viewFilterMenuSource, /from "@\/workspaceDrag"/);
   assert.match(viewFilterMenuSource, /reorderIdsByDropIndex/);
@@ -456,6 +458,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /onDeleteProperty/);
   assert.match(tableViewSource, /onReorderViewProperties/);
   assert.match(tableViewSource, /onTogglePropertyVisibility/);
+  assert.match(tableViewSource, /function canRenameProperty/);
+  assert.match(tableViewSource, /disabled=\{!canRenameProperty\(property\)\}/);
   assert.match(tableViewSource, /readonly view: WorkspaceViewState \| null;/);
   assert.match(tableViewSource, /readonly statusValues: WorkspaceProjectionResponse\["statusValues"\];/);
   assert.match(tableViewSource, /readonly onToggleValueFilter: \(propertyId: string, valueId: string, included: boolean\) => void;/);
@@ -662,6 +666,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /visibleProperties\.map/);
   assert.match(projectDetailPanelSource, /property\.id === "property:name"/);
   assert.match(projectDetailPanelSource, /property\.id === "property:status"/);
+  assert.match(projectDetailPanelSource, /function canRenameCardProperty/);
+  assert.match(projectDetailPanelSource, /renderCardPropertyActionsMenu\(property/);
   assert.match(projectDetailPanelSource, /expandedFolderIds/);
   assert.match(projectDetailPanelSource, /toggleProjectFileFolder/);
   assert.match(projectDetailPanelSource, /aria-expanded=\{isFolder \? isExpanded : undefined\}/);

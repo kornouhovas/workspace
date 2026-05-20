@@ -900,8 +900,21 @@ async function createPropertyResult({ body, workspaceId, propertyScopeId, proper
 
 async function updatePropertyResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
-  const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
   const patch = normalizePatchObject(body.patch);
+
+  if (isSystemPropertyId(propertyId)) {
+    return updateSystemPropertyResult({
+      body,
+      workspaceId,
+      propertyScopeId,
+      propertyId,
+      patch,
+      propertyStore,
+      now,
+    });
+  }
+
+  const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
 
   if (Object.hasOwn(patch, "type") && patch.type !== property.type) {
     throw createWorkspaceServiceError("VALIDATION_FAILED", "Property type cannot be changed.", "type");
@@ -921,6 +934,52 @@ async function updatePropertyResult({ body, workspaceId, propertyScopeId, proper
   } catch (error) {
     throw createWorkspaceServiceError("VALIDATION_FAILED", error.message, "type");
   }
+
+  return {
+    workspaceId,
+    property: await propertyStore.saveProperty(updatedProperty),
+  };
+}
+
+async function updateSystemPropertyResult({
+  workspaceId,
+  propertyScopeId,
+  propertyId,
+  patch,
+  propertyStore,
+  now,
+}) {
+  const patchKeys = Object.keys(patch);
+  if (patchKeys.length === 0) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "patch is required.", "patch");
+  }
+
+  const unsupportedKeys = patchKeys.filter((key) => key !== "name");
+  if (unsupportedKeys.length > 0) {
+    throw createWorkspaceServiceError(
+      "PROPERTY_SYSTEM_LOCKED",
+      "System properties only support rename.",
+      unsupportedKeys[0],
+    );
+  }
+
+  const existingProperty = await propertyStore.getProperty(propertyScopeId, propertyId);
+  const defaultProperty = createDefaultPropertySchemas(propertyScopeId)
+    .find((property) => property.id === propertyId);
+
+  if (!defaultProperty) {
+    throw createWorkspaceServiceError("PROPERTY_NOT_FOUND", "Property was not found.", "propertyId");
+  }
+
+  const timestamp = now();
+  const updatedProperty = normalizePropertyDefinition({
+    ...defaultProperty,
+    ...existingProperty,
+    id: propertyId,
+    workspaceId: propertyScopeId,
+    name: requireNonEmptyText(patch.name, "name"),
+    updatedAt: timestamp,
+  }, { workspaceId: propertyScopeId, now: timestamp });
 
   return {
     workspaceId,
@@ -1282,10 +1341,15 @@ async function updateProjectPropertyValueResult({ body, workspaceId, propertySco
 }
 
 async function listAllPropertyDefinitions({ workspaceId, propertyStore }) {
-  return [
-    ...createDefaultPropertySchemas(workspaceId),
-    ...await propertyStore.listProperties(workspaceId),
-  ].sort(comparePropertyDefinitions);
+  const propertyById = new Map(
+    createDefaultPropertySchemas(workspaceId).map((property) => [property.id, property]),
+  );
+
+  for (const property of await propertyStore.listProperties(workspaceId)) {
+    propertyById.set(property.id, property);
+  }
+
+  return [...propertyById.values()].sort(comparePropertyDefinitions);
 }
 
 function createVisiblePropertiesForView({ view, propertyDefinitions }) {

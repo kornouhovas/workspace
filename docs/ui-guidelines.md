@@ -84,6 +84,7 @@ Rules:
 - Include `No status` when projects are outside status folders.
 - Do not implement drag and drop between primary status groups in MVP.
 - Cards should show `Name` and selected visible properties. `Status` is visible by default and may be hidden in the active view.
+- Standard property rename menus apply to the display labels for `Name` and `Status`, while delete, type changes, and stored value editing stay unavailable for those system properties.
 - Cards should be compact and predictable in height.
 - Long project names and property values must truncate or wrap without resizing the whole board unexpectedly.
 - Use Badge for status/value chips instead of custom styled spans.
@@ -96,6 +97,7 @@ Rules:
 - Table rows represent projects.
 - Columns represent visible properties in the active view.
 - `Name` remains visible as the required identity column; `Status` can be hidden or shown like other view columns.
+- Table, Customize Columns, and Project Detail property menus should expose the same rename affordance for system `Name` and `Status` labels as for custom properties, but system-only restrictions still apply to delete/type/value mutation.
 - Use the existing shadcn `Table` component and existing table patterns before custom markup.
 - Column visibility and ordering are view settings.
 - Long text must truncate inside stable column widths.

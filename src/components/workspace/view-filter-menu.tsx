@@ -87,6 +87,10 @@ function isRequiredViewProperty(propertyId: string) {
   return propertyId === "property:name";
 }
 
+function canRenameProperty(property: WorkspacePropertyDefinitionState) {
+  return property.id === "property:name" || property.id === "property:status" || !isSystemProperty(property.id);
+}
+
 function isFilterableProperty(property: WorkspacePropertyDefinitionState) {
   return property.id === "property:status"
     || property.propertyType === "select"
@@ -174,7 +178,7 @@ export function WorkspaceViewFilterMenu({
   }, [open]);
 
   function beginRenameProperty(property: WorkspacePropertyDefinitionState) {
-    if (isSystemProperty(property.id)) {
+    if (!canRenameProperty(property)) {
       return;
     }
 
@@ -438,6 +442,8 @@ export function WorkspaceViewFilterMenu({
   ) {
     const required = isRequiredViewProperty(property.id);
     const editableDefinition = !isSystemProperty(property.id);
+    const renameableDefinition = canRenameProperty(property);
+    const canOpenActions = canRenameProperty(property) || !required;
     const canDragProperty = section === "visible" && !required && editingPropertyId !== property.id;
 
     return (
@@ -488,7 +494,7 @@ export function WorkspaceViewFilterMenu({
             ) : null}
           </div>
           <div className="flex size-6 items-center justify-center justify-self-center">
-            {required ? null : (
+            {canOpenActions ? (
               <Popover
                 open={actionsPropertyId === property.id}
                 onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
@@ -516,7 +522,7 @@ export function WorkspaceViewFilterMenu({
                   onClick={stopActionMenuEvent}
                   onPointerDown={stopActionMenuEvent}
                 >
-                  {editableDefinition ? (
+                  {renameableDefinition ? (
                     <button
                       type="button"
                       role="menuitem"
@@ -530,23 +536,25 @@ export function WorkspaceViewFilterMenu({
                       Rename property
                     </button>
                   ) : null}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={workspaceMenuItemClassName}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setActionsPropertyId(null);
-                      onTogglePropertyVisibility(property.id, section === "hidden");
-                    }}
-                  >
-                    {section === "hidden" ? (
-                      <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                    ) : (
-                      <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                    )}
-                    {section === "hidden" ? "Show in view" : "Hide from view"}
-                  </button>
+                  {!required ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={workspaceMenuItemClassName}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActionsPropertyId(null);
+                        onTogglePropertyVisibility(property.id, section === "hidden");
+                      }}
+                    >
+                      {section === "hidden" ? (
+                        <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                      ) : (
+                        <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                      )}
+                      {section === "hidden" ? "Show in view" : "Hide from view"}
+                    </button>
+                  ) : null}
                   {editableDefinition ? (
                     <button
                       type="button"
@@ -566,7 +574,7 @@ export function WorkspaceViewFilterMenu({
                   ) : null}
                 </PopoverContent>
               </Popover>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

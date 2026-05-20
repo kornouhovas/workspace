@@ -61,10 +61,12 @@ export function normalizePropertyDefinition(input = {}, context = {}) {
   const systemDefaults = getSystemPropertyDefaults(id);
 
   if (systemDefaults) {
+    const displayName = normalizeTrimmedString(input.name) || systemDefaults.name;
+
     return {
       id,
       workspaceId: normalizeString(input.workspaceId || context.workspaceId),
-      name: systemDefaults.name,
+      name: displayName,
       type: systemDefaults.type,
       system: true,
       immutable: true,

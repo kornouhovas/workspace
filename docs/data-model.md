@@ -332,6 +332,7 @@ Business rules:
 
 - `property:name` and `property:status` are system properties.
 - System properties cannot be deleted.
+- System property display names may be renamed and persisted as property definitions, but their ids, types, order, and derived project values remain system-controlled.
 - `property:name` is derived from the project folder name.
 - `property:status` is derived from folder role scan output.
 - Custom property values are stored in `property_values`.
@@ -434,7 +435,7 @@ Business rules:
 - `date` value is `YYYY-MM-DD` or null.
 - `select` value is one select value id or null.
 - `multi-select` value is an ordered array of select value ids.
-- System `Name` and `Status` are derived values and should not be stored as editable custom values.
+- System `Name` and `Status` values are derived and should not be stored as editable custom values, even when their display labels are renamed.
 - Updating a value creates a `propertyHistory` record.
 
 Example:

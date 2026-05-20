@@ -233,6 +233,10 @@ function isEditableProperty(property: WorkspaceMockVisibleProperty) {
   return !isSystemProperty(property.id) && property.system !== true;
 }
 
+function canRenameProperty(property: WorkspaceMockVisibleProperty) {
+  return property.id === "property:name" || property.id === "property:status" || isEditableProperty(property);
+}
+
 function isFilterableProperty(property: WorkspaceMockVisibleProperty) {
   return property.id === "property:status"
     || property.propertyType === "select"
@@ -618,7 +622,7 @@ export function WorkspaceTableView({
   }, [openPropertyMenuId]);
 
   function beginRenameProperty(property: WorkspaceMockVisibleProperty) {
-    if (isSystemProperty(property.id)) {
+    if (!canRenameProperty(property)) {
       return;
     }
 
@@ -1069,7 +1073,7 @@ export function WorkspaceTableView({
                               <button
                                 type="button"
                                 role="menuitem"
-                                disabled={isSystemProperty(property.id)}
+                                disabled={!canRenameProperty(property)}
                                 className={workspaceMenuItemClassName}
                                 onClick={() => {
                                   beginRenameProperty(property);

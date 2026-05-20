@@ -687,6 +687,80 @@ test("workspace IPC handler persists custom properties and projects them into vi
   }
 });
 
+test("workspace IPC handler renames system property labels without changing system semantics", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-system-properties-"));
+
+  try {
+    const rootPath = join(tempDirectory, "projects");
+    const configPath = join(tempDirectory, "settings.json");
+    const viewStorePath = join(tempDirectory, "views.json");
+    const propertyStorePath = join(tempDirectory, "properties.json");
+    let idCounter = 0;
+
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      idFactory: () => `seed-${idCounter += 1}`,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const workspaceId = rootResponse.root.workspaceId;
+
+    await handler(null, "workspace.updateProperty", {
+      workspaceId,
+      propertyId: "property:name",
+      patch: { name: "Project" },
+    });
+    await handler(null, "workspace.updateProperty", {
+      workspaceId,
+      propertyId: "property:status",
+      patch: { name: "Stage" },
+    });
+
+    const propertiesResponse = await handler(null, "workspace.listProperties", { workspaceId });
+    const systemProperties = propertiesResponse.properties.filter((property) => (
+      property.id === "property:name" || property.id === "property:status"
+    ));
+
+    assert.deepEqual(
+      systemProperties.map((property) => [property.id, property.name, property.type, property.system, property.hidden, property.order]),
+      [
+        ["property:name", "Project", "text", true, false, 10],
+        ["property:status", "Stage", "select", true, false, 20],
+      ],
+    );
+
+    const projectionResponse = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-table",
+    });
+    assert.deepEqual(
+      projectionResponse.visibleProperties.map((property) => [property.id, property.name, property.propertyType]),
+      [
+        ["property:name", "Project", "text"],
+        ["property:status", "Stage", "select"],
+      ],
+    );
+    assert.equal(projectionResponse.projection.rows[0].propertyValues["property:name"], "Project Alpha");
+    assert.match(projectionResponse.projection.rows[0].propertyValues["property:status"], /^statusValue:/);
+
+    await assert.rejects(
+      handler(null, "workspace.updateProperty", {
+        workspaceId,
+        propertyId: "property:status",
+        patch: { hidden: true },
+      }),
+      /System properties only support rename/,
+    );
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler creates duplicate property names as distinct id-backed properties", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");
