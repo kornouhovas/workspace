@@ -100,7 +100,7 @@ Rules:
 - Table, Customize Columns, and Project Detail property menus should expose the same rename affordance for system `Name` and `Status` labels as for custom properties, but system-only restrictions still apply to delete/type/value mutation.
 - Use the existing shadcn `Table` component and existing table patterns before custom markup.
 - Column visibility and ordering are view settings.
-- Long text must truncate inside stable column widths.
+- `Text` property values should preserve manual line breaks and wrap inside stable column widths; non-text values should stay compact and truncate where needed.
 - Table row click opens the Project Detail Panel.
 - Do not duplicate edit controls in every cell if that makes the table noisy; prefer focused inline controls or the detail panel.
 
@@ -116,7 +116,7 @@ Rules:
 - Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - Project Detail Panel may create a new custom property from the Properties table through a compact `Add property` row using the same property types and service path as Table view.
 - Hidden properties in Project Detail Panel should keep the same row affordances as visible properties: property-name menu, rename/delete/show actions, value editing, and drag reorder within the hidden group.
-- Use `Input` for short text and numbers, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
+- Use autosizing multiline text controls for `Text`, `Input` for numbers, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
 - Use `Badge` for select and multi-select values, including value colors.
 - Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.
 - Board cards should display only the custom properties enabled for the active view.

@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
+import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -124,6 +125,8 @@ const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";
 const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";
 const projectDetailPlainValueClassName =
   "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-medium text-foreground";
+const projectDetailMultilineValueClassName =
+  "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-medium leading-5 text-foreground";
 const projectDetailPlainTriggerClassName =
   "h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
@@ -441,7 +444,20 @@ function ProjectPropertyValueDisplay({
     return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
   }
 
-  if (property.propertyType === "text" || property.propertyType === "number") {
+  if (property.propertyType === "text") {
+    return (
+      <button
+        type="button"
+        aria-label={`Edit ${property.name}`}
+        className={projectDetailMultilineValueClassName}
+        onClick={onStartEditing}
+      >
+        <span className="min-w-0 whitespace-pre-wrap break-words">{stringifyPropertyValue(value)}</span>
+      </button>
+    );
+  }
+
+  if (property.propertyType === "number") {
     return (
       <button
         type="button"
@@ -593,22 +609,20 @@ function ProjectPropertyValueEditor({
     }
 
     return (
-      <Input
+      <WorkspaceTextValueTextarea
         key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
         autoFocus
         defaultValue={stringifyPropertyValue(value)}
         aria-label={`${property.name} text value`}
-        className="h-7 border-border bg-background px-2 text-[13px] shadow-none"
+        className="min-h-8 border-transparent bg-transparent px-0 text-[13px] font-medium leading-5 shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
         onBlur={(event) => {
           onProjectPropertyValueChange(project.id, property.id, event.target.value);
           onStopEditing();
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.currentTarget.blur();
-          }
           if (event.key === "Escape") {
-            onStopEditing();
+            event.preventDefault();
+            event.currentTarget.blur();
           }
         }}
       />

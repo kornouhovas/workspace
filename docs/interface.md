@@ -231,8 +231,8 @@ When the active view type is Table:
 
 Table requirements:
 
-- Rows are stable in height.
-- Long text truncates inside stable column widths.
+- Rows remain compact for short values.
+- `Text` property values preserve manual line breaks and wrap inside stable column widths when the value is multiline or longer than the column.
 - Clicking a row opens the right Project Detail Panel.
 - Table should render as a compact bordered grid with subtle row separators and vertical dividers aligned between headers and values.
 - Header vertical dividers should visually match the body dividers instead of fading on the first table row.

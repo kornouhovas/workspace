@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
+import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import {
   CalendarIcon,
   CircleDotIcon,
@@ -404,6 +405,19 @@ function ProjectTablePropertyValueEditor({
     );
   }
 
+  function renderTextCellDisplay(label: string) {
+    return (
+      <button
+        type="button"
+        className="workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        onClick={startCellEditing}
+        onPointerDown={stopCellActivation}
+      >
+        <span className="workspace-table-text-value min-w-0 whitespace-pre-wrap break-words rounded-md px-1 py-0.5">{label}</span>
+      </button>
+    );
+  }
+
   if (property.propertyType === "number") {
     if (!editing) {
       return renderCellDisplay(stringifyEditableValue(value));
@@ -463,16 +477,16 @@ function ProjectTablePropertyValueEditor({
   }
 
   if (!editing) {
-    return renderCellDisplay(stringifyEditableValue(value));
+    return renderTextCellDisplay(stringifyEditableValue(value));
   }
 
   return (
-    <Input
+    <WorkspaceTextValueTextarea
       key={editorKey}
       defaultValue={stringifyEditableValue(value)}
       aria-label={`${property.name} text value`}
       autoFocus
-      className="h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
+      className="min-h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
       onPointerDown={stopCellActivation}
       onBlur={(event) => {
         saveValue(event.target.value);
@@ -480,7 +494,7 @@ function ProjectTablePropertyValueEditor({
       }}
       onKeyDown={(event) => {
         event.stopPropagation();
-        if (event.key === "Enter") {
+        if (event.key === "Escape") {
           event.preventDefault();
           event.currentTarget.blur();
         }

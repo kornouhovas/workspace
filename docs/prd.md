@@ -172,6 +172,7 @@ MVP включает:
 - Settings не создаёт, не переименовывает, не удаляет, не скрывает и не перемещает кастомные properties.
 - Кастомные properties и их values управляются из Table, Project Detail Panel, `Customize Columns` и property menus.
 - Пользователь может создать кастомную property типа `Text`.
+- Значения `Text` должны сохранять ручные переносы строк и переноситься по ширине в Table и Project Detail Panel.
 - Пользователь может создать кастомную property типа `Numbers`.
 - Пользователь может создать кастомную property типа `Date`.
 - Пользователь может создать кастомную property типа `Select`.

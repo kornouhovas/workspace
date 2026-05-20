@@ -516,6 +516,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /ProjectTablePropertyValueEditor/);
   assert.match(tableViewSource, /WorkspaceSelectValueEditor/);
   assert.match(tableViewSource, /WorkspaceDateValueEditor/);
+  assert.match(tableViewSource, /WorkspaceTextValueTextarea/);
   assert.match(tableViewSource, /isEditableProperty/);
   assert.match(tableViewSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
@@ -537,6 +538,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /open=\{openAddPropertyMenu\}/);
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
+  assert.match(tableViewSource, /function renderTextCellDisplay/);
+  assert.match(tableViewSource, /workspace-table-text-value min-w-0 whitespace-pre-wrap break-words rounded-md px-1 py-0\.5/);
+  assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
+  assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
   assert.match(tableViewSource, /openProjectFromNameCell/);
   assert.match(tableViewSource, /property\.id === "property:name"/);
   assert.doesNotMatch(tableViewSource, /label \|\| "Empty"/);
@@ -742,6 +747,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /onOpenChange/);
   assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
   assert.match(projectDetailPanelSource, /ProjectPropertyValueDisplay/);
+  assert.match(projectDetailPanelSource, /WorkspaceTextValueTextarea/);
+  assert.match(projectDetailPanelSource, /projectDetailMultilineValueClassName/);
+  assert.match(projectDetailPanelSource, /whitespace-pre-wrap break-words/);
+  assert.match(projectDetailPanelSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(projectDetailPanelSource, /editingPropertyId/);
   assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
   assert.match(projectDetailPanelSource, /orderedVisibleProperties/);

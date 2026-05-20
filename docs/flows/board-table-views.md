@@ -76,8 +76,8 @@ Rules:
 Rules:
 
 - Table columns are controlled by active view settings.
-- Table view should preserve stable row height.
-- Long text should truncate inside stable column widths.
+- Table view should keep rows compact for short values.
+- `Text` values preserve manual line breaks and wrap inside stable column widths when the value is multiline or longer than the column.
 - Horizontal scrolling is allowed when columns exceed viewport width.
 
 ## View Management Path
