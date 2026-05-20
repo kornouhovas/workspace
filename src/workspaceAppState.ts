@@ -13,6 +13,7 @@ export type WorkspaceViewState = {
   readonly visiblePropertyIds?: readonly string[];
   readonly propertyOrder?: Record<string, number>;
   readonly valueVisibility?: Record<string, { readonly valueIds: readonly string[]; readonly includeEmpty?: boolean }>;
+  readonly propertyLayout?: Record<string, { readonly wrapContent?: boolean }>;
 };
 
 export type WorkspacePropertyDefinitionState = {
@@ -156,6 +157,11 @@ export type WorkspaceAppAction =
       readonly type: "viewValueVisibilityUpdated";
       readonly viewId: string;
       readonly valueVisibility: NonNullable<WorkspaceViewState["valueVisibility"]>;
+    }
+  | {
+      readonly type: "viewPropertyLayoutUpdated";
+      readonly viewId: string;
+      readonly propertyLayout: NonNullable<WorkspaceViewState["propertyLayout"]>;
     }
   | {
       readonly type: "propertySaveFailed";
@@ -405,6 +411,32 @@ export function workspaceAppStateReducer(
             view: {
               ...state.projection.view,
               valueVisibility: action.valueVisibility,
+            },
+          }
+        : state.projection,
+      error: null,
+    };
+  }
+
+  if (action.type === "viewPropertyLayoutUpdated") {
+    const views = state.views.map((view) => (
+      view.id === action.viewId
+        ? {
+            ...view,
+            propertyLayout: action.propertyLayout,
+          }
+        : view
+    ));
+
+    return {
+      ...state,
+      views,
+      projection: state.projection?.view.id === action.viewId
+        ? {
+            ...state.projection,
+            view: {
+              ...state.projection.view,
+              propertyLayout: action.propertyLayout,
             },
           }
         : state.projection,
@@ -856,14 +888,17 @@ function removeViewPropertyReference(
 ): WorkspaceViewState {
   const propertyOrder = { ...(view.propertyOrder || {}) };
   const valueVisibility = { ...(view.valueVisibility || {}) };
+  const propertyLayout = { ...(view.propertyLayout || {}) };
   delete propertyOrder[propertyId];
   delete valueVisibility[propertyId];
+  delete propertyLayout[propertyId];
 
   return {
     ...view,
     visiblePropertyIds: view.visiblePropertyIds?.filter((id) => id !== propertyId),
     propertyOrder,
     valueVisibility,
+    propertyLayout,
   };
 }
 

@@ -72,12 +72,13 @@ Rules:
 3. Columns show `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 4. Value visibility filters hide projects whose selected property values are excluded by the active view.
 5. User clicks a row to open the Project Detail Panel.
+6. User can open a Text column property menu and toggle `Wrap content`.
 
 Rules:
 
 - Table columns are controlled by active view settings.
 - Table view should keep rows compact for short values.
-- `Text` values preserve manual line breaks and wrap inside stable column widths when the value is multiline or longer than the column.
+- `Text` values are compact and single-line by default; when `Wrap content` is enabled for that Text property in the active view, manual line breaks are preserved visually and long text wraps inside the column, allowing row height to expand.
 - Horizontal scrolling is allowed when columns exceed viewport width.
 
 ## View Management Path
@@ -113,6 +114,7 @@ Rules:
 - `Name` is required in every view; `Status` is a system property that can be hidden or shown per view.
 - Hiding a select value in one view does not delete the value.
 - Value visibility is a filter for the active view.
+- `Wrap content` for Text properties is a display setting for the active view and does not change stored property values.
 - Filters do not change project property values.
 
 ## Search Path

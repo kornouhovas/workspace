@@ -157,6 +157,7 @@ Fields:
 - `hiddenPropertyIds`: array of `property_definitions.id`.
 - `propertyOrder`: object mapping property id to order number.
 - `valueVisibility`: object keyed by property id, with view-level value filter settings.
+- `propertyLayout`: object keyed by property id, with view-level display settings such as `wrapContent` for custom Text properties.
 - `createdAt`: timestamp.
 - `updatedAt`: timestamp.
 - `deletedAt`: nullable timestamp.
@@ -173,6 +174,7 @@ Business rules:
 - For `select` and `multi-select` properties, `valueVisibility.valueIds` references `selectValue` document ids.
 - For system `Status`, `valueVisibility.valueIds` references derived status value ids from folder roles plus `statusValue:no-status`.
 - `includeEmpty` controls whether projects without a custom select value remain visible when an include filter is active.
+- `propertyLayout.<propertyId>.wrapContent: true` makes a custom Text property wrap in Table view and allows row height to expand; missing or false means compact single-line display.
 - Board views do not support drag and drop between primary status groups in MVP.
 
 Example:
@@ -202,6 +204,11 @@ Example:
       "mode": "include",
       "valueIds": ["selectValue:priority:high", "selectValue:priority:medium"],
       "includeEmpty": false
+    }
+  },
+  "propertyLayout": {
+    "property:notes": {
+      "wrapContent": true
     }
   },
   "createdAt": "2026-05-14T00:00:00.000Z",
@@ -583,6 +590,7 @@ These are logical access patterns. The physical `any-store` indexing strategy ca
 - Select values must reference existing non-deleted `selectValue` documents.
 - Multi-select values must be arrays of unique select value ids.
 - View `valueVisibility.valueIds` must reference select values for the same custom select property, or derived status value ids for system `Status`.
+- View `propertyLayout.wrapContent` may be true only for active custom Text properties.
 - A Workspace must always have at least one non-deleted view.
 - System properties cannot be deleted.
 - Search in MVP uses project `name` only.

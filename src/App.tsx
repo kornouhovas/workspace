@@ -64,6 +64,24 @@ function getNameFromPath(path: string) {
   return path.split(/[\\/]/).filter(Boolean).at(-1) || "Workspace";
 }
 
+function normalizeViewPropertyLayout(value: unknown): NonNullable<WorkspaceViewState["propertyLayout"]> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const propertyLayout = Object.fromEntries(
+    Object.entries(value).flatMap(([propertyId, setting]) => {
+      if (!isRecord(setting) || setting.wrapContent !== true) {
+        return [];
+      }
+
+      return [[propertyId, { wrapContent: true }]];
+    }),
+  );
+
+  return Object.keys(propertyLayout).length > 0 ? propertyLayout : {};
+}
+
 function normalizeRootResponse(response: unknown): WorkspaceRootState | null {
   const root = isRecord(response) && isRecord(response.root) ? response.root : response;
   if (!isRecord(root)) {
@@ -120,6 +138,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
               }),
             )
           : undefined,
+        propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
       })).filter((view) => view.id)
     : [];
 
@@ -299,6 +318,36 @@ function normalizeCreatedViewResponse(
       id,
       name: getString(view.name) || fallbackView.name,
       viewType,
+      visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
+        ? view.visiblePropertyIds.filter((propertyId): propertyId is string => typeof propertyId === "string")
+        : fallbackView.visiblePropertyIds,
+      propertyOrder: isRecord(view.propertyOrder)
+        ? Object.fromEntries(
+            Object.entries(view.propertyOrder)
+              .filter(([, order]) => Number.isFinite(Number(order)))
+              .map(([propertyId, order]) => [propertyId, Number(order)]),
+          )
+        : fallbackView.propertyOrder,
+      valueVisibility: isRecord(view.valueVisibility)
+        ? Object.fromEntries(
+            Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
+              if (!isRecord(setting)) {
+                return [];
+              }
+
+              return [[
+                propertyId,
+                {
+                  valueIds: Array.isArray(setting.valueIds)
+                    ? setting.valueIds.filter((valueId): valueId is string => typeof valueId === "string")
+                    : [],
+                  includeEmpty: setting.includeEmpty === true,
+                },
+              ]];
+            }),
+          )
+        : fallbackView.valueVisibility,
+      propertyLayout: normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
     },
   };
 }
@@ -1069,6 +1118,47 @@ export default function App() {
     }
   }
 
+  async function handleTogglePropertyWrapContent(propertyId: string, wrapContent: boolean) {
+    if (!state.activeViewId) {
+      return;
+    }
+
+    const property = settingsProperties.find((item) => item.id === propertyId);
+    if (!property || property.system || property.propertyType !== "text") {
+      return;
+    }
+
+    const activeViewId = state.activeViewId;
+    const activeView = getActiveViewState();
+    const previousPropertyLayout = activeView?.propertyLayout || {};
+    const propertyLayout = { ...previousPropertyLayout };
+
+    if (wrapContent) {
+      propertyLayout[propertyId] = { wrapContent: true };
+    } else {
+      delete propertyLayout[propertyId];
+    }
+
+    dispatch({
+      type: "viewPropertyLayoutUpdated",
+      viewId: activeViewId,
+      propertyLayout,
+    });
+
+    try {
+      await updateActiveViewPatch({ propertyLayout }, { refreshProjection: false });
+    } catch (error) {
+      dispatch({
+        type: "viewPropertyLayoutUpdated",
+        viewId: activeViewId,
+        propertyLayout: previousPropertyLayout,
+      });
+      toast.error("Could not update text wrapping", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
     if (!state.workspaceId || !state.activeViewId) {
       return;
@@ -1767,6 +1857,7 @@ export default function App() {
                         onReorderViewProperties={handleReorderViewProperties}
                         onTogglePropertyVisibility={handleTogglePropertyVisibility}
                         onToggleValueFilter={handleToggleValueFilter}
+                        onTogglePropertyWrapContent={handleTogglePropertyWrapContent}
                         onProjectPropertyValueChange={handleProjectPropertyValueChange}
                         onCreateSelectValue={handleCreateSelectValue}
                         onRenameSelectValue={handleRenameSelectValue}

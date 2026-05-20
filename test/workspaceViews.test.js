@@ -79,6 +79,70 @@ test("normalizeViewDocument preserves known fields and visible property order af
   });
 });
 
+test("normalizeViewDocument stores text wrap layout as a view setting", () => {
+  const view = normalizeViewDocument({
+    id: "view:table",
+    workspaceId: "workspace:root",
+    viewType: "table",
+    visiblePropertyIds: ["property:name", "property:status", "property:notes"],
+    propertyLayout: {
+      "property:notes": {
+        wrapContent: true,
+      },
+      "property:priority": {
+        wrapContent: false,
+      },
+    },
+  });
+
+  assert.deepEqual(view.propertyLayout, {
+    "property:notes": {
+      wrapContent: true,
+    },
+  });
+});
+
+test("validateViewPatch accepts text wrap layout for active text properties", () => {
+  assert.doesNotThrow(() => validateViewPatch({
+    patch: {
+      propertyLayout: {
+        "property:notes": {
+          wrapContent: true,
+        },
+      },
+    },
+    propertyDefinitions: [
+      { id: "property:name", type: "text", system: true },
+      { id: "property:status", type: "select", system: true },
+      { id: "property:notes", type: "text", system: false },
+    ],
+    selectValues: [],
+    statusValues: [{ id: "statusValue:no-status" }],
+  }));
+});
+
+test("validateViewPatch rejects text wrap layout for non-text properties", () => {
+  assert.throws(
+    () => validateViewPatch({
+      patch: {
+        propertyLayout: {
+          "property:priority": {
+            wrapContent: true,
+          },
+        },
+      },
+      propertyDefinitions: [
+        { id: "property:name", type: "text", system: true },
+        { id: "property:status", type: "select", system: true },
+        { id: "property:priority", type: "select", system: false },
+      ],
+      selectValues: [],
+      statusValues: [{ id: "statusValue:no-status" }],
+    }),
+    (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
+  );
+});
+
 test("validateViewPatch rejects removing the required Name property", () => {
   assert.throws(
     () => validateViewPatch({

@@ -105,6 +105,10 @@ type ValueVisibilityDocument struct {
 	IncludeEmpty bool     `json:"includeEmpty"`
 }
 
+type PropertyLayoutDocument struct {
+	WrapContent bool `json:"wrapContent"`
+}
+
 type ViewDocument struct {
 	ID                 string                             `json:"id"`
 	Type               string                             `json:"type"`
@@ -117,6 +121,7 @@ type ViewDocument struct {
 	HiddenPropertyIDs  []string                           `json:"hiddenPropertyIds"`
 	PropertyOrder      map[string]int                     `json:"propertyOrder"`
 	ValueVisibility    map[string]ValueVisibilityDocument `json:"valueVisibility"`
+	PropertyLayout     map[string]PropertyLayoutDocument  `json:"propertyLayout"`
 	CreatedAt          string                             `json:"createdAt"`
 	UpdatedAt          string                             `json:"updatedAt"`
 	DeletedAt          *string                            `json:"deletedAt"`

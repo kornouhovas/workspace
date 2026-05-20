@@ -955,6 +955,19 @@ func removePropertyFromView(view workspacestore.ViewDocument, propertyID string,
 		}
 	}
 
+	if nextView.PropertyLayout != nil {
+		if _, ok := nextView.PropertyLayout[propertyID]; ok {
+			propertyLayout := make(map[string]workspacestore.PropertyLayoutDocument, len(nextView.PropertyLayout))
+			for key, value := range nextView.PropertyLayout {
+				if key != propertyID {
+					propertyLayout[key] = value
+				}
+			}
+			nextView.PropertyLayout = propertyLayout
+			changed = true
+		}
+	}
+
 	if changed {
 		nextView.UpdatedAt = timestamp
 	}

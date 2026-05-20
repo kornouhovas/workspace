@@ -525,6 +525,7 @@ test("createCreateViewResponse creates a default active Board view", async () =>
       [PROPERTY_STATUS_ID]: 20,
     },
     valueVisibility: {},
+    propertyLayout: {},
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

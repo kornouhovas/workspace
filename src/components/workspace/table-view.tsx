@@ -110,6 +110,7 @@ type WorkspaceTableViewProps = {
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onTogglePropertyWrapContent: (propertyId: string, wrapContent: boolean) => void;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
@@ -234,6 +235,10 @@ function isEditableProperty(property: WorkspaceMockVisibleProperty) {
   return !isSystemProperty(property.id) && property.system !== true;
 }
 
+function isWrappableTextProperty(property: WorkspaceMockVisibleProperty) {
+  return isEditableProperty(property) && property.propertyType === "text";
+}
+
 function canRenameProperty(property: WorkspaceMockVisibleProperty) {
   return property.id === "property:name" || property.id === "property:status" || isEditableProperty(property);
 }
@@ -271,7 +276,7 @@ function hasActiveValueFilter(
   return (valueVisibility?.[propertyId]?.valueIds?.length ?? 0) > 0;
 }
 
-function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean) {
+function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean, wrapContent: boolean) {
   if (property.id === "property:name") {
     return `h-10 ${tableColumnDividerClassName} p-0.5`;
   }
@@ -280,7 +285,7 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
     return `h-10 ${tableColumnDividerClassName} p-0.5`;
   }
 
-  if (property.propertyType === "text") {
+  if (property.propertyType === "text" && wrapContent) {
     return `h-10 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
   }
 
@@ -353,6 +358,7 @@ function ProjectTablePropertyValueEditor({
   project,
   property,
   selectValues,
+  wrapContent,
   editing,
   onProjectPropertyValueChange,
   onCreateSelectValue,
@@ -366,6 +372,7 @@ function ProjectTablePropertyValueEditor({
   readonly project: WorkspaceMockProject;
   readonly property: WorkspaceMockVisibleProperty;
   readonly selectValues: readonly WorkspaceSelectValueState[];
+  readonly wrapContent: boolean;
   readonly editing: boolean;
   readonly dismissSignal: number;
   readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
@@ -410,6 +417,10 @@ function ProjectTablePropertyValueEditor({
   }
 
   function renderTextCellDisplay(label: string) {
+    if (!wrapContent) {
+      return renderCellDisplay(label);
+    }
+
     return (
       <button
         type="button"
@@ -522,6 +533,7 @@ export function WorkspaceTableView({
   onReorderViewProperties,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  onTogglePropertyWrapContent,
   onProjectPropertyValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
@@ -985,6 +997,8 @@ export function WorkspaceTableView({
                 const propertyFilterValues = getFilterValues(property, selectValues, statusValues);
                 const showValueFilters = isFilterableProperty(property);
                 const valueFilterActive = hasActiveValueFilter(property.id, valueVisibility);
+                const wrapContent = view?.propertyLayout?.[property.id]?.wrapContent === true;
+                const showWrapContentToggle = isWrappableTextProperty(property);
                 const propertyMenuTriggerActive = hoveredPropertyMenuTriggerId === property.id
                   || openPropertyMenuId === property.id;
 
@@ -1114,6 +1128,19 @@ export function WorkspaceTableView({
                                 <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                                 Hide from view
                               </button>
+                              {showWrapContentToggle ? (
+                                <button
+                                  type="button"
+                                  role="menuitemcheckbox"
+                                  aria-checked={wrapContent}
+                                  className={workspaceMenuItemClassName}
+                                  onClick={() => onTogglePropertyWrapContent(property.id, !wrapContent)}
+                                >
+                                  <TypeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                                  <span className="min-w-0 flex-1">Wrap content</span>
+                                  <span className="text-xs text-muted-foreground">{wrapContent ? "On" : "Off"}</span>
+                                </button>
+                              ) : null}
                             </div>
                             {showValueFilters ? (
                               <>
@@ -1239,11 +1266,12 @@ export function WorkspaceTableView({
               >
                 {visibleProperties.map((property) => {
                   const editable = isEditableProperty(property);
+                  const wrapContent = view?.propertyLayout?.[property.id]?.wrapContent === true;
 
                   return (
                     <TableCell
                       key={property.id}
-                      className={getBodyCellClassName(property, editable)}
+                      className={getBodyCellClassName(property, editable, wrapContent)}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
                       {editable ? (
@@ -1251,6 +1279,7 @@ export function WorkspaceTableView({
                           project={project}
                           property={property}
                           selectValues={selectValues}
+                          wrapContent={wrapContent}
                           editing={editingCellId === getProjectPropertyCellId(project.id, property.id)}
                           dismissSignal={dropdownDismissToken}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}

@@ -307,6 +307,64 @@ test("workspace app state updates view value visibility without clearing project
   assert.equal(state.projection.projection.rows[0], alpha);
 });
 
+test("workspace app state updates view property layout without clearing projection rows", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const alpha = {
+    id: "project:alpha",
+    name: "Alpha Project",
+    propertyValues: {
+      "property:name": "Alpha Project",
+      "property:notes": "first line\nsecond line",
+    },
+  };
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      workspaceId: "workspace:ops",
+      activeViewId: "view:table",
+      views: [
+        {
+          id: "view:table",
+          name: "Table",
+          viewType: "table",
+          propertyLayout: {},
+        },
+      ],
+    },
+    projectionResponse: {
+      ...projectionResponse,
+      view: {
+        id: "view:table",
+        name: "Table",
+        viewType: "table",
+        propertyLayout: {},
+      },
+      projection: {
+        type: "table",
+        rows: [alpha],
+      },
+    },
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewPropertyLayoutUpdated",
+    viewId: "view:table",
+    propertyLayout: {
+      "property:notes": { wrapContent: true },
+    },
+  });
+
+  assert.deepEqual(state.views[0].propertyLayout, {
+    "property:notes": { wrapContent: true },
+  });
+  assert.deepEqual(state.projection.view.propertyLayout, {
+    "property:notes": { wrapContent: true },
+  });
+  assert.equal(state.projection.projection.rows[0], alpha);
+});
+
 test("workspace app state removes a deleted property from catalog and projections", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {

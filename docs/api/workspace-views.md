@@ -83,6 +83,11 @@ Required error codes:
       "includeEmpty": false
     }
   },
+  "propertyLayout": {
+    "property:notes": {
+      "wrapContent": true
+    }
+  },
   "createdAt": "2026-05-14T00:00:00.000Z",
   "updatedAt": "2026-05-14T00:00:00.000Z",
   "deletedAt": null
@@ -99,6 +104,7 @@ Rules:
 - `hiddenPropertyIds` is retained for compatibility with UI controls, but `visiblePropertyIds` is the source of display order.
 - `propertyOrder` mirrors `visiblePropertyIds` for stable ordering and migration safety.
 - `valueVisibility` filters projects in this view only.
+- `propertyLayout` stores view-level display settings. `propertyLayout.<customTextPropertyId>.wrapContent: true` enables wrapped Text cells in Table view; missing settings keep Text cells compact and single-line.
 
 ### Value Visibility
 
@@ -239,6 +245,7 @@ Response:
       "property:status": 20
     },
     "valueVisibility": {},
+    "propertyLayout": {},
     "createdAt": "2026-05-14T00:00:00.000Z",
     "updatedAt": "2026-05-14T00:00:00.000Z",
     "deletedAt": null
@@ -307,6 +314,11 @@ Request:
         "valueIds": ["selectValue:priority:high", "selectValue:priority:medium"],
         "includeEmpty": false
       }
+    },
+    "propertyLayout": {
+      "property:notes": {
+        "wrapContent": true
+      }
     }
   }
 }
@@ -328,6 +340,11 @@ Response:
         "includeEmpty": false
       }
     },
+    "propertyLayout": {
+      "property:notes": {
+        "wrapContent": true
+      }
+    },
     "updatedAt": "2026-05-14T00:00:00.000Z"
   }
 }
@@ -338,10 +355,11 @@ Validation:
 - `workspaceId` and `viewId` are required.
 - `patch` must not include `id`, `workspaceId`, `type`, `schemaVersion`, `createdAt`, or `deletedAt`.
 - `viewType` cannot be changed in MVP.
-- `property:name` and `property:status` must remain in `visiblePropertyIds` in MVP.
+- `property:name` must remain in `visiblePropertyIds` in MVP. `property:status` is visible by default but can be hidden per view.
 - `visiblePropertyIds` must reference active property definitions in the same Workspace.
 - `propertyOrder` keys must be a subset of `visiblePropertyIds`.
 - `valueVisibility` keys must reference `select`, `multi-select`, or system `Status` properties.
+- `propertyLayout` keys must reference active custom properties; `wrapContent` is accepted only for custom Text properties.
 - Invalid value references reject the whole update.
 - Updating view settings does not create property history records.
 

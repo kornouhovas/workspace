@@ -43,6 +43,7 @@ export function createDefaultView({
       [PROPERTY_STATUS_ID]: 20,
     },
     valueVisibility: {},
+    propertyLayout: {},
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -65,6 +66,7 @@ export function normalizeViewDocument(view = {}) {
     hiddenPropertyIds: normalizeStringArray(view.hiddenPropertyIds).filter((id) => !visiblePropertyIds.includes(id)),
     propertyOrder: normalizePropertyOrder(view.propertyOrder, visiblePropertyIds),
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
+    propertyLayout: normalizePropertyLayout(view.propertyLayout),
     createdAt: normalizeString(view.createdAt),
     updatedAt: normalizeString(view.updatedAt),
     deletedAt: view.deletedAt == null ? null : normalizeString(view.deletedAt),
@@ -126,6 +128,10 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     selectValues,
     statusValues,
   });
+  validatePropertyLayoutReferences({
+    propertyLayout: patch.propertyLayout,
+    propertyDefinitions,
+  });
 }
 
 export function filterProjectsForView({ projects = [], view, searchQuery = "" } = {}) {
@@ -156,6 +162,10 @@ export function createViewProjection({
       id: normalizedView.id,
       name: normalizedView.name,
       viewType: normalizedView.viewType,
+      visiblePropertyIds: normalizedView.visiblePropertyIds,
+      propertyOrder: normalizedView.propertyOrder,
+      valueVisibility: normalizedView.valueVisibility,
+      propertyLayout: normalizedView.propertyLayout,
     },
     visibleProperties,
     statusValues,
@@ -219,6 +229,22 @@ function normalizeValueVisibility(value) {
   );
 }
 
+function normalizePropertyLayout(value) {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([propertyId, setting]) => typeof propertyId === "string" && isPlainObject(setting))
+      .flatMap(([propertyId, setting]) => (
+        setting.wrapContent === true
+          ? [[propertyId, { wrapContent: true }]]
+          : []
+      )),
+  );
+}
+
 function validateValueVisibilityReferences({ valueVisibility, propertyDefinitions, selectValues, statusValues }) {
   if (!isPlainObject(valueVisibility)) {
     return;
@@ -267,6 +293,29 @@ function validateValueVisibilityReferences({ valueVisibility, propertyDefinition
       if (!allowedValues.has(valueId)) {
         throw new WorkspaceViewError("INVALID_VALUE_REFERENCE", "Select filter value does not exist for property.", "valueVisibility");
       }
+    }
+  }
+}
+
+function validatePropertyLayoutReferences({ propertyLayout, propertyDefinitions }) {
+  if (!isPlainObject(propertyLayout)) {
+    return;
+  }
+
+  const propertiesById = new Map(propertyDefinitions.filter((item) => !item.deletedAt).map((item) => [item.id, item]));
+
+  for (const [propertyId, rawSetting] of Object.entries(propertyLayout)) {
+    if (typeof propertyId !== "string" || !isPlainObject(rawSetting) || rawSetting.wrapContent !== true) {
+      continue;
+    }
+
+    const property = propertiesById.get(propertyId);
+    if (!property) {
+      throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Property layout references an unknown property.", "propertyLayout");
+    }
+
+    if (property.system === true || property.type !== "text") {
+      throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Only custom text properties can use wrap content.", "propertyLayout");
     }
   }
 }

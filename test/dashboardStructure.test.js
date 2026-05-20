@@ -539,8 +539,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
   assert.match(tableViewSource, /function renderTextCellDisplay/);
-  assert.match(tableViewSource, /property\.propertyType === "text"[\s\S]*whitespace-normal align-top/);
+  assert.match(tableViewSource, /readonly onTogglePropertyWrapContent: \(propertyId: string, wrapContent: boolean\) => void;/);
+  assert.match(tableViewSource, /Wrap content/);
+  assert.match(tableViewSource, /property\.propertyType === "text" && wrapContent/);
   assert.match(tableViewSource, /workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words \[overflow-wrap:anywhere\] rounded-md px-1 py-0\.5/);
+  assert.match(tableViewSource, /workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0\.5/);
+  assert.match(appSource, /viewPropertyLayoutUpdated/);
   assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
   assert.match(tableViewSource, /openProjectFromNameCell/);
@@ -604,7 +608,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /return `h-10 \$\{tableColumnDividerClassName\} p-0\.5`;/);
   assert.match(tableViewSource, /\? `h-10 \$\{tableColumnDividerClassName\} p-0\.5`/);
   assert.match(tableViewSource, /: `h-10 \$\{tableColumnDividerClassName\} truncate px-3 py-0`;/);
-  assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable\)\}/);
+  assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable, wrapContent\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-8/);
   assert.match(tableViewSource, /workspace-table-cell-control/);
   assert.match(tableViewSource, /workspace-table-text-value/);
