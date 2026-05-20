@@ -396,7 +396,7 @@ export function WorkspaceSelectValueEditor({
                 {selectedValueItems.map((selectValue) => (
                   <span
                     key={selectValue.id}
-                    className="workspace-table-value-chip inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
+                    className="workspace-table-value-chip workspace-table-select-value-chip inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
                   >
                     <span className="size-2 shrink-0 rounded-full" data-color={selectValue.color || "gray"} />
                     <span className="truncate">{selectValue.name}</span>
