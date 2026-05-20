@@ -694,6 +694,7 @@ test("renderer composes the workspace product shell", async () => {
     projectDetailPanelSource.indexOf("<section className=\"grid gap-2\" aria-labelledby=\"project-file-tree-heading\">"),
   );
   assert.match(hiddenPropertiesMarkup, /hover:bg-accent\/15/);
+  assert.doesNotMatch(hiddenPropertiesMarkup, /opacity-75/);
   assert.match(hiddenPropertiesMarkup, /data-card-property-row-group="hidden"/);
   assert.match(hiddenPropertiesMarkup, /PopoverAnchor asChild/);
   assert.match(hiddenPropertiesMarkup, /startCardPropertyDrag\(event, property\.id, \{\s+group: "hidden",\s+openActionsOnClick: true,\s+\}\)/);

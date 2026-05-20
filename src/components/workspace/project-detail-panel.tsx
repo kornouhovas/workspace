@@ -1521,7 +1521,7 @@ export function WorkspaceProjectDetailPanel({
                                 data-card-property-row-id={property.id}
                                 data-card-property-row-group="hidden"
                                 className={[
-                                  "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 opacity-75 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
+                                  "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
                                   cardPropertyDrag ? "transition-transform ease-out" : "",
                                   cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                                 ].filter(Boolean).join(" ")}
