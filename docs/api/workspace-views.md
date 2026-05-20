@@ -94,7 +94,8 @@ Rules:
 - `viewType` is `board` or `table`.
 - `viewType` is immutable in MVP; create another view to switch type.
 - `visiblePropertyIds` stores the properties displayed in this view.
-- `property:name` and `property:status` are required in `visiblePropertyIds` for Board and Table views in MVP.
+- `property:name` is required in `visiblePropertyIds` for Board and Table views in MVP.
+- `property:status` is included by default in new views, remains filterable through `valueVisibility`, and can be hidden from a specific view.
 - `hiddenPropertyIds` is retained for compatibility with UI controls, but `visiblePropertyIds` is the source of display order.
 - `propertyOrder` mirrors `visiblePropertyIds` for stable ordering and migration safety.
 - `valueVisibility` filters projects in this view only.

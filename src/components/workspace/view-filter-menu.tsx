@@ -20,6 +20,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   Columns3Icon,
+  EyeIcon,
   EyeOffIcon,
   ListFilterIcon,
   MoreHorizontalIcon,
@@ -76,6 +77,10 @@ type PropertyPointerDragState = {
 
 function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
+}
+
+function isRequiredViewProperty(propertyId: string) {
+  return propertyId === "property:name";
 }
 
 function isFilterableProperty(property: WorkspacePropertyDefinitionState) {
@@ -412,8 +417,9 @@ export function WorkspaceViewFilterMenu({
     checked: boolean,
     section: "visible" | "hidden",
   ) {
-    const disabled = isSystemProperty(property.id);
-    const canDragProperty = section === "visible" && editingPropertyId !== property.id;
+    const required = isRequiredViewProperty(property.id);
+    const editableDefinition = !isSystemProperty(property.id);
+    const canDragProperty = section === "visible" && !required && editingPropertyId !== property.id;
 
     return (
       <div key={property.id} className="grid min-w-0">
@@ -425,7 +431,7 @@ export function WorkspaceViewFilterMenu({
         >
           <Checkbox
             checked={checked}
-            disabled={disabled}
+            disabled={required}
             aria-label={`${property.name} visible`}
             className={workspaceMenuCheckboxClassName}
             onPointerDown={stopActionMenuEvent}
@@ -456,7 +462,7 @@ export function WorkspaceViewFilterMenu({
             <span className="truncate font-medium">{property.name}</span>
           )}
           <div className="flex min-w-0 justify-end pr-1">
-            {disabled ? (
+            {required ? (
               <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
                 Required
               </Badge>
@@ -467,7 +473,7 @@ export function WorkspaceViewFilterMenu({
             ) : null}
           </div>
           <div className="flex size-6 items-center justify-center justify-self-center">
-            {disabled ? null : (
+            {required ? null : (
               <Popover
                 open={actionsPropertyId === property.id}
                 onOpenChange={(nextOpen) => setActionsPropertyId(nextOpen ? property.id : null)}
@@ -495,33 +501,54 @@ export function WorkspaceViewFilterMenu({
                   onClick={stopActionMenuEvent}
                   onPointerDown={stopActionMenuEvent}
                 >
+                  {editableDefinition ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={workspaceMenuItemClassName}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        beginRenameProperty(property);
+                      }}
+                    >
+                      <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                      Rename property
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     role="menuitem"
                     className={workspaceMenuItemClassName}
                     onClick={(event) => {
                       event.stopPropagation();
-                      beginRenameProperty(property);
-                    }}
-                  >
-                    <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                    Rename property
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={workspaceMenuDangerItemClassName}
-                    onClick={(event) => {
-                      event.stopPropagation();
                       setActionsPropertyId(null);
-                      if (window.confirm(`Delete property "${property.name}"?`)) {
-                        onDeleteProperty(property.id);
-                      }
+                      onTogglePropertyVisibility(property.id, section === "hidden");
                     }}
                   >
-                    <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                    Delete property
+                    {section === "hidden" ? (
+                      <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    ) : (
+                      <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    )}
+                    {section === "hidden" ? "Show in view" : "Hide from view"}
                   </button>
+                  {editableDefinition ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={workspaceMenuDangerItemClassName}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActionsPropertyId(null);
+                        if (window.confirm(`Delete property "${property.name}"?`)) {
+                          onDeleteProperty(property.id);
+                        }
+                      }}
+                    >
+                      <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                      Delete property
+                    </button>
+                  ) : null}
                 </PopoverContent>
               </Popover>
             )}

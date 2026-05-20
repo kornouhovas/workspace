@@ -377,7 +377,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(viewFilterMenuSource, /DropdownMenuSub/);
   assert.doesNotMatch(viewFilterMenuSource, /ml-7 mr-1 mb-1/);
   assert.match(viewFilterMenuSource, /Rename property/);
+  assert.match(viewFilterMenuSource, /Hide from view/);
+  assert.match(viewFilterMenuSource, /Show in view/);
   assert.match(viewFilterMenuSource, /Delete property/);
+  assert.match(viewFilterMenuSource, /function isRequiredViewProperty/);
+  assert.match(viewFilterMenuSource, /propertyId === "property:name"/);
+  assert.doesNotMatch(viewFilterMenuSource, /const disabled = isSystemProperty\(property\.id\)/);
   assert.match(viewFilterMenuSource, /editingPropertyId/);
   assert.match(viewFilterMenuSource, /onRenameProperty/);
   assert.match(viewFilterMenuSource, /onDeleteProperty/);
@@ -456,6 +461,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /function isFilterableProperty/);
   assert.match(tableViewSource, /function getFilterValues/);
   assert.match(tableViewSource, /function hasActiveValueFilter/);
+  assert.match(tableViewSource, /function isRequiredViewProperty/);
+  assert.match(tableViewSource, /propertyId === "property:name"/);
   assert.match(tableViewSource, /ListFilterIcon/);
   assert.match(tableViewSource, /\$\{property\.name\} value filter active/);
   assert.match(tableViewSource, /hasActiveValueFilter\(property\.id, valueVisibility\)/);
@@ -495,6 +502,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /Short notes or free text/);
   assert.match(tableViewSource, /Numeric values and counts/);
   assert.match(tableViewSource, /Hide from view/);
+  assert.match(tableViewSource, /disabled=\{isRequiredViewProperty\(property\.id\)\}/);
   assert.match(tableViewSource, /Delete property/);
   assert.doesNotMatch(tableViewSource, /newPropertyName/);
   assert.doesNotMatch(tableViewSource, /newPropertyType/);

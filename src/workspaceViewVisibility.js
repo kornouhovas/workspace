@@ -1,4 +1,4 @@
-export const requiredViewPropertyIds = ["property:name", "property:status"];
+export const requiredViewPropertyIds = ["property:name"];
 
 export function createPropertyOrder(visiblePropertyIds = []) {
   return Object.fromEntries(

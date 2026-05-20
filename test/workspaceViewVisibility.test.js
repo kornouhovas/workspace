@@ -27,7 +27,7 @@ test("createNextVisiblePropertyIds removes stale property ids when showing a pro
   );
 });
 
-test("createNextVisiblePropertyIds keeps required properties when hiding a property", () => {
+test("createNextVisiblePropertyIds keeps Name required while allowing Status to hide", () => {
   assert.deepEqual(
     createNextVisiblePropertyIds({
       currentVisiblePropertyIds: [
@@ -44,7 +44,7 @@ test("createNextVisiblePropertyIds keeps required properties when hiding a prope
       propertyId: "property:status",
       visible: false,
     }),
-    ["property:name", "property:status", "property:priority"],
+    ["property:name", "property:priority"],
   );
 });
 

@@ -532,7 +532,7 @@ test("createCreateViewResponse creates a default active Board view", async () =>
   assert.equal((await store.getWorkspace("workspace:ops")).activeViewId, "view:abc-123");
 });
 
-test("createListViewsResponse returns active view id and normalized non-deleted views", async () => {
+test("createListViewsResponse preserves explicit view property visibility while normalizing defaults", async () => {
   const store = createMemoryViewStore({
     workspaces: [{ id: "workspace:ops", activeViewId: "view:second" }],
     views: [
@@ -554,7 +554,7 @@ test("createListViewsResponse returns active view id and normalized non-deleted 
   assert.deepEqual(
     response.payload.views.map((view) => [view.id, view.name, view.visiblePropertyIds]),
     [
-      ["view:first", "Board", [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]],
+      ["view:first", "Board", [PROPERTY_NAME_ID]],
       ["view:second", "Board", [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]],
     ],
   );

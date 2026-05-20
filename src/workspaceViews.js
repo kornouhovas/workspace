@@ -94,7 +94,7 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     : null;
 
   if (hasVisiblePropertyIdsPatch) {
-    for (const requiredId of [PROPERTY_NAME_ID, PROPERTY_STATUS_ID]) {
+    for (const requiredId of [PROPERTY_NAME_ID]) {
       if (!visiblePropertyIds.includes(requiredId)) {
         throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", `${requiredId} is required in MVP.`, "visiblePropertyIds");
       }
@@ -192,7 +192,11 @@ export function createViewProjection({
 
 function normalizeVisiblePropertyIds(value) {
   const ids = normalizeStringArray(value);
-  return uniqueStrings([PROPERTY_NAME_ID, PROPERTY_STATUS_ID, ...ids]);
+  if (!Array.isArray(value)) {
+    return [PROPERTY_NAME_ID, PROPERTY_STATUS_ID];
+  }
+
+  return uniqueStrings([PROPERTY_NAME_ID, ...ids]);
 }
 
 function normalizeValueVisibility(value) {

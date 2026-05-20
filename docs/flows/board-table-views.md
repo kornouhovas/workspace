@@ -54,7 +54,7 @@ This is the primary daily workflow after the project source folder and folder ro
 2. Board shows one column per primary status group.
 3. Projects inside status folders appear in their status column.
 4. Projects outside status folders appear in the `No status` column.
-5. Each card shows `Name`, `Status`, and visible properties for the view.
+5. Each card shows `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 6. Value visibility filters hide projects whose selected property values are excluded by the active view.
 7. User clicks a card to open the Project Detail Panel.
 
@@ -69,7 +69,7 @@ Rules:
 
 1. User selects a Table view.
 2. Table shows one row per project.
-3. Columns show `Name`, `Status`, and visible properties for the view.
+3. Columns show `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 4. Value visibility filters hide projects whose selected property values are excluded by the active view.
 5. User clicks a row to open the Project Detail Panel.
 
@@ -110,6 +110,7 @@ Rules:
 Rules:
 
 - Hiding a property in one view does not delete the property.
+- `Name` is required in every view; `Status` is a system property that can be hidden or shown per view.
 - Hiding a select value in one view does not delete the value.
 - Value visibility is a filter for the active view.
 - Filters do not change project property values.

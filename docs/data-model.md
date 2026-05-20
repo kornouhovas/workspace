@@ -166,7 +166,8 @@ Business rules:
 - A Workspace can have multiple views.
 - Deleting a view does not delete projects, properties, or values.
 - A Workspace cannot delete its last view.
-- `property:name` and `property:status` are always visible in Board and Table views in MVP.
+- `property:name` is required in Board and Table views in MVP.
+- `property:status` is visible by default in new views and can be hidden per view without changing derived project status data.
 - `valueVisibility` is a view-level filter.
 - View filters affect only display, not stored project values.
 - For `select` and `multi-select` properties, `valueVisibility.valueIds` references `selectValue` document ids.

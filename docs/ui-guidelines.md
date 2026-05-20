@@ -83,7 +83,7 @@ Rules:
 - Board columns represent primary `Status` groups.
 - Include `No status` when projects are outside status folders.
 - Do not implement drag and drop between primary status groups in MVP.
-- Cards should show `Name`, `Status`, and selected visible properties.
+- Cards should show `Name` and selected visible properties. `Status` is visible by default and may be hidden in the active view.
 - Cards should be compact and predictable in height.
 - Long project names and property values must truncate or wrap without resizing the whole board unexpectedly.
 - Use Badge for status/value chips instead of custom styled spans.
@@ -95,6 +95,7 @@ Rules:
 
 - Table rows represent projects.
 - Columns represent visible properties in the active view.
+- `Name` remains visible as the required identity column; `Status` can be hidden or shown like other view columns.
 - Use the existing shadcn `Table` component and existing table patterns before custom markup.
 - Column visibility and ordering are view settings.
 - Long text must truncate inside stable column widths.

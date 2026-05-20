@@ -217,6 +217,7 @@ When the active view type is Table:
 - do not show the Board surface above or below it;
 - show one row per project;
 - show visible properties as columns.
+- keep `Name` visible as the required identity column; `Status` is visible by default but can be hidden for the current view.
 
 Table requirements:
 
@@ -230,6 +231,7 @@ Table requirements:
 - Table should not show a dedicated row drag-handle column while row ordering is not persisted.
 - The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
 - Column property menus for `Status`, `Select`, and `Multi-select` should include `Value filters` for the current property, using the same view-level `valueVisibility` settings as `Customize Columns`.
+- The Customize Columns menu should allow hiding `Status` from the active view while keeping `Name` required.
 - When a column has active value filters, the header shows a compact filter indicator next to the property action menu.
 
 ## Project Detail Panel

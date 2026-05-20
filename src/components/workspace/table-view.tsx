@@ -196,6 +196,10 @@ function isSystemProperty(propertyId: string) {
   return propertyId === "property:name" || propertyId === "property:status";
 }
 
+function isRequiredViewProperty(propertyId: string) {
+  return propertyId === "property:name";
+}
+
 function isPropertyMenuTarget(target: EventTarget | null) {
   return target instanceof Element
     && Boolean(target.closest("[data-workspace-property-menu='true'], [data-workspace-property-menu-trigger='true']"));
@@ -1074,7 +1078,7 @@ export function WorkspaceTableView({
                               <button
                                 type="button"
                                 role="menuitem"
-                                disabled={isSystemProperty(property.id)}
+                                disabled={isRequiredViewProperty(property.id)}
                                 className={workspaceMenuItemClassName}
                                 onClick={() => {
                                   onTogglePropertyVisibility(property.id, false);

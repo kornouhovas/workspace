@@ -1,4 +1,4 @@
-export const requiredViewPropertyIds: readonly ["property:name", "property:status"];
+export const requiredViewPropertyIds: readonly ["property:name"];
 
 export function createPropertyOrder(
   visiblePropertyIds?: readonly string[],

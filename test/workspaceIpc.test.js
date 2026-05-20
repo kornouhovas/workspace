@@ -125,7 +125,7 @@ test("workspace IPC handler serves default views and projection for selected sou
   }
 });
 
-test("workspace IPC handler keeps required Status visible for stale table views", async () => {
+test("workspace IPC handler preserves table views that hide Status", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");
   const viewStorePath = join(tempDirectory, "views.json");
@@ -157,7 +157,7 @@ test("workspace IPC handler keeps required Status visible for stale table views"
 
     assert.deepEqual(
       projectionResponse.visibleProperties.map((property) => property.id),
-      ["property:name", "property:status"],
+      ["property:name"],
     );
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });

@@ -9,7 +9,7 @@ import {
   WorkspaceViewError,
 } from "../src/workspaceViews.js";
 
-test("createDefaultView creates Board and Table views with required system properties", () => {
+test("createDefaultView creates Board and Table views with default system properties", () => {
   const board = createDefaultView({
     workspaceId: "workspace:root",
     viewType: "board",
@@ -51,7 +51,7 @@ test("createDefaultView rejects invalid view types", () => {
   );
 });
 
-test("normalizeViewDocument preserves known fields and required system properties", () => {
+test("normalizeViewDocument preserves known fields and visible property order after Name", () => {
   const view = normalizeViewDocument({
     id: "view:board",
     workspaceId: "workspace:root",
@@ -70,7 +70,7 @@ test("normalizeViewDocument preserves known fields and required system propertie
     updatedAt: "2026-05-14T00:00:00.000Z",
   });
 
-  assert.deepEqual(view.visiblePropertyIds, ["property:name", "property:status", "property:priority"]);
+  assert.deepEqual(view.visiblePropertyIds, ["property:name", "property:priority", "property:status"]);
   assert.equal(view.order, 40);
   assert.deepEqual(view.valueVisibility["property:priority"], {
     mode: "include",
@@ -79,11 +79,11 @@ test("normalizeViewDocument preserves known fields and required system propertie
   });
 });
 
-test("validateViewPatch rejects removal of required system properties", () => {
+test("validateViewPatch rejects removing the required Name property", () => {
   assert.throws(
     () => validateViewPatch({
       patch: {
-        visiblePropertyIds: ["property:name", "property:priority"],
+        visiblePropertyIds: ["property:status", "property:priority"],
       },
       propertyDefinitions: [
         { id: "property:name", type: "text", system: true },
@@ -95,6 +95,25 @@ test("validateViewPatch rejects removal of required system properties", () => {
     }),
     (error) => error instanceof WorkspaceViewError && error.code === "INVALID_PROPERTY_REFERENCE",
   );
+});
+
+test("validateViewPatch allows hiding the system Status property", () => {
+  assert.doesNotThrow(() => validateViewPatch({
+    patch: {
+      visiblePropertyIds: ["property:name", "property:priority"],
+      propertyOrder: {
+        "property:name": 10,
+        "property:priority": 20,
+      },
+    },
+    propertyDefinitions: [
+      { id: "property:name", type: "text", system: true },
+      { id: "property:status", type: "select", system: true },
+      { id: "property:priority", type: "select", system: false },
+    ],
+    selectValues: [],
+    statusValues: [{ id: "statusValue:no-status" }],
+  }));
 });
 
 test("validateViewPatch rejects propertyOrder keys outside visible properties", () => {
