@@ -143,6 +143,8 @@ const valueFilterGroupButtonClassName =
 const valueFilterItemClassName =
   "grid h-7 min-w-0 cursor-default select-none grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
 
+const propertyDragStartThreshold = 4;
+
 export function WorkspaceViewFilterMenu({
   view,
   dismissSignal,
@@ -334,27 +336,34 @@ export function WorkspaceViewFilterMenu({
 
     event.stopPropagation();
 
-    const previousCursor = document.body.style.cursor;
-    const previousUserSelect = document.body.style.userSelect;
-
-    document.body.style.cursor = "grabbing";
-    document.body.style.userSelect = "none";
-
     let frameId = 0;
     let pendingClientY = event.clientY;
     let moved = false;
+    let dragStarted = false;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
 
-    setActionsPropertyId(null);
-    setPropertyDragState({
-      propertyId,
-      startY: event.clientY,
-      currentY: event.clientY,
-      dropIndex: findPropertyDropIndex(event.clientY, propertyDragPreviewRows, propertyId),
-      rows: propertyDragPreviewRows,
-    });
+    function startPropertyDragPreview(clientY: number) {
+      dragStarted = true;
+      pendingClientY = clientY;
+      setActionsPropertyId(null);
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+      setPropertyDragState({
+        propertyId,
+        startY: event.clientY,
+        currentY: clientY,
+        dropIndex: findPropertyDropIndex(clientY, propertyDragPreviewRows, propertyId),
+        rows: propertyDragPreviewRows,
+      });
+    }
 
     function updateDraggedProperty() {
       frameId = 0;
+
+      if (!dragStarted) {
+        return;
+      }
 
       const dropIndex = findPropertyDropIndex(
         pendingClientY,
@@ -377,7 +386,16 @@ export function WorkspaceViewFilterMenu({
 
     function moveProperty(pointerEvent: PointerEvent) {
       pendingClientY = pointerEvent.clientY;
-      moved ||= Math.abs(pointerEvent.clientY - event.clientY) > 4;
+
+      if (!dragStarted && Math.abs(pointerEvent.clientY - event.clientY) <= propertyDragStartThreshold) {
+        return;
+      }
+
+      if (!dragStarted) {
+        startPropertyDragPreview(pointerEvent.clientY);
+      }
+
+      moved = true;
 
       if (frameId === 0) {
         frameId = window.requestAnimationFrame(updateDraggedProperty);
@@ -393,15 +411,18 @@ export function WorkspaceViewFilterMenu({
       const orderedPropertyIds = propertyDragPreviewRows.map((row) => row.propertyId);
       const nextPropertyIds = getPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
 
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
+      if (dragStarted) {
+        document.body.style.cursor = previousCursor;
+        document.body.style.userSelect = previousUserSelect;
+      }
       window.removeEventListener("pointermove", moveProperty);
       window.cancelAnimationFrame(frameId);
       window.removeEventListener("pointerup", finishPropertyDrag);
       setPropertyDragState(null);
 
       if (
-        moved
+        dragStarted
+        && moved
         && nextPropertyIds.join("\0") !== visibleViewProperties.map((property) => property.id).join("\0")
       ) {
         onReorderViewProperties(nextPropertyIds);

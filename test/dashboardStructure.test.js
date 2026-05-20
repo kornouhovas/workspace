@@ -350,6 +350,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /propertyDragState/);
   assert.match(viewFilterMenuSource, /data-view-property-row-id/);
   assert.match(viewFilterMenuSource, /startPointerPropertyDrag/);
+  assert.match(viewFilterMenuSource, /propertyDragStartThreshold/);
+  assert.match(viewFilterMenuSource, /dragStarted/);
+  assert.match(viewFilterMenuSource, /startPropertyDragPreview/);
+  assert.match(viewFilterMenuSource, /Math\.abs\(pointerEvent\.clientY - event\.clientY\) <= propertyDragStartThreshold/);
   assert.match(viewFilterMenuSource, /getPropertyDragPreviewRows/);
   assert.match(viewFilterMenuSource, /getPropertyDragStyle/);
   assert.match(viewFilterMenuSource, /requestAnimationFrame/);
