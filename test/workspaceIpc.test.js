@@ -760,6 +760,67 @@ test("workspace IPC handler creates duplicate property names as distinct id-back
   }
 });
 
+test("workspace IPC handler persists derived status value colors", async () => {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const rootPath = join(tempDirectory, "projects");
+  const configPath = join(tempDirectory, "settings.json");
+  const viewStorePath = join(tempDirectory, "views.json");
+  const propertyStorePath = join(tempDirectory, "properties.json");
+
+  try {
+    await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    await mkdir(join(rootPath, "Done", "Project Beta"), { recursive: true });
+    const handler = createWorkspaceIpcHandler({
+      configPath,
+      viewStorePath,
+      propertyStorePath,
+      chooseRoot: async () => rootPath,
+      now: () => "2026-05-15T10:00:00.000Z",
+    });
+
+    const rootResponse = await handler(null, "workspace.setRoot", {});
+    const workspaceId = rootResponse.root.workspaceId;
+    const initialProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-table",
+    });
+    const activeStatus = initialProjection.statusValues.find((statusValue) => statusValue.name === "Active");
+    assert.ok(activeStatus);
+
+    const updateResponse = await handler(null, "workspace.updateStatusValueColor", {
+      workspaceId,
+      statusValueId: activeStatus.id,
+      color: "orange",
+    });
+    assert.deepEqual(
+      [updateResponse.statusValue.id, updateResponse.statusValue.name, updateResponse.statusValue.color],
+      [activeStatus.id, "Active", "orange"],
+    );
+
+    const propertiesResponse = await handler(null, "workspace.listProperties", { workspaceId });
+    assert.deepEqual(
+      propertiesResponse.selectValues
+        .filter((value) => value.propertyId === "property:status")
+        .map((value) => [value.id, value.name, value.color]),
+      [[activeStatus.id, "Active", "orange"]],
+    );
+
+    const updatedProjection = await handler(null, "workspace.getViewProjection", {
+      workspaceId,
+      viewId: "view:default-table",
+    });
+    assert.deepEqual(
+      updatedProjection.statusValues
+        .filter((statusValue) => statusValue.name === "Active")
+        .map((statusValue) => [statusValue.id, statusValue.color]),
+      [[activeStatus.id, "orange"]],
+    );
+    assert.equal(updatedProjection.projection.rows[0].status.color, "orange");
+  } finally {
+    await rm(tempDirectory, { recursive: true, force: true });
+  }
+});
+
 test("workspace IPC handler shares object properties across workspaces for the same source folder", async () => {
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
   const rootPath = join(tempDirectory, "projects");

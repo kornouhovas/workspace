@@ -61,6 +61,11 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
     selectValueId: "selectValue:priority:high",
     patch: { name: "Critical" },
   });
+  await transport.request("workspace.updateStatusValueColor", {
+    workspaceId: "workspace:ops",
+    statusValueId: "statusValue:workspace-ops:active",
+    color: "orange",
+  });
   await transport.request("workspace.reorderSelectValues", {
     workspaceId: "workspace:ops",
     propertyId: "property:priority",
@@ -188,6 +193,16 @@ test("createSidecarHttpTransport maps service methods to sidecar routes", async 
         workspaceId: "workspace:ops",
         selectValueId: "selectValue:priority:high",
         patch: { name: "Critical" },
+      },
+    },
+    {
+      url: "http://127.0.0.1:5000/workspace/status-values",
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: {
+        workspaceId: "workspace:ops",
+        statusValueId: "statusValue:workspace-ops:active",
+        color: "orange",
       },
     },
     {

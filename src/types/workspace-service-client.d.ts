@@ -19,6 +19,7 @@ declare module "@/workspaceServiceClient.js" {
     deleteProperty(payload: Record<string, unknown>): Promise<unknown>;
     createSelectValue(payload: Record<string, unknown>): Promise<unknown>;
     updateSelectValue(payload: Record<string, unknown>): Promise<unknown>;
+    updateStatusValueColor(payload: Record<string, unknown>): Promise<unknown>;
     reorderSelectValues(payload: Record<string, unknown>): Promise<unknown>;
     deleteSelectValue(payload: Record<string, unknown>): Promise<unknown>;
     updateProjectPropertyValue(payload: Record<string, unknown>): Promise<unknown>;

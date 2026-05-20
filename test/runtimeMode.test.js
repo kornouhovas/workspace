@@ -94,6 +94,7 @@ test("workspace runs as an Electron-only app shell", async () => {
     "workspace.deleteProperty",
     "workspace.createSelectValue",
     "workspace.updateSelectValue",
+    "workspace.updateStatusValueColor",
     "workspace.reorderSelectValues",
     "workspace.deleteSelectValue",
     "workspace.updateProjectPropertyValue",

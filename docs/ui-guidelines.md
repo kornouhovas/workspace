@@ -130,7 +130,7 @@ Settings owns:
 - project source folder selection;
 - folder tree role configuration;
 - Workspace-level configuration when relevant;
-- property and value configuration.
+- color configuration for derived `Status` values.
 
 Rules:
 
@@ -138,10 +138,9 @@ Rules:
 - Folder role controls should use clear segmented or select controls for `group`, `status`, and `project`.
 - Settings tree must make parent/child relationships clear.
 - Role changes should show loading and error states because they affect project discovery.
-- Destructive actions such as deleting properties or values require confirmation.
-- Property management should support create, rename, delete, hide/show, and reorder.
-- Select value management should support create, rename, color, delete, hide/show, and reorder.
-- Settings must show whether a property/value is deleted, hidden globally, hidden in the active view, or filtered by value visibility.
+- Settings property controls should show only system `Status` and its derived values from folder roles.
+- Settings may change colors for `Status` values; it must not create, rename, delete, hide, or reorder custom properties.
+- Custom property creation, rename, delete, hide/show, reorder, select value management, and view-level value filters belong to the Table/Project Detail property menus and `Customize Columns`.
 - Settings must not imply that deleting a Workspace deletes files on disk.
 
 ## Component Rules

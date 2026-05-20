@@ -210,13 +210,17 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceProp
   }
 
   if (property.id === "property:status") {
-    return project.status.name;
+    return project.status;
   }
 
   return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
 }
 
 function stringifyPropertyValue(value: unknown) {
+  if (value && typeof value === "object" && !Array.isArray(value) && "name" in value) {
+    return String((value as { readonly name?: unknown }).name || "");
+  }
+
   if (Array.isArray(value)) {
     return value.filter((item) => typeof item === "string").join(", ");
   }
@@ -382,10 +386,14 @@ function ProjectPropertyValueDisplay({
 }) {
   if (property.id === "property:status") {
     const label = stringifyPropertyValue(value);
+    const statusValue = value && typeof value === "object" && !Array.isArray(value)
+      ? value as { readonly color?: unknown }
+      : null;
+    const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
     return label
       ? (
         <Badge variant="secondary" className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium">
-          <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+          <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
           <span className="truncate">{label}</span>
         </Badge>
       )

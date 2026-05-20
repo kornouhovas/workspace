@@ -123,14 +123,15 @@ Rules:
 
 ### Status Value
 
-Status values are derived response values, not stored documents.
+Status values are derived response values. Optional `color` metadata may be stored locally for display, but status identity, name, and membership remain derived from folder roles.
 
 ```json
 {
   "id": "statusValue:folderRole:workspace-main:active",
   "name": "Active",
   "relativePath": "Active",
-  "source": "folderRole"
+  "source": "folderRole",
+  "color": "orange"
 }
 ```
 

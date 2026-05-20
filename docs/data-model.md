@@ -381,6 +381,8 @@ Fields:
 Business rules:
 
 - Select values belong to one property.
+- For system `Status`, `select_values` may store only UI color metadata for derived status values. These records use `propertyId: "property:status"`, `id` equal to the derived status value id, and a `name` mirrored from the current derived status value.
+- Status value metadata does not create, rename, delete, hide, or reorder status values; status values remain derived from folder roles.
 - Deleting a select value requires confirmation if used by any project.
 - View-level value visibility for `select` and `multi-select` properties references select value ids.
 - Hidden select values are not the same as deleted values.

@@ -142,6 +142,21 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
     },
   );
   assert.deepEqual(
+    await client.updateStatusValueColor({
+      workspaceId: "workspace:ops",
+      statusValueId: "statusValue:workspace-ops:active",
+      color: "orange",
+    }),
+    {
+      method: "workspace.updateStatusValueColor",
+      payload: {
+        workspaceId: "workspace:ops",
+        statusValueId: "statusValue:workspace-ops:active",
+        color: "orange",
+      },
+    },
+  );
+  assert.deepEqual(
     await client.reorderSelectValues({
       workspaceId: "workspace:ops",
       propertyId: "property:priority",
@@ -382,6 +397,14 @@ test("WorkspaceServiceClient sends named service methods through transport", asy
         workspaceId: "workspace:ops",
         selectValueId: "selectValue:priority:high",
         patch: { name: "Critical" },
+      },
+    },
+    {
+      method: "workspace.updateStatusValueColor",
+      payload: {
+        workspaceId: "workspace:ops",
+        statusValueId: "statusValue:workspace-ops:active",
+        color: "orange",
       },
     },
     {

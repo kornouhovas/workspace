@@ -54,7 +54,11 @@ function formatPropertyValue(
 }
 
 function renderBoardStatusValue(value: unknown) {
-  const label = value == null ? "" : String(value);
+  const statusValue = value && typeof value === "object" && !Array.isArray(value)
+    ? value as { readonly name?: unknown; readonly color?: unknown }
+    : null;
+  const label = statusValue ? String(statusValue.name || "") : value == null ? "" : String(value);
+  const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
 
   if (!label) {
     return null;
@@ -65,7 +69,7 @@ function renderBoardStatusValue(value: unknown) {
       variant="secondary"
       className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
     >
-      <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+      <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
       <span className="truncate">{label}</span>
     </Badge>
   );
@@ -110,7 +114,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
                         <div className="min-w-0">
                           <h4 className="truncate text-sm font-medium leading-snug">{project.name}</h4>
                         </div>
-                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status.name)}</div>
+                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status)}</div>
                       </div>
                       {cardProperties.length > 0 ? (
                         <dl className="grid gap-2">

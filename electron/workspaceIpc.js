@@ -40,6 +40,7 @@ import {
 } from "../src/workspaceViews.js";
 
 const ipcChannel = "workspace:request";
+const statusValueColorTokens = new Set(["gray", "red", "orange", "yellow", "green", "blue", "purple"]);
 
 const supportedMethods = new Set([
   "workspace.getRoot",
@@ -56,6 +57,7 @@ const supportedMethods = new Set([
   "workspace.deleteProperty",
   "workspace.createSelectValue",
   "workspace.updateSelectValue",
+  "workspace.updateStatusValueColor",
   "workspace.reorderSelectValues",
   "workspace.deleteSelectValue",
   "workspace.updateProjectPropertyValue",
@@ -348,6 +350,30 @@ export function createWorkspaceIpcHandler(options = {}) {
       });
     }
 
+    if (method === "workspace.updateStatusValueColor") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({
+        viewStore,
+        workspaceId,
+        rootPath,
+      });
+      const settings = await readWorkspaceSettings(configPath);
+      const statusValues = await getStatusValues({
+        rootPath,
+        workspaceId,
+        propertyStore,
+        rules: normalizeFolderRules(settings.folderRules),
+      });
+      return updateStatusValueColorResult({
+        body,
+        workspaceId,
+        propertyScopeId: sourceFolderId,
+        propertyStore,
+        statusValues,
+        now,
+      });
+    }
+
     if (method === "workspace.reorderSelectValues") {
       const workspaceId = requirePayloadString(body, "workspaceId");
       await requireSourceWorkspace({
@@ -569,6 +595,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       const statusValues = await getStatusValues({
         rootPath,
         workspaceId,
+        propertyStore,
         rules: normalizeFolderRules(settings.folderRules),
       });
       return unwrapBackendResponse(await createUpdateViewResponse({
@@ -597,6 +624,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         projectsAndStatusValues ||= getProjectsAndStatusValues({
           rootPath,
           workspaceId,
+          propertyStore,
           rules,
         });
         return projectsAndStatusValues;
@@ -773,7 +801,7 @@ async function createWorkspaceDocument({
   });
 }
 
-async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} }) {
+async function getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {} }) {
   const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
   const sourceFolderId = createWorkspaceId(rootPath);
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
@@ -781,7 +809,11 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} })
     rootPath,
     folders: scan.folders || [],
   });
-  const statusValues = createStatusValues(sourceFolderId, workspaceObjects.objects || []);
+  const statusValues = await createStatusValuesWithColors({
+    workspaceId: sourceFolderId,
+    objects: workspaceObjects.objects || [],
+    propertyStore,
+  });
   const statusValueByName = new Map(statusValues.map((statusValue) => [statusValue.name, statusValue]));
 
   return {
@@ -803,8 +835,8 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId, rules = {} })
   };
 }
 
-async function getStatusValues({ rootPath, workspaceId, rules = {} }) {
-  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, rules });
+async function getStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {} }) {
+  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
   return statusValues;
 }
 
@@ -1077,6 +1109,40 @@ async function updateSelectValueResult({ body, workspaceId, propertyScopeId, pro
   };
 }
 
+async function updateStatusValueColorResult({ body, workspaceId, propertyScopeId, propertyStore, statusValues, now }) {
+  const statusValueId = requirePayloadString(body, "statusValueId");
+  const statusValue = statusValues.find((value) => value.id === statusValueId);
+  if (!statusValue) {
+    throw createWorkspaceServiceError("STATUS_VALUE_NOT_FOUND", "Status value was not found.", "statusValueId");
+  }
+
+  const color = normalizeStatusValueColor(body.color ?? normalizePatchObject(body.patch).color);
+  const existingValue = await propertyStore.getSelectValue(propertyScopeId, statusValueId);
+  const timestamp = now();
+  const order = existingValue?.order ?? ((statusValues.findIndex((value) => value.id === statusValueId) + 1) * 10);
+  const savedValue = await propertyStore.saveSelectValue(normalizeSelectValue({
+    ...existingValue,
+    id: statusValue.id,
+    workspaceId: propertyScopeId,
+    propertyId: PROPERTY_STATUS_ID,
+    name: statusValue.name,
+    color,
+    hidden: false,
+    order,
+    createdAt: existingValue?.createdAt || timestamp,
+    updatedAt: timestamp,
+    deletedAt: null,
+  }, { workspaceId: propertyScopeId, propertyId: PROPERTY_STATUS_ID, now: timestamp }));
+
+  return {
+    workspaceId,
+    statusValue: {
+      ...statusValue,
+      color: savedValue.color,
+    },
+  };
+}
+
 async function reorderSelectValuesResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
   const propertyId = requirePayloadString(body, "propertyId");
   await requireSelectableProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
@@ -1160,7 +1226,7 @@ async function updateProjectPropertyValueResult({ body, workspaceId, propertySco
   const projectId = requirePayloadString(body, "projectId");
   const propertyId = requirePayloadString(body, "propertyId");
   const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
-  const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, rules });
+  const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
   const project = projects.find((item) => item.id === projectId);
 
   if (!project) {
@@ -1314,6 +1380,15 @@ function validateCustomDocumentOrder(orderedIds, existingDocuments, field) {
 
 function normalizePatchObject(patch) {
   return patch && typeof patch === "object" && !Array.isArray(patch) ? patch : {};
+}
+
+function normalizeStatusValueColor(value) {
+  const color = typeof value === "string" ? value.trim() : "";
+  if (!statusValueColorTokens.has(color)) {
+    throw createWorkspaceServiceError("VALIDATION_FAILED", "Status value color is invalid.", "color");
+  }
+
+  return color;
 }
 
 function requireNonEmptyText(value, field) {
@@ -1489,6 +1564,20 @@ function toWorkspaceListItem(workspace) {
     name: workspace.name,
     order: workspace.order,
   };
+}
+
+async function createStatusValuesWithColors({ workspaceId, objects, propertyStore }) {
+  const statusValues = createStatusValues(workspaceId, objects);
+  if (!propertyStore) {
+    return statusValues;
+  }
+
+  const colorValues = await propertyStore.listSelectValues(workspaceId, { propertyId: PROPERTY_STATUS_ID });
+  const colorByStatusValueId = new Map(colorValues.map((value) => [value.id, value.color]));
+  return statusValues.map((statusValue) => {
+    const color = colorByStatusValueId.get(statusValue.id);
+    return color ? { ...statusValue, color } : statusValue;
+  });
 }
 
 function createStatusValues(workspaceId, objects) {

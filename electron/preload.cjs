@@ -15,6 +15,7 @@ const allowedMethods = new Set([
   "workspace.deleteProperty",
   "workspace.createSelectValue",
   "workspace.updateSelectValue",
+  "workspace.updateStatusValueColor",
   "workspace.reorderSelectValues",
   "workspace.deleteSelectValue",
   "workspace.updateProjectPropertyValue",

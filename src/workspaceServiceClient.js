@@ -63,6 +63,10 @@ export class WorkspaceServiceClient {
     return this.request("workspace.updateSelectValue", payload);
   }
 
+  updateStatusValueColor(payload) {
+    return this.request("workspace.updateStatusValueColor", payload);
+  }
+
   reorderSelectValues(payload) {
     return this.request("workspace.reorderSelectValues", payload);
   }

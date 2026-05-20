@@ -73,6 +73,7 @@ export type WorkspaceProjectionResponse = {
     readonly name: string;
     readonly relativePath: string | null;
     readonly source: string;
+    readonly color?: string;
   }[];
   readonly projection:
     | {

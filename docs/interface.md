@@ -80,7 +80,7 @@ Settings contains:
 
 - Source folder section;
 - Folder role tree section;
-- later Workspace/property/value configuration sections.
+- Status values section for the system `Status` property.
 
 ### Source Folder Section
 
@@ -102,6 +102,16 @@ Behavior:
 ### Folder Role Tree
 
 The Folder role tree shows the selected source folder structure for role configuration.
+
+### Status Values Section
+
+The Status values section shows only the system `Status` property.
+
+- Status values are derived from folders marked as `status` in the folder role tree.
+- Each status value shows its display name and current dot color.
+- The user can change the dot color for each status value.
+- The user cannot create, rename, delete, hide, or reorder custom properties in Settings.
+- Custom property management stays in Table, Project Detail Panel, `Customize Columns`, and property menus.
 
 Initial tree display:
 

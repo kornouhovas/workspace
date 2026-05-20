@@ -1366,6 +1366,26 @@ export default function App() {
     }
   }
 
+  async function handleColorStatusValue(statusValueId: string, color: string) {
+    if (!state.workspaceId) {
+      return;
+    }
+
+    try {
+      await workspaceClient.updateStatusValueColor({
+        workspaceId: state.workspaceId,
+        statusValueId,
+        color,
+      });
+      await refreshPropertyCatalog();
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      toast.error("Could not update status color", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function handleHideSelectValue(selectValueId: string, hidden: boolean) {
     if (!state.workspaceId) {
       return;
@@ -1667,22 +1687,12 @@ export default function App() {
                   <WorkspaceSettingsView
                     sourceFolder={sourceFolder}
                     folderRoleTree={folderRoleTree}
-                    properties={settingsProperties}
+                    statusValues={statusValues}
                     selectValues={settingsSelectValues}
                     onSelectFolder={handleSelectFolder}
                     onCloseSettings={openWorkspaceSurface}
                     onFolderRoleChange={handleFolderRoleChange}
-                    onCreateProperty={handleCreateProperty}
-                    onRenameProperty={handleRenameProperty}
-                    onHideProperty={handleHideProperty}
-                    onDeleteProperty={handleDeleteProperty}
-                    onReorderProperties={handleReorderProperties}
-                    onCreateSelectValue={handleCreateSelectValue}
-                    onRenameSelectValue={handleRenameSelectValue}
-                    onColorSelectValue={handleColorSelectValue}
-                    onHideSelectValue={handleHideSelectValue}
-                    onDeleteSelectValue={handleDeleteSelectValue}
-                    onReorderSelectValues={handleReorderSelectValues}
+                    onColorStatusValue={handleColorStatusValue}
                     selectingFolder={selectingFolder}
                   />
                 </>

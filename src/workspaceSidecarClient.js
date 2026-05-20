@@ -62,6 +62,9 @@ function getSidecarRoute(method, payload = {}) {
   if (method === "workspace.updateSelectValue") {
     return { httpMethod: "PATCH", path: "/workspace/select-values" };
   }
+  if (method === "workspace.updateStatusValueColor") {
+    return { httpMethod: "PATCH", path: "/workspace/status-values" };
+  }
   if (method === "workspace.reorderSelectValues") {
     return { httpMethod: "PUT", path: "/workspace/select-values/reorder" };
   }

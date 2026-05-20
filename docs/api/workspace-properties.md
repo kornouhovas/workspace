@@ -37,6 +37,7 @@ Rules:
 
 - `property:name` and `property:status` are system properties.
 - System properties are returned by property list methods but cannot be renamed, deleted, reordered below custom properties, or edited as stored custom values.
+- `property:status` may persist color metadata for derived status values through `workspace.updateStatusValueColor`; the status values themselves remain derived from folder roles.
 - Custom property definitions are Workspace-scoped.
 - Custom property values are project-scoped and Workspace-scoped.
 - `Select` and `Multi-select` options are stored as `selectValue` documents.
@@ -52,6 +53,7 @@ Rules:
 - `PROPERTY_SYSTEM_LOCKED`: attempted to mutate a system property in a forbidden way.
 - `PROPERTY_TYPE_INVALID`: property type is not supported.
 - `SELECT_VALUE_NOT_FOUND`: select value id does not resolve to an active value for the property.
+- `STATUS_VALUE_NOT_FOUND`: status value id does not resolve to a derived status value in the current Workspace projection.
 - `SELECT_VALUE_IN_USE`: delete requires confirmation because the value is used by at least one project.
 - `PROPERTY_VALUE_INVALID`: value does not match property type.
 - `VALIDATION_FAILED`: request payload is structurally invalid.
@@ -364,6 +366,42 @@ Response:
   }
 }
 ```
+
+### `workspace.updateStatusValueColor`
+
+Recolors a derived system `Status` value. This method only persists UI color metadata; it does not create, rename, delete, hide, or reorder status values.
+
+Request:
+
+```json
+{
+  "workspaceId": "workspace:ops",
+  "statusValueId": "statusValue:folderRole:workspace-main:active",
+  "color": "orange"
+}
+```
+
+Response:
+
+```json
+{
+  "workspaceId": "workspace:ops",
+  "statusValue": {
+    "id": "statusValue:folderRole:workspace-main:active",
+    "name": "Active",
+    "relativePath": "Active",
+    "source": "folderRole",
+    "color": "orange"
+  }
+}
+```
+
+Validation:
+
+- `workspaceId`, `statusValueId`, and `color` are required.
+- `statusValueId` must match a derived status value from the current Workspace source folder and folder roles.
+- `color` must be one of the supported select/status color tokens.
+- The persisted metadata is stored locally with `propertyId: "property:status"` and `id` equal to the derived status value id.
 
 ### `workspace.reorderSelectValues`
 

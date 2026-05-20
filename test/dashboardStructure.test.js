@@ -110,7 +110,6 @@ test("renderer composes the workspace product shell", async () => {
     viewFilterMenuSource,
     selectValueEditorSource,
     projectDetailPanelSource,
-    propertyControlsSource,
   ]) {
     assert.match(menuSource, /from "@\/components\/workspace\/menu-styles"/);
     assert.match(menuSource, /workspaceMenuContentClassName/);
@@ -270,35 +269,24 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(settingsViewSource, /project/);
   assert.match(settingsViewSource, /folderRoleTree/);
   assert.match(settingsViewSource, /WorkspacePropertyControls/);
-  assert.match(settingsViewSource, /properties=\{properties\}/);
+  assert.match(settingsViewSource, /statusValues=\{statusValues\}/);
   assert.match(settingsViewSource, /selectValues=\{selectValues\}/);
-  assert.match(settingsViewSource, /onCreateProperty/);
+  assert.match(settingsViewSource, /onColorStatusValue/);
   assert.match(propertyControlsSource, /WorkspacePropertyControls/);
-  assert.match(propertyControlsSource, /Add property/);
-  assert.match(propertyControlsSource, /Text/);
-  assert.match(propertyControlsSource, /Numbers/);
-  assert.match(propertyControlsSource, /Date/);
-  assert.match(propertyControlsSource, /Select/);
-  assert.match(propertyControlsSource, /Multi-select/);
-  assert.match(propertyControlsSource, /Rename property/);
-  assert.match(propertyControlsSource, /Hide property/);
-  assert.match(propertyControlsSource, /Show property/);
-  assert.match(propertyControlsSource, /Delete property/);
-  assert.match(propertyControlsSource, /GripVerticalIcon/);
-  assert.match(propertyControlsSource, /DropdownMenu/);
-  assert.match(propertyControlsSource, /<Input/);
+  assert.match(propertyControlsSource, /Status values/);
+  assert.match(propertyControlsSource, /Status is derived from folder roles/);
+  assert.match(propertyControlsSource, /onColorStatusValue/);
   assert.match(propertyControlsSource, /<Select/);
-  assert.match(propertyControlsSource, /Add select value/);
-  assert.match(propertyControlsSource, /Rename select value/);
   assert.match(propertyControlsSource, /Color/);
-  assert.match(propertyControlsSource, /Hide select value/);
-  assert.match(propertyControlsSource, /Show select value/);
-  assert.match(propertyControlsSource, /Delete select value/);
   assert.match(propertyControlsSource, /valueColorOptions/);
-  assert.match(propertyControlsSource, /isSelectProperty/);
+  assert.doesNotMatch(propertyControlsSource, /Add property/);
+  assert.doesNotMatch(propertyControlsSource, /Property name/);
+  assert.doesNotMatch(propertyControlsSource, /Add select value/);
+  assert.doesNotMatch(propertyControlsSource, /Rename select value/);
+  assert.doesNotMatch(propertyControlsSource, /Delete select value/);
   assert.match(appSource, /workspaceClient\.createSelectValue/);
   assert.match(appSource, /normalizeSelectValue\(response\.selectValue/);
-  assert.match(appSource, /onCreateSelectValue=\{handleCreateSelectValue\}/);
+  assert.match(appSource, /workspaceClient\.updateStatusValueColor/);
   assert.match(appSource, /workspaceClient\.updateSelectValue/);
   assert.match(appSource, /workspaceClient\.deleteSelectValue/);
   assert.match(appSource, /workspaceClient\.reorderSelectValues/);

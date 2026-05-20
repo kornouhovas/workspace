@@ -160,7 +160,7 @@ function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMock
   }
 
   if (property.id === "property:status") {
-    return project.status?.name
+    return project.status
       || backendProject.folderStatus
       || project.propertyValues?.["property:status"]
       || "";
@@ -281,7 +281,11 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
 }
 
 function renderTableStatusValue(value: unknown) {
-  const label = value == null ? "" : String(value);
+  const statusValue = value && typeof value === "object" && !Array.isArray(value)
+    ? value as { readonly name?: unknown; readonly color?: unknown }
+    : null;
+  const label = statusValue ? String(statusValue.name || "") : value == null ? "" : String(value);
+  const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
 
   if (!label) {
     return "";
@@ -293,7 +297,7 @@ function renderTableStatusValue(value: unknown) {
         variant="secondary"
         className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
       >
-        <span className="size-2 rounded-full bg-muted-foreground/70" aria-hidden="true" />
+        <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
         <span className="truncate">{label}</span>
       </Badge>
     </div>

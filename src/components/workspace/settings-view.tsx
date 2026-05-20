@@ -4,14 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import {
-  WorkspacePropertyControls,
-  type WorkspaceCustomPropertyType,
-} from "@/components/workspace/property-controls";
+import { WorkspacePropertyControls } from "@/components/workspace/property-controls";
 import { ChevronDownIcon, ChevronRightIcon } from "@/lib/lucide-icons";
 import type {
   WorkspaceFolderRoleNode,
-  WorkspacePropertyDefinitionState,
+  WorkspaceProjectionResponse,
   WorkspaceSelectValueState,
 } from "@/workspaceAppState";
 
@@ -24,22 +21,12 @@ type WorkspaceSourceFolder = {
 type WorkspaceSettingsViewProps = {
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
-  readonly properties: readonly WorkspacePropertyDefinitionState[];
+  readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onSelectFolder: () => void;
   readonly onCloseSettings: () => void;
   readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
-  readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;
-  readonly onRenameProperty: (propertyId: string, name: string) => void;
-  readonly onHideProperty: (propertyId: string, hidden: boolean) => void;
-  readonly onDeleteProperty: (propertyId: string) => void;
-  readonly onReorderProperties: (orderedPropertyIds: readonly string[]) => void;
-  readonly onCreateSelectValue: (propertyId: string, input: { name: string; color: string }) => void;
-  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
-  readonly onColorSelectValue: (selectValueId: string, color: string) => void;
-  readonly onHideSelectValue: (selectValueId: string, hidden: boolean) => void;
-  readonly onDeleteSelectValue: (selectValueId: string) => void;
-  readonly onReorderSelectValues: (propertyId: string, orderedSelectValueIds: readonly string[]) => void;
+  readonly onColorStatusValue: (statusValueId: string, color: string) => void;
   readonly selectingFolder?: boolean;
 };
 
@@ -129,22 +116,12 @@ function FolderRoleNode({
 export function WorkspaceSettingsView({
   sourceFolder,
   folderRoleTree,
-  properties,
+  statusValues,
   selectValues,
   onSelectFolder,
   onCloseSettings,
   onFolderRoleChange,
-  onCreateProperty,
-  onRenameProperty,
-  onHideProperty,
-  onDeleteProperty,
-  onReorderProperties,
-  onCreateSelectValue,
-  onRenameSelectValue,
-  onColorSelectValue,
-  onHideSelectValue,
-  onDeleteSelectValue,
-  onReorderSelectValues,
+  onColorStatusValue,
   selectingFolder = false,
 }: WorkspaceSettingsViewProps) {
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -221,19 +198,9 @@ export function WorkspaceSettingsView({
       </div>
       <div className="lg:col-span-2">
         <WorkspacePropertyControls
-          properties={properties}
+          statusValues={statusValues}
           selectValues={selectValues}
-          onCreateProperty={onCreateProperty}
-          onRenameProperty={onRenameProperty}
-          onHideProperty={onHideProperty}
-          onDeleteProperty={onDeleteProperty}
-          onReorderProperties={onReorderProperties}
-          onCreateSelectValue={onCreateSelectValue}
-          onRenameSelectValue={onRenameSelectValue}
-          onColorSelectValue={onColorSelectValue}
-          onHideSelectValue={onHideSelectValue}
-          onDeleteSelectValue={onDeleteSelectValue}
-          onReorderSelectValues={onReorderSelectValues}
+          onColorStatusValue={onColorStatusValue}
         />
       </div>
     </section>
