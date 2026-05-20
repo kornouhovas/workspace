@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"strconv"
@@ -703,7 +704,7 @@ func normalizeProjectPropertyValueDocument(ctx context.Context, store *workspace
 func normalizePropertyValueByType(ctx context.Context, store *workspacestore.Store, workspaceID string, propertyID string, propertyType string, value any) (any, error) {
 	switch propertyType {
 	case "number":
-		return normalizeNumberPropertyValue(value), nil
+		return normalizeNumberPropertyValue(value)
 	case "date":
 		return normalizeDatePropertyValue(value), nil
 	case "select":
@@ -737,26 +738,238 @@ func normalizePropertyValueByType(ctx context.Context, store *workspacestore.Sto
 	}
 }
 
-func normalizeNumberPropertyValue(value any) any {
+func normalizeNumberPropertyValue(value any) (any, error) {
 	if value == nil {
-		return nil
+		return nil, nil
 	}
 	switch typedValue := value.(type) {
 	case float64:
-		return typedValue
+		if !isFiniteNumber(typedValue) {
+			return nil, nil
+		}
+		return typedValue, nil
 	case string:
 		trimmedValue := strings.TrimSpace(typedValue)
 		if trimmedValue == "" {
-			return nil
+			return nil, nil
+		}
+		if strings.HasPrefix(trimmedValue, "=") {
+			return normalizeNumberExpressionPropertyValue(trimmedValue)
 		}
 		number, err := strconv.ParseFloat(trimmedValue, 64)
-		if err != nil {
-			return nil
+		if err != nil || !isFiniteNumber(number) {
+			return nil, nil
 		}
-		return number
+		return number, nil
+	case map[string]any:
+		expression, ok := typedValue["expression"].(string)
+		if !ok {
+			return nil, nil
+		}
+		return normalizeNumberExpressionPropertyValue(expression)
 	default:
-		return nil
+		return nil, nil
 	}
+}
+
+func normalizeNumberExpressionPropertyValue(expression string) (any, error) {
+	trimmedExpression := strings.TrimSpace(expression)
+	if !strings.HasPrefix(trimmedExpression, "=") {
+		return nil, nil
+	}
+
+	value, err := evaluateNumberExpression(strings.TrimPrefix(trimmedExpression, "="))
+	if err != nil || !isFiniteNumber(value) {
+		return nil, errors.New("Invalid number expression.")
+	}
+
+	return map[string]any{
+		"expression": trimmedExpression,
+		"value":      value,
+	}, nil
+}
+
+type numberExpressionParser struct {
+	input string
+	index int
+}
+
+func evaluateNumberExpression(expression string) (float64, error) {
+	parser := &numberExpressionParser{input: expression}
+	value, err := parser.parseExpression()
+	if err != nil {
+		return 0, err
+	}
+	parser.skipWhitespace()
+	if parser.index != len(parser.input) {
+		return 0, errors.New("Invalid number expression.")
+	}
+	return value, nil
+}
+
+func (parser *numberExpressionParser) parseExpression() (float64, error) {
+	value, err := parser.parseTerm()
+	if err != nil {
+		return 0, err
+	}
+
+	for {
+		parser.skipWhitespace()
+		if parser.index >= len(parser.input) {
+			return value, nil
+		}
+
+		operator := parser.input[parser.index]
+		if operator != '+' && operator != '-' {
+			return value, nil
+		}
+
+		parser.index++
+		nextValue, err := parser.parseTerm()
+		if err != nil {
+			return 0, err
+		}
+		if operator == '+' {
+			value += nextValue
+		} else {
+			value -= nextValue
+		}
+	}
+}
+
+func (parser *numberExpressionParser) parseTerm() (float64, error) {
+	value, err := parser.parseFactor()
+	if err != nil {
+		return 0, err
+	}
+
+	for {
+		parser.skipWhitespace()
+		if parser.index >= len(parser.input) {
+			return value, nil
+		}
+
+		operator := parser.input[parser.index]
+		if operator != '*' && operator != '/' {
+			return value, nil
+		}
+
+		parser.index++
+		nextValue, err := parser.parseFactor()
+		if err != nil {
+			return 0, err
+		}
+		if operator == '*' {
+			value *= nextValue
+			continue
+		}
+		if nextValue == 0 {
+			return 0, errors.New("Invalid number expression.")
+		}
+		value /= nextValue
+	}
+}
+
+func (parser *numberExpressionParser) parseFactor() (float64, error) {
+	parser.skipWhitespace()
+	if parser.index >= len(parser.input) {
+		return 0, errors.New("Invalid number expression.")
+	}
+
+	operator := parser.input[parser.index]
+	if operator == '+' || operator == '-' {
+		parser.index++
+		value, err := parser.parseFactor()
+		if err != nil {
+			return 0, err
+		}
+		if operator == '-' {
+			return -value, nil
+		}
+		return value, nil
+	}
+
+	if parser.input[parser.index] == '(' {
+		parser.index++
+		value, err := parser.parseExpression()
+		if err != nil {
+			return 0, err
+		}
+		parser.skipWhitespace()
+		if parser.index >= len(parser.input) || parser.input[parser.index] != ')' {
+			return 0, errors.New("Invalid number expression.")
+		}
+		parser.index++
+		return value, nil
+	}
+
+	return parser.parseNumber()
+}
+
+func (parser *numberExpressionParser) parseNumber() (float64, error) {
+	parser.skipWhitespace()
+	startIndex := parser.index
+	digitFound := false
+
+	for parser.index < len(parser.input) && isASCIIDigit(parser.input[parser.index]) {
+		parser.index++
+		digitFound = true
+	}
+
+	if parser.index < len(parser.input) && parser.input[parser.index] == '.' {
+		parser.index++
+		for parser.index < len(parser.input) && isASCIIDigit(parser.input[parser.index]) {
+			parser.index++
+			digitFound = true
+		}
+	}
+
+	if !digitFound {
+		return 0, errors.New("Invalid number expression.")
+	}
+
+	if parser.index < len(parser.input) && (parser.input[parser.index] == 'e' || parser.input[parser.index] == 'E') {
+		exponentIndex := parser.index
+		parser.index++
+		if parser.index < len(parser.input) && (parser.input[parser.index] == '+' || parser.input[parser.index] == '-') {
+			parser.index++
+		}
+
+		exponentDigitFound := false
+		for parser.index < len(parser.input) && isASCIIDigit(parser.input[parser.index]) {
+			parser.index++
+			exponentDigitFound = true
+		}
+
+		if !exponentDigitFound {
+			parser.index = exponentIndex
+		}
+	}
+
+	value, err := strconv.ParseFloat(parser.input[startIndex:parser.index], 64)
+	if err != nil || !isFiniteNumber(value) {
+		return 0, errors.New("Invalid number expression.")
+	}
+	return value, nil
+}
+
+func (parser *numberExpressionParser) skipWhitespace() {
+	for parser.index < len(parser.input) {
+		switch parser.input[parser.index] {
+		case ' ', '\n', '\r', '\t':
+			parser.index++
+		default:
+			return
+		}
+	}
+}
+
+func isASCIIDigit(value byte) bool {
+	return value >= '0' && value <= '9'
+}
+
+func isFiniteNumber(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
 }
 
 func normalizeDatePropertyValue(value any) any {

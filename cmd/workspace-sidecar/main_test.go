@@ -200,6 +200,65 @@ func TestUpdateProjectPropertyValueNormalizesAndPreservesCreatedAt(t *testing.T)
 	}
 }
 
+func TestUpdateProjectPropertyValueNormalizesNumberExpression(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx)
+	if err := store.UpsertPropertyDefinition(ctx, workspacestore.PropertyDefinitionDocument{
+		ID:           "property:budget",
+		WorkspaceID:  "workspace:ops",
+		Name:         "Budget",
+		PropertyType: "number",
+		Order:        10,
+		CreatedAt:    "2026-05-15T09:00:00.000Z",
+		UpdatedAt:    "2026-05-15T09:00:00.000Z",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := performJSONRequest(t, newWorkspaceMux(store), http.MethodPut, "/workspace/property-values", map[string]any{
+		"workspaceId": "workspace:ops",
+		"projectId":   "project:alpha",
+		"propertyId":  "property:budget",
+		"value":       "=20/4+1",
+	})
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected expression value update to succeed, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+
+	var response struct {
+		Value map[string]any `json:"value"`
+	}
+	decodeResponse(t, recorder, &response)
+	if response.Value["expression"] != "=20/4+1" || response.Value["value"] != float64(6) {
+		t.Fatalf("expected expression response value, got %#v", response.Value)
+	}
+
+	values, err := store.ListPropertyValues(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(values) != 1 {
+		t.Fatalf("expected one value after expression update, got %#v", values)
+	}
+	expressionValue, ok := values[0].Value.(map[string]any)
+	if !ok {
+		t.Fatalf("expected stored expression object, got %#v", values[0].Value)
+	}
+	if expressionValue["expression"] != "=20/4+1" || expressionValue["value"] != float64(6) {
+		t.Fatalf("expected stored expression value, got %#v", expressionValue)
+	}
+
+	bad := performJSONRequest(t, newWorkspaceMux(store), http.MethodPut, "/workspace/property-values", map[string]any{
+		"workspaceId": "workspace:ops",
+		"projectId":   "project:alpha",
+		"propertyId":  "property:budget",
+		"value":       "=1/0",
+	})
+	if bad.Code != http.StatusBadRequest {
+		t.Fatalf("expected invalid expression to be rejected, got %d: %s", bad.Code, bad.Body.String())
+	}
+}
+
 func TestSelectReferencesAreValidatedAndClearedOnDelete(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx)

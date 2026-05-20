@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
+import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import {
@@ -465,7 +466,7 @@ function ProjectPropertyValueDisplay({
         className={projectDetailPlainValueClassName}
         onClick={onStartEditing}
       >
-        <span className="min-w-0 truncate">{stringifyPropertyValue(value)}</span>
+        <span className="min-w-0 truncate">{formatNumberDisplayValue(value)}</span>
       </button>
     );
   }
@@ -643,15 +644,16 @@ function ProjectPropertyValueEditor({
 
     return (
       <Input
-        key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+        key={`${project.id}:${property.id}:${formatNumberEditorValue(value)}`}
         autoFocus
-        type="number"
-        defaultValue={stringifyPropertyValue(value)}
+        type="text"
+        inputMode="decimal"
+        defaultValue={formatNumberEditorValue(value)}
         aria-label={`${property.name} number value`}
         className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();
-          onProjectPropertyValueChange(project.id, property.id, text === "" ? null : Number(text));
+          onProjectPropertyValueChange(project.id, property.id, text === "" ? null : text);
           onStopEditing();
         }}
         onKeyDown={(event) => {

@@ -186,17 +186,179 @@ function normalizePropertyOption(option, index) {
   };
 }
 
+export function normalizeNumberExpressionValue(expression) {
+  const expressionText = normalizeString(expression).trim();
+  if (!expressionText.startsWith("=")) {
+    return null;
+  }
+
+  const evaluatedValue = evaluateArithmeticExpression(expressionText.slice(1));
+  if (!Number.isFinite(evaluatedValue)) {
+    throw new TypeError("Invalid number expression.");
+  }
+
+  return {
+    expression: expressionText,
+    value: evaluatedValue,
+  };
+}
+
 function normalizeNumberValue(value) {
   if (value == null) {
     return null;
+  }
+
+  if (isPlainObject(value) && typeof value.expression === "string") {
+    return normalizeNumberExpressionValue(value.expression);
   }
 
   if (typeof value === "string" && value.trim() === "") {
     return null;
   }
 
+  if (typeof value === "string" && value.trim().startsWith("=")) {
+    return normalizeNumberExpressionValue(value);
+  }
+
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function evaluateArithmeticExpression(expression) {
+  const parser = createArithmeticParser(expression);
+  const value = parser.parseExpression();
+  parser.skipWhitespace();
+  if (!parser.isComplete()) {
+    throw new TypeError("Invalid number expression.");
+  }
+  return value;
+}
+
+function createArithmeticParser(expression) {
+  const input = String(expression ?? "");
+  let index = 0;
+
+  function skipWhitespace() {
+    while (index < input.length && /\s/.test(input[index])) {
+      index += 1;
+    }
+  }
+
+  function parseExpression() {
+    let value = parseTerm();
+
+    while (true) {
+      skipWhitespace();
+      const operator = input[index];
+      if (operator !== "+" && operator !== "-") {
+        return value;
+      }
+
+      index += 1;
+      const nextValue = parseTerm();
+      value = operator === "+" ? value + nextValue : value - nextValue;
+    }
+  }
+
+  function parseTerm() {
+    let value = parseFactor();
+
+    while (true) {
+      skipWhitespace();
+      const operator = input[index];
+      if (operator !== "*" && operator !== "/") {
+        return value;
+      }
+
+      index += 1;
+      const nextValue = parseFactor();
+      if (operator === "/" && nextValue === 0) {
+        throw new TypeError("Invalid number expression.");
+      }
+      value = operator === "*" ? value * nextValue : value / nextValue;
+    }
+  }
+
+  function parseFactor() {
+    skipWhitespace();
+
+    const operator = input[index];
+    if (operator === "+" || operator === "-") {
+      index += 1;
+      const value = parseFactor();
+      return operator === "-" ? -value : value;
+    }
+
+    if (input[index] === "(") {
+      index += 1;
+      const value = parseExpression();
+      skipWhitespace();
+      if (input[index] !== ")") {
+        throw new TypeError("Invalid number expression.");
+      }
+      index += 1;
+      return value;
+    }
+
+    return parseNumber();
+  }
+
+  function parseNumber() {
+    skipWhitespace();
+    const startIndex = index;
+    let digitFound = false;
+
+    while (isDigit(input[index])) {
+      index += 1;
+      digitFound = true;
+    }
+
+    if (input[index] === ".") {
+      index += 1;
+      while (isDigit(input[index])) {
+        index += 1;
+        digitFound = true;
+      }
+    }
+
+    if (!digitFound) {
+      throw new TypeError("Invalid number expression.");
+    }
+
+    if (input[index] === "e" || input[index] === "E") {
+      const exponentIndex = index;
+      index += 1;
+      if (input[index] === "+" || input[index] === "-") {
+        index += 1;
+      }
+
+      let exponentDigitFound = false;
+      while (isDigit(input[index])) {
+        index += 1;
+        exponentDigitFound = true;
+      }
+
+      if (!exponentDigitFound) {
+        index = exponentIndex;
+      }
+    }
+
+    const value = Number(input.slice(startIndex, index));
+    if (!Number.isFinite(value)) {
+      throw new TypeError("Invalid number expression.");
+    }
+    return value;
+  }
+
+  return {
+    parseExpression,
+    skipWhitespace,
+    isComplete: () => index >= input.length,
+  };
+}
+
+function isDigit(value) {
+  return typeof value === "string" && value >= "0" && value <= "9";
 }
 
 function normalizeDateValue(value) {

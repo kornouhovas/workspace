@@ -66,6 +66,29 @@ test("normalizePropertyValue normalizes number values", () => {
   assert.equal(normalizePropertyValue("number", "not a number"), null);
 });
 
+test("normalizePropertyValue preserves number expressions with computed values", () => {
+  assert.deepEqual(normalizePropertyValue("number", "=2+3*4"), {
+    expression: "=2+3*4",
+    value: 14,
+  });
+  assert.deepEqual(normalizePropertyValue("number", " = (2 + 3) * 4 "), {
+    expression: "= (2 + 3) * 4",
+    value: 20,
+  });
+  assert.deepEqual(normalizePropertyValue("number", { expression: "=10/4", value: 1 }), {
+    expression: "=10/4",
+    value: 2.5,
+  });
+  assert.throws(
+    () => normalizePropertyValue("number", "=1/0"),
+    /Invalid number expression/,
+  );
+  assert.throws(
+    () => normalizePropertyValue("number", "=2+"),
+    /Invalid number expression/,
+  );
+});
+
 test("normalizePropertyValue normalizes date values", () => {
   assert.equal(normalizePropertyValue("date", "2026-04-30"), "2026-04-30");
   assert.equal(normalizePropertyValue("date", "0001-01-01"), "0001-01-01");
@@ -263,9 +286,13 @@ test("normalizeProjectPropertyValue validates type-specific project values", () 
   assert.deepEqual(
     normalizeProjectPropertyValue({
       property: { id: "property:budget", type: "number" },
-      value: "42.5",
+      value: "=40+2.5",
     }),
-    { propertyId: "property:budget", type: "number", value: 42.5 },
+    {
+      propertyId: "property:budget",
+      type: "number",
+      value: { expression: "=40+2.5", value: 42.5 },
+    },
   );
   assert.deepEqual(
     normalizeProjectPropertyValue({

@@ -796,7 +796,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /property\.propertyType === "date"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "select"/);
   assert.match(projectDetailPanelSource, /property\.propertyType === "multi-select"/);
-  assert.match(projectDetailPanelSource, /type="number"/);
+  assert.match(projectDetailPanelSource, /formatNumberEditorValue/);
+  assert.match(projectDetailPanelSource, /formatNumberDisplayValue/);
+  assert.doesNotMatch(projectDetailPanelSource, /type="number"/);
+  assert.match(tableViewSource, /formatNumberEditorValue/);
+  assert.match(tableViewSource, /formatNumberDisplayValue/);
+  assert.doesNotMatch(tableViewSource, /type="number"/);
   assert.doesNotMatch(projectDetailPanelSource, /type="date"/);
   assert.match(projectDetailPanelSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /handleProjectPropertyValueChange/);

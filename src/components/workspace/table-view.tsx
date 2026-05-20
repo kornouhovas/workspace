@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
+import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import {
@@ -435,21 +436,22 @@ function ProjectTablePropertyValueEditor({
 
   if (property.propertyType === "number") {
     if (!editing) {
-      return renderCellDisplay(stringifyEditableValue(value));
+      return renderCellDisplay(formatNumberDisplayValue(value));
     }
 
     return (
       <Input
-        key={editorKey}
-        type="number"
-        defaultValue={stringifyEditableValue(value)}
+        key={`${project.id}:${property.id}:${formatNumberEditorValue(value)}`}
+        type="text"
+        inputMode="decimal"
+        defaultValue={formatNumberEditorValue(value)}
         aria-label={`${property.name} number value`}
         autoFocus
         className="workspace-number-input h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
         onBlur={(event) => {
           const text = event.target.value.trim();
-          saveValue(text === "" ? null : Number(text));
+          saveValue(text === "" ? null : text);
           onStopEditingCell();
         }}
         onKeyDown={(event) => {

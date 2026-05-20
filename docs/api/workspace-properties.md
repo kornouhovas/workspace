@@ -130,7 +130,8 @@ Validation:
 Value rules:
 
 - `text`: string; empty value is `""`.
-- `number`: finite number or `null`.
+- `number`: finite number, `null`, or a number expression object such as `{ "expression": "=2+2", "value": 4 }`.
+  Expressions must start with `=`, preserve the user-entered expression, and support simple arithmetic `+`, `-`, `*`, `/`, parentheses, decimals, and unary signs. Invalid expressions and division by zero are rejected as `PROPERTY_VALUE_INVALID` / `VALIDATION_FAILED`.
 - `date`: valid `YYYY-MM-DD` string or `null`.
 - `select`: one active select value id for the same property, or `null`.
 - `multi-select`: ordered array of unique active select value ids for the same property.

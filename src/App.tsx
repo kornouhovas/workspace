@@ -1560,17 +1560,20 @@ export default function App() {
     });
 
     try {
-      await workspaceClient.updateProjectPropertyValue({
+      const response = await workspaceClient.updateProjectPropertyValue({
         workspaceId: state.workspaceId,
         projectId,
         propertyId,
         value,
       });
+      const savedValue = isRecord(response) && Object.hasOwn(response, "value")
+        ? response.value
+        : value;
       dispatch({
         type: "projectPropertyValueUpdated",
         projectId,
         propertyId,
-        value,
+        value: savedValue,
         requestVersion,
       });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
@@ -1580,7 +1583,7 @@ export default function App() {
                 ...currentProject,
                 propertyValues: {
                   ...currentProject.propertyValues,
-                  [propertyId]: value,
+                  [propertyId]: savedValue,
                 },
               }
             : currentProject

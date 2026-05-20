@@ -269,7 +269,7 @@ Properties section behavior:
 - Render properties as a compact two-column table: drag handle and property name on the left, editable value on the right, row separators, and a vertical divider between name and value.
 - Supported custom property types are `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - `Text` values use a compact text input or textarea depending on configured display density.
-- `Numbers` values use a numeric input and preserve empty value as `null`.
+- `Numbers` values use a text-like inline editor so users can enter either plain numbers or arithmetic expressions that start with `=`. The closed value shows the computed result, while the editor reopens with the original expression.
 - `Date` values use a date input or date picker and store `YYYY-MM-DD`.
 - `Select` values use a single-value menu with colored value badges.
 - `Multi-select` values use a multi-value menu with removable colored badges.

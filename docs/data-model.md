@@ -438,7 +438,7 @@ Business rules:
 
 - One active property value exists per project/property/workspace.
 - `text` value is a string.
-- `number` value is a finite number or null.
+- `number` value is a finite number, null, or a number expression object `{ "expression": "=2+2", "value": 4 }`.
 - `date` value is `YYYY-MM-DD` or null.
 - `select` value is one select value id or null.
 - `multi-select` value is an ordered array of select value ids.
@@ -585,7 +585,7 @@ These are logical access patterns. The physical `any-store` indexing strategy ca
 - Relative paths that resolve outside the source folder are rejected.
 - Folder role must be `group`, `status`, or `project`.
 - Property type must be `text`, `number`, `date`, `select`, or `multi-select`.
-- Number values must be finite numbers or null.
+- Number values must be finite numbers, null, or number expression objects with the original expression and finite computed value.
 - Date values must be valid `YYYY-MM-DD` strings or null.
 - Select values must reference existing non-deleted `selectValue` documents.
 - Multi-select values must be arrays of unique select value ids.
