@@ -235,14 +235,16 @@
 .workspace-table-cell-control .workspace-table-text-value {
   transition:
     background-color 150ms ease,
-    color 150ms ease;
+    color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .workspace-table-cell-control .workspace-table-value-chip:hover,
 .workspace-table-cell-control .workspace-table-empty-value:hover,
 .workspace-table-cell-control .workspace-table-text-value:hover {
-  background-color: var(--muted);
+  background-color: color-mix(in oklch, var(--muted) 84%, var(--foreground) 16%);
   color: var(--foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, var(--foreground) 25%);
 }
 
 [data-color="gray"] {

@@ -597,6 +597,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(cssSource, /\.workspace-table-value-chip:hover/);
   assert.match(cssSource, /\.workspace-table-empty-value:hover/);
   assert.match(cssSource, /\.workspace-table-text-value:hover/);
+  assert.match(cssSource, /box-shadow: inset 0 0 0 1px color-mix\(in oklch, var\(--border\) 75%, var\(--foreground\) 25%\);/);
   assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
   assert.doesNotMatch(tableViewSource, /className="flex h-10 w-full/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
