@@ -129,7 +129,7 @@ const projectDetailPlainValueClassName =
 const projectDetailMultilineValueClassName =
   "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-medium leading-5 text-foreground";
 const projectDetailPlainTriggerClassName =
-  "h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+  "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
 const propertyTypeOptions: readonly ProjectDetailPropertyTypeOption[] = [
   { value: "text", label: "Text", description: "Short notes or free text" },

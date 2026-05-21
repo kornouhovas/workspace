@@ -131,6 +131,7 @@ export function WorkspaceDateValueEditor({
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
             aria-label="Pick date"
+            data-empty-value={dateValue ? undefined : "true"}
           >
             {dateValue ? (
               <>

@@ -896,6 +896,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(dateValueEditorSource, /dateValue \|\| "Empty"/);
   assert.doesNotMatch(selectValueEditorSource, /: "Empty"/);
   assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Empty<\/span>/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-value-trigger/);
+  assert.match(dateValueEditorSource, /data-empty-value=\{dateValue \? undefined : "true"\}/);
+  assert.match(selectValueEditorSource, /data-empty-value=\{selectedValueItems\.length > 0 \? undefined : "true"\}/);
+  assert.match(cssSource, /\.workspace-project-detail-value-trigger\[data-empty-value="true"\]:hover/);
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);

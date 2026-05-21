@@ -363,6 +363,7 @@ export function WorkspaceSelectValueEditor({
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
             aria-label={`${property.name} select value`}
+            data-empty-value={selectedValueItems.length > 0 ? undefined : "true"}
           >
             {selectedValueItems.length > 0 ? (
               <span className="flex min-w-0 items-center gap-1 overflow-hidden">
