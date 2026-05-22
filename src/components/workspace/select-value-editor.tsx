@@ -57,6 +57,12 @@ type WorkspaceSelectValueEditorProps = {
   readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
 
+type SelectValueActionSource = "chip" | "picker";
+type SelectValueActionState = {
+  readonly selectValueId: string;
+  readonly source: SelectValueActionSource;
+} | null;
+
 const valueColorOptions = ["gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
@@ -163,7 +169,7 @@ export function WorkspaceSelectValueEditor({
   const [creating, setCreating] = useState(false);
   const [editingSelectValueId, setEditingSelectValueId] = useState<string | null>(null);
   const [editingSelectValueName, setEditingSelectValueName] = useState("");
-  const [actionsSelectValueId, setActionsSelectValueId] = useState<string | null>(null);
+  const [selectValueAction, setSelectValueAction] = useState<SelectValueActionState>(null);
   const closingDropdownForSelectValueActionRef = useRef<string | null>(null);
   const isMultiSelect = property.propertyType === "multi-select";
   const values = useMemo(
@@ -189,7 +195,7 @@ export function WorkspaceSelectValueEditor({
 
   useEffect(() => {
     setOpen(false);
-    setActionsSelectValueId(null);
+    setSelectValueAction(null);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
     closingDropdownForSelectValueActionRef.current = null;
@@ -244,8 +250,15 @@ export function WorkspaceSelectValueEditor({
     setOpen(false);
   }
 
-  function beginRenameSelectValue(selectValue: WorkspaceSelectValueState) {
-    setActionsSelectValueId(selectValue.id);
+  function isSelectValueActionOpen(
+    selectValue: WorkspaceSelectValueState,
+    source: SelectValueActionSource,
+  ) {
+    return selectValueAction?.selectValueId === selectValue.id && selectValueAction.source === source;
+  }
+
+  function beginRenameSelectValue(selectValue: WorkspaceSelectValueState, source: SelectValueActionSource) {
+    setSelectValueAction({ selectValueId: selectValue.id, source });
     setEditingSelectValueId(selectValue.id);
     setEditingSelectValueName(selectValue.name);
   }
@@ -273,7 +286,7 @@ export function WorkspaceSelectValueEditor({
   }
 
   function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
-    setActionsSelectValueId(null);
+    setSelectValueAction(null);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
     if (window.confirm(`Delete value "${selectValue.name}"?`)) {
@@ -281,7 +294,11 @@ export function WorkspaceSelectValueEditor({
     }
   }
 
-  function handleSelectValueActionsOpenChange(selectValue: WorkspaceSelectValueState, nextOpen: boolean) {
+  function handleSelectValueActionsOpenChange(
+    selectValue: WorkspaceSelectValueState,
+    source: SelectValueActionSource,
+    nextOpen: boolean,
+  ) {
     if (!nextOpen && editingSelectValueId === selectValue.id) {
       commitRenameSelectValue(selectValue);
     }
@@ -290,7 +307,17 @@ export function WorkspaceSelectValueEditor({
       closingDropdownForSelectValueActionRef.current = null;
     }
 
-    setActionsSelectValueId(nextOpen ? selectValue.id : null);
+    setSelectValueAction((currentAction) => {
+      if (nextOpen) {
+        return { selectValueId: selectValue.id, source };
+      }
+
+      if (currentAction?.selectValueId === selectValue.id && currentAction.source === source) {
+        return null;
+      }
+
+      return currentAction;
+    });
   }
 
   function handleSelectValuePickerOpenChange(nextOpen: boolean) {
@@ -301,7 +328,7 @@ export function WorkspaceSelectValueEditor({
 
       closingDropdownForSelectValueActionRef.current = null;
       setOpen(true);
-      setActionsSelectValueId(null);
+      setSelectValueAction(null);
       setEditingSelectValueId(null);
       setEditingSelectValueName("");
       return;
@@ -318,7 +345,7 @@ export function WorkspaceSelectValueEditor({
       commitActiveRenameSelectValue();
     }
 
-    setActionsSelectValueId(null);
+    setSelectValueAction(null);
   }
 
   function openSelectValueActionsFromChip(
@@ -328,9 +355,9 @@ export function WorkspaceSelectValueEditor({
     event.preventDefault();
     event.stopPropagation();
 
-    if (actionsSelectValueId === selectValue.id) {
+    if (isSelectValueActionOpen(selectValue, "chip")) {
       closingDropdownForSelectValueActionRef.current = null;
-      setActionsSelectValueId(null);
+      setSelectValueAction(null);
       setEditingSelectValueId(null);
       setEditingSelectValueName("");
       return;
@@ -340,12 +367,16 @@ export function WorkspaceSelectValueEditor({
     setOpen(false);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
-    setActionsSelectValueId(selectValue.id);
+    setSelectValueAction({ selectValueId: selectValue.id, source: "chip" });
   }
 
   function renderSelectValueActionsContent(
     selectValue: WorkspaceSelectValueState,
-    options: { readonly side?: "bottom" | "right"; readonly sideOffset?: number } = {},
+    options: {
+      readonly source: SelectValueActionSource;
+      readonly side?: "bottom" | "right";
+      readonly sideOffset?: number;
+    },
   ) {
     const renamingValue = editingSelectValueId === selectValue.id;
 
@@ -379,13 +410,13 @@ export function WorkspaceSelectValueEditor({
                 if (event.key === "Enter") {
                   event.preventDefault();
                   commitRenameSelectValue(selectValue);
-                  setActionsSelectValueId(null);
+                  setSelectValueAction(null);
                 }
                 if (event.key === "Escape") {
                   event.preventDefault();
                   setEditingSelectValueId(null);
                   setEditingSelectValueName("");
-                  setActionsSelectValueId(null);
+                  setSelectValueAction(null);
                 }
               }}
             />
@@ -398,7 +429,7 @@ export function WorkspaceSelectValueEditor({
               className={workspaceMenuItemClassName}
               onClick={(event) => {
                 event.stopPropagation();
-                beginRenameSelectValue(selectValue);
+                beginRenameSelectValue(selectValue, options.source);
               }}
             >
               <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
@@ -434,7 +465,7 @@ export function WorkspaceSelectValueEditor({
                       onClick={(event) => {
                         event.stopPropagation();
                         onColorSelectValue(selectValue.id, color);
-                        setActionsSelectValueId(null);
+                        setSelectValueAction(null);
                       }}
                     >
                       <span className="size-3 rounded-full" data-color={color} />
@@ -452,8 +483,8 @@ export function WorkspaceSelectValueEditor({
   function renderSelectValueActions(selectValue: WorkspaceSelectValueState) {
     return (
       <Popover
-        open={actionsSelectValueId === selectValue.id}
-        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, nextOpen)}
+        open={isSelectValueActionOpen(selectValue, "picker")}
+        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, "picker", nextOpen)}
       >
         <PopoverTrigger asChild>
           <button
@@ -466,7 +497,7 @@ export function WorkspaceSelectValueEditor({
             <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
           </button>
         </PopoverTrigger>
-        {renderSelectValueActionsContent(selectValue)}
+        {renderSelectValueActionsContent(selectValue, { source: "picker" })}
       </Popover>
     );
   }
@@ -475,8 +506,8 @@ export function WorkspaceSelectValueEditor({
     return (
       <Popover
         key={selectValue.id}
-        open={actionsSelectValueId === selectValue.id}
-        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, nextOpen)}
+        open={isSelectValueActionOpen(selectValue, "chip")}
+        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, "chip", nextOpen)}
       >
         <PopoverAnchor asChild>
           <span
@@ -489,7 +520,7 @@ export function WorkspaceSelectValueEditor({
             <span className="truncate">{selectValue.name}</span>
           </span>
         </PopoverAnchor>
-        {renderSelectValueActionsContent(selectValue, { side: "bottom", sideOffset: 6 })}
+        {renderSelectValueActionsContent(selectValue, { source: "chip", side: "bottom", sideOffset: 6 })}
       </Popover>
     );
   }
