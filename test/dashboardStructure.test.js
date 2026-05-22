@@ -832,6 +832,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /Popover/);
   assert.match(selectValueEditorSource, /PopoverContent/);
   assert.match(selectValueEditorSource, /data-workspace-actions-popover/);
+  assert.match(selectValueEditorSource, /data-workspace-select-value-menu/);
+  assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverOpen/);
+  assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverOpen\}/);
+  assert.match(selectValueEditorSource, /onInteractOutside=\{keepSelectValueActionsPopoverOpen\}/);
   assert.match(selectValueEditorSource, /side="right"/);
   assert.doesNotMatch(selectValueEditorSource, /DropdownMenuSub/);
   assert.doesNotMatch(selectValueEditorSource, /mx-1 mb-1/);

@@ -64,6 +64,15 @@ function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; 
   }
 }
 
+function keepSelectValueActionsPopoverOpen(event: { target: EventTarget | null; preventDefault: () => void }) {
+  if (
+    event.target instanceof Element
+    && event.target.closest("[data-workspace-select-value-menu='true'], [data-workspace-actions-popover='true']")
+  ) {
+    event.preventDefault();
+  }
+}
+
 function getSelectValuesForProperty(
   selectValues: readonly WorkspaceSelectValueState[],
   propertyId: string,
@@ -284,6 +293,8 @@ export function WorkspaceSelectValueEditor({
           sideOffset={8}
           className={`${workspaceMenuContentClassName} w-56`}
           onOpenAutoFocus={(event) => event.preventDefault()}
+          onFocusOutside={keepSelectValueActionsPopoverOpen}
+          onInteractOutside={keepSelectValueActionsPopoverOpen}
           onClick={stopSelectionEditorActivation}
           onPointerDown={stopSelectionEditorActivation}
         >
@@ -383,6 +394,7 @@ export function WorkspaceSelectValueEditor({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
+          data-workspace-select-value-menu="true"
           align="start"
           className={`${workspaceMenuContentClassName} w-64`}
           onInteractOutside={keepDropdownOpenForActionsPopover}
