@@ -904,6 +904,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(dateValueEditorSource, /data-empty-value=\{dateValue \? undefined : "true"\}/);
   assert.match(selectValueEditorSource, /data-empty-value=\{selectedValueItems\.length > 0 \? undefined : "true"\}/);
   assert.match(cssSource, /\.workspace-project-detail-value-trigger\[data-empty-value="true"\]:hover/);
+  assert.match(cssSource, /\.workspace-project-detail-value-trigger:has\(\.workspace-table-select-value-chip:hover\):hover/);
+  assert.match(cssSource, /\.workspace-project-detail-value-trigger \.workspace-table-select-value-chip:hover/);
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);

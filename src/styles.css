@@ -257,6 +257,23 @@
   width: 100%;
 }
 
+.workspace-project-detail-value-trigger:has(.workspace-table-select-value-chip:hover):hover {
+  background-color: transparent;
+}
+
+.workspace-project-detail-value-trigger .workspace-table-select-value-chip {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.workspace-project-detail-value-trigger .workspace-table-select-value-chip:hover {
+  background-color: color-mix(in oklch, var(--muted) 84%, var(--foreground) 16%);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, var(--foreground) 25%);
+}
+
 .workspace-customize-property-row:hover {
   background-color: color-mix(in oklch, var(--accent) 60%, transparent);
 }
