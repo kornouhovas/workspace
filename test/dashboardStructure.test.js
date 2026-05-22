@@ -815,6 +815,7 @@ test("renderer composes the workspace product shell", async () => {
 
   assert.match(selectValueEditorSource, /WorkspaceSelectValueEditor/);
   assert.match(selectValueEditorSource, /useEffect/);
+  assert.match(selectValueEditorSource, /useRef/);
   assert.match(selectValueEditorSource, /dismissSignal/);
   assert.match(selectValueEditorSource, /setOpen\(false\)/);
   assert.match(selectValueEditorSource, /setActionsSelectValueId\(null\)/);
@@ -835,8 +836,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /data-workspace-actions-popover/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-menu/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-chip-trigger="true"/);
+  assert.match(selectValueEditorSource, /data-workspace-select-value-trigger="true"/);
   assert.match(selectValueEditorSource, /openSelectValueActionsFromChip/);
+  assert.match(selectValueEditorSource, /closingDropdownForSelectValueActionRef/);
+  assert.match(selectValueEditorSource, /actionsSelectValueId === selectValue\.id/);
+  assert.match(selectValueEditorSource, /setActionsSelectValueId\(null\);[\s\S]*return;/);
+  assert.match(selectValueEditorSource, /closingDropdownForSelectValueActionRef\.current = selectValue\.id/);
   assert.match(selectValueEditorSource, /setOpen\(false\);[\s\S]*setActionsSelectValueId\(selectValue\.id\)/);
+  assert.match(selectValueEditorSource, /if \(nextOpen\) \{[\s\S]*setActionsSelectValueId\(null\)/);
   assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverOpen/);
   assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverOpen\}/);
   assert.match(selectValueEditorSource, /onInteractOutside=\{keepSelectValueActionsPopoverOpen\}/);

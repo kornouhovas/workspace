@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -164,6 +164,7 @@ export function WorkspaceSelectValueEditor({
   const [editingSelectValueId, setEditingSelectValueId] = useState<string | null>(null);
   const [editingSelectValueName, setEditingSelectValueName] = useState("");
   const [actionsSelectValueId, setActionsSelectValueId] = useState<string | null>(null);
+  const closingDropdownForSelectValueActionRef = useRef<string | null>(null);
   const isMultiSelect = property.propertyType === "multi-select";
   const values = useMemo(
     () => getSelectValuesForProperty(selectValues, property.id),
@@ -191,6 +192,7 @@ export function WorkspaceSelectValueEditor({
     setActionsSelectValueId(null);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
+    closingDropdownForSelectValueActionRef.current = null;
   }, [dismissSignal]);
 
   function clearSingleSelectValue() {
@@ -284,7 +286,39 @@ export function WorkspaceSelectValueEditor({
       commitRenameSelectValue(selectValue);
     }
 
+    if (!nextOpen && closingDropdownForSelectValueActionRef.current === selectValue.id) {
+      closingDropdownForSelectValueActionRef.current = null;
+    }
+
     setActionsSelectValueId(nextOpen ? selectValue.id : null);
+  }
+
+  function handleSelectValuePickerOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      if (editingSelectValueId) {
+        commitActiveRenameSelectValue();
+      }
+
+      closingDropdownForSelectValueActionRef.current = null;
+      setOpen(true);
+      setActionsSelectValueId(null);
+      setEditingSelectValueId(null);
+      setEditingSelectValueName("");
+      return;
+    }
+
+    setOpen(false);
+
+    if (closingDropdownForSelectValueActionRef.current !== null) {
+      closingDropdownForSelectValueActionRef.current = null;
+      return;
+    }
+
+    if (editingSelectValueId) {
+      commitActiveRenameSelectValue();
+    }
+
+    setActionsSelectValueId(null);
   }
 
   function openSelectValueActionsFromChip(
@@ -293,6 +327,16 @@ export function WorkspaceSelectValueEditor({
   ) {
     event.preventDefault();
     event.stopPropagation();
+
+    if (actionsSelectValueId === selectValue.id) {
+      closingDropdownForSelectValueActionRef.current = null;
+      setActionsSelectValueId(null);
+      setEditingSelectValueId(null);
+      setEditingSelectValueName("");
+      return;
+    }
+
+    closingDropdownForSelectValueActionRef.current = selectValue.id;
     setOpen(false);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
@@ -454,15 +498,7 @@ export function WorkspaceSelectValueEditor({
     <div onClick={stopSelectionEditorActivation} onPointerDown={stopSelectionEditorActivation}>
       <DropdownMenu
         open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && editingSelectValueId) {
-            commitActiveRenameSelectValue();
-          }
-          setOpen(nextOpen);
-          if (!nextOpen) {
-            setActionsSelectValueId(null);
-          }
-        }}
+        onOpenChange={handleSelectValuePickerOpenChange}
       >
         <DropdownMenuTrigger asChild>
           <Button
@@ -470,6 +506,7 @@ export function WorkspaceSelectValueEditor({
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
             aria-label={`${property.name} select value`}
+            data-workspace-select-value-trigger="true"
             data-empty-value={selectedValueItems.length > 0 ? undefined : "true"}
           >
             {selectedValueItems.length > 0 ? (

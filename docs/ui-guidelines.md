@@ -104,7 +104,7 @@ Rules:
 - Table row click opens the Project Detail Panel.
 - Do not duplicate edit controls in every cell if that makes the table noisy; prefer focused inline controls or the detail panel.
 - Empty `Date`, `Select`, and `Multi-select` values should render as blank cells, not as `Empty` placeholder text.
-- Clicking a visible `Select` or `Multi-select` value chip opens that value's direct menu for rename, delete, and color actions. Clicking the rest of the cell opens the normal value picker.
+- Clicking a visible `Select` or `Multi-select` value chip opens that value's direct menu for rename, delete, and color actions. Re-clicking the same chip closes its direct menu. Clicking the rest of the cell closes any direct value menu and opens the normal value picker.
 
 ### Project Detail Panel
 
@@ -121,7 +121,7 @@ Rules:
 - Use autosizing multiline text controls for `Text`, text-like inline inputs for `Numbers` so arithmetic expressions can start with `=`, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
 - Use `Badge` for select and multi-select values, including value colors.
 - Empty `Date`, `Select`, and `Multi-select` values should keep their editable row affordance but render visually blank instead of showing `Empty`.
-- `Select` and `Multi-select` value chips should expose the same direct value menu as Table cells: rename value, delete value, and change value color. Clicking the row value area outside a chip opens the normal value picker.
+- `Select` and `Multi-select` value chips should expose the same direct value menu as Table cells: rename value, delete value, and change value color. Re-clicking the same chip closes its direct menu. Clicking the row value area outside a chip closes any direct value menu and opens the normal value picker.
 - Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.
 - Board cards should display only the custom properties enabled for the active view.
 - Table should display custom properties as stable-width columns in active view order.
