@@ -830,13 +830,17 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /DropdownMenuCheckboxItem/);
   assert.match(selectValueEditorSource, /actionsSelectValueId/);
   assert.match(selectValueEditorSource, /Popover/);
+  assert.match(selectValueEditorSource, /PopoverAnchor/);
   assert.match(selectValueEditorSource, /PopoverContent/);
   assert.match(selectValueEditorSource, /data-workspace-actions-popover/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-menu/);
+  assert.match(selectValueEditorSource, /data-workspace-select-value-chip-trigger="true"/);
+  assert.match(selectValueEditorSource, /openSelectValueActionsFromChip/);
+  assert.match(selectValueEditorSource, /setOpen\(false\);[\s\S]*setActionsSelectValueId\(selectValue\.id\)/);
   assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverOpen/);
   assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverOpen\}/);
   assert.match(selectValueEditorSource, /onInteractOutside=\{keepSelectValueActionsPopoverOpen\}/);
-  assert.match(selectValueEditorSource, /side="right"/);
+  assert.match(selectValueEditorSource, /side=\{options\.side \|\| "right"\}/);
   assert.doesNotMatch(selectValueEditorSource, /DropdownMenuSub/);
   assert.doesNotMatch(selectValueEditorSource, /mx-1 mb-1/);
   assert.doesNotMatch(selectValueEditorSource, /onBlur=\{\(\) => commitRenameSelectValue/);

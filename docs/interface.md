@@ -252,6 +252,7 @@ Table requirements:
 - Column property menus for `Status`, `Select`, and `Multi-select` should include `Value filters` for the current property, using the same view-level `valueVisibility` settings as `Customize Columns`.
 - The Customize Columns menu should allow hiding `Status` from the active view while keeping `Name` required.
 - When a column has active value filters, the header shows a compact filter indicator next to the property action menu.
+- Clicking a visible `Select` or `Multi-select` value chip opens the value-specific menu for rename, delete, and color actions. Clicking elsewhere in the cell opens the normal select value picker.
 
 ## Project Detail Panel
 
@@ -281,6 +282,7 @@ Properties section behavior:
 - `Date` values use a date input or date picker and store `YYYY-MM-DD`.
 - `Select` values use a single-value menu with colored value badges.
 - `Multi-select` values use a multi-value menu with removable colored badges.
+- Clicking a visible select value badge opens the value-specific menu for rename, delete, and color actions. Clicking elsewhere in the value area opens the normal select value picker.
 - Hidden properties, when expanded, use the same compact bordered table styling and editable value controls as visible properties.
 - Do not place horizontal divider lines between visible properties, hidden properties, and the file tree section.
 - Editing a value saves through Workspace service methods, not component-local persistence.

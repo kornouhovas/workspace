@@ -13,7 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   MoreHorizontalIcon,
   PaletteIcon,
@@ -55,6 +60,11 @@ type WorkspaceSelectValueEditorProps = {
 const valueColorOptions = ["gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
+  event.stopPropagation();
+}
+
+function stopSelectValueChipTriggerActivation(event: { preventDefault: () => void; stopPropagation: () => void }) {
+  event.preventDefault();
   event.stopPropagation();
 }
 
@@ -233,7 +243,7 @@ export function WorkspaceSelectValueEditor({
   }
 
   function beginRenameSelectValue(selectValue: WorkspaceSelectValueState) {
-    setActionsSelectValueId(null);
+    setActionsSelectValueId(selectValue.id);
     setEditingSelectValueId(selectValue.id);
     setEditingSelectValueName(selectValue.name);
   }
@@ -262,16 +272,144 @@ export function WorkspaceSelectValueEditor({
 
   function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
     setActionsSelectValueId(null);
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
     if (window.confirm(`Delete value "${selectValue.name}"?`)) {
       onDeleteSelectValue(selectValue.id);
     }
+  }
+
+  function handleSelectValueActionsOpenChange(selectValue: WorkspaceSelectValueState, nextOpen: boolean) {
+    if (!nextOpen && editingSelectValueId === selectValue.id) {
+      commitRenameSelectValue(selectValue);
+    }
+
+    setActionsSelectValueId(nextOpen ? selectValue.id : null);
+  }
+
+  function openSelectValueActionsFromChip(
+    selectValue: WorkspaceSelectValueState,
+    event: { preventDefault: () => void; stopPropagation: () => void },
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpen(false);
+    setEditingSelectValueId(null);
+    setEditingSelectValueName("");
+    setActionsSelectValueId(selectValue.id);
+  }
+
+  function renderSelectValueActionsContent(
+    selectValue: WorkspaceSelectValueState,
+    options: { readonly side?: "bottom" | "right"; readonly sideOffset?: number } = {},
+  ) {
+    const renamingValue = editingSelectValueId === selectValue.id;
+
+    return (
+      <PopoverContent
+        data-workspace-actions-popover="true"
+        role={renamingValue ? undefined : "menu"}
+        aria-label={`${selectValue.name} value actions`}
+        side={options.side || "right"}
+        align="start"
+        sideOffset={options.sideOffset ?? 8}
+        className={`${workspaceMenuContentClassName} w-56`}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        onFocusOutside={keepSelectValueActionsPopoverOpen}
+        onInteractOutside={keepSelectValueActionsPopoverOpen}
+        onClick={stopSelectionEditorActivation}
+        onPointerDown={stopSelectionEditorActivation}
+      >
+        {renamingValue ? (
+          <div className="grid gap-1 p-1">
+            <div className={workspaceMenuLabelClassName}>Rename value</div>
+            <Input
+              value={editingSelectValueName}
+              autoFocus
+              aria-label="Rename value"
+              className="h-8"
+              onChange={(event) => setEditingSelectValueName(event.target.value)}
+              onPointerMove={stopSelectionEditorActivation}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitRenameSelectValue(selectValue);
+                  setActionsSelectValueId(null);
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setEditingSelectValueId(null);
+                  setEditingSelectValueName("");
+                  setActionsSelectValueId(null);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              role="menuitem"
+              className={workspaceMenuItemClassName}
+              onClick={(event) => {
+                event.stopPropagation();
+                beginRenameSelectValue(selectValue);
+              }}
+            >
+              <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+              Rename value
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={workspaceMenuDangerItemClassName}
+              onClick={(event) => {
+                event.stopPropagation();
+                deleteSelectValue(selectValue);
+              }}
+            >
+              <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+              Delete value
+            </button>
+            {onColorSelectValue ? (
+              <>
+                <div className={workspaceMenuSeparatorClassName} />
+                <div className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
+                  <PaletteIcon className="size-3.5" aria-hidden="true" />
+                  Color
+                </div>
+                <div className="grid grid-cols-7 gap-1 px-1 pb-1">
+                  {valueColorOptions.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      aria-label={`Color ${color}`}
+                      title={color}
+                      className="flex size-6 items-center justify-center rounded-md hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onColorSelectValue(selectValue.id, color);
+                        setActionsSelectValueId(null);
+                      }}
+                    >
+                      <span className="size-3 rounded-full" data-color={color} />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </>
+        )}
+      </PopoverContent>
+    );
   }
 
   function renderSelectValueActions(selectValue: WorkspaceSelectValueState) {
     return (
       <Popover
         open={actionsSelectValueId === selectValue.id}
-        onOpenChange={(nextOpen) => setActionsSelectValueId(nextOpen ? selectValue.id : null)}
+        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, nextOpen)}
       >
         <PopoverTrigger asChild>
           <button
@@ -284,72 +422,30 @@ export function WorkspaceSelectValueEditor({
             <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
           </button>
         </PopoverTrigger>
-        <PopoverContent
-          data-workspace-actions-popover="true"
-          role="menu"
-          aria-label={`${selectValue.name} value actions`}
-          side="right"
-          align="start"
-          sideOffset={8}
-          className={`${workspaceMenuContentClassName} w-56`}
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          onFocusOutside={keepSelectValueActionsPopoverOpen}
-          onInteractOutside={keepSelectValueActionsPopoverOpen}
-          onClick={stopSelectionEditorActivation}
-          onPointerDown={stopSelectionEditorActivation}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className={workspaceMenuItemClassName}
-            onClick={(event) => {
-              event.stopPropagation();
-              beginRenameSelectValue(selectValue);
-            }}
+        {renderSelectValueActionsContent(selectValue)}
+      </Popover>
+    );
+  }
+
+  function renderSelectedValueChip(selectValue: WorkspaceSelectValueState) {
+    return (
+      <Popover
+        key={selectValue.id}
+        open={actionsSelectValueId === selectValue.id}
+        onOpenChange={(nextOpen) => handleSelectValueActionsOpenChange(selectValue, nextOpen)}
+      >
+        <PopoverAnchor asChild>
+          <span
+            data-workspace-select-value-chip-trigger="true"
+            className="workspace-table-value-chip workspace-table-select-value-chip inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
+            onPointerDown={stopSelectValueChipTriggerActivation}
+            onClick={(event) => openSelectValueActionsFromChip(selectValue, event)}
           >
-            <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-            Rename value
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className={workspaceMenuDangerItemClassName}
-            onClick={(event) => {
-              event.stopPropagation();
-              deleteSelectValue(selectValue);
-            }}
-          >
-            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-            Delete value
-          </button>
-          {onColorSelectValue ? (
-            <>
-              <div className={workspaceMenuSeparatorClassName} />
-              <div className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
-                <PaletteIcon className="size-3.5" aria-hidden="true" />
-                Color
-              </div>
-              <div className="grid grid-cols-7 gap-1 px-1 pb-1">
-                {valueColorOptions.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    aria-label={`Color ${color}`}
-                    title={color}
-                    className="flex size-6 items-center justify-center rounded-md hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onColorSelectValue(selectValue.id, color);
-                      setActionsSelectValueId(null);
-                    }}
-                  >
-                    <span className="size-3 rounded-full" data-color={color} />
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : null}
-        </PopoverContent>
+            <span className="size-2 shrink-0 rounded-full" data-color={selectValue.color || "gray"} />
+            <span className="truncate">{selectValue.name}</span>
+          </span>
+        </PopoverAnchor>
+        {renderSelectValueActionsContent(selectValue, { side: "bottom", sideOffset: 6 })}
       </Popover>
     );
   }
@@ -378,15 +474,7 @@ export function WorkspaceSelectValueEditor({
           >
             {selectedValueItems.length > 0 ? (
               <span className="flex min-w-0 items-center gap-1 overflow-hidden">
-                {selectedValueItems.map((selectValue) => (
-                  <span
-                    key={selectValue.id}
-                    className="workspace-table-value-chip workspace-table-select-value-chip inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground"
-                  >
-                    <span className="size-2 shrink-0 rounded-full" data-color={selectValue.color || "gray"} />
-                    <span className="truncate">{selectValue.name}</span>
-                  </span>
-                ))}
+                {selectedValueItems.map((selectValue) => renderSelectedValueChip(selectValue))}
               </span>
             ) : (
               <span className="workspace-table-empty-value min-h-5 flex-1" aria-hidden="true" />
@@ -431,33 +519,6 @@ export function WorkspaceSelectValueEditor({
               const selected = isMultiSelect
                 ? selectedValues.includes(selectValue.id)
                 : selectedValueId === selectValue.id;
-
-              if (editingSelectValueId === selectValue.id) {
-                return (
-                  <div key={selectValue.id} className="px-1 py-1">
-                    <Input
-                      value={editingSelectValueName}
-                      autoFocus
-                      aria-label="Rename value"
-                      className="h-8"
-                      onChange={(event) => setEditingSelectValueName(event.target.value)}
-                      onPointerMove={stopSelectionEditorActivation}
-                      onKeyDown={(event) => {
-                        event.stopPropagation();
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          commitRenameSelectValue(selectValue);
-                        }
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          setEditingSelectValueId(null);
-                          setEditingSelectValueName("");
-                        }
-                      }}
-                    />
-                  </div>
-                );
-              }
 
               if (isMultiSelect) {
                 return (
