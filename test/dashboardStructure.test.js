@@ -34,6 +34,7 @@ test("renderer composes the workspace product shell", async () => {
     disableFsEventsLoaderSource,
     lucideIconTypesSource,
     menuStylesSource,
+    menuDismissalSource,
   ] = await Promise.all([
     readProjectFile("components.json"),
     readProjectFile("src/App.tsx"),
@@ -61,6 +62,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("scripts/disable-fsevents-loader.mjs"),
     readProjectFile("src/types/lucide-react-icons.d.ts"),
     readProjectFile("src/components/workspace/menu-styles.ts"),
+    readProjectFile("src/components/workspace/menu-dismissal.ts"),
   ]);
 
   const componentsJson = JSON.parse(componentsSource);
@@ -102,6 +104,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(menuStylesSource, /!size-3\.5/);
   assert.match(menuStylesSource, /!rounded-full/);
   assert.match(menuStylesSource, /\[&_\[data-slot=checkbox-indicator\]>svg\]:!size-2\.5/);
+  assert.match(menuDismissalSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(menuDismissalSource, /event\.preventDefault\(\)/);
+  assert.match(menuDismissalSource, /event\.stopPropagation\(\)/);
+  assert.match(menuDismissalSource, /document\.addEventListener\("click"/);
+  assert.match(menuDismissalSource, /window\.setTimeout/);
+  assert.match(menuDismissalSource, /dismiss\(\)/);
 
   for (const menuSource of [
     leftPanelSource,
@@ -336,6 +344,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /const canOpenActions = canRenameProperty\(property\) \|\| !required;/);
   assert.match(cssSource, /\.workspace-customize-property-row:has\(\.workspace-customize-property-action:hover\):hover/);
   assert.match(viewFilterMenuSource, /from "@\/workspaceDrag"/);
+  assert.match(viewFilterMenuSource, /from "@\/components\/workspace\/menu-dismissal"/);
+  assert.match(viewFilterMenuSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(viewFilterMenuSource, /data-workspace-view-filter-menu/);
   assert.match(viewFilterMenuSource, /reorderIdsByDropIndex/);
   assert.match(viewFilterMenuSource, /mergeFixedIdsWithReorderedIds/);
   assert.match(viewFilterMenuSource, /\.filter\(\(property\) => !isRequiredViewProperty\(property\.id\)\)/);
@@ -418,6 +429,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
   assert.match(viewTabsSource, /function isViewContextMenuTarget/);
+  assert.match(viewTabsSource, /from "@\/components\/workspace\/menu-dismissal"/);
+  assert.match(viewTabsSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(viewTabsSource, /data-workspace-view-create-menu/);
+  assert.match(viewTabsSource, /data-workspace-view-actions-menu/);
   assert.match(viewTabsSource, /closeViewContextMenuOnOutsidePointerDown/);
   assert.match(viewTabsSource, /document\.addEventListener\("pointerdown", closeViewContextMenuOnOutsidePointerDown, true\)/);
   assert.match(viewTabsSource, /data-workspace-view-context-menu="true"/);
@@ -482,6 +497,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /No values/);
   assert.match(tableViewSource, /data-workspace-property-menu="true"/);
   assert.match(tableViewSource, /data-workspace-property-menu-trigger="true"/);
+  assert.match(tableViewSource, /from "@\/components\/workspace\/menu-dismissal"/);
+  assert.match(tableViewSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(tableViewSource, /data-workspace-table-add-property-menu/);
   assert.match(tableViewSource, /hoveredPropertyMenuTriggerId/);
   assert.match(tableViewSource, /setPropertyMenuTriggerHovered/);
   assert.match(tableViewSource, /propertyMenuTriggerActive \? "" : "hover:bg-muted\/60 focus-within:bg-muted\/60"/);
@@ -844,6 +862,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /PopoverContent/);
   assert.match(selectValueEditorSource, /data-workspace-actions-popover/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-menu/);
+  assert.match(selectValueEditorSource, /from "@\/components\/workspace\/menu-dismissal"/);
+  assert.match(selectValueEditorSource, /blockOutsideWorkspaceMenuPointerDown/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-chip-trigger="true"/);
   assert.match(selectValueEditorSource, /data-workspace-select-value-trigger="true"/);
   assert.match(selectValueEditorSource, /openSelectValueActionsFromChip/);
@@ -920,6 +940,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(dateValueEditorSource, /dismissSignal/);
   assert.match(dateValueEditorSource, /setOpen\(false\)/);
   assert.match(dateValueEditorSource, /Popover/);
+  assert.match(dateValueEditorSource, /from "@\/components\/workspace\/menu-dismissal"/);
+  assert.match(dateValueEditorSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(dateValueEditorSource, /data-workspace-date-value-menu/);
   assert.match(dateValueEditorSource, /Pick date/);
   assert.match(dateValueEditorSource, /Clear date/);
   assert.match(dateValueEditorSource, /ChevronLeftIcon/);

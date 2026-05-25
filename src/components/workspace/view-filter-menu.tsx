@@ -36,6 +36,7 @@ import {
   workspaceMenuItemClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -137,6 +138,8 @@ const valueFilterItemClassName =
   "grid h-7 min-w-0 cursor-default select-none grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
 
 const propertyDragStartThreshold = 4;
+const viewFilterMenuSurfaceSelector =
+  "[data-workspace-view-filter-menu='true'], [data-workspace-actions-popover='true']";
 
 export function WorkspaceViewFilterMenu({
   view,
@@ -196,6 +199,41 @@ export function WorkspaceViewFilterMenu({
       onRenameProperty(property.id, name);
     }
   }
+
+  function commitActiveRenameProperty() {
+    const property = properties.find((propertyOption) => propertyOption.id === editingPropertyId);
+
+    if (property) {
+      commitRenameProperty(property);
+      return;
+    }
+
+    setEditingPropertyId(null);
+    setEditingPropertyName("");
+  }
+
+  useEffect(() => {
+    if (!open && !actionsPropertyId) {
+      return undefined;
+    }
+
+    function closeViewFilterMenusOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, viewFilterMenuSurfaceSelector, () => {
+        if (editingPropertyId) {
+          commitActiveRenameProperty();
+        }
+
+        setOpen(false);
+        setActionsPropertyId(null);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeViewFilterMenusOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeViewFilterMenusOnOutsidePointerDown, true);
+    };
+  }, [actionsPropertyId, editingPropertyId, editingPropertyName, open, properties]);
 
   function toggleFilterPropertyExpanded(propertyId: string) {
     setExpandedFilterPropertyIds((currentPropertyIds) => {
@@ -591,6 +629,7 @@ export function WorkspaceViewFilterMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
+        data-workspace-view-filter-menu="true"
         align="end"
         className={`${workspaceMenuContentClassName} w-80 overflow-hidden p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}

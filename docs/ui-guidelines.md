@@ -189,6 +189,7 @@ Rules:
 - Use `Tooltip` for icon-only actions whose meaning is not immediately obvious.
 - Workspace dropdowns, popovers, and context menus must use the shared menu tokens from `src/components/workspace/menu-styles.ts`; action rows should include a leading lucide icon, destructive actions should use the destructive menu style, and property-type menus should include a short secondary description.
 - Workspace menu checklist controls should use the shared circular checkbox token from `src/components/workspace/menu-styles.ts`; full form surfaces may keep the default square shadcn checkbox.
+- Workspace dropdowns, popovers, and context menus should treat the first outside pointer/click as an inactive dismiss zone: close the open menu and do not activate, select, focus, or open controls underneath that click.
 
 ## shadcn Composition Rules
 

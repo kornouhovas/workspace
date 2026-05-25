@@ -253,6 +253,7 @@ Table requirements:
 - The Customize Columns menu should allow hiding `Status` from the active view while keeping `Name` required.
 - When a column has active value filters, the header shows a compact filter indicator next to the property action menu.
 - Clicking a visible `Select` or `Multi-select` value chip opens the value-specific menu for rename, delete, and color actions. Re-clicking the same chip closes that menu. Clicking elsewhere in the cell closes any value-specific menu and opens the normal select value picker.
+- While any Table dropdown, popover, or context menu is open, the first click outside the menu closes it and must not activate the cell, header, view tab, or control underneath that click.
 
 ## Project Detail Panel
 

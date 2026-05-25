@@ -36,6 +36,10 @@ import {
   workspaceMenuLabelClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import {
+  blockOutsideWorkspaceMenuPointerDown,
+  isWorkspaceMenuSurfaceTarget,
+} from "@/components/workspace/menu-dismissal";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -78,6 +82,10 @@ type ViewTabPointerDragState = {
   readonly tabs: readonly ViewTabDragPreviewItem[];
 };
 
+const viewContextMenuSurfaceSelector = "[data-workspace-view-context-menu='true']";
+const viewDropdownMenuSurfaceSelector =
+  "[data-workspace-view-create-menu='true'], [data-workspace-view-actions-menu='true']";
+
 function renderViewIcon(view: WorkspaceView) {
   const iconClassName = "size-3.5 shrink-0";
 
@@ -104,8 +112,7 @@ function getViewTabDragOrder(
 }
 
 function isViewContextMenuTarget(target: EventTarget | null) {
-  return target instanceof Element
-    && Boolean(target.closest("[data-workspace-view-context-menu='true']"));
+  return isWorkspaceMenuSurfaceTarget(target, viewContextMenuSurfaceSelector);
 }
 
 export function WorkspaceViewTabs({
@@ -160,11 +167,9 @@ export function WorkspaceViewTabs({
     }
 
     function closeViewContextMenuOnOutsidePointerDown(event: PointerEvent) {
-      if (isViewContextMenuTarget(event.target)) {
-        return;
-      }
-
-      setContextMenuViewId(null);
+      blockOutsideWorkspaceMenuPointerDown(event, viewContextMenuSurfaceSelector, () => {
+        setContextMenuViewId(null);
+      });
     }
 
     function closeViewContextMenuOnEscape(event: KeyboardEvent) {
@@ -181,6 +186,25 @@ export function WorkspaceViewTabs({
       document.removeEventListener("keydown", closeViewContextMenuOnEscape);
     };
   }, [contextMenuViewId]);
+
+  useEffect(() => {
+    if (!openCreateViewMenu && !openViewActionsMenu) {
+      return undefined;
+    }
+
+    function closeViewDropdownMenusOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, viewDropdownMenuSurfaceSelector, () => {
+        setOpenCreateViewMenu(false);
+        setOpenViewActionsMenu(false);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);
+    };
+  }, [openCreateViewMenu, openViewActionsMenu]);
 
   function startRenameView(view: WorkspaceView) {
     cancelViewRenameRef.current = false;
@@ -531,7 +555,11 @@ export function WorkspaceViewTabs({
               <span>Add View</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-56`}>
+          <DropdownMenuContent
+            data-workspace-view-create-menu="true"
+            align="end"
+            className={`${workspaceMenuContentClassName} min-w-56`}
+          >
             <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add view</DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("board")}>
@@ -556,7 +584,11 @@ export function WorkspaceViewTabs({
               <MoreHorizontalIcon className="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} min-w-56`}>
+          <DropdownMenuContent
+            data-workspace-view-actions-menu="true"
+            align="end"
+            className={`${workspaceMenuContentClassName} min-w-56`}
+          >
             <DropdownMenuLabel className={workspaceMenuLabelClassName}>
               {activeView?.name || "View"}
             </DropdownMenuLabel>

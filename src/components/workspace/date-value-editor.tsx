@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lucide-icons";
 
 type WorkspaceDateValueEditorProps = {
@@ -13,6 +14,7 @@ type WorkspaceDateValueEditorProps = {
 };
 
 const weekDayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const dateValueMenuSurfaceSelector = "[data-workspace-date-value-menu='true']";
 
 function stopDateEditorActivation(event: { stopPropagation: () => void }) {
   event.stopPropagation();
@@ -80,6 +82,24 @@ export function WorkspaceDateValueEditor({
     setOpen(false);
   }, [dismissSignal]);
 
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    function closeDateValueMenuOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, dateValueMenuSurfaceSelector, () => {
+        setOpen(false);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeDateValueMenuOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeDateValueMenuOnOutsidePointerDown, true);
+    };
+  }, [open]);
+
   function moveMonth(offset: number) {
     setMonthDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
   }
@@ -146,6 +166,7 @@ export function WorkspaceDateValueEditor({
           </Button>
         </PopoverTrigger>
         <PopoverContent
+          data-workspace-date-value-menu="true"
           align="start"
           className="w-72"
           onClick={stopDateEditorActivation}

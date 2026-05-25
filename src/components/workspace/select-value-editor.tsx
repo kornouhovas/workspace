@@ -36,6 +36,7 @@ import {
   workspaceMenuLabelClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
@@ -64,6 +65,8 @@ type SelectValueActionState = {
 } | null;
 
 const valueColorOptions = ["gray", "red", "orange", "yellow", "green", "blue", "purple"] as const;
+const selectValueMenuSurfaceSelector =
+  "[data-workspace-select-value-menu='true'], [data-workspace-actions-popover='true']";
 
 function stopSelectionEditorActivation(event: { stopPropagation: () => void }) {
   event.stopPropagation();
@@ -284,6 +287,30 @@ export function WorkspaceSelectValueEditor({
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
   }
+
+  useEffect(() => {
+    if (!open && !selectValueAction) {
+      return undefined;
+    }
+
+    function closeSelectValueMenusOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, selectValueMenuSurfaceSelector, () => {
+        if (editingSelectValueId) {
+          commitActiveRenameSelectValue();
+        }
+
+        closingDropdownForSelectValueActionRef.current = null;
+        setOpen(false);
+        setSelectValueAction(null);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeSelectValueMenusOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeSelectValueMenusOnOutsidePointerDown, true);
+    };
+  }, [editingSelectValueId, editingSelectValueName, open, selectValueAction, values]);
 
   function deleteSelectValue(selectValue: WorkspaceSelectValueState) {
     setSelectValueAction(null);

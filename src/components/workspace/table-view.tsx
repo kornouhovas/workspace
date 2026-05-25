@@ -53,6 +53,10 @@ import {
   workspaceMenuOptionItemClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import {
+  blockOutsideWorkspaceMenuPointerDown,
+  isWorkspaceMenuSurfaceTarget,
+} from "@/components/workspace/menu-dismissal";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type {
@@ -138,6 +142,9 @@ const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border)]";
 const propertyMenuWidth = 240;
 const propertyMenuOffset = 4;
 const propertyMenuViewportMargin = 8;
+const propertyMenuSurfaceSelector = "[data-workspace-property-menu='true']";
+const propertyMenuTargetSelector = `${propertyMenuSurfaceSelector}, [data-workspace-property-menu-trigger='true']`;
+const tableAddPropertyMenuSurfaceSelector = "[data-workspace-table-add-property-menu='true']";
 
 function getDefaultPropertyColumnWidth(property: WorkspaceMockVisibleProperty) {
   if (property.id === "property:name") {
@@ -204,8 +211,7 @@ function isRequiredViewProperty(propertyId: string) {
 }
 
 function isPropertyMenuTarget(target: EventTarget | null) {
-  return target instanceof Element
-    && Boolean(target.closest("[data-workspace-property-menu='true'], [data-workspace-property-menu-trigger='true']"));
+  return isWorkspaceMenuSurfaceTarget(target, propertyMenuTargetSelector);
 }
 
 function clampPropertyMenuLeft(left: number) {
@@ -629,12 +635,10 @@ export function WorkspaceTableView({
     }
 
     function closePropertyMenuOnOutsidePointerDown(event: PointerEvent) {
-      if (isPropertyMenuTarget(event.target)) {
-        return;
-      }
-
-      setOpenPropertyMenuId(null);
-      setPropertyMenuAnchor(null);
+      blockOutsideWorkspaceMenuPointerDown(event, propertyMenuSurfaceSelector, () => {
+        setOpenPropertyMenuId(null);
+        setPropertyMenuAnchor(null);
+      });
     }
 
     function closePropertyMenuOnEscape(event: KeyboardEvent) {
@@ -652,6 +656,24 @@ export function WorkspaceTableView({
       document.removeEventListener("keydown", closePropertyMenuOnEscape);
     };
   }, [openPropertyMenuId]);
+
+  useEffect(() => {
+    if (!openAddPropertyMenu) {
+      return undefined;
+    }
+
+    function closeAddPropertyMenuOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, tableAddPropertyMenuSurfaceSelector, () => {
+        setOpenAddPropertyMenu(false);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+    };
+  }, [openAddPropertyMenu]);
 
   function beginRenameProperty(property: WorkspaceMockVisibleProperty) {
     if (!canRenameProperty(property)) {
@@ -1216,7 +1238,11 @@ export function WorkspaceTableView({
                       <PlusIcon className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={`${workspaceMenuContentClassName} w-64`}>
+                  <DropdownMenuContent
+                    data-workspace-table-add-property-menu="true"
+                    align="end"
+                    className={`${workspaceMenuContentClassName} w-64`}
+                  >
                     <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       {propertyTypeOptions.map((option) => (
