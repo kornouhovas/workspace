@@ -47,6 +47,7 @@ type WorkspaceSelectValueEditorProps = {
   readonly value: unknown;
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly dismissSignal?: number;
+  readonly containerClassName?: string;
   readonly triggerClassName?: string;
   readonly onValueChange: (value: unknown) => void;
   readonly onCreateSelectValue: (
@@ -171,6 +172,7 @@ export function WorkspaceSelectValueEditor({
   value,
   selectValues,
   dismissSignal,
+  containerClassName,
   triggerClassName,
   onValueChange,
   onCreateSelectValue,
@@ -564,7 +566,11 @@ export function WorkspaceSelectValueEditor({
   }
 
   return (
-    <div onClick={stopSelectionEditorActivation} onPointerDown={stopSelectionEditorActivation}>
+    <div
+      className={containerClassName}
+      onClick={stopSelectionEditorActivation}
+      onPointerDown={stopSelectionEditorActivation}
+    >
       <DropdownMenu
         open={open}
         onOpenChange={handleSelectValuePickerOpenChange}

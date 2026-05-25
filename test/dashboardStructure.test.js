@@ -954,6 +954,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /workspace-project-detail-value-trigger/);
   assert.match(dateValueEditorSource, /data-empty-value=\{dateValue \? undefined : "true"\}/);
   assert.match(selectValueEditorSource, /data-empty-value=\{selectedValueItems\.length > 0 \? undefined : "true"\}/);
+  assert.match(selectValueEditorSource, /readonly containerClassName\?: string/);
+  assert.match(selectValueEditorSource, /className=\{containerClassName\}/);
+  assert.match(dateValueEditorSource, /readonly containerClassName\?: string/);
+  assert.match(dateValueEditorSource, /className=\{containerClassName\}/);
+  assert.match(projectDetailPanelSource, /containerClassName="w-full min-w-0"/);
   assert.match(cssSource, /\.workspace-project-detail-value-trigger\[data-empty-value="true"\]:hover/);
   assert.match(cssSource, /\.workspace-project-detail-value-trigger:has\(\.workspace-table-select-value-chip:hover\):hover/);
   assert.match(cssSource, /\.workspace-project-detail-value-trigger \.workspace-table-select-value-chip:hover/);

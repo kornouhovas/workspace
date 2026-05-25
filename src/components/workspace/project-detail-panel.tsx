@@ -667,6 +667,7 @@ function ProjectPropertyValueEditor({
     return (
       <WorkspaceDateValueEditor
         value={value}
+        containerClassName="w-full min-w-0"
         triggerClassName={projectDetailPlainTriggerClassName}
         onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
       />
@@ -679,6 +680,7 @@ function ProjectPropertyValueEditor({
         property={property}
         value={value}
         selectValues={selectValues}
+        containerClassName="w-full min-w-0"
         triggerClassName={projectDetailPlainTriggerClassName}
         onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
         onCreateSelectValue={onCreateSelectValue}

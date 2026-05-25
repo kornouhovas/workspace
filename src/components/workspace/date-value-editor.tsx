@@ -9,6 +9,7 @@ import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lu
 type WorkspaceDateValueEditorProps = {
   readonly value: unknown;
   readonly dismissSignal?: number;
+  readonly containerClassName?: string;
   readonly triggerClassName?: string;
   readonly onValueChange: (value: string | null) => void;
 };
@@ -69,6 +70,7 @@ function getMonthLabel(monthDate: Date) {
 export function WorkspaceDateValueEditor({
   value,
   dismissSignal,
+  containerClassName,
   triggerClassName,
   onValueChange,
 }: WorkspaceDateValueEditorProps) {
@@ -134,7 +136,11 @@ export function WorkspaceDateValueEditor({
   }
 
   return (
-    <div onClick={stopDateEditorActivation} onPointerDown={stopDateEditorActivation}>
+    <div
+      className={containerClassName}
+      onClick={stopDateEditorActivation}
+      onPointerDown={stopDateEditorActivation}
+    >
       <Popover
         open={open}
         onOpenChange={(nextOpen) => {
