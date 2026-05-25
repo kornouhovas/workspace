@@ -417,6 +417,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /min-w-56/);
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
+  assert.match(viewTabsSource, /function isViewContextMenuTarget/);
+  assert.match(viewTabsSource, /closeViewContextMenuOnOutsidePointerDown/);
+  assert.match(viewTabsSource, /document\.addEventListener\("pointerdown", closeViewContextMenuOnOutsidePointerDown, true\)/);
+  assert.match(viewTabsSource, /data-workspace-view-context-menu="true"/);
+  assert.doesNotMatch(viewTabsSource, /onMouseLeave=\{\(\) => setContextMenuViewId\(null\)\}/);
   assert.doesNotMatch(leftPanelSource, /window\.prompt/);
   assert.doesNotMatch(viewTabsSource, /window\.prompt/);
   assert.doesNotMatch(viewTabsSource, /\bcapitalize\b/);
@@ -853,6 +858,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverOpen/);
   assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverOpen\}/);
   assert.match(selectValueEditorSource, /onInteractOutside=\{keepSelectValueActionsPopoverOpen\}/);
+  const selectValueActionsOutsideGuard = selectValueEditorSource.slice(
+    selectValueEditorSource.indexOf("function keepSelectValueActionsPopoverOpen"),
+    selectValueEditorSource.indexOf("function getSelectValuesForProperty"),
+  );
+  assert.match(selectValueActionsOutsideGuard, /data-workspace-actions-popover/);
+  assert.doesNotMatch(selectValueActionsOutsideGuard, /data-workspace-select-value-menu/);
   assert.match(selectValueEditorSource, /side=\{options\.side \|\| "right"\}/);
   assert.doesNotMatch(selectValueEditorSource, /DropdownMenuSub/);
   assert.doesNotMatch(selectValueEditorSource, /mx-1 mb-1/);

@@ -103,6 +103,11 @@ function getViewTabDragOrder(
   ];
 }
 
+function isViewContextMenuTarget(target: EventTarget | null) {
+  return target instanceof Element
+    && Boolean(target.closest("[data-workspace-view-context-menu='true']"));
+}
+
 export function WorkspaceViewTabs({
   activeViewId,
   views,
@@ -148,6 +153,34 @@ export function WorkspaceViewTabs({
     setViewTabDragState(null);
     suppressViewClickRef.current = null;
   }, [dismissSignal]);
+
+  useEffect(() => {
+    if (!contextMenuViewId) {
+      return undefined;
+    }
+
+    function closeViewContextMenuOnOutsidePointerDown(event: PointerEvent) {
+      if (isViewContextMenuTarget(event.target)) {
+        return;
+      }
+
+      setContextMenuViewId(null);
+    }
+
+    function closeViewContextMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setContextMenuViewId(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);
+    document.addEventListener("keydown", closeViewContextMenuOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);
+      document.removeEventListener("keydown", closeViewContextMenuOnEscape);
+    };
+  }, [contextMenuViewId]);
 
   function startRenameView(view: WorkspaceView) {
     cancelViewRenameRef.current = false;
@@ -554,10 +587,10 @@ export function WorkspaceViewTabs({
       </div>
       {contextMenuView ? (
         <div
+          data-workspace-view-context-menu="true"
           className={`fixed z-50 min-w-56 ${workspaceMenuContentClassName}`}
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
           role="menu"
-          onMouseLeave={() => setContextMenuViewId(null)}
         >
           <button
             type="button"

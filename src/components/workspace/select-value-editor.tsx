@@ -83,7 +83,7 @@ function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; 
 function keepSelectValueActionsPopoverOpen(event: { target: EventTarget | null; preventDefault: () => void }) {
   if (
     event.target instanceof Element
-    && event.target.closest("[data-workspace-select-value-menu='true'], [data-workspace-actions-popover='true']")
+    && event.target.closest("[data-workspace-actions-popover='true']")
   ) {
     event.preventDefault();
   }
