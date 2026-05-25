@@ -92,6 +92,17 @@ function keepSelectValueActionsPopoverOpen(event: { target: EventTarget | null; 
   }
 }
 
+function keepSelectValueActionsPopoverFocusInsidePicker(
+  event: { target: EventTarget | null; preventDefault: () => void },
+) {
+  if (
+    event.target instanceof Element
+    && event.target.closest("[data-workspace-actions-popover='true'], [data-workspace-select-value-menu='true']")
+  ) {
+    event.preventDefault();
+  }
+}
+
 function getSelectValuesForProperty(
   selectValues: readonly WorkspaceSelectValueState[],
   propertyId: string,
@@ -417,7 +428,7 @@ export function WorkspaceSelectValueEditor({
         sideOffset={options.sideOffset ?? 8}
         className={`${workspaceMenuContentClassName} w-56`}
         onOpenAutoFocus={(event) => event.preventDefault()}
-        onFocusOutside={keepSelectValueActionsPopoverOpen}
+        onFocusOutside={keepSelectValueActionsPopoverFocusInsidePicker}
         onInteractOutside={keepSelectValueActionsPopoverOpen}
         onClick={stopSelectionEditorActivation}
         onPointerDown={stopSelectionEditorActivation}

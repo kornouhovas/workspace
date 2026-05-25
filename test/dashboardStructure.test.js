@@ -875,15 +875,15 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(selectValueEditorSource, /closingDropdownForSelectValueActionRef\.current = selectValue\.id/);
   assert.match(selectValueEditorSource, /setOpen\(false\);[\s\S]*setSelectValueAction\(\{ selectValueId: selectValue\.id, source: "chip" \}\)/);
   assert.match(selectValueEditorSource, /if \(nextOpen\) \{[\s\S]*setSelectValueAction\(null\)/);
-  assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverOpen/);
-  assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverOpen\}/);
+  assert.match(selectValueEditorSource, /keepSelectValueActionsPopoverFocusInsidePicker/);
+  assert.match(selectValueEditorSource, /onFocusOutside=\{keepSelectValueActionsPopoverFocusInsidePicker\}/);
   assert.match(selectValueEditorSource, /onInteractOutside=\{keepSelectValueActionsPopoverOpen\}/);
   const selectValueActionsOutsideGuard = selectValueEditorSource.slice(
-    selectValueEditorSource.indexOf("function keepSelectValueActionsPopoverOpen"),
+    selectValueEditorSource.indexOf("function keepSelectValueActionsPopoverFocusInsidePicker"),
     selectValueEditorSource.indexOf("function getSelectValuesForProperty"),
   );
   assert.match(selectValueActionsOutsideGuard, /data-workspace-actions-popover/);
-  assert.doesNotMatch(selectValueActionsOutsideGuard, /data-workspace-select-value-menu/);
+  assert.match(selectValueActionsOutsideGuard, /data-workspace-select-value-menu/);
   assert.match(selectValueEditorSource, /side=\{options\.side \|\| "right"\}/);
   assert.doesNotMatch(selectValueEditorSource, /DropdownMenuSub/);
   assert.doesNotMatch(selectValueEditorSource, /mx-1 mb-1/);
