@@ -1442,25 +1442,13 @@ export function WorkspaceProjectDetailPanel({
                           data-card-property-row-id={property.id}
                           data-card-property-row-group="visible"
                           className={[
-                            "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
+                            "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
                             cardPropertyDrag ? "transition-transform ease-out" : "",
                             cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                           ].filter(Boolean).join(" ")}
                           style={{
                             gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                             ...getCardPropertyDragStyle(property.id, "visible"),
-                          }}
-                          onContextMenu={(event) => {
-                            if (!propertyMenuAvailable) {
-                              return;
-                            }
-
-                            if (closePropertyMenuBeforeAction(event)) {
-                              return;
-                            }
-
-                            event.preventDefault();
-                            openCardPropertyMenu(property.id);
                           }}
                         >
                           <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
@@ -1490,7 +1478,7 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={`Open ${property.name} property menu`}
-                                  className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                   onPointerDown={(event) => (
                                     startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
                                   )}
@@ -1523,7 +1511,7 @@ export function WorkspaceProjectDetailPanel({
                               <button
                                 type="button"
                                 aria-label={`Reorder ${property.name} card property order`}
-                                className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                 onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
                               >
                                 <span className="flex h-full items-center justify-center text-muted-foreground/70">
@@ -1633,25 +1621,13 @@ export function WorkspaceProjectDetailPanel({
                                 data-card-property-row-id={property.id}
                                 data-card-property-row-group="hidden"
                                 className={[
-                                  "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0 hover:bg-accent/15",
+                                  "group/card-property grid min-h-10 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
                                   cardPropertyDrag ? "transition-transform ease-out" : "",
                                   cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                                 ].filter(Boolean).join(" ")}
                                 style={{
                                   gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
-                                }}
-                                onContextMenu={(event) => {
-                                  if (!propertyMenuAvailable) {
-                                    return;
-                                  }
-
-                                  if (closePropertyMenuBeforeAction(event)) {
-                                    return;
-                                  }
-
-                                  event.preventDefault();
-                                  openCardPropertyMenu(property.id);
                                 }}
                               >
                                 <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
@@ -1681,7 +1657,7 @@ export function WorkspaceProjectDetailPanel({
                                       <button
                                         type="button"
                                         aria-label={`Open ${property.name} property menu`}
-                                        className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                        className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                         onPointerDown={(event) => (
                                           startCardPropertyDrag(event, property.id, {
                                             group: "hidden",
@@ -1717,7 +1693,7 @@ export function WorkspaceProjectDetailPanel({
                                     <button
                                       type="button"
                                       aria-label={`Reorder ${property.name} card property order`}
-                                      className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center text-left text-[13px] font-medium text-muted-foreground outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                       onPointerDown={(event) =>
                                         startCardPropertyDrag(event, property.id, { group: "hidden" })
                                       }
@@ -1730,59 +1706,19 @@ export function WorkspaceProjectDetailPanel({
                                   )}
                                 </dt>
                                 <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
-                                  {isProtectedCardProperty(property) && propertyMenuAvailable ? (
-                                    <button
-                                      type="button"
-                                      aria-label={`Open ${property.name} hidden property value menu`}
-                                      className="flex min-h-8 w-full min-w-0 items-center rounded-md text-left transition-colors hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                                      onClick={(event) => {
-                                        if (closePropertyMenuBeforeAction(event)) {
-                                          return;
-                                        }
-
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        openCardPropertyMenu(property.id);
-                                      }}
-                                      onContextMenu={(event) => {
-                                        if (closePropertyMenuBeforeAction(event)) {
-                                          return;
-                                        }
-
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                        openCardPropertyMenu(property.id);
-                                      }}
-                                    >
-                                      <ProjectPropertyValueEditor
-                                        project={displayedProject}
-                                        property={property}
-                                        selectValues={selectValues}
-                                        editing={editingPropertyId === property.id}
-                                        onStartEditing={() => setEditingPropertyId(property.id)}
-                                        onStopEditing={() => setEditingPropertyId(null)}
-                                        onProjectPropertyValueChange={onProjectPropertyValueChange}
-                                        onCreateSelectValue={onCreateSelectValue}
-                                        onRenameSelectValue={onRenameSelectValue}
-                                        onColorSelectValue={onColorSelectValue}
-                                        onDeleteSelectValue={onDeleteSelectValue}
-                                      />
-                                    </button>
-                                  ) : (
-                                    <ProjectPropertyValueEditor
-                                      project={displayedProject}
-                                      property={property}
-                                      selectValues={selectValues}
-                                      editing={editingPropertyId === property.id}
-                                      onStartEditing={() => setEditingPropertyId(property.id)}
-                                      onStopEditing={() => setEditingPropertyId(null)}
-                                      onProjectPropertyValueChange={onProjectPropertyValueChange}
-                                      onCreateSelectValue={onCreateSelectValue}
-                                      onRenameSelectValue={onRenameSelectValue}
-                                      onColorSelectValue={onColorSelectValue}
-                                      onDeleteSelectValue={onDeleteSelectValue}
-                                    />
-                                  )}
+                                  <ProjectPropertyValueEditor
+                                    project={displayedProject}
+                                    property={property}
+                                    selectValues={selectValues}
+                                    editing={editingPropertyId === property.id}
+                                    onStartEditing={() => setEditingPropertyId(property.id)}
+                                    onStopEditing={() => setEditingPropertyId(null)}
+                                    onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                    onCreateSelectValue={onCreateSelectValue}
+                                    onRenameSelectValue={onRenameSelectValue}
+                                    onColorSelectValue={onColorSelectValue}
+                                    onDeleteSelectValue={onDeleteSelectValue}
+                                  />
                                 </dd>
                               </div>
                               {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}
