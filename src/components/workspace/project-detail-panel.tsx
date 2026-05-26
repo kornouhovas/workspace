@@ -1730,19 +1730,59 @@ export function WorkspaceProjectDetailPanel({
                                   )}
                                 </dt>
                                 <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
-                                  <ProjectPropertyValueEditor
-                                    project={displayedProject}
-                                    property={property}
-                                    selectValues={selectValues}
-                                    editing={editingPropertyId === property.id}
-                                    onStartEditing={() => setEditingPropertyId(property.id)}
-                                    onStopEditing={() => setEditingPropertyId(null)}
-                                    onProjectPropertyValueChange={onProjectPropertyValueChange}
-                                    onCreateSelectValue={onCreateSelectValue}
-                                    onRenameSelectValue={onRenameSelectValue}
-                                    onColorSelectValue={onColorSelectValue}
-                                    onDeleteSelectValue={onDeleteSelectValue}
-                                  />
+                                  {isProtectedCardProperty(property) && propertyMenuAvailable ? (
+                                    <button
+                                      type="button"
+                                      aria-label={`Open ${property.name} hidden property value menu`}
+                                      className="flex min-h-8 w-full min-w-0 items-center rounded-md text-left transition-colors hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      onClick={(event) => {
+                                        if (closePropertyMenuBeforeAction(event)) {
+                                          return;
+                                        }
+
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openCardPropertyMenu(property.id);
+                                      }}
+                                      onContextMenu={(event) => {
+                                        if (closePropertyMenuBeforeAction(event)) {
+                                          return;
+                                        }
+
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openCardPropertyMenu(property.id);
+                                      }}
+                                    >
+                                      <ProjectPropertyValueEditor
+                                        project={displayedProject}
+                                        property={property}
+                                        selectValues={selectValues}
+                                        editing={editingPropertyId === property.id}
+                                        onStartEditing={() => setEditingPropertyId(property.id)}
+                                        onStopEditing={() => setEditingPropertyId(null)}
+                                        onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                        onCreateSelectValue={onCreateSelectValue}
+                                        onRenameSelectValue={onRenameSelectValue}
+                                        onColorSelectValue={onColorSelectValue}
+                                        onDeleteSelectValue={onDeleteSelectValue}
+                                      />
+                                    </button>
+                                  ) : (
+                                    <ProjectPropertyValueEditor
+                                      project={displayedProject}
+                                      property={property}
+                                      selectValues={selectValues}
+                                      editing={editingPropertyId === property.id}
+                                      onStartEditing={() => setEditingPropertyId(property.id)}
+                                      onStopEditing={() => setEditingPropertyId(null)}
+                                      onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                      onCreateSelectValue={onCreateSelectValue}
+                                      onRenameSelectValue={onRenameSelectValue}
+                                      onColorSelectValue={onColorSelectValue}
+                                      onDeleteSelectValue={onDeleteSelectValue}
+                                    />
+                                  )}
                                 </dd>
                               </div>
                               {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}
