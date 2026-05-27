@@ -495,6 +495,36 @@ function ProjectTablePropertyValueEditor({
     );
   }
 
+  function renderWrappedTextEditor(label: string) {
+    return (
+      <div
+        className="workspace-table-wrapped-text-editor-frame workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-sm text-foreground transition-colors focus-within:border-ring focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/30"
+        onPointerDown={stopCellActivation}
+        onClick={stopCellActivation}
+      >
+        <WorkspaceTextValueTextarea
+          key={editorKey}
+          defaultValue={label}
+          aria-label={`${property.name} text value`}
+          autoFocus
+          className="workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md border-0 bg-transparent px-1 py-0.5 shadow-none focus-visible:border-0 focus-visible:bg-transparent focus-visible:ring-0"
+          onPointerDown={stopCellActivation}
+          onBlur={(event) => {
+            saveValue(event.target.value);
+            onStopEditingCell();
+          }}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   if (property.propertyType === "number") {
     if (!editing) {
       return renderCellDisplay(formatNumberDisplayValue(value));
@@ -562,27 +592,7 @@ function ProjectTablePropertyValueEditor({
     return renderTextCellDisplay(stringifyEditableValue(value));
   }
 
-  return (
-    <WorkspaceTextValueTextarea
-      key={editorKey}
-      defaultValue={stringifyEditableValue(value)}
-      aria-label={`${property.name} text value`}
-      autoFocus
-      className="min-h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
-      onPointerDown={stopCellActivation}
-      onBlur={(event) => {
-        saveValue(event.target.value);
-        onStopEditingCell();
-      }}
-      onKeyDown={(event) => {
-        event.stopPropagation();
-        if (event.key === "Escape") {
-          event.preventDefault();
-          event.currentTarget.blur();
-        }
-      }}
-    />
-  );
+  return renderWrappedTextEditor(stringifyEditableValue(value));
 }
 
 export function WorkspaceTableView({

@@ -573,6 +573,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /Wrap content/);
   assert.match(tableViewSource, /property\.propertyType === "text" && wrapContent/);
   assert.match(tableViewSource, /workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words \[overflow-wrap:anywhere\] rounded-md px-1 py-0\.5/);
+  assert.match(tableViewSource, /function renderWrappedTextEditor/);
+  assert.match(tableViewSource, /workspace-table-wrapped-text-editor-frame/);
+  assert.match(tableViewSource, /border-0 bg-transparent px-1 py-0\.5/);
+  assert.match(tableViewSource, /focus-within:border-ring focus-within:bg-background focus-within:ring-2 focus-within:ring-ring\/30/);
+  assert.match(tableViewSource, /return renderWrappedTextEditor\(stringifyEditableValue\(value\)\);/);
   assert.match(tableViewSource, /workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0\.5/);
   assert.match(tableViewSource, /if \(property\.propertyType === "text" && !wrapContent\) \{[\s\S]*return renderTextEditorPopover\(stringifyEditableValue\(value\)\);[\s\S]*\}/);
   assert.match(appSource, /viewPropertyLayoutUpdated/);
