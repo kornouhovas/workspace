@@ -29,6 +29,7 @@ import {
   workspaceMenuOptionItemClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import {
   Popover,
   PopoverAnchor,
@@ -130,6 +131,7 @@ const projectDetailMultilineValueClassName =
   "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-medium leading-5 text-foreground";
 const projectDetailPlainTriggerClassName =
   "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+const detailAddPropertyMenuSurfaceSelector = "[data-workspace-detail-add-property-menu='true']";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
 const propertyTypeOptions: readonly ProjectDetailPropertyTypeOption[] = [
   { value: "text", label: "Text", description: "Short notes or free text" },
@@ -726,6 +728,7 @@ export function WorkspaceProjectDetailPanel({
   const [renamingPropertyId, setRenamingPropertyId] = useState<string | null>(null);
   const [renamingPropertyName, setRenamingPropertyName] = useState("");
   const [hiddenPropertiesExpanded, setHiddenPropertiesExpanded] = useState(true);
+  const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
   const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
   const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(readSavedCardHiddenPropertyIds);
   const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
@@ -791,6 +794,7 @@ export function WorkspaceProjectDetailPanel({
       setPropertyActionsId(null);
       setRenamingPropertyId(null);
       setRenamingPropertyName("");
+      setOpenAddPropertyMenu(false);
     }
   }, [isOpen, project?.id]);
 
@@ -892,6 +896,24 @@ export function WorkspaceProjectDetailPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onOpenChange]);
 
+  useEffect(() => {
+    if (!openAddPropertyMenu) {
+      return undefined;
+    }
+
+    function closeAddPropertyMenuOnOutsidePointerDown(event: PointerEvent) {
+      blockOutsideWorkspaceMenuPointerDown(event, detailAddPropertyMenuSurfaceSelector, () => {
+        setOpenAddPropertyMenu(false);
+      });
+    }
+
+    document.addEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+    };
+  }, [openAddPropertyMenu]);
+
   function updatePanelWidth(nextWidth: number) {
     const clampedWidth = clampProjectDetailPanelWidth(nextWidth);
     panelWidthRef.current = clampedWidth;
@@ -982,6 +1004,7 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function createPropertyFromType(option: ProjectDetailPropertyTypeOption) {
+    setOpenAddPropertyMenu(false);
     onCreateProperty({ name: option.label, type: option.value });
   }
 
@@ -1543,7 +1566,10 @@ export function WorkspaceProjectDetailPanel({
                       </Popover>
                     );
                   })}
-                  <DropdownMenu>
+                  <DropdownMenu
+                    open={openAddPropertyMenu}
+                    onOpenChange={setOpenAddPropertyMenu}
+                  >
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
@@ -1563,7 +1589,11 @@ export function WorkspaceProjectDetailPanel({
                         </span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className={`${workspaceMenuContentClassName} w-64`}>
+                    <DropdownMenuContent
+                      data-workspace-detail-add-property-menu="true"
+                      align="start"
+                      className={`${workspaceMenuContentClassName} w-64`}
+                    >
                       <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
                       <DropdownMenuGroup>
                         {propertyTypeOptions.map((option) => (

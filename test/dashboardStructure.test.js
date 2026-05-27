@@ -804,6 +804,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /PopoverAnchor asChild/);
   assert.match(projectDetailPanelSource, /PopoverContent/);
   assert.match(projectDetailPanelSource, /DropdownMenuTrigger asChild[\s\S]*Add property/);
+  assert.match(projectDetailPanelSource, /detailAddPropertyMenuSurfaceSelector/);
+  assert.match(projectDetailPanelSource, /blockOutsideWorkspaceMenuPointerDown/);
+  assert.match(projectDetailPanelSource, /const \[openAddPropertyMenu, setOpenAddPropertyMenu\] = useState\(false\);/);
+  assert.match(projectDetailPanelSource, /setOpenAddPropertyMenu\(false\);[\s\S]*onCreateProperty\(\{ name: option\.label, type: option\.value \}\);/);
+  assert.match(projectDetailPanelSource, /if \(!openAddPropertyMenu\) \{[\s\S]*return undefined;[\s\S]*blockOutsideWorkspaceMenuPointerDown\(event, detailAddPropertyMenuSurfaceSelector, \(\) => \{[\s\S]*setOpenAddPropertyMenu\(false\);/);
+  assert.match(projectDetailPanelSource, /<DropdownMenu\s+open=\{openAddPropertyMenu\}\s+onOpenChange=\{setOpenAddPropertyMenu\}/);
+  assert.match(projectDetailPanelSource, /data-workspace-detail-add-property-menu="true"/);
   assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
   assert.match(projectDetailPanelSource, /aria-label=\{`Open \$\{property\.name\} property menu`\}\s+className="[^"]*cursor-grab[^"]*"\s+onPointerDown=\{\(event\) =>\s*\(\s*startCardPropertyDrag\(event, property\.id, \{ openActionsOnClick: true \}\)\s*\)\}/);
