@@ -507,7 +507,7 @@ function ProjectTablePropertyValueEditor({
           defaultValue={label}
           aria-label={`${property.name} text value`}
           autoFocus
-          className="workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md border-0 bg-transparent px-1 py-0.5 shadow-none focus-visible:border-0 focus-visible:bg-transparent focus-visible:ring-0"
+          className="workspace-table-text-value block w-full min-w-0 min-h-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md border-0 bg-transparent px-1 py-0.5 shadow-none focus-visible:border-0 focus-visible:bg-transparent focus-visible:ring-0"
           onPointerDown={stopCellActivation}
           onBlur={(event) => {
             saveValue(event.target.value);
