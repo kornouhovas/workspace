@@ -28,6 +28,7 @@ test("renderer composes the workspace product shell", async () => {
     viewFilterMenuSource,
     selectValueEditorSource,
     dateValueEditorSource,
+    textValueEditorSource,
     popoverSource,
     workspaceAppStateSource,
     buildRendererSource,
@@ -56,6 +57,7 @@ test("renderer composes the workspace product shell", async () => {
     readProjectFile("src/components/workspace/view-filter-menu.tsx"),
     readProjectFile("src/components/workspace/select-value-editor.tsx"),
     readProjectFile("src/components/workspace/date-value-editor.tsx"),
+    readProjectFile("src/components/workspace/text-value-editor.tsx"),
     readProjectFile("src/components/ui/popover.tsx"),
     readProjectFile("src/workspaceAppState.ts"),
     readProjectFile("scripts/build-renderer.mjs"),
@@ -576,6 +578,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /viewPropertyLayoutUpdated/);
   assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
+  assert.match(textValueEditorSource, /useLayoutEffect/);
+  assert.doesNotMatch(textValueEditorSource, /useEffect/);
   assert.match(tableViewSource, /openProjectFromNameCell/);
   assert.match(tableViewSource, /property\.id === "property:name"/);
   assert.doesNotMatch(tableViewSource, /label \|\| "Empty"/);

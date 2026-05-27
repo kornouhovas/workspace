@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { TextareaHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ export function WorkspaceTextValueTextarea({
 }: WorkspaceTextValueTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     resizeTextValueTextarea(textareaRef.current);
   }, [defaultValue]);
 
