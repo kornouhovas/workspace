@@ -78,7 +78,7 @@ Rules:
 
 - Table columns are controlled by active view settings.
 - Table view should keep rows compact for short values.
-- `Text` values are compact and single-line by default; when `Wrap content` is enabled for that Text property in the active view, manual line breaks are preserved visually and long text wraps inside the column, allowing row height to expand.
+- `Text` values are compact and single-line by default; editing a compact Text cell opens a popover editor anchored to the cell so the row height stays stable. When `Wrap content` is enabled for that Text property in the active view, manual line breaks are preserved visually and long text wraps inside the column, allowing row height to expand.
 - Horizontal scrolling is allowed when columns exceed viewport width.
 
 ## View Management Path

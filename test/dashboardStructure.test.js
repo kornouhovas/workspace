@@ -511,7 +511,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /propertyMenuAnchor/);
   assert.match(tableViewSource, /fixed z-50 w-60/);
   assert.match(tableViewSource, /style=\{\{ left: propertyMenuAnchor\.left, top: propertyMenuAnchor\.top \}\}/);
-  assert.doesNotMatch(tableViewSource, /PopoverContent/);
   assert.doesNotMatch(tableViewSource, /DropdownMenuCheckboxItem/);
   assert.match(tableViewSource, /import \{ Checkbox \} from "@\/components\/ui\/checkbox";/);
   assert.match(tableViewSource, /workspaceMenuCheckboxClassName/);
@@ -540,6 +539,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /WorkspaceSelectValueEditor/);
   assert.match(tableViewSource, /WorkspaceDateValueEditor/);
   assert.match(tableViewSource, /WorkspaceTextValueTextarea/);
+  assert.match(tableViewSource, /PopoverTrigger/);
+  assert.match(tableViewSource, /function renderTextEditorPopover/);
+  assert.match(tableViewSource, /property\.propertyType === "text" && !wrapContent/);
+  assert.match(tableViewSource, /style=\{\{ width: "var\(--radix-popover-trigger-width\)" \}\}/);
+  assert.match(tableViewSource, /className="workspace-table-text-editor-popover/);
+  assert.match(tableViewSource, /editing \? \(/);
   assert.match(tableViewSource, /isEditableProperty/);
   assert.match(tableViewSource, /onProjectPropertyValueChange/);
   assert.match(appSource, /workspaceClient\.updateProjectPropertyValue/);
@@ -567,6 +572,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /property\.propertyType === "text" && wrapContent/);
   assert.match(tableViewSource, /workspace-table-text-value block w-full min-w-0 whitespace-pre-wrap break-words \[overflow-wrap:anywhere\] rounded-md px-1 py-0\.5/);
   assert.match(tableViewSource, /workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0\.5/);
+  assert.match(tableViewSource, /if \(property\.propertyType === "text" && !wrapContent\) \{[\s\S]*return renderTextEditorPopover\(stringifyEditableValue\(value\)\);[\s\S]*\}/);
   assert.match(appSource, /viewPropertyLayoutUpdated/);
   assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);

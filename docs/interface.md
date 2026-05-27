@@ -241,6 +241,7 @@ Table requirements:
 
 - Rows remain compact for short values.
 - `Text` property values preserve stored manual line breaks, but Table shows them compactly in one line by default.
+- In compact one-line `Text` mode, editing opens a popover editor anchored to the cell so the row height does not expand while typing longer text.
 - The Text column property menu includes `Wrap content`; when enabled for that view, the column preserves manual line breaks visually, wraps long text inside the stable column width, and lets row height expand.
 - Clicking a row opens the right Project Detail Panel.
 - Table should render as a compact bordered grid with subtle row separators and vertical dividers aligned between headers and values.

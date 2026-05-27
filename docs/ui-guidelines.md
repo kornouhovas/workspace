@@ -100,7 +100,7 @@ Rules:
 - Table, Customize Columns, and Project Detail property menus should expose the same rename affordance for system `Name` and `Status` labels as for custom properties, but system-only restrictions still apply to delete/type/value mutation.
 - Use the existing shadcn `Table` component and existing table patterns before custom markup.
 - Column visibility and ordering are view settings.
-- `Text` property values should preserve manual line breaks in stored values. In Table, `Text` columns should stay compact and truncate by default; a Text column menu can enable `Wrap content` to preserve line breaks visually, wrap inside stable column widths, and allow row height to expand. Non-text values stay compact and truncate where needed.
+- `Text` property values should preserve manual line breaks in stored values. In Table, `Text` columns should stay compact and truncate by default; compact editing opens a cell-width popover editor instead of growing the row. A Text column menu can enable `Wrap content` to preserve line breaks visually, wrap inside stable column widths, and allow row height to expand. Non-text values stay compact and truncate where needed.
 - Table row click opens the Project Detail Panel.
 - Do not duplicate edit controls in every cell if that makes the table noisy; prefer focused inline controls or the detail panel.
 - Empty `Date`, `Select`, and `Multi-select` values should render as blank cells, not as `Empty` placeholder text.

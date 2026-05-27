@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Table,
   TableBody,
   TableCell,
@@ -440,6 +445,56 @@ function ProjectTablePropertyValueEditor({
     );
   }
 
+  function renderTextEditorPopover(label: string) {
+    return (
+      <Popover
+        open={editing}
+        onOpenChange={(nextOpen) => {
+          if (nextOpen) {
+            onStartEditingCell(cellId);
+            return;
+          }
+
+          onStopEditingCell();
+        }}
+      >
+        <PopoverTrigger asChild>
+          {renderCellDisplay(label)}
+        </PopoverTrigger>
+        {editing ? (
+          <PopoverContent
+            align="start"
+            sideOffset={2}
+            className="workspace-table-text-editor-popover min-w-48 p-0"
+            style={{ width: "var(--radix-popover-trigger-width)" }}
+            onPointerDown={stopCellActivation}
+            onClick={stopCellActivation}
+          >
+            <WorkspaceTextValueTextarea
+              key={editorKey}
+              defaultValue={label}
+              aria-label={`${property.name} text value`}
+              autoFocus
+              className="max-h-64 min-h-8 min-w-0 overflow-y-auto rounded-lg border-border bg-popover px-2 shadow-none focus-visible:border-ring focus-visible:bg-popover"
+              onPointerDown={stopCellActivation}
+              onBlur={(event) => {
+                saveValue(event.target.value);
+                onStopEditingCell();
+              }}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          </PopoverContent>
+        ) : null}
+      </Popover>
+    );
+  }
+
   if (property.propertyType === "number") {
     if (!editing) {
       return renderCellDisplay(formatNumberDisplayValue(value));
@@ -497,6 +552,10 @@ function ProjectTablePropertyValueEditor({
         onDeleteSelectValue={onDeleteSelectValue}
       />
     );
+  }
+
+  if (property.propertyType === "text" && !wrapContent) {
+    return renderTextEditorPopover(stringifyEditableValue(value));
   }
 
   if (!editing) {
