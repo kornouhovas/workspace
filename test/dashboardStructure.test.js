@@ -644,9 +644,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /className="h-10 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
-  assert.match(tableViewSource, /return `h-10 \$\{tableColumnDividerClassName\} p-0\.5`;/);
-  assert.match(tableViewSource, /\? `h-10 \$\{tableColumnDividerClassName\} p-0\.5`/);
-  assert.match(tableViewSource, /: `h-10 \$\{tableColumnDividerClassName\} truncate px-3 py-0`;/);
+  assert.match(tableViewSource, /return `h-10 \$\{tableColumnDividerClassName\} align-top p-0\.5`;/);
+  assert.match(tableViewSource, /\? `h-10 \$\{tableColumnDividerClassName\} align-top p-0\.5`/);
+  assert.match(tableViewSource, /: `h-10 \$\{tableColumnDividerClassName\} align-top truncate px-3 py-0`;/);
   assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable, wrapContent\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-8/);
   assert.match(tableViewSource, /workspace-table-cell-control/);

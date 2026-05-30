@@ -290,11 +290,11 @@ function hasActiveValueFilter(
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean, wrapContent: boolean) {
   if (property.id === "property:name") {
-    return `h-10 ${tableColumnDividerClassName} p-0.5`;
+    return `h-10 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.id === "property:status") {
-    return `h-10 ${tableColumnDividerClassName} p-0.5`;
+    return `h-10 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.propertyType === "text" && wrapContent) {
@@ -302,8 +302,8 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
   }
 
   return editable
-    ? `h-10 ${tableColumnDividerClassName} p-0.5`
-    : `h-10 ${tableColumnDividerClassName} truncate px-3 py-0`;
+    ? `h-10 ${tableColumnDividerClassName} align-top p-0.5`
+    : `h-10 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
 }
 
 function renderTableStatusValue(value: unknown) {
