@@ -753,11 +753,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /property\.hidden \|\| cardHiddenPropertyIds\.includes\(property\.id\)/);
   assert.match(projectDetailPanelSource, /function setCardPropertyHidden/);
   assert.match(projectDetailPanelSource, /setCardPropertyHidden\(property, visibilityAction === "hide"\)/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-properties-heading-row flex items-center gap-3/);
-  assert.doesNotMatch(projectDetailPanelSource, /workspace-project-detail-properties-heading-row flex items-center justify-between/);
+  assert.match(projectDetailPanelSource, /<h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">\s*Properties\s*<\/h3>/);
+  assert.doesNotMatch(projectDetailPanelSource, /Properties[\s\S]*workspace-project-detail-hidden-properties-toggle[\s\S]*<\/div>[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">\s*\{orderedVisibleProperties\.map/);
   assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle/);
-  assert.match(projectDetailPanelSource, /<h3 id="project-properties-heading"[\s\S]*>\s*Properties\s*<\/h3>[\s\S]*Hidden properties[\s\S]*Chevron/);
-  assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-heading flex items-center justify-between gap-3/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle -ml-6 flex h-8/);
+  assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl[\s\S]*id="project-hidden-properties"[\s\S]*className="overflow-hidden rounded-md border border-border\/45 bg-background\/15"/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);
   const hiddenPropertiesMarkup = projectDetailPanelSource.slice(
