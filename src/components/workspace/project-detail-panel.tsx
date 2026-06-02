@@ -1444,9 +1444,28 @@ export function WorkspaceProjectDetailPanel({
           <div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">
             <div className="grid gap-5">
               <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
-                <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
-                  Properties
-                </h3>
+                <div className="workspace-project-detail-properties-heading-row flex items-center justify-between gap-3">
+                  <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
+                    Properties
+                  </h3>
+                  {hiddenCardProperties.length > 0 ? (
+                    <button
+                      type="button"
+                      aria-controls="project-hidden-properties"
+                      aria-expanded={hiddenPropertiesExpanded}
+                      className="workspace-project-detail-hidden-properties-toggle flex h-7 min-w-0 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                      onClick={() => setHiddenPropertiesExpanded((expanded) => !expanded)}
+                    >
+                      <span className="truncate">Hidden properties</span>
+                      {hiddenPropertiesExpanded ? (
+                        <ChevronDownIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <ChevronRightIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                      )}
+                      <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
+                    </button>
+                  ) : null}
+                </div>
                 <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
@@ -1617,23 +1636,11 @@ export function WorkspaceProjectDetailPanel({
                 </dl>
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
-                    <button
-                      type="button"
-                      className="flex h-8 w-full items-center justify-between rounded-md px-1 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                      onClick={() => setHiddenPropertiesExpanded((expanded) => !expanded)}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        {hiddenPropertiesExpanded ? (
-                          <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
-                        ) : (
-                          <ChevronRightIcon className="size-4 shrink-0" aria-hidden="true" />
-                        )}
-                        <span className="truncate">Hidden properties</span>
-                      </span>
-                      <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
-                    </button>
                     {hiddenPropertiesExpanded ? (
-                      <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
+                      <dl
+                        id="project-hidden-properties"
+                        className="overflow-hidden rounded-md border border-border/45 bg-background/15"
+                      >
                         {hiddenCardProperties.map((property) => {
                           const propertyProtected = isProtectedCardProperty(property);
                           const propertyMenuAvailable = canRenameCardProperty(property)
