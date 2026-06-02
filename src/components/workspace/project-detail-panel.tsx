@@ -1444,7 +1444,7 @@ export function WorkspaceProjectDetailPanel({
           <div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">
             <div className="grid gap-5">
               <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
-                <div className="workspace-project-detail-properties-heading-row flex items-center justify-between gap-3">
+                <div className="workspace-project-detail-properties-heading-row flex items-center gap-3">
                   <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
                     Properties
                   </h3>
