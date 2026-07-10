@@ -412,6 +412,48 @@ test("createViewProjection returns board columns and table rows from the same fi
   );
 });
 
+test("createViewProjection omits empty board columns while value filters are active", () => {
+  const statusValues = [
+    { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },
+    { id: "statusValue:done", name: "Done", relativePath: "Done", source: "folderRole" },
+  ];
+  const projects = [
+    {
+      id: "project:active",
+      name: "Active Project",
+      status: statusValues[0],
+      propertyValues: { "property:status": "statusValue:active" },
+    },
+    {
+      id: "project:done",
+      name: "Done Project",
+      status: statusValues[1],
+      propertyValues: { "property:status": "statusValue:done" },
+    },
+  ];
+  const boardView = normalizeViewDocument({
+    id: "view:board",
+    workspaceId: "workspace:root",
+    viewType: "board",
+    valueVisibility: {
+      "property:status": {
+        mode: "include",
+        valueIds: ["statusValue:done"],
+      },
+    },
+  });
+
+  const response = createViewProjection({ view: boardView, projects, visibleProperties: [], statusValues });
+
+  assert.deepEqual(
+    response.projection.columns.map((column) => [
+      column.statusValueId,
+      column.projects.map((project) => project.id),
+    ]),
+    [["statusValue:done", ["project:done"]]],
+  );
+});
+
 test("createViewProjection adds No status column when matching projects have no status", () => {
   const statusValues = [
     { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },

@@ -853,10 +853,12 @@ export function filterWorkspaceProjectionBySearch(
     ...projectionResponse,
     projection: {
       ...projectionResponse.projection,
-      columns: projectionResponse.projection.columns.map((column) => ({
-        ...column,
-        projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
-      })),
+      columns: projectionResponse.projection.columns
+        .map((column) => ({
+          ...column,
+          projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
+        }))
+        .filter((column) => column.projects.length > 0),
     },
   };
 }

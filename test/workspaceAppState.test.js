@@ -937,7 +937,6 @@ test("workspace projection search filter narrows board and table locally by proj
 
   assert.deepEqual(filteredBoard.projection.columns.map((column) => column.projects.map((project) => project.id)), [
     ["project:alpha"],
-    [],
   ]);
   assert.deepEqual(filteredTable.projection.rows.map((project) => project.id), ["project:alpha"]);
   assert.deepEqual(boardProjection.projection.columns[0].projects.map((project) => project.id), [

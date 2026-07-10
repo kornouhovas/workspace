@@ -182,6 +182,13 @@ export function createViewProjection({
   }
 
   const boardStatusValues = createBoardStatusValues({ statusValues, filteredProjects });
+  const hasActiveFilter = Boolean(normalizeString(searchQuery).trim())
+    || Object.keys(normalizedView.valueVisibility).length > 0;
+  const boardColumns = boardStatusValues.map((statusValue) => ({
+    statusValueId: statusValue.id,
+    name: statusValue.name,
+    projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
+  }));
 
   return {
     ...response,
@@ -191,11 +198,9 @@ export function createViewProjection({
       capabilities: {
         canMoveBetweenStatuses: false,
       },
-      columns: boardStatusValues.map((statusValue) => ({
-        statusValueId: statusValue.id,
-        name: statusValue.name,
-        projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
-      })),
+      columns: hasActiveFilter
+        ? boardColumns.filter((column) => column.projects.length > 0)
+        : boardColumns,
     },
   };
 }

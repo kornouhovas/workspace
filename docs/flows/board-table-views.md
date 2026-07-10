@@ -62,7 +62,8 @@ Rules:
 
 - Board columns are status groups, not draggable lanes in MVP.
 - Project cards are not draggable between primary statuses in MVP.
-- Empty status columns remain visible with a compact empty state.
+- Empty status columns remain visible with a compact empty state when no value filter or search query is active.
+- While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
 - Board supports horizontal scrolling when there are many statuses.
 
 ## Table Path
@@ -177,7 +178,8 @@ Show:
 Show:
 
 - compact empty state inside the Board column;
-- do not remove the status column.
+- do not remove the status column when no value filter or search query is active;
+- hide the status column while filtering or searching if it has no matching projects.
 
 ### No Search Results
 

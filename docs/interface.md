@@ -217,7 +217,8 @@ Board constraints:
 
 - No drag and drop between primary status columns in MVP.
 - Board may horizontally scroll when there are many statuses.
-- Empty status columns stay visible with compact empty state.
+- Without an active value filter or search query, empty status columns stay visible with a compact empty state.
+- While a value filter or search query is active, status columns with no matching projects are hidden and the remaining columns shift together without empty gaps.
 
 ## Empty Property Values
 
