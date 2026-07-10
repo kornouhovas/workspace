@@ -86,7 +86,7 @@ export function WorkspaceBoardView({ projection, visibleProperties, selectValues
         <Badge variant="outline">Move disabled</Badge>
       </div>
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="grid h-full w-full auto-cols-[minmax(20rem,1fr)] grid-flow-col gap-3">
+        <div className="grid h-full min-w-full w-max auto-cols-[24rem] grid-flow-col gap-3">
           {projection.columns.map((column) => (
             <section
               key={column.statusValueId}

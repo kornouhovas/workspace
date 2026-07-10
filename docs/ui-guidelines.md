@@ -87,6 +87,7 @@ Rules:
 - Standard property rename menus apply to the display labels for `Name` and `Status`, while delete, type changes, and stored value editing stay unavailable for those system properties.
 - Cards should be compact and predictable in height.
 - Long project names and property values must truncate or wrap without resizing the whole board unexpectedly.
+- Status columns use a stable fixed width. Removing filtered-out columns shifts the remaining columns but must not widen their cards.
 - Use Badge for status/value chips instead of custom styled spans.
 - Empty status columns should show a compact empty state, not disappear.
 
