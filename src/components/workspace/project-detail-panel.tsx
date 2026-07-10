@@ -1622,13 +1622,13 @@ export function WorkspaceProjectDetailPanel({
                         type="button"
                         aria-controls="project-hidden-properties"
                         aria-expanded={hiddenPropertiesExpanded}
-                        className="workspace-project-detail-hidden-properties-toggle -ml-6 flex h-8 min-w-0 items-center gap-2 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                        className="workspace-project-detail-hidden-properties-toggle -ml-4 flex h-8 min-w-0 items-center gap-1 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
                         onClick={() => setHiddenPropertiesExpanded((expanded) => !expanded)}
                       >
                         {hiddenPropertiesExpanded ? (
-                          <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
+                          <ChevronDownIcon className="size-3 shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRightIcon className="size-4 shrink-0" aria-hidden="true" />
+                          <ChevronRightIcon className="size-3 shrink-0" aria-hidden="true" />
                         )}
                         <span className="truncate">Hidden properties</span>
                       </button>

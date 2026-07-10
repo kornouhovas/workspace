@@ -757,7 +757,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(projectDetailPanelSource, /Properties[\s\S]*workspace-project-detail-hidden-properties-toggle[\s\S]*<\/div>[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">\s*\{orderedVisibleProperties\.map/);
   assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle/);
   assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-heading flex items-center justify-between gap-3/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle -ml-6 flex h-8/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle -ml-4 flex h-8/);
   assert.match(projectDetailPanelSource, /Hidden properties[\s\S]*<dl[\s\S]*id="project-hidden-properties"[\s\S]*className="overflow-hidden rounded-md border border-border\/45 bg-background\/15"/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);
