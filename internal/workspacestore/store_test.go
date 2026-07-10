@@ -147,6 +147,7 @@ func TestStorePersistsWorkspaceViewsWithoutBreakingRootDocument(t *testing.T) {
 		HiddenPropertyIDs:  []string{},
 		PropertyOrder:      map[string]int{"property:name": 10, "property:status": 20},
 		ValueVisibility:    map[string]ValueVisibilityDocument{},
+		BoardLayout:        BoardLayoutDocument{ColumnWidth: 384},
 		CreatedAt:          "2026-05-14T00:00:00.000Z",
 		UpdatedAt:          "2026-05-14T00:00:00.000Z",
 	}
@@ -160,6 +161,9 @@ func TestStorePersistsWorkspaceViewsWithoutBreakingRootDocument(t *testing.T) {
 	}
 	if len(views) != 1 || views[0].ID != "view:board" {
 		t.Fatalf("expected one active view, got %#v", views)
+	}
+	if views[0].BoardLayout.ColumnWidth != 384 {
+		t.Fatalf("expected Board column width to persist, got %#v", views[0].BoardLayout)
 	}
 
 	savedWorkspace, err := store.GetWorkspace(ctx, "workspace:ops")

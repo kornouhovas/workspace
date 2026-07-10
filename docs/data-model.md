@@ -158,6 +158,7 @@ Fields:
 - `propertyOrder`: object mapping property id to order number.
 - `valueVisibility`: object keyed by property id, with view-level value filter settings.
 - `propertyLayout`: object keyed by property id, with view-level display settings such as `wrapContent` for custom Text properties.
+- `boardLayout`: Board-only display settings. `columnWidth` stores the preferred status-column width in pixels.
 - `createdAt`: timestamp.
 - `updatedAt`: timestamp.
 - `deletedAt`: nullable timestamp.
@@ -175,6 +176,7 @@ Business rules:
 - For system `Status`, `valueVisibility.valueIds` references derived status value ids from folder roles plus `statusValue:no-status`.
 - `includeEmpty` controls whether projects without a custom select value remain visible when an include filter is active.
 - `propertyLayout.<propertyId>.wrapContent: true` makes a custom Text property wrap in Table view and allows row height to expand; missing or false means compact single-line display.
+- `boardLayout.columnWidth` is normalized to the supported persisted range of `288..1600`; the renderer additionally caps the effective value at one third of the current Workspace working area.
 - Board views do not support drag and drop between primary status groups in MVP.
 
 Example:
@@ -210,6 +212,9 @@ Example:
     "property:notes": {
       "wrapContent": true
     }
+  },
+  "boardLayout": {
+    "columnWidth": 384
   },
   "createdAt": "2026-05-14T00:00:00.000Z",
   "updatedAt": "2026-05-14T00:00:00.000Z",

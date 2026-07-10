@@ -56,7 +56,8 @@ This is the primary daily workflow after the project source folder and folder ro
 4. Projects outside status folders appear in the `No status` column.
 5. Each card shows `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 6. Value visibility filters hide projects whose selected property values are excluded by the active view.
-7. User clicks a card to open the Project Detail Panel.
+7. User can adjust the shared status-column width for this Board view from `Customize Columns`.
+8. User clicks a card to open the Project Detail Panel.
 
 Rules:
 
@@ -65,6 +66,7 @@ Rules:
 - Empty status columns remain visible with a compact empty state when no value filter or search query is active.
 - While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
 - Status columns retain their fixed width while other filtered-out columns are removed; Board uses horizontal scrolling when needed.
+- The Board column-width slider applies immediately to every status column, persists per view, and is constrained from `288px` to one third of the current Workspace working area.
 - Board supports horizontal scrolling when there are many statuses.
 
 ## Table Path

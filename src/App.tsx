@@ -35,6 +35,11 @@ import {
 import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";
 import { WorkspaceServiceClient } from "@/workspaceServiceClient.js";
 import {
+  BOARD_COLUMN_WIDTH_DEFAULT,
+  getBoardColumnWidthMax,
+  normalizeBoardColumnWidth,
+} from "@/workspaceBoardLayout.js";
+import {
   addWorkspaceListFallback,
   createWorkspaceListFallback,
   deleteWorkspaceListFallback,
@@ -80,6 +85,12 @@ function normalizeViewPropertyLayout(value: unknown): NonNullable<WorkspaceViewS
   );
 
   return Object.keys(propertyLayout).length > 0 ? propertyLayout : {};
+}
+
+function normalizeViewBoardLayout(value: unknown): NonNullable<WorkspaceViewState["boardLayout"]> {
+  return {
+    columnWidth: normalizeBoardColumnWidth(isRecord(value) ? value.columnWidth : undefined),
+  };
 }
 
 function normalizeRootResponse(response: unknown): WorkspaceRootState | null {
@@ -139,6 +150,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
             )
           : undefined,
         propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
+        boardLayout: normalizeViewBoardLayout(view.boardLayout),
       })).filter((view) => view.id)
     : [];
 
@@ -348,6 +360,7 @@ function normalizeCreatedViewResponse(
           )
         : fallbackView.valueVisibility,
       propertyLayout: normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
+      boardLayout: normalizeViewBoardLayout(view.boardLayout || fallbackView.boardLayout),
     },
   };
 }
@@ -469,6 +482,7 @@ export default function App() {
   });
   const [reloadToken, setReloadToken] = useState(0);
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
+  const [boardViewportWidth, setBoardViewportWidth] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
@@ -1159,6 +1173,42 @@ export default function App() {
     }
   }
 
+  function handleBoardColumnWidthPreview(columnWidth: number) {
+    if (!state.activeViewId) {
+      return;
+    }
+
+    dispatch({
+      type: "viewBoardLayoutUpdated",
+      viewId: state.activeViewId,
+      boardLayout: { columnWidth: normalizeBoardColumnWidth(columnWidth) },
+    });
+  }
+
+  async function handleBoardColumnWidthCommit(columnWidth: number, previousColumnWidth: number) {
+    if (!state.activeViewId) {
+      return;
+    }
+
+    const activeViewId = state.activeViewId;
+    const boardLayout = { columnWidth: normalizeBoardColumnWidth(columnWidth) };
+
+    dispatch({ type: "viewBoardLayoutUpdated", viewId: activeViewId, boardLayout });
+
+    try {
+      await updateActiveViewPatch({ boardLayout }, { refreshProjection: false });
+    } catch (error) {
+      dispatch({
+        type: "viewBoardLayoutUpdated",
+        viewId: activeViewId,
+        boardLayout: { columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT) },
+      });
+      toast.error("Could not update Board column width", {
+        description: getServiceErrorMessage(error),
+      });
+    }
+  }
+
   async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
     if (!state.workspaceId || !state.activeViewId) {
       return;
@@ -1825,6 +1875,9 @@ export default function App() {
                 statusValues={statusValues}
                 onTogglePropertyVisibility={handleTogglePropertyVisibility}
                 onToggleValueFilter={handleToggleValueFilter}
+                boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
+                onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
+                onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
                 onReorderViewProperties={handleReorderViewProperties}
                 onRenameProperty={handleRenameProperty}
                 onDeleteProperty={handleDeleteProperty}
@@ -1840,6 +1893,8 @@ export default function App() {
                     {activeViewType === "board" ? (
                       <WorkspaceBoardView
                         projection={boardProjection as typeof workspaceMockProjection.projection}
+                        columnWidth={activeView?.boardLayout?.columnWidth}
+                        onViewportWidthChange={setBoardViewportWidth}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
                         selectValues={settingsSelectValues}
                         onProjectOpen={handleProjectOpen}

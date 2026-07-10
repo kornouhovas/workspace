@@ -218,6 +218,8 @@ Board constraints:
 - No drag and drop between primary status columns in MVP.
 - Board may horizontally scroll when there are many statuses.
 - Board status columns use a stable fixed width; hiding a filtered-out status must not widen the remaining columns.
+- `Customize Columns` for a Board view includes a bottom `Column width` slider. It updates all status columns together for that view.
+- Board column width defaults to `384px`, cannot go below `288px`, and cannot exceed one third of the current Workspace working area.
 - Without an active value filter or search query, empty status columns stay visible with a compact empty state.
 - While a value filter or search query is active, status columns with no matching projects are hidden and the remaining columns shift together without empty gaps.
 

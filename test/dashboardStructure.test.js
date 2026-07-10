@@ -448,7 +448,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /renderBoardStatusValue/);
   assert.match(boardViewSource, /className="h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-medium"/);
   assert.match(boardViewSource, /size-2 rounded-full bg-muted-foreground\/70/);
-  assert.match(boardViewSource, /min-w-full w-max auto-cols-\[24rem\]/);
+  assert.match(boardViewSource, /Math\.min\(preferredColumnWidth, getBoardColumnWidthMax\(boardViewportWidth\)\)/);
+  assert.match(boardViewSource, /gridAutoColumns: "var\(--workspace-board-column-width\)"/);
+  assert.match(boardViewSource, /resizeObserver\.observe\(viewport\)/);
+  assert.match(appSource, /columnWidth=\{activeView\?\.boardLayout\?\.columnWidth\}/);
+  assert.match(appSource, /boardColumnWidthMax=\{getBoardColumnWidthMax\(boardViewportWidth\)\}/);
+  assert.match(appSource, /onViewportWidthChange=\{setBoardViewportWidth\}/);
   assert.match(boardViewSource, /min-h-24/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(boardViewSource, /pl-4 pr-0 pt-4 pb-0/);
@@ -582,6 +587,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0\.5/);
   assert.match(tableViewSource, /if \(property\.propertyType === "text" && !wrapContent\) \{[\s\S]*return renderTextEditorPopover\(stringifyEditableValue\(value\)\);[\s\S]*\}/);
   assert.match(appSource, /viewPropertyLayoutUpdated/);
+  assert.match(appSource, /viewBoardLayoutUpdated/);
+  assert.match(viewFilterMenuSource, /Column width/);
+  assert.match(viewFilterMenuSource, /<Slider/);
+  assert.match(viewFilterMenuSource, /onValueCommit/);
+  assert.match(viewFilterMenuSource, /max-h-\[calc\(100vh-6\.5rem\)\].*overflow-y-auto/);
   assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{`\$\{property\.name\} text value`\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
   assert.match(textValueEditorSource, /useLayoutEffect/);

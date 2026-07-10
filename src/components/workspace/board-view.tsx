@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
+import { getBoardColumnWidthMax, normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
 
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
@@ -17,6 +20,8 @@ type WorkspaceBoardProjection = {
 
 type WorkspaceBoardViewProps = {
   readonly projection: WorkspaceBoardProjection;
+  readonly columnWidth?: number;
+  readonly onViewportWidthChange?: (viewportWidth: number) => void;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onProjectOpen: (project: WorkspaceMockProject) => void;
@@ -75,18 +80,52 @@ function renderBoardStatusValue(value: unknown) {
   );
 }
 
-export function WorkspaceBoardView({ projection, visibleProperties, selectValues, onProjectOpen }: WorkspaceBoardViewProps) {
+export function WorkspaceBoardView({
+  projection,
+  columnWidth,
+  onViewportWidthChange,
+  visibleProperties,
+  selectValues,
+  onProjectOpen,
+}: WorkspaceBoardViewProps) {
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
   );
+  const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
+  const boardViewportRef = useRef<HTMLDivElement | null>(null);
+  const [boardViewportWidth, setBoardViewportWidth] = useState(0);
+  const effectiveColumnWidth = Math.min(preferredColumnWidth, getBoardColumnWidthMax(boardViewportWidth));
+  const boardGridStyle = {
+    "--workspace-board-column-width": `${effectiveColumnWidth}px`,
+    gridAutoColumns: "var(--workspace-board-column-width)",
+  } as CSSProperties;
+
+  useEffect(() => {
+    const viewport = boardViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const updateWidth = () => {
+      const viewportWidth = viewport.clientWidth;
+      setBoardViewportWidth(viewportWidth);
+      onViewportWidthChange?.(viewportWidth);
+    };
+    updateWidth();
+
+    const resizeObserver = new ResizeObserver(updateWidth);
+    resizeObserver.observe(viewport);
+
+    return () => resizeObserver.disconnect();
+  }, [onViewportWidthChange]);
 
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-label="Workspace board">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Badge variant="outline">Move disabled</Badge>
       </div>
-      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="grid h-full min-w-full w-max auto-cols-[24rem] grid-flow-col gap-3">
+      <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="grid h-full min-w-full w-max grid-flow-col gap-3" style={boardGridStyle}>
           {projection.columns.map((column) => (
             <section
               key={column.statusValueId}

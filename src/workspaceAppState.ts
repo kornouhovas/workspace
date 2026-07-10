@@ -14,6 +14,7 @@ export type WorkspaceViewState = {
   readonly propertyOrder?: Record<string, number>;
   readonly valueVisibility?: Record<string, { readonly valueIds: readonly string[]; readonly includeEmpty?: boolean }>;
   readonly propertyLayout?: Record<string, { readonly wrapContent?: boolean }>;
+  readonly boardLayout?: { readonly columnWidth: number };
 };
 
 export type WorkspacePropertyDefinitionState = {
@@ -162,6 +163,11 @@ export type WorkspaceAppAction =
       readonly type: "viewPropertyLayoutUpdated";
       readonly viewId: string;
       readonly propertyLayout: NonNullable<WorkspaceViewState["propertyLayout"]>;
+    }
+  | {
+      readonly type: "viewBoardLayoutUpdated";
+      readonly viewId: string;
+      readonly boardLayout: NonNullable<WorkspaceViewState["boardLayout"]>;
     }
   | {
       readonly type: "propertySaveFailed";
@@ -437,6 +443,29 @@ export function workspaceAppStateReducer(
             view: {
               ...state.projection.view,
               propertyLayout: action.propertyLayout,
+            },
+          }
+        : state.projection,
+      error: null,
+    };
+  }
+
+  if (action.type === "viewBoardLayoutUpdated") {
+    const views = state.views.map((view) => (
+      view.id === action.viewId
+        ? { ...view, boardLayout: action.boardLayout }
+        : view
+    ));
+
+    return {
+      ...state,
+      views,
+      projection: state.projection?.view.id === action.viewId
+        ? {
+            ...state.projection,
+            view: {
+              ...state.projection.view,
+              boardLayout: action.boardLayout,
             },
           }
         : state.projection,

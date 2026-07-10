@@ -109,6 +109,10 @@ type PropertyLayoutDocument struct {
 	WrapContent bool `json:"wrapContent"`
 }
 
+type BoardLayoutDocument struct {
+	ColumnWidth int `json:"columnWidth"`
+}
+
 type ViewDocument struct {
 	ID                 string                             `json:"id"`
 	Type               string                             `json:"type"`
@@ -122,6 +126,7 @@ type ViewDocument struct {
 	PropertyOrder      map[string]int                     `json:"propertyOrder"`
 	ValueVisibility    map[string]ValueVisibilityDocument `json:"valueVisibility"`
 	PropertyLayout     map[string]PropertyLayoutDocument  `json:"propertyLayout"`
+	BoardLayout        BoardLayoutDocument                `json:"boardLayout"`
 	CreatedAt          string                             `json:"createdAt"`
 	UpdatedAt          string                             `json:"updatedAt"`
 	DeletedAt          *string                            `json:"deletedAt"`

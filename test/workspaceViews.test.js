@@ -34,6 +34,7 @@ test("createDefaultView creates Board and Table views with default system proper
     "property:name": 10,
     "property:status": 20,
   });
+  assert.deepEqual(board.boardLayout, { columnWidth: 384 });
   assert.equal(table.viewType, "table");
   assert.equal(table.name, "Table");
   assert.deepEqual(table.visiblePropertyIds, ["property:name", "property:status"]);
@@ -100,6 +101,32 @@ test("normalizeViewDocument stores text wrap layout as a view setting", () => {
       wrapContent: true,
     },
   });
+});
+
+test("normalizeViewDocument stores a bounded Board column width", () => {
+  assert.deepEqual(normalizeViewDocument({
+    id: "view:board",
+    workspaceId: "workspace:root",
+    viewType: "board",
+    boardLayout: { columnWidth: 472.4 },
+  }).boardLayout, { columnWidth: 472 });
+
+  assert.deepEqual(normalizeViewDocument({
+    id: "view:board-default",
+    workspaceId: "workspace:root",
+    viewType: "board",
+  }).boardLayout, { columnWidth: 384 });
+});
+
+test("validateViewPatch rejects Board column widths outside the persisted range", () => {
+  for (const columnWidth of [287, 1601, Number.NaN]) {
+    assert.throws(
+      () => validateViewPatch({ patch: { boardLayout: { columnWidth } } }),
+      (error) => error instanceof WorkspaceViewError
+        && error.code === "VALIDATION_FAILED"
+        && error.field === "boardLayout.columnWidth",
+    );
+  }
 });
 
 test("validateViewPatch accepts text wrap layout for active text properties", () => {

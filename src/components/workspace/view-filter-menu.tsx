@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -16,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -47,6 +49,10 @@ import {
   mergeFixedIdsWithReorderedIds,
   reorderIdsByDropIndex,
 } from "@/workspaceDrag";
+import {
+  BOARD_COLUMN_WIDTH_MIN,
+  normalizeBoardColumnWidth,
+} from "@/workspaceBoardLayout.js";
 
 type WorkspaceViewFilterMenuProps = {
   readonly view: WorkspaceViewState | null;
@@ -54,8 +60,11 @@ type WorkspaceViewFilterMenuProps = {
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+  readonly boardColumnWidthMax: number;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onBoardColumnWidthPreview: (columnWidth: number) => void;
+  readonly onBoardColumnWidthCommit: (columnWidth: number, previousColumnWidth: number) => void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
@@ -147,8 +156,11 @@ export function WorkspaceViewFilterMenu({
   properties,
   selectValues,
   statusValues,
+  boardColumnWidthMax,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  onBoardColumnWidthPreview,
+  onBoardColumnWidthCommit,
   onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
@@ -159,11 +171,15 @@ export function WorkspaceViewFilterMenu({
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
   const [propertyDragState, setPropertyDragState] = useState<PropertyPointerDragState | null>(null);
   const [expandedFilterPropertyIds, setExpandedFilterPropertyIds] = useState<ReadonlySet<string>>(() => new Set());
+  const boardColumnWidthStartRef = useRef<number | null>(null);
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const visibleViewProperties = properties.filter((property) => visiblePropertyIds.has(property.id));
   const hiddenViewProperties = properties.filter((property) => !visiblePropertyIds.has(property.id));
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
+  const preferredBoardColumnWidth = normalizeBoardColumnWidth(view?.boardLayout?.columnWidth);
+  const effectiveBoardColumnWidthMax = Math.max(BOARD_COLUMN_WIDTH_MIN, boardColumnWidthMax);
+  const effectiveBoardColumnWidth = Math.min(preferredBoardColumnWidth, effectiveBoardColumnWidthMax);
 
   useEffect(() => {
     setOpen(false);
@@ -631,7 +647,7 @@ export function WorkspaceViewFilterMenu({
       <DropdownMenuContent
         data-workspace-view-filter-menu="true"
         align="end"
-        className={`${workspaceMenuContentClassName} w-80 overflow-hidden p-0`}
+        className={`${workspaceMenuContentClassName} max-h-[calc(100vh-6.5rem)] w-80 overflow-x-hidden overflow-y-auto p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
         <div className="grid gap-2.5 p-3">
@@ -727,6 +743,52 @@ export function WorkspaceViewFilterMenu({
             })}
           </div>
         </div>
+        {view?.viewType === "board" ? (
+          <>
+            <Separator className={workspaceMenuSeparatorClassName} />
+            <div className="grid gap-2.5 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="grid gap-1">
+                  <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+                    <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                    Column width
+                  </p>
+                  <p className="pl-6 text-xs text-muted-foreground">Resize every Board column</p>
+                </div>
+                <Badge variant="outline" className="h-6 min-w-14 justify-center rounded-full px-2 tabular-nums">
+                  {effectiveBoardColumnWidth}px
+                </Badge>
+              </div>
+              <Slider
+                aria-label="Board column width"
+                min={BOARD_COLUMN_WIDTH_MIN}
+                max={effectiveBoardColumnWidthMax}
+                step={8}
+                value={[effectiveBoardColumnWidth]}
+                onPointerDown={() => {
+                  boardColumnWidthStartRef.current = preferredBoardColumnWidth;
+                }}
+                onKeyDown={() => {
+                  boardColumnWidthStartRef.current ??= preferredBoardColumnWidth;
+                }}
+                onValueChange={([columnWidth]) => {
+                  if (typeof columnWidth === "number") {
+                    onBoardColumnWidthPreview(columnWidth);
+                  }
+                }}
+                onValueCommit={([columnWidth]) => {
+                  if (typeof columnWidth !== "number") {
+                    return;
+                  }
+
+                  const previousColumnWidth = boardColumnWidthStartRef.current ?? preferredBoardColumnWidth;
+                  boardColumnWidthStartRef.current = null;
+                  onBoardColumnWidthCommit(columnWidth, previousColumnWidth);
+                }}
+              />
+            </div>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -365,6 +365,44 @@ test("workspace app state updates view property layout without clearing projecti
   assert.equal(state.projection.projection.rows[0], alpha);
 });
 
+test("workspace app state previews Board column width without clearing projection columns", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const loadedState = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded",
+    root,
+    viewsResponse: {
+      workspaceId: "workspace:ops",
+      activeViewId: "view:board",
+      views: [{
+        id: "view:board",
+        name: "Board",
+        viewType: "board",
+        boardLayout: { columnWidth: 384 },
+      }],
+    },
+    projectionResponse: {
+      ...projectionResponse,
+      view: {
+        id: "view:board",
+        name: "Board",
+        viewType: "board",
+        boardLayout: { columnWidth: 384 },
+      },
+    },
+    folderRoleTree,
+  });
+
+  const state = workspaceAppStateReducer(loadedState, {
+    type: "viewBoardLayoutUpdated",
+    viewId: "view:board",
+    boardLayout: { columnWidth: 456 },
+  });
+
+  assert.deepEqual(state.views[0].boardLayout, { columnWidth: 456 });
+  assert.deepEqual(state.projection.view.boardLayout, { columnWidth: 456 });
+  assert.equal(state.projection.projection, loadedState.projection.projection);
+});
+
 test("workspace app state removes a deleted property from catalog and projections", async () => {
   const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
   const alpha = {

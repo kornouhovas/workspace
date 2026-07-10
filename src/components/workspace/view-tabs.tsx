@@ -63,6 +63,9 @@ type WorkspaceViewTabsProps = {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly boardColumnWidthMax: number;
+  readonly onBoardColumnWidthPreview: (columnWidth: number) => void;
+  readonly onBoardColumnWidthCommit: (columnWidth: number, previousColumnWidth: number) => void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
@@ -129,6 +132,9 @@ export function WorkspaceViewTabs({
   statusValues,
   onTogglePropertyVisibility,
   onToggleValueFilter,
+  boardColumnWidthMax,
+  onBoardColumnWidthPreview,
+  onBoardColumnWidthCommit,
   onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
@@ -537,8 +543,11 @@ export function WorkspaceViewTabs({
           properties={properties}
           selectValues={selectValues}
           statusValues={statusValues}
+          boardColumnWidthMax={boardColumnWidthMax}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
           onToggleValueFilter={onToggleValueFilter}
+          onBoardColumnWidthPreview={onBoardColumnWidthPreview}
+          onBoardColumnWidthCommit={onBoardColumnWidthCommit}
           onReorderViewProperties={onReorderViewProperties}
           onRenameProperty={onRenameProperty}
           onDeleteProperty={onDeleteProperty}

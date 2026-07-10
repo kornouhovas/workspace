@@ -88,6 +88,7 @@ Rules:
 - Cards should be compact and predictable in height.
 - Long project names and property values must truncate or wrap without resizing the whole board unexpectedly.
 - Status columns use a stable fixed width. Removing filtered-out columns shifts the remaining columns but must not widen their cards.
+- Board `Customize Columns` uses a compact slider for column width, shows the current pixel value, and keeps the range between `288px` and one third of the current working area.
 - Use Badge for status/value chips instead of custom styled spans.
 - Empty status columns should show a compact empty state, not disappear.
 

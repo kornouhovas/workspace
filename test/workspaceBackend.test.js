@@ -526,6 +526,7 @@ test("createCreateViewResponse creates a default active Board view", async () =>
     },
     valueVisibility: {},
     propertyLayout: {},
+    boardLayout: { columnWidth: 384 },
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -714,6 +715,7 @@ test("createUpdateViewResponse validates patch references and saves normalized u
           [PROPERTY_STATUS_ID]: { valueIds: ["statusValue:active"] },
           "property:priority": { valueIds: ["selectValue:high"], includeEmpty: true },
         },
+        boardLayout: { columnWidth: 456 },
       },
     },
     viewStore: store,
@@ -746,6 +748,7 @@ test("createUpdateViewResponse validates patch references and saves normalized u
       includeEmpty: true,
     },
   });
+  assert.deepEqual(response.payload.view.boardLayout, { columnWidth: 456 });
   assert.equal(response.payload.view.updatedAt, now);
   assert.deepEqual(await store.getView("view:board"), response.payload.view);
 });

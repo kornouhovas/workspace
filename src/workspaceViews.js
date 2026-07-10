@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import {
+  BOARD_COLUMN_WIDTH_DEFAULT,
+  BOARD_COLUMN_WIDTH_MIN,
+  BOARD_COLUMN_WIDTH_PERSISTED_MAX,
+  normalizeBoardColumnWidth,
+} from "./workspaceBoardLayout.js";
+
 export const PROPERTY_NAME_ID = "property:name";
 export const PROPERTY_STATUS_ID = "property:status";
 export const NO_STATUS_VALUE_ID = "statusValue:no-status";
@@ -44,6 +51,9 @@ export function createDefaultView({
     },
     valueVisibility: {},
     propertyLayout: {},
+    boardLayout: {
+      columnWidth: BOARD_COLUMN_WIDTH_DEFAULT,
+    },
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -67,6 +77,7 @@ export function normalizeViewDocument(view = {}) {
     propertyOrder: normalizePropertyOrder(view.propertyOrder, visiblePropertyIds),
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
+    boardLayout: normalizeBoardLayout(view.boardLayout),
     createdAt: normalizeString(view.createdAt),
     updatedAt: normalizeString(view.updatedAt),
     deletedAt: view.deletedAt == null ? null : normalizeString(view.deletedAt),
@@ -132,6 +143,7 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     propertyLayout: patch.propertyLayout,
     propertyDefinitions,
   });
+  validateBoardLayout(patch.boardLayout);
 }
 
 export function filterProjectsForView({ projects = [], view, searchQuery = "" } = {}) {
@@ -166,6 +178,7 @@ export function createViewProjection({
       propertyOrder: normalizedView.propertyOrder,
       valueVisibility: normalizedView.valueVisibility,
       propertyLayout: normalizedView.propertyLayout,
+      boardLayout: normalizedView.boardLayout,
     },
     visibleProperties,
     statusValues,
@@ -248,6 +261,39 @@ function normalizePropertyLayout(value) {
           : []
       )),
   );
+}
+
+function normalizeBoardLayout(value) {
+  return {
+    columnWidth: normalizeBoardColumnWidth(value?.columnWidth),
+  };
+}
+
+function validateBoardLayout(value) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isPlainObject(value)) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Board layout must be an object.", "boardLayout");
+  }
+
+  if (!Object.hasOwn(value, "columnWidth")) {
+    return;
+  }
+
+  const columnWidth = Number(value.columnWidth);
+  if (
+    !Number.isFinite(columnWidth)
+    || columnWidth < BOARD_COLUMN_WIDTH_MIN
+    || columnWidth > BOARD_COLUMN_WIDTH_PERSISTED_MAX
+  ) {
+    throw new WorkspaceViewError(
+      "VALIDATION_FAILED",
+      `Board column width must be between ${BOARD_COLUMN_WIDTH_MIN} and ${BOARD_COLUMN_WIDTH_PERSISTED_MAX}.`,
+      "boardLayout.columnWidth",
+    );
+  }
 }
 
 function validateValueVisibilityReferences({ valueVisibility, propertyDefinitions, selectValues, statusValues }) {

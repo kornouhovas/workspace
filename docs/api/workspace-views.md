@@ -88,6 +88,9 @@ Required error codes:
       "wrapContent": true
     }
   },
+  "boardLayout": {
+    "columnWidth": 384
+  },
   "createdAt": "2026-05-14T00:00:00.000Z",
   "updatedAt": "2026-05-14T00:00:00.000Z",
   "deletedAt": null
@@ -105,6 +108,7 @@ Rules:
 - `propertyOrder` mirrors `visiblePropertyIds` for stable ordering and migration safety.
 - `valueVisibility` filters projects in this view only.
 - `propertyLayout` stores view-level display settings. `propertyLayout.<customTextPropertyId>.wrapContent: true` enables wrapped Text cells in Table view; missing settings keep Text cells compact and single-line.
+- `boardLayout.columnWidth` stores the preferred Board status-column width in pixels. Missing values default to `384`; persisted values are limited to `288..1600`, while the renderer caps the effective width at one third of the current Workspace working area.
 
 ### Value Visibility
 
@@ -319,6 +323,9 @@ Request:
       "property:notes": {
         "wrapContent": true
       }
+    },
+    "boardLayout": {
+      "columnWidth": 384
     }
   }
 }
@@ -345,6 +352,9 @@ Response:
         "wrapContent": true
       }
     },
+    "boardLayout": {
+      "columnWidth": 384
+    },
     "updatedAt": "2026-05-14T00:00:00.000Z"
   }
 }
@@ -360,6 +370,7 @@ Validation:
 - `propertyOrder` keys must be a subset of `visiblePropertyIds`.
 - `valueVisibility` keys must reference `select`, `multi-select`, or system `Status` properties.
 - `propertyLayout` keys must reference active custom properties; `wrapContent` is accepted only for custom Text properties.
+- `boardLayout.columnWidth` must be a finite number in the persisted range `288..1600`.
 - Invalid value references reject the whole update.
 - Updating view settings does not create property history records.
 
