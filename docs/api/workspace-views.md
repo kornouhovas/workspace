@@ -108,7 +108,7 @@ Rules:
 - `propertyOrder` mirrors `visiblePropertyIds` for stable ordering and migration safety.
 - `valueVisibility` filters projects in this view only.
 - `propertyLayout` stores view-level display settings. `propertyLayout.<customTextPropertyId>.wrapContent: true` enables wrapped Text cells in Table view; missing settings keep Text cells compact and single-line.
-- `boardLayout.columnWidth` stores the preferred Board status-column width in pixels. Missing values default to `384`; persisted values are limited to `288..1600`, while the renderer caps the effective width at one third of the current Workspace working area.
+- `boardLayout.columnWidth` stores the fixed Board status-column width in pixels. Missing values default to `384`; persisted values are limited to `288..1600`. The renderer does not rewrite or reduce this value during window resizing; the one-third working-area limit applies only while selecting a new width.
 
 ### Value Visibility
 

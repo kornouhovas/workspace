@@ -176,7 +176,7 @@ Business rules:
 - For system `Status`, `valueVisibility.valueIds` references derived status value ids from folder roles plus `statusValue:no-status`.
 - `includeEmpty` controls whether projects without a custom select value remain visible when an include filter is active.
 - `propertyLayout.<propertyId>.wrapContent: true` makes a custom Text property wrap in Table view and allows row height to expand; missing or false means compact single-line display.
-- `boardLayout.columnWidth` is normalized to the supported persisted range of `288..1600`; the renderer additionally caps the effective value at one third of the current Workspace working area.
+- `boardLayout.columnWidth` is normalized to the supported persisted range of `288..1600`. The renderer keeps the stored width stable across window resizing; the one-third working-area limit applies when choosing a new width, not when rendering an existing preference.
 - Board views do not support drag and drop between primary status groups in MVP.
 
 Example:

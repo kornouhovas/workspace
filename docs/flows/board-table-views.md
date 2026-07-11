@@ -66,7 +66,7 @@ Rules:
 - Empty status columns remain visible with a compact empty state when no value filter or search query is active.
 - While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
 - Status columns retain their fixed width while other filtered-out columns are removed; Board uses horizontal scrolling when needed.
-- The Board column-width slider applies immediately to every status column, persists per view, and is constrained from `288px` to one third of the current Workspace working area.
+- The Board column-width slider applies immediately to every status column and persists per view. New selections are constrained from `288px` to one third of the current Workspace working area. Resizing the window never changes an already selected column width; Board uses horizontal scrolling when it no longer fits.
 - Board supports horizontal scrolling when there are many statuses.
 
 ## Table Path

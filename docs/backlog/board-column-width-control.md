@@ -22,8 +22,8 @@ Read:
 - Moving the slider previews the new width without refreshing the projection or closing the menu.
 - Releasing the slider persists `boardLayout.columnWidth` through `workspace.updateView`.
 - Width is shared by all columns in that Board view and remains stable when columns are filtered out.
-- Preferred width defaults to `384px`, has a minimum of `288px`, and the UI maximum equals one third of the current Workspace working area.
-- Resizing the window clamps the effective width without corrupting the saved preference.
+- Preferred width defaults to `384px`, has a minimum of `288px`, and the UI maximum for a new selection equals one third of the current Workspace working area.
+- Resizing the window keeps the selected width fixed and uses horizontal Board scrolling when needed.
 - Table views are unaffected.
 
 ## Constraints

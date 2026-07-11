@@ -171,6 +171,7 @@ export function WorkspaceViewFilterMenu({
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
   const [propertyDragState, setPropertyDragState] = useState<PropertyPointerDragState | null>(null);
   const [expandedFilterPropertyIds, setExpandedFilterPropertyIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [boardColumnWidthDragMax, setBoardColumnWidthDragMax] = useState<number | null>(null);
   const boardColumnWidthStartRef = useRef<number | null>(null);
   const visiblePropertyIds = new Set(view?.visiblePropertyIds || properties.map((property) => property.id));
   const visibleViewProperties = properties.filter((property) => visiblePropertyIds.has(property.id));
@@ -178,8 +179,12 @@ export function WorkspaceViewFilterMenu({
   const valueVisibility = view?.valueVisibility || {};
   const filterableProperties = properties.filter(isFilterableProperty);
   const preferredBoardColumnWidth = normalizeBoardColumnWidth(view?.boardLayout?.columnWidth);
-  const effectiveBoardColumnWidthMax = Math.max(BOARD_COLUMN_WIDTH_MIN, boardColumnWidthMax);
-  const effectiveBoardColumnWidth = Math.min(preferredBoardColumnWidth, effectiveBoardColumnWidthMax);
+  const availableBoardColumnWidthMax = Math.max(
+    BOARD_COLUMN_WIDTH_MIN,
+    boardColumnWidthMax,
+    preferredBoardColumnWidth,
+  );
+  const effectiveBoardColumnWidthMax = boardColumnWidthDragMax ?? availableBoardColumnWidthMax;
 
   useEffect(() => {
     setOpen(false);
@@ -756,7 +761,7 @@ export function WorkspaceViewFilterMenu({
                   <p className="pl-6 text-xs text-muted-foreground">Resize every Board column</p>
                 </div>
                 <Badge variant="outline" className="h-6 min-w-14 justify-center rounded-full px-2 tabular-nums">
-                  {effectiveBoardColumnWidth}px
+                  {preferredBoardColumnWidth}px
                 </Badge>
               </div>
               <Slider
@@ -764,12 +769,14 @@ export function WorkspaceViewFilterMenu({
                 min={BOARD_COLUMN_WIDTH_MIN}
                 max={effectiveBoardColumnWidthMax}
                 step={8}
-                value={[effectiveBoardColumnWidth]}
+                value={[preferredBoardColumnWidth]}
                 onPointerDown={() => {
                   boardColumnWidthStartRef.current = preferredBoardColumnWidth;
+                  setBoardColumnWidthDragMax(availableBoardColumnWidthMax);
                 }}
                 onKeyDown={() => {
                   boardColumnWidthStartRef.current ??= preferredBoardColumnWidth;
+                  setBoardColumnWidthDragMax((currentMax) => currentMax ?? availableBoardColumnWidthMax);
                 }}
                 onValueChange={([columnWidth]) => {
                   if (typeof columnWidth === "number") {
@@ -783,7 +790,12 @@ export function WorkspaceViewFilterMenu({
 
                   const previousColumnWidth = boardColumnWidthStartRef.current ?? preferredBoardColumnWidth;
                   boardColumnWidthStartRef.current = null;
+                  setBoardColumnWidthDragMax(null);
                   onBoardColumnWidthCommit(columnWidth, previousColumnWidth);
+                }}
+                onPointerCancel={() => {
+                  boardColumnWidthStartRef.current = null;
+                  setBoardColumnWidthDragMax(null);
                 }}
               />
             </div>

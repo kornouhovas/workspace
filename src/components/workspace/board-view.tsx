@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
-import { getBoardColumnWidthMax, normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
+import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
 
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
@@ -93,10 +93,8 @@ export function WorkspaceBoardView({
   );
   const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
-  const [boardViewportWidth, setBoardViewportWidth] = useState(0);
-  const effectiveColumnWidth = Math.min(preferredColumnWidth, getBoardColumnWidthMax(boardViewportWidth));
   const boardGridStyle = {
-    "--workspace-board-column-width": `${effectiveColumnWidth}px`,
+    "--workspace-board-column-width": `${preferredColumnWidth}px`,
     gridAutoColumns: "var(--workspace-board-column-width)",
   } as CSSProperties;
 
@@ -108,7 +106,6 @@ export function WorkspaceBoardView({
 
     const updateWidth = () => {
       const viewportWidth = viewport.clientWidth;
-      setBoardViewportWidth(viewportWidth);
       onViewportWidthChange?.(viewportWidth);
     };
     updateWidth();
