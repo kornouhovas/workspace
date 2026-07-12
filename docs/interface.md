@@ -78,9 +78,19 @@ Exit:
 
 Settings contains:
 
+- Language section;
 - Source folder section;
 - Folder role tree section;
 - Status values section for the system `Status` property.
+
+### Language Section
+
+The Language section shows an `Interface language` control with `English` and `Русский`.
+
+- Changing language updates application-owned text immediately without reloading Workspace data.
+- The selected language persists as a device-local preference and applies to every Workspace.
+- English is the default and fallback locale.
+- User-created names, values, filenames, and paths are not translated.
 
 ### Source Folder Section
 

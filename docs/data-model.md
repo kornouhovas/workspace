@@ -53,6 +53,12 @@ Logical collection names:
 
 The physical `any-store` collection names should match these names unless a migration ADR changes them.
 
+## Device-Local Renderer Preferences
+
+Interface locale is presentation state, not product metadata. It is stored locally by the renderer under the versioned preference key `workspace.interfaceLocale.v1` and is not written to `any-store`, Workspace documents, View documents, project folders, or `any sync`.
+
+Supported values are `en` and `ru`. Missing or invalid values normalize to `en`.
+
 ## Entity: Project Source Folder
 
 Represents the selected root folder that contains project folders.

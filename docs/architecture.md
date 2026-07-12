@@ -54,6 +54,7 @@ Owned by React components under `src/App.tsx`, `src/components/`, `src/hooks/`, 
 Responsibilities:
 
 - render Left Panel, Settings, Board view, Table view, and Project Detail Panel;
+- resolve application-owned text through renderer localisation catalogs and persist the device-local interface locale;
 - use Tailwind CSS and shadcn/ui for layout and controls;
 - collect user actions and call workspace service methods;
 - show loading, empty, error, and success states;
@@ -66,6 +67,7 @@ Rules:
 - UI must not implement folder role traversal or project discovery rules.
 - UI must not create product ids ad hoc.
 - UI-only state must not be persisted as product data.
+- Interface locale is a renderer-owned device preference, not Workspace metadata and not `any sync` data.
 
 ### Application / Service Client Layer
 

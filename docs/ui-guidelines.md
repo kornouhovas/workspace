@@ -136,6 +136,7 @@ Rules:
 
 Settings owns:
 
+- interface language selection;
 - project source folder selection;
 - folder tree role configuration;
 - Workspace-level configuration when relevant;
@@ -143,6 +144,8 @@ Settings owns:
 
 Rules:
 
+- Interface language uses a compact `Select` with `English` and `Русский`; option labels remain self-identifying in both locales.
+- Locale changes update visible UI without blanking, reloading, or rescanning the active Workspace.
 - Source folder selection appears once in Settings.
 - Folder role controls should use clear segmented or select controls for `group`, `status`, and `project`.
 - Settings tree must make parent/child relationships clear.
