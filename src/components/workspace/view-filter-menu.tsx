@@ -40,6 +40,7 @@ import {
 } from "@/components/workspace/menu-styles";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import { useI18n } from "@/i18n";
+import { getStatusDisplayName } from "@/i18n/status";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -112,11 +113,12 @@ function getFilterValues(
   property: WorkspacePropertyDefinitionState,
   selectValues: readonly WorkspaceSelectValueState[],
   statusValues: WorkspaceProjectionResponse["statusValues"],
+  t: (key: string) => string,
 ): readonly WorkspaceFilterValue[] {
   if (property.id === "property:status") {
     return statusValues.map((statusValue) => ({
       id: statusValue.id,
-      name: statusValue.name,
+      name: getStatusDisplayName(t, statusValue),
     }));
   }
 
@@ -704,7 +706,7 @@ export function WorkspaceViewFilterMenu({
               <p className="text-sm text-muted-foreground">{t("common.noValues")}</p>
             ) : filterableProperties.map((property) => {
               const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
-              const propertyValues = getFilterValues(property, selectValues, statusValues);
+              const propertyValues = getFilterValues(property, selectValues, statusValues, t);
               const expanded = expandedFilterPropertyIds.has(property.id);
 
               return (

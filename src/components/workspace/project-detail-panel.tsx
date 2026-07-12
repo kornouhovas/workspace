@@ -41,6 +41,7 @@ import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import { useI18n } from "@/i18n";
+import { getStatusDisplayName } from "@/i18n/status";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -426,10 +427,17 @@ function ProjectPropertyValueDisplay({
   const { t } = useI18n();
 
   if (property.id === "property:status") {
-    const label = stringifyPropertyValue(value);
     const statusValue = value && typeof value === "object" && !Array.isArray(value)
-      ? value as { readonly color?: unknown }
+      ? value as {
+          readonly id?: string;
+          readonly name?: string;
+          readonly source?: string;
+          readonly color?: unknown;
+        }
       : null;
+    const label = statusValue
+      ? getStatusDisplayName(t, statusValue)
+      : stringifyPropertyValue(value);
     const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
     return label
       ? (
@@ -449,7 +457,7 @@ function ProjectPropertyValueDisplay({
     return (
       <button
         type="button"
-        aria-label={t("table.propertyActions", { name: property.name })}
+        aria-label={t("property.editValue", { name: property.name })}
         className={projectDetailMultilineValueClassName}
         onClick={onStartEditing}
       >
@@ -462,7 +470,7 @@ function ProjectPropertyValueDisplay({
     return (
       <button
         type="button"
-        aria-label={t("table.propertyActions", { name: property.name })}
+        aria-label={t("property.editValue", { name: property.name })}
         className={projectDetailPlainValueClassName}
         onClick={onStartEditing}
       >
@@ -617,7 +625,7 @@ function ProjectPropertyValueEditor({
         key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
         autoFocus
         defaultValue={stringifyPropertyValue(value)}
-        aria-label={t("table.propertyActions", { name: property.name })}
+        aria-label={t("property.editValue", { name: property.name })}
         className="min-h-8 border-transparent bg-transparent px-0 text-[13px] font-medium leading-5 shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
         onBlur={(event) => {
           onProjectPropertyValueChange(project.id, property.id, event.target.value);
@@ -652,7 +660,7 @@ function ProjectPropertyValueEditor({
         type="text"
         inputMode="decimal"
         defaultValue={formatNumberEditorValue(value)}
-        aria-label={t("table.propertyActions", { name: property.name })}
+        aria-label={t("property.editValue", { name: property.name })}
         className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useI18n } from "@/i18n";
+import { getStatusDisplayName } from "@/i18n/status";
 import type {
   WorkspaceProjectionResponse,
   WorkspaceSelectValueState,
@@ -88,12 +89,11 @@ export function WorkspacePropertyControls({
               return (
                 <li
                   key={statusValue.id}
-                  className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60"
+                  className="grid grid-cols-[minmax(0,1fr)_10rem] items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground" data-color={color} aria-hidden="true" />
-                    <span className="truncate text-sm font-medium">{statusValue.name}</span>
-                    {statusValue.source === "no-status" ? <Badge variant="outline">{t("property.noStatus")}</Badge> : null}
+                    <span className="truncate text-sm font-medium">{getStatusDisplayName(t, statusValue)}</span>
                   </div>
                   <Select
                     value={color}

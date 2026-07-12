@@ -11,18 +11,20 @@ export function normalizeLocale(value) {
   return SUPPORTED_LOCALES.includes(value) ? value : DEFAULT_LOCALE;
 }
 
-export function readStoredLocale(storage = globalThis.localStorage) {
+export function readStoredLocale(storage) {
   try {
-    return normalizeLocale(storage?.getItem(LOCALE_STORAGE_KEY));
+    const resolvedStorage = storage ?? globalThis.localStorage;
+    return normalizeLocale(resolvedStorage?.getItem(LOCALE_STORAGE_KEY));
   } catch {
     return DEFAULT_LOCALE;
   }
 }
 
-export function writeStoredLocale(locale, storage = globalThis.localStorage) {
+export function writeStoredLocale(locale, storage) {
   const normalizedLocale = normalizeLocale(locale);
   try {
-    storage?.setItem(LOCALE_STORAGE_KEY, normalizedLocale);
+    const resolvedStorage = storage ?? globalThis.localStorage;
+    resolvedStorage?.setItem(LOCALE_STORAGE_KEY, normalizedLocale);
   } catch {
     // The current session still uses the selected locale when storage is unavailable.
   }

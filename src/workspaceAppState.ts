@@ -1,5 +1,10 @@
 export type WorkspaceAppStatus = "idle" | "loading" | "ready" | "error";
 
+export type WorkspaceServiceErrorState =
+  | string
+  | { readonly kind: "localized"; readonly translationKey: string }
+  | { readonly kind: "opaque"; readonly message: string };
+
 export type WorkspaceRootState = {
   readonly workspaceId: string;
   readonly name: string;
@@ -116,7 +121,7 @@ export type WorkspaceAppState = {
   readonly selectedProjectId: string | null;
   readonly detailOpen: boolean;
   readonly sourceFolderMissing: boolean;
-  readonly error: string | null;
+  readonly error: WorkspaceServiceErrorState | null;
   readonly propertySaveError: string | null;
   readonly propertySaveVersions: Readonly<Record<string, number>>;
 };
@@ -177,7 +182,7 @@ export type WorkspaceAppAction =
       readonly requestVersion?: number;
     }
   | { readonly type: "workspaceActivated"; readonly workspaceId: string }
-  | { readonly type: "serviceError"; readonly error: string }
+  | { readonly type: "serviceError"; readonly error: WorkspaceServiceErrorState }
   | { readonly type: "searchQueryChanged"; readonly searchQuery: string }
   | { readonly type: "activeViewChanged"; readonly activeViewId: string }
   | {

@@ -33,6 +33,7 @@ import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import { useI18n } from "@/i18n";
+import { getStatusDisplayName } from "@/i18n/status";
 import {
   CalendarIcon,
   CircleDotIcon,
@@ -259,11 +260,12 @@ function getFilterValues(
   property: WorkspaceMockVisibleProperty,
   selectValues: readonly WorkspaceSelectValueState[],
   statusValues: WorkspaceProjectionResponse["statusValues"],
+  t: (key: string) => string,
 ): readonly WorkspaceFilterValue[] {
   if (property.id === "property:status") {
     return statusValues.map((statusValue) => ({
       id: statusValue.id,
-      name: statusValue.name,
+      name: getStatusDisplayName(t, statusValue),
     }));
   }
 
@@ -300,11 +302,16 @@ function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: 
     : `h-10 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
 }
 
-function renderTableStatusValue(value: unknown) {
+function renderTableStatusValue(value: unknown, t: (key: string) => string) {
   const statusValue = value && typeof value === "object" && !Array.isArray(value)
-    ? value as { readonly name?: unknown; readonly color?: unknown }
+    ? value as {
+        readonly id?: string;
+        readonly name?: string;
+        readonly source?: string;
+        readonly color?: unknown;
+      }
     : null;
-  const label = statusValue ? String(statusValue.name || "") : value == null ? "" : String(value);
+  const label = statusValue ? getStatusDisplayName(t, statusValue) : value == null ? "" : String(value);
   const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
 
   if (!label) {
@@ -1115,7 +1122,7 @@ export function WorkspaceTableView({
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
                 const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
-                const propertyFilterValues = getFilterValues(property, selectValues, statusValues);
+                const propertyFilterValues = getFilterValues(property, selectValues, statusValues, t);
                 const showValueFilters = isFilterableProperty(property);
                 const valueFilterActive = hasActiveValueFilter(property.id, valueVisibility);
                 const wrapContent = view?.propertyLayout?.[property.id]?.wrapContent === true;
@@ -1426,7 +1433,7 @@ export function WorkspaceTableView({
                           </span>
                         </button>
                       ) : property.id === "property:status" ? (
-                        renderTableStatusValue(getPropertyValue(project, property))
+                        renderTableStatusValue(getPropertyValue(project, property), t)
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
                       )}

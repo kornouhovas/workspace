@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n";
+import { getStatusDisplayName } from "@/i18n/status";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
@@ -59,11 +60,16 @@ function formatPropertyValue(
   return value == null ? "" : String(value);
 }
 
-function renderBoardStatusValue(value: unknown) {
+function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
   const statusValue = value && typeof value === "object" && !Array.isArray(value)
-    ? value as { readonly name?: unknown; readonly color?: unknown }
+    ? value as {
+        readonly id?: string;
+        readonly name?: string;
+        readonly source?: string;
+        readonly color?: unknown;
+      }
     : null;
-  const label = statusValue ? String(statusValue.name || "") : value == null ? "" : String(value);
+  const label = statusValue ? getStatusDisplayName(t, statusValue) : value == null ? "" : String(value);
   const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
 
   if (!label) {
@@ -129,10 +135,14 @@ export function WorkspaceBoardView({
             <section
               key={column.statusValueId}
               className="flex min-h-0 min-w-0 flex-col rounded-lg border border-border bg-muted/20"
-              aria-label={t("board.projectsAria", { name: column.name })}
+              aria-label={t("board.projectsAria", {
+                name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
+              })}
             >
               <header className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
-                <h3 className="min-w-0 truncate text-sm font-medium">{column.name}</h3>
+                <h3 className="min-w-0 truncate text-sm font-medium">
+                  {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
+                </h3>
                 <Badge variant="secondary" className="shrink-0">{column.projects.length}</Badge>
               </header>
               <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto overflow-x-hidden p-2">
@@ -152,7 +162,7 @@ export function WorkspaceBoardView({
                         <div className="min-w-0">
                           <h4 className="truncate text-sm font-medium leading-snug">{project.name}</h4>
                         </div>
-                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status)}</div>
+                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status, t)}</div>
                       </div>
                       {cardProperties.length > 0 ? (
                         <dl className="grid gap-2">

@@ -11,6 +11,11 @@ import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/i18n";
+import {
+  RendererLocalizedError,
+  createRendererErrorState,
+  resolveRendererErrorState,
+} from "@/i18n/errors.js";
 import { PanelLeftIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
@@ -164,7 +169,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
 
 function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResponse {
   if (!isRecord(response) || !isRecord(response.view) || !isRecord(response.projection)) {
-    throw new Error("Workspace projection response was invalid.");
+    throw new RendererLocalizedError("error.invalidProjectionResponse");
   }
 
   return response as WorkspaceProjectionResponse;
@@ -431,8 +436,8 @@ function normalizeFolderRoleTree(response: unknown): WorkspaceFolderRoleNode[] {
     .filter((node): node is WorkspaceFolderRoleNode => node !== null);
 }
 
-function getServiceErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Workspace service request failed.";
+function getServiceErrorMessage(error: unknown, t: (key: string) => string) {
+  return resolveRendererErrorState(createRendererErrorState(error), t);
 }
 
 function WorkspaceLoadingState() {
@@ -460,7 +465,7 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
 
   return (
     <div className="mx-4 mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-      {t("state.serviceUnavailable", { error: state.error })}
+      {t("state.serviceUnavailable", { error: resolveRendererErrorState(state.error, t) })}
     </div>
   );
 }
@@ -569,7 +574,7 @@ export default function App() {
           ? requestedActiveViewId
           : viewsResponse.activeViewId || viewsResponse.views[0]?.id;
         if (!activeViewId) {
-          throw new Error("Workspace active view is unavailable.");
+          throw new RendererLocalizedError("error.activeViewUnavailable");
         }
 
         const projectionResponse = normalizeProjectionResponse(
@@ -599,10 +604,11 @@ export default function App() {
           }
         }
       } catch (error) {
-        const message = getServiceErrorMessage(error);
+        const errorState = createRendererErrorState(error);
+        const message = resolveRendererErrorState(errorState, t);
         if (isCurrentLoad()) {
           setWorkspaceList({ activeWorkspaceId: null, workspaces: [] });
-          dispatch({ type: "serviceError", error: message });
+          dispatch({ type: "serviceError", error: errorState });
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
             setSelectingFolder(false);
@@ -659,7 +665,7 @@ export default function App() {
       } catch (error) {
         if (!cancelled) {
           toast.error(t("toast.viewLoadFailed"), {
-            description: getServiceErrorMessage(error),
+            description: getServiceErrorMessage(error, t),
           });
         }
       }
@@ -694,7 +700,7 @@ export default function App() {
         dispatch({ type: "rootSelected", root });
         setWorkspaceList(createWorkspaceListFallback(root));
       } else {
-        throw new Error("Selected workspace folder response was invalid.");
+        throw new RendererLocalizedError("error.invalidSelectedFolderResponse");
       }
       folderSelectionPendingRef.current = true;
       setReloadToken((value) => value + 1);
@@ -702,7 +708,7 @@ export default function App() {
       folderSelectionPendingRef.current = false;
       setSelectingFolder(false);
       toast.error(t("toast.folderLoadFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -750,7 +756,7 @@ export default function App() {
       }
 
       toast.error(t("toast.workspaceAddFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -780,7 +786,7 @@ export default function App() {
       }
 
       toast.error(t("toast.workspaceOpenFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -801,7 +807,7 @@ export default function App() {
       }
 
       toast.error(t("toast.workspaceRenameFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -836,7 +842,7 @@ export default function App() {
       }
 
       toast.error(t("toast.workspaceDeleteFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -870,7 +876,7 @@ export default function App() {
       }
 
       toast.error(t("toast.workspaceReorderFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
       setReloadToken((value) => value + 1);
     }
@@ -907,7 +913,7 @@ export default function App() {
       toast.success(t("toast.viewCreated"));
     } catch (error) {
       toast.error(t("toast.viewCreateFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -934,7 +940,7 @@ export default function App() {
       }
 
       toast.error(t("toast.viewRenameFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -960,7 +966,7 @@ export default function App() {
       setSelectedProject(null);
     } catch (error) {
       toast.error(t("toast.viewDeleteFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1001,7 +1007,7 @@ export default function App() {
 
       dispatch({ type: "viewsReordered", orderedViewIds: currentViewIds });
       toast.error(t("toast.viewReorderFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1091,7 +1097,7 @@ export default function App() {
         propertyOrder: previousPropertyOrder,
       });
       toast.error(t("toast.propertyVisibilityFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1133,7 +1139,7 @@ export default function App() {
         valueVisibility: previousValueVisibility,
       });
       toast.error(t("toast.valueFilterFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1174,7 +1180,7 @@ export default function App() {
         propertyLayout: previousPropertyLayout,
       });
       toast.error(t("toast.textWrapFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1210,7 +1216,7 @@ export default function App() {
         boardLayout: { columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT) },
       });
       toast.error(t("toast.boardWidthFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1250,7 +1256,7 @@ export default function App() {
         propertyOrder: previousPropertyOrder,
       });
       toast.error(t("toast.propertyOrderFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1295,7 +1301,7 @@ export default function App() {
       toast.success(t("toast.propertyCreated"));
     } catch (error) {
       toast.error(t("toast.propertyCreateFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1319,7 +1325,7 @@ export default function App() {
       setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error(t("toast.folderRoleUpdateFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1356,7 +1362,7 @@ export default function App() {
       toast.success(t("toast.propertyCreated"));
     } catch (error) {
       toast.error(t("toast.propertyCreateFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1376,7 +1382,7 @@ export default function App() {
       toast.success(t("toast.propertyRenamed"));
     } catch (error) {
       toast.error(t("toast.propertyRenameFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1396,7 +1402,7 @@ export default function App() {
       toast.success(t(hidden ? "toast.propertyHidden" : "toast.propertyShown"));
     } catch (error) {
       toast.error(t("toast.propertyVisibilityFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1420,7 +1426,7 @@ export default function App() {
       toast.success(t("toast.propertyDeleted"));
     } catch (error) {
       toast.error(t("toast.propertyDeleteFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1439,7 +1445,7 @@ export default function App() {
       setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error(t("toast.propertyOrderFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1467,7 +1473,7 @@ export default function App() {
       return selectValue;
     } catch (error) {
       toast.error(t("toast.valueCreateFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
       return null;
     }
@@ -1488,7 +1494,7 @@ export default function App() {
       toast.success(t("toast.valueRenamed"));
     } catch (error) {
       toast.error(t("toast.valueRenameFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1507,7 +1513,7 @@ export default function App() {
       await refreshPropertyCatalog();
     } catch (error) {
       toast.error(t("toast.valueColorFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1527,7 +1533,7 @@ export default function App() {
       setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error(t("toast.statusColorFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1548,7 +1554,7 @@ export default function App() {
       toast.success(t(hidden ? "toast.valueHidden" : "toast.valueShown"));
     } catch (error) {
       toast.error(t("toast.valueVisibilityFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1578,7 +1584,7 @@ export default function App() {
       toast.success(t("toast.valueDeleted"));
     } catch (error) {
       toast.error(t("toast.valueDeleteFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1597,7 +1603,7 @@ export default function App() {
       await refreshPropertyCatalog();
     } catch (error) {
       toast.error(t("toast.valueOrderFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1646,7 +1652,7 @@ export default function App() {
         ));
       }
     } catch (error) {
-      const message = getServiceErrorMessage(error);
+      const message = getServiceErrorMessage(error, t);
       dispatch({ type: "propertySaveFailed", error: message, projectId, propertyId, requestVersion });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
         toast.error(t("toast.propertySaveFailed"), {
@@ -1666,7 +1672,7 @@ export default function App() {
       ));
     } catch (error) {
       toast.error(t("toast.fileTreeLoadFailed"), {
-        description: getServiceErrorMessage(error),
+        description: getServiceErrorMessage(error, t),
       });
     }
   }
@@ -1866,7 +1872,7 @@ export default function App() {
                       viewId: activeViewId,
                     }).catch((error: unknown) => {
                       toast.error(t("toast.activeViewSaveFailed"), {
-                        description: getServiceErrorMessage(error),
+                        description: getServiceErrorMessage(error, t),
                       });
                     });
                   }
