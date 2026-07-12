@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/i18n";
 import type {
   WorkspaceProjectionResponse,
   WorkspaceSelectValueState,
@@ -35,6 +36,7 @@ export function WorkspacePropertyControls({
   selectValues,
   onColorStatusValue,
 }: WorkspacePropertyControlsProps) {
+  const { t } = useI18n();
   const statusValueColorById = useMemo(() => {
     const byId = new Map<string, WorkspaceSelectValueState>();
     for (const selectValue of selectValues) {
@@ -61,21 +63,21 @@ export function WorkspacePropertyControls({
     <section className="rounded-lg border border-border bg-card" aria-labelledby="workspace-properties-heading">
       <div className="flex items-center justify-between gap-3 px-3 py-2">
         <div className="min-w-0">
-          <h3 id="workspace-properties-heading" className="text-sm font-semibold">Properties</h3>
-          <p className="truncate text-xs text-muted-foreground">Status values and colors for this Workspace</p>
+          <h3 id="workspace-properties-heading" className="text-sm font-semibold">{t("property.properties")}</h3>
+          <p className="truncate text-xs text-muted-foreground">{t("settings.statusValuesDescription")}</p>
         </div>
-        <Badge variant="outline">{sortedStatusValues.length} values</Badge>
+        <Badge variant="outline">{t("settings.values", { count: sortedStatusValues.length })}</Badge>
       </div>
       <div className="grid gap-2 border-t border-border p-3">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-medium">Status</span>
-              <Badge variant="secondary">Select</Badge>
-              <Badge variant="outline">System</Badge>
+              <span className="truncate text-sm font-medium">{t("table.status")}</span>
+              <Badge variant="secondary">{t("value.select")}</Badge>
+              <Badge variant="outline">{t("property.system")}</Badge>
             </div>
             <p className="mt-1 truncate text-xs text-muted-foreground">
-              Status is derived from folder roles; only value colors are editable here.
+              {t("settings.statusValuesDescription")}
             </p>
           </div>
         </div>
@@ -91,21 +93,21 @@ export function WorkspacePropertyControls({
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground" data-color={color} aria-hidden="true" />
                     <span className="truncate text-sm font-medium">{statusValue.name}</span>
-                    {statusValue.source === "no-status" ? <Badge variant="outline">No status</Badge> : null}
+                    {statusValue.source === "no-status" ? <Badge variant="outline">{t("property.noStatus")}</Badge> : null}
                   </div>
                   <Select
                     value={color}
                     onValueChange={(nextColor) => onColorStatusValue(statusValue.id, nextColor)}
                   >
-                    <SelectTrigger size="sm" className="w-full" aria-label={`Color for ${statusValue.name}`}>
-                      <SelectValue placeholder="Color" />
+                    <SelectTrigger size="sm" className="w-full" aria-label={t("value.color")}>
+                      <SelectValue placeholder={t("value.color")} />
                     </SelectTrigger>
                     <SelectContent>
                       {valueColorOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           <span className="inline-flex items-center gap-2">
                             <span className="size-2 rounded-full" data-color={option} aria-hidden="true" />
-                            {option}
+                            {t(`color.${option}`)}
                           </span>
                         </SelectItem>
                       ))}
@@ -117,7 +119,7 @@ export function WorkspacePropertyControls({
           </ul>
         ) : (
           <p className="rounded-lg border border-dashed border-border px-3 py-6 text-sm text-muted-foreground">
-            No status values yet. Configure status folders in the folder role tree.
+            {t("settings.noStatusValues")}
           </p>
         )}
       </div>

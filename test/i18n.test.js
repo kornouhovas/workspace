@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -11,6 +12,18 @@ import {
   writeStoredLocale,
 } from "../src/i18n/core.js";
 
+async function collectSourceFiles(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = await Promise.all(entries.map(async (entry) => {
+    const path = `${directory}/${entry.name}`;
+    if (entry.isDirectory()) {
+      return collectSourceFiles(path);
+    }
+    return /\.(?:ts|tsx)$/.test(entry.name) ? [path] : [];
+  }));
+  return files.flat();
+}
+
 test("normalizes unsupported locales to English", () => {
   assert.equal(normalizeLocale("ru"), "ru");
   assert.equal(normalizeLocale("en"), "en");
@@ -20,6 +33,24 @@ test("normalizes unsupported locales to English", () => {
 
 test("English and Russian catalogs have the same keys", () => {
   assert.deepEqual(getMissingTranslationKeys("ru"), []);
+});
+
+test("all statically referenced renderer translation keys exist", async () => {
+  const sourceRoot = new URL("../src", import.meta.url).pathname;
+  const sourceFiles = await collectSourceFiles(sourceRoot);
+  const referencedKeys = new Set();
+
+  for (const sourceFile of sourceFiles) {
+    const source = await readFile(sourceFile, "utf8");
+    for (const match of source.matchAll(/\bt\("([^"]+)"/g)) {
+      referencedKeys.add(match[1]);
+    }
+  }
+
+  const missingKeys = [...referencedKeys]
+    .filter((key) => translate("en", key) === key)
+    .sort();
+  assert.deepEqual(missingKeys, []);
 });
 
 test("translates interpolation and Russian plural forms", () => {

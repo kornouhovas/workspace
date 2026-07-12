@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
+import { useI18n } from "@/i18n";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lucide-icons";
 
 type WorkspaceDateValueEditorProps = {
@@ -14,7 +15,6 @@ type WorkspaceDateValueEditorProps = {
   readonly onValueChange: (value: string | null) => void;
 };
 
-const weekDayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const dateValueMenuSurfaceSelector = "[data-workspace-date-value-menu='true']";
 
 function stopDateEditorActivation(event: { stopPropagation: () => void }) {
@@ -60,11 +60,25 @@ function getMonthDays(monthDate: Date) {
   ];
 }
 
-function getMonthLabel(monthDate: Date) {
-  return monthDate.toLocaleDateString("en-US", {
+function getMonthLabel(monthDate: Date, locale: string) {
+  return monthDate.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
+}
+
+function getWeekDayLabels(locale: string) {
+  const formatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  return Array.from({ length: 7 }, (_unused, index) => formatter.format(new Date(2024, 0, index + 1)));
+}
+
+function formatDateForDisplay(value: string, locale: string) {
+  if (!value) {
+    return "";
+  }
+
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(year, month - 1, day));
 }
 
 export function WorkspaceDateValueEditor({
@@ -74,11 +88,13 @@ export function WorkspaceDateValueEditor({
   triggerClassName,
   onValueChange,
 }: WorkspaceDateValueEditorProps) {
+  const { locale, t } = useI18n();
   const dateValue = getDateValue(value);
   const [open, setOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(() => getMonthStart(dateValue));
   const [typedDate, setTypedDate] = useState(dateValue);
   const monthDays = useMemo(() => getMonthDays(monthDate), [monthDate]);
+  const weekDayLabels = useMemo(() => getWeekDayLabels(locale), [locale]);
 
   useEffect(() => {
     setOpen(false);
@@ -156,14 +172,14 @@ export function WorkspaceDateValueEditor({
             type="button"
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
-            aria-label="Pick date"
+            aria-label={t("value.chooseDate")}
             data-empty-value={dateValue ? undefined : "true"}
           >
             {dateValue ? (
               <>
                 <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="workspace-table-text-value -mx-1 min-w-0 truncate rounded-md px-1 py-0.5">
-                  {dateValue}
+                  {formatDateForDisplay(dateValue, locale)}
                 </span>
               </>
             ) : (
@@ -180,11 +196,11 @@ export function WorkspaceDateValueEditor({
         >
           <div className="grid gap-3">
             <div className="flex items-center justify-between gap-2">
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="Previous month" onClick={() => moveMonth(-1)}>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={t("value.previousMonth")} onClick={() => moveMonth(-1)}>
                 <ChevronLeftIcon className="size-4" aria-hidden="true" />
               </Button>
-              <div className="truncate text-sm font-medium">{getMonthLabel(monthDate)}</div>
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="Next month" onClick={() => moveMonth(1)}>
+              <div className="truncate text-sm font-medium">{getMonthLabel(monthDate, locale)}</div>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={t("value.nextMonth")} onClick={() => moveMonth(1)}>
                 <ChevronRightIcon className="size-4" aria-hidden="true" />
               </Button>
             </div>
@@ -220,7 +236,7 @@ export function WorkspaceDateValueEditor({
               <Input
                 value={typedDate}
                 placeholder="YYYY-MM-DD"
-                aria-label="Date value"
+                aria-label={t("value.date")}
                 className="h-8"
                 onChange={(event) => setTypedDate(event.target.value)}
                 onBlur={commitTypedDate}
@@ -232,7 +248,7 @@ export function WorkspaceDateValueEditor({
                   }
                 }}
               />
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="Clear date" onClick={clearDate}>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={t("value.clearSelection")} onClick={clearDate}>
                 <XIcon className="size-4" aria-hidden="true" />
               </Button>
             </div>

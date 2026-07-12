@@ -39,6 +39,7 @@ import {
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
+import { useI18n } from "@/i18n";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceProjectionResponse,
@@ -165,6 +166,7 @@ export function WorkspaceViewFilterMenu({
   onRenameProperty,
   onDeleteProperty,
 }: WorkspaceViewFilterMenuProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
@@ -516,7 +518,7 @@ export function WorkspaceViewFilterMenu({
           <Checkbox
             checked={checked}
             disabled={required}
-            aria-label={`${property.name} visible`}
+            aria-label={`${property.name}: ${t("common.show")}`}
             className={workspaceMenuCheckboxClassName}
             onPointerDown={stopActionMenuEvent}
             onCheckedChange={(value) => onTogglePropertyVisibility(property.id, value === true)}
@@ -525,7 +527,7 @@ export function WorkspaceViewFilterMenu({
             <Input
               value={editingPropertyName}
               autoFocus
-              aria-label="Rename property"
+              aria-label={t("property.rename")}
               className="h-6 min-w-0"
               onChange={(event) => setEditingPropertyName(event.target.value)}
               onBlur={() => commitRenameProperty(property)}
@@ -548,7 +550,7 @@ export function WorkspaceViewFilterMenu({
           <div className="flex min-w-0 justify-end pr-1">
             {required ? (
               <Badge variant="outline" className="h-6 rounded-full px-2 text-xs">
-                Required
+                {t("common.required")}
               </Badge>
             ) : null}
           </div>
@@ -562,7 +564,7 @@ export function WorkspaceViewFilterMenu({
                   <button
                     type="button"
                     className="workspace-customize-property-action flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                    aria-label={`${property.name} property actions`}
+                    aria-label={t("table.propertyActions", { name: property.name })}
                     onClick={stopActionMenuEvent}
                     onPointerDown={stopActionMenuEvent}
                   >
@@ -572,7 +574,7 @@ export function WorkspaceViewFilterMenu({
                 <PopoverContent
                   data-workspace-actions-popover="true"
                   role="menu"
-                  aria-label={`${property.name} property actions`}
+                  aria-label={t("table.propertyActions", { name: property.name })}
                   side="right"
                   align="start"
                   sideOffset={8}
@@ -592,7 +594,7 @@ export function WorkspaceViewFilterMenu({
                       }}
                     >
                       <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                      Rename property
+                      {t("property.rename")}
                     </button>
                   ) : null}
                   {!required ? (
@@ -611,7 +613,7 @@ export function WorkspaceViewFilterMenu({
                       ) : (
                         <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                       )}
-                      {section === "hidden" ? "Show in view" : "Hide from view"}
+                      {section === "hidden" ? t("property.showInView") : t("property.hideFromView")}
                     </button>
                   ) : null}
                   {editableDefinition ? (
@@ -622,13 +624,13 @@ export function WorkspaceViewFilterMenu({
                       onClick={(event) => {
                         event.stopPropagation();
                         setActionsPropertyId(null);
-                        if (window.confirm(`Delete property "${property.name}"?`)) {
+                        if (window.confirm(t("confirm.deleteProperty", { name: property.name }))) {
                           onDeleteProperty(property.id);
                         }
                       }}
                     >
                       <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                      Delete property
+                      {t("property.delete")}
                     </button>
                   ) : null}
                 </PopoverContent>
@@ -643,9 +645,9 @@ export function WorkspaceViewFilterMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" aria-label="View property visibility and filters">
+        <Button type="button" variant="outline" aria-label={t("view.customizeColumns")}>
           <Columns3Icon data-icon="inline-start" aria-hidden="true" />
-          <span>Customize Columns</span>
+          <span>{t("view.customizeColumns")}</span>
           <ChevronDownIcon data-icon="inline-end" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
@@ -660,13 +662,13 @@ export function WorkspaceViewFilterMenu({
             <div className="flex items-center justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold leading-none">
                 <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                Visible properties
+                {t("view.visibleProperties")}
               </p>
               <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
                 {visibleViewProperties.length}
               </Badge>
             </div>
-            <p className="pl-6 text-xs text-muted-foreground">Choose fields for this view</p>
+            <p className="pl-6 text-xs text-muted-foreground">{t("view.visiblePropertiesDescription")}</p>
           </div>
           <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
             {visibleViewProperties.map((property) => renderPropertyVisibilityRow(property, true, "visible"))}
@@ -676,7 +678,7 @@ export function WorkspaceViewFilterMenu({
               <div className="flex h-7 items-center justify-between gap-2 px-1.5 text-sm font-semibold text-muted-foreground">
                 <span className="flex min-w-0 items-center gap-2">
                   <EyeOffIcon className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">Hidden properties</span>
+                  <span className="truncate">{t("view.hiddenProperties")}</span>
                 </span>
                 <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">
                   {hiddenViewProperties.length}
@@ -693,13 +695,13 @@ export function WorkspaceViewFilterMenu({
           <div className="grid gap-1.5">
             <p className="flex items-center gap-2 text-sm font-semibold leading-none">
               <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-              Value filters
+              {t("view.valueFilters")}
             </p>
-            <p className="pl-6 text-xs text-muted-foreground">Limit visible projects by select values</p>
+            <p className="pl-6 text-xs text-muted-foreground">{t("view.valueFiltersDescription")}</p>
           </div>
           <div className="grid max-h-60 gap-1 overflow-auto pr-1">
             {filterableProperties.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No select properties</p>
+              <p className="text-sm text-muted-foreground">{t("common.noValues")}</p>
             ) : filterableProperties.map((property) => {
               const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
               const propertyValues = getFilterValues(property, selectValues, statusValues);
@@ -739,7 +741,7 @@ export function WorkspaceViewFilterMenu({
                           <span className="truncate font-medium">{selectValue.name}</span>
                         </label>
                       )) : (
-                        <p className="px-1.5 py-1 text-xs text-muted-foreground">No values</p>
+                        <p className="px-1.5 py-1 text-xs text-muted-foreground">{t("common.noValues")}</p>
                       )}
                     </div>
                   ) : null}
@@ -756,16 +758,16 @@ export function WorkspaceViewFilterMenu({
                 <div className="grid gap-1">
                   <p className="flex items-center gap-2 text-sm font-semibold leading-none">
                     <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                    Column width
+                    {t("view.columnWidth")}
                   </p>
-                  <p className="pl-6 text-xs text-muted-foreground">Resize every Board column</p>
+                  <p className="pl-6 text-xs text-muted-foreground">{t("view.columnWidthDescription")}</p>
                 </div>
                 <Badge variant="outline" className="h-6 min-w-14 justify-center rounded-full px-2 tabular-nums">
                   {preferredBoardColumnWidth}px
                 </Badge>
               </div>
               <Slider
-                aria-label="Board column width"
+                aria-label={t("view.columnWidth")}
                 min={BOARD_COLUMN_WIDTH_MIN}
                 max={effectiveBoardColumnWidthMax}
                 step={8}

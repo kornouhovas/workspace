@@ -32,6 +32,7 @@ import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-edit
 import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
+import { useI18n } from "@/i18n";
 import {
   CalendarIcon,
   CircleDotIcon,
@@ -77,6 +78,7 @@ type WorkspaceTableProjection = {
 
 type PropertyTypeOption = {
   readonly value: WorkspaceCustomPropertyType;
+  readonly defaultName: string;
   readonly label: string;
   readonly description: string;
 };
@@ -130,14 +132,6 @@ type WorkspaceTableViewProps = {
   readonly onColorSelectValue: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
 };
-
-const propertyTypeOptions: readonly PropertyTypeOption[] = [
-  { value: "text", label: "Text", description: "Short notes or free text" },
-  { value: "number", label: "Number", description: "Numeric values and counts" },
-  { value: "date", label: "Date", description: "Deadlines and calendar dates" },
-  { value: "select", label: "Select", description: "One option from a list" },
-  { value: "multi-select", label: "Multi-select", description: "Several options from a list" },
-];
 
 const addPropertyColumnWidth = 48;
 const minimumPropertyColumnWidth = 132;
@@ -398,6 +392,7 @@ function ProjectTablePropertyValueEditor({
   readonly onStartEditingCell: (cellId: string) => void;
   readonly onStopEditingCell: () => void;
 }) {
+  const { t } = useI18n();
   const value = getPropertyValue(project, property);
   const editorKey = `${project.id}:${property.id}:${stringifyEditableValue(value)}`;
   const cellId = getProjectPropertyCellId(project.id, property.id);
@@ -473,7 +468,7 @@ function ProjectTablePropertyValueEditor({
             <WorkspaceTextValueTextarea
               key={editorKey}
               defaultValue={label}
-              aria-label={`${property.name} text value`}
+              aria-label={`${property.name}: ${t("property.type.text")}`}
               autoFocus
               className="max-h-64 min-h-8 min-w-0 overflow-y-auto rounded-lg border-border bg-popover px-2 shadow-none focus-visible:border-ring focus-visible:bg-popover"
               onPointerDown={stopCellActivation}
@@ -505,7 +500,7 @@ function ProjectTablePropertyValueEditor({
         <WorkspaceTextValueTextarea
           key={editorKey}
           defaultValue={label}
-          aria-label={`${property.name} text value`}
+          aria-label={`${property.name}: ${t("property.type.text")}`}
           autoFocus
           className="workspace-table-text-value block w-full min-w-0 min-h-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md border-0 bg-transparent px-1 py-0.5 shadow-none focus-visible:border-0 focus-visible:bg-transparent focus-visible:ring-0"
           onPointerDown={stopCellActivation}
@@ -536,7 +531,7 @@ function ProjectTablePropertyValueEditor({
         type="text"
         inputMode="decimal"
         defaultValue={formatNumberEditorValue(value)}
-        aria-label={`${property.name} number value`}
+        aria-label={`${property.name}: ${t("property.type.number")}`}
         autoFocus
         className="workspace-number-input h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
@@ -617,6 +612,39 @@ export function WorkspaceTableView({
   onColorSelectValue,
   onDeleteSelectValue,
 }: WorkspaceTableViewProps) {
+  const { t } = useI18n();
+  const propertyTypeOptions: readonly PropertyTypeOption[] = [
+    {
+      value: "text",
+      defaultName: "Text",
+      label: t("property.type.text"),
+      description: t("property.type.textDescription"),
+    },
+    {
+      value: "number",
+      defaultName: "Number",
+      label: t("property.type.number"),
+      description: t("property.type.numberDescription"),
+    },
+    {
+      value: "date",
+      defaultName: "Date",
+      label: t("property.type.date"),
+      description: t("property.type.dateDescription"),
+    },
+    {
+      value: "select",
+      defaultName: "Select",
+      label: t("property.type.select"),
+      description: t("property.type.selectDescription"),
+    },
+    {
+      value: "multi-select",
+      defaultName: "Multi-select",
+      label: t("property.type.multiSelect"),
+      description: t("property.type.multiSelectDescription"),
+    },
+  ];
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [editingCellId, setEditingCellId] = useState<string | null>(null);
@@ -764,7 +792,7 @@ export function WorkspaceTableView({
   }
 
   function createPropertyFromType(option: PropertyTypeOption) {
-    onCreateProperty({ name: option.label, type: option.value });
+    onCreateProperty({ name: option.defaultName, type: option.value });
   }
 
   function closePropertyMenu() {
@@ -1070,14 +1098,14 @@ export function WorkspaceTableView({
   }
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-0 pt-4" aria-label="Workspace table">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-0 pt-4" aria-label={t("app.title")}>
       <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
         <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
             {visibleProperties.map((property) => (
               <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
             ))}
-            <col aria-label="Add property filler column" />
+            <col aria-label={t("table.addPropertyFiller")} />
           </colgroup>
           <TableHeader
             className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
@@ -1117,7 +1145,7 @@ export function WorkspaceTableView({
                     {editingPropertyId === property.id ? (
                       <Input
                         value={editingPropertyName}
-                        aria-label="Rename property"
+                        aria-label={t("property.rename")}
                         className="h-7 w-full min-w-0 rounded-md px-1.5 text-sm"
                         autoFocus
                         onChange={(event) => setEditingPropertyName(event.target.value)}
@@ -1146,7 +1174,7 @@ export function WorkspaceTableView({
                           <button
                             type="button"
                             className="flex h-full min-w-0 flex-1 cursor-grab items-center text-left focus-visible:ring-1 focus-visible:ring-ring/40 active:cursor-grabbing"
-                            aria-label={`Drag ${property.name} column`}
+                            aria-label={t("table.dragColumn", { name: property.name })}
                             onPointerDown={(event) => startPointerColumnDrag(event, property.id)}
                           >
                             <span className="block min-w-0 truncate">{property.name}</span>
@@ -1154,8 +1182,8 @@ export function WorkspaceTableView({
                           {valueFilterActive ? (
                             <span
                               className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground"
-                              aria-label={`${property.name} value filter active`}
-                              title={`${property.name} value filter active`}
+                              aria-label={t("table.valueFilterActive", { name: property.name })}
+                              title={t("table.valueFilterActive", { name: property.name })}
                             >
                               <ListFilterIcon className="size-3.5" aria-hidden="true" />
                             </span>
@@ -1164,7 +1192,7 @@ export function WorkspaceTableView({
                             type="button"
                             data-workspace-property-menu-trigger="true"
                             className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus:opacity-100 focus-visible:ring-1 focus-visible:ring-ring/40 group-hover/column:opacity-100 group-focus-within/column:opacity-100 data-[state=open]:opacity-100"
-                            aria-label={`${property.name} property actions`}
+                            aria-label={t("table.propertyActions", { name: property.name })}
                             data-state={openPropertyMenuId === property.id ? "open" : "closed"}
                             onPointerEnter={() => setPropertyMenuTriggerHovered(property.id, true)}
                             onPointerLeave={() => setPropertyMenuTriggerHovered(property.id, false)}
@@ -1188,7 +1216,7 @@ export function WorkspaceTableView({
                           <div
                             data-workspace-property-menu="true"
                             role="menu"
-                            aria-label={`${property.name} property actions`}
+                            aria-label={t("table.propertyActions", { name: property.name })}
                             className={`fixed z-50 w-60 ${workspaceMenuContentClassName}`}
                             style={{ left: propertyMenuAnchor.left, top: propertyMenuAnchor.top }}
                             onPointerDown={(event) => event.stopPropagation()}
@@ -1206,7 +1234,7 @@ export function WorkspaceTableView({
                                 }}
                               >
                                 <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                                Rename property
+                                {t("property.rename")}
                               </button>
                               <button
                                 type="button"
@@ -1219,7 +1247,7 @@ export function WorkspaceTableView({
                                 }}
                               >
                                 <EyeOffIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                                Hide from view
+                                {t("property.hideFromView")}
                               </button>
                               {showWrapContentToggle ? (
                                 <button
@@ -1230,18 +1258,18 @@ export function WorkspaceTableView({
                                   onClick={() => onTogglePropertyWrapContent(property.id, !wrapContent)}
                                 >
                                   <TypeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                                  <span className="min-w-0 flex-1">Wrap content</span>
-                                  <span className="text-xs text-muted-foreground">{wrapContent ? "On" : "Off"}</span>
+                                  <span className="min-w-0 flex-1">{t("property.wrapContent")}</span>
+                                      <span className="text-xs text-muted-foreground">{t(wrapContent ? "common.on" : "common.off")}</span>
                                 </button>
                               ) : null}
                             </div>
                             {showValueFilters ? (
                               <>
                                 <div className={workspaceMenuSeparatorClassName} />
-                                <div className="grid gap-1" aria-label={`${property.name} value filters`}>
+                                <div className="grid gap-1" aria-label={t("property.valueFilters")}>
                                   <p className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
                                     <ListFilterIcon className="size-3.5" aria-hidden="true" />
-                                    Value filters
+                                    {t("property.valueFilters")}
                                   </p>
                                   <div className="grid max-h-52 gap-0.5 overflow-auto px-1 pb-1">
                                     {propertyFilterValues.length > 0 ? propertyFilterValues.map((filterValue) => {
@@ -1254,7 +1282,7 @@ export function WorkspaceTableView({
                                         >
                                           <Checkbox
                                             checked={filterValueChecked}
-                                            aria-label={`${filterValue.name} visible in ${property.name}`}
+                                            aria-label={`${filterValue.name}: ${t("common.show")}`}
                                             className={workspaceMenuCheckboxClassName}
                                             onCheckedChange={(value) => onToggleValueFilter(property.id, filterValue.id, value === true)}
                                           />
@@ -1262,7 +1290,7 @@ export function WorkspaceTableView({
                                         </label>
                                       );
                                     }) : (
-                                      <p className="px-1.5 py-1 text-xs text-muted-foreground">No values</p>
+                                      <p className="px-1.5 py-1 text-xs text-muted-foreground">{t("common.noValues")}</p>
                                     )}
                                   </div>
                                 </div>
@@ -1276,13 +1304,13 @@ export function WorkspaceTableView({
                               className={workspaceMenuDangerItemClassName}
                               onClick={() => {
                                 closePropertyMenu();
-                                if (window.confirm(`Delete property "${property.name}"?`)) {
+                                if (window.confirm(t("confirm.deleteProperty", { name: property.name }))) {
                                   onDeleteProperty(property.id);
                                 }
                               }}
                             >
                               <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                              Delete property
+                              {t("property.delete")}
                             </button>
                           </div>
                         ), document.body) : null}
@@ -1291,7 +1319,7 @@ export function WorkspaceTableView({
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 z-10 w-1.5 cursor-col-resize touch-none rounded-sm hover:bg-primary/50"
-                      aria-label={`Resize ${property.name} column`}
+                      aria-label={t("table.resizeColumn", { name: property.name })}
                       onPointerDown={(event) => startColumnResize(event, property)}
                     />
                   </TableHead>
@@ -1303,7 +1331,7 @@ export function WorkspaceTableView({
                   onOpenChange={setOpenAddPropertyMenu}
                 >
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon-sm" aria-label="Add property column">
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label={t("table.addProperty")}>
                       <PlusIcon className="size-4" aria-hidden="true" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -1312,7 +1340,7 @@ export function WorkspaceTableView({
                     align="end"
                     className={`${workspaceMenuContentClassName} w-64`}
                   >
-                    <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
+                    <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("property.add")}</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       {propertyTypeOptions.map((option) => (
                         <DropdownMenuItem
@@ -1335,7 +1363,7 @@ export function WorkspaceTableView({
                         <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
                         <DropdownMenuGroup>
                           <DropdownMenuLabel className={workspaceMenuLabelClassName}>
-                            Hidden in this view
+                            {t("view.hiddenProperties")}
                           </DropdownMenuLabel>
                           {hiddenViewProperties.map((property) => (
                             <DropdownMenuItem
@@ -1344,7 +1372,7 @@ export function WorkspaceTableView({
                               onSelect={() => onTogglePropertyVisibility(property.id, true)}
                             >
                               <EyeIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                              Show {property.name}
+                              {t("common.show")} {property.name}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuGroup>

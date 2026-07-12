@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/i18n";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
@@ -88,6 +89,7 @@ export function WorkspaceBoardView({
   selectValues,
   onProjectOpen,
 }: WorkspaceBoardViewProps) {
+  const { t } = useI18n();
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
   );
@@ -117,9 +119,9 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-label="Workspace board">
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-label={t("view.boardDefault")}>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Badge variant="outline">Move disabled</Badge>
+        <Badge variant="outline">{t("board.moveDisabled")}</Badge>
       </div>
       <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="grid h-full min-w-full w-max grid-flow-col gap-3" style={boardGridStyle}>
@@ -127,7 +129,7 @@ export function WorkspaceBoardView({
             <section
               key={column.statusValueId}
               className="flex min-h-0 min-w-0 flex-col rounded-lg border border-border bg-muted/20"
-              aria-label={`${column.name} projects`}
+              aria-label={t("board.projectsAria", { name: column.name })}
             >
               <header className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
                 <h3 className="min-w-0 truncate text-sm font-medium">{column.name}</h3>
@@ -136,7 +138,7 @@ export function WorkspaceBoardView({
               <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto overflow-x-hidden p-2">
                 {column.projects.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-                    No projects
+                    {t("board.noProjects")}
                   </div>
                 ) : (
                   column.projects.map((project) => (

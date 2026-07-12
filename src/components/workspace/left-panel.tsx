@@ -31,6 +31,7 @@ import {
   workspaceMenuItemClassName,
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
+import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavigationItem = {
@@ -93,6 +94,7 @@ export function WorkspaceLeftPanel({
   onSearchQueryChange,
   onOpenSettings,
 }: WorkspaceLeftPanelProps) {
+  const { t } = useI18n();
   const [workspaceDragState, setWorkspaceDragState] = useState<WorkspacePointerDragState | null>(null);
   const [contextMenuWorkspaceId, setContextMenuWorkspaceId] = useState<string | null>(null);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export function WorkspaceLeftPanel({
   }
 
   function deleteWorkspace(workspace: WorkspaceNavigationItem) {
-    if (window.confirm(`Delete workspace "${workspace.name}"?`)) {
+    if (window.confirm(t("confirm.deleteWorkspace", { name: workspace.name }))) {
       onDeleteWorkspace(workspace.id);
     }
   }
@@ -353,28 +355,28 @@ export function WorkspaceLeftPanel({
         <button
           type="button"
           className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          title="Add Workspace"
+          title={t("sidebar.addWorkspace")}
           onClick={onAddWorkspace}
         >
           <PlusIcon className="size-4" aria-hidden="true" />
-          Add Workspace
+          {t("sidebar.addWorkspace")}
         </button>
         <label className="grid gap-1 text-xs text-muted-foreground">
-          Search
+          {t("sidebar.search")}
           <span className="relative block">
             <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
-              placeholder="Project name"
+              placeholder={t("sidebar.searchPlaceholder")}
               type="search"
             />
           </span>
         </label>
         <div className="h-px bg-border" />
         <div className="grid gap-1">
-          <p className="px-2 text-xs font-medium text-muted-foreground">Workspaces</p>
+          <p className="px-2 text-xs font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
             const editing = editingWorkspaceId === workspace.id;
@@ -403,7 +405,7 @@ export function WorkspaceLeftPanel({
                   >
                     <input
                       ref={editingWorkspaceInputRef}
-                      aria-label="Rename workspace"
+                      aria-label={t("sidebar.renameWorkspaceInput")}
                       className="h-8 w-full rounded-lg border border-ring bg-background px-2 text-sm text-foreground outline-none ring-3 ring-ring/30"
                       value={editingWorkspaceName}
                       onChange={(event) => setEditingWorkspaceName(event.currentTarget.value)}
@@ -440,8 +442,8 @@ export function WorkspaceLeftPanel({
                         <button
                           type="button"
                           className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100"
-                          aria-label={`Workspace actions for ${workspace.name}`}
-                          title="Workspace actions"
+                          aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
+                          title={t("sidebar.workspaceActions", { name: workspace.name })}
                         >
                           <MoreHorizontalIcon className="size-4" aria-hidden="true" />
                         </button>
@@ -453,7 +455,7 @@ export function WorkspaceLeftPanel({
                             onSelect={() => startRenameWorkspace(workspace)}
                           >
                             <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                            Rename Workspace
+                            {t("sidebar.renameWorkspace")}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
@@ -464,7 +466,7 @@ export function WorkspaceLeftPanel({
                             onSelect={() => deleteWorkspace(workspace)}
                           >
                             <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                            Delete Workspace
+                            {t("sidebar.deleteWorkspace")}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>
@@ -483,11 +485,11 @@ export function WorkspaceLeftPanel({
               "inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
               activeSurface === "settings" && "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
-            title="Settings"
+            title={t("sidebar.settings")}
             onClick={onOpenSettings}
           >
             <SettingsIcon className="size-4" aria-hidden="true" />
-            Settings
+            {t("sidebar.settings")}
           </button>
         </div>
       </div>

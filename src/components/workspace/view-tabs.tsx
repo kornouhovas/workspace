@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
+import { useI18n } from "@/i18n";
 import {
   KanbanIcon,
   MoreHorizontalIcon,
@@ -139,6 +140,7 @@ export function WorkspaceViewTabs({
   onRenameProperty,
   onDeleteProperty,
 }: WorkspaceViewTabsProps) {
+  const { t } = useI18n();
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
   const [viewTabDragState, setViewTabDragState] = useState<ViewTabPointerDragState | null>(null);
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
@@ -230,7 +232,7 @@ export function WorkspaceViewTabs({
       return;
     }
 
-    if (window.confirm(`Delete view "${activeView.name}"?`)) {
+    if (window.confirm(t("confirm.deleteView", { name: activeView.name }))) {
       onDeleteView(activeView.id);
     }
   }
@@ -258,7 +260,7 @@ export function WorkspaceViewTabs({
   }
 
   function deleteView(view: WorkspaceView) {
-    if (window.confirm(`Delete view "${view.name}"?`)) {
+    if (window.confirm(t("confirm.deleteView", { name: view.name }))) {
       onDeleteView(view.id);
     }
     setContextMenuViewId(null);
@@ -480,7 +482,7 @@ export function WorkspaceViewTabs({
     <div className="relative flex min-w-0 items-center justify-between gap-4 px-4 py-3">
       <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0 overflow-hidden">
         <TabsList
-          aria-label="Workspace views"
+          aria-label={t("view.actions")}
           className="max-w-full justify-start overflow-x-auto rounded-xl bg-muted/80 p-0.5 ring-1 ring-border/40 group-data-horizontal/tabs:!h-9"
         >
           {views.map((view) => {
@@ -496,7 +498,7 @@ export function WorkspaceViewTabs({
                 >
                   <input
                     ref={editingViewInputRef}
-                    aria-label="Rename view"
+                    aria-label={t("view.renameInput")}
                     className="h-full w-full rounded-lg border border-ring bg-background px-2.5 text-sm font-medium text-foreground outline-none ring-2 ring-ring/30"
                     value={editingViewName}
                     onChange={(event) => setEditingViewName(event.currentTarget.value)}
@@ -557,11 +559,11 @@ export function WorkspaceViewTabs({
             <Button
               type="button"
               variant="outline"
-              aria-label="Add Board or Table view"
-              title="Add view"
+              aria-label={t("view.addAria")}
+              title={t("view.add")}
             >
               <PlusIcon data-icon="inline-start" aria-hidden="true" />
-              <span>Add View</span>
+              <span>{t("view.add")}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -569,15 +571,15 @@ export function WorkspaceViewTabs({
             align="end"
             className={`${workspaceMenuContentClassName} min-w-56`}
           >
-            <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add view</DropdownMenuLabel>
+            <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("view.add")}</DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("board")}>
                 <KanbanIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                New Board View
+                {t("view.newBoard")}
               </DropdownMenuItem>
               <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("table")}>
                 <TableIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                New Table View
+                {t("view.newTable")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -587,8 +589,8 @@ export function WorkspaceViewTabs({
             <button
               type="button"
               className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="View actions"
-              title="View actions"
+              aria-label={t("view.actions")}
+              title={t("view.actions")}
             >
               <MoreHorizontalIcon className="size-4" aria-hidden="true" />
             </button>
@@ -599,7 +601,7 @@ export function WorkspaceViewTabs({
             className={`${workspaceMenuContentClassName} min-w-56`}
           >
             <DropdownMenuLabel className={workspaceMenuLabelClassName}>
-              {activeView?.name || "View"}
+              {activeView?.name || t("view.actions")}
             </DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem
@@ -608,7 +610,7 @@ export function WorkspaceViewTabs({
                 onSelect={renameActiveView}
               >
                 <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-              Rename View
+              {t("view.rename")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
@@ -620,7 +622,7 @@ export function WorkspaceViewTabs({
                 onSelect={deleteActiveView}
               >
                 <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-              Delete View
+              {t("view.delete")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
@@ -639,7 +641,7 @@ export function WorkspaceViewTabs({
             onClick={() => startRenameView(contextMenuView)}
           >
             <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-            Rename View
+            {t("view.rename")}
           </button>
           <button
             type="button"
@@ -648,7 +650,7 @@ export function WorkspaceViewTabs({
             onClick={() => deleteView(contextMenuView)}
           >
             <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-            Delete View
+            {t("view.delete")}
           </button>
         </div>
       ) : null}

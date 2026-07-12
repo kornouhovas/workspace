@@ -40,6 +40,7 @@ import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-edit
 import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
+import { useI18n } from "@/i18n";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -133,13 +134,13 @@ const projectDetailPlainTriggerClassName =
   "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-medium text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 const detailAddPropertyMenuSurfaceSelector = "[data-workspace-detail-add-property-menu='true']";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
-const propertyTypeOptions: readonly ProjectDetailPropertyTypeOption[] = [
-  { value: "text", label: "Text", description: "Short notes or free text" },
-  { value: "number", label: "Number", description: "Numeric values and counts" },
-  { value: "date", label: "Date", description: "Deadlines and calendar dates" },
-  { value: "select", label: "Select", description: "One option from a list" },
-  { value: "multi-select", label: "Multi-select", description: "Several options from a list" },
-];
+const defaultPropertyNameByType: Readonly<Record<WorkspaceCustomPropertyType, string>> = {
+  text: "Text",
+  number: "Number",
+  date: "Date",
+  select: "Select",
+  "multi-select": "Multi-select",
+};
 
 function getMaxProjectDetailPanelWidth() {
   if (typeof window === "undefined") {
@@ -422,6 +423,8 @@ function ProjectPropertyValueDisplay({
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onStartEditing: () => void;
 }) {
+  const { t } = useI18n();
+
   if (property.id === "property:status") {
     const label = stringifyPropertyValue(value);
     const statusValue = value && typeof value === "object" && !Array.isArray(value)
@@ -446,7 +449,7 @@ function ProjectPropertyValueDisplay({
     return (
       <button
         type="button"
-        aria-label={`Edit ${property.name}`}
+        aria-label={t("table.propertyActions", { name: property.name })}
         className={projectDetailMultilineValueClassName}
         onClick={onStartEditing}
       >
@@ -459,7 +462,7 @@ function ProjectPropertyValueDisplay({
     return (
       <button
         type="button"
-        aria-label={`Edit ${property.name}`}
+        aria-label={t("table.propertyActions", { name: property.name })}
         className={projectDetailPlainValueClassName}
         onClick={onStartEditing}
       >
@@ -498,6 +501,7 @@ function FileTreeNode({
   expandedFolderIds,
   onToggleFolder,
 }: FileTreeNodeProps) {
+  const { t } = useI18n();
   const isFolder = node.kind === "folder";
   const hasChildren = isFolder && node.children !== undefined && node.children.length > 0;
   const isExpanded = isFolder && expandedFolderIds.has(node.id);
@@ -510,6 +514,7 @@ function FileTreeNode({
         disabled={!node.available}
         className="h-8 w-full justify-start px-1.5 py-0 text-left text-muted-foreground hover:bg-accent/30 hover:text-foreground"
         title={node.relativePath}
+        aria-label={`${t(isFolder ? "detail.folder" : "detail.file")}: ${node.name}`}
         aria-expanded={isFolder ? isExpanded : undefined}
         onClick={() => {
           if (hasChildren) {
@@ -533,7 +538,7 @@ function FileTreeNode({
             <FileIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
           )}
           <span className={getFileTreeNodeNameClassName(node)}>{node.name}</span>
-          {!node.available ? <Badge variant="destructive">Missing</Badge> : null}
+          {!node.available ? <Badge variant="destructive">{t("detail.fileUnavailable")}</Badge> : null}
         </span>
       </Button>
       {isFolder && isExpanded && node.children && node.children.length > 0 ? (
@@ -581,6 +586,7 @@ function ProjectPropertyValueEditor({
   readonly onColorSelectValue: (selectValueId: string, color: string) => void;
   readonly onDeleteSelectValue: (selectValueId: string) => void;
 }) {
+  const { t } = useI18n();
   const value = getPropertyValue(project, property);
 
   if (isProtectedCardProperty(property)) {
@@ -611,7 +617,7 @@ function ProjectPropertyValueEditor({
         key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
         autoFocus
         defaultValue={stringifyPropertyValue(value)}
-        aria-label={`${property.name} text value`}
+        aria-label={t("table.propertyActions", { name: property.name })}
         className="min-h-8 border-transparent bg-transparent px-0 text-[13px] font-medium leading-5 shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
         onBlur={(event) => {
           onProjectPropertyValueChange(project.id, property.id, event.target.value);
@@ -646,7 +652,7 @@ function ProjectPropertyValueEditor({
         type="text"
         inputMode="decimal"
         defaultValue={formatNumberEditorValue(value)}
-        aria-label={`${property.name} number value`}
+        aria-label={t("table.propertyActions", { name: property.name })}
         className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();
@@ -719,6 +725,34 @@ export function WorkspaceProjectDetailPanel({
   onHideProperty,
   onDeleteProperty,
 }: WorkspaceProjectDetailPanelProps) {
+  const { t } = useI18n();
+  const propertyTypeOptions = useMemo<readonly ProjectDetailPropertyTypeOption[]>(() => [
+    {
+      value: "text",
+      label: t("property.type.text"),
+      description: t("property.type.textDescription"),
+    },
+    {
+      value: "number",
+      label: t("property.type.number"),
+      description: t("property.type.numberDescription"),
+    },
+    {
+      value: "date",
+      label: t("property.type.date"),
+      description: t("property.type.dateDescription"),
+    },
+    {
+      value: "select",
+      label: t("property.type.select"),
+      description: t("property.type.selectDescription"),
+    },
+    {
+      value: "multi-select",
+      label: t("property.type.multiSelect"),
+      description: t("property.type.multiSelectDescription"),
+    },
+  ], [t]);
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
@@ -998,14 +1032,14 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function deleteProperty(property: WorkspacePropertyDefinitionState) {
-    if (!isProtectedCardProperty(property) && window.confirm(`Delete property "${property.name}"?`)) {
+    if (!isProtectedCardProperty(property) && window.confirm(t("confirm.deleteProperty", { name: property.name }))) {
       onDeleteProperty(property.id);
     }
   }
 
   function createPropertyFromType(option: ProjectDetailPropertyTypeOption) {
     setOpenAddPropertyMenu(false);
-    onCreateProperty({ name: option.label, type: option.value });
+    onCreateProperty({ name: defaultPropertyNameByType[option.value], type: option.value });
   }
 
   function onReorderCardProperties(nextPropertyIds: readonly string[]) {
@@ -1317,7 +1351,9 @@ export function WorkspaceProjectDetailPanel({
     property: WorkspacePropertyDefinitionState,
     visibilityAction: "hide" | "show",
   ) {
-    const visibilityLabel = visibilityAction === "hide" ? "Hide property" : "Show property";
+    const visibilityLabel = visibilityAction === "hide"
+      ? t("property.hideFromView")
+      : t("property.showInView");
     const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
     const propertyProtected = isProtectedCardProperty(property);
     const renameableProperty = canRenameCardProperty(property);
@@ -1329,7 +1365,7 @@ export function WorkspaceProjectDetailPanel({
         className={`${workspaceMenuContentClassName} w-52`}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <div role="menu" aria-label={`${property.name} property menu`} className="grid gap-0.5">
+        <div role="menu" aria-label={t("table.propertyActions", { name: property.name })} className="grid gap-0.5">
           {renameableProperty ? (
             <button
               type="button"
@@ -1338,7 +1374,7 @@ export function WorkspaceProjectDetailPanel({
               onClick={() => beginRenameProperty(property)}
             >
               <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-              Rename property
+              {t("property.rename")}
             </button>
           ) : null}
           {hideableProperty ? (
@@ -1368,7 +1404,7 @@ export function WorkspaceProjectDetailPanel({
                     }}
                   >
                     <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-                    Delete property
+                    {t("property.delete")}
                   </button>
                 </>
               ) : null}
@@ -1395,7 +1431,7 @@ export function WorkspaceProjectDetailPanel({
     >
       <button
         type="button"
-        aria-label="Close project details backdrop"
+        aria-label={t("detail.close")}
         className="electron-window-no-drag absolute inset-0 cursor-default bg-transparent"
         tabIndex={panelVisible ? 0 : -1}
         onClick={closeProjectDetails}
@@ -1418,18 +1454,18 @@ export function WorkspaceProjectDetailPanel({
       >
         <button
           type="button"
-          aria-label="Resize project panel"
+          aria-label={t("detail.resizePanel")}
           className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
           onPointerDown={startPanelResize}
         >
-          <span className="sr-only">Resize project panel</span>
+          <span className="sr-only">{t("detail.resizePanel")}</span>
         </button>
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
           className="electron-window-no-drag absolute right-3 top-3 z-10"
-          aria-label="Close project details"
+          aria-label={t("detail.close")}
           onPointerDown={closeProjectDetails}
           onClick={closeProjectDetails}
         >
@@ -1445,7 +1481,7 @@ export function WorkspaceProjectDetailPanel({
             <div className="grid gap-5">
               <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
                 <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
-                  Properties
+                  {t("property.properties")}
                 </h3>
                 <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                   {orderedVisibleProperties.map((property) => {
@@ -1480,7 +1516,7 @@ export function WorkspaceProjectDetailPanel({
                                 <Input
                                   ref={renamingPropertyInputRef}
                                   value={renamingPropertyName}
-                                  aria-label="Rename property"
+                                  aria-label={t("property.rename")}
                                   className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
                                   onChange={(event) => setRenamingPropertyName(event.target.value)}
                                   onBlur={() => commitRenameProperty(property)}
@@ -1500,7 +1536,7 @@ export function WorkspaceProjectDetailPanel({
                               <PopoverAnchor asChild>
                                 <button
                                   type="button"
-                                  aria-label={`Open ${property.name} property menu`}
+                                  aria-label={t("table.propertyActions", { name: property.name })}
                                   className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                   onPointerDown={(event) => (
                                     startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
@@ -1533,7 +1569,7 @@ export function WorkspaceProjectDetailPanel({
                             ) : (
                               <button
                                 type="button"
-                                aria-label={`Reorder ${property.name} card property order`}
+                                aria-label={t("detail.reorderProperty", { name: property.name })}
                                 className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                 onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
                               >
@@ -1581,11 +1617,11 @@ export function WorkspaceProjectDetailPanel({
                             <PlusIcon className="size-3.5" aria-hidden="true" />
                           </span>
                           <span className="min-w-0 truncate pr-3 text-[13px] font-medium text-muted-foreground">
-                            Add property
+                            {t("property.add")}
                           </span>
                         </span>
                         <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
-                          Choose type
+                          {t("property.addDescription")}
                         </span>
                       </button>
                     </DropdownMenuTrigger>
@@ -1594,7 +1630,7 @@ export function WorkspaceProjectDetailPanel({
                       align="start"
                       className={`${workspaceMenuContentClassName} w-64`}
                     >
-                      <DropdownMenuLabel className={workspaceMenuLabelClassName}>Add property</DropdownMenuLabel>
+                      <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("property.add")}</DropdownMenuLabel>
                       <DropdownMenuGroup>
                         {propertyTypeOptions.map((option) => (
                           <DropdownMenuItem
@@ -1630,7 +1666,7 @@ export function WorkspaceProjectDetailPanel({
                         ) : (
                           <ChevronRightIcon className="size-3 shrink-0" aria-hidden="true" />
                         )}
-                        <span className="truncate">Hidden properties</span>
+                        <span className="truncate">{t("view.hiddenProperties")}</span>
                       </button>
                       <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
                     </div>
@@ -1671,7 +1707,7 @@ export function WorkspaceProjectDetailPanel({
                                       <Input
                                         ref={renamingPropertyInputRef}
                                         value={renamingPropertyName}
-                                        aria-label="Rename property"
+                                        aria-label={t("property.rename")}
                                         className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
                                         onChange={(event) => setRenamingPropertyName(event.target.value)}
                                         onBlur={() => commitRenameProperty(property)}
@@ -1691,7 +1727,7 @@ export function WorkspaceProjectDetailPanel({
                                     <PopoverAnchor asChild>
                                       <button
                                         type="button"
-                                        aria-label={`Open ${property.name} property menu`}
+                                        aria-label={t("table.propertyActions", { name: property.name })}
                                         className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                         onPointerDown={(event) => (
                                           startCardPropertyDrag(event, property.id, {
@@ -1727,7 +1763,7 @@ export function WorkspaceProjectDetailPanel({
                                   ) : (
                                     <button
                                       type="button"
-                                      aria-label={`Reorder ${property.name} card property order`}
+                                      aria-label={t("detail.reorderProperty", { name: property.name })}
                                       className="col-span-2 grid min-h-10 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                       onPointerDown={(event) =>
                                         startCardPropertyDrag(event, property.id, { group: "hidden" })
@@ -1768,9 +1804,11 @@ export function WorkspaceProjectDetailPanel({
               <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
                   <h3 id="project-file-tree-heading" className="text-sm font-medium text-muted-foreground">
-                    File tree
+                    {t("detail.fileTree")}
                   </h3>
-                  <Badge variant="secondary" className="h-6 px-2 text-xs">{displayedProject.fileTree.length} items</Badge>
+                  <Badge variant="secondary" className="h-6 px-2 text-xs">
+                    {t("detail.items", { count: displayedProject.fileTree.length })}
+                  </Badge>
                 </div>
                 <ul className="grid gap-0">
                   {displayedProject.fileTree.map((node) => (

@@ -10,6 +10,7 @@ import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { useI18n } from "@/i18n";
 import { PanelLeftIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
@@ -435,8 +436,10 @@ function getServiceErrorMessage(error: unknown) {
 }
 
 function WorkspaceLoadingState() {
+  const { t } = useI18n();
+
   return (
-    <div className="grid gap-4 px-4 py-4" aria-label="Loading workspace">
+    <div className="grid gap-4 px-4 py-4" aria-label={t("common.loading")}>
       <Skeleton className="h-28 w-full rounded-lg" />
       <div className="grid gap-3 lg:grid-cols-3">
         <Skeleton className="h-72 rounded-lg" />
@@ -449,13 +452,15 @@ function WorkspaceLoadingState() {
 }
 
 function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState }) {
+  const { t } = useI18n();
+
   if (state.status !== "error" || !state.error) {
     return null;
   }
 
   return (
     <div className="mx-4 mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-      Workspace service unavailable. Showing deterministic mock workspace data. {state.error}
+      {t("state.serviceUnavailable", { error: state.error })}
     </div>
   );
 }
@@ -468,6 +473,7 @@ function createClientDocumentId(prefix: string) {
 }
 
 export default function App() {
+  const { t } = useI18n();
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
     undefined,
@@ -589,7 +595,7 @@ export default function App() {
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
             setSelectingFolder(false);
-            toast.success("Workspace folder selected");
+            toast.success(t("toast.folderSelected"));
           }
         }
       } catch (error) {
@@ -600,12 +606,12 @@ export default function App() {
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
             setSelectingFolder(false);
-            toast.error("Could not load selected workspace folder", {
+            toast.error(t("toast.folderLoadFailed"), {
               description: message,
             });
           } else {
-            toast.error("Workspace service unavailable", {
-              description: "Mock workspace data is shown while the service bridge is unavailable.",
+            toast.error(t("toast.serviceUnavailable"), {
+              description: t("toast.serviceUnavailableDescription"),
             });
           }
         }
@@ -652,7 +658,7 @@ export default function App() {
         }
       } catch (error) {
         if (!cancelled) {
-          toast.error("Could not load view", {
+          toast.error(t("toast.viewLoadFailed"), {
             description: getServiceErrorMessage(error),
           });
         }
@@ -695,7 +701,7 @@ export default function App() {
     } catch (error) {
       folderSelectionPendingRef.current = false;
       setSelectingFolder(false);
-      toast.error("Could not select workspace folder", {
+      toast.error(t("toast.folderLoadFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -703,7 +709,7 @@ export default function App() {
 
   async function handleAddWorkspace() {
     if (!state.root) {
-      toast.error("Select a source folder before adding workspaces.");
+      toast.error(t("toast.sourceRequiredWorkspaces"));
       return;
     }
 
@@ -732,18 +738,18 @@ export default function App() {
       }
       setSelectedProject(null);
       setActiveSurface("workspace");
-      toast.success("Workspace added");
+      toast.success(t("toast.workspaceAdded"));
       setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.createWorkspace")) {
         setWorkspaceList((current) => addWorkspaceListFallback(current, workspaceName));
         setSelectedProject(null);
         setActiveSurface("workspace");
-        toast.success("Workspace added locally");
+        toast.success(t("toast.workspaceAdded"));
         return;
       }
 
-      toast.error("Could not add workspace", {
+      toast.error(t("toast.workspaceAddFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -773,7 +779,7 @@ export default function App() {
         return;
       }
 
-      toast.error("Could not open workspace", {
+      toast.error(t("toast.workspaceOpenFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -786,15 +792,15 @@ export default function App() {
         patch: { name },
       });
       setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
-      toast.success("Workspace renamed");
+      toast.success(t("toast.workspaceRenamed"));
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateWorkspace")) {
         setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
-        toast.success("Workspace renamed locally");
+        toast.success(t("toast.workspaceRenamed"));
         return;
       }
 
-      toast.error("Could not rename workspace", {
+      toast.error(t("toast.workspaceRenameFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -819,17 +825,17 @@ export default function App() {
       if (wasActiveWorkspace && nextActiveWorkspaceId) {
         dispatch({ type: "workspaceActivated", workspaceId: nextActiveWorkspaceId });
       }
-      toast.success("Workspace deleted");
+      toast.success(t("toast.workspaceDeleted"));
       setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.deleteWorkspace")) {
         setWorkspaceList((current) => deleteWorkspaceListFallback(current, workspaceId));
         setSelectedProject(null);
-        toast.success("Workspace deleted locally");
+        toast.success(t("toast.workspaceDeleted"));
         return;
       }
 
-      toast.error("Could not delete workspace", {
+      toast.error(t("toast.workspaceDeleteFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -863,7 +869,7 @@ export default function App() {
         return;
       }
 
-      toast.error("Could not reorder workspaces", {
+      toast.error(t("toast.workspaceReorderFailed"), {
         description: getServiceErrorMessage(error),
       });
       setReloadToken((value) => value + 1);
@@ -872,11 +878,11 @@ export default function App() {
 
   async function handleCreateView(viewType: "board" | "table") {
     if (!state.workspaceId) {
-      toast.error("Select a source folder before creating views.");
+      toast.error(t("toast.sourceRequiredViews"));
       return;
     }
 
-    const label = viewType === "board" ? "Board" : "Table";
+    const label = viewType === "board" ? t("view.boardDefault") : t("view.tableDefault");
     const currentViews = state.views.length > 0 ? state.views : workspaceMockProjection.views;
     const nextIndex = currentViews.filter((view) => view.viewType === viewType).length + 1;
 
@@ -898,9 +904,9 @@ export default function App() {
         activeViewId: createdView.activeViewId,
         view: createdView.view,
       });
-      toast.success("View created");
+      toast.success(t("toast.viewCreated"));
     } catch (error) {
-      toast.error("Could not create view", {
+      toast.error(t("toast.viewCreateFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -908,7 +914,7 @@ export default function App() {
 
   async function handleRenameView(viewId: string, name: string) {
     if (!state.workspaceId) {
-      toast.error("Select a source folder before renaming views.");
+      toast.error(t("toast.sourceRequiredViews"));
       return;
     }
 
@@ -919,15 +925,15 @@ export default function App() {
         patch: { name },
       });
       dispatch({ type: "viewRenamed", viewId, name });
-      toast.success("View renamed");
+      toast.success(t("toast.viewRenamed"));
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
         dispatch({ type: "viewRenamed", viewId, name });
-        toast.success("View renamed locally");
+        toast.success(t("toast.viewRenamed"));
         return;
       }
 
-      toast.error("Could not rename view", {
+      toast.error(t("toast.viewRenameFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -935,7 +941,7 @@ export default function App() {
 
   async function handleDeleteView(viewId: string) {
     if (!state.workspaceId) {
-      toast.error("Select a source folder before deleting views.");
+      toast.error(t("toast.sourceRequiredViews"));
       return;
     }
 
@@ -950,10 +956,10 @@ export default function App() {
         viewId,
         activeViewId: deletedView.activeViewId,
       });
-      toast.success("View deleted");
+      toast.success(t("toast.viewDeleted"));
       setSelectedProject(null);
     } catch (error) {
-      toast.error("Could not delete view", {
+      toast.error(t("toast.viewDeleteFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -994,7 +1000,7 @@ export default function App() {
       }
 
       dispatch({ type: "viewsReordered", orderedViewIds: currentViewIds });
-      toast.error("Could not reorder views", {
+      toast.error(t("toast.viewReorderFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1084,7 +1090,7 @@ export default function App() {
         visiblePropertyIds: currentVisiblePropertyIds,
         propertyOrder: previousPropertyOrder,
       });
-      toast.error("Could not update view properties", {
+      toast.error(t("toast.propertyVisibilityFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1126,7 +1132,7 @@ export default function App() {
         viewId: activeViewId,
         valueVisibility: previousValueVisibility,
       });
-      toast.error("Could not update view filter", {
+      toast.error(t("toast.valueFilterFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1167,7 +1173,7 @@ export default function App() {
         viewId: activeViewId,
         propertyLayout: previousPropertyLayout,
       });
-      toast.error("Could not update text wrapping", {
+      toast.error(t("toast.textWrapFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1203,7 +1209,7 @@ export default function App() {
         viewId: activeViewId,
         boardLayout: { columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT) },
       });
-      toast.error("Could not update Board column width", {
+      toast.error(t("toast.boardWidthFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1243,7 +1249,7 @@ export default function App() {
         visiblePropertyIds: previousVisiblePropertyIds,
         propertyOrder: previousPropertyOrder,
       });
-      toast.error("Could not reorder view properties", {
+      toast.error(t("toast.propertyOrderFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1251,7 +1257,7 @@ export default function App() {
 
   async function handleCreateVisibleProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
     if (!state.workspaceId) {
-      toast.error("Select a source folder before adding properties.");
+      toast.error(t("toast.sourceRequiredProperties"));
       return;
     }
 
@@ -1286,9 +1292,9 @@ export default function App() {
         });
       }
 
-      toast.success("Property added");
+      toast.success(t("toast.propertyCreated"));
     } catch (error) {
-      toast.error("Could not add property", {
+      toast.error(t("toast.propertyCreateFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1299,7 +1305,7 @@ export default function App() {
     role: WorkspaceFolderRoleNode["role"],
   ) {
     if (!state.root) {
-      toast.error("Select a source folder before changing folder roles.");
+      toast.error(t("toast.sourceRequiredFolderRoles"));
       return;
     }
 
@@ -1308,11 +1314,11 @@ export default function App() {
         path: node.relativePath,
         role,
       });
-      toast.success("Folder role updated");
+      toast.success(t("toast.folderRoleUpdated"));
       setSelectedProject(null);
       setReloadToken((value) => value + 1);
     } catch (error) {
-      toast.error("Could not update folder role", {
+      toast.error(t("toast.folderRoleUpdateFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1335,7 +1341,7 @@ export default function App() {
 
   async function handleCreateProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
     if (!state.workspaceId) {
-      toast.error("Select a source folder before adding properties.");
+      toast.error(t("toast.sourceRequiredProperties"));
       return;
     }
 
@@ -1347,9 +1353,9 @@ export default function App() {
         type: input.type,
       });
       await refreshPropertyCatalog();
-      toast.success("Property added");
+      toast.success(t("toast.propertyCreated"));
     } catch (error) {
-      toast.error("Could not add property", {
+      toast.error(t("toast.propertyCreateFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1367,9 +1373,9 @@ export default function App() {
         patch: { name },
       });
       await refreshPropertyCatalog();
-      toast.success("Property renamed");
+      toast.success(t("toast.propertyRenamed"));
     } catch (error) {
-      toast.error("Could not rename property", {
+      toast.error(t("toast.propertyRenameFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1387,9 +1393,9 @@ export default function App() {
         patch: { hidden },
       });
       await refreshPropertyCatalog();
-      toast.success(hidden ? "Property hidden" : "Property shown");
+      toast.success(t(hidden ? "toast.propertyHidden" : "toast.propertyShown"));
     } catch (error) {
-      toast.error("Could not update property", {
+      toast.error(t("toast.propertyVisibilityFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1411,9 +1417,9 @@ export default function App() {
         currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject
       ));
       await refreshPropertyCatalog();
-      toast.success("Property deleted");
+      toast.success(t("toast.propertyDeleted"));
     } catch (error) {
-      toast.error("Could not delete property", {
+      toast.error(t("toast.propertyDeleteFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1432,7 +1438,7 @@ export default function App() {
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
     } catch (error) {
-      toast.error("Could not reorder properties", {
+      toast.error(t("toast.propertyOrderFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1457,10 +1463,10 @@ export default function App() {
         ? normalizeSelectValue(response.selectValue)
         : null;
       await refreshPropertyCatalog();
-      toast.success("Select value added");
+      toast.success(t("toast.valueCreated"));
       return selectValue;
     } catch (error) {
-      toast.error("Could not add select value", {
+      toast.error(t("toast.valueCreateFailed"), {
         description: getServiceErrorMessage(error),
       });
       return null;
@@ -1479,9 +1485,9 @@ export default function App() {
         patch: { name },
       });
       await refreshPropertyCatalog();
-      toast.success("Select value renamed");
+      toast.success(t("toast.valueRenamed"));
     } catch (error) {
-      toast.error("Could not rename select value", {
+      toast.error(t("toast.valueRenameFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1500,7 +1506,7 @@ export default function App() {
       });
       await refreshPropertyCatalog();
     } catch (error) {
-      toast.error("Could not update select value color", {
+      toast.error(t("toast.valueColorFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1520,7 +1526,7 @@ export default function App() {
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
     } catch (error) {
-      toast.error("Could not update status color", {
+      toast.error(t("toast.statusColorFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1539,9 +1545,9 @@ export default function App() {
       });
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
-      toast.success(hidden ? "Select value hidden" : "Select value shown");
+      toast.success(t(hidden ? "toast.valueHidden" : "toast.valueShown"));
     } catch (error) {
-      toast.error("Could not update select value", {
+      toast.error(t("toast.valueVisibilityFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1569,9 +1575,9 @@ export default function App() {
       }
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
-      toast.success("Select value deleted");
+      toast.success(t("toast.valueDeleted"));
     } catch (error) {
-      toast.error("Could not delete select value", {
+      toast.error(t("toast.valueDeleteFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1590,7 +1596,7 @@ export default function App() {
       });
       await refreshPropertyCatalog();
     } catch (error) {
-      toast.error("Could not reorder select values", {
+      toast.error(t("toast.valueOrderFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1643,7 +1649,7 @@ export default function App() {
       const message = getServiceErrorMessage(error);
       dispatch({ type: "propertySaveFailed", error: message, projectId, propertyId, requestVersion });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
-        toast.error("Could not save property value", {
+        toast.error(t("toast.propertySaveFailed"), {
           description: message,
         });
       }
@@ -1659,7 +1665,7 @@ export default function App() {
         currentProject?.id === project.id ? { ...currentProject, fileTree } : currentProject
       ));
     } catch (error) {
-      toast.error("Could not load project files", {
+      toast.error(t("toast.fileTreeLoadFailed"), {
         description: getServiceErrorMessage(error),
       });
     }
@@ -1698,7 +1704,7 @@ export default function App() {
   const sourceFolder = state.root
     ? {
         name: state.root.name,
-        path: state.root.path || "Path unavailable",
+        path: state.root.path || t("common.pathUnavailable"),
         state: "connected",
       }
     : workspaceMockSettings.sourceFolder;
@@ -1810,14 +1816,14 @@ export default function App() {
             <button
               type="button"
               className="electron-window-no-drag inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+              aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+              title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
               onClick={() => setSidebarCollapsed((value) => !value)}
             >
               <PanelLeftIcon className="size-4" aria-hidden="true" />
             </button>
             <h1 className="truncate text-sm font-medium">
-              {activeSurface === "settings" ? "Settings" : "Workspace Project Board"}
+              {activeSurface === "settings" ? t("settings.title") : t("app.title")}
             </h1>
           </header>
           {activeSurface === "settings" ? (
@@ -1859,7 +1865,7 @@ export default function App() {
                       workspaceId: state.workspaceId,
                       viewId: activeViewId,
                     }).catch((error: unknown) => {
-                      toast.error("Could not save active view", {
+                      toast.error(t("toast.activeViewSaveFailed"), {
                         description: getServiceErrorMessage(error),
                       });
                     });

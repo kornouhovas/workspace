@@ -37,6 +37,7 @@ import {
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
+import { useI18n } from "@/i18n";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
@@ -180,6 +181,7 @@ export function WorkspaceSelectValueEditor({
   onColorSelectValue,
   onDeleteSelectValue,
 }: WorkspaceSelectValueEditorProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [creating, setCreating] = useState(false);
@@ -329,7 +331,7 @@ export function WorkspaceSelectValueEditor({
     setSelectValueAction(null);
     setEditingSelectValueId(null);
     setEditingSelectValueName("");
-    if (window.confirm(`Delete value "${selectValue.name}"?`)) {
+    if (window.confirm(t("confirm.deleteValue", { name: selectValue.name }))) {
       onDeleteSelectValue(selectValue.id);
     }
   }
@@ -424,7 +426,7 @@ export function WorkspaceSelectValueEditor({
       <PopoverContent
         data-workspace-actions-popover="true"
         role={renamingValue ? undefined : "menu"}
-        aria-label={`${selectValue.name} value actions`}
+        aria-label={t("value.actions", { name: selectValue.name })}
         side={options.side || "right"}
         align="start"
         sideOffset={options.sideOffset ?? 8}
@@ -437,11 +439,11 @@ export function WorkspaceSelectValueEditor({
       >
         {renamingValue ? (
           <div className="grid gap-1 p-1">
-            <div className={workspaceMenuLabelClassName}>Rename value</div>
+            <div className={workspaceMenuLabelClassName}>{t("value.rename")}</div>
             <Input
               value={editingSelectValueName}
               autoFocus
-              aria-label="Rename value"
+              aria-label={t("value.rename")}
               className="h-8"
               onChange={(event) => setEditingSelectValueName(event.target.value)}
               onPointerMove={stopSelectionEditorActivation}
@@ -473,7 +475,7 @@ export function WorkspaceSelectValueEditor({
               }}
             >
               <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-              Rename value
+              {t("value.rename")}
             </button>
             <button
               type="button"
@@ -485,22 +487,22 @@ export function WorkspaceSelectValueEditor({
               }}
             >
               <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-              Delete value
+              {t("value.delete")}
             </button>
             {onColorSelectValue ? (
               <>
                 <div className={workspaceMenuSeparatorClassName} />
                 <div className={`${workspaceMenuLabelClassName} flex items-center gap-2`}>
                   <PaletteIcon className="size-3.5" aria-hidden="true" />
-                  Color
+                  {t("value.color")}
                 </div>
                 <div className="grid grid-cols-7 gap-1 px-1 pb-1">
                   {valueColorOptions.map((color) => (
                     <button
                       key={color}
                       type="button"
-                      aria-label={`Color ${color}`}
-                      title={color}
+                      aria-label={`${t("value.color")}: ${color}`}
+                      title={`${t("value.color")}: ${color}`}
                       className="flex size-6 items-center justify-center rounded-md hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40"
                       onClick={(event) => {
                         event.stopPropagation();
@@ -530,7 +532,7 @@ export function WorkspaceSelectValueEditor({
           <button
             type="button"
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-            aria-label={`${selectValue.name} value actions`}
+            aria-label={t("value.actions", { name: selectValue.name })}
             onClick={stopSelectionEditorActivation}
             onPointerDown={stopSelectionEditorActivation}
           >
@@ -580,7 +582,7 @@ export function WorkspaceSelectValueEditor({
             type="button"
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
-            aria-label={`${property.name} select value`}
+            aria-label={`${property.name}: ${t(isMultiSelect ? "value.multiSelect" : "value.select")}`}
             data-workspace-select-value-trigger="true"
             data-empty-value={selectedValueItems.length > 0 ? undefined : "true"}
           >
@@ -606,8 +608,8 @@ export function WorkspaceSelectValueEditor({
             <Input
               value={searchQuery}
               autoFocus
-              placeholder="Search values"
-              aria-label="Search values"
+              placeholder={t("value.search")}
+              aria-label={t("value.search")}
               className="h-8"
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -624,7 +626,7 @@ export function WorkspaceSelectValueEditor({
             {!isMultiSelect && selectedValueId ? (
               <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={clearSingleSelectValue}>
                 <XIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                Clear selection
+                {t("value.clearSelection")}
               </DropdownMenuItem>
             ) : null}
             {filteredValues.map((selectValue) => {
@@ -672,7 +674,7 @@ export function WorkspaceSelectValueEditor({
             })}
             {filteredValues.length === 0 && !canCreateValue ? (
               <DropdownMenuItem className={workspaceMenuItemClassName} disabled>
-                No matching values
+                {t("common.noMatchingValues")}
               </DropdownMenuItem>
             ) : null}
             {canCreateValue ? (
@@ -687,7 +689,7 @@ export function WorkspaceSelectValueEditor({
                   }}
                 >
                   <PlusIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                  Create "{searchQuery.trim()}"
+                  {t("value.create", { name: searchQuery.trim() })}
                 </DropdownMenuItem>
               </>
             ) : null}
