@@ -843,7 +843,7 @@ export function WorkspaceTableView({
   }
 
   function dismissHeaderTransientState(event: ReactPointerEvent<HTMLElement>) {
-    if (isPropertyMenuTarget(event.target)) {
+    if (isPropertyMenuTarget(event.target) || isWorkspaceMenuSurfaceTarget(event.target, tableAddPropertyMenuSurfaceSelector)) {
       return;
     }
 
