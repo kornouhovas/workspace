@@ -447,7 +447,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /selectValues/);
   assert.match(boardViewSource, /formatPropertyValue/);
   assert.match(boardViewSource, /renderBoardStatusValue/);
-  assert.match(boardViewSource, /className="h-5 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-xs font-normal"/);
+  assert.match(boardViewSource, /className="h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-normal"/);
   assert.match(boardViewSource, /size-2 rounded-full bg-muted-foreground\/70/);
   assert.match(boardViewSource, /"--workspace-board-column-width": `\$\{preferredColumnWidth\}px`/);
   assert.doesNotMatch(boardViewSource, /Math\.min\(preferredColumnWidth/);

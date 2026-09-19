@@ -50,12 +50,12 @@ function formatPropertyValue(
 ) {
   if (property.propertyType === "date") return formatDateForDisplay(value, locale);
   if (property.propertyType === "select") {
-    return selectValues.find((selectValue) => selectValue.id === value)?.name || "";
+    return selectValues.find((selectValue) => selectValue.id === value)?.name || (typeof value === "string" ? value : "");
   }
 
   if (property.propertyType === "multi-select" && Array.isArray(value)) {
     return value
-      .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name)
+      .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name || (typeof valueId === "string" ? valueId : ""))
       .filter(Boolean)
       .join(", ");
   }
@@ -82,7 +82,7 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
   return (
     <Badge
       variant="secondary"
-      className="h-5 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-xs font-normal"
+      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal"
     >
       <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
       <span className="truncate">{label}</span>
@@ -174,8 +174,24 @@ export function WorkspaceBoardView({
                           {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
-                              <dd className="truncate text-foreground">
-                                {value}
+                              <dd className="min-w-0 text-foreground">
+                                {property.propertyType === "select" || property.propertyType === "multi-select" ? (
+                                  <span className="flex min-w-0 flex-wrap items-center gap-1">
+                                    {(Array.isArray(getPropertyValue(project, property))
+                                      ? getPropertyValue(project, property) as unknown[]
+                                      : [getPropertyValue(project, property)])
+                                      .filter((id): id is string => typeof id === "string" && id.trim() !== "")
+                                      .map((id) => {
+                                        const option = selectValues.find((item) => item.id === id && item.propertyId === property.id && !item.hidden);
+                                        return (
+                                          <span key={id} className="inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground">
+                                            <span className="size-2 shrink-0 rounded-full" data-color={option?.color || "gray"} aria-hidden="true" />
+                                            <span className="truncate">{option?.name || id}</span>
+                                          </span>
+                                        );
+                                      })}
+                                  </span>
+                                ) : <span className="block truncate">{value}</span>}
                               </dd>
                             </div>
                           ))}
