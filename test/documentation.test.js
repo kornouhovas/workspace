@@ -25,7 +25,7 @@ test("agent instructions define the spec-first Codex workflow", async () => {
   assert.match(agents, /Workflow Evidence/);
   assert.match(agents, /Infer the request mode/);
   assert.match(agents, /Handoff state/);
-  assert.match(agents, /Create commits when requested or when the accepted implementation plan includes them/);
+  assert.match(agents, /Commit every completed and verified file-changing task before handoff/);
   assert.match(agents, /target durable local store is the Go sidecar using `any-store` on SQLite/);
   assert.match(agents, /React must stay thin/);
   assert.match(agents, /Electron preload IPC/);
