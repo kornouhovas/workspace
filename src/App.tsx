@@ -539,9 +539,24 @@ export default function App() {
     }
   }
 
+  function closeProjectTab(tabId: string) {
+    const index = expandedProjectTabs.findIndex((tab) => tab.tabId === tabId);
+    if (index < 0) return;
+    const previousTab = expandedProjectTabs[index - 1];
+    dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId });
+    if (activeProjectTabId !== tabId) return;
+    if (selectedProject && previousTab) {
+      handleProjectOpen(previousTab, previousTab.tabId);
+      return;
+    }
+    setActiveProjectTabId(null);
+    setSelectedProject(null);
+  }
+
   function closeSelectedProject() {
     if (projectExpanded && activeProjectTabId) {
-      dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: activeProjectTabId });
+      closeProjectTab(activeProjectTabId);
+      return;
     }
     setActiveProjectTabId(null);
     setSelectedProject(null);
@@ -1967,10 +1982,7 @@ export default function App() {
                         dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: id });
                         if (project) handleProjectOpen(project);
                       }}
-                      onClose={(id) => {
-                        dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: id });
-                        if (activeProjectTabId === id) { setActiveProjectTabId(null); setSelectedProject(null); }
-                      }}
+                      onClose={closeProjectTab}
                       onReorder={(tabIds) => dispatchProjectTabs({ type: "reorder", workspaceId: projectTabsWorkspaceId, tabIds })}
                     />
                   }

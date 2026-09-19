@@ -282,6 +282,7 @@ Panel behavior:
 - Opens from the right as a Sheet.
 - Does not open on initial app load.
 - Can be closed without changing active view.
+- Closing the active expanded project tab, using either Close or its context menu, selects the immediately preceding project tab in the current tab order. If no project tab is to its left, return to the selected Board/Table view. Closing an inactive tab preserves the current screen.
 - Preserves the current Board/Table context.
 - A square button beside Close expands the project across the working area up to the sidebar. The same button restores the previous side-panel width.
 - The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons are hidden and non-interactive while a card is open. Both tab groups remain above the panel background.
