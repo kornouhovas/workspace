@@ -6,6 +6,7 @@ import { getStatusDisplayName } from "@/i18n/status";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
+import { formatDateForDisplay } from "@/formatDateForDisplay.js";
 
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
@@ -45,7 +46,9 @@ function formatPropertyValue(
   value: unknown,
   property: WorkspaceMockVisibleProperty,
   selectValues: readonly WorkspaceSelectValueState[],
+  locale: string,
 ) {
+  if (property.propertyType === "date") return formatDateForDisplay(value, locale);
   if (property.propertyType === "select") {
     return selectValues.find((selectValue) => selectValue.id === value)?.name || "";
   }
@@ -95,7 +98,7 @@ export function WorkspaceBoardView({
   selectValues,
   onProjectOpen,
 }: WorkspaceBoardViewProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name" && property.id !== "property:status",
   );
@@ -151,7 +154,7 @@ export function WorkspaceBoardView({
                   column.projects.map((project) => {
                     const populatedProperties = cardProperties.map((property) => ({
                       property,
-                      value: formatPropertyValue(getPropertyValue(project, property), property, selectValues),
+                      value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),
                     })).filter(({ value }) => value.trim() !== "");
                     return (
                     <button

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import { useI18n } from "@/i18n";
+import { formatDateForDisplay } from "@/formatDateForDisplay.js";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lucide-icons";
 
 type WorkspaceDateValueEditorProps = {
@@ -70,15 +71,6 @@ function getMonthLabel(monthDate: Date, locale: string) {
 function getWeekDayLabels(locale: string) {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
   return Array.from({ length: 7 }, (_unused, index) => formatter.format(new Date(2024, 0, index + 1)));
-}
-
-function formatDateForDisplay(value: string, locale: string) {
-  if (!value) {
-    return "";
-  }
-
-  const [year, month, day] = value.split("-").map((part) => Number(part));
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(year, month - 1, day));
 }
 
 export function WorkspaceDateValueEditor({
