@@ -19,7 +19,6 @@ Describe user-facing value or impact.
 ## Relevant Docs
 
 - `AGENTS.md`
-- `WORKFLOW.md`
 - `docs/vision.md`
 - `docs/prd.md`
 - `docs/architecture.md`

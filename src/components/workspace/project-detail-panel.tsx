@@ -56,6 +56,8 @@ import {
   ListChecksIcon,
   PencilIcon,
   PlusIcon,
+  SquareIcon,
+  PanelsTopLeftIcon,
   Trash2Icon,
   TypeIcon,
   XIcon,
@@ -71,6 +73,9 @@ import type {
 } from "@/workspaceAppState";
 
 type WorkspaceProjectDetailPanelProps = {
+  readonly expanded?: boolean;
+  readonly sidebarCollapsed?: boolean;
+  readonly onToggleExpanded?: () => void;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly project: WorkspaceMockProject | null;
@@ -182,6 +187,20 @@ function readSavedCardPropertyOrder() {
       : [];
   } catch {
     return [];
+  }
+}
+
+const cardSectionsStorageKey = "workspace.card-property-sections.v1";
+
+function readSavedCardSections() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(cardSectionsStorageKey) || "null");
+    return {
+      properties: typeof saved?.properties === "boolean" ? saved.properties : true,
+      hidden: typeof saved?.hidden === "boolean" ? saved.hidden : true,
+    };
+  } catch {
+    return { properties: true, hidden: true };
   }
 }
 
@@ -718,6 +737,9 @@ function ProjectPropertyValueEditor({
 }
 
 export function WorkspaceProjectDetailPanel({
+  expanded = false,
+  sidebarCollapsed = false,
+  onToggleExpanded,
   open,
   onOpenChange,
   project,
@@ -769,7 +791,17 @@ export function WorkspaceProjectDetailPanel({
   const [propertyActionsId, setPropertyActionsId] = useState<string | null>(null);
   const [renamingPropertyId, setRenamingPropertyId] = useState<string | null>(null);
   const [renamingPropertyName, setRenamingPropertyName] = useState("");
-  const [hiddenPropertiesExpanded, setHiddenPropertiesExpanded] = useState(true);
+  const [cardSections, setCardSections] = useState(readSavedCardSections);
+  const propertiesExpanded = cardSections.properties;
+  const hiddenPropertiesExpanded = cardSections.hidden;
+  function toggleCardSection(section: "properties" | "hidden") {
+    setCardSections((current) => ({ ...current, [section]: !current[section] }));
+  }
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(cardSectionsStorageKey, JSON.stringify(cardSections));
+    } catch { /* Keep the controls usable when local storage is unavailable. */ }
+  }, [cardSections]);
   const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
   const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
   const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(readSavedCardHiddenPropertyIds);
@@ -1432,18 +1464,18 @@ export function WorkspaceProjectDetailPanel({
   return (
     <div
       className={[
-        "electron-window-no-drag fixed inset-0 z-50 flex justify-end",
-        panelVisible ? "pointer-events-auto" : "pointer-events-none",
+        "electron-window-no-drag pointer-events-none fixed top-0 bottom-0 right-0 z-30 flex justify-end",
+        expanded && !sidebarCollapsed ? "left-72" : "left-0",
       ].join(" ")}
       aria-hidden={!panelVisible}
     >
-      <button
+      {!expanded ? <button
         type="button"
         aria-label={t("detail.close")}
-        className="electron-window-no-drag absolute inset-0 cursor-default bg-transparent"
+        className={`electron-window-no-drag absolute inset-0 cursor-default bg-transparent ${panelVisible ? "pointer-events-auto" : "pointer-events-none"}`}
         tabIndex={panelVisible ? 0 : -1}
         onClick={closeProjectDetails}
-      />
+      /> : null}
       <aside
         aria-labelledby="project-detail-title"
         aria-modal="false"
@@ -1455,26 +1487,38 @@ export function WorkspaceProjectDetailPanel({
           }
         }}
         className={[
-          "electron-window-no-drag pointer-events-auto relative flex h-full max-w-[calc(100vw-6rem)] flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding pt-14 text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          expanded ? "w-full max-w-none" : "max-w-[calc(100vw-6rem)]",
+          panelVisible ? "pointer-events-auto" : "pointer-events-none",
           panelVisible ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
-        style={{ width: projectDetailPanelWidth }}
+        style={{ width: expanded ? "100%" : projectDetailPanelWidth }}
       >
-        <button
+        {!expanded ? <button
           type="button"
           aria-label={t("detail.resizePanel")}
           className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
           onPointerDown={startPanelResize}
         >
           <span className="sr-only">{t("detail.resizePanel")}</span>
-        </button>
+        </button> : null}
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="electron-window-no-drag absolute right-3 top-3 z-10"
+          className="electron-window-no-drag absolute right-11 top-4 z-10"
+          aria-label={t(expanded ? "detail.restore" : "detail.expand")}
+          title={t(expanded ? "detail.restore" : "detail.expand")}
+          onClick={onToggleExpanded}
+        >
+          {expanded ? <PanelsTopLeftIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="electron-window-no-drag absolute right-3 top-4 z-10"
           aria-label={t("detail.close")}
-          onPointerDown={closeProjectDetails}
           onClick={closeProjectDetails}
         >
           <XIcon className="size-4" aria-hidden="true" />
@@ -1487,11 +1531,24 @@ export function WorkspaceProjectDetailPanel({
           </header>
           <div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">
             <div className="grid gap-5">
-              <section className="grid gap-2.5" aria-labelledby="project-properties-heading">
+              <section className={`grid ${propertiesExpanded ? "gap-2.5" : "gap-0"}`} aria-labelledby="project-properties-heading">
                 <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
-                  {t("property.properties")}
+                  <button
+                    type="button"
+                    aria-controls="project-visible-properties"
+                    aria-expanded={propertiesExpanded}
+                    className="group/section-heading -ml-4 flex h-8 w-[calc(100%+1rem)] items-center gap-1 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                    onClick={() => toggleCardSection("properties")}
+                  >
+                    {propertiesExpanded ? (
+                      <ChevronDownIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100" aria-hidden="true" />
+                    ) : (
+                      <ChevronRightIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100" aria-hidden="true" />
+                    )}
+                    {t("property.properties")}
+                  </button>
                 </h3>
-                <dl className="overflow-hidden rounded-md border border-border/45 bg-background/15">
+                {propertiesExpanded ? <dl id="project-visible-properties" className="overflow-hidden rounded-md border border-border/45 bg-background/15">
                   {orderedVisibleProperties.map((property) => {
                     const propertyProtected = isProtectedCardProperty(property);
                     const propertyMenuAvailable = canRenameCardProperty(property)
@@ -1658,21 +1715,21 @@ export function WorkspaceProjectDetailPanel({
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </dl>
+                </dl> : null}
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
-                    <div className="workspace-project-detail-hidden-properties-heading flex items-center justify-between gap-3">
+                    <div className="workspace-project-detail-hidden-properties-heading group/section-heading flex items-center justify-between gap-3">
                       <button
                         type="button"
                         aria-controls="project-hidden-properties"
                         aria-expanded={hiddenPropertiesExpanded}
-                        className="workspace-project-detail-hidden-properties-toggle -ml-4 flex h-8 min-w-0 items-center gap-1 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
-                        onClick={() => setHiddenPropertiesExpanded((expanded) => !expanded)}
+                        className="workspace-project-detail-hidden-properties-toggle group/section-toggle -ml-4 flex h-8 min-w-0 flex-1 items-center gap-1 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                        onClick={() => toggleCardSection("hidden")}
                       >
                         {hiddenPropertiesExpanded ? (
-                          <ChevronDownIcon className="size-3 shrink-0" aria-hidden="true" />
+                          <ChevronDownIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
                         ) : (
-                          <ChevronRightIcon className="size-3 shrink-0" aria-hidden="true" />
+                          <ChevronRightIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
                         )}
                         <span className="truncate">{t("view.hiddenProperties")}</span>
                       </button>

@@ -40,6 +40,7 @@ type WorkspaceNavigationItem = {
 };
 
 type WorkspaceLeftPanelProps = {
+  readonly collapsed?: boolean;
   readonly activeSurface: "workspace" | "settings";
   readonly activeWorkspaceId: string | null;
   readonly workspaces: readonly WorkspaceNavigationItem[];
@@ -82,6 +83,7 @@ function getWorkspaceDragOrder(
 }
 
 export function WorkspaceLeftPanel({
+  collapsed = false,
   activeSurface,
   activeWorkspaceId,
   workspaces,
@@ -350,7 +352,7 @@ export function WorkspaceLeftPanel({
 
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-sidebar">
-      <div className="electron-window-drag min-h-12 pt-7" />
+      <div className={`mr-12 min-h-12 pt-7 ${collapsed ? "" : "electron-window-drag"}`} />
       <div className="electron-window-no-drag flex flex-1 flex-col gap-3 px-3 py-3">
         <button
           type="button"

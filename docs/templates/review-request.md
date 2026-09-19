@@ -17,7 +17,6 @@ Describe what should be reviewed.
 ## Relevant Docs
 
 - `AGENTS.md`
-- `WORKFLOW.md`
 - relevant backlog item
 - relevant implementation plan
 - relevant API/flow/architecture docs

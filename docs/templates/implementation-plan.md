@@ -13,7 +13,6 @@
 ## Relevant Specs
 
 - `AGENTS.md`
-- `WORKFLOW.md`
 - relevant backlog item
 - relevant API/flow/architecture docs
 

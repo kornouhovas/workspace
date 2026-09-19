@@ -129,7 +129,7 @@ test("renderer composes the workspace product shell", async () => {
 
   assert.match(appSource, /from "@\/components\/workspace\/left-panel"/);
   assert.match(appSource, /useI18n/);
-  assert.match(appSource, /t\("app\.title"\)/);
+  assert.doesNotMatch(appSource, /t\("app\.title"\)/);
   assert.match(appSource, /<WorkspaceLeftPanel/);
   assert.match(appSource, /WorkspaceBoardView/);
   assert.match(appSource, /WorkspaceTableView/);
@@ -214,7 +214,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
   assert.match(appSource, /sidebarCollapsed/);
   assert.match(appSource, /PanelLeftIcon/);
-  assert.match(appSource, /pl-24/);
+  assert.match(appSource, /ml-36/);
   assert.match(appSource, /transition-\[width,opacity\]/);
   assert.match(appSource, /w-0/);
   assert.doesNotMatch(leftPanelSource, /onToggleCollapsed/);
@@ -435,7 +435,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /from "@\/components\/workspace\/menu-dismissal"/);
   assert.match(viewTabsSource, /blockOutsideWorkspaceMenuPointerDown/);
   assert.match(viewTabsSource, /data-workspace-view-create-menu/);
-  assert.match(viewTabsSource, /data-workspace-view-actions-menu/);
+  assert.doesNotMatch(viewTabsSource, /data-workspace-view-actions-menu/);
   assert.match(viewTabsSource, /closeViewContextMenuOnOutsidePointerDown/);
   assert.match(viewTabsSource, /document\.addEventListener\("pointerdown", closeViewContextMenuOnOutsidePointerDown, true\)/);
   assert.match(viewTabsSource, /data-workspace-view-context-menu="true"/);
@@ -682,10 +682,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /w-full/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45/);
   assert.match(viewFilterMenuSource, /t\("view\.customizeColumns"\)/);
-  assert.match(viewFilterMenuSource, /ChevronDownIcon data-icon="inline-end"/);
+  assert.doesNotMatch(viewFilterMenuSource, /ChevronDownIcon data-icon="inline-end"/);
   assert.match(viewTabsSource, /from "@\/components\/ui\/button"/);
   assert.match(viewTabsSource, /t\("view\.add"\)/);
-  assert.match(viewTabsSource, /PlusIcon data-icon="inline-start"/);
+  assert.match(viewTabsSource, /PlusIcon aria-hidden="true"/);
   assert.doesNotMatch(tableViewSource, /sticky right-0/);
   assert.doesNotMatch(tableViewSource, /currentRelativePath/);
   assert.doesNotMatch(tableViewSource, />Path<\/TableHead>/);
@@ -706,7 +706,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /t\("detail\.resizePanel"\)/);
   assert.match(projectDetailPanelSource, /onPointerDown/);
   assert.match(projectDetailPanelSource, /function closeProjectDetails/);
-  assert.match(projectDetailPanelSource, /onPointerDown=\{closeProjectDetails\}/);
+  assert.match(projectDetailPanelSource, /onClick=\{onToggleExpanded\}/);
   assert.match(projectDetailPanelSource, /onClick=\{closeProjectDetails\}/);
   assert.match(projectDetailPanelSource, /t\("detail\.close"\)/);
   assert.match(projectDetailPanelSource, /stopPropagation/);
@@ -766,11 +766,11 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /property\.hidden \|\| cardHiddenPropertyIds\.includes\(property\.id\)/);
   assert.match(projectDetailPanelSource, /function setCardPropertyHidden/);
   assert.match(projectDetailPanelSource, /setCardPropertyHidden\(property, visibilityAction === "hide"\)/);
-  assert.match(projectDetailPanelSource, /<h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">\s*\{t\("property\.properties"\)\}\s*<\/h3>/);
+  assert.match(projectDetailPanelSource, /aria-controls="project-visible-properties"\s+aria-expanded=\{propertiesExpanded\}/);
   assert.doesNotMatch(projectDetailPanelSource, /Properties[\s\S]*workspace-project-detail-hidden-properties-toggle[\s\S]*<\/div>[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">\s*\{orderedVisibleProperties\.map/);
   assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-heading flex items-center justify-between gap-3/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle -ml-4 flex h-8/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-heading group\/section-heading flex items-center justify-between gap-3/);
+  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle group\/section-toggle -ml-4 flex h-8/);
   assert.match(projectDetailPanelSource, /t\("view\.hiddenProperties"\)[\s\S]*<dl[\s\S]*id="project-hidden-properties"[\s\S]*className="overflow-hidden rounded-md border border-border\/45 bg-background\/15"/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);

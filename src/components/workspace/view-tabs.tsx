@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactNode,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -13,7 +14,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu
 import { useI18n } from "@/i18n";
 import {
   KanbanIcon,
-  MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
   TableIcon,
@@ -35,7 +34,6 @@ import {
   workspaceMenuIconClassName,
   workspaceMenuItemClassName,
   workspaceMenuLabelClassName,
-  workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import {
   blockOutsideWorkspaceMenuPointerDown,
@@ -51,10 +49,15 @@ import type {
 type WorkspaceView = WorkspaceViewState;
 
 type WorkspaceViewTabsProps = {
+  readonly actionsHidden?: boolean;
+  readonly projectTabs?: ReactNode;
+  readonly projectActive?: boolean;
+  readonly onShowView?: () => void;
   readonly activeViewId: string;
   readonly views: readonly WorkspaceView[];
   readonly onActiveViewChange: (viewId: string) => void;
   readonly onCreateView: (viewType: "board" | "table") => void;
+  readonly onDuplicateView: (viewId: string) => void;
   readonly onRenameView: (viewId: string, name: string) => void;
   readonly onDeleteView: (viewId: string) => void;
   readonly onReorderViews: (orderedViewIds: readonly string[]) => void;
@@ -88,7 +91,7 @@ type ViewTabPointerDragState = {
 
 const viewContextMenuSurfaceSelector = "[data-workspace-view-context-menu='true']";
 const viewDropdownMenuSurfaceSelector =
-  "[data-workspace-view-create-menu='true'], [data-workspace-view-actions-menu='true']";
+  "[data-workspace-view-create-menu='true']";
 
 function renderViewIcon(view: WorkspaceView) {
   const iconClassName = "size-3.5 shrink-0";
@@ -120,10 +123,15 @@ function isViewContextMenuTarget(target: EventTarget | null) {
 }
 
 export function WorkspaceViewTabs({
+  actionsHidden = false,
+  projectTabs,
+  projectActive = false,
+  onShowView,
   activeViewId,
   views,
   onActiveViewChange,
   onCreateView,
+  onDuplicateView,
   onRenameView,
   onDeleteView,
   onReorderViews,
@@ -148,7 +156,6 @@ export function WorkspaceViewTabs({
   const [editingViewId, setEditingViewId] = useState<string | null>(null);
   const [editingViewName, setEditingViewName] = useState("");
   const [openCreateViewMenu, setOpenCreateViewMenu] = useState(false);
-  const [openViewActionsMenu, setOpenViewActionsMenu] = useState(false);
   const editingViewInputRef = useRef<HTMLInputElement | null>(null);
   const cancelViewRenameRef = useRef(false);
   const suppressViewClickRef = useRef<string | null>(null);
@@ -164,7 +171,6 @@ export function WorkspaceViewTabs({
   useEffect(() => {
     setContextMenuViewId(null);
     setOpenCreateViewMenu(false);
-    setOpenViewActionsMenu(false);
     setViewTabDragState(null);
     suppressViewClickRef.current = null;
   }, [dismissSignal]);
@@ -196,14 +202,13 @@ export function WorkspaceViewTabs({
   }, [contextMenuViewId]);
 
   useEffect(() => {
-    if (!openCreateViewMenu && !openViewActionsMenu) {
+    if (!openCreateViewMenu) {
       return undefined;
     }
 
     function closeViewDropdownMenusOnOutsidePointerDown(event: PointerEvent) {
       blockOutsideWorkspaceMenuPointerDown(event, viewDropdownMenuSurfaceSelector, () => {
         setOpenCreateViewMenu(false);
-        setOpenViewActionsMenu(false);
       });
     }
 
@@ -212,29 +217,13 @@ export function WorkspaceViewTabs({
     return () => {
       document.removeEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);
     };
-  }, [openCreateViewMenu, openViewActionsMenu]);
+  }, [openCreateViewMenu]);
 
   function startRenameView(view: WorkspaceView) {
     cancelViewRenameRef.current = false;
     setContextMenuViewId(null);
     setEditingViewId(view.id);
     setEditingViewName(view.name);
-  }
-
-  function renameActiveView() {
-    if (activeView) {
-      startRenameView(activeView);
-    }
-  }
-
-  function deleteActiveView() {
-    if (!activeView) {
-      return;
-    }
-
-    if (window.confirm(t("confirm.deleteView", { name: activeView.name }))) {
-      onDeleteView(activeView.id);
-    }
   }
 
   function submitViewRename(view: WorkspaceView) {
@@ -392,7 +381,6 @@ export function WorkspaceViewTabs({
 
     setContextMenuViewId(null);
     setOpenCreateViewMenu(false);
-    setOpenViewActionsMenu(false);
     setViewTabDragState({
       viewId,
       startX: event.clientX,
@@ -470,6 +458,7 @@ export function WorkspaceViewTabs({
 
   function handleViewTabClick(event: ReactMouseEvent<HTMLButtonElement>, viewId: string) {
     if (suppressViewClickRef.current !== viewId) {
+      onShowView?.();
       return;
     }
 
@@ -479,8 +468,9 @@ export function WorkspaceViewTabs({
   }
 
   return (
-    <div className="relative flex min-w-0 items-center justify-between gap-4 px-4 py-3">
-      <Tabs value={activeViewId} onValueChange={onActiveViewChange} className="min-w-0 overflow-hidden">
+    <div className="relative flex min-w-0 items-center justify-between gap-2">
+      <div className="relative z-40 flex min-w-0 flex-1 items-center gap-3">
+      <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="min-w-0 max-w-[50%] shrink-0 overflow-hidden">
         <TabsList
           aria-label={t("view.actions")}
           className="max-w-full justify-start overflow-x-auto rounded-xl bg-muted/80 p-0.5 ring-1 ring-border/40 group-data-horizontal/tabs:!h-9"
@@ -538,7 +528,9 @@ export function WorkspaceViewTabs({
           })}
         </TabsList>
       </Tabs>
-      <div className="flex shrink-0 items-center gap-2">
+      {projectTabs}
+      </div>
+      <div aria-hidden={actionsHidden || undefined} inert={actionsHidden || undefined} className={`flex shrink-0 items-center gap-0.5 ${actionsHidden ? "invisible" : ""}`}>
         <WorkspaceViewFilterMenu
           view={activeView}
           dismissSignal={dismissSignal}
@@ -558,12 +550,12 @@ export function WorkspaceViewTabs({
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="icon"
               aria-label={t("view.addAria")}
               title={t("view.add")}
             >
-              <PlusIcon data-icon="inline-start" aria-hidden="true" />
-              <span>{t("view.add")}</span>
+              <PlusIcon aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -584,49 +576,6 @@ export function WorkspaceViewTabs({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DropdownMenu open={openViewActionsMenu} onOpenChange={setOpenViewActionsMenu}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={t("view.actions")}
-              title={t("view.actions")}
-            >
-              <MoreHorizontalIcon className="size-4" aria-hidden="true" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            data-workspace-view-actions-menu="true"
-            align="end"
-            className={`${workspaceMenuContentClassName} min-w-56`}
-          >
-            <DropdownMenuLabel className={workspaceMenuLabelClassName}>
-              {activeView?.name || t("view.actions")}
-            </DropdownMenuLabel>
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                className={workspaceMenuItemClassName}
-                disabled={!activeView}
-                onSelect={renameActiveView}
-              >
-                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-              {t("view.rename")}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                className={workspaceMenuDangerItemClassName}
-                disabled={!activeView || views.length <= 1}
-                variant="destructive"
-                onSelect={deleteActiveView}
-              >
-                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
-              {t("view.delete")}
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
       {contextMenuView ? (
         <div
@@ -635,6 +584,17 @@ export function WorkspaceViewTabs({
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
           role="menu"
         >
+          <button
+            type="button"
+            className={workspaceMenuItemClassName}
+            onClick={() => {
+              onDuplicateView(contextMenuView.id);
+              setContextMenuViewId(null);
+            }}
+          >
+            <PlusIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+            {t("detail.duplicateTab")}
+          </button>
           <button
             type="button"
             className={workspaceMenuItemClassName}

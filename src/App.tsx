@@ -8,6 +8,10 @@ import { WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
+import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
+import { projectTabsReducer } from "@/workspaceProjectTabs.js";
+import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
+import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/i18n";
@@ -486,12 +490,62 @@ export default function App() {
   );
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
+  const [activeProjectTabId, setActiveProjectTabId] = useState<string | null>(null);
+  const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
+  const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(projectTabsReducer, savedProjectSession.tabs);
+  const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
+  const restoreStartupScreen = useRef(true);
+  const pendingWorkspaceScreen = useRef<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [workspaceList, setWorkspaceList] = useState<WorkspaceListState>({
     activeWorkspaceId: null,
     workspaces: [],
   });
   const [reloadToken, setReloadToken] = useState(0);
+  const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
+  const expandedProjectTabs = projectTabsByWorkspace[projectTabsWorkspaceId] || [];
+  const projectExpanded = selectedProject !== null && expandedProjectTabs.some((project) => project.tabId === activeProjectTabId && project.id === selectedProject.id);
+
+  useEffect(() => {
+    if (state.status !== "ready" || state.workspaceSwitchPending || pendingWorkspaceScreen.current || restoreStartupScreen.current) return;
+    if (activeSurface === "workspace") {
+      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+        viewId: state.activeViewId,
+        tabId: projectExpanded ? activeProjectTabId : null,
+      });
+    }
+    writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
+  }, [projectTabsByWorkspace, projectTabsWorkspaceId, projectExpanded, activeProjectTabId, selectedProject, state.status, state.workspaceSwitchPending, state.activeViewId, activeSurface]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      dispatchProjectTabs({ type: "update", workspaceId: projectTabsWorkspaceId, project: selectedProject });
+    }
+  }, [selectedProject, projectTabsWorkspaceId]);
+
+  function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
+    const tabId = createClientDocumentId("project-tab");
+    dispatchProjectTabs({ type: "expand", workspaceId: projectTabsWorkspaceId, project, tabId, afterTabId });
+    handleProjectOpen(project, tabId);
+  }
+
+  function toggleProjectExpanded() {
+    if (!selectedProject) return;
+    if (projectExpanded && activeProjectTabId) {
+      dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: activeProjectTabId });
+      setActiveProjectTabId(null);
+    } else {
+      createExpandedProject(selectedProject);
+    }
+  }
+
+  function closeSelectedProject() {
+    if (projectExpanded && activeProjectTabId) {
+      dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: activeProjectTabId });
+    }
+    setActiveProjectTabId(null);
+    setSelectedProject(null);
+  }
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [boardViewportWidth, setBoardViewportWidth] = useState(0);
   const [selectingFolder, setSelectingFolder] = useState(false);
@@ -565,7 +619,9 @@ export default function App() {
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
         const propertiesResponse = normalizePropertiesResponse(propertiesRawResponse, root.workspaceId);
-        const requestedActiveViewId = workspaceIdRef.current === root.workspaceId ||
+        const requestedActiveViewId = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
+          ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId || viewsResponse.activeViewId
+          : workspaceIdRef.current === root.workspaceId ||
           previousWorkspaceId === root.workspaceId
           ? activeViewIdRef.current
           : null;
@@ -597,6 +653,22 @@ export default function App() {
             type: "propertiesLoaded",
             propertiesResponse,
           });
+          if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId) {
+            restoreStartupScreen.current = false;
+            pendingWorkspaceScreen.current = null;
+            const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
+            const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find((item) => item.tabId === tabId);
+            const projectId = cachedProject?.id;
+            const projects = projectionResponse.projection.type === "board"
+              ? projectionResponse.projection.columns.flatMap((column) => column.projects)
+              : projectionResponse.projection.rows;
+            const freshProject = projects.find((item) => isRecord(item) && item.id === projectId);
+            const project = cachedProject && isRecord(freshProject)
+              ? { ...cachedProject, ...freshProject } as WorkspaceMockProject : cachedProject;
+            setActiveProjectTabId(project ? tabId || null : null);
+            setSelectedProject(project || null);
+            if (project) void loadProjectFileTree(project, root.workspaceId);
+          }
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
             setSelectingFolder(false);
@@ -769,8 +841,14 @@ export default function App() {
       return;
     }
 
+    workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+      viewId: state.activeViewId,
+      tabId: projectExpanded ? activeProjectTabId : null,
+    });
+
     try {
       await workspaceClient.setActiveWorkspace({ workspaceId });
+      pendingWorkspaceScreen.current = workspaceId;
       setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
       dispatch({ type: "workspaceActivated", workspaceId });
       setSelectedProject(null);
@@ -778,10 +856,12 @@ export default function App() {
       setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.setActiveWorkspace")) {
+        pendingWorkspaceScreen.current = workspaceId;
         setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
         dispatch({ type: "workspaceActivated", workspaceId });
         setSelectedProject(null);
         setActiveSurface("workspace");
+        setReloadToken((value) => value + 1);
         return;
       }
 
@@ -911,10 +991,33 @@ export default function App() {
         view: createdView.view,
       });
       toast.success(t("toast.viewCreated"));
+      setSelectedProject(null);
     } catch (error) {
       toast.error(t("toast.viewCreateFailed"), {
         description: getServiceErrorMessage(error, t),
       });
+    }
+  }
+
+  const duplicatingViewRef = useRef(false);
+  async function handleDuplicateView(sourceId: string) {
+    if (!state.workspaceId || duplicatingViewRef.current) return;
+    const source = state.views.find(view => view.id === sourceId);
+    if (!source) return;
+    const workspaceId = state.workspaceId;
+    duplicatingViewRef.current = true;
+    try {
+      const viewId = await duplicateWorkspaceView(workspaceClient, workspaceId, sourceId, t("view.copyName", { name: source.name }));
+      if (workspaceIdRef.current !== workspaceId) return;
+      setSelectedProject(null);
+      setActiveProjectTabId(null);
+      dispatch({ type: "activeViewChanged", activeViewId: viewId });
+      await refreshActiveViewAfterPatch(viewId);
+    } catch (error) {
+      toast.error(t("view.duplicateFailed"), { description: getServiceErrorMessage(error, t) });
+      if (workspaceIdRef.current === workspaceId) setReloadToken(value => value + 1);
+    } finally {
+      duplicatingViewRef.current = false;
     }
   }
 
@@ -1639,6 +1742,7 @@ export default function App() {
         requestVersion,
       });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+        dispatchProjectTabs({ type: "valueSaved", workspaceId: projectTabsWorkspaceId, projectId, propertyId, value: savedValue });
         setSelectedProject((currentProject) => (
           currentProject?.id === projectId
             ? {
@@ -1662,13 +1766,14 @@ export default function App() {
     }
   }
 
-  async function loadProjectFileTree(project: WorkspaceMockProject) {
+  async function loadProjectFileTree(project: WorkspaceMockProject, requestWorkspaceId = state.workspaceId) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
         await workspaceClient.listProjectFileTree({ path: project.currentRelativePath }),
       );
       setSelectedProject((currentProject) => (
-        currentProject?.id === project.id ? { ...currentProject, fileTree } : currentProject
+        workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id
+          ? { ...currentProject, fileTree } : currentProject
       ));
     } catch (error) {
       toast.error(t("toast.fileTreeLoadFailed"), {
@@ -1677,7 +1782,8 @@ export default function App() {
     }
   }
 
-  function handleProjectOpen(project: WorkspaceMockProject) {
+  function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null) {
+    setActiveProjectTabId(tabId);
     setSelectedProject(project);
     if (state.status === "ready" && state.root) {
       void loadProjectFileTree(project);
@@ -1788,15 +1894,29 @@ export default function App() {
 
   return (
     <>
-      <div className="dark flex h-screen min-h-0 bg-background text-foreground">
+      <div className="dark relative flex h-screen min-h-0 bg-background text-foreground">
+        <button
+          type="button"
+          className={[
+            "electron-window-no-drag absolute top-4 z-40 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground",
+            sidebarCollapsed ? "left-24" : "left-[15.25rem]",
+          ].join(" ")}
+          aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+          title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+          onClick={() => setSidebarCollapsed((value) => !value)}
+        >
+          <PanelLeftIcon className="size-4" aria-hidden="true" />
+        </button>
         <div
           aria-hidden={sidebarCollapsed}
+          inert={sidebarCollapsed || undefined}
           className={[
             "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
             sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-72 opacity-100",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
+            collapsed={sidebarCollapsed}
             activeSurface={activeSurface}
             activeWorkspaceId={workspaceList.activeWorkspaceId || state.workspaceId}
             workspaces={navigationWorkspaces}
@@ -1815,22 +1935,84 @@ export default function App() {
         <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header
             className={[
-              "electron-window-drag flex h-12 shrink-0 items-center gap-2 pr-4",
-              sidebarCollapsed ? "pl-24" : "pl-4",
+              "electron-window-drag flex h-14 shrink-0 items-center gap-2 pt-2 pr-4",
+              sidebarCollapsed ? "ml-36" : "pl-4",
             ].join(" ")}
           >
-            <button
-              type="button"
-              className="electron-window-no-drag inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-              title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-              onClick={() => setSidebarCollapsed((value) => !value)}
-            >
-              <PanelLeftIcon className="size-4" aria-hidden="true" />
-            </button>
-            <h1 className="truncate text-sm font-medium">
-              {activeSurface === "settings" ? t("settings.title") : t("app.title")}
-            </h1>
+            {activeSurface !== "settings" ? (
+              <div
+                aria-busy={isWorkspaceSwitchPendingSurface || undefined}
+                inert={isWorkspaceSwitchPendingSurface || undefined}
+                className="electron-window-no-drag min-w-0 flex-1"
+              >
+                <WorkspaceViewTabs
+                  projectActive={projectExpanded}
+                  onShowView={() => setSelectedProject(null)}
+                  actionsHidden={selectedProject !== null}
+                  projectTabs={
+                    <WorkspaceProjectTabs
+                      key={projectTabsWorkspaceId}
+                      projects={expandedProjectTabs}
+                      activeProjectId={projectExpanded ? activeProjectTabId || "" : ""}
+                      onSelect={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        if (project) handleProjectOpen(project, id);
+                      }}
+                      onDuplicate={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        if (project) createExpandedProject(project, id);
+                      }}
+                      onRestore={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: id });
+                        if (project) handleProjectOpen(project);
+                      }}
+                      onClose={(id) => {
+                        dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: id });
+                        if (activeProjectTabId === id) { setActiveProjectTabId(null); setSelectedProject(null); }
+                      }}
+                      onReorder={(tabIds) => dispatchProjectTabs({ type: "reorder", workspaceId: projectTabsWorkspaceId, tabIds })}
+                    />
+                  }
+                  activeViewId={viewState.activeViewId}
+                  views={viewState.views}
+                  onActiveViewChange={(activeViewId) => {
+                    setSelectedProject(null);
+                    dispatch({ type: "activeViewChanged", activeViewId });
+                    if (state.workspaceId) {
+                      void workspaceClient.setActiveView({
+                        workspaceId: state.workspaceId,
+                        viewId: activeViewId,
+                      }).catch((error: unknown) => {
+                        toast.error(t("toast.activeViewSaveFailed"), {
+                          description: getServiceErrorMessage(error, t),
+                        });
+                      });
+                    }
+                  }}
+                  onCreateView={handleCreateView}
+                  onDuplicateView={handleDuplicateView}
+                  onRenameView={handleRenameView}
+                  onDeleteView={handleDeleteView}
+                  onReorderViews={handleReorderViews}
+                  dismissSignal={workspaceFloatingDismissToken}
+                  properties={settingsProperties}
+                  selectValues={settingsSelectValues}
+                  statusValues={statusValues}
+                  onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                  onToggleValueFilter={handleToggleValueFilter}
+                  boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
+                  onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
+                  onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
+                  onReorderViewProperties={handleReorderViewProperties}
+                  onRenameProperty={handleRenameProperty}
+                  onDeleteProperty={handleDeleteProperty}
+                />
+              </div>
+            ) : null}
+            {activeSurface === "settings" ? (
+              <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
+            ) : null}
           </header>
           {activeSurface === "settings" ? (
             <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
@@ -1861,39 +2043,6 @@ export default function App() {
                 isWorkspaceSwitchPendingSurface ? "pointer-events-none select-none" : "",
               ].join(" ")}
             >
-              <WorkspaceViewTabs
-                activeViewId={viewState.activeViewId}
-                views={viewState.views}
-                onActiveViewChange={(activeViewId) => {
-                  dispatch({ type: "activeViewChanged", activeViewId });
-                  if (state.workspaceId) {
-                    void workspaceClient.setActiveView({
-                      workspaceId: state.workspaceId,
-                      viewId: activeViewId,
-                    }).catch((error: unknown) => {
-                      toast.error(t("toast.activeViewSaveFailed"), {
-                        description: getServiceErrorMessage(error, t),
-                      });
-                    });
-                  }
-                }}
-                onCreateView={handleCreateView}
-                onRenameView={handleRenameView}
-                onDeleteView={handleDeleteView}
-                onReorderViews={handleReorderViews}
-                dismissSignal={workspaceFloatingDismissToken}
-                properties={settingsProperties}
-                selectValues={settingsSelectValues}
-                statusValues={statusValues}
-                onTogglePropertyVisibility={handleTogglePropertyVisibility}
-                onToggleValueFilter={handleToggleValueFilter}
-                boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
-                onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
-                onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
-                onReorderViewProperties={handleReorderViewProperties}
-                onRenameProperty={handleRenameProperty}
-                onDeleteProperty={handleDeleteProperty}
-              />
               <div className="min-h-0 flex-1 overflow-hidden">
                 {shouldShowWorkspaceLoadingState ? (
                   <WorkspaceLoadingState />
@@ -1943,10 +2092,13 @@ export default function App() {
           )}
         </main>
         <WorkspaceProjectDetailPanel
+          expanded={projectExpanded}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleExpanded={toggleProjectExpanded}
           open={selectedProject !== null}
           onOpenChange={(open) => {
             if (!open) {
-              setSelectedProject(null);
+              closeSelectedProject();
             }
           }}
           project={selectedProject}

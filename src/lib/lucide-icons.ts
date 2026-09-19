@@ -27,6 +27,8 @@ export { default as MoreHorizontalIcon } from "lucide-react/dist/esm/icons/more-
 export { default as OctagonXIcon } from "lucide-react/dist/esm/icons/octagon-x.mjs";
 export { default as PaletteIcon } from "lucide-react/dist/esm/icons/palette.mjs";
 export { default as PanelLeftIcon } from "lucide-react/dist/esm/icons/panel-left.mjs";
+export { default as SquareIcon } from "lucide-react/dist/esm/icons/square.mjs";
+export { default as PanelsTopLeftIcon } from "lucide-react/dist/esm/icons/panels-top-left.mjs";
 export { default as PencilIcon } from "lucide-react/dist/esm/icons/pencil.mjs";
 export { default as PlusIcon } from "lucide-react/dist/esm/icons/plus.mjs";
 export { default as SearchIcon } from "lucide-react/dist/esm/icons/search.mjs";

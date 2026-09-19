@@ -43,7 +43,6 @@ Examples:
 ## Existing Docs To Read
 
 - `AGENTS.md`
-- `WORKFLOW.md`
 - `docs/vision.md`
 - `docs/prd.md`
 - `docs/architecture.md`

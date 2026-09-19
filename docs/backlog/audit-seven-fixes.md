@@ -57,7 +57,7 @@ Status: Backlog
 
 - [Implementation plan](../superpowers/plans/2026-09-18-audit-seven-fixes.md)
 - [Proposed ADR-004](../adr/004-project-identity-and-audit-migrations.md)
-- `WORKFLOW.md`, `docs/architecture.md`, `docs/prd.md`, `docs/data-model.md`
+- `AGENTS.md`, `docs/architecture.md`, `docs/prd.md`, `docs/data-model.md`
 - `docs/api/workspace-properties.md`, `docs/api/workspace-views.md`
 - `docs/ui-guidelines.md`, `docs/interface.md`, `docs/flows/board-table-views.md`
 - `docs/flows/settings-source-folder-and-roles.md`, `docs/flows/language-selection.md`

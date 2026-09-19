@@ -57,7 +57,6 @@ If not yet reproduced, say what still needs to be checked.
 ## Relevant Docs
 
 - `AGENTS.md`
-- `WORKFLOW.md`
 - relevant `docs/flows/*`
 - relevant `docs/api/*`
 - `docs/architecture.md`

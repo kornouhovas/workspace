@@ -125,10 +125,7 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden gap-3 pl-4 pr-0 pt-4 pb-0" aria-label={t("view.boardDefault")}>
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Badge variant="outline">{t("board.moveDisabled")}</Badge>
-      </div>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-4 pr-0 pt-4 pb-0" aria-label={t("view.boardDefault")}>
       <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="grid h-full min-w-full w-max grid-flow-col gap-3" style={boardGridStyle}>
           {projection.columns.map((column) => (

@@ -187,7 +187,9 @@ Required behavior:
 - Only one view is active at a time.
 - View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
 - View tabs show their view type with a compact icon, such as Board or Table.
-- View-level actions should follow the framework toolbar pattern: segmented view tabs on the left, labeled outline buttons such as `Customize Columns` and `Add View` on the right.
+- The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. The sidebar toggle sits at the upper right of the expanded sidebar; when collapsed it remains visible before the tabs, clear of the macOS window controls. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips.
+- View duplicate/rename/delete actions are available from the tab context menu; there is no separate three-dot view menu. Duplicating preserves the view type and display settings, persists a separate view immediately to the right of the source, and activates the copy.
+- Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses remains unavailable.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
 - The `+` action creates a new view.
@@ -196,6 +198,7 @@ Required behavior:
 
 Each view needs a menu with:
 
+- Duplicate Tab;
 - Rename View;
 - Delete View.
 
@@ -280,6 +283,14 @@ Panel behavior:
 - Does not open on initial app load.
 - Can be closed without changing active view.
 - Preserves the current Board/Table context.
+- A square button beside Close expands the project across the working area up to the sidebar. The same button restores the previous side-panel width.
+- The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons are hidden and non-interactive while a card is open. Both tab groups remain above the panel background.
+- Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a view shows Board/Table without removing project tabs; selecting a project tab returns to its expanded panel.
+- Duplicate tab inserts the new instance immediately to the right of the source tab and activates it.
+- Each project tab has its own identity, separate from the project ID. Clicking a project in Board/Table always opens an independent side panel, even if that project has expanded tabs. Expanding the side panel always creates a new tab. The tab context menu includes Duplicate tab, which creates and selects another expanded tab for the same project. Closing/restoring a tab removes only that instance; closing the independent side panel removes no tabs. Project property changes are shared across all instances. Duplicate tabs, their order and the active instance persist across restarts; older saved tabs migrate automatically.
+- Project tabs share the saved-view tab styling, support drag reorder within their Workspace, and expose Restore view / Close view through a right-click menu. These actions affect the clicked project, including an inactive tab, and match the panel's Restore and Close buttons.
+- Dragging project tabs translates them without scaling their width or height. On returning to a Workspace, restore its last selected saved view and, if it was showing an expanded project, reopen that project after the Workspace data is ready. Returning to a Workspace left on Board/Table must not reopen an inactive project tab.
+- Multiple expanded project tabs, their order, and the last active screen are saved locally per Workspace and restored after restarting the application. Close removes the active project tab; Restore removes its tab and keeps its side panel open. Changing Workspace or visiting Settings does not discard the tabs. Startup restores the active expanded project after loading its Workspace; file trees are loaded again instead of persisted. Invalid stored data is ignored safely.
 
 Panel content order:
 
@@ -289,6 +300,8 @@ Panel content order:
 
 Properties section behavior:
 
+- Properties and Hidden properties collapse independently through their heading rows. Their chevrons appear on hover or keyboard focus without shifting the heading text. The two expanded/collapsed preferences are shared across project cards on this device and persist across closing cards and restarting the app.
+- When both property sections are collapsed, their heading rows have no extra gap. Project tabs share the available width, shrinking from 176px down to 40px as the window narrows or more tabs open; narrow tabs show only their icon, with the full name retained in the tooltip and accessible label. Horizontal scrolling is used only after the minimum widths no longer fit.
 - Always show system `Name` and `Status`.
 - Show every active custom property that belongs to the active Workspace.
 - Render properties as a compact two-column table: drag handle and property name on the left, editable value on the right, row separators, and a vertical divider between name and value.

@@ -23,7 +23,6 @@ Read:
 
 - current diff;
 - `AGENTS.md`;
-- `WORKFLOW.md`;
 - relevant backlog item;
 - relevant implementation plan;
 - relevant API/flow/architecture docs.

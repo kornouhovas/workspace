@@ -20,7 +20,7 @@ Future orchestrated process:
 ```text
 Issue tracker task moves to Ready
   -> orchestrator creates isolated workspace
-  -> Codex app-server runs task using WORKFLOW.md
+  -> Codex app-server runs task using AGENTS.md and the task contract
   -> agent posts proof of work
   -> task moves to Human Review
 ```
@@ -28,7 +28,6 @@ Issue tracker task moves to Ready
 ## Minimum Requirements Before Orchestration
 
 - `AGENTS.md` is accurate.
-- `WORKFLOW.md` is accurate.
 - Backlog items have clear acceptance criteria.
 - Implementation plans are small and executable.
 - Quality gates are stable.

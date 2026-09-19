@@ -647,10 +647,8 @@ export function WorkspaceViewFilterMenu({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" aria-label={t("view.customizeColumns")}>
-          <Columns3Icon data-icon="inline-start" aria-hidden="true" />
-          <span>{t("view.customizeColumns")}</span>
-          <ChevronDownIcon data-icon="inline-end" aria-hidden="true" />
+        <Button type="button" variant="ghost" size="icon" aria-label={t("view.customizeColumns")} title={t("view.customizeColumns")}>
+          <Columns3Icon aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
