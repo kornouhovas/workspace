@@ -141,7 +141,7 @@ export const en = {
   "detail.restoreTab": "Restore view",
   "detail.closeTab": "Close view",
   "detail.duplicateTab": "Duplicate tab",
-  "view.copyName": "{name} — copy",
+  "view.copyName": "{{name}} — copy",
   "view.duplicateFailed": "Could not duplicate view",
   "detail.fileTree": "File tree",
   "detail.items": { "one": "{{count}} item", "other": "{{count}} items" },

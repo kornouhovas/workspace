@@ -20,6 +20,11 @@ import {
 } from "../src/i18n/errors.js";
 import { getStatusDisplayName } from "../src/i18n/status.js";
 
+test("duplicate view names interpolate the source title in both locales", () => {
+  assert.equal(translate("ru", "view.copyName", { name: "Доска" }), "Доска — копия");
+  assert.equal(translate("en", "view.copyName", { name: "Board" }), "Board — copy");
+});
+
 async function collectSourceFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(entries.map(async (entry) => {

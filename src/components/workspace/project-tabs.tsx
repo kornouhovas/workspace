@@ -27,12 +27,14 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
 }) {
   const { t } = useI18n();
   const { setNodeRef, transform, transition, listeners, isDragging } = useSortable({ id: project.tabId });
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const focusDuplicate = useRef(false);
   return (
     <ContextMenu.Root modal={false}>
       <ContextMenu.Trigger asChild>
         <span className="contents">
         <TabsTrigger
-          ref={setNodeRef}
+          ref={(node) => { setNodeRef(node); triggerRef.current = node; }}
           value={project.tabId}
           data-project-tab-id={project.tabId}
           title={project.name}
@@ -51,8 +53,17 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
           data-project-tab-menu="true"
           className={`electron-window-no-drag z-50 min-w-56 ${workspaceMenuContentClassName}`}
           onEscapeKeyDown={(event) => event.stopPropagation()}
+          onCloseAutoFocus={(event) => {
+            if (!focusDuplicate.current) return;
+            focusDuplicate.current = false;
+            event.preventDefault();
+            const list = triggerRef.current?.closest('[role="tablist"]');
+            requestAnimationFrame(() => {
+              list?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
+            });
+          }}
         >
-          <ContextMenu.Item className={workspaceMenuItemClassName} onSelect={() => onDuplicate(project.tabId)}>
+          <ContextMenu.Item className={workspaceMenuItemClassName} onSelect={() => { focusDuplicate.current = true; onDuplicate(project.tabId); }}>
             <FileIcon className="size-4" aria-hidden="true" />{t("detail.duplicateTab")}
           </ContextMenu.Item>
           <ContextMenu.Item className={workspaceMenuItemClassName} onSelect={() => onRestore(project.tabId)}>

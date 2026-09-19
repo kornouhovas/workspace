@@ -141,7 +141,7 @@ export const ru = {
   "detail.restoreTab": "Свернуть вид",
   "detail.closeTab": "Закрыть вид",
   "detail.duplicateTab": "Дублировать вкладку",
-  "view.copyName": "{name} — копия",
+  "view.copyName": "{{name}} — копия",
   "view.duplicateFailed": "Не удалось дублировать вид",
   "detail.fileTree": "Дерево файлов",
   "detail.items": { "one": "{{count}} элемент", "few": "{{count}} элемента", "many": "{{count}} элементов", "other": "{{count}} элемента" },
