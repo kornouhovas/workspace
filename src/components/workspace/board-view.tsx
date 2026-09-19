@@ -164,8 +164,8 @@ export function WorkspaceBoardView({
                       {cardProperties.length > 0 ? (
                         <dl className="grid gap-2">
                           {cardProperties.map((property) => (
-                            <div key={property.id} className="grid grid-cols-[5rem_1fr] gap-2 text-xs">
-                              <dt className="truncate text-muted-foreground">{property.name}</dt>
+                            <div key={property.id} className="min-w-0 text-xs">
+                              <dt className="sr-only">{property.name}</dt>
                               <dd className="truncate text-foreground">
                                 {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
                               </dd>
