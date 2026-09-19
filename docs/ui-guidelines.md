@@ -14,6 +14,8 @@ The goal is to avoid pixel-level micromanagement while keeping the UI consistent
 - Primitive base: Radix UI primitives through shadcn components.
 - Icons: `lucide` as configured in `components.json`.
 - Font: Geist Variable from `@fontsource-variable/geist`.
+- Compact desktop typography: primary interface text is 13px with a 20px line height; secondary labels and chips are 12px. Use regular weight for project names, values and tabs, reserving stronger weight for section headings. Keep the root font size and clickable icon button areas unchanged.
+- Compact density: table rows and property rows start at 36px, file tree rows at 28px, and board cards at 48px with content-driven height. Wrapped text and additional properties must expand naturally rather than be clipped.
 - Theme: dark mode is the primary current runtime.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.

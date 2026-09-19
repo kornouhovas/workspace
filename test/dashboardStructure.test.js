@@ -410,7 +410,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /aria-label=\{t\("view\.renameInput"\)\}/);
   assert.match(viewTabsSource, /rounded-xl bg-muted\/80/);
   assert.match(viewTabsSource, /group-data-horizontal\/tabs:!h-9/);
-  assert.match(viewTabsSource, /text-sm font-medium/);
+  assert.match(viewTabsSource, /text-sm font-normal/);
   assert.doesNotMatch(viewTabsSource, /justify-between gap-3 border-b border-border px-4 py-2\.5/);
   assert.match(viewTabsSource, /data-active:border-border/);
   assert.match(viewTabsSource, /data-active:bg-background/);
@@ -447,7 +447,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /selectValues/);
   assert.match(boardViewSource, /formatPropertyValue/);
   assert.match(boardViewSource, /renderBoardStatusValue/);
-  assert.match(boardViewSource, /className="h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-medium"/);
+  assert.match(boardViewSource, /className="h-5 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-xs font-normal"/);
   assert.match(boardViewSource, /size-2 rounded-full bg-muted-foreground\/70/);
   assert.match(boardViewSource, /"--workspace-board-column-width": `\$\{preferredColumnWidth\}px`/);
   assert.doesNotMatch(boardViewSource, /Math\.min\(preferredColumnWidth/);
@@ -456,7 +456,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /columnWidth=\{activeView\?\.boardLayout\?\.columnWidth\}/);
   assert.match(appSource, /boardColumnWidthMax=\{getBoardColumnWidthMax\(boardViewportWidth\)\}/);
   assert.match(appSource, /onViewportWidthChange=\{setBoardViewportWidth\}/);
-  assert.match(boardViewSource, /min-h-24/);
+  assert.match(boardViewSource, /min-h-12/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(boardViewSource, /pl-4 pr-0 pt-4 pb-0/);
   assert.match(boardViewSource, /min-h-0 flex-1 overflow-x-auto overflow-y-hidden/);
@@ -473,7 +473,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /backendProject\.folderStatus/);
   assert.match(tableViewSource, /renderTableStatusValue/);
   assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors"/);
-  assert.match(tableViewSource, /className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-\[13px\] font-medium"/);
+  assert.match(tableViewSource, /className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-xs font-normal"/);
   assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
   assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
@@ -654,12 +654,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(tableViewSource, /rowHandleColumnWidth/);
   assert.doesNotMatch(tableViewSource, /aria-label="Row reorder"/);
   assert.match(tableViewSource, /PlusIcon/);
-  assert.match(tableViewSource, /className="h-10 hover:bg-accent\/15"/);
+  assert.match(tableViewSource, /className="h-9 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
-  assert.match(tableViewSource, /return `h-10 \$\{tableColumnDividerClassName\} align-top p-0\.5`;/);
-  assert.match(tableViewSource, /\? `h-10 \$\{tableColumnDividerClassName\} align-top p-0\.5`/);
-  assert.match(tableViewSource, /: `h-10 \$\{tableColumnDividerClassName\} align-top truncate px-3 py-0`;/);
+  assert.match(tableViewSource, /return `h-9 \$\{tableColumnDividerClassName\} align-top p-0\.5`;/);
+  assert.match(tableViewSource, /\? `h-9 \$\{tableColumnDividerClassName\} align-top p-0\.5`/);
+  assert.match(tableViewSource, /: `h-9 \$\{tableColumnDividerClassName\} align-top truncate px-3 py-0`;/);
   assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable, wrapContent\)\}/);
   assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-8/);
   assert.match(tableViewSource, /workspace-table-cell-control/);
@@ -674,7 +674,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(cssSource, /\.workspace-table-empty-value:hover/);
   assert.doesNotMatch(cssSource, /\.workspace-table-text-value:hover/);
   assert.match(cssSource, /box-shadow: inset 0 0 0 1px color-mix\(in oklch, var\(--border\) 75%, var\(--foreground\) 25%\);/);
-  assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
+  assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
   assert.doesNotMatch(tableViewSource, /className="flex h-10 w-full/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
   assert.match(tableViewSource, /px-4 pb-0 pt-4/);
@@ -718,8 +718,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.doesNotMatch(projectDetailPanelSource, /project-identity-heading/);
-  assert.match(projectDetailPanelSource, /<header className="px-6 pb-3 pr-12 pt-6">/);
-  assert.match(projectDetailPanelSource, /<div className="min-h-0 flex-1 overflow-auto px-6 pb-6 pt-1">/);
+  assert.match(projectDetailPanelSource, /<header className="px-5 pb-2 pr-12 pt-4">/);
+  assert.match(projectDetailPanelSource, /<div className="min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1">/);
   assert.doesNotMatch(projectDetailPanelSource, /displayedProject\.currentRelativePath/);
   assert.doesNotMatch(projectDetailPanelSource, /<Badge variant="outline">\{displayedProject\.status\.name\}<\/Badge>/);
   assert.doesNotMatch(projectDetailPanelSource, /property\.id !== "property:status"/);
@@ -740,7 +740,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /grid-cols-\[2rem_minmax\(0,1fr\)\]/);
   assert.match(projectDetailPanelSource, /border-r border-border\/45/);
   assert.match(projectDetailPanelSource, /border-b border-border\/45/);
-  assert.match(projectDetailPanelSource, /className="h-8 w-full justify-start px-1\.5 py-0 text-left/);
+  assert.match(projectDetailPanelSource, /className="h-7 w-full justify-start px-1\.5 py-0 text-left/);
   assert.match(projectDetailPanelSource, /text-amber-300/);
   assert.match(projectDetailPanelSource, /text-emerald-300/);
   assert.match(projectDetailPanelSource, /text-rose-300/);

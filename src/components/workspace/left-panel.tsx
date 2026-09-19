@@ -353,20 +353,20 @@ export function WorkspaceLeftPanel({
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-sidebar">
       <div className={`mr-12 min-h-12 pt-7 ${collapsed ? "" : "electron-window-drag"}`} />
-      <div className="electron-window-no-drag flex flex-1 flex-col gap-3 px-3 py-3">
+      <div className="electron-window-no-drag flex flex-1 flex-col gap-2 px-3 py-2">
         <button
           type="button"
           className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           title={t("sidebar.addWorkspace")}
           onClick={onAddWorkspace}
         >
-          <PlusIcon className="size-4" aria-hidden="true" />
+          <PlusIcon className="size-3.5" aria-hidden="true" />
           {t("sidebar.addWorkspace")}
         </button>
         <label className="grid gap-1 text-xs text-muted-foreground">
           {t("sidebar.search")}
           <span className="relative block">
-            <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               value={searchQuery}
@@ -433,7 +433,7 @@ export function WorkspaceLeftPanel({
                       onPointerDown={(event) => startPointerWorkspaceDrag(event, workspace.id)}
                       onClick={() => openWorkspace(workspace.id)}
                     >
-                      <FolderKanbanIcon className="size-4 shrink-0" aria-hidden="true" />
+                      <FolderKanbanIcon className="size-3.5 shrink-0" aria-hidden="true" />
                       <span className="truncate">{workspace.name}</span>
                     </button>
                     <DropdownMenu
@@ -447,7 +447,7 @@ export function WorkspaceLeftPanel({
                           aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
                           title={t("sidebar.workspaceActions", { name: workspace.name })}
                         >
-                          <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                          <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={cn(workspaceMenuContentClassName, "min-w-52")}>
@@ -490,7 +490,7 @@ export function WorkspaceLeftPanel({
             title={t("sidebar.settings")}
             onClick={onOpenSettings}
           >
-            <SettingsIcon className="size-4" aria-hidden="true" />
+            <SettingsIcon className="size-3.5" aria-hidden="true" />
             {t("sidebar.settings")}
           </button>
         </div>

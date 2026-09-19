@@ -39,7 +39,7 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
           aria-label={project.name}
           {...listeners}
           style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 30 : undefined }}
-          className="@container h-7 min-w-10 max-w-44 flex-1 basis-44 cursor-grab touch-none rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60"
+          className="@container h-7 min-w-10 max-w-44 flex-1 basis-44 cursor-grab touch-none rounded-lg px-2.5 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60"
         >
           <FileIcon className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="min-w-0 truncate @max-[3rem]:hidden">{project.name}</span>

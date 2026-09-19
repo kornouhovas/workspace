@@ -79,7 +79,7 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
   return (
     <Badge
       variant="secondary"
-      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+      className="h-5 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-xs font-normal"
     >
       <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
       <span className="truncate">{label}</span>
@@ -136,7 +136,7 @@ export function WorkspaceBoardView({
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}
             >
-              <header className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
+              <header className="flex h-9 shrink-0 items-center justify-between border-b border-border px-2.5">
                 <h3 className="min-w-0 truncate text-sm font-medium">
                   {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
                 </h3>
@@ -152,12 +152,12 @@ export function WorkspaceBoardView({
                     <button
                       key={project.id}
                       type="button"
-                      className="flex min-h-24 w-full min-w-0 flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-3 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                      className="flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
                       onClick={() => onProjectOpen(project)}
                     >
                       <div className="flex min-w-0 items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h4 className="truncate text-sm font-medium leading-snug">{project.name}</h4>
+                          <h4 className="truncate text-sm font-normal leading-5">{project.name}</h4>
                         </div>
                         <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status, t)}</div>
                       </div>

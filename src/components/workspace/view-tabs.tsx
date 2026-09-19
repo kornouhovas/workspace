@@ -489,7 +489,7 @@ export function WorkspaceViewTabs({
                   <input
                     ref={editingViewInputRef}
                     aria-label={t("view.renameInput")}
-                    className="h-full w-full rounded-lg border border-ring bg-background px-2.5 text-sm font-medium text-foreground outline-none ring-2 ring-ring/30"
+                    className="h-full w-full rounded-lg border border-ring bg-background px-2.5 text-sm font-normal text-foreground outline-none ring-2 ring-ring/30"
                     value={editingViewName}
                     onChange={(event) => setEditingViewName(event.currentTarget.value)}
                     onBlur={() => submitViewRename(view)}
@@ -510,7 +510,7 @@ export function WorkspaceViewTabs({
                 value={view.id}
                 data-view-tab-id={view.id}
                 className={[
-                  "h-7 flex-none cursor-grab rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60",
+                  "h-7 flex-none cursor-grab rounded-lg px-2.5 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60",
                 ].join(" ")}
                 style={getViewTabDragStyle(view.id)}
                 onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}

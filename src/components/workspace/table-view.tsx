@@ -286,20 +286,20 @@ function hasActiveValueFilter(
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean, wrapContent: boolean) {
   if (property.id === "property:name") {
-    return `h-10 ${tableColumnDividerClassName} align-top p-0.5`;
+    return `h-9 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.id === "property:status") {
-    return `h-10 ${tableColumnDividerClassName} align-top p-0.5`;
+    return `h-9 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.propertyType === "text" && wrapContent) {
-    return `h-10 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
+    return `h-9 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
   }
 
   return editable
-    ? `h-10 ${tableColumnDividerClassName} align-top p-0.5`
-    : `h-10 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
+    ? `h-9 ${tableColumnDividerClassName} align-top p-0.5`
+    : `h-9 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
 }
 
 function renderTableStatusValue(value: unknown, t: (key: string) => string) {
@@ -322,7 +322,7 @@ function renderTableStatusValue(value: unknown, t: (key: string) => string) {
     <div className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors">
       <Badge
         variant="secondary"
-        className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-medium"
+        className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-xs font-normal"
       >
         <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
         <span className="truncate">{label}</span>
@@ -1394,7 +1394,7 @@ export function WorkspaceTableView({
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
-                className="h-10 hover:bg-accent/15"
+                className="h-9 hover:bg-accent/15"
               >
                 {visibleProperties.map((property) => {
                   const editable = isEditableProperty(property);
@@ -1425,7 +1425,7 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-medium text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
                           <span className="workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0.5">
@@ -1440,7 +1440,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-10 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
+                <TableCell className="h-9 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>
