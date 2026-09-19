@@ -148,7 +148,12 @@ export function WorkspaceBoardView({
                     {t("board.noProjects")}
                   </div>
                 ) : (
-                  column.projects.map((project) => (
+                  column.projects.map((project) => {
+                    const populatedProperties = cardProperties.map((property) => ({
+                      property,
+                      value: formatPropertyValue(getPropertyValue(project, property), property, selectValues),
+                    })).filter(({ value }) => value.trim() !== "");
+                    return (
                     <button
                       key={project.id}
                       type="button"
@@ -161,20 +166,21 @@ export function WorkspaceBoardView({
                         </div>
                         <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status, t)}</div>
                       </div>
-                      {cardProperties.length > 0 ? (
+                      {populatedProperties.length > 0 ? (
                         <dl className="grid gap-2">
-                          {cardProperties.map((property) => (
+                          {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
                               <dd className="truncate text-foreground">
-                                {formatPropertyValue(getPropertyValue(project, property), property, selectValues)}
+                                {value}
                               </dd>
                             </div>
                           ))}
                         </dl>
                       ) : null}
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </section>
