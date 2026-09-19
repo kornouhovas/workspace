@@ -367,7 +367,7 @@ function getProjectPropertyCellId(projectId: string, propertyId: string) {
   return `${projectId}:${propertyId}`;
 }
 
-function ProjectTablePropertyValueEditor({
+export function ProjectTablePropertyValueEditor({
   project,
   property,
   selectValues,

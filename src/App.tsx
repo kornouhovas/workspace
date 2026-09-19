@@ -2071,6 +2071,11 @@ export default function App() {
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
                         selectValues={settingsSelectValues}
                         onProjectOpen={handleProjectOpen}
+                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                        onCreateSelectValue={handleCreateSelectValue}
+                        onRenameSelectValue={handleRenameSelectValue}
+                        onColorSelectValue={handleColorSelectValue}
+                        onDeleteSelectValue={handleDeleteSelectValue}
                       />
                     ) : null}
                     {activeViewType === "table" ? (

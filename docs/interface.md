@@ -191,6 +191,7 @@ Required behavior:
 - View duplicate/rename/delete actions are available from the tab context menu; there is no separate three-dot view menu. Duplicating preserves the view type and display settings, persists a separate view immediately to the right of the source, and activates the copy.
 - Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses remains unavailable.
 - Board cards show populated property values below the project name, without visible property labels. System Status participates in this list and follows the view's property order and visibility instead of being pinned beside the name. Empty values add no rows or spacing. Dates and colored value chips match the project detail display.
+- Populated custom Board values can be edited directly using the same text, number, date and selection editors as Table. Editing a value does not open project details; the card name/background still opens details. System Status remains read-only, and empty properties remain omitted.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
 - The `+` action creates a new view.

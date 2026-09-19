@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n";
@@ -7,6 +7,7 @@ import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/works
 import type { WorkspaceSelectValueState } from "@/workspaceAppState";
 import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
 import { formatDateForDisplay } from "@/formatDateForDisplay.js";
+import { ProjectTablePropertyValueEditor } from "./table-view";
 
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
@@ -21,7 +22,10 @@ type WorkspaceBoardProjection = {
   readonly columns: readonly WorkspaceBoardColumn[];
 };
 
-type WorkspaceBoardViewProps = {
+type BoardEditingProps = Pick<ComponentProps<typeof ProjectTablePropertyValueEditor>,
+  "onProjectPropertyValueChange" | "onCreateSelectValue" | "onRenameSelectValue" | "onColorSelectValue" | "onDeleteSelectValue">;
+
+type WorkspaceBoardViewProps = BoardEditingProps & {
   readonly projection: WorkspaceBoardProjection;
   readonly columnWidth?: number;
   readonly onViewportWidthChange?: (viewportWidth: number) => void;
@@ -97,8 +101,10 @@ export function WorkspaceBoardView({
   visibleProperties,
   selectValues,
   onProjectOpen,
+  ...editingProps
 }: WorkspaceBoardViewProps) {
   const { t, locale } = useI18n();
+  const [editingCellId, setEditingCellId] = useState<string | null>(null);
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name",
   );
@@ -155,44 +161,39 @@ export function WorkspaceBoardView({
                     const populatedProperties = cardProperties.map((property) => ({
                       property,
                       value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),
-                    })).filter(({ value }) => value.trim() !== "");
+                    })).filter(({ property, value }) => value.trim() !== "" || editingCellId === `${project.id}:${property.id}`);
                     return (
-                    <button
+                    <article
                       key={project.id}
-                      type="button"
-                      className="flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
-                      onClick={() => onProjectOpen(project)}
+                      className="relative flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
                     >
-                      <h4 className="min-w-0 truncate text-sm font-normal leading-5">{project.name}</h4>
+                      <button type="button" className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" aria-label={project.name} onClick={() => onProjectOpen(project)} />
+                      <h4 className="pointer-events-none relative min-w-0 truncate text-sm font-normal leading-5">{project.name}</h4>
                       {populatedProperties.length > 0 ? (
-                        <dl className="grid gap-2">
+                        <dl className="relative grid gap-2">
                           {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
-                              <dd className="min-w-0 text-foreground">
-                                {property.id === "property:status" ? renderBoardStatusValue(project.status, t) : property.propertyType === "select" || property.propertyType === "multi-select" ? (
-                                  <span className="flex min-w-0 flex-wrap items-center gap-1">
-                                    {(Array.isArray(getPropertyValue(project, property))
-                                      ? getPropertyValue(project, property) as unknown[]
-                                      : [getPropertyValue(project, property)])
-                                      .filter((id): id is string => typeof id === "string" && id.trim() !== "")
-                                      .map((id) => {
-                                        const option = selectValues.find((item) => item.id === id && item.propertyId === property.id && !item.hidden);
-                                        return (
-                                          <span key={id} className="inline-flex h-5 min-w-0 max-w-28 shrink items-center gap-1 rounded-md bg-secondary px-1.5 text-xs text-secondary-foreground">
-                                            <span className="size-2 shrink-0 rounded-full" data-color={option?.color || "gray"} aria-hidden="true" />
-                                            <span className="truncate">{option?.name || id}</span>
-                                          </span>
-                                        );
-                                      })}
-                                  </span>
-                                ) : <span className="block truncate">{value}</span>}
+                              <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
+                                {property.id === "property:status" ? renderBoardStatusValue(project.status, t) : property.system ? <span className="block truncate">{value}</span> : (
+                                  <ProjectTablePropertyValueEditor
+                                    {...editingProps}
+                                    project={project}
+                                    property={property}
+                                    selectValues={selectValues}
+                                    wrapContent={false}
+                                    editing={editingCellId === `${project.id}:${property.id}`}
+                                    dismissSignal={0}
+                                    onStartEditingCell={setEditingCellId}
+                                    onStopEditingCell={() => setEditingCellId(null)}
+                                  />
+                                )}
                               </dd>
                             </div>
                           ))}
                         </dl>
                       ) : null}
-                    </button>
+                    </article>
                     );
                   })
                 )}
