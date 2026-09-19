@@ -24,6 +24,7 @@ import {
   KanbanIcon,
   PencilIcon,
   PlusIcon,
+  CopyIcon,
   TableIcon,
   Trash2Icon,
 } from "@/lib/lucide-icons";
@@ -592,7 +593,7 @@ export function WorkspaceViewTabs({
               setContextMenuViewId(null);
             }}
           >
-            <PlusIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+            <CopyIcon className={workspaceMenuIconClassName} aria-hidden="true" />
             {t("detail.duplicateTab")}
           </button>
           <button
