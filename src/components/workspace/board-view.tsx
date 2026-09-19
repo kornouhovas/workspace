@@ -142,7 +142,7 @@ export function WorkspaceBoardView({
                 </h3>
                 <Badge variant="secondary" className="shrink-0">{column.projects.length}</Badge>
               </header>
-              <div className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto overflow-x-hidden p-2">
+              <div className="grid min-h-0 flex-1 auto-rows-max content-start gap-2 overflow-y-auto overflow-x-hidden p-2">
                 {column.projects.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
                     {t("board.noProjects")}
