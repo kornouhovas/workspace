@@ -100,7 +100,7 @@ export function WorkspaceBoardView({
 }: WorkspaceBoardViewProps) {
   const { t, locale } = useI18n();
   const cardProperties = visibleProperties.filter(
-    (property) => property.id !== "property:name" && property.id !== "property:status",
+    (property) => property.id !== "property:name",
   );
   const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
@@ -163,19 +163,14 @@ export function WorkspaceBoardView({
                       className="flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
                       onClick={() => onProjectOpen(project)}
                     >
-                      <div className="flex min-w-0 items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h4 className="truncate text-sm font-normal leading-5">{project.name}</h4>
-                        </div>
-                        <div className="max-w-28 shrink-0 overflow-hidden">{renderBoardStatusValue(project.status, t)}</div>
-                      </div>
+                      <h4 className="min-w-0 truncate text-sm font-normal leading-5">{project.name}</h4>
                       {populatedProperties.length > 0 ? (
                         <dl className="grid gap-2">
                           {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
                               <dd className="min-w-0 text-foreground">
-                                {property.propertyType === "select" || property.propertyType === "multi-select" ? (
+                                {property.id === "property:status" ? renderBoardStatusValue(project.status, t) : property.propertyType === "select" || property.propertyType === "multi-select" ? (
                                   <span className="flex min-w-0 flex-wrap items-center gap-1">
                                     {(Array.isArray(getPropertyValue(project, property))
                                       ? getPropertyValue(project, property) as unknown[]
