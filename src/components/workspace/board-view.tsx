@@ -167,15 +167,23 @@ export function WorkspaceBoardView({
                       key={project.id}
                       className="relative flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
                     >
-                      <button type="button" className="absolute inset-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" aria-label={project.name} onClick={() => onProjectOpen(project)} />
-                      <h4 className="pointer-events-none relative min-w-0 truncate text-sm font-normal leading-5">{project.name}</h4>
+                      <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
+                      <h4 className="relative min-w-0 text-sm font-normal leading-5">
+                        <button type="button" className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                          <span className="truncate">{project.name}</span>
+                        </button>
+                      </h4>
                       {populatedProperties.length > 0 ? (
                         <dl className="relative grid gap-2">
                           {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
                               <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
-                                {property.id === "property:status" ? renderBoardStatusValue(project.status, t) : property.system ? <span className="block truncate">{value}</span> : (
+                                {property.id === "property:status" ? (
+                                  <div className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2 hover:bg-muted">
+                                    {renderBoardStatusValue(project.status, t)}
+                                  </div>
+                                ) : property.system ? <span className="block truncate">{value}</span> : (
                                   <ProjectTablePropertyValueEditor
                                     {...editingProps}
                                     project={project}
