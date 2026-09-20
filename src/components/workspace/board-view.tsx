@@ -165,7 +165,7 @@ export function WorkspaceBoardView({
                     return (
                     <article
                       key={project.id}
-                      className="relative flex min-h-12 w-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
+                      className="relative flex min-h-12 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card p-2.5 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
                     >
                       <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
                       <h4 className="relative min-w-0 text-sm font-normal leading-5">
@@ -174,7 +174,7 @@ export function WorkspaceBoardView({
                         </button>
                       </h4>
                       {populatedProperties.length > 0 ? (
-                        <dl className="relative grid gap-2">
+                        <dl className="relative grid gap-0.5">
                           {populatedProperties.map(({ property, value }) => (
                             <div key={property.id} className="min-w-0 text-xs">
                               <dt className="sr-only">{property.name}</dt>
