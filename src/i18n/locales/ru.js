@@ -25,6 +25,7 @@ export const ru = {
   "sidebar.addWorkspace": "Добавить Workspace",
   "sidebar.search": "Поиск",
   "sidebar.searchPlaceholder": "Название проекта",
+  "state.noSearchResults": "Проекты не найдены. Попробуйте другое название.",
   "sidebar.workspaces": "Workspaces",
   "sidebar.settings": "Настройки",
   "sidebar.workspaceActions": "Действия Workspace {{name}}",

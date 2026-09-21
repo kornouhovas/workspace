@@ -1,0 +1,8 @@
+{
+  "viewport": [1024, 720],
+  "scroller": [296, 615],
+  "selected_tab": [495, 671],
+  "scroll_left": 49,
+  "full_name_available_in_title_and_ax": true,
+  "observation": "After renaming the selected third view to a long Unicode title, the tab's right 56px lies outside its scroll viewport."
+}

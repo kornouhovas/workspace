@@ -1,0 +1,18 @@
+{
+  "check": "renderer-quality",
+  "attempt": 2,
+  "basis": "observed",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T19:28:41.818299+00:00",
+  "source": "Independent verifier attempt 2 on frozen 21-file manifest: npm test, typecheck, build:renderer, git diff --check",
+  "summary": "All 200 tests passed; typecheck, renderer build and diff check exit 0.",
+  "verdict": "pass",
+  "artifacts": [
+    "verifier-attempt-2/report.md",
+    "verifier-attempt-2/check-0.txt",
+    "verifier-attempt-2/check-1.txt",
+    "verifier-attempt-2/build-renderer.txt",
+    "verifier-attempt-2/check-2.txt",
+    "verifier-attempt-2/freeze-hashes.json"
+  ]
+}

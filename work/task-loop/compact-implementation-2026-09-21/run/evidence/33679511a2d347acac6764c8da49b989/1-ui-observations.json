@@ -1,0 +1,37 @@
+{
+  "observer": "/root/compact_verifier",
+  "observed_on": "2026-09-21T19:25-19:29Z",
+  "method": "CUA Chrome temporary tab at local diagnostic harness, AX and read-only DOM geometry; direct UI selection and reload against isolated fixture",
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-compact-impl-xod6z3b2",
+  "viewport": [1024, 720],
+  "views": {
+    "ax_count": 20,
+    "clicked": "Board 19",
+    "selected_tab_rect": [495, 7.5, 615, 39.5],
+    "header_rect": [248, 0, 1024, 48],
+    "customize_rect": [942, 7.5, 974, 39.5],
+    "add_view_rect": [976, 7.5, 1008, 39.5],
+    "action_background": "rgba(0, 0, 0, 0)",
+    "after_reload": "20 view tabs; Board 19 selected; header height 48"
+  },
+  "properties": {
+    "after_reload_table_brand_system_row": "Brand SystemDoneПервая строка 🛰\nSecond line — a long value for wrap behavior14Sep 29, 2026Приоритет 🟣ПервыйВторой",
+    "ax": "Brand System row exposes Text, Number 14, Date, Select Приоритет 🟣 and Multi-select Первый/Второй"
+  },
+  "settings": {
+    "header_height": 48,
+    "header_actions": "Settings; Back to workspace",
+    "source_folder": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-compact-impl-xod6z3b2/projects",
+    "role_tree": "3 roots: Done, In Progress, Planned; each Status selected"
+  },
+  "project_tabs": {
+    "expanded_project_tabs_ax_count": 10,
+    "selected": "Workspace App",
+    "detail_title": "Workspace App",
+    "header_height": 48,
+    "restore_side_panel_rect": [942, 7.5, 974, 39.5],
+    "close_project_details_rect": [976, 7.5, 1008, 39.5],
+    "actions_within_header": true
+  },
+  "limits": "Browser UI selection changed only the isolated fixture's active view. Property values were observed after reload, not re-edited by verifier. Native 118x167 thumbnail was inspected as an executor artifact; independent native window size and traffic-light hit testing were not performed. Chrome temporary tab closed and viewport reset."
+}

@@ -1,0 +1,214 @@
+{
+  "time": "2026-09-21T19:06:43.174629+00:00",
+  "report_rows": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14",
+    "E15",
+    "E16",
+    "E17",
+    "E18",
+    "E19",
+    "E20",
+    "E21",
+    "E22",
+    "E23",
+    "E24",
+    "E25",
+    "E26",
+    "E27",
+    "E28",
+    "E29",
+    "E30",
+    "E31",
+    "E32",
+    "E33",
+    "E34",
+    "E35",
+    "E36",
+    "E37",
+    "E38",
+    "E39",
+    "E40",
+    "E41",
+    "E42",
+    "E43",
+    "E44",
+    "E45",
+    "E46",
+    "E47",
+    "E48",
+    "E49",
+    "E50",
+    "E51",
+    "E52",
+    "E53",
+    "E54",
+    "E55",
+    "E56"
+  ],
+  "unique_56": true,
+  "images": {
+    "board-1024x720.png": {
+      "sha256": "f7c03cb898e2c990efadc87f8e87832b32366a4e1e44034bce3a2aad89d36ee4",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "board-1440x960.png": {
+      "sha256": "bb37f69116833e4dffa4165ef20557c08e267c2c8078f39309d0e3bbcc35639a",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "JPEG"
+    },
+    "board-final-1024x720.png": {
+      "sha256": "900053297b3e8e7cc556cdb0430919123f078c0a7a7f1780d6ed81627f64e57b",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "board-final-1440x960.png": {
+      "sha256": "17a706d3ad078b2694cf65caac9d2b0fd70c9f4f918781ecb80693a30f3658a6",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "JPEG"
+    },
+    "empty-search-final-1024x720.png": {
+      "sha256": "23e994f530ff4caa354dcb441a736aec76c9835b933d55ab87f22bd61ac7305c",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "empty-search-table-1024x720.png": {
+      "sha256": "ab24f5bd58437d0e58f2096d36de5d4800b0ab63dc566e94602a54e3179cffc9",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "expanded-1024x720.png": {
+      "sha256": "af575b0e00bdbd71e0e78882634cec6909b30ce1f6da4c7e16fcff446a12a639",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "overflow-after-1024x720.png": {
+      "sha256": "628e8608e1ccd5be4d8636efbef4c0497bd508b9c5d7d30d053748b43f775909",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "overflow-before-1024x720.png": {
+      "sha256": "db735a21b1dc548a698a993e6d5c4f9a5a8a3699f39676a191e2d98702c9e94b",
+      "size": [
+        1024,
+        496
+      ],
+      "magic": "JPEG"
+    },
+    "panel-1024x720.png": {
+      "sha256": "4ca61193c600d7bc2f4092c83dd3e76f073662c00625726b10c6d41da703d00e",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "search-carried-1024x720.png": {
+      "sha256": "93c48da979ba620f98e1328cb0aabe25b57e0791ec5eb41157c3b9bc1b00a303",
+      "size": [
+        1512,
+        732
+      ],
+      "magic": "JPEG"
+    },
+    "settings-1024x720.png": {
+      "sha256": "40538de457af55d4714d0cc1bdf4cc60e48a77f98fad56b5160b8e181c5f9236",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "settings-1440x960.png": {
+      "sha256": "ecc44c1bbdf97b37250a42044aa5d1252b172297c0f8c49cfb6ee9ff02bdd227",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "JPEG"
+    },
+    "settings-final-1024x720.png": {
+      "sha256": "a9358a8d0668402ccbcb50da6d7f7615896c16bf70067bc26a2e200e42bb9ded",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "table-1024x720.png": {
+      "sha256": "59acd8ae41468cdcf88dde3d33acfb561f065afe1646cd5d874939067a538e87",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "table-final-1024x720.png": {
+      "sha256": "958cdac928d7643295148453399188276b69c68c89f6cb10cc1f80625619c8db",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    }
+  },
+  "changed_paths": [
+    "docs/design/compact-edge-matrix.md",
+    "docs/design/compact-redesign-handoff.md",
+    "docs/ui-guidelines.md",
+    "src/App.tsx",
+    "src/components/workspace/board-view.tsx",
+    "src/components/workspace/left-panel.tsx",
+    "src/components/workspace/menu-styles.ts",
+    "src/components/workspace/project-detail-panel.tsx",
+    "src/components/workspace/project-tabs.tsx",
+    "src/components/workspace/settings-view.tsx",
+    "src/components/workspace/table-view.tsx",
+    "src/components/workspace/view-filter-menu.tsx",
+    "src/components/workspace/view-tabs.tsx",
+    "src/i18n/locales/en.js",
+    "src/i18n/locales/ru.js",
+    "src/main.tsx",
+    "src/styles.css",
+    "src/workspaceAppState.ts",
+    "test/workspaceAppState.test.js"
+  ],
+  "untracked_report": "docs/design/compact-implementation-review.md"
+}

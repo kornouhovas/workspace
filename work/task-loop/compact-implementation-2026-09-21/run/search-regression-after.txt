@@ -1,0 +1,140 @@
+TAP version 13
+# Subtest: workspace app state represents a missing source folder
+ok 1 - workspace app state represents a missing source folder
+  ---
+  duration_ms: 71.477583
+  ...
+# Subtest: workspace app state stores loaded service projection responses
+ok 2 - workspace app state stores loaded service projection responses
+  ---
+  duration_ms: 28.124166
+  ...
+# Subtest: workspace app state stores custom property catalog responses
+ok 3 - workspace app state stores custom property catalog responses
+  ---
+  duration_ms: 18.47375
+  ...
+# Subtest: workspace app state refreshes visible property labels from catalog without clearing projection
+ok 4 - workspace app state refreshes visible property labels from catalog without clearing projection
+  ---
+  duration_ms: 24.58625
+  ...
+# Subtest: workspace app state updates visible view properties without clearing projection rows
+ok 5 - workspace app state updates visible view properties without clearing projection rows
+  ---
+  duration_ms: 15.475709
+  ...
+# Subtest: workspace app state updates view value visibility without clearing projection rows
+ok 6 - workspace app state updates view value visibility without clearing projection rows
+  ---
+  duration_ms: 14.56775
+  ...
+# Subtest: workspace app state updates view property layout without clearing projection rows
+ok 7 - workspace app state updates view property layout without clearing projection rows
+  ---
+  duration_ms: 11
+  ...
+# Subtest: workspace app state previews Board column width without clearing projection columns
+ok 8 - workspace app state previews Board column width without clearing projection columns
+  ---
+  duration_ms: 13.568375
+  ...
+# Subtest: workspace app state removes a deleted property from catalog and projections
+ok 9 - workspace app state removes a deleted property from catalog and projections
+  ---
+  duration_ms: 18.5985
+  ...
+# Subtest: workspace app state applies project property value updates without closing details
+ok 10 - workspace app state applies project property value updates without closing details
+  ---
+  duration_ms: 12.513166
+  ...
+# Subtest: workspace app state stores property save errors without clearing projection data
+ok 11 - workspace app state stores property save errors without clearing projection data
+  ---
+  duration_ms: 10.000625
+  ...
+# Subtest: workspace app state stores selected root before projection loading completes
+ok 12 - workspace app state stores selected root before projection loading completes
+  ---
+  duration_ms: 8.55875
+  ...
+# Subtest: workspace app state keeps current workspace content visible while another workspace loads
+ok 13 - workspace app state keeps current workspace content visible while another workspace loads
+  ---
+  duration_ms: 10.879125
+  ...
+# Subtest: workspace app state keeps current view state as a stale visual surface when another workspace is activated
+ok 14 - workspace app state keeps current view state as a stale visual surface when another workspace is activated
+  ---
+  duration_ms: 9.591958
+  ...
+# Subtest: workspace app state stores service errors
+ok 15 - workspace app state stores service errors
+  ---
+  duration_ms: 10.790709
+  ...
+# Subtest: workspace app state updates search query without changing service responses
+ok 16 - workspace app state updates search query without changing service responses
+  ---
+  duration_ms: 9.465291
+  ...
+# Subtest: workspace app state updates projection without returning to loading
+ok 17 - workspace app state updates projection without returning to loading
+  ---
+  duration_ms: 9.600584
+  ...
+# Subtest: workspace app state ignores projection updates for stale workspace or view
+ok 18 - workspace app state ignores projection updates for stale workspace or view
+  ---
+  duration_ms: 9.957417
+  ...
+# Subtest: workspace app state ignores full projection loads after workspace or view changes
+ok 19 - workspace app state ignores full projection loads after workspace or view changes
+  ---
+  duration_ms: 8.187667
+  ...
+# Subtest: workspace app state switches the active view
+ok 20 - workspace app state switches the active view
+  ---
+  duration_ms: 11.384292
+  ...
+# Subtest: workspace app state ignores older property save completions for the same cell
+ok 21 - workspace app state ignores older property save completions for the same cell
+  ---
+  duration_ms: 7.820375
+  ...
+# Subtest: workspace app state adds a created view to only the active workspace state
+ok 22 - workspace app state adds a created view to only the active workspace state
+  ---
+  duration_ms: 8.510917
+  ...
+# Subtest: workspace app state ignores a created view for another workspace
+ok 23 - workspace app state ignores a created view for another workspace
+  ---
+  duration_ms: 10.334584
+  ...
+# Subtest: workspace app state renames a loaded view locally
+ok 24 - workspace app state renames a loaded view locally
+  ---
+  duration_ms: 8.137958
+  ...
+# Subtest: workspace app state reorders loaded views locally
+ok 25 - workspace app state reorders loaded views locally
+  ---
+  duration_ms: 9.956958
+  ...
+# Subtest: workspace projection search filter narrows board and table locally by project name
+ok 26 - workspace projection search filter narrows board and table locally by project name
+  ---
+  duration_ms: 8.350084
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 635.353833

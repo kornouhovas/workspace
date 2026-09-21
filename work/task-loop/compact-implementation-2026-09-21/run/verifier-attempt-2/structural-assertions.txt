@@ -1,0 +1,4 @@
+141:  assert.match(appSource, /electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4/);
+411:  assert.match(viewTabsSource, /workspace-tab-scroll/);
+1010:  assert.doesNotMatch(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
+1011:  assert.match(cssSource, /--background: #fafbfd/);

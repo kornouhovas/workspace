@@ -33,7 +33,6 @@ type WorkspaceSettingsViewProps = {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onSelectFolder: () => void;
-  readonly onCloseSettings: () => void;
   readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
   readonly onColorStatusValue: (statusValueId: string, color: string) => void;
   readonly selectingFolder?: boolean;
@@ -93,7 +92,7 @@ function FolderRoleNode({
             <span className="truncate text-sm font-medium">{node.name}</span>
             <Badge variant="outline">{statusLabel}</Badge>
           </div>
-          <p className="truncate text-xs text-muted-foreground">{node.relativePath}</p>
+          <p className="truncate text-xs text-muted-foreground" title={node.relativePath}>{node.relativePath}</p>
         </div>
         <ToggleGroup
           aria-label={t("settings.roleFor", { name: node.name })}
@@ -142,7 +141,6 @@ export function WorkspaceSettingsView({
   statusValues,
   selectValues,
   onSelectFolder,
-  onCloseSettings,
   onFolderRoleChange,
   onColorStatusValue,
   selectingFolder = false,
@@ -164,16 +162,7 @@ export function WorkspaceSettingsView({
   }
 
   return (
-    <section className="grid gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-labelledby="workspace-settings-heading">
-      <div className="flex items-center justify-between gap-3 lg:col-span-2">
-        <div className="min-w-0">
-          <h2 id="workspace-settings-heading" className="text-sm font-semibold">{t("settings.title")}</h2>
-          <p className="truncate text-xs text-muted-foreground">{t("settings.description")}</p>
-        </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onCloseSettings}>
-          {t("settings.back")}
-        </Button>
-      </div>
+    <section className="grid min-w-0 gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
       <div className="grid content-start gap-3">
         <div className="rounded-lg border border-border bg-card">
           <div className="flex items-center justify-between gap-3 px-3 py-2">
@@ -184,8 +173,8 @@ export function WorkspaceSettingsView({
           <div className="grid gap-3 p-3">
             <div className="grid gap-1">
               <p className="text-xs font-medium text-muted-foreground">{t("settings.sourceFolder")}</p>
-              <p className="truncate text-sm font-medium">{sourceFolder.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{sourceFolder.path}</p>
+              <p className="truncate text-sm font-medium" title={sourceFolder.name}>{sourceFolder.name}</p>
+              <p className="break-all text-xs text-muted-foreground">{sourceFolder.path}</p>
             </div>
             <Button
               type="button"
@@ -225,11 +214,11 @@ export function WorkspaceSettingsView({
           </div>
         </section>
       </div>
-      <div className="min-w-0 rounded-lg border border-border bg-muted/20">
+      <div className="min-w-0 rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between gap-3 px-3 py-2">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t("settings.folderRoleTree")}</h3>
-            <p className="truncate text-xs text-muted-foreground">{sourceFolder.path}</p>
+            <p className="truncate text-xs text-muted-foreground" title={sourceFolder.path}>{sourceFolder.path}</p>
           </div>
           <Badge variant="outline">{t("settings.roots", { count: folderRoleTree.length })}</Badge>
         </div>

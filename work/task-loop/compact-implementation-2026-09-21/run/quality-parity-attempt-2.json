@@ -1,0 +1,15 @@
+{
+  "check": "function-parity",
+  "attempt": 2,
+  "basis": "observed",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T19:28:41.818299+00:00",
+  "source": "Independent verifier source diff and Chrome UI replay in isolated fixture",
+  "summary": "Handlers remain reachable within checked renderer boundaries; 20 views and editor values persist after reload, settings and project actions reachable; fault paths/DnD/native restart remain unverified.",
+  "verdict": "pass",
+  "artifacts": [
+    "verifier-attempt-2/report.md",
+    "verifier-attempt-2/ui-observations.json",
+    "verifier-attempt-2/artifact-inventory.json"
+  ]
+}

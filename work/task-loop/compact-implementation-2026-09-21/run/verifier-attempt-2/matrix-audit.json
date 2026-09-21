@@ -1,0 +1,287 @@
+{
+  "timestamp": "2026-09-21T19:27:18.384236+00:00",
+  "rows": [
+    {
+      "id": "E01",
+      "executor_claim": "inspected: отдельные no-source и no-workspace ветви сохранены; observed в новой UI unverified, fixture был с source.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E02",
+      "executor_claim": "inspected: loading/refresh ветви не менялись; screenshot loading unverified, состояние кратковременно.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E03",
+      "executor_claim": "tested: reducer для stale workspace response в профильном наборе; pending UI unverified без инъекции задержки.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E04",
+      "executor_claim": "inspected: service error остаётся над проекцией; UI-инъекция ошибки unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E05",
+      "executor_claim": "tested: stale-save/reducer профильные тесты; save failure UI unverified без безопасной fault injection.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E06",
+      "executor_claim": "inspected: missing-root обработка и Settings CTA сохранены; restart с отсутствующим root/native chooser unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E07",
+      "executor_claim": "inspected: file/project availability и безопасное открытие не менялись; удаление после scan UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E08",
+      "executor_claim": "tested: projectSession/projectTabs regressions, закрытый tab не восстанавливается по имени.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E09",
+      "executor_claim": "observed: шесть проектов, три Status на Board; zero/one/no-status UI unverified, исходная логика проекции сохранена.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E10",
+      "executor_claim": "tested: фильтрация статусов в workspaceViews; empty status UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E11",
+      "executor_claim": "observed: Unicode запрос без совпадений показывает локализованное сообщение в Board и Table (`empty-search-final-1024x720.png`).",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E12",
+      "executor_claim": "tested: новый reducer regression для переноса Unicode search query между видами; observed перенос Board→Table. Поиск остаётся по имени.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E13",
+      "executor_claim": "observed: длинное Unicode/unbroken имя вида сокращается визуально, полное имя остаётся в `title`/AX; длинные project names/paths UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E14",
+      "executor_claim": "inspected: табы используют project ID, не название; duplicate-name fixture UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E15",
+      "executor_claim": "unverified: 200 проектов/10 групп/30 колонок не генерировались; performance не заявляется.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E16",
+      "executor_claim": "observed: Board при 1024 имеет горизонтальную прокрутку и стабильную ширину колонок; правила min/max покрыты существующим тестом boardLayout.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E17",
+      "executor_claim": "inspected: Board card/value click и detail editor сохранены; hidden/empty custom value UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E18",
+      "executor_claim": "observed: Table при 1024 сохраняет столбцы и горизонтальную прокрутку; drag/resize UI unverified, обработчики не менялись.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E19",
+      "executor_claim": "observed: через Table Text editor сохранены две строки с кириллицей/emoji, после reload значение сохранилось; длинный 1000-символьный wrap UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E20",
+      "executor_claim": "tested: properties scenarios для 0, отрицательных, decimal и формулы; observed: `=2+3*4` введено через Table editor, отображается `14` и сохраняется после reload.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E21",
+      "executor_claim": "tested: invalid number/expression normalization; UI error unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E22",
+      "executor_claim": "tested: date/property/i18n набор; observed: выбор 29 сентября 2026 через calendar в Table сохранился после reload. Typed leap date и month/year navigation UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E23",
+      "executor_claim": "observed: пустой Select picker, no-match и создание Unicode option, выбранный chip сохранился после reload; 50 options UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E24",
+      "executor_claim": "observed: через Multi-select созданы и выбраны два chips, после reload оба сохранились и не расширили shell; 20 chips UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E25",
+      "executor_claim": "inspected: chip direct menu и dismissal обработчики сохранены; повторные pointer действия UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E26",
+      "executor_claim": "tested: property domain validations; delete confirmation UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E27",
+      "executor_claim": "inspected: системные Name/Status ограничения сохранены; Customize action observed и доступен из верхней строки.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E28",
+      "executor_claim": "inspected: hidden property group и reorder не менялись; UI unverified на fixture без custom properties.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E29",
+      "executor_claim": "tested: visibility/view projection regressions; фильтр не меняет сохранённые значения.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E30",
+      "executor_claim": "observed: создано 18 новых Board views через существующее Add View, context menu предлагает Duplicate/Rename/Delete; last-view delete и actual duplicate/delete UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E31",
+      "executor_claim": "observed: 20 view tabs и длинный Unicode rename при 1024×720; выбранный tab и Add View находятся внутри viewport, 20 видов/active view сохранились после reload (`views-20-1024x720.jpg`).",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E32",
+      "executor_claim": "observed: panel и expanded при 1024, restore в боковую панель, close в верхней строке; скриншоты `panel-1024x720.png`, `expanded-1024x720.png`.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E33",
+      "executor_claim": "observed: два и более instance одного Workspace App в tabs; разные tab instances, данные проекта общие по контракту.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E34",
+      "executor_claim": "observed: 12 текстовых project tabs при 1440 и 1024; после resize активная вкладка в видимой области (`overflow-after-1024x720.png`, geometry JSON).",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E35",
+      "executor_claim": "observed: close последнего активного выбирает предыдущий tab; first/middle/inactive UI unverified, reducer tested.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E36",
+      "executor_claim": "observed: Restore удаляет один tab instance и открывает side panel при оставшихся дубликатах.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E37",
+      "executor_claim": "inspected: existing reorder handlers сохранены; pointer DnD UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E38",
+      "executor_claim": "inspected: activation threshold и drag constraint сохранены; edge/cancel UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E39",
+      "executor_claim": "tested: workspace session serialization/recovery; restart UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E40",
+      "executor_claim": "baseline observed: sidebar collapse/restore; inspected после изменения — скрытое содержимое inert, кнопка Show sidebar доступна; повторный UI проход unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E41",
+      "executor_claim": "observed: Settings, roles и path при 1024/1440; native chooser/cancel/deep tree unverified, их не открывали на тестовом fixture.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E42",
+      "executor_claim": "inspected: workspace rename/delete/reorder handlers сохранены; mutation UI unverified в read/select harness.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E43",
+      "executor_claim": "observed: Customize menu и context menu view при 1024; последнее имеет bounds x555–779/y23–145 внутри viewport. Nested/popover scroll UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E44",
+      "executor_claim": "observed verifier: Return открывает Customize и Escape возвращает focus trigger; nested Escape отдельно unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E45",
+      "executor_claim": "inspected: shared inactive outside-dismissal не менялся; pointer pass-through UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E46",
+      "executor_claim": "observed verifier: Tab переводит focus на Customize, Return открывает, Escape закрывает с возвратом focus; полный Shift+Tab/Space/card flow unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E47",
+      "executor_claim": "observed verifier: icon-only Customize/Add View в верхней строке, прозрачный default фон, названия/tooltip в AX и 2px purple focus; hover/disabled/busy state UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E48",
+      "executor_claim": "observed: русский текст в native AX и английский в браузерном fixture; IME composition unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E49",
+      "executor_claim": "observed: file tree с одним файлом в detail; empty/deep/unavailable UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E50",
+      "executor_claim": "inspected: Sonner слой не менялся; toast за panel/menu UI unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E51",
+      "executor_claim": "observed: Board при 1440×960 и 1024×720, Table/panel/expanded/Settings/search и 20-view/editors stress при 1024×720; raster размеры проверены.",
+      "has_unverified_part": false
+    },
+    {
+      "id": "E52",
+      "executor_claim": "unverified после внедрения: 800×720 ниже целевого desktop min; baseline screenshot в исходной матрице.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E53",
+      "executor_claim": "unverified: zoom 125/200% и OS scaling в этой попытке не запускались.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E54",
+      "executor_claim": "observed: native Electron AX показал русские toolbar/tabs и Table; native CUA screenshot получен во втором запуске, сохранена только миниатюра 118×167. Размер окна и titlebar/traffic-light hit testing unverified. Первый ScreenCaptureKit вызов возвращал `-3811`, повторный успешен.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E55",
+      "executor_claim": "measured (WCAG sRGB): foreground/background 15.28:1, muted/background 5.75:1, primary/background 6.07:1, destructive/background 6.26:1, input/background 3.05:1; focus ring `#6544D5` и текстовые Status labels. High Contrast OS unverified.",
+      "has_unverified_part": true
+    },
+    {
+      "id": "E56",
+      "executor_claim": "observed: no-search текст переносится в ограниченной ширине; long error/offline recovery UI unverified без fault injection.",
+      "has_unverified_part": true
+    }
+  ],
+  "all_56_exactly_once": true,
+  "partial_rows": 43
+}

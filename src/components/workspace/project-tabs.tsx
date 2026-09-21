@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ContextMenu } from "radix-ui";
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type Modifier } from "@dnd-kit/core";
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -41,10 +41,10 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
           aria-label={project.name}
           {...listeners}
           style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 30 : undefined }}
-          className="@container h-7 min-w-10 max-w-44 flex-1 basis-44 cursor-grab touch-none rounded-lg px-2.5 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60"
+          className="h-8 w-40 max-w-44 min-w-30 flex-none cursor-grab touch-none rounded-md px-2.5 text-[13px] font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
           <FileIcon className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 truncate @max-[3rem]:hidden">{project.name}</span>
+          <span className="min-w-0 truncate">{project.name}</span>
         </TabsTrigger>
         </span>
       </ContextMenu.Trigger>
@@ -83,6 +83,18 @@ export function WorkspaceProjectTabs({ projects, activeProjectId, onSelect, onDu
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const dragging = useRef(false);
   const tabListRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = tabListRef.current;
+    const scroller = list?.parentElement;
+    if (!scroller) return;
+    const revealActiveTab = () => {
+      list?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    };
+    revealActiveTab();
+    const resizeObserver = new ResizeObserver(revealActiveTab);
+    resizeObserver.observe(scroller);
+    return () => resizeObserver.disconnect();
+  }, [activeProjectId, projects.length]);
   const restrictToTabList: Modifier = ({ transform, draggingNodeRect }) => {
     const list = tabListRef.current;
     if (!list || !draggingNodeRect) return transform;
@@ -109,8 +121,8 @@ export function WorkspaceProjectTabs({ projects, activeProjectId, onSelect, onDu
         }
       }}
     >
-      <Tabs value={activeProjectId} onValueChange={(id) => { if (!dragging.current) onSelect(id); }} className="min-w-0 flex-1 overflow-hidden">
-        <TabsList ref={tabListRef} aria-label={t("detail.projectTabs")} style={{ width: projects.length * 176 + 4 }} className="max-w-full justify-start overflow-x-auto rounded-xl bg-muted/80 p-0.5 ring-1 ring-border/40 group-data-horizontal/tabs:!h-9">
+      <Tabs value={activeProjectId} onValueChange={(id) => { if (!dragging.current) onSelect(id); }} className="workspace-tab-scroll min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
+        <TabsList ref={tabListRef} aria-label={t("detail.projectTabs")} className="!h-9 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none">
           <SortableContext items={projects.map(project => project.tabId)} strategy={horizontalListSortingStrategy}>
             {projects.map(project => <ProjectTab key={project.tabId} project={project} onDuplicate={onDuplicate} onRestore={onRestore} onClose={onClose} />)}
           </SortableContext>

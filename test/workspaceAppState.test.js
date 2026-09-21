@@ -780,14 +780,18 @@ test("workspace app state switches the active view", async () => {
     projectionResponse,
     folderRoleTree,
   });
+  const searchedState = workspaceAppStateReducer(loadedState, {
+    type: "searchQueryChanged",
+    searchQuery: "Проект 🧪",
+  });
 
-  const state = workspaceAppStateReducer(loadedState, {
+  const state = workspaceAppStateReducer(searchedState, {
     type: "activeViewChanged",
     activeViewId: "view:table",
   });
 
   assert.equal(state.activeViewId, "view:table");
-  assert.equal(state.searchQuery, "");
+  assert.equal(state.searchQuery, "Проект 🧪");
   assert.equal(state.projection.workspaceId, "workspace:ops");
   assert.equal(state.projection.view.id, "view:table");
   assert.equal(state.projection.projection.type, "table");

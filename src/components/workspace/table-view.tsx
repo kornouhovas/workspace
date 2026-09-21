@@ -1118,7 +1118,7 @@ export function WorkspaceTableView({
             className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
             onPointerDownCapture={dismissHeaderTransientState}
           >
-            <TableRow className="h-11 hover:bg-transparent">
+            <TableRow className="h-9 hover:bg-transparent">
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
                 const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);

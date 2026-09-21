@@ -138,7 +138,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(boardViewSource, /Status columns are fixed for the MVP/);
   assert.doesNotMatch(tableViewSource, /Rows use the same project set as the Board projection/);
   assert.match(appSource, /WorkspaceViewTabs/);
-  assert.doesNotMatch(appSource, /electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4/);
+  assert.match(appSource, /electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4/);
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /loadRequestIdRef/);
@@ -408,12 +408,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /t\("view\.delete"\)/);
   assert.match(viewTabsSource, /editingViewId/);
   assert.match(viewTabsSource, /aria-label=\{t\("view\.renameInput"\)\}/);
-  assert.match(viewTabsSource, /rounded-xl bg-muted\/80/);
-  assert.match(viewTabsSource, /group-data-horizontal\/tabs:!h-9/);
-  assert.match(viewTabsSource, /text-sm font-normal/);
+  assert.match(viewTabsSource, /workspace-tab-scroll/);
+  assert.match(viewTabsSource, /!h-9 w-max max-w-none flex-nowrap/);
+  assert.match(viewTabsSource, /text-\[13px\] font-normal/);
   assert.doesNotMatch(viewTabsSource, /justify-between gap-3 border-b border-border px-4 py-2\.5/);
-  assert.match(viewTabsSource, /data-active:border-border/);
-  assert.match(viewTabsSource, /data-active:bg-background/);
+  assert.match(viewTabsSource, /data-active:border-transparent/);
+  assert.match(viewTabsSource, /data-active:bg-accent/);
   assert.match(viewTabsSource, /renderViewIcon/);
   assert.match(viewTabsSource, /KanbanIcon/);
   assert.match(viewTabsSource, /TableIcon/);
@@ -706,7 +706,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /t\("detail\.resizePanel"\)/);
   assert.match(projectDetailPanelSource, /onPointerDown/);
   assert.match(projectDetailPanelSource, /function closeProjectDetails/);
-  assert.match(projectDetailPanelSource, /onClick=\{onToggleExpanded\}/);
+  assert.match(appSource, /onClick=\{toggleProjectExpanded\}/);
   assert.match(projectDetailPanelSource, /onClick=\{closeProjectDetails\}/);
   assert.match(projectDetailPanelSource, /t\("detail\.close"\)/);
   assert.match(projectDetailPanelSource, /stopPropagation/);
@@ -718,7 +718,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /translate-x-full/);
   assert.doesNotMatch(projectDetailPanelSource, /SheetContent/);
   assert.doesNotMatch(projectDetailPanelSource, /project-identity-heading/);
-  assert.match(projectDetailPanelSource, /<header className="px-5 pb-2 pr-12 pt-4">/);
+  assert.match(projectDetailPanelSource, /<header className="px-5 pb-2 pt-4">/);
   assert.match(projectDetailPanelSource, /<div className="min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1">/);
   assert.doesNotMatch(projectDetailPanelSource, /displayedProject\.currentRelativePath/);
   assert.doesNotMatch(projectDetailPanelSource, /<Badge variant="outline">\{displayedProject\.status\.name\}<\/Badge>/);
@@ -1007,7 +1007,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(cssSource, /\.workspace-project-detail-value-trigger \.workspace-table-select-value-chip:hover/);
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
-  assert.match(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
+  assert.doesNotMatch(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
+  assert.match(cssSource, /--background: #fafbfd/);
   assert.match(lucideIconsSource, /FolderKanbanIcon/);
   assert.match(lucideIconsSource, /FolderIcon/);
   assert.match(lucideIconsSource, /FileIcon/);

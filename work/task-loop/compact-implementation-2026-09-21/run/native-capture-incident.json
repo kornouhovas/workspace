@@ -1,0 +1,14 @@
+{
+  "id": "compact-native-capture-unavailable",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run",
+  "scenario": "compact-implementation-first-review",
+  "phase": "implementing",
+  "symptom": "Native Electron window opened with isolated fixture but ScreenCaptureKit failed for screenshot and later AX refresh",
+  "basis": "observed",
+  "source": "CUA getApp/getScreenshot/getAXState against project Electron.app",
+  "observed_at": "2026-09-21T18:48:37.696014+00:00",
+  "summary": "Initial AX exposed Compact header and side-panel controls in native Electron; visual/titlebar verification could not proceed because ScreenCaptureKit stream failed. Browser captures remain separate diagnostic evidence.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run/native-capture-error.txt"
+  ]
+}

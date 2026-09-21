@@ -9,6 +9,7 @@ import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
+import { Button } from "@/components/ui/button";
 import { projectTabsReducer } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
 import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
@@ -20,7 +21,7 @@ import {
   createRendererErrorState,
   resolveRendererErrorState,
 } from "@/i18n/errors.js";
-import { PanelLeftIcon } from "@/lib/lucide-icons";
+import { PanelLeftIcon, PanelsTopLeftIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
@@ -1906,15 +1907,20 @@ export default function App() {
       state.status === "idle" ||
       (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection)
     );
+  const searchHasNoResults = state.searchQuery.trim().length > 0 && (
+    activeViewType === "board"
+      ? boardProjection.type === "board" && boardProjection.columns.every((column) => column.projects.length === 0)
+      : tableProjection.type === "table" && tableProjection.rows.length === 0
+  );
 
   return (
     <>
-      <div className="dark relative flex h-screen min-h-0 bg-background text-foreground">
+      <div className="relative flex h-screen min-h-0 bg-background text-foreground">
         <button
           type="button"
           className={[
-            "electron-window-no-drag absolute top-4 z-40 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground",
-            sidebarCollapsed ? "left-24" : "left-[15.25rem]",
+            "electron-window-no-drag workspace-top-action absolute top-2 z-40 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground",
+            sidebarCollapsed ? "left-24" : "left-[15.5rem]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
@@ -1927,7 +1933,7 @@ export default function App() {
           inert={sidebarCollapsed || undefined}
           className={[
             "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
-            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-72 opacity-100",
+            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[15.5rem] opacity-100",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
@@ -1950,8 +1956,8 @@ export default function App() {
         <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header
             className={[
-              "electron-window-drag flex h-14 shrink-0 items-center gap-2 pt-2 pr-4",
-              sidebarCollapsed ? "ml-36" : "pl-4",
+              "electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4",
+              sidebarCollapsed ? "ml-36" : "pl-12",
             ].join(" ")}
           >
             {activeSurface !== "settings" ? (
@@ -1962,6 +1968,16 @@ export default function App() {
               >
                 <WorkspaceViewTabs
                   projectActive={projectExpanded}
+                  projectActions={selectedProject ? (
+                    <>
+                      <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t(projectExpanded ? "detail.restore" : "detail.expand")} title={t(projectExpanded ? "detail.restore" : "detail.expand")} onClick={toggleProjectExpanded}>
+                        {projectExpanded ? <PanelsTopLeftIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t("detail.close")} title={t("detail.close")} onClick={closeSelectedProject}>
+                        <XIcon className="size-4" aria-hidden="true" />
+                      </Button>
+                    </>
+                  ) : null}
                   onShowView={() => setSelectedProject(null)}
                   actionsHidden={selectedProject !== null}
                   projectTabs={
@@ -2023,7 +2039,10 @@ export default function App() {
               </div>
             ) : null}
             {activeSurface === "settings" ? (
-              <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
+              <div className="electron-window-no-drag flex min-w-0 flex-1 items-center justify-between gap-3">
+                <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
+                <Button type="button" variant="ghost" size="sm" className="workspace-top-action" onClick={openWorkspaceSurface}>{t("settings.back")}</Button>
+              </div>
             ) : null}
           </header>
           {activeSurface === "settings" ? (
@@ -2039,7 +2058,6 @@ export default function App() {
                     statusValues={statusValues}
                     selectValues={settingsSelectValues}
                     onSelectFolder={handleSelectFolder}
-                    onCloseSettings={openWorkspaceSurface}
                     onFolderRoleChange={handleFolderRoleChange}
                     onColorStatusValue={handleColorStatusValue}
                     selectingFolder={selectingFolder}
@@ -2063,7 +2081,11 @@ export default function App() {
                 ) : (
                   <>
                     <WorkspaceServiceError state={state} />
-                    {activeViewType === "board" ? (
+                    {searchHasNoResults ? (
+                      <div className="flex h-full min-h-0 items-center justify-center px-6 text-center" role="status">
+                        <p className="max-w-md break-words text-sm text-muted-foreground">{t("state.noSearchResults")}</p>
+                      </div>
+                    ) : activeViewType === "board" ? (
                       <WorkspaceBoardView
                         projection={boardProjection as typeof workspaceMockProjection.projection}
                         columnWidth={activeView?.boardLayout?.columnWidth}
@@ -2078,7 +2100,7 @@ export default function App() {
                         onDeleteSelectValue={handleDeleteSelectValue}
                       />
                     ) : null}
-                    {activeViewType === "table" ? (
+                    {!searchHasNoResults && activeViewType === "table" ? (
                       <WorkspaceTableView
                         projection={tableProjection as typeof workspaceMockProjection.tableProjection}
                         view={activeView ?? null}
@@ -2111,7 +2133,6 @@ export default function App() {
         <WorkspaceProjectDetailPanel
           expanded={projectExpanded}
           sidebarCollapsed={sidebarCollapsed}
-          onToggleExpanded={toggleProjectExpanded}
           open={selectedProject !== null}
           onOpenChange={(open) => {
             if (!open) {

@@ -1,0 +1,17 @@
+{
+  "check": "renderer-quality",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent verifier npm test, npm run typecheck, npm run build:renderer, git diff --check on frozen attempt 1",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T19:08:49.706662+00:00",
+  "summary": "npm test exit 1: 199/200 pass; dashboardStructure.test.js asserts old header/dark structure. Typecheck, renderer build, diff check exit 0.",
+  "verdict": "fail",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/check-0.txt",
+    "verifier-attempt-1/check-1.txt",
+    "verifier-attempt-1/build-renderer.txt",
+    "verifier-attempt-1/check-2.txt"
+  ]
+}

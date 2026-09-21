@@ -1,5 +1,7 @@
 # Compact: матрица краевых случаев и доказательств
 
+[Результаты E01–E56 после реализации Compact №3](compact-implementation-review.md).
+
 Приложение к [handoff](compact-redesign-handoff.md). Аудит 2026-09-21, baseline `2f7cb00`. Метки: **observed** — реально пройден UI; **tested** — выполнены названные automated tests, не визуальная проверка; **code-inspected** — просмотр реализации; **proposed** — целевое правило; **unverified** — нужный сценарий не пройден. В одной строке допустимы разные метки для разных слоёв. Ни один слой не заменяет другой.
 
 [Source/action inventory](../../work/task-loop/compact-design-handoff-2026-09-21/run/source-inventory.md) содержит 26 поверхностей с точными source:line и tests. [Лог 100 passing tests](../../work/task-loop/compact-design-handoff-2026-09-21/run/targeted-tests.txt). [UI observations](../../work/task-loop/compact-design-handoff-2026-09-21/run/ui-observations.json). Runtime — неизменённый renderer + IPC backend на `/tmp/workspace-design-review`, Chrome :8770, только разрешённые read/select методы; UI session менялся в отдельной browser tab. Native Electron, chooser и реальные рабочие данные не использовались.

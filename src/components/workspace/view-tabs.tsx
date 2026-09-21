@@ -51,6 +51,7 @@ type WorkspaceView = WorkspaceViewState;
 
 type WorkspaceViewTabsProps = {
   readonly actionsHidden?: boolean;
+  readonly projectActions?: ReactNode;
   readonly projectTabs?: ReactNode;
   readonly projectActive?: boolean;
   readonly onShowView?: () => void;
@@ -125,6 +126,7 @@ function isViewContextMenuTarget(target: EventTarget | null) {
 
 export function WorkspaceViewTabs({
   actionsHidden = false,
+  projectActions,
   projectTabs,
   projectActive = false,
   onShowView,
@@ -158,6 +160,7 @@ export function WorkspaceViewTabs({
   const [editingViewName, setEditingViewName] = useState("");
   const [openCreateViewMenu, setOpenCreateViewMenu] = useState(false);
   const editingViewInputRef = useRef<HTMLInputElement | null>(null);
+  const viewTabListRef = useRef<HTMLDivElement | null>(null);
   const cancelViewRenameRef = useRef(false);
   const suppressViewClickRef = useRef<string | null>(null);
   const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
@@ -168,6 +171,19 @@ export function WorkspaceViewTabs({
       editingViewInputRef.current?.select();
     }
   }, [editingViewId]);
+
+  useEffect(() => {
+    const list = viewTabListRef.current;
+    const scroller = list?.parentElement;
+    if (!scroller || projectActive) return;
+    const revealActiveTab = () => {
+      list?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    };
+    revealActiveTab();
+    const resizeObserver = new ResizeObserver(revealActiveTab);
+    resizeObserver.observe(scroller);
+    return () => resizeObserver.disconnect();
+  }, [activeViewId, projectActive, views]);
 
   useEffect(() => {
     setContextMenuViewId(null);
@@ -470,11 +486,12 @@ export function WorkspaceViewTabs({
 
   return (
     <div className="relative flex min-w-0 items-center justify-between gap-2">
-      <div className="relative z-40 flex min-w-0 flex-1 items-center gap-3">
-      <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="min-w-0 max-w-[50%] shrink-0 overflow-hidden">
+      <div className="relative z-40 flex min-w-0 flex-1 items-center gap-0">
+      <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="workspace-tab-scroll min-w-0 max-w-[50%] shrink-0 overflow-x-auto overflow-y-hidden">
         <TabsList
+          ref={viewTabListRef}
           aria-label={t("view.actions")}
-          className="max-w-full justify-start overflow-x-auto rounded-xl bg-muted/80 p-0.5 ring-1 ring-border/40 group-data-horizontal/tabs:!h-9"
+          className="!h-9 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none"
         >
           {views.map((view) => {
             if (editingViewId === view.id) {
@@ -510,8 +527,10 @@ export function WorkspaceViewTabs({
                 key={view.id}
                 value={view.id}
                 data-view-tab-id={view.id}
+                title={view.name}
+                aria-label={view.name}
                 className={[
-                  "h-7 flex-none cursor-grab rounded-lg px-2.5 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-border data-active:bg-background data-active:text-foreground dark:data-active:border-border dark:data-active:bg-background/60",
+                  "h-8 max-w-44 min-w-30 flex-none cursor-grab rounded-md px-2.5 text-[13px] font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                 ].join(" ")}
                 style={getViewTabDragStyle(view.id)}
                 onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}
@@ -519,7 +538,10 @@ export function WorkspaceViewTabs({
                 onContextMenu={(event) => {
                   event.preventDefault();
                   setContextMenuViewId(view.id);
-                  setContextMenuPosition({ x: event.clientX, y: event.clientY });
+                  setContextMenuPosition({
+                    x: Math.max(8, Math.min(event.clientX, window.innerWidth - 232)),
+                    y: Math.max(8, Math.min(event.clientY, window.innerHeight - 144)),
+                  });
                 }}
               >
                 {renderViewIcon(view)}
@@ -529,9 +551,11 @@ export function WorkspaceViewTabs({
           })}
         </TabsList>
       </Tabs>
+      <div aria-hidden="true" className="mx-2 h-5 w-px shrink-0 bg-border" />
       {projectTabs}
       </div>
-      <div aria-hidden={actionsHidden || undefined} inert={actionsHidden || undefined} className={`flex shrink-0 items-center gap-0.5 ${actionsHidden ? "invisible" : ""}`}>
+      <div className="flex shrink-0 items-center gap-0.5">
+        {actionsHidden ? projectActions : <>
         <WorkspaceViewFilterMenu
           view={activeView}
           dismissSignal={dismissSignal}
@@ -553,6 +577,7 @@ export function WorkspaceViewTabs({
               type="button"
               variant="ghost"
               size="icon"
+              className="workspace-top-action"
               aria-label={t("view.addAria")}
               title={t("view.add")}
             >
@@ -577,6 +602,7 @@ export function WorkspaceViewTabs({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        </>}
       </div>
       {contextMenuView ? (
         <div

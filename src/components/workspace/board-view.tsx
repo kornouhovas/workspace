@@ -169,7 +169,7 @@ export function WorkspaceBoardView({
                     >
                       <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
                       <h4 className="relative min-w-0 text-sm font-normal leading-5">
-                        <button type="button" className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                        <button type="button" title={project.name} className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
                           <span className="truncate">{project.name}</span>
                         </button>
                       </h4>

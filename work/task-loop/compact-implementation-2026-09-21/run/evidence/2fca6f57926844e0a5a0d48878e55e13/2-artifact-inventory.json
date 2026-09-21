@@ -1,0 +1,270 @@
+{
+  "timestamp": "2026-09-21T19:25:18.352056+00:00",
+  "report_rows": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14",
+    "E15",
+    "E16",
+    "E17",
+    "E18",
+    "E19",
+    "E20",
+    "E21",
+    "E22",
+    "E23",
+    "E24",
+    "E25",
+    "E26",
+    "E27",
+    "E28",
+    "E29",
+    "E30",
+    "E31",
+    "E32",
+    "E33",
+    "E34",
+    "E35",
+    "E36",
+    "E37",
+    "E38",
+    "E39",
+    "E40",
+    "E41",
+    "E42",
+    "E43",
+    "E44",
+    "E45",
+    "E46",
+    "E47",
+    "E48",
+    "E49",
+    "E50",
+    "E51",
+    "E52",
+    "E53",
+    "E54",
+    "E55",
+    "E56"
+  ],
+  "unique_56": true,
+  "images": {
+    "board-1024x720.png": {
+      "sha256": "d587086e9692dc183203a7a0a91aa2993349801f0af3fa4b0d81906d1943216a",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "board-1440x960.png": {
+      "sha256": "c641a10b5cd35ee37a9143e6b603e123da258f4a67cff956e2d4d03001a66947",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "PNG"
+    },
+    "board-final-1024x720.png": {
+      "sha256": "50e5c18ec3797bac1bec236803ec516da0c51dc94662fceeb716f00c8aa5057b",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "board-final-1440x960.png": {
+      "sha256": "cc5579d32e50eeaac720d295b12b0ffee2c8aef6de10256d70bc1b9157d5a01b",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "PNG"
+    },
+    "empty-search-final-1024x720.png": {
+      "sha256": "0c3629976aabcf1597b58992037ea21256da0974e1f7e29aed4caaca723e632b",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "empty-search-table-1024x720.png": {
+      "sha256": "df44ff52c10a2831e6b496abb43ed43b23688566878c58baf79e92a2bf90c687",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "expanded-1024x720.png": {
+      "sha256": "3b44b08598040bd637f93445c60337c61933f70c86a476f8d33dbe8d94b06ce2",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "native-electron-thumbnail.png": {
+      "sha256": "3e1ff9a46eafa4092c37ad73eadf3652c02f641ef899fa6ab5ea74d474fa49ab",
+      "size": [
+        118,
+        167
+      ],
+      "magic": "PNG"
+    },
+    "overflow-after-1024x720.png": {
+      "sha256": "ccb2cd2ce36747ecb5c8e8480c5e822db19282ea09a338312b723ab5caf57623",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "overflow-before-1024x720.png": {
+      "sha256": "10944ce316db3bbf8e250c417470fad39d629be78ec1b899122d33147272a09c",
+      "size": [
+        1024,
+        496
+      ],
+      "magic": "PNG"
+    },
+    "panel-1024x720.png": {
+      "sha256": "4782828fb0bb1f75e03b482c799b8cfe278a9701409e1dca8e87b5898e557f4d",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "search-carried-1024x720.png": {
+      "sha256": "edf258dcef353a2bf0459948f65fe9d8d3d6161f0d0c63206b813ed01102aea9",
+      "size": [
+        1512,
+        732
+      ],
+      "magic": "PNG"
+    },
+    "settings-1024x720.png": {
+      "sha256": "8387cf996b972776cfa1be52b0237cf85dbde59c4049342239ec7eea9a4c5e80",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "settings-1440x960.png": {
+      "sha256": "80a069c0f51df7d2b990247615e6b6d6fa58316d9ab8e7ad3d0104106b38990f",
+      "size": [
+        1440,
+        960
+      ],
+      "magic": "PNG"
+    },
+    "settings-final-1024x720.png": {
+      "sha256": "6983fbeef1f8f76c7951c9fcb21fd0c4cde94b23bf36c19dada9f08f59000660",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "table-1024x720.png": {
+      "sha256": "1ac30c5ca8bd69a0917cc176611f4197f31cbdd84c1ae43afe09be30d42b3544",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "table-final-1024x720.png": {
+      "sha256": "557c0f021fe15a1bcea9d24c0a0ffe42c72f1d4a4ac46dbcc80cbb3e09c2e40a",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "PNG"
+    },
+    "editors-1024x720.jpg": {
+      "sha256": "ffe4a8ed9f4f3d403e82d8db0e85c228389e5f2d042b31402e17e0317f46e97c",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "editors-scrolled-1024x720.jpg": {
+      "sha256": "64979aa64460ac4984598a47385fabc106159a9e4e0de6dab363abaab196a90a",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "long-view-after-1024x720.jpg": {
+      "sha256": "c42bc483e5601537e8df21a03a659613daaa60dd4d1ebb9cda24414f1c48c5a3",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    },
+    "long-view-tab-1024x720.jpg": {
+      "sha256": "020f61e673ca7084f81cf40f152ede62ac60530327e464fe080eed82a50ba0f4",
+      "size": [
+        1024,
+        496
+      ],
+      "magic": "JPEG"
+    },
+    "native-electron.jpg": {
+      "sha256": "1b83544b9bc7dac11b0690564321ec416104f25bc85e8e6b3b3ea26c1103b3c6",
+      "size": [
+        118,
+        167
+      ],
+      "magic": "JPEG"
+    },
+    "views-20-1024x720.jpg": {
+      "sha256": "428172eff3bd5717605e424908551c40eba5c3a2ceb680aabc54bbd8f0a230e0",
+      "size": [
+        1024,
+        720
+      ],
+      "magic": "JPEG"
+    }
+  },
+  "changed_paths": [
+    "docs/design/compact-edge-matrix.md",
+    "docs/design/compact-redesign-handoff.md",
+    "docs/ui-guidelines.md",
+    "src/App.tsx",
+    "src/components/workspace/board-view.tsx",
+    "src/components/workspace/left-panel.tsx",
+    "src/components/workspace/menu-styles.ts",
+    "src/components/workspace/project-detail-panel.tsx",
+    "src/components/workspace/project-tabs.tsx",
+    "src/components/workspace/settings-view.tsx",
+    "src/components/workspace/table-view.tsx",
+    "src/components/workspace/view-filter-menu.tsx",
+    "src/components/workspace/view-tabs.tsx",
+    "src/i18n/locales/en.js",
+    "src/i18n/locales/ru.js",
+    "src/main.tsx",
+    "src/styles.css",
+    "src/workspaceAppState.ts",
+    "test/dashboardStructure.test.js",
+    "test/workspaceAppState.test.js"
+  ]
+}

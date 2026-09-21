@@ -1,0 +1,15 @@
+{
+  "id": "compact-long-view-tab-hidden-after-rename",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run",
+  "scenario": "compact-implementation-first-review",
+  "phase": "implementing",
+  "symptom": "Selected view tab clipped after renaming to long Unicode title at 1024x720.",
+  "basis": "observed",
+  "source": "CUA browser fixture, selected view rename via context menu and DOM bounding boxes",
+  "observed_at": "2026-09-21T19:13:11.122309+00:00",
+  "summary": "Tab spans x495–671 while view tab scroller ends x615; ResizeObserver tracked scroller size and effect only tracked active ID/count, so rename width change did not reveal active tab.",
+  "artifacts": [
+    "long-view-before-geometry.json",
+    "long-view-tab-1024x720.jpg"
+  ]
+}

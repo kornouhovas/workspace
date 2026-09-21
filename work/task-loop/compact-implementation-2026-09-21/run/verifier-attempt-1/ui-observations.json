@@ -1,0 +1,24 @@
+{
+  "observer": "/root/compact_verifier",
+  "observed_on": "2026-09-21T19:05-19:09Z",
+  "fixture": "http://127.0.0.1:8870/ served by run/diagnostic-harness.mjs; isolated temporary root from run/fixture-path.txt",
+  "method": "Codex in-app browser CUA AX, screenshot and read-only DOM geometry; native Electron CUA AX and screenshot",
+  "browser_1024x720": {
+    "header_rect": [248, 0, 1024, 48],
+    "main_rect_x": [248, 1024],
+    "board_tab_rect": [296, 7.5, 416, 39.5],
+    "table_tab_rect": [420, 7.5, 540, 39.5],
+    "customize_rect": [942, 7.5, 974, 39.5],
+    "add_view_rect": [976, 7.5, 1008, 39.5],
+    "customize_name": "Customize Columns",
+    "add_view_name": "Add Board or Table view",
+    "add_view_help": "Add View",
+    "customize_default_background": "rgba(0, 0, 0, 0)",
+    "add_view_default_background": "rgba(0, 0, 0, 0)",
+    "keyboard": "Tab from selected Board focused Customize; computed outline rgb(101, 68, 213) solid 2px, offset 2px; Return opened menu and Escape closed it with focus returned to Customize",
+    "search": "Unicode query несуществующий проект ♞ displayed role=status: No projects found. Try a different project name.; query persisted after Board to Table click"
+  },
+  "browser_1440x960": "Viewport override set; accessibility tree continued to expose Board/Table and both actions. Existing frozen board-final-1440x960.jpg content reviewed; browser screenshot not saved separately.",
+  "native": "Electron launched from temporary fixture working directory with app's bundled executable; CUA AX exposed Russian toolbar actions, Table and project rows. CUA getScreenshot succeeded, showing one toolbar and Table. Screenshot remained in CUA tool response, not saved as local file. Target viewport dimensions and traffic light hit testing were not measured.",
+  "limits": "CUA observations are trace outputs in this task conversation. No mutation API was used; fixture diagnostic handler exposes read/select methods. Hover, long-name stress, property editor mutations and complete keyboard traversal were not replayed."
+}

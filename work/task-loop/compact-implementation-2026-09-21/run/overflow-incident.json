@@ -1,0 +1,15 @@
+{
+  "id": "compact-active-tab-hidden-after-resize",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run",
+  "scenario": "compact-implementation-first-review",
+  "phase": "implementing",
+  "symptom": "After shrinking from 1440 to 1024 with 12 project tabs, selected tab remained outside viewport while actions stayed pinned",
+  "basis": "observed",
+  "source": "Chrome diagnostic fixture DOM geometry and screenshot at 1024x720",
+  "observed_at": "2026-09-21T18:50:30.341776+00:00",
+  "summary": "Initial scrollIntoView effect only depended on selection/count; resize did not trigger it. ResizeObserver on tab scroller is the next experiment.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run/overflow-before-geometry.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run/overflow-before-1024x720.png"
+  ]
+}

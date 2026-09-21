@@ -1,0 +1,26 @@
+{
+  "viewport": [
+    1024,
+    720
+  ],
+  "tab_count": 12,
+  "scroller": {
+    "left": 557,
+    "width": 377,
+    "scroll_left": 1171,
+    "scroll_width": 1964
+  },
+  "selected_tab": {
+    "left": 1190,
+    "right": 1350
+  },
+  "restore": {
+    "left": 942,
+    "right": 974
+  },
+  "close": {
+    "left": 976,
+    "right": 1008
+  },
+  "observation": "Selected tab outside viewport after resizing from 1440 to 1024 without selection change; actions remain visible."
+}

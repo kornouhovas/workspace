@@ -1,0 +1,7 @@
+{
+  "viewport": [1024, 720],
+  "scroller": [296, 615],
+  "selected_tab": [439, 615],
+  "scroll_left": 105,
+  "observation": "After a short-to-long Unicode rename with the updated effect, the selected tab ends at the scroll viewport edge."
+}

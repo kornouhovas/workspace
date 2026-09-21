@@ -1,0 +1,1 @@
+CUA native getScreenshot/getAXState: Computer Use server error -10005: Error Domain=com.apple.ScreenCaptureKit.SCStreamErrorDomain Code=-3811 "Failed to start stream due to audio/video capture failure". Native window AX was initially observed; later capture and AX failed. Electron launched from isolated fixture cwd and terminated with SIGINT.

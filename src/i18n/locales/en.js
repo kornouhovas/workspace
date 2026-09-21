@@ -25,6 +25,7 @@ export const en = {
   "sidebar.addWorkspace": "Add Workspace",
   "sidebar.search": "Search",
   "sidebar.searchPlaceholder": "Project name",
+  "state.noSearchResults": "No projects found. Try a different project name.",
   "sidebar.workspaces": "Workspaces",
   "sidebar.settings": "Settings",
   "sidebar.workspaceActions": "Workspace actions for {{name}}",

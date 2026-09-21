@@ -5,7 +5,6 @@ import App from "./App";
 import { I18nProvider } from "./i18n";
 import "./styles.css";
 
-document.documentElement.classList.add("dark");
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

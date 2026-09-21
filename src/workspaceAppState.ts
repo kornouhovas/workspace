@@ -626,7 +626,6 @@ export function workspaceAppStateReducer(
       projectionRefreshing: transitionProjection?.view.id === action.activeViewId &&
         transitionProjection !== state.projection,
       workspaceSwitchPending: false,
-      searchQuery: "",
       selectedProjectId: null,
       detailOpen: false,
     };

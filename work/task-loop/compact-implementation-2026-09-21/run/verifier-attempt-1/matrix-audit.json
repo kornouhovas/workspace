@@ -1,0 +1,341 @@
+{
+  "timestamp": "2026-09-21T19:07:24.329655+00:00",
+  "rows": [
+    {
+      "id": "E01",
+      "executor_claim": "inspected: отдельные no-source и no-workspace ветви сохранены; observed в новой UI unverified, fixture был с source.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E02",
+      "executor_claim": "inspected: loading/refresh ветви не менялись; screenshot loading unverified, состояние кратковременно.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E03",
+      "executor_claim": "tested: reducer для stale workspace response в профильном наборе; pending UI unverified без инъекции задержки.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E04",
+      "executor_claim": "inspected: service error остаётся над проекцией; UI-инъекция ошибки unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E05",
+      "executor_claim": "tested: stale-save/reducer профильные тесты; save failure UI unverified без безопасной fault injection.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E06",
+      "executor_claim": "inspected: missing-root обработка и Settings CTA сохранены; restart с отсутствующим root/native chooser unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E07",
+      "executor_claim": "inspected: file/project availability и безопасное открытие не менялись; удаление после scan UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E08",
+      "executor_claim": "tested: projectSession/projectTabs regressions, закрытый tab не восстанавливается по имени.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E09",
+      "executor_claim": "observed: шесть проектов, три Status на Board; zero/one/no-status UI unverified, исходная логика проекции сохранена.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E10",
+      "executor_claim": "tested: фильтрация статусов в workspaceViews; empty status UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E11",
+      "executor_claim": "observed: Unicode запрос без совпадений показывает локализованное сообщение в Board и Table (`empty-search-final-1024x720.png`).",
+      "independent_basis": "UI replay",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E12",
+      "executor_claim": "tested: новый reducer regression для переноса Unicode search query между видами; observed перенос Board→Table. Поиск остаётся по имени.",
+      "independent_basis": "UI replay",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E13",
+      "executor_claim": "inspected: tab full name через title/accessible name, paths wrap; long/unbroken fixture UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E14",
+      "executor_claim": "inspected: табы используют project ID, не название; duplicate-name fixture UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E15",
+      "executor_claim": "unverified: 200 проектов/10 групп/30 колонок не генерировались; performance не заявляется.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E16",
+      "executor_claim": "observed: Board при 1024 имеет горизонтальную прокрутку и стабильную ширину колонок; правила min/max покрыты существующим тестом boardLayout.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E17",
+      "executor_claim": "inspected: Board card/value click и detail editor сохранены; hidden/empty custom value UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E18",
+      "executor_claim": "observed: Table при 1024 сохраняет столбцы и горизонтальную прокрутку; drag/resize UI unverified, обработчики не менялись.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E19",
+      "executor_claim": "inspected: Text editor и wrap логика не менялись; длинный multiline UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E20",
+      "executor_claim": "tested: properties scenarios для 0, отрицательных, decimal и формулы; editor UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E21",
+      "executor_claim": "tested: invalid number/expression normalization; UI error unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E22",
+      "executor_claim": "tested: date/property/i18n набор; calendar UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E23",
+      "executor_claim": "inspected: Select picker/editor не менялся; длинные 50 options UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E24",
+      "executor_claim": "inspected: Multi-select editor и chips не менялись; 20 chips UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E25",
+      "executor_claim": "inspected: chip direct menu и dismissal обработчики сохранены; повторные pointer действия UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E26",
+      "executor_claim": "tested: property domain validations; delete confirmation UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E27",
+      "executor_claim": "inspected: системные Name/Status ограничения сохранены; Customize action observed и доступен из верхней строки.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E28",
+      "executor_claim": "inspected: hidden property group и reorder не менялись; UI unverified на fixture без custom properties.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E29",
+      "executor_claim": "tested: visibility/view projection regressions; фильтр не меняет сохранённые значения.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E30",
+      "executor_claim": "inspected: last-view delete disabled, duplicate view остаётся в context menu; UI mutation unverified в read/select harness.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E31",
+      "executor_claim": "inspected: view tabs имеют текст, `title`, accessible name, scroll и ResizeObserver; 20-view UI unverified, harness не менял views.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E32",
+      "executor_claim": "observed: panel и expanded при 1024, restore в боковую панель, close в верхней строке; скриншоты `panel-1024x720.png`, `expanded-1024x720.png`.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E33",
+      "executor_claim": "observed: два и более instance одного Workspace App в tabs; разные tab instances, данные проекта общие по контракту.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E34",
+      "executor_claim": "observed: 12 текстовых project tabs при 1440 и 1024; после resize активная вкладка в видимой области (`overflow-after-1024x720.png`, geometry JSON).",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E35",
+      "executor_claim": "observed: close последнего активного выбирает предыдущий tab; first/middle/inactive UI unverified, reducer tested.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E36",
+      "executor_claim": "observed: Restore удаляет один tab instance и открывает side panel при оставшихся дубликатах.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E37",
+      "executor_claim": "inspected: existing reorder handlers сохранены; pointer DnD UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E38",
+      "executor_claim": "inspected: activation threshold и drag constraint сохранены; edge/cancel UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E39",
+      "executor_claim": "tested: workspace session serialization/recovery; restart UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E40",
+      "executor_claim": "baseline observed: sidebar collapse/restore; inspected после изменения — скрытое содержимое inert, кнопка Show sidebar доступна; повторный UI проход unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E41",
+      "executor_claim": "observed: Settings, roles и path при 1024/1440; native chooser/cancel/deep tree unverified из-за capture/driver ограничения.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E42",
+      "executor_claim": "inspected: workspace rename/delete/reorder handlers сохранены; mutation UI unverified в read/select harness.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E43",
+      "executor_claim": "observed: Customize menu при 1024; context menu view теперь зажимает координаты к viewport. Nested/popover scroll UI unverified.",
+      "independent_basis": "UI replay",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E44",
+      "executor_claim": "observed: Escape из Customize вернул focus на trigger в исходном UI-аудите; новый layout не менял primitive; повторный UI проход unverified.",
+      "independent_basis": "UI replay",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E45",
+      "executor_claim": "inspected: shared inactive outside-dismissal не менялся; pointer pass-through UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E46",
+      "executor_claim": "inspected: tab/button accessible names и focus-visible styles сохранены; полный Tab/Shift+Tab/Enter/Space UI проход unverified.",
+      "independent_basis": "UI replay",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E47",
+      "executor_claim": "observed: icon-only Customize/Add View в верхней строке; CSS hover/active без фоновой подсветки, focus outline 2px; toolbar в меню/disabled state UI unverified.",
+      "independent_basis": "UI replay",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E48",
+      "executor_claim": "observed: русский текст в native AX и английский в браузерном fixture; IME composition unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E49",
+      "executor_claim": "observed: file tree с одним файлом в detail; empty/deep/unavailable UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E50",
+      "executor_claim": "inspected: Sonner слой не менялся; toast за panel/menu UI unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E51",
+      "executor_claim": "observed: Board при 1440×960 и 1024×720, Table/panel/expanded/Settings/search при 1024×720; raster размеры проверены.",
+      "independent_basis": "UI replay",
+      "verifier_status": "claim examined"
+    },
+    {
+      "id": "E52",
+      "executor_claim": "unverified после внедрения: 800×720 ниже целевого desktop min; baseline screenshot в исходной матрице.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E53",
+      "executor_claim": "unverified: zoom 125/200% и OS scaling в этой попытке не запускались.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E54",
+      "executor_claim": "native Electron запускался, AX показал toolbar и tabs; screenshot/native titlebar interaction unverified из-за ScreenCaptureKit `-3811`.",
+      "independent_basis": "UI replay",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E55",
+      "executor_claim": "measured (WCAG sRGB): foreground/background 15.28:1, muted/background 5.75:1, primary/background 6.07:1, destructive/background 6.26:1, input/background 3.05:1; focus ring `#6544D5` и текстовые Status labels. High Contrast OS unverified.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    },
+    {
+      "id": "E56",
+      "executor_claim": "observed: no-search текст переносится в ограниченной ширине; long error/offline recovery UI unverified без fault injection.",
+      "independent_basis": "artifact/source/test inspection only",
+      "verifier_status": "partial"
+    }
+  ]
+}

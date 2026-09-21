@@ -1,0 +1,26 @@
+{
+  "branch": "codex/compact-redesign",
+  "base": "bda852c40ba0fecff0a97259486eafb83794d1f0",
+  "files": {
+    "docs/design/compact-edge-matrix.md": "e315f00e235f8fc32689bb91e73cec02bfe2d264122abe2f279c20e984aca25e",
+    "docs/design/compact-implementation-review.md": "83d4d48fcbca0233239c05076e4f9b2e26540eaa78022506def5032c30c56575",
+    "docs/design/compact-redesign-handoff.md": "4e588b937f487e9ced4b2e7ab69e682da5e27a6e2e77ad8059dbcf51d365af7a",
+    "docs/ui-guidelines.md": "1aa266d3b0152d792197eec26a394a07c74b1a0698173c3e313e45fea63ca920",
+    "src/App.tsx": "b91e2e85e377d9f2851c2b1f561b828dcbad3dcbbda8e6ab868438b65889ca85",
+    "src/components/workspace/board-view.tsx": "fc85262397bab1e197b427add747a9803b8ab176f1f9f06c18869e3348f3cdc0",
+    "src/components/workspace/left-panel.tsx": "da52f465b7b8eeb548bba02ff2de91ef568d994752a93ebd1da9acb086dfe44c",
+    "src/components/workspace/menu-styles.ts": "6b5e2bbb95057b5853371ee53e48d835285be2dded9a9e270ae1e74b62ce7a99",
+    "src/components/workspace/project-detail-panel.tsx": "03bb80acd9971e49db4e22a7d19cedcfa78b5498ad2b688f1bf897fec59fd962",
+    "src/components/workspace/project-tabs.tsx": "dd95af1ca24b979c5886ccb8b79da736289332a30b329beb398776694fcd9dd7",
+    "src/components/workspace/settings-view.tsx": "cc3342ac8d6ca1aaf77b05ea8c5af8b1796c6afbbfc2268eff457f68a9c10fb1",
+    "src/components/workspace/table-view.tsx": "64d96722438424b140a205652e1d2c8191d0f0259973ab5fc8dfc2cf339bea5f",
+    "src/components/workspace/view-filter-menu.tsx": "d33aad8dd6081f5e8348911bc73899ce81360ec5df9ca5b30f25e381ef3de783",
+    "src/components/workspace/view-tabs.tsx": "0f0e698431ed446a4be41e21c1e18a37d5fe743aac383508052ecd78aaaf06fc",
+    "src/i18n/locales/en.js": "6d06175307c30c7cefa315866b29fb92ea4e74119437e6bb39a44dfc0b983121",
+    "src/i18n/locales/ru.js": "059ad625cfd67bcac9eb13ec66dcbf45c9202d047189aaa2aa67f8ed618bb208",
+    "src/main.tsx": "7f6f869e07fb0546adbaa1482fac4abb185769c083aea06b31a52ef3f81317a5",
+    "src/styles.css": "63b7a0f0716e3a658f73cfa99bb09a028fc8308e01c31b33d167cf769d1dabf4",
+    "src/workspaceAppState.ts": "09ec63be2399bbf7c0c31773d89a97bf694d4638d85048dab2b8b0e9fe4cd4ed",
+    "test/workspaceAppState.test.js": "41aa7bacae303045c5a4b0d9c8982d1ff8c848ee8a706042d03a9cd2a320fb5d"
+  }
+}

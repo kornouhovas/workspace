@@ -56,11 +56,8 @@ import {
   ListChecksIcon,
   PencilIcon,
   PlusIcon,
-  SquareIcon,
-  PanelsTopLeftIcon,
   Trash2Icon,
   TypeIcon,
-  XIcon,
 } from "@/lib/lucide-icons";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 import type {
@@ -75,7 +72,6 @@ import type {
 type WorkspaceProjectDetailPanelProps = {
   readonly expanded?: boolean;
   readonly sidebarCollapsed?: boolean;
-  readonly onToggleExpanded?: () => void;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly project: WorkspaceMockProject | null;
@@ -739,7 +735,6 @@ function ProjectPropertyValueEditor({
 export function WorkspaceProjectDetailPanel({
   expanded = false,
   sidebarCollapsed = false,
-  onToggleExpanded,
   open,
   onOpenChange,
   project,
@@ -1464,8 +1459,8 @@ export function WorkspaceProjectDetailPanel({
   return (
     <div
       className={[
-        "electron-window-no-drag pointer-events-none fixed top-0 bottom-0 right-0 z-30 flex justify-end",
-        expanded && !sidebarCollapsed ? "left-72" : "left-0",
+        "electron-window-no-drag pointer-events-none fixed top-12 bottom-0 right-0 z-30 flex justify-end",
+        expanded && !sidebarCollapsed ? "left-[15.5rem]" : "left-0",
       ].join(" ")}
       aria-hidden={!panelVisible}
     >
@@ -1487,7 +1482,7 @@ export function WorkspaceProjectDetailPanel({
           }
         }}
         className={[
-          "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding pt-14 text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           expanded ? "w-full max-w-none" : "max-w-[calc(100vw-6rem)]",
           panelVisible ? "pointer-events-auto" : "pointer-events-none",
           panelVisible ? "translate-x-0" : "translate-x-full",
@@ -1502,30 +1497,9 @@ export function WorkspaceProjectDetailPanel({
         >
           <span className="sr-only">{t("detail.resizePanel")}</span>
         </button> : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="electron-window-no-drag absolute right-11 top-4 z-10"
-          aria-label={t(expanded ? "detail.restore" : "detail.expand")}
-          title={t(expanded ? "detail.restore" : "detail.expand")}
-          onClick={onToggleExpanded}
-        >
-          {expanded ? <PanelsTopLeftIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="electron-window-no-drag absolute right-3 top-4 z-10"
-          aria-label={t("detail.close")}
-          onClick={closeProjectDetails}
-        >
-          <XIcon className="size-4" aria-hidden="true" />
-        </Button>
         <>
-          <header className="px-5 pb-2 pr-12 pt-4">
-            <h2 id="project-detail-title" className="text-xl font-semibold leading-7 tracking-normal text-foreground">
+          <header className="px-5 pb-2 pt-4">
+            <h2 id="project-detail-title" className="break-words text-xl font-normal leading-7 tracking-normal text-foreground">
               {displayedProject.name}
             </h2>
           </header>

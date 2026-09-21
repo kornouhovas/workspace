@@ -351,12 +351,12 @@ export function WorkspaceLeftPanel({
   }
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-sidebar">
+    <aside className="flex h-full w-[15.5rem] shrink-0 flex-col border-r border-border bg-sidebar">
       <div className={`mr-12 min-h-12 pt-7 ${collapsed ? "" : "electron-window-drag"}`} />
-      <div className="electron-window-no-drag flex flex-1 flex-col gap-2 px-3 py-2">
+      <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-3 px-3 py-2">
         <button
           type="button"
-          className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-md border border-border bg-card px-2.5 text-[13px] font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           title={t("sidebar.addWorkspace")}
           onClick={onAddWorkspace}
         >
@@ -364,11 +364,11 @@ export function WorkspaceLeftPanel({
           {t("sidebar.addWorkspace")}
         </button>
         <label className="grid gap-1 text-xs text-muted-foreground">
-          {t("sidebar.search")}
+          <span className="sr-only">{t("sidebar.search")}</span>
           <span className="relative block">
             <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
-              className="h-8 w-full rounded-lg border border-input bg-background pl-8 pr-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="h-9 w-full rounded-md border border-input bg-card pl-8 pr-2 text-[13px] text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
               placeholder={t("sidebar.searchPlaceholder")}
@@ -377,7 +377,7 @@ export function WorkspaceLeftPanel({
           </span>
         </label>
         <div className="h-px bg-border" />
-        <div className="grid gap-1">
+        <div className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
           <p className="px-2 text-xs font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
@@ -426,7 +426,7 @@ export function WorkspaceLeftPanel({
                       type="button"
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "inline-flex h-8 min-w-0 flex-1 cursor-grab items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent active:cursor-grabbing",
+                        "inline-flex h-8 min-w-0 flex-1 cursor-grab items-center justify-start gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground hover:bg-sidebar-accent active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                         active && "bg-sidebar-accent text-sidebar-accent-foreground",
                       )}
                       title={workspace.name}
@@ -479,7 +479,7 @@ export function WorkspaceLeftPanel({
             );
           })}
         </div>
-        <div className="mt-auto">
+        <div className="shrink-0 border-t border-border pt-2">
           <button
             type="button"
             aria-current={activeSurface === "settings" ? "page" : undefined}

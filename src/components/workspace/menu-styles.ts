@@ -1,11 +1,11 @@
 export const workspaceMenuContentClassName =
-  "rounded-xl border border-border/70 bg-popover p-1.5 text-popover-foreground shadow-lg shadow-black/20 ring-1 ring-foreground/10";
+  "max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-md border border-border bg-popover p-1.5 text-popover-foreground shadow-md shadow-black/10";
 
 export const workspaceMenuItemClassName =
-  "group/workspace-menu-item flex h-9 w-full cursor-default items-center gap-2 rounded-lg px-2.5 text-left text-sm font-medium text-popover-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50";
+  "group/workspace-menu-item flex min-h-9 w-full cursor-default items-center gap-2 rounded-md px-2.5 text-left text-[13px] font-normal text-popover-foreground outline-none transition-colors [overflow-wrap:anywhere] hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50";
 
 export const workspaceMenuDangerItemClassName =
-  "group/workspace-menu-item flex h-9 w-full cursor-default items-center gap-2 rounded-lg px-2.5 text-left text-sm font-medium text-destructive outline-none transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50";
+  "group/workspace-menu-item flex min-h-9 w-full cursor-default items-center gap-2 rounded-md px-2.5 text-left text-[13px] font-normal text-destructive outline-none transition-colors [overflow-wrap:anywhere] hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50";
 
 export const workspaceMenuIconClassName =
   "size-4 shrink-0 text-muted-foreground";
