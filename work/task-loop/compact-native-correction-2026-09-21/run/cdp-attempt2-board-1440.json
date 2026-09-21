@@ -1,0 +1,1 @@
+{"type":"screenshot","viewport":[1440,960],"waitFor":"document.querySelector('button[aria-label=Board]')?.getAttribute('aria-selected') === 'true' && !document.querySelector('[role=dialog]')","path":"/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-board-renderer-1440x960.png"}

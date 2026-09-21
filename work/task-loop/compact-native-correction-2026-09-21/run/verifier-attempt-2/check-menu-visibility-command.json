@@ -1,0 +1,1 @@
+{"type": "eval", "expression": "[...document.querySelectorAll('[role=\"menu\"]')].map(e=>({text:e.textContent.trim().slice(0,100),state:e.getAttribute(\"data-state\"),rect:e.getBoundingClientRect().toJSON(),display:getComputedStyle(e).display,visibility:getComputedStyle(e).visibility}))"}

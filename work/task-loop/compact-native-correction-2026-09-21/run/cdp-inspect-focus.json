@@ -1,0 +1,1 @@
+{"type":"eval","expression":"(() => { const e=document.activeElement; const s=getComputedStyle(e); return {tag:e.tagName,name:e.getAttribute('aria-label'),focusVisible:e.matches(':focus-visible'),outline:s.outline,outlineWidth:s.outlineWidth,outlineColor:s.outlineColor,outlineStyle:s.outlineStyle,boxShadow:s.boxShadow}; })()"}

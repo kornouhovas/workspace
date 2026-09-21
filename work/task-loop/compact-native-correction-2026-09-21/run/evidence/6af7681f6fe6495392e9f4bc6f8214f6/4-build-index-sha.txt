@@ -1,0 +1,2 @@
+{"command": ["shasum", "-a", "256", "dist/renderer/index.html"], "exit": 0, "observed_utc": "2026-09-21T21:08:26.468735+00:00"}
+355f36577a5fefb28064c3b81ab98f96edf6af060b29c145db31f73ab9d7e469  dist/renderer/index.html

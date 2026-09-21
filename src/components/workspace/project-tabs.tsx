@@ -41,9 +41,9 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
           aria-label={project.name}
           {...listeners}
           style={{ transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 30 : undefined }}
-          className="h-8 w-40 max-w-44 min-w-30 flex-none cursor-grab touch-none rounded-md px-2.5 text-[13px] font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-12 w-48 max-w-52 min-w-30 flex-none cursor-grab touch-none rounded-lg px-3.5 text-base font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <FileIcon className="size-3.5 shrink-0" aria-hidden="true" />
+          <FileIcon className="size-5 shrink-0" aria-hidden="true" />
           <span className="min-w-0 truncate">{project.name}</span>
         </TabsTrigger>
         </span>
@@ -122,7 +122,7 @@ export function WorkspaceProjectTabs({ projects, activeProjectId, onSelect, onDu
       }}
     >
       <Tabs value={activeProjectId} onValueChange={(id) => { if (!dragging.current) onSelect(id); }} className="workspace-tab-scroll min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <TabsList ref={tabListRef} aria-label={t("detail.projectTabs")} className="!h-9 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none">
+        <TabsList ref={tabListRef} aria-label={t("detail.projectTabs")} className="!h-14 w-max max-w-none flex-nowrap justify-start gap-2 rounded-none bg-transparent p-0 shadow-none">
           <SortableContext items={projects.map(project => project.tabId)} strategy={horizontalListSortingStrategy}>
             {projects.map(project => <ProjectTab key={project.tabId} project={project} onDuplicate={onDuplicate} onRestore={onRestore} onClose={onClose} />)}
           </SortableContext>

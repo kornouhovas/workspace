@@ -1,0 +1,1 @@
+{"type":"click","expression":"document.querySelector('[data-card-property-row-id]:not([data-card-property-row-id=\"property:status\"]) button[aria-label=\"Select property actions\"]')"}

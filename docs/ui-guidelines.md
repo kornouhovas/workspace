@@ -14,8 +14,8 @@ The goal is to avoid pixel-level micromanagement while keeping the UI consistent
 - Primitive base: Radix UI primitives through shadcn components.
 - Icons: `lucide` as configured in `components.json`.
 - Font: Geist Variable from `@fontsource-variable/geist`.
-- Compact desktop typography: primary interface text is 13px with a 20px line height; secondary labels and chips are 12px. Use regular weight for project names, values and tabs, reserving stronger weight for section headings. Keep the root font size and clickable icon button areas unchanged.
-- Compact density: table rows and property rows start at 36px, file tree rows at 28px, and board cards at 48px with content-driven height. Wrapped text and additional properties must expand naturally rather than be clipped.
+- The selected Compact №3 Board, sidebar, top row and expanded project use the larger visual scale shown in the two approved mockups: primary labels and tabs near 16px, board card names and section headings near 18px, expanded project title near 30px. Dense table cells, menus and editors keep their working scale near 13px. Preserve accessible icon button areas and visible focus.
+- Table rows start at 36px; expanded project property rows use 48px; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
 - Theme: Compact uses the light semantic palette in `src/styles.css`. Status and Select colors still come from project data.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.
@@ -76,7 +76,7 @@ Rules:
 - Board and Table must share the same active project set.
 - Switching views must not imply data changes.
 - View controls should sit close to the view tabs and use familiar icon actions where possible.
-- Keep view tabs, project tabs, and their existing actions in one 48px top row. Tabs keep text and scroll horizontally when they overflow; actions remain visible at the right.
+- Keep view tabs, project tabs, and their existing actions in one top row: 96px for Board/Table and 113px for expanded project details. Tabs keep text and scroll horizontally when they overflow; actions remain visible at the right.
 - `Add View` and `Customize Columns` are icon-only actions with accessible names and tooltips. Hover does not add a background; keyboard focus stays visible.
 - Keep primary content full-width and unframed; avoid wrapping entire page sections in cards.
 

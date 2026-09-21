@@ -1,0 +1,1 @@
+{"type": "eval", "expression": "({menus:[...document.querySelectorAll('[role=\"menu\"]')].map(e=>e.textContent.trim()),dialogs:[...document.querySelectorAll('[role=\"dialog\"]')].map(e=>e.textContent.trim())})"}

@@ -1,0 +1,8 @@
+{"at": "2026-09-21T21:10:24.926903+00:00", "exit": 0}
+{
+  "menus": [
+    "Add ViewNew Board ViewNew Table View",
+    "Visible properties2Choose fields for this viewNameRequiredStatusValue filtersLimit visible projects by select valuesStatusDoneIn ProgressPlannedColumn widthResize every Board column360px"
+  ],
+  "dialogs": []
+}

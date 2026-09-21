@@ -1,0 +1,1 @@
+{"type":"eval","expression":"({tag:document.activeElement?.tagName,name:document.activeElement?.getAttribute('aria-label')||document.activeElement?.textContent?.trim().slice(0,80),focusVisible:document.activeElement?.matches(':focus-visible'),outline:getComputedStyle(document.activeElement).outline,boxShadow:getComputedStyle(document.activeElement).boxShadow})"}

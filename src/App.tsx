@@ -1919,21 +1919,21 @@ export default function App() {
         <button
           type="button"
           className={[
-            "electron-window-no-drag workspace-top-action absolute top-2 z-40 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground",
-            sidebarCollapsed ? "left-24" : "left-[15.5rem]",
+            "electron-window-no-drag workspace-top-action absolute top-4 z-40 inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground",
+            sidebarCollapsed ? "left-4" : "left-[17.25rem]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           onClick={() => setSidebarCollapsed((value) => !value)}
         >
-          <PanelLeftIcon className="size-4" aria-hidden="true" />
+          <PanelLeftIcon className="size-5" aria-hidden="true" />
         </button>
         <div
           aria-hidden={sidebarCollapsed}
           inert={sidebarCollapsed || undefined}
           className={[
             "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
-            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[15.5rem] opacity-100",
+            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-80 opacity-100",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
@@ -1956,8 +1956,10 @@ export default function App() {
         <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header
             className={[
-              "electron-window-drag flex h-12 shrink-0 items-center gap-2 border-b border-border pr-4",
-              sidebarCollapsed ? "ml-36" : "pl-12",
+              "electron-window-drag flex shrink-0 gap-2 border-b border-border pr-6",
+              projectExpanded ? "h-[113px]" : "h-24",
+              activeSurface === "settings" ? "items-center" : "items-end",
+              sidebarCollapsed ? "pl-16" : "pl-7",
             ].join(" ")}
           >
             {activeSurface !== "settings" ? (
@@ -2088,6 +2090,7 @@ export default function App() {
                     ) : activeViewType === "board" ? (
                       <WorkspaceBoardView
                         projection={boardProjection as typeof workspaceMockProjection.projection}
+                        statusValues={statusValues}
                         columnWidth={activeView?.boardLayout?.columnWidth}
                         onViewportWidthChange={setBoardViewportWidth}
                         visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}

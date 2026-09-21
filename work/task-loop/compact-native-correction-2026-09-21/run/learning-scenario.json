@@ -1,0 +1,7 @@
+{
+  "id": "native-visual-acceptance",
+  "definition": "First native Electron visual acceptance of Workspace redesign against user-selected mockups at matched viewport and comparable data",
+  "inclusion": "Workspace redesign implementation or correction tasks whose user goal is native visual fidelity",
+  "opportunity": "First native baseline package before visual correction is implemented",
+  "guardrail": "Existing actions, project data, storage and security contracts preserved"
+}

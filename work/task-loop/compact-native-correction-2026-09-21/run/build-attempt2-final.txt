@@ -1,0 +1,21 @@
+
+> workspace@0.1.0 build:renderer
+> node scripts/build-renderer.mjs
+
+vite v6.4.2 building for production...
+transforming...
+✓ 250 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                                           0.40 kB │ gzip:   0.27 kB
+dist/renderer/assets/geist-cyrillic-wght-normal-CHSlOQsW.woff2    14.69 kB
+dist/renderer/assets/geist-latin-ext-wght-normal-DMtmJ5ZE.woff2   15.31 kB
+dist/renderer/assets/geist-latin-wght-normal-Dm3htQBi.woff2       28.40 kB
+dist/renderer/assets/index-DWHRAd75.css                          126.18 kB │ gzip:  19.79 kB
+dist/renderer/assets/index-BHj5H0UO.js                           656.19 kB │ gzip: 189.48 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.12s

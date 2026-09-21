@@ -1,0 +1,9 @@
+{"at": "2026-09-21T21:10:48.442545+00:00", "exit": 1}
+file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/native-cdp.mjs:45
+    if (point.exceptionDetails) throw new Error(point.exceptionDetails.text);
+                                      ^
+
+Error: Uncaught
+    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/native-cdp.mjs:45:39
+
+Node.js v20.18.3

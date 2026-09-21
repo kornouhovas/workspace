@@ -1,0 +1,17 @@
+{
+  "check": "native-visual",
+  "attempt": 1,
+  "basis": "observed",
+  "verdict": "fail",
+  "source": "Independent 1:1 comparison and exact-app native CUA AX/screenshot attempt",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T20:28:00+00:00",
+  "summary": "Renderer anchors are close, but the required full native window pair is absent after ScreenCaptureKit -3811. Active tab underline and soft surface styling are visibly missing and were not explained in the frozen map.",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/visual-comparison.json",
+    "verifier-attempt-1/cua-live-window.txt",
+    "native-final-board-1486x1059.png",
+    "native-final-expanded-1486x1059.png"
+  ]
+}

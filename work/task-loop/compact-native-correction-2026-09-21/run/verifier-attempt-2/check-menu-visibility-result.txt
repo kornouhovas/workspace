@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Add ViewNew Board ViewNew Table View",
+    "state": "closed",
+    "rect": {
+      "x": 1194,
+      "y": 87,
+      "width": 224,
+      "height": 110,
+      "top": 87,
+      "right": 1418,
+      "bottom": 197,
+      "left": 1194
+    },
+    "display": "block",
+    "visibility": "visible"
+  },
+  {
+    "text": "Visible properties2Choose fields for this viewNameRequiredStatusValue filtersLimit visible projects ",
+    "state": "closed",
+    "rect": {
+      "x": 1142,
+      "y": 87,
+      "width": 320,
+      "height": 432,
+      "top": 87,
+      "right": 1462,
+      "bottom": 519,
+      "left": 1142
+    },
+    "display": "block",
+    "visibility": "visible"
+  }
+]

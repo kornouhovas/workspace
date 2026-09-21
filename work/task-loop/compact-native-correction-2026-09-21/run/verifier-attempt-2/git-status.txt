@@ -1,0 +1,13 @@
+{"command": ["git", "status", "--short", "--branch"], "exit": 0, "observed_utc": "2026-09-21T21:08:26.426622+00:00"}
+## codex/compact-redesign
+ M docs/design/compact-redesign-handoff.md
+ M docs/ui-guidelines.md
+ M src/App.tsx
+ M src/components/workspace/board-view.tsx
+ M src/components/workspace/left-panel.tsx
+ M src/components/workspace/project-detail-panel.tsx
+ M src/components/workspace/project-tabs.tsx
+ M src/components/workspace/view-tabs.tsx
+ M src/styles.css
+ M test/dashboardStructure.test.js
+?? work/task-loop/compact-native-correction-2026-09-21/

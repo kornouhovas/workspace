@@ -456,7 +456,7 @@ function ProjectPropertyValueDisplay({
     const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
     return label
       ? (
-        <Badge variant="secondary" className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal">
+        <Badge variant="secondary" data-workspace-status-value className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal">
           <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
           <span className="truncate">{label}</span>
         </Badge>
@@ -1459,8 +1459,9 @@ export function WorkspaceProjectDetailPanel({
   return (
     <div
       className={[
-        "electron-window-no-drag pointer-events-none fixed top-12 bottom-0 right-0 z-30 flex justify-end",
-        expanded && !sidebarCollapsed ? "left-[15.5rem]" : "left-0",
+        "electron-window-no-drag pointer-events-none fixed bottom-0 right-0 z-30 flex justify-end",
+        expanded ? "top-[113px]" : "top-24",
+        expanded && !sidebarCollapsed ? "left-80" : "left-0",
       ].join(" ")}
       aria-hidden={!panelVisible}
     >
@@ -1483,6 +1484,7 @@ export function WorkspaceProjectDetailPanel({
         }}
         className={[
           "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          expanded ? "workspace-project-detail-expanded" : "",
           expanded ? "w-full max-w-none" : "max-w-[calc(100vw-6rem)]",
           panelVisible ? "pointer-events-auto" : "pointer-events-none",
           panelVisible ? "translate-x-0" : "translate-x-full",
@@ -1498,26 +1500,26 @@ export function WorkspaceProjectDetailPanel({
           <span className="sr-only">{t("detail.resizePanel")}</span>
         </button> : null}
         <>
-          <header className="px-5 pb-2 pt-4">
-            <h2 id="project-detail-title" className="break-words text-xl font-normal leading-7 tracking-normal text-foreground">
+          <header className={expanded ? "px-9 pb-3 pt-[43px]" : "px-5 pb-2 pt-4"}>
+            <h2 id="project-detail-title" className={expanded ? "break-words text-[30px] font-semibold leading-10 tracking-normal text-foreground" : "break-words text-xl font-normal leading-7 tracking-normal text-foreground"}>
               {displayedProject.name}
             </h2>
           </header>
-          <div className="min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1">
-            <div className="grid gap-4">
+          <div className={expanded ? "min-h-0 flex-1 overflow-auto px-9 pb-9 pt-2" : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"}>
+            <div className={expanded ? "grid gap-8" : "grid gap-4"}>
               <section className={`grid ${propertiesExpanded ? "gap-2.5" : "gap-0"}`} aria-labelledby="project-properties-heading">
-                <h3 id="project-properties-heading" className="text-sm font-medium text-muted-foreground">
+                <h3 id="project-properties-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
                   <button
                     type="button"
                     aria-controls="project-visible-properties"
                     aria-expanded={propertiesExpanded}
-                    className="group/section-heading -ml-4 flex h-8 w-[calc(100%+1rem)] items-center gap-1 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                    className={expanded ? "group/section-heading -ml-1 flex h-9 w-[calc(100%+0.25rem)] items-center gap-2 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40" : "group/section-heading -ml-4 flex h-8 w-[calc(100%+1rem)] items-center gap-1 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"}
                     onClick={() => toggleCardSection("properties")}
                   >
                     {propertiesExpanded ? (
-                      <ChevronDownIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100" aria-hidden="true" />
+                      <ChevronDownIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
                     ) : (
-                      <ChevronRightIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100" aria-hidden="true" />
+                      <ChevronRightIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
                     )}
                     {t("property.properties")}
                   </button>
@@ -1545,7 +1547,7 @@ export function WorkspaceProjectDetailPanel({
                             cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                           ].filter(Boolean).join(" ")}
                           style={{
-                            gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
+                            gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
                             ...getCardPropertyDragStyle(property.id, "visible"),
                           }}
                         >
@@ -1649,7 +1651,7 @@ export function WorkspaceProjectDetailPanel({
                       <button
                         type="button"
                         className="grid min-h-9 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                        style={{ gridTemplateColumns: projectDetailPropertiesGridTemplateColumns }}
+                        style={{ gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns }}
                       >
                         <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
                           <span className="flex h-full items-center justify-center text-muted-foreground/70">
@@ -1736,7 +1738,7 @@ export function WorkspaceProjectDetailPanel({
                                   cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
                                 ].filter(Boolean).join(" ")}
                                 style={{
-                                  gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
+                                  gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
                                 }}
                               >
@@ -1840,16 +1842,16 @@ export function WorkspaceProjectDetailPanel({
                   </div>
                 ) : null}
               </section>
-              <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
+              <section className={expanded ? "grid gap-4" : "grid gap-2"} aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 id="project-file-tree-heading" className="text-sm font-medium text-muted-foreground">
+                  <h3 id="project-file-tree-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
                     {t("detail.fileTree")}
                   </h3>
-                  <Badge variant="secondary" className="h-6 px-2 text-xs">
+                  <Badge variant="secondary" className={expanded ? "h-8 rounded-full px-3 text-sm" : "h-6 px-2 text-xs"}>
                     {t("detail.items", { count: displayedProject.fileTree.length })}
                   </Badge>
                 </div>
-                <ul className="grid gap-0">
+                <ul className="workspace-file-tree grid gap-0">
                   {displayedProject.fileTree.map((node) => (
                     <FileTreeNode
                       key={node.id}

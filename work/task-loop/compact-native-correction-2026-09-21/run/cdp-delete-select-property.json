@@ -1,0 +1,1 @@
+{"type":"click","expression":"[...document.querySelectorAll('[role=menuitem]')].find(e=>e.textContent?.includes('Delete property'))"}

@@ -1,0 +1,17 @@
+{
+  "check": "responsive-visual",
+  "attempt": 1,
+  "basis": "observed",
+  "verdict": "inconclusive",
+  "source": "Independent image inspection of frozen 1440x960 and 1024x720 Electron renderer PNGs",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T20:28:00+00:00",
+  "summary": "1024 Board/expanded/focus sample is readable with pinned actions. The 1440 Board file was captured during a 360ms detail-panel exit animation and cannot establish settled unobstructed layout.",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "native-final-board-1440x960.png",
+    "native-final-board-1024x720.png",
+    "native-final-expanded-1024x720.png",
+    "native-focus-1024x720.png"
+  ]
+}

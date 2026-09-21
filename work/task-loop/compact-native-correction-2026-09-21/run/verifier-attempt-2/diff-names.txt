@@ -1,0 +1,11 @@
+{"command": ["git", "diff", "--name-only"], "exit": 0, "observed_utc": "2026-09-21T21:08:26.445875+00:00"}
+docs/design/compact-redesign-handoff.md
+docs/ui-guidelines.md
+src/App.tsx
+src/components/workspace/board-view.tsx
+src/components/workspace/left-panel.tsx
+src/components/workspace/project-detail-panel.tsx
+src/components/workspace/project-tabs.tsx
+src/components/workspace/view-tabs.tsx
+src/styles.css
+test/dashboardStructure.test.js

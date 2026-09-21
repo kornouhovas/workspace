@@ -1,0 +1,1 @@
+{"type":"eval","expression":"[...document.querySelectorAll('[data-card-property-row-id]')].map(e=>({id:e.getAttribute('data-card-property-row-id'),text:e.innerText,buttons:[...e.querySelectorAll('button')].map(b=>({aria:b.getAttribute('aria-label'),title:b.title,text:b.innerText}))}))"}

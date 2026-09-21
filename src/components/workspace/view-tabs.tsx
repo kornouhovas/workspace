@@ -96,7 +96,7 @@ const viewDropdownMenuSurfaceSelector =
   "[data-workspace-view-create-menu='true']";
 
 function renderViewIcon(view: WorkspaceView) {
-  const iconClassName = "size-3.5 shrink-0";
+  const iconClassName = "size-5 shrink-0";
 
   if (view.viewType === "table") {
     return <TableIcon className={iconClassName} aria-hidden="true" />;
@@ -491,14 +491,14 @@ export function WorkspaceViewTabs({
         <TabsList
           ref={viewTabListRef}
           aria-label={t("view.actions")}
-          className="!h-9 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none"
+          className="!h-14 w-max max-w-none flex-nowrap justify-start gap-2 rounded-none bg-transparent p-0 shadow-none"
         >
           {views.map((view) => {
             if (editingViewId === view.id) {
               return (
                 <form
                   key={view.id}
-                  className="h-7 min-w-32"
+                  className="h-12 min-w-32"
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitViewRename(view);
@@ -530,7 +530,7 @@ export function WorkspaceViewTabs({
                 title={view.name}
                 aria-label={view.name}
                 className={[
-                  "h-8 max-w-44 min-w-30 flex-none cursor-grab rounded-md px-2.5 text-[13px] font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                  "h-12 max-w-52 min-w-30 flex-none cursor-grab rounded-lg px-3.5 text-base font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                 ].join(" ")}
                 style={getViewTabDragStyle(view.id)}
                 onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}
@@ -551,26 +551,11 @@ export function WorkspaceViewTabs({
           })}
         </TabsList>
       </Tabs>
-      <div aria-hidden="true" className="mx-2 h-5 w-px shrink-0 bg-border" />
+      <div aria-hidden="true" className="mx-3 h-7 w-px shrink-0 bg-border" />
       {projectTabs}
       </div>
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center gap-3">
         {actionsHidden ? projectActions : <>
-        <WorkspaceViewFilterMenu
-          view={activeView}
-          dismissSignal={dismissSignal}
-          properties={properties}
-          selectValues={selectValues}
-          statusValues={statusValues}
-          boardColumnWidthMax={boardColumnWidthMax}
-          onTogglePropertyVisibility={onTogglePropertyVisibility}
-          onToggleValueFilter={onToggleValueFilter}
-          onBoardColumnWidthPreview={onBoardColumnWidthPreview}
-          onBoardColumnWidthCommit={onBoardColumnWidthCommit}
-          onReorderViewProperties={onReorderViewProperties}
-          onRenameProperty={onRenameProperty}
-          onDeleteProperty={onDeleteProperty}
-        />
         <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
           <DropdownMenuTrigger asChild>
             <Button
@@ -602,6 +587,21 @@ export function WorkspaceViewTabs({
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <WorkspaceViewFilterMenu
+          view={activeView}
+          dismissSignal={dismissSignal}
+          properties={properties}
+          selectValues={selectValues}
+          statusValues={statusValues}
+          boardColumnWidthMax={boardColumnWidthMax}
+          onTogglePropertyVisibility={onTogglePropertyVisibility}
+          onToggleValueFilter={onToggleValueFilter}
+          onBoardColumnWidthPreview={onBoardColumnWidthPreview}
+          onBoardColumnWidthCommit={onBoardColumnWidthCommit}
+          onReorderViewProperties={onReorderViewProperties}
+          onRenameProperty={onRenameProperty}
+          onDeleteProperty={onDeleteProperty}
+        />
         </>}
       </div>
       {contextMenuView ? (

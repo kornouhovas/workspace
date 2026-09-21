@@ -1,0 +1,15 @@
+{
+  "check": "native-provenance",
+  "attempt": 1,
+  "basis": "observed",
+  "verdict": "pass",
+  "source": "Independent process/CDP/hash inspection of isolated Electron PID 58040",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T20:28:00+00:00",
+  "summary": "Exact project Electron executable, isolated fixture cwd, file URL and built renderer hash were directly observed and stable. The former user process was absent and its loaded URL remains inferred.",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/native-provenance-check.txt",
+    "native-provenance.md"
+  ]
+}

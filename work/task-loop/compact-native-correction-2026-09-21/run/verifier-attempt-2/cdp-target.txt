@@ -1,0 +1,10 @@
+{"command": ["curl", "-fsS", "http://127.0.0.1:9229/json/list"], "exit": 0, "observed_utc": "2026-09-21T21:08:26.087832+00:00"}
+[ {
+   "description": "",
+   "devtoolsFrontendUrl": "/devtools/inspector.html?ws=127.0.0.1:9229/devtools/page/F8ACF6E05480BC7CB64ED9C3E170017C",
+   "id": "F8ACF6E05480BC7CB64ED9C3E170017C",
+   "title": "Workspace",
+   "type": "page",
+   "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html",
+   "webSocketDebuggerUrl": "ws://127.0.0.1:9229/devtools/page/F8ACF6E05480BC7CB64ED9C3E170017C"
+} ]

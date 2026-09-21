@@ -1,0 +1,23 @@
+{"command": ["node", "--experimental-websocket", "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/native-cdp.mjs", "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2/cdp-readonly-command.json"], "at": "2026-09-21T21:09:44.712693+00:00", "exit": 0}
+{
+  "viewport": {
+    "width": 1486,
+    "height": 874,
+    "dpr": 2
+  },
+  "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html",
+  "selected": [
+    {
+      "text": "Board",
+      "role": "tab"
+    }
+  ],
+  "buttons": [
+    "Settings",
+    "Board",
+    "Table",
+    "Add Board or Table view",
+    "Customize Columns"
+  ],
+  "hscroll": []
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "text": "Operations",
+    "title": "Operations",
+    "label": null
+  },
+  {
+    "text": "",
+    "title": "Workspace actions for Operations",
+    "label": "Workspace actions for Operations"
+  }
+]

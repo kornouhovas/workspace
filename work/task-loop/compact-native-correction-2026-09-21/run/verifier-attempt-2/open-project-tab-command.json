@@ -1,0 +1,1 @@
+{"type": "click", "expression": "document.querySelector('[role=\"tab\"][aria-label=\"Workspace App\"]')"}

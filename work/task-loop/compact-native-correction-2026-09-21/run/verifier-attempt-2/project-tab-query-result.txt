@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Board",
+    "label": "Board",
+    "selected": "true"
+  },
+  {
+    "text": "Table",
+    "label": "Table",
+    "selected": "false"
+  },
+  {
+    "text": "Workspace App",
+    "label": "Workspace App",
+    "selected": "false"
+  },
+  {
+    "text": "Client Portal",
+    "label": "Client Portal",
+    "selected": "false"
+  }
+]

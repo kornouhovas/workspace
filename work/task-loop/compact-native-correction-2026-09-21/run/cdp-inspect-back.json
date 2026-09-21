@@ -1,0 +1,1 @@
+{"type":"eval","expression":"[...document.querySelectorAll('button')].filter(e=>e.getAttribute('aria-label')==='Back to workspace'||e.textContent.includes('Back to workspace')||e.getAttribute('title')==='Back to workspace').map(e=>({aria:e.getAttribute('aria-label'),title:e.getAttribute('title'),text:e.textContent,outer:e.outerHTML.slice(-500)}))"}

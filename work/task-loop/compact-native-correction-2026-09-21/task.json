@@ -1,0 +1,20 @@
+{
+  "id": "compact-native-correction-2026-09-21",
+  "learning_store": "/Users/aleksandersk/.codex/skills/task-loop/journal",
+  "project_id": "workspace-project-board",
+  "process_version": "task-loop-v1-tabs-visible",
+  "supersedes": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-implementation-2026-09-21/run",
+  "supersedes_reason": "User correction: the previous Compact №3 result does not match the two selected mockups in the running Electron app; browser fixture captures and passing tests did not establish native visual acceptance.",
+  "goal": "Make the running Workspace Electron Board and expanded project visually match the selected Compact №3 mockups on comparable isolated data and equal viewports, while preserving working product behavior, then deliver native full-resolution evidence and a verified local commit.",
+  "hypothesis": "Identify the actual native build and measure its composition against the reference images, then correct renderer layout, typography, spacing and status presentation within existing behavior and service boundaries; paired native captures will show the material deviations removed.",
+  "scope": "Workspace renderer UI, focused tests and UI handoff documents; isolated visual fixtures and native captures. No live user project changes, storage, IPC, Electron security, project identity, status rules, backend, push, merge or release.",
+  "measurement_plan": "First identify the active native process, executable, working directory, loaded renderer URL and build provenance. Compare Board and expanded project with the reference images at 1486x1059, using comparable six-project data, status names/colors and open tabs; save before and after full-resolution native captures and a deviation map. Also inspect compact layout at 1440x960 and 1024x720. Assess material deviations by named regions and visible composition rather than inventing a pixel threshold. A thumbnail or browser-only screenshot cannot satisfy native visual outcome.",
+  "max_attempts": 6,
+  "checks": [
+    {"id":"native-provenance","role":"quality","method":"observation","description":"Record the executable/process, branch/commit, build path/mtime or hash, and loaded native renderer for the app under test; unknown or mismatched provenance falsifies the check."},
+    {"id":"behavior-quality","role":"quality","method":"observation","description":"Relevant Node tests, npm run typecheck, npm run build:renderer and git diff --check pass; native tabs, project operations, property/settings actions and keyboard accessibility remain usable on isolated data, with no storage/IPC/security/identity/status-rule change. Any failed command or lost action falsifies."},
+    {"id":"native-visual","role":"outcome","method":"observation","description":"Full-resolution native Electron Board and expanded captures at the same 1486x1059 viewport and comparable data as both selected mockups support a region-by-region deviation map: sidebar, toolbar, status accents, board columns/cards and expanded properties/file tree materially align, with each remaining significant mismatch specifically explained. Missing paired capture, browser substitution or unexplained material deviation falsifies."},
+    {"id":"responsive-visual","role":"outcome","method":"observation","description":"Native compact layout at 1440x960 and 1024x720 keeps required actions, readable text, visible focus and accessible tab overflow; clipped action, unreadable content or second toolbar row falsifies."},
+    {"id":"delivery","role":"delivery","method":"observation","description":"A reviewable local commit contains intended changes and linked native captures, deviation map, check output, provenance, limitations and independent verifier report; absent artifacts, uncommitted product changes or misleading screenshot labels falsify."}
+  ]
+}

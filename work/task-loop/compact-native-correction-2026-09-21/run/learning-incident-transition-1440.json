@@ -1,0 +1,12 @@
+{
+  "id": "compact-native-1440-captured-during-panel-exit",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run",
+  "scenario": "native-visual-acceptance",
+  "phase": "evaluating",
+  "symptom": "The 1440x960 Board evidence still showed an exiting project details panel over the Planned column.",
+  "basis": "observed",
+  "source": "Independent verifier attempt 1, frozen 1440 Board PNG and CDP capture command",
+  "observed_at": "2026-09-21T20:30:44+00:00",
+  "summary": "The capture waited for Board aria-selected but not for completion of the 360ms details-panel exit transition. This is an evidence-timing defect; the stable Board UI has not yet been shown by that image. Recapture after the panel disappears and add that condition to the diagnostic.",
+  "artifacts": ["verifier-attempt-1/report.md", "native-final-board-1440x960.png", "cdp-board-1440.json"]
+}

@@ -351,24 +351,24 @@ export function WorkspaceLeftPanel({
   }
 
   return (
-    <aside className="flex h-full w-[15.5rem] shrink-0 flex-col border-r border-border bg-sidebar">
-      <div className={`mr-12 min-h-12 pt-7 ${collapsed ? "" : "electron-window-drag"}`} />
-      <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-3 px-3 py-2">
+    <aside className="workspace-sidebar flex h-full w-80 shrink-0 flex-col border-r border-border bg-sidebar">
+      <div className={`mr-12 min-h-[3.75rem] pt-7 ${collapsed ? "" : "electron-window-drag"}`} />
+      <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-3.5 pl-[22px] pr-[14px] pb-12 pt-2">
         <button
           type="button"
-          className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-md border border-border bg-card px-2.5 text-[13px] font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex h-11 w-full items-center justify-start gap-3 rounded-lg border border-border bg-card px-3.5 text-base font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           title={t("sidebar.addWorkspace")}
           onClick={onAddWorkspace}
         >
-          <PlusIcon className="size-3.5" aria-hidden="true" />
+          <PlusIcon className="size-5" aria-hidden="true" />
           {t("sidebar.addWorkspace")}
         </button>
         <label className="grid gap-1 text-xs text-muted-foreground">
           <span className="sr-only">{t("sidebar.search")}</span>
           <span className="relative block">
-            <SearchIcon className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
             <input
-              className="h-9 w-full rounded-md border border-input bg-card pl-8 pr-2 text-[13px] text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-11 w-full rounded-lg border border-input bg-card pl-12 pr-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
               placeholder={t("sidebar.searchPlaceholder")}
@@ -378,7 +378,7 @@ export function WorkspaceLeftPanel({
         </label>
         <div className="h-px bg-border" />
         <div className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
-          <p className="px-2 text-xs font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
+          <p className="px-1 text-sm font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
             const editing = editingWorkspaceId === workspace.id;
@@ -393,6 +393,7 @@ export function WorkspaceLeftPanel({
                 }}
                 className={cn(
                   "group/workspace relative flex items-center gap-1 rounded-lg transition-colors duration-100",
+                  active && "bg-sidebar-accent",
                   workspaceDragState && "transition-transform ease-out",
                 )}
                 style={getWorkspaceDragStyle(workspace.id)}
@@ -408,7 +409,7 @@ export function WorkspaceLeftPanel({
                     <input
                       ref={editingWorkspaceInputRef}
                       aria-label={t("sidebar.renameWorkspaceInput")}
-                      className="h-8 w-full rounded-lg border border-ring bg-background px-2 text-sm text-foreground outline-none ring-3 ring-ring/30"
+                      className="h-11 w-full rounded-lg border border-ring bg-background px-3 text-base text-foreground outline-none ring-3 ring-ring/30"
                       value={editingWorkspaceName}
                       onChange={(event) => setEditingWorkspaceName(event.currentTarget.value)}
                       onBlur={() => submitWorkspaceRename(workspace)}
@@ -426,14 +427,14 @@ export function WorkspaceLeftPanel({
                       type="button"
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "inline-flex h-8 min-w-0 flex-1 cursor-grab items-center justify-start gap-2 rounded-md px-2 text-[13px] text-sidebar-foreground hover:bg-sidebar-accent active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                        active && "bg-sidebar-accent text-sidebar-accent-foreground",
+                        "inline-flex h-11 min-w-0 flex-1 cursor-grab items-center justify-start gap-2 rounded-md px-[22px] text-base text-sidebar-foreground hover:bg-sidebar-accent active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                        active && "text-sidebar-accent-foreground",
                       )}
                       title={workspace.name}
                       onPointerDown={(event) => startPointerWorkspaceDrag(event, workspace.id)}
                       onClick={() => openWorkspace(workspace.id)}
                     >
-                      <FolderKanbanIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                      <FolderKanbanIcon className={cn("size-5 shrink-0", active && "text-primary")} aria-hidden="true" />
                       <span className="truncate">{workspace.name}</span>
                     </button>
                     <DropdownMenu
@@ -443,11 +444,11 @@ export function WorkspaceLeftPanel({
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100"
+                          className={cn("inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100", active && "opacity-100")}
                           aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
                           title={t("sidebar.workspaceActions", { name: workspace.name })}
                         >
-                          <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
+                          <MoreHorizontalIcon className="size-5" aria-hidden="true" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={cn(workspaceMenuContentClassName, "min-w-52")}>
@@ -479,18 +480,18 @@ export function WorkspaceLeftPanel({
             );
           })}
         </div>
-        <div className="shrink-0 border-t border-border pt-2">
+        <div className="shrink-0 pt-2">
           <button
             type="button"
             aria-current={activeSurface === "settings" ? "page" : undefined}
             className={cn(
-              "inline-flex h-8 w-full items-center justify-start gap-2 rounded-lg px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+              "inline-flex h-11 w-full items-center justify-start gap-2 rounded-lg px-[22px] text-base text-sidebar-foreground hover:bg-sidebar-accent",
               activeSurface === "settings" && "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
             title={t("sidebar.settings")}
             onClick={onOpenSettings}
           >
-            <SettingsIcon className="size-3.5" aria-hidden="true" />
+            <SettingsIcon className="size-5" aria-hidden="true" />
             {t("sidebar.settings")}
           </button>
         </div>

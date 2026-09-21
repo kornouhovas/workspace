@@ -1,0 +1,18 @@
+{
+  "check": "behavior-quality",
+  "attempt": 1,
+  "basis": "observed",
+  "verdict": "pass",
+  "source": "Independent npm test, typecheck, renderer build, diff check and scope audit; executor isolated Electron interaction smoke",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-21T20:28:00+00:00",
+  "summary": "200 tests passed, typecheck/build/diff passed, changed files stayed in renderer/docs/test scope. Representative native menus/tabs/settings/focus worked; mutation/editor/persistence UI paths were not replayed independently.",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/check-0.txt",
+    "verifier-attempt-1/check-1.txt",
+    "verifier-attempt-1/build-renderer.txt",
+    "verifier-attempt-1/check-2.txt",
+    "native-smoke.md"
+  ]
+}

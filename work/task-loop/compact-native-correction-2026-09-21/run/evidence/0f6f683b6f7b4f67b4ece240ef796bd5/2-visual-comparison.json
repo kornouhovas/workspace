@@ -1,0 +1,24 @@
+{
+  "observed_utc": "2026-09-21 21:05–21:12 UTC",
+  "method": "1:1 visual inspection of both selected mock PNGs and all seven frozen final full-window PNGs; approximate pixel anchors read from image, no numerical acceptance threshold imposed",
+  "board_1486": {
+    "sidebar_boundary": "mock x≈322; actual x≈320",
+    "top_row_bottom": "mock y≈94; actual y≈95",
+    "column_left_top": "mock x≈349,y≈121; actual x≈348,y≈120",
+    "first_card": "mock x≈360,y≈182; actual x≈358,y≈181",
+    "active_tab": "both lavender background and violet lower rule",
+    "remaining": "status column order target Planned/In Progress/Done, actual Done/In Progress/Planned; target stronger glow; target sliders+ellipsis replaced by actual Customize icon with no invented action; card contents ordered by actual projection"
+  },
+  "expanded_1486": {
+    "title": "mock x≈357,y≈162; actual x≈357,y≈164",
+    "properties_table": "mock left≈357 top≈262; actual left≈357 top≈263",
+    "file_tree": "mock label y≈402; actual y≈401",
+    "active_tab": "both lavender background and violet lower rule; target active tab wider due extra illustrative ellipsis",
+    "remaining": "actual README/file-tree supporting text visually smaller than mock; native restore glyph differs; target glow stronger"
+  },
+  "responsive": {
+    "1440": "Board and expanded have one header row, visible top actions and no transient detail panel; Board third column extends right for horizontal scrolling",
+    "1024": "Board and expanded have one header row; pinned Add View/Customize or Restore/Close visible; text tabs clip at right before actions, active tab visible; Board second column partly clipped with third off-screen by design; focused Customize outline visible in focus capture"
+  },
+  "limits": "No live same-size CUA capture: exact-app getApp timed out. Independent CG capture of current altered 197x152 window excluded. No independent scroll gesture or quantitative contrast check."
+}

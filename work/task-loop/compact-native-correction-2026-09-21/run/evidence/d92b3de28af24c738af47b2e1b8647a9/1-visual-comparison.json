@@ -1,0 +1,27 @@
+{
+  "observer": "/root/compact_verifier",
+  "method": "Independent 1:1 visual inspection of four 1486x1059 PNGs, with boundary pixels sampled from source images; coordinates are approximate to 2 px",
+  "image_hashes": "See image-inventory.json",
+  "board_anchors": [
+    {"region": "sidebar boundary", "reference_x": 320, "final_x": 319, "difference_px": -1},
+    {"region": "first board panel top-left", "reference_xy": [349, 121], "final_xy": [348, 120], "difference_xy_px": [-1, -1]},
+    {"region": "first card top-left", "reference_xy": [360, 182], "final_xy": [358, 181], "difference_xy_px": [-2, -1]},
+    {"region": "toolbar bottom", "reference_y": 94, "final_y": 95, "difference_px": 1}
+  ],
+  "expanded_anchors": [
+    {"region": "sidebar boundary", "reference_x": 322, "final_x": 320, "difference_px": -2},
+    {"region": "title visual top-left", "reference_xy": [357, 162], "final_xy": [357, 164], "difference_xy_px": [0, 2]},
+    {"region": "properties rows top-left", "reference_xy": [357, 262], "final_xy": [357, 263], "difference_xy_px": [0, 1]},
+    {"region": "file tree label top-left", "reference_xy": [357, 401], "final_xy": [357, 401], "difference_xy_px": [0, 0]}
+  ],
+  "matching_content": "Six project names, three status labels and colors, two text project tabs, expanded Status property and README.md file tree appear in both pairs",
+  "remaining_visible_differences": [
+    "Mock Board orders Planned, In Progress, Done; final renderer orders Done, In Progress, Planned. Final map attributes order to discovery/status semantics.",
+    "Mock active Board/project tabs have a purple bottom underline; final renderer uses lavender rounded active pills without underline. This is not explained in final-deviation-map.md.",
+    "Mock sidebar and Board columns use subtle gradients and strokes; final renderer uses almost flat light surfaces. This is not explained in final-deviation-map.md.",
+    "Mock toolbar includes a separate ellipsis and different Customize glyph; final renderer has Add View and Customize only. Final map identifies ellipsis as illustration-only command.",
+    "Renderer PNGs omit macOS traffic lights/rounded native frame. This is correctly labelled as a CDP renderer boundary and needs full-window capture for acceptance."
+  ],
+  "responsive_1440_observation": "native-final-board-1440x960.png has a partially visible project detail panel covering approximately x1345–1440. Its capture command waits only for Board aria-selected=true, not panel transition completion; this file cannot establish settled unobstructed Board layout at 1440x960.",
+  "responsive_1024_observation": "native-final-board-1024x720.png and native-final-expanded-1024x720.png show a single upper row, pinned actions, horizontal Board and tab clipping. Native-focus-1024x720.png shows Add View focus ring. These are renderer surface captures, not macOS full-window captures."
+}

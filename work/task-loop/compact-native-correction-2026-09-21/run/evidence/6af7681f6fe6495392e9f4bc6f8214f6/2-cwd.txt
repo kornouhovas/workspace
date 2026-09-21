@@ -1,0 +1,4 @@
+{"command": ["lsof", "-a", "-p", "58040", "-d", "cwd", "-Fn"], "exit": 0, "observed_utc": "2026-09-21T21:08:26.075181+00:00"}
+p58040
+fcwd
+n/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-compact-native-tdd9idew

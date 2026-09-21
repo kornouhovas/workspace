@@ -1,0 +1,17 @@
+2026-09-21 approximately 20:25–20:26 UTC, observer /root/compact_verifier
+
+CUA getApp exact path:
+/Users/aleksandersk/Documents/programming/Projects/project_folder/node_modules/electron/dist/Electron.app
+
+Initial result: Window "Workspace", App Electron, HTML content URL file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html. AX exposed selected Board tab, Table tab, Add Board or Table view, Customize Columns, six project cards and status columns. This independently confirms the exact app's live accessibility surface at that instant; it is not an image.
+
+CUA performSecondaryAction on window 0, "Raise":
+The user changed '/Users/aleksandersk/Documents/programming/Projects/project_folder/node_modules/electron/dist/Electron.app'. Re-query the latest state with get_app_state before sending more actions.
+
+Subsequent electronApp.getAXState():
+Computer Use server error -10005: Error Domain=com.apple.ScreenCaptureKit.SCStreamErrorDomain Code=-3811 "Failed to start stream due to audio/video capture failure" UserInfo={NSLocalizedDescription=Failed to start stream due to audio/video capture failure}
+
+Subsequent electronApp.getScreenshot():
+Computer Use server error -10005: Error Domain=com.apple.ScreenCaptureKit.SCStreamErrorDomain Code=-3811 "Failed to start stream due to audio/video capture failure" UserInfo={NSLocalizedDescription=Failed to start stream due to audio/video capture failure}
+
+No full native window screenshot or pixel dimensions returned. The user-window PID 56841 was already gone. CDP captures of isolated PID 58040 must be described as renderer captures only.

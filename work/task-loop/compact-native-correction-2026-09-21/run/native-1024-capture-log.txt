@@ -1,0 +1,6 @@
+capture_start=2026-09-21T20:48:31Z
+pid=58040 window=2792 bounds=(2.0, 30.0, 1016.0, 715.0) png=1022x718 attempt=3
+restored_display=0 mode=1512x982
+pid=58040 window=2792 bounds=(0.0, 30.0, 1024.0, 720.0) png=1024x720 attempt=1
+restored_display=0 mode=1512x982
+capture_end=2026-09-21T20:48:39Z

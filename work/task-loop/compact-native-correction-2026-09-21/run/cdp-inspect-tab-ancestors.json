@@ -1,0 +1,1 @@
+{"type":"eval","expression":"(() => { let e=document.querySelector('button[aria-label=Board]'); const a=[]; while(e&&a.length<7){const r=e.getBoundingClientRect(),s=getComputedStyle(e);a.push({tag:e.tagName,cls:e.className.toString().slice(0,90),rect:{x:r.x,y:r.y,w:r.width,h:r.height},overflow:s.overflowY});e=e.parentElement} return a})()"}
