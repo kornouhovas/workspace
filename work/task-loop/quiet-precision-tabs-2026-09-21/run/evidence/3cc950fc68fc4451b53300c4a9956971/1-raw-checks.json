@@ -1,0 +1,152 @@
+{
+  "at": "2026-09-21T17:46:23.084474+00:00",
+  "method": "sha256 baseline/artifacts comparison; git diff HEAD; HTTP GET byte comparison",
+  "baseline": {
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/.workspace/views.json": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/.workspace/.views.json.53a13f06-eb65-4e99-94d0-86676edb2ffa.tmp": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/.workspace/settings.json": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/.workspace/properties.json": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/gallery-check.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/index.html": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/05-color-atlas.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/source-table.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/03-night-console.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/02-paper-studio.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/source-board.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/README.md": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/01-quiet-precision.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/reference-things.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/source-empty.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/04-native-focus.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/comparison-data.json": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/reference-linear.png": true,
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/source-detail.png": true
+  },
+  "artifacts": {
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/04-file-workspace.png": {
+      "sha256": "1c8ed75afa7005d7625946b8092c4589f009d96cccf46decfd83a299bf0e7ed5",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/05-reading-focus.png": {
+      "sha256": "e1370a04eee093a4d02a1b7447bd00b9575eef3c3a33bb658bd91b6522d70f7d",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-restored-side-panel.png": {
+      "sha256": "2c2a450fe29b3090d691453e9d49002c491290a024f7dfe614630ade861a7909",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/index.html": {
+      "sha256": "f9a2270591ba73d43d9e3075c20cdb7542e5f59e4f47098ba15bd061316775f7",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/02-clear-levels.png": {
+      "sha256": "27a931e1029a7b8ad0c0636a93eabc72ddaf1ace59a4d1ed0b0bb026215c5862",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/01-board-with-project-tabs.png": {
+      "sha256": "d419198414abc45f12afdef7cb6ff4b42dfa6527b094b29f5298bd7ea85a43c3",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/README.md": {
+      "sha256": "701c7f68836b53b1d6c9e7a3fd261f6a76a7d5b721285ede2ad697413e1bc838",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/03-compact-precision.png": {
+      "sha256": "93b954b282934c5625b8cc7e00c09dbdaf447892cb3e227097e3d42787fcd073",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/01-quiet-precision-updated.png": {
+      "sha256": "ba4cd499e4b3211775cfef0d70f4447d2590e35df8c2ae296207f38a0af5f820",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-expanded-workspace-two-tabs.png": {
+      "sha256": "8d76f0557e8e0379c6fe0742a64c76e687ea5cc0823a90d05638c4f754830f80",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-board-two-retained-tabs.png": {
+      "sha256": "4a0ee07578074b714919ecef4ec2a30ebfd872523df8750032a41f47e920f12d",
+      "matches": true
+    },
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-project-tab-context-menu.png": {
+      "sha256": "2a25efce8c18a424283b18b02cb5a27299fcdd8f5cb555e3eedeed4a8ed6d792",
+      "matches": true
+    }
+  },
+  "git_diff": "",
+  "http": {
+    "http://127.0.0.1:8771/04-file-workspace.png": {
+      "status": 200,
+      "bytes": 1197002,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/05-reading-focus.png": {
+      "status": 200,
+      "bytes": 994414,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/source-restored-side-panel.png": {
+      "status": 200,
+      "bytes": 37509,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/index.html": {
+      "status": 200,
+      "bytes": 8504,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/02-clear-levels.png": {
+      "status": 200,
+      "bytes": 1155417,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/01-board-with-project-tabs.png": {
+      "status": 200,
+      "bytes": 1189091,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/README.md": {
+      "status": 200,
+      "bytes": 12975,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/03-compact-precision.png": {
+      "status": 200,
+      "bytes": 992173,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/01-quiet-precision-updated.png": {
+      "status": 200,
+      "bytes": 961131,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/source-expanded-workspace-two-tabs.png": {
+      "status": 200,
+      "bytes": 26215,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/source-board-two-retained-tabs.png": {
+      "status": 200,
+      "bytes": 37912,
+      "matches": true
+    },
+    "http://127.0.0.1:8771/source-project-tab-context-menu.png": {
+      "status": 200,
+      "bytes": 28970,
+      "matches": true
+    }
+  },
+  "readme_local_links": {
+    "01-board-with-project-tabs.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/01-board-with-project-tabs.png",
+    "01-quiet-precision-updated.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/01-quiet-precision-updated.png",
+    "02-clear-levels.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/02-clear-levels.png",
+    "03-compact-precision.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/03-compact-precision.png",
+    "04-file-workspace.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/04-file-workspace.png",
+    "05-reading-focus.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/05-reading-focus.png",
+    "source-expanded-workspace-two-tabs.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-expanded-workspace-two-tabs.png",
+    "source-board-two-retained-tabs.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-board-two-retained-tabs.png",
+    "source-project-tab-context-menu.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-project-tab-context-menu.png",
+    "source-restored-side-panel.png": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/quiet-precision-tabs-2026-09-21/source-restored-side-panel.png",
+    "../design-directions-2026-09-21/README.md": "/Users/aleksandersk/Documents/programming/Projects/project_folder/outputs/design-directions-2026-09-21/README.md"
+  },
+  "local_links_exist": true
+}

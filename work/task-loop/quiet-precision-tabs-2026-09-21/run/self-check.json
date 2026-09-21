@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-09-21T17:44:57.468362+00:00",
+  "baseline_changed": [],
+  "http": {
+    "04-file-workspace.png": 200,
+    "05-reading-focus.png": 200,
+    "source-restored-side-panel.png": 200,
+    "index.html": 200,
+    "02-clear-levels.png": 200,
+    "01-board-with-project-tabs.png": 200,
+    "README.md": 200,
+    "03-compact-precision.png": 200,
+    "01-quiet-precision-updated.png": 200,
+    "source-expanded-workspace-two-tabs.png": 200,
+    "source-board-two-retained-tabs.png": 200,
+    "source-project-tab-context-menu.png": 200
+  }
+}

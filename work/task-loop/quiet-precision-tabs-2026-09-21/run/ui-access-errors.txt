@@ -1,0 +1,1 @@
+2026-09-21: Native getApp failed with ScreenCaptureKit -3811. Browser existing handle failed Browser is not available:1. cua reset/getState returns browsers:[]. Coordinator created browser 1 tab 3 for loopback runtime; executor getTab still returned Browser is not available:1. Need fresh host agent for UI capture.

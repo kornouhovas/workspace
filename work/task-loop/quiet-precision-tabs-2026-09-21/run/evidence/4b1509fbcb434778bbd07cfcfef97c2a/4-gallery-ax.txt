@@ -1,0 +1,77 @@
+Browser tab: 1, Title: "Quiet Precision — вкладки и вариации", URL: "http://127.0.0.1:8771/".
+0 AXWebArea Quiet Precision — вкладки и вариации, URL: 127.0.0.1:8771/
+	1 container
+		2 text WORKSPACE / QUIET PRECISION / REFINEMENT
+		3 heading Выбранный стиль. Вкладки карточек на месте., Value: 1
+			4 text Выбранный стиль.
+			5 text Вкладки карточек на месте.
+		6 text Обновлённый первый вариант и четыре близкие вариации. Во всех отдельно показаны Board/Table и открытые проекты Workspace App / Client Portal. Рекомендую №1  как прямое продолжение выбранного дизайна.  №2  яснее разделяет виды и карточки, ценой дополнительной строки. Статичные макеты. Код приложения и рабочие данные сохранены. 
+		7 link Description: Отчёт: проверенное поведение, карта действий и ограничения, Value: 127.0.0.1:8771/README.md
+		8 text .
+		9 link Description: №1 · Доска, Value: 127.0.0.1:8771/#board
+		10 link Description: 1 · Quiet Precision, Value: 127.0.0.1:8771/#v1
+		11 link Description: 2 · Clear Levels, Value: 127.0.0.1:8771/#v2
+		12 link Description: 3 · Compact Precision, Value: 127.0.0.1:8771/#v3
+		13 link Description: 4 · File Workspace, Value: 127.0.0.1:8771/#v4
+		14 link Description: 5 · Reading Focus, Value: 127.0.0.1:8771/#v5
+	15 container
+		16 container board
+			17 heading №1 · Доска после открытия карточек, Value: 2
+				18 text №1 · Доска после открытия карточек
+			19 text Board активен. Открытые Workspace App и Client Portal остаются вкладками, хотя сейчас не выбраны. Это второе состояние первого варианта, не отдельное направление.
+			20 link Description: Доска и отдельные сохранённые вкладки проектов, Value: 127.0.0.1:8771/01-board-with-project-tabs.png
+		21 text Во всех пяти кадрах ниже активно одно и то же состояние: полноэкранный Workspace App, Status = In Progress, README.md. Панель занимает основную область, sidebar сохраняется.
+		22 container v1
+			23 heading 1. Quiet Precision · обновлённый, Value: 2
+				24 text 1. Quiet Precision · обновлённый
+			25 link Description: Quiet Precision · обновлённый: Workspace App active, Client Portal inactive, Board/Table separate, Value: 127.0.0.1:8771/01-quiet-precision-updated.png
+			26 text Минимальное изменение выбранного дизайна: группы видов и открытых проектов стоят рядом, разделены вертикальной линией. Свойства и файлы идут сверху вниз.
+			27 container
+				28 text Плюс:  Самая близкая к понравившемуся варианту композиция; знакомая навигация.
+			29 container
+				30 text Компромисс:  Когда вкладок много, одной строке становится тесно.
+		31 container v2
+			32 heading 2. Clear Levels · два уровня, Value: 2
+				33 text 2. Clear Levels · два уровня
+			34 link Description: Clear Levels · два уровня: Workspace App active, Client Portal inactive, Board/Table separate, Value: 127.0.0.1:8771/02-clear-levels.png
+			35 text Views и Open projects вынесены в два явно подписанных ряда. Остальная светлая палитра, sidebar и содержимое сохранены.
+			36 container
+				37 text Плюс:  Самое ясное различие между видом рабочего пространства и открытой карточкой.
+			38 container
+				39 text Компромисс:  Дополнительная строка отнимает высоту, вокруг содержимого больше рамок.
+		40 container v3
+			41 heading 3. Compact Precision · плотнее, Value: 2
+				42 text 3. Compact Precision · плотнее
+			43 link Description: Compact Precision · плотнее: Workspace App active, Client Portal inactive, Board/Table separate, Value: 127.0.0.1:8771/03-compact-precision.png
+			44 text Контекст Operations уменьшен, верхняя панель и строки свойств компактнее. Проект выделяется без большого промежутка.
+			45 container
+				46 text Плюс:  Больше места для длинного списка файлов и множества свойств.
+			47 container
+				48 text Компромисс:  Меньше воздуха, более мелкие подписи; потребуется проверка читаемости.
+		49 container v4
+			50 heading 4. File Workspace · файлы в центре, Value: 2
+				51 text 4. File Workspace · файлы в центре
+			52 link Description: File Workspace · файлы в центре: Workspace App active, Client Portal inactive, Board/Table separate, Value: 127.0.0.1:8771/04-file-workspace.png
+			53 text Файлы слева в широкой области, свойства справа в узкой колонке внутри того же полноэкранного проекта.
+			54 container
+				55 text Плюс:  Удобно при частом обращении к содержимому папки; свойства всегда рядом.
+			56 container
+				57 text Компромисс:  На узком окне колонки придётся складывать; длинным текстовым свойствам справа теснее.
+		58 container v5
+			59 heading 5. Reading Focus · спокойные линии, Value: 2
+				60 text 5. Reading Focus · спокойные линии
+			61 link Description: Reading Focus · спокойные линии: Workspace App active, Client Portal inactive, Board/Table separate, Value: 127.0.0.1:8771/05-reading-focus.png
+			62 text Вкладки оформлены как документы, активная подчёркнута. У свойств лёгкие разделители, крупнее заголовок и свободнее вертикальный ритм.
+			63 container
+				64 text Плюс:  Меньше ощущения формы и рамок, спокойнее просмотр одной карточки.
+			65 container
+				66 text Компромисс:  Реже видны элементы по высоте, чем в компактном варианте.
+		67 heading Проверено в реальном renderer, Value: 2
+			68 text Проверено в реальном renderer
+		69 text Карточка → боковая панель → Expand → вкладка проекта. Board сохраняет вкладки. Restore убирает только нужную вкладку и возвращает панель. Снимки получены на временных данных через диагностический transport; native Electron capture недоступен.
+		70 link Description: expanded-workspace-two-tabs, Value: 127.0.0.1:8771/source-expanded-workspace-two-tabs.png
+		71 link Description: board-two-retained-tabs, Value: 127.0.0.1:8771/source-board-two-retained-tabs.png
+		72 link Description: project-tab-context-menu, Value: 127.0.0.1:8771/source-project-tab-context-menu.png
+		73 link Description: restored-side-panel, Value: 127.0.0.1:8771/source-restored-side-panel.png
+
+The focused UI element is 0 AXWebArea Quiet Precision — вкладки и вариации, URL: 127.0.0.1:8771/

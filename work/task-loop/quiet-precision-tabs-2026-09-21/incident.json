@@ -1,0 +1,14 @@
+{
+  "id": "design-missed-expanded-project-tabs",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/design-directions-2026-09-21/run",
+  "scenario": "design-first-review",
+  "phase": "delivering",
+  "symptom": "User observed missing full-screen project tabs in delivered design concepts",
+  "basis": "observed",
+  "source": "User correction in current task",
+  "observed_at": "2026-09-21T17:32:44.889437+00:00",
+  "summary": "Prior function map mentioned project tabs but visual concepts omitted them. Need explicit visible tab acceptance on new linked design run. Earlier successful static-scope review remains history; not evidence of coverage of omitted state.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/user-correction.txt"
+  ]
+}

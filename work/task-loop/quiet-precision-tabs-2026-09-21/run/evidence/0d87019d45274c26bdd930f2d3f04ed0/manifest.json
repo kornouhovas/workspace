@@ -1,0 +1,18 @@
+{
+  "check": "visible-tabs",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent visual/file/source review; raw UI actions by runtime-inspector and capture by gallery_capture",
+  "observer": "/root/design_verifier",
+  "observed_at": "2026-09-21T17:47:27.038088+00:00",
+  "summary": "Independently visually inspected all five full-screen project PNGs. Each has Board and Table separately from Workspace App (lavender selected) and Client Portal (unselected); project Workspace App fills main area; Properties with Status In Progress and no dropdown indicator; Add property/Choose type; File tree README.md and 1 item; restore and close visible. Extra board is a second state of #1, with Board selected, both project tabs retained/inactive, six original projects/statuses, Add View/Customize Columns visible. Exactly five directions plus this clearly described companion state.",
+  "verdict": "pass",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/verifier/report.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/verifier/raw-checks.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/artifact-hashes.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/runtime-inspector/observations.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/gallery-capture/gallery-ax.txt",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/quiet-precision-tabs-2026-09-21/run/gallery-capture/gallery-full.png"
+  ]
+}

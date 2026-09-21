@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-09-21T17:37:49.693Z",
+  "url": "http://127.0.0.1:8770/",
+  "transport": "isolated renderer and temporary shim fixture, not native Electron",
+  "observed": [
+    "Card opens side panel without creating project tab.",
+    "Expand project creates named project tab and selects it; Board and Table stay visible but unselected.",
+    "Expanding second project retains first project tab.",
+    "Selecting Board retains both project tabs, both unselected.",
+    "Project tab context menu: Duplicate tab, Restore view, Close view.",
+    "Restore side panel on Workspace App returns to Board selected, opens Workspace App side panel, removes Workspace App project tab, retains Client Portal tab."
+  ],
+  "actions": [
+    "click Workspace App in Table",
+    "click Expand project",
+    "click Board",
+    "click Client Portal",
+    "click Expand project",
+    "click Workspace App tab",
+    "right click Workspace App tab",
+    "Escape",
+    "click Board",
+    "click Workspace App tab",
+    "click Restore side panel"
+  ],
+  "limitations": [
+    "Native Electron not captured by this agent.",
+    "Duplicate/Close menu items observed, not activated."
+  ]
+}
