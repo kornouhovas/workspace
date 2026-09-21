@@ -1,0 +1,16 @@
+{
+  "id": "compact-toolbar-first-review",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run",
+  "scenario": "tab-aware-design-first-review",
+  "process_version": "task-loop-v1-tabs-visible",
+  "result": "fail",
+  "guardrail": "pass",
+  "basis": "observed",
+  "source": "Independent verifier final report, image review and raw checks",
+  "observed_at": "2026-09-21T18:06:43.757364+00:00",
+  "summary": "First review failed continuity: generated column/card controls absent from runtime; corrected separately in attempt2.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/verifier/report-attempt1.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/verifier/raw-checks-attempt1.json"
+  ]
+}

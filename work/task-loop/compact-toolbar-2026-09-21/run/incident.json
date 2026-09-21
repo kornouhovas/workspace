@@ -1,0 +1,14 @@
+{
+  "id": "generated-toolbar-retained-title-row",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run",
+  "scenario": "design-first-review",
+  "phase": "implementing",
+  "symptom": "First ImageGen output retained Operations heading above the requested single upper row",
+  "basis": "observed",
+  "source": "ImageGen result and executor visual inspection",
+  "observed_at": "2026-09-21T18:04:08.991119+00:00",
+  "summary": "Refined before verification by explicitly deleting standalone heading; no global process modification. Prompt compliance is not evidence, visible row count checked.",
+  "artifacts": [
+    "/Users/aleksandersk/.codex/generated_images/01a0c4f5-460b-7341-a475-61f28b35febf/exec-e8904770-f623-4de2-bcad-66b03c5b3af3.png"
+  ]
+}

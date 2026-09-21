@@ -1,0 +1,15 @@
+{
+  "check": "continuity",
+  "attempt": 2,
+  "basis": "observed",
+  "source": "Independent verifier image inspection, hashes and HTTP retrieval",
+  "observer": "/root/design_verifier",
+  "observed_at": "2026-09-21T18:07:14.120760+00:00",
+  "summary": "Attempt1 defect corrected: no +/ellipsis in column headings and no card ellipsis remain. README now correctly states folder-derived projects and no invented card creation/column/card menus. Compact neutral/lavender/sidebar identity and six exact projects/status memberships retained. Board active, two project tabs inactive. Unchanged expanded frame retains active Workspace App, inactive Client Portal, readonly In Progress status, property creation access, README.md/1 item, restore and close. All requested continuity holds.",
+  "verdict": "pass",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/verifier/report-attempt2.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/verifier/raw-checks-attempt2.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/artifact-hashes.json"
+  ]
+}

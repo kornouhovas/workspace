@@ -1,0 +1,15 @@
+# Attempt 2 — PASS
+
+safety — pass
+Fresh SHA256 baseline comparison: live .workspace and previous outputs unchanged. Frozen hashes match; git diff HEAD empty. Prior source runtime evidence/references remain unchanged.
+
+toolbar — pass
+Corrected Board PNG visually reviewed: single top row retains Board/Table, separate Workspace App/Client Portal, bare +/sliders/ellipsis without labels, outline or filled action containers. No secondary toolbar. Expanded PNG hash identical to independently viewed attempt1 version.
+
+continuity — pass
+Attempt1 defect corrected: no +/ellipsis in column headings and no card ellipsis remain. README now correctly states folder-derived projects and no invented card creation/column/card menus. Compact neutral/lavender/sidebar identity and six exact projects/status memberships retained. Board active, two project tabs inactive. Unchanged expanded frame retains active Workspace App, inactive Client Portal, readonly In Progress status, property creation access, README.md/1 item, restore and close. All requested continuity holds.
+
+delivery — pass
+Fresh GET: four package files HTTP 200 and byte-identical; all index image/report local paths exist. Both PNGs have been visually decoded (new board now; identical expanded version in attempt1). README explicitly specifies no hover background as future implementation behavior, not tested runtime behavior.
+
+Static concept review only; hover, keyboard and responsive behavior not verified.

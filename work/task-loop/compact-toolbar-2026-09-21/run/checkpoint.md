@@ -1,0 +1,1 @@
+Done, attempt2 supported. Independent verifier all four checks PASS. Two PNGs + gallery/README on http://127.0.0.1:8772. Product and live data unchanged. First review failure retained in learning and attempt1 report. Incidents generated-toolbar-retained-title-row and generated-board-invented-controls. Process improvement remains inconclusive; no global skills modified.

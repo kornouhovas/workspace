@@ -1,0 +1,14 @@
+{
+  "id": "generated-board-invented-controls",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run",
+  "scenario": "design-first-review",
+  "phase": "verifying",
+  "symptom": "Independent verifier found column add/menu and card menu absent in actual source",
+  "basis": "observed",
+  "source": "Independent verifier /root/design_verifier",
+  "observed_at": "2026-09-21T18:05:03.646961+00:00",
+  "summary": "Reference mockup controls were inherited without comparing against real runtime inventory. Remove unsupported controls, correct README, independently recheck attempt 2.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-toolbar-2026-09-21/run/attempt-1/01-compact-board.png"
+  ]
+}
