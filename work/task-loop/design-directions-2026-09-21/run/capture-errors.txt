@@ -1,0 +1,4 @@
+Observed cua_repl native capture failure after source-detail.png, 2026-09-21:
+Computer Use server error -10005: ScreenCaptureKit SCStreamErrorDomain -3812 Failed due to an invalid parameter.
+Repeated getAXState and getApp failed. Restarted isolated Electron; getApp then returned -3811 Failed to start stream due to audio/video capture failure.
+Four source screenshots already saved. Browser screenshots still work. Remaining native surfaces recorded as code-inspected only.
