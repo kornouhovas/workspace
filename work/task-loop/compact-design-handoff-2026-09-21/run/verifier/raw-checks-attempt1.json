@@ -1,0 +1,207 @@
+{
+  "timestamp": "2026-09-21T18:24:35.584878+00:00",
+  "observer": "/root/edge_inventory",
+  "links": [
+    {
+      "source": "docs/design/compact-edge-matrix.md",
+      "target": "compact-redesign-handoff.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-edge-matrix.md",
+      "target": "../../work/task-loop/compact-design-handoff-2026-09-21/run/source-inventory.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-edge-matrix.md",
+      "target": "../../work/task-loop/compact-design-handoff-2026-09-21/run/targeted-tests.txt",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-edge-matrix.md",
+      "target": "../../work/task-loop/compact-design-handoff-2026-09-21/run/ui-observations.json",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-edge-matrix.md",
+      "target": "../../work/task-loop/quiet-precision-tabs-2026-09-21/run/diagnostic-harness.mjs",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../prd.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../ui-guidelines.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../interface.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../architecture.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../data-model.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../api/workspace-properties.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../api/workspace-views.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../../outputs/compact-toolbar-2026-09-21/01-compact-board.png",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../../outputs/compact-toolbar-2026-09-21/02-compact-expanded.png",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "compact-edge-matrix.md",
+      "exists": true
+    },
+    {
+      "source": "docs/design/compact-redesign-handoff.md",
+      "target": "../../work/task-loop/compact-design-handoff-2026-09-21/run/source-inventory.md",
+      "exists": true
+    }
+  ],
+  "case_ids": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14",
+    "E15",
+    "E16",
+    "E17",
+    "E18",
+    "E19",
+    "E20",
+    "E21",
+    "E22",
+    "E23",
+    "E24",
+    "E25",
+    "E26",
+    "E27",
+    "E28",
+    "E29",
+    "E30",
+    "E31",
+    "E32",
+    "E33",
+    "E34",
+    "E35",
+    "E36",
+    "E37",
+    "E38",
+    "E39",
+    "E40",
+    "E41",
+    "E42",
+    "E43",
+    "E44",
+    "E45",
+    "E46",
+    "E47",
+    "E48",
+    "E49",
+    "E50",
+    "E51",
+    "E52",
+    "E53",
+    "E54",
+    "E55",
+    "E56"
+  ],
+  "hashes": {
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/docs/design/compact-edge-matrix.md": "dcdfd394e73cacafad1c1c01615209d3f08ea6a836e73dff7fb1ca66dc684b35",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/docs/design/compact-redesign-handoff.md": "0d23e6fafb5cd519b2072ef2998e8bd7a0f48eebb7dc7c2c14f68524f34458e2"
+  },
+  "png_sizes": {
+    "duplicate-tabs-1440.png": [
+      65536,
+      4292542531
+    ],
+    "table-1024.png": [
+      65536,
+      4292542531
+    ],
+    "collapsed-1024.png": [
+      65536,
+      4292542531
+    ],
+    "empty-search.png": [
+      65536,
+      4292542531
+    ],
+    "tabs-overflow-1024.png": [
+      65536,
+      4292542531
+    ],
+    "customize-1024.png": [
+      65536,
+      4292542531
+    ],
+    "panel-1024.png": [
+      65536,
+      4292542531
+    ],
+    "board-1024.png": [
+      65536,
+      4292542531
+    ],
+    "panel-800-stress.png": [
+      65536,
+      4292542531
+    ]
+  },
+  "git status --short --branch": {
+    "exit": 0,
+    "stdout": "## codex/workspace-design-directions\n?? docs/design/\n?? work/task-loop/compact-design-handoff-2026-09-21/\n",
+    "stderr": ""
+  },
+  "git diff --name-only": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "git diff --check": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "git diff 2f7cb00 -- src electron test outputs": {
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "png_sizes_note": "Raw byte offset dimensions invalid: files are JPEG content with .png extension. Disregard png_sizes; sips metadata in separate image-metadata.txt is authoritative."
+}

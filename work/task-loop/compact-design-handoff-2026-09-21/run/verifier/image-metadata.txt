@@ -1,0 +1,27 @@
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/board-1024.png
+  pixelWidth: 1024
+  pixelHeight: 720
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/collapsed-1024.png
+  pixelWidth: 1024
+  pixelHeight: 496
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/customize-1024.png
+  pixelWidth: 1024
+  pixelHeight: 496
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/duplicate-tabs-1440.png
+  pixelWidth: 1440
+  pixelHeight: 960
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/empty-search.png
+  pixelWidth: 1024
+  pixelHeight: 720
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/panel-1024.png
+  pixelWidth: 1024
+  pixelHeight: 496
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/panel-800-stress.png
+  pixelWidth: 800
+  pixelHeight: 720
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/table-1024.png
+  pixelWidth: 1024
+  pixelHeight: 720
+/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/tabs-overflow-1024.png
+  pixelWidth: 1024
+  pixelHeight: 720

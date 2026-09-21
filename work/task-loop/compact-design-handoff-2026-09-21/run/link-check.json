@@ -1,0 +1,82 @@
+[
+  {
+    "file": "docs/design/compact-edge-matrix.md",
+    "link": "compact-redesign-handoff.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-edge-matrix.md",
+    "link": "../../work/task-loop/compact-design-handoff-2026-09-21/run/source-inventory.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-edge-matrix.md",
+    "link": "../../work/task-loop/compact-design-handoff-2026-09-21/run/targeted-tests.txt",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-edge-matrix.md",
+    "link": "../../work/task-loop/compact-design-handoff-2026-09-21/run/ui-observations.json",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-edge-matrix.md",
+    "link": "../../work/task-loop/quiet-precision-tabs-2026-09-21/run/diagnostic-harness.mjs",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../prd.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../ui-guidelines.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../interface.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../architecture.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../data-model.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../api/workspace-properties.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../api/workspace-views.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../../outputs/compact-toolbar-2026-09-21/01-compact-board.png",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../../outputs/compact-toolbar-2026-09-21/02-compact-expanded.png",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "compact-edge-matrix.md",
+    "exists": true
+  },
+  {
+    "file": "docs/design/compact-redesign-handoff.md",
+    "link": "../../work/task-loop/compact-design-handoff-2026-09-21/run/source-inventory.md",
+    "exists": true
+  }
+]

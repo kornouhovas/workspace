@@ -1,0 +1,91 @@
+Browser tab: 901527124, Title: "Workspace", URL: "http://127.0.0.1:8770/".
+0 AXWebArea Workspace, URL: 127.0.0.1:8770/
+	1 container root
+		2 container
+			3 button Show sidebar
+			70 tab group View actions
+				71 tab (selected, settable, boolean) Board, Value: 1, ID: radix-_r_2_-trigger-view:c68b862a-d9fe-4968-8d47-97efbc600b62-board
+				72 tab (selectable, settable, boolean) Table, Value: 0, ID: radix-_r_2_-trigger-view:c68b862a-d9fe-4968-8d47-97efbc600b62-table
+			10 container Board
+				11 container
+					12 container Done projects
+						13 container
+							14 heading Done, Value: 3
+								15 text Done
+							16 text 2
+						17 container
+							18 heading Brand System, Value: 4
+								19 button Brand System
+							20 definition list
+								21 container Status
+									22 text Status
+								23 text Done
+						24 container
+							25 heading Research Notes, Value: 4
+								26 button Research Notes
+							27 definition list
+								28 container Status
+									29 text Status
+								30 text Done
+					31 container In Progress projects
+						32 container
+							33 heading In Progress, Value: 3
+								34 text In Progress
+							35 text 2
+						36 container
+							37 heading Client Portal, Value: 4
+								38 button Client Portal
+							39 definition list
+								40 container Status
+									41 text Status
+								42 text In Progress
+						43 container
+							44 heading Workspace App, Value: 4
+								45 button Workspace App
+							46 definition list
+								47 container Status
+									48 text Status
+								49 text In Progress
+					50 container Planned projects
+						51 container
+							52 heading Planned, Value: 3
+								53 text Planned
+							54 text 2
+						55 container
+							56 heading Atlas Website, Value: 4
+								57 button Atlas Website
+							58 definition list
+								59 container Status
+									60 text Status
+								61 text Planned
+						62 container
+							63 heading Studio Library, Value: 4
+								64 button Studio Library
+							65 definition list
+								66 container Status
+									67 text Status
+								68 text Planned
+			73 button Close project details
+			74 container Workspace App
+				75 button Resize project details panel
+				76 button Expand project
+				77 button Close project details
+				78 heading Workspace App, Value: 2, ID: project-detail-title
+					79 text Workspace App
+				80 container Properties
+					81 heading Properties, Value: 3, ID: project-properties-heading
+						82 button (expanded) Properties, Secondary Actions: Collapse
+					83 definition list project-visible-properties
+						84 container Status property actions
+							85 button Status property actions
+						86 text In Progress
+						87 pop up button (collapsed) Add property Choose type, ID: radix-_r_i_, Secondary Actions: Expand
+				88 container File tree
+					89 heading File tree, Value: 3, ID: project-file-tree-heading
+						90 text File tree
+					91 text 1 item
+					92 content list
+						93 button Description: File: README.md, Help: In Progress/Workspace App/README.md
+		69 container Notifications alt+T
+
+The focused UI element is 45 button Workspace App

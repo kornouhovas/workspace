@@ -1,0 +1,15 @@
+{
+  "id": "diagnostic-capture-height-drift",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run",
+  "scenario": "tab-aware-design-first-review",
+  "phase": "implementing",
+  "symptom": "Three CUA captures were1024x496 despite earlier1024x720 viewport request",
+  "basis": "observed",
+  "source": "sips pixelWidth/pixelHeight and image inspection",
+  "observed_at": "2026-09-21T18:23:55.076534+00:00",
+  "summary": "Documented actual dimensions and limited claims; full720 acceptance remains required. Other captures have expected dimensions.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/customize-1024.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/ui-observations.json"
+  ]
+}

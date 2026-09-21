@@ -1,0 +1,44 @@
+{
+  "observer": "/root/design_executor",
+  "observed_at": "2026-09-21T18:22:57.259709+00:00",
+  "transport": "Chrome CUA, unchanged renderer at127.0.0.1:8770 + existing read/select-only backend fixture /tmp/workspace-design-review; not native Electron",
+  "actions": [
+    "Board1024 screenshot: saved384px columns overflow horizontally",
+    "Search zz-no-match-\u4e0d\u5b58\u5728 yields empty Board AX, no no-result explanatory text",
+    "Collapse sidebar removes interactive navigation from AX; Show sidebar remains",
+    "Customize1024 shows Name required disabled, Status checkbox, value filters, saved384 slider",
+    "Escape closes Customize and AX focus returns to its trigger",
+    "Workspace App side panel hides view actions",
+    "Expand produces project tab",
+    "Duplicate produces independent instance IDs",
+    "Restore removes one duplicated instance, Board active and panel open",
+    "1440 duplicate screenshot captured;800 panel stress captured; viewport reset",
+    "12 project tabs1024 visually collapse to file icons; names remain accessible DOM; restore/close reachable",
+    "Table selected retains12 project tabs and shows6 rows; view actions return"
+  ],
+  "artifacts": [
+    "duplicate-tabs-1440.png",
+    "table-1024.png",
+    "collapsed-1024.png",
+    "empty-search.png",
+    "tabs-overflow-1024.png",
+    "customize-1024.png",
+    "panel-1024.png",
+    "board-1024.png",
+    "panel-800-stress.png",
+    "customize-1024.ax.txt",
+    "tabs-overflow-1024.txt",
+    "duplicate-tabs-1440.ax.txt",
+    "restore-one-instance.ax.txt",
+    "board-1024.ax.txt",
+    "empty-search.ax.txt",
+    "panel-1024.ax.txt"
+  ],
+  "limitations": [
+    "No native capture/integration",
+    "No long-name custom fixture or all editors exercised",
+    "No zoom, full keyboard sweep, contrast or drag pointer run",
+    "Browser initial IAB unavailable; Chrome fallback succeeded",
+    "Three mid-series PNG captures1024x496 despite requested1024x720; do not infer full720 layout from these."
+  ]
+}

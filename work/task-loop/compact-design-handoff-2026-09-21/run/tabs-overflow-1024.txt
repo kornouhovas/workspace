@@ -1,0 +1,117 @@
+- button "Show sidebar":
+- complementary:
+  - button:
+    - text: Add Workspace
+  - text: Search
+  - searchbox
+  - paragraph: Workspaces
+  - button:
+    - generic: Operations
+  - button:
+  - button:
+    - generic: Workspace
+  - button:
+  - button:
+    - text: Settings
+- main:
+  - tablist "View actions":
+    - tab "Board":
+      - generic: Board
+    - tab "Table":
+      - generic: Table
+  - tablist "Expanded projects":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App":
+    - tab "Workspace App" [active] [selected]:
+  - status
+  - region "Board":
+    - region "Done projects":
+      - heading "Done" [level=3]
+      - generic: "2"
+      - article:
+        - button
+        - heading "Brand System" [level=4]:
+          - button "Brand System":
+            - generic: Brand System
+        - term: Status
+        - definition:
+          - generic: Done
+      - article:
+        - button
+        - heading "Research Notes" [level=4]:
+          - button "Research Notes":
+            - generic: Research Notes
+        - term: Status
+        - definition:
+          - generic: Done
+    - region "In Progress projects":
+      - heading "In Progress" [level=3]
+      - generic: "2"
+      - article:
+        - button
+        - heading "Client Portal" [level=4]:
+          - button "Client Portal":
+            - generic: Client Portal
+        - term: Status
+        - definition:
+          - generic: In Progress
+      - article:
+        - button
+        - heading "Workspace App" [level=4]:
+          - button "Workspace App":
+            - generic: Workspace App
+        - term: Status
+        - definition:
+          - generic: In Progress
+    - region "Planned projects":
+      - heading "Planned" [level=3]
+      - generic: "2"
+      - article:
+        - button
+        - heading "Atlas Website" [level=4]:
+          - button "Atlas Website":
+            - generic: Atlas Website
+        - term: Status
+        - definition:
+          - generic: Planned
+      - article:
+        - button
+        - heading "Studio Library" [level=4]:
+          - button "Studio Library":
+            - generic: Studio Library
+        - term: Status
+        - definition:
+          - generic: Planned
+- dialog "Workspace App":
+  - button "Restore side panel":
+  - button "Close project details":
+  - banner:
+    - heading "Workspace App" [level=2]
+  - region "Properties":
+    - heading "Properties" [level=3]:
+      - button "Properties" [expanded]:
+        - text: Properties
+    - term:
+      - button "Status property actions":
+        - generic: Status
+    - definition:
+      - generic: In Progress
+    - button "Add property Choose type":
+      - generic: Add property
+      - generic: Choose type
+  - region "File tree":
+    - heading "File tree" [level=3]
+    - generic: 1 item
+    - list:
+      - 'button "File: README.md"':
+        - generic: README.md
+- region "Notifications alt+T"

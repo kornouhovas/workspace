@@ -1,0 +1,15 @@
+{
+  "id": "handoff-action-and-test-overclaim",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run",
+  "scenario": "tab-aware-design-first-review",
+  "phase": "verifying",
+  "symptom": "Separate toolbar menu inferred from PNG, selection fallback claimed reducer-tested",
+  "basis": "observed",
+  "source": "Independent verifier /root/edge_inventory source comparison",
+  "observed_at": "2026-09-21T18:25:10.639161+00:00",
+  "summary": "Removed standalone menu requirement; context menu remains on view tab. Selection fallback mapped to App inspection and runtime unverified, removal suite remains tested.",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/attempt-1-docs/compact-redesign-handoff.md",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-design-handoff-2026-09-21/run/attempt-1-docs/compact-edge-matrix.md"
+  ]
+}
