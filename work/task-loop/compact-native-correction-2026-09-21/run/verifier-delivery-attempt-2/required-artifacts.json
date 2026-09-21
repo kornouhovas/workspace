@@ -1,0 +1,128 @@
+[
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/task.json",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 3873,
+    "sha256": "cc2c39b3dcb8be1c73f7a456f78134cd4b272bb00b16be652d8ad9a63afebbd4"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/attempt2-checks.md",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 1533,
+    "sha256": "be2c772d427f581cf551d9e73477692f8e39c37485ca634d3a4d4f2e4219d0a7"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/attempt2-deviation-map.md",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 3612,
+    "sha256": "20306cd0bf6791fad3d57066d5136d402cdd2c15d01568c92933616e18e70b4a"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/attempt2-process-assessment.md",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 1414,
+    "sha256": "976a3ac78026389978c97ab933cce57a85ff5ba7af86034b92277e979315c198"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/attempt2-provenance.md",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 4463,
+    "sha256": "3dd84d3af575b67326435a15ef00cfcc4ad9a67e9f10a1992e56eb6088dbac4e"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/capture-native-equal-viewport.swift",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 5689,
+    "sha256": "cde6308da7eb01e1930afd2af5a9877825b09e32cfb2ef85a4b84d2f37713077"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-1024-capture-log.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 292,
+    "sha256": "675f66fcc0b3e0b3d343a20da5e047082483bab5537fa3af1186129deac7c0db"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-1440-capture-log.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 292,
+    "sha256": "4ba061207a018a252e16ff61af78d3fa9113c666cd967c260456302bf2fe795c"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-equal-capture-log.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 297,
+    "sha256": "a244e6b970e6d8b518a7fbc89345bb9483a4c8a3cf4996fbe6608032412ff0ee"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/tests-attempt2-final.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 39225,
+    "sha256": "ab7c297e8e705089361765cb66fc80f201bd9f842c415bfb4d851800d07617b3"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/typecheck-attempt2-final.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 45,
+    "sha256": "96a27d83a001329c2432224b5c120df9f94a511adff948cca07ac2e72d883286"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/build-attempt2-final.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 1057,
+    "sha256": "1616daea3b3426562bf759b63f6f665ece2bd5b89adf6256c67dc90cec6843e8"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/diff-check-attempt2-final.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2/report.md",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 5972,
+    "sha256": "191c5392544793800d7373c9df1171df0ad50d974eb0a009e8fc050d26146a24"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2/npm-test.txt",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 39344,
+    "sha256": "a3e5ffa3a31f410819187ad621c8d32e746470f0a65cef628fdd45e463c254f7"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2/visual-comparison.json",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 1997,
+    "sha256": "fd5efa9d14061c147e9686ad104307fcba6dc0ce91d0c706951fcb6b1ce06d41"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/freeze-manifest-attempt2.sha256",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 4790,
+    "sha256": "93e55a67e1bdb4a8516e86746b9152b5e41cafdf4d61f64c3982d5d7e0cde800"
+  },
+  {
+    "path": "work/task-loop/compact-native-correction-2026-09-21/run/state.json",
+    "present_readable": true,
+    "committed": true,
+    "bytes": 32870,
+    "sha256": "ebe00aea9645c4d0dddb7e3063bcccbfba77ecfa9bb196627a675e9ccc109805"
+  }
+]

@@ -2,12 +2,12 @@
   "schema_version": 1,
   "run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run",
   "attempt": 2,
-  "updated_at": "2026-09-21T21:03:34+00:00",
+  "updated_at": "2026-09-21T21:19:08+00:00",
   "agents": [
     {
       "id": "/root/compact_executor",
       "role": "executor",
-      "status": "delivering",
+      "status": "done",
       "owns": [
         "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21",
         "/Users/aleksandersk/Documents/programming/Projects/project_folder/src",
@@ -17,17 +17,17 @@
     {
       "id": "/root/compact_verifier",
       "role": "verifier",
-      "status": "review_complete",
+      "status": "delivery_audit_complete",
       "owns": [
-        "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2"
+        "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2"
       ]
     }
   ],
   "review": {
     "attempt": 2,
-    "status": "quality_outcome_pass_delivery_pending",
-    "report": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-attempt-2/report.md",
+    "status": "pass_with_documented_limits",
+    "report": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/report.md",
     "evidence": []
   },
-  "next_action": "Independent attempt 2 report passed quality and isolated native visual outcome with explicit limits. Create the local reviewable commit and obtain a read-only delivery audit before recording delivery evidence and closing the run."
+  "next_action": "Task-loop phase done and verdict supported on the isolated running Electron fixture. Final checkpoint and delivery audit are staged for the local follow-up commit; report both hashes and the explicit provenance/archive limits."
 }

@@ -1,0 +1,302 @@
+{"command": ["git", "show", "--stat", "--oneline", "--format=short", "02662e94b7521b2754fdceb650a07ba90a1a277a"], "utc": "2026-09-21T21:16:07.028793+00:00", "exit": 0}
+commit 02662e9
+Author: Aleksander Kornoukhov <kornouhovas@gmail.com>
+
+    Match Compact board and project views to native mockups
+
+ docs/design/compact-redesign-handoff.md            |   11 +-
+ docs/ui-guidelines.md                              |    6 +-
+ src/App.tsx                                        |   15 +-
+ src/components/workspace/board-view.tsx            |   44 +-
+ src/components/workspace/left-panel.tsx            |   35 +-
+ src/components/workspace/project-detail-panel.tsx  |   38 +-
+ src/components/workspace/project-tabs.tsx          |    6 +-
+ src/components/workspace/view-tabs.tsx             |   42 +-
+ src/styles.css                                     |   90 +-
+ test/dashboardStructure.test.js                    |   21 +-
+ .../run/attempt2-checks.md                         |   11 +
+ .../run/attempt2-deviation-map.md                  |   19 +
+ .../run/attempt2-process-assessment.md             |    7 +
+ .../run/attempt2-provenance.md                     |   37 +
+ .../run/baseline-deviation-map.md                  |   16 +
+ .../run/build-attempt2-final.txt                   |   21 +
+ .../run/build-attempt2.txt                         |   21 +
+ .../run/build-final.txt                            |   21 +
+ .../run/build-iteration-2.txt                      |   21 +
+ .../run/build-iteration-3.txt                      |   21 +
+ .../run/capture-native-equal-viewport.swift        |  127 +
+ .../run/capture-native-window.swift                |   64 +
+ .../run/cdp-attempt2-board-1024.json               |    1 +
+ .../run/cdp-attempt2-board-1440.json               |    1 +
+ .../run/cdp-attempt2-board-1486.json               |    1 +
+ .../run/cdp-attempt2-board-draft.json              |    1 +
+ .../run/cdp-attempt2-expanded-1024.json            |    1 +
+ .../run/cdp-attempt2-expanded-1486.json            |    1 +
+ .../run/cdp-attempt2-focus-screenshot.json         |    1 +
+ .../run/cdp-board-1024.json                        |    1 +
+ .../run/cdp-board-1440.json                        |    1 +
+ .../run/cdp-clear-viewport.json                    |    1 +
+ .../run/cdp-click-add-view.json                    |    1 +
+ .../run/cdp-click-back.json                        |    1 +
+ .../run/cdp-click-board.json                       |    1 +
+ .../run/cdp-click-brand-tab.json                   |    1 +
+ .../run/cdp-click-client-card.json                 |    1 +
+ .../run/cdp-click-close.json                       |    1 +
+ .../run/cdp-click-customize.json                   |    1 +
+ .../run/cdp-click-expand.json                      |    1 +
+ .../run/cdp-click-restore.json                     |    1 +
+ .../run/cdp-click-select-property-actions.json     |    1 +
+ .../run/cdp-click-settings.json                    |    1 +
+ .../run/cdp-click-table.json                       |    1 +
+ .../run/cdp-click-workspace-card.json              |    1 +
+ .../run/cdp-click-workspace.json                   |    1 +
+ .../run/cdp-collapse-hidden-properties.json        |    1 +
+ .../run/cdp-command.json                           |    1 +
+ .../run/cdp-delete-select-property.json            |    1 +
+ .../run/cdp-expanded-1024.json                     |    1 +
+ .../run/cdp-expanded-final.json                    |    1 +
+ .../run/cdp-focus-add-view.json                    |    1 +
+ .../run/cdp-focus-screenshot.json                  |    1 +
+ .../run/cdp-focus-state.json                       |    1 +
+ .../run/cdp-hide-select-from-card.json             |    1 +
+ .../run/cdp-inspect-active-tab.json                |    1 +
+ .../run/cdp-inspect-back.json                      |    1 +
+ .../run/cdp-inspect-card-properties.json           |    1 +
+ .../run/cdp-inspect-css.json                       |    1 +
+ .../run/cdp-inspect-expanded.json                  |    1 +
+ .../run/cdp-inspect-focus.json                     |    1 +
+ .../run/cdp-inspect-tab-ancestors.json             |    1 +
+ .../run/cdp-inspect-tabs.json                      |    1 +
+ .../run/cdp-key-escape.json                        |    1 +
+ .../run/cdp-key-tab.json                           |    1 +
+ .../run/cdp-menu-state.json                        |    1 +
+ .../run/cdp-reload.json                            |    1 +
+ .../run/cdp-tab-class.json                         |    1 +
+ .../run/cdp-ui-state.json                          |    1 +
+ .../run/cdp-wait-board-settled.json                |    1 +
+ .../run/cdp-wait-expanded.json                     |    1 +
+ .../run/cdp-wait-state.json                        |    1 +
+ .../run/coordination.json                          |   33 +
+ .../run/dashboard-structure-iteration.txt          |   15 +
+ .../run/diff-check-attempt2-final.txt              |    0
+ .../run/diff-check-attempt2.txt                    |    0
+ .../run/diff-check-final.txt                       |    0
+ .../run/evidence-attempt1-behavior-quality.json    |   18 +
+ .../run/evidence-attempt1-native-provenance.json   |   15 +
+ .../run/evidence-attempt1-native-visual.json       |   17 +
+ .../run/evidence-attempt1-responsive-visual.json   |   17 +
+ .../run/evidence-attempt2-behavior-quality.json    |   19 +
+ .../run/evidence-attempt2-native-provenance.json   |   18 +
+ .../run/evidence-attempt2-native-visual.json       |   18 +
+ .../run/evidence-attempt2-responsive-visual.json   |   20 +
+ .../0cdb4f9da8d141e6a2cdd36a22fd7985/0-report.md   |   23 +
+ .../1-native-final-board-1440x960.png              |  Bin 0 -> 61964 bytes
+ .../2-native-final-board-1024x720.png              |  Bin 0 -> 44013 bytes
+ .../3-native-final-expanded-1024x720.png           |  Bin 0 -> 45507 bytes
+ .../4-native-focus-1024x720.png                    |  Bin 0 -> 42624 bytes
+ .../0cdb4f9da8d141e6a2cdd36a22fd7985/manifest.json |   17 +
+ .../0f6f683b6f7b4f67b4ece240ef796bd5/0-report.md   |   31 +
+ .../1-image-inventory.json                         |  123 +
+ .../2-visual-comparison.json                       |   24 +
+ ...native-attempt2-final-board-window-1440x960.png |  Bin 0 -> 311049 bytes
+ ...ive-attempt2-final-expanded-window-1440x960.png |  Bin 0 -> 171057 bytes
+ ...native-attempt2-final-board-window-1024x720.png |  Bin 0 -> 199957 bytes
+ ...ive-attempt2-final-expanded-window-1024x720.png |  Bin 0 -> 137755 bytes
+ ...native-attempt2-final-focus-window-1024x720.png |  Bin 0 -> 176698 bytes
+ .../0f6f683b6f7b4f67b4ece240ef796bd5/manifest.json |   20 +
+ .../6af7681f6fe6495392e9f4bc6f8214f6/0-report.md   |   31 +
+ .../6af7681f6fe6495392e9f4bc6f8214f6/1-process.txt |    2 +
+ .../6af7681f6fe6495392e9f4bc6f8214f6/2-cwd.txt     |    4 +
+ .../3-cdp-target.txt                               |   10 +
+ .../4-build-index-sha.txt                          |    2 +
+ .../5-attempt2-provenance.md                       |   37 +
+ .../6af7681f6fe6495392e9f4bc6f8214f6/manifest.json |   18 +
+ .../7205101bf1704467aed186714a5bc2a8/0-report.md   |   23 +
+ .../1-native-provenance-check.txt                  |   18 +
+ .../2-native-provenance.md                         |   16 +
+ .../7205101bf1704467aed186714a5bc2a8/manifest.json |   15 +
+ .../75c147702c434ba084315c912ec6ceae/0-report.md   |   31 +
+ .../1-npm-test.txt                                 | 1016 ++++++
+ .../2-typecheck.txt                                |    5 +
+ .../3-build-renderer.txt                           |   22 +
+ .../4-diff-check.txt                               |    1 +
+ .../5-check-project-detail-result.txt              |   10 +
+ .../6-check-menu-visibility-result.txt             |   34 +
+ .../75c147702c434ba084315c912ec6ceae/manifest.json |   19 +
+ .../76dd7d79ea8c49c9b65632ed62227d28/0-report.md   |   23 +
+ .../76dd7d79ea8c49c9b65632ed62227d28/1-check-0.txt | 1018 ++++++
+ .../76dd7d79ea8c49c9b65632ed62227d28/2-check-1.txt |    7 +
+ .../3-build-renderer.txt                           |   24 +
+ .../76dd7d79ea8c49c9b65632ed62227d28/4-check-2.txt |    3 +
+ .../5-native-smoke.md                              |   18 +
+ .../76dd7d79ea8c49c9b65632ed62227d28/manifest.json |   18 +
+ .../d92b3de28af24c738af47b2e1b8647a9/0-report.md   |   23 +
+ .../1-visual-comparison.json                       |   27 +
+ .../2-cua-live-window.txt                          |   17 +
+ .../3-native-final-board-1486x1059.png             |  Bin 0 -> 54799 bytes
+ .../4-native-final-expanded-1486x1059.png          |  Bin 0 -> 50212 bytes
+ .../d92b3de28af24c738af47b2e1b8647a9/manifest.json |   17 +
+ .../f68dff466d46425a9d30e73823436ff2/0-report.md   |   31 +
+ .../1-image-inventory.json                         |  123 +
+ .../2-visual-comparison.json                       |   24 +
+ ...ative-attempt2-final-board-window-1486x1059.png |  Bin 0 -> 335155 bytes
+ ...ve-attempt2-final-expanded-window-1486x1059.png |  Bin 0 -> 182754 bytes
+ .../5-attempt2-deviation-map.md                    |   19 +
+ .../f68dff466d46425a9d30e73823436ff2/manifest.json |   18 +
+ .../run/final-deviation-map.md                     |   22 +
+ .../run/fixture-path.txt                           |    1 +
+ .../run/freeze-manifest-attempt2.sha256            |   34 +
+ .../run/freeze-manifest.sha256                     |   21 +
+ .../run/learning-incident-full-window.json         |   12 +
+ .../run/learning-incident-old-header-result.json   | 1023 ++++++
+ .../run/learning-incident-old-header.json          |   14 +
+ .../run/learning-incident-result.json              |  923 ++++++
+ .../run/learning-incident-surface-gap.json         |   12 +
+ .../run/learning-incident-transition-1440.json     |   12 +
+ .../run/learning-incident-user-correction.json     |   14 +
+ .../run/learning-observation-baseline.json         |   17 +
+ .../run/learning-observation-result.json           |  984 ++++++
+ .../run/learning-scenario.json                     |    7 +
+ .../run/native-1024-capture-log.txt                |    6 +
+ .../run/native-1440-capture-log.txt                |    6 +
+ .../run/native-after-board-1486x1059.png           |  Bin 0 -> 54656 bytes
+ .../run/native-after-expanded-1486x1059.png        |  Bin 0 -> 50225 bytes
+ .../run/native-attempt2-board-draft-1486x1059.png  |  Bin 0 -> 152908 bytes
+ .../run/native-attempt2-board-interim-window.png   |  Bin 0 -> 903031 bytes
+ .../native-attempt2-board-renderer-1024x720.png    |  Bin 0 -> 98858 bytes
+ .../native-attempt2-board-renderer-1440x960.png    |  Bin 0 -> 144534 bytes
+ .../native-attempt2-board-renderer-1486x1059.png   |  Bin 0 -> 155067 bytes
+ .../run/native-attempt2-board-window-1024x720.png  |  Bin 0 -> 176165 bytes
+ .../run/native-attempt2-board-window-1440x960.png  |  Bin 0 -> 311049 bytes
+ .../run/native-attempt2-board-window-compact.png   |  Bin 0 -> 575315 bytes
+ ...ative-attempt2-board-window-equal-1486x1059.png |  Bin 0 -> 295004 bytes
+ .../run/native-attempt2-board-window.png           |  Bin 0 -> 690042 bytes
+ .../native-attempt2-expanded-renderer-1024x720.png |  Bin 0 -> 76670 bytes
+ ...native-attempt2-expanded-renderer-1486x1059.png |  Bin 0 -> 101542 bytes
+ .../native-attempt2-expanded-window-1024x720.png   |  Bin 0 -> 137949 bytes
+ .../native-attempt2-expanded-window-1440x960.png   |  Bin 0 -> 171794 bytes
+ .../native-attempt2-expanded-window-compact.png    |  Bin 0 -> 362745 bytes
+ ...ve-attempt2-expanded-window-equal-1486x1059.png |  Bin 0 -> 182815 bytes
+ .../run/native-attempt2-expanded-window.png        |  Bin 0 -> 441679 bytes
+ ...native-attempt2-final-board-window-1024x720.png |  Bin 0 -> 199957 bytes
+ ...native-attempt2-final-board-window-1440x960.png |  Bin 0 -> 311049 bytes
+ ...ative-attempt2-final-board-window-1486x1059.png |  Bin 0 -> 335155 bytes
+ ...ive-attempt2-final-expanded-window-1024x720.png |  Bin 0 -> 137755 bytes
+ ...ive-attempt2-final-expanded-window-1440x960.png |  Bin 0 -> 171057 bytes
+ ...ve-attempt2-final-expanded-window-1486x1059.png |  Bin 0 -> 182754 bytes
+ ...native-attempt2-final-focus-window-1024x720.png |  Bin 0 -> 176698 bytes
+ .../native-attempt2-focus-renderer-1024x720.png    |  Bin 0 -> 101951 bytes
+ .../run/native-attempt2-focus-window-1024x720.png  |  Bin 0 -> 176721 bytes
+ .../run/native-before-board-1486x1059.png          |  Bin 0 -> 44310 bytes
+ .../run/native-before-expanded-1486x1059.png       |  Bin 0 -> 39841 bytes
+ .../run/native-board-1024x720.png                  |  Bin 0 -> 43809 bytes
+ .../run/native-cdp.mjs                             |  101 +
+ .../run/native-cua-error.txt                       |    6 +
+ .../run/native-equal-capture-log.txt               |    6 +
+ .../run/native-expanded-1024x720.png               |  Bin 0 -> 45525 bytes
+ .../run/native-final-board-1024x720.png            |  Bin 0 -> 44013 bytes
+ .../run/native-final-board-1440x960.png            |  Bin 0 -> 61964 bytes
+ .../run/native-final-board-1486x1059.png           |  Bin 0 -> 54799 bytes
+ .../run/native-final-expanded-1024x720.png         |  Bin 0 -> 45507 bytes
+ .../run/native-final-expanded-1486x1059.png        |  Bin 0 -> 50212 bytes
+ .../run/native-fixture-scan.json                   |  234 ++
+ .../run/native-focus-1024x720.png                  |  Bin 0 -> 42624 bytes
+ .../run/native-iteration-board-1486x1059.png       |  Bin 0 -> 54520 bytes
+ .../run/native-iteration-expanded-1486x1059.png    |  Bin 0 -> 51163 bytes
+ .../run/native-provenance.md                       |   16 +
+ .../run/native-smoke.md                            |   18 +
+ .../run/native-window-capture.swift                |   34 +
+ .../run/native-window-list.swift                   |   13 +
+ .../run/native-window-resize.swift                 |   31 +
+ .../run/native-window-test-after-activate.png      |  Bin 0 -> 664714 bytes
+ .../run/native-window-test.png                     |  Bin 0 -> 70692 bytes
+ .../run/process-assessment.md                      |    7 +
+ .../run/state.json                                 |  562 ++++
+ .../run/tests-attempt2-final.txt                   | 1015 ++++++
+ .../run/tests-attempt2.txt                         | 1015 ++++++
+ .../run/tests-final.txt                            | 1015 ++++++
+ .../run/tests-iteration-1.txt                      | 3467 ++++++++++++++++++++
+ .../run/typecheck-attempt2-final.txt               |    4 +
+ .../run/typecheck-attempt2.txt                     |    4 +
+ .../run/typecheck-final.txt                        |    4 +
+ .../run/user-correction.txt                        |    1 +
+ .../run/verifier-attempt-1/build-renderer.txt      |   24 +
+ .../verifier-attempt-1/cdp-readonly-command.json   |    1 +
+ .../verifier-attempt-1/cdp-readonly-result.json    |    9 +
+ .../run/verifier-attempt-1/check-0.txt             | 1018 ++++++
+ .../run/verifier-attempt-1/check-1.txt             |    7 +
+ .../run/verifier-attempt-1/check-2.txt             |    3 +
+ .../run/verifier-attempt-1/cua-live-window.txt     |   17 +
+ .../run/verifier-attempt-1/hash-check.txt          |   24 +
+ .../run/verifier-attempt-1/image-inventory.json    |   85 +
+ .../verifier-attempt-1/native-provenance-check.txt |   18 +
+ .../run/verifier-attempt-1/report.md               |   23 +
+ .../run/verifier-attempt-1/scope-audit.txt         |   10 +
+ .../run/verifier-attempt-1/visual-comparison.json  |   27 +
+ .../run/verifier-attempt-2/build-index-sha.txt     |    2 +
+ .../run/verifier-attempt-2/build-renderer.txt      |   22 +
+ .../verifier-attempt-2/cdp-readonly-command.json   |    1 +
+ .../run/verifier-attempt-2/cdp-readonly-result.txt |   23 +
+ .../run/verifier-attempt-2/cdp-target.txt          |   10 +
+ .../verifier-attempt-2/check-add-view-command.json |    1 +
+ .../verifier-attempt-2/check-add-view-result.txt   |    7 +
+ .../check-board-after-project-command.json         |    1 +
+ .../check-board-after-project-result.txt           |    4 +
+ .../verifier-attempt-2/check-board-command.json    |    1 +
+ .../run/verifier-attempt-2/check-board-result.txt  |    4 +
+ .../check-customize-command.json                   |    1 +
+ .../verifier-attempt-2/check-customize-result.txt  |    8 +
+ .../check-menu-visibility-command.json             |    1 +
+ .../check-menu-visibility-result.txt               |   34 +
+ .../check-project-detail-command.json              |    1 +
+ .../check-project-detail-result.txt                |   10 +
+ .../check-return-board-command.json                |    1 +
+ .../check-return-board-result.txt                  |    5 +
+ .../verifier-attempt-2/check-settings-command.json |    1 +
+ .../verifier-attempt-2/check-settings-result.txt   |    7 +
+ .../verifier-attempt-2/check-table-command.json    |    1 +
+ .../run/verifier-attempt-2/check-table-result.txt  |    4 +
+ .../run/verifier-attempt-2/cua-observation.txt     |    2 +
+ .../run/verifier-attempt-2/cwd.txt                 |    4 +
+ .../run/verifier-attempt-2/diff-check.txt          |    1 +
+ .../run/verifier-attempt-2/diff-names.txt          |   11 +
+ .../dismiss-add-view-command.json                  |    1 +
+ .../verifier-attempt-2/dismiss-add-view-result.txt |    2 +
+ .../dismiss-customize-command.json                 |    1 +
+ .../dismiss-customize-result.txt                   |    2 +
+ .../run/verifier-attempt-2/git-status.txt          |   13 +
+ .../run/verifier-attempt-2/hash-check-after.txt    |   35 +
+ .../run/verifier-attempt-2/hash-check.txt          |   35 +
+ .../run/verifier-attempt-2/image-inventory.json    |  123 +
+ .../independent-native-current.png                 |  Bin 0 -> 69727 bytes
+ .../run/verifier-attempt-2/npm-test.txt            | 1016 ++++++
+ .../verifier-attempt-2/open-add-view-command.json  |    1 +
+ .../verifier-attempt-2/open-add-view-result.txt    |    2 +
+ .../verifier-attempt-2/open-customize-command.json |    1 +
+ .../verifier-attempt-2/open-customize-result.txt   |    2 +
+ .../open-project-tab-command.json                  |    1 +
+ .../verifier-attempt-2/open-project-tab-result.txt |    2 +
+ .../verifier-attempt-2/open-settings-command.json  |    1 +
+ .../verifier-attempt-2/open-settings-result.txt    |    2 +
+ .../run/verifier-attempt-2/process.txt             |    2 +
+ .../project-tab-query-command.json                 |    1 +
+ .../project-tab-query-result.txt                   |   22 +
+ .../run/verifier-attempt-2/report.md               |   31 +
+ .../verifier-attempt-2/return-board-command.json   |    1 +
+ .../return-board-from-project-command.json         |    1 +
+ .../return-board-from-project-result.txt           |    2 +
+ .../run/verifier-attempt-2/return-board-result.txt |    9 +
+ .../return-workspace-command.json                  |    1 +
+ .../verifier-attempt-2/return-workspace-result.txt |    1 +
+ .../verifier-attempt-2/select-board-command.json   |    1 +
+ .../run/verifier-attempt-2/select-board-result.txt |    2 +
+ .../verifier-attempt-2/select-table-command.json   |    1 +
+ .../run/verifier-attempt-2/select-table-result.txt |    2 +
+ .../settings-buttons-command.json                  |    1 +
+ .../verifier-attempt-2/settings-buttons-result.txt |   12 +
+ .../run/verifier-attempt-2/typecheck.txt           |    5 +
+ .../run/verifier-attempt-2/visual-comparison.json  |   24 +
+ .../run/verifier-attempt-2/window-list.txt         |   43 +
+ .../run/workflow.yaml                              |   55 +
+ .../compact-native-correction-2026-09-21/task.json |   20 +
+ 295 files changed, 17363 insertions(+), 105 deletions(-)

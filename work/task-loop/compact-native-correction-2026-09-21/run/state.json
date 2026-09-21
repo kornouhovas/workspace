@@ -47,7 +47,7 @@
   },
   "contract_hash": "2e4235e58ae5a1d97eafd26c1ba0d23146802055dde7c1c166309843a0353b4f",
   "workflow_hash": "6fde9b6050dafc79c719185d49d251ddb8b7ced72d6fd85c7683a76c66c7e5a7",
-  "phase": "delivering",
+  "phase": "done",
   "verdict": "supported",
   "attempt": 2,
   "max_attempts": 6,
@@ -361,6 +361,59 @@
           "sha256": "506a5ab6d4e9d55b780fddf35574c5087e30db18dd792c41c2a42a65f800fa67"
         }
       ]
+    },
+    {
+      "check": "delivery",
+      "attempt": 2,
+      "manifest": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/manifest.json",
+      "manifest_sha256": "78c1a2349b81bed58fdbe8e8d3c2f8828db86f5a7d1784c3c5e6250ef2b24bcf",
+      "files": [
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/report.md",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/0-report.md",
+          "sha256": "a0268eedf078ea48a53d4bad73de104752368fc65735eebc1a4f7b45ba6bac7e"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/head.txt",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/1-head.txt",
+          "sha256": "adbab927c670f95c7873fb601fe593ac82339ca19c039eb212698c823ddd86ae"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/scope-summary.json",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/2-scope-summary.json",
+          "sha256": "90f281e508a5bd8daaec887eb1330fe665cc3f6f43cd77da948082cf0c5c0c70"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/freeze-tree-audit.json",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/3-freeze-tree-audit.json",
+          "sha256": "165b1f4998e5024f692def6e1feb33ae8010ae3687ad8cfda6b7f074ad8b8a80"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/image-tree-audit.json",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/4-image-tree-audit.json",
+          "sha256": "ce097978630e66b5c4145551a1916632e2112264c1002ac78140356356b60b77"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/required-artifacts.json",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/5-required-artifacts.json",
+          "sha256": "a1ff3d852831ac7d1681b2cc8146b78e8951b7a4b8a1f7f03d0cb99d04b605ab"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/markdown-links-all.json",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/6-markdown-links-all.json",
+          "sha256": "07afcd301803da7010efc586fc425bff7f89fa1b2aa9380ad040d6b73f88f779"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/commit-diff-check.txt",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/7-commit-diff-check.txt",
+          "sha256": "b3b0b7148e2df1b3da19cf3add24905a1e78ead668b2da7822e68470bd47074b"
+        },
+        {
+          "original": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/verifier-delivery-attempt-2/product-diff-check.txt",
+          "snapshot": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/8-product-diff-check.txt",
+          "sha256": "736c355e654b1be4c55351b4df4261488bd2d3d35f27d48c0e1cf960ad00ba2d"
+        }
+      ]
     }
   ],
   "history": [
@@ -554,9 +607,28 @@
         },
         "verdict": "supported"
       }
+    },
+    {
+      "at": "2026-09-21T21:19:00.796635+00:00",
+      "event": "evidence_recorded",
+      "phase": "delivering",
+      "attempt": 2,
+      "details": {
+        "check": "delivery",
+        "manifest": "evidence/9b3de7dbd1b34f8cbfb0ea4f0c8dfe9b/manifest.json"
+      }
+    },
+    {
+      "at": "2026-09-21T21:19:05.998414+00:00",
+      "event": "advanced",
+      "phase": "done",
+      "attempt": 2,
+      "details": {
+        "note": "Independent quality/outcome/delivery passed for isolated running Electron: native full-window pair and responsive captures, 200/200 tests, scoped local commit 02662e94 and 34/34 frozen blobs. Former user PID exited; archive relative links and raw-log whitespace are explicit delivery limits."
+      }
     }
   ],
-  "next_action": "Executor: Make the result usable in the intended scenario and record delivery evidence. Obtain independent verifier evidence for delivery on this attempt before recording; coordinator only relays.",
+  "next_action": "Independent quality/outcome/delivery passed for isolated running Electron: native full-window pair and responsive captures, 200/200 tests, scoped local commit 02662e94 and 34/34 frozen blobs. Former user PID exited; archive relative links and raw-log whitespace are explicit delivery limits.",
   "suspension": null,
-  "updated_at": "2026-09-21T21:13:10.519881+00:00"
+  "updated_at": "2026-09-21T21:19:05.998414+00:00"
 }

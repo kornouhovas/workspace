@@ -1,0 +1,8 @@
+{"command": ["git", "show", "--format=fuller", "--no-patch", "02662e94b7521b2754fdceb650a07ba90a1a277a"], "utc": "2026-09-21T21:16:06.909715+00:00", "exit": 0}
+commit 02662e94b7521b2754fdceb650a07ba90a1a277a
+Author:     Aleksander Kornoukhov <kornouhovas@gmail.com>
+AuthorDate: Tue Sep 22 00:14:49 2026 +0300
+Commit:     Aleksander Kornoukhov <kornouhovas@gmail.com>
+CommitDate: Tue Sep 22 00:14:49 2026 +0300
+
+    Match Compact board and project views to native mockups

@@ -1,0 +1,46 @@
+{
+  "total_bytes": 11263648,
+  "run_bytes": 10922310,
+  "top10": [
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-board-interim-window.png",
+      "bytes": 903031
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-board-window.png",
+      "bytes": 690042
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-window-test-after-activate.png",
+      "bytes": 664714
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-board-window-compact.png",
+      "bytes": 575315
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-expanded-window.png",
+      "bytes": 441679
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-expanded-window-compact.png",
+      "bytes": 362745
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/evidence/f68dff466d46425a9d30e73823436ff2/3-native-attempt2-final-board-window-1486x1059.png",
+      "bytes": 335155
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-final-board-window-1486x1059.png",
+      "bytes": 335155
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/evidence/0f6f683b6f7b4f67b4ece240ef796bd5/3-native-attempt2-final-board-window-1440x960.png",
+      "bytes": 311049
+    },
+    {
+      "path": "work/task-loop/compact-native-correction-2026-09-21/run/native-attempt2-board-window-1440x960.png",
+      "bytes": 311049
+    }
+  ]
+}
