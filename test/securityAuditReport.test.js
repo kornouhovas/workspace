@@ -332,6 +332,7 @@ test("consolidated audit includes every finding in the risk register and remedia
     "view routes without current-source authorization must remain classified as Medium",
   );
   for (const [id, message] of [
+    ["SEC-008", "same-handler settings lost updates must remain classified as Medium"],
     ["SEC-023", "path-derived project identity collisions must remain classified as Medium"],
     ["SEC-024", "source-root settings loss must remain classified as Medium"],
     ["SEC-025", "status identifier collisions must remain classified as Medium"],
@@ -354,6 +355,10 @@ test("second review findings retain concrete active-runtime evidence", async () 
   const report = await readFile(reportUrl, "utf8");
   const findingsById = new Map(parseFindings(report).map((finding) => [finding.id, finding]));
 
+  assert.match(findingsById.get("SEC-008")?.evidence ?? "", /single handler/);
+  assert.match(findingsById.get("SEC-008")?.evidence ?? "", /workspace\.updateFolderRole[\s\S]+workspace\.setActiveWorkspace/);
+  assert.match(findingsById.get("SEC-008")?.reproduction ?? "", /Promise\.all[\s\S]+folder role[\s\S]+active Workspace[\s\S]+lost update/);
+  assert.match(findingsById.get("SEC-008")?.recommendation ?? "", /settings read-modify-write[\s\S]+single handler[\s\S]+independent settings fields/);
   assert.match(findingsById.get("SEC-023")?.evidence ?? "", /32-bit[\s\S]+14wmu3/);
   assert.match(findingsById.get("SEC-023")?.reproduction ?? "", /Status\/A\(\[&_--B[\s\S]+Status\/A_!% --B/);
   assert.match(findingsById.get("SEC-026")?.evidence ?? "", /deletePropertyResult[\s\S]+PROPERTY_NOT_FOUND/);
