@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
@@ -491,9 +491,11 @@ test("createFileResponse rejects symlink previews outside root", async () => {
   assert.equal(response.status, 400);
 });
 
-test("createFileResponse rejects unsupported types and broken symlink previews", async () => {
+test("createFileResponse rejects unsupported types and broken symlink previews", async (t) => {
   const root = await createWorkspaceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
   const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  t.after(() => rm(outside, { recursive: true, force: true }));
   await symlink(join(outside, "Missing.pdf"), join(root, "Archive", "Completed", "Missing.pdf"));
 
   const unsupportedResponse = await createFileResponse({
@@ -516,9 +518,11 @@ test("workspace backend rejects paths outside root", async () => {
   assert.equal(response.status, 400);
 });
 
-test("workspace backend rejects an explicit directory symlink outside root", async () => {
+test("workspace backend rejects an explicit directory symlink outside root", async (t) => {
   const root = await createWorkspaceFixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
   const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  t.after(() => rm(outside, { recursive: true, force: true }));
   await mkdir(join(outside, "External"));
   await writeFile(join(outside, "External", "Secret.txt"), "secret");
   await symlink(join(outside, "External"), join(root, "External"));

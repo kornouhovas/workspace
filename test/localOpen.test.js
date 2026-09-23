@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -90,18 +90,22 @@ test("createRevealResponse validates path, kind, and existing item before spawni
   assert.equal(unsupportedPlatformResponse.status, 501);
 });
 
-test("resolveExistingWorkspacePath rejects symlinks that escape the workspace root", async () => {
+test("resolveExistingWorkspacePath rejects symlinks that escape the workspace root", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "workspace-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  t.after(() => rm(outside, { recursive: true, force: true }));
   await writeFile(join(outside, "Secret.pdf"), "secret");
   await symlink(join(outside, "Secret.pdf"), join(root, "Secret.pdf"));
 
   assert.throws(() => resolveExistingWorkspacePath(root, "Secret.pdf"), /outside workspace root/);
 });
 
-test("createRevealResponse does not spawn escaped or broken symlink targets", async () => {
+test("createRevealResponse does not spawn escaped or broken symlink targets", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "workspace-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
   const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  t.after(() => rm(outside, { recursive: true, force: true }));
   await writeFile(join(outside, "Secret.pdf"), "secret");
   await symlink(join(outside, "Secret.pdf"), join(root, "Escaped.pdf"));
   await symlink(join(outside, "Missing.pdf"), join(root, "Broken.pdf"));

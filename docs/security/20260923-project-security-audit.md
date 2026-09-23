@@ -19,7 +19,7 @@
 
 ## Executive summary
 
-Аудит выявил 18 уникальных findings: 1 High, 6 Medium, 6 Low и 5 Informational; Critical findings не обнаружены. Тринадцать findings являются подтверждёнными vulnerabilities, четыре — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Наиболее приоритетный риск — известные high-severity advisories в зафиксированном npm graph (SEC-016). Для активного Electron runtime главные цепочки риска проходят через отсутствие navigation/sender policy (SEC-001), привилегированный reveal (SEC-005) и утечку file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013).
+Аудит выявил 18 уникальных findings: 0 High, 5 Medium, 6 Low и 7 Informational; Critical findings не обнаружены. Одиннадцать findings являются подтверждёнными vulnerabilities, шесть — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Для активного Electron runtime наиболее приоритетны привилегированный reveal (SEC-005) и утечка file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013). Отсутствующие navigation/sender controls (SEC-001) и известные advisories без подтверждённого project-specific exploit path (SEC-016) остаются обязательным hardening до расширения navigation surface или release, но не считаются подтверждёнными vulnerabilities текущего runtime.
 
 Существующие controls существенно ограничивают blast radius: Electron включает isolation и sandbox, preload/main используют совпадающие allowlists, renderer не импортирует Node/backend modules, path helpers блокируют lexical traversal и стабильные symlink escapes, JSON writes используют atomic replacement, а sidecar по умолчанию слушает ephemeral loopback address. Это не компенсирует findings, зависящие от скомпрометированного renderer, конкурентного изменения filesystem или другого локального процесса.
 
@@ -161,17 +161,17 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 ### SEC-001: Navigation и IPC sender не ограничены доверенным renderer
 
-- Severity: Medium
+- Severity: Informational
 - Confidence: High
 - Status: Open
-- Class: Vulnerability
+- Class: Defense in depth
 - CWE: CWE-346
 - OWASP: A01:2021 Broken Access Control
 - Trust boundary: TB-01, TB-02
 - Affected files: `electron/main.js:71`, `electron/main.js:94`, `electron/preload.cjs:40`, `electron/workspaceIpc.js:82`, `electron/workspaceIpc.js:125`
 - Evidence: окно загружает локальный renderer с preload, но не регистрирует `will-navigate`, `setWindowOpenHandler` или permission handler; IPC handler принимает `_event` и не проверяет `event.sender`, `senderFrame` или origin. Preload остаётся capability facade для всех 34 workspace methods, включая изменение metadata, preview и reveal. Поиск этих controls в Electron runtime не дал совпадений; allowlist и единственный канал подтверждены `test/securityControls.test.js`.
-- Impact: если main frame будет перенаправлен на недоверенный URL (например, после компрометации renderer или будущей ошибки обработки ссылки), загруженный там документ получит тот же preload API и сможет читать сведения о workspace, менять локальные metadata и вызывать filesystem-backed операции в пределах полномочий bridge. Для эксплуатации требуется navigation в недоверенный документ; прямой штатный внешний navigation target в текущем renderer не обнаружен.
-- Reproduction: в отдельной тестовой сборке инициировать из renderer `location.assign()` на контролируемую страницу и после загрузки проверить наличие `window.workspace.request`; статический путь подтверждается отсутствием navigation policy и sender/frame validation. Не использовать пользовательскую project folder.
+- Impact: прямой штатный внешний navigation target в текущем renderer не обнаружен, а скомпрометированный trusted renderer уже может вызвать весь preload API до navigation; поэтому дополнительная privilege escalation в текущем runtime не доказана. Отсутствующие controls увеличат blast radius, если будущая ссылка, rich preview или ошибка routing позволит загрузить недоверенный документ в тот же `webContents`.
+- Reproduction: статически подтвердить отсутствие navigation/window/permission policy и sender/frame validation. Отдельная тестовая сборка с `location.assign()` может подтвердить, что недоверенный документ наследует bridge, но это проверка отсутствующего control, а не воспроизведение достижимого текущего exploit path. Не использовать пользовательскую project folder.
 - Recommendation: запрещать все main-frame navigation вне ожидаемого локального renderer URL, отклонять создание новых окон, задавать явный permission request/check handler и в IPC проверять `event.sender`/`senderFrame.url` против текущего `mainWindow.webContents` и локального renderer origin; добавить Electron integration test с доверенным и недоверенным sender.
 
 ### SEC-002: Renderer не получает Content Security Policy
@@ -386,17 +386,17 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 ### SEC-016: Locked npm graph содержит известные high-severity advisories
 
-- Severity: High
+- Severity: Informational
 - Confidence: High
 - Status: Open
-- Class: Vulnerability
+- Class: Defense in depth
 - CWE: CWE-1395
 - OWASP: A06:2021 Vulnerable and Outdated Components
 - Trust boundary: TB-07
 - Affected files: `package.json:20`, `package.json:43`, `package-lock.json:1`
-- Evidence: `npm audit --json --omit=dev` для locked production graph вернул 15 affected packages: 8 high, 4 moderate и 3 low; полный `npm audit --json` вернул 18: 11 high, 4 moderate и 3 low. Exact affected versions и advisory IDs перечислены в разделе dependency evidence. Production-classified advisories в основном достигаются через прямую dependency `shadcn@4.7.0`, которая не импортируется application source; full graph дополнительно включает `electron@41.5.0`, `extract-zip@2.0.1` и `vite@6.4.2`. Наличие advisories подтверждено registry audit, но индивидуальные exploit paths динамически не проверялись.
-- Impact: скомпрометированный или уязвимый transitive package может затронуть install/build environment, а advisories в Electron относятся к runtime, который запускает приложение. Фактический blast radius зависит от достижимости конкретного advisory; неиспользуемый `shadcn` уменьшает runtime-достижимость его graph, но не риск установки package и выполнения lifecycle/build tooling.
-- Reproduction: на зафиксированном `package-lock.json` выполнить production и full `npm audit --json`, сохранить только counts, advisory IDs и installed versions, затем подтвердить dependency roots через `npm explain`; audit exit code 1 ожидаем при найденных advisories.
+- Evidence: `npm audit --json --omit=dev` для locked production graph вернул 15 affected packages: 8 high, 4 moderate и 3 low; полный `npm audit --json` вернул 18: 11 high, 4 moderate и 3 low. Exact affected versions и advisory IDs перечислены в разделе dependency evidence. Production-classified advisories в основном достигаются через прямую dependency `shadcn@4.7.0`, которая не импортируется application source или build scripts. Electron advisories относятся к custom `ProtocolResponse.url` и sandboxed iframe popup paths, которых в приложении нет; `extract-zip` используется при получении Electron package, а не для application-controlled archives. Vite используется для build, не dev server, и зафиксированные Vite advisories относятся к Windows-specific dev-server paths. Registry severity подтверждена, но attacker-controlled input до уязвимых операций текущего проекта не прослежен.
+- Impact: известный vulnerable graph увеличивает риск install/build/release и может стать достижимым при добавлении соответствующей runtime или tooling functionality, однако текущий project-specific exploit path не подтверждён. Это dependency hardening и release gate, а не доказанная High vulnerability приложения; registry severity не переносится автоматически в project severity.
+- Reproduction: на зафиксированном `package-lock.json` выполнить production и full `npm audit --json`, сохранить только counts, advisory IDs и installed versions, подтвердить dependency roots через `npm explain`, затем сопоставить advisory prerequisites с фактическими imports, build scripts и Electron features. Audit exit code 1 подтверждает advisory presence, но не exploitability.
 - Recommendation: удалить неиспользуемый `shadcn` из runtime dependencies либо перенести CLI tooling в dev-only workflow, обновить Electron/Vite и уязвимые transitive chains до исправленных версий, пересоздать lockfile контролируемым change, затем повторить оба audit, полный test/typecheck/build и Electron smoke test.
 
 ### SEC-017: SQLite и audit-runner artifacts не покрыты ignore policy
@@ -437,8 +437,8 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 | Class | Findings | Интерпретация |
 | --- | --- | --- |
-| Vulnerability | SEC-001, SEC-003—SEC-008, SEC-010—SEC-014, SEC-016 | Достижимый security или data-safety impact подтверждён статическим путём, безопасным fixture либо advisory evidence |
-| Defense in depth | SEC-002, SEC-009, SEC-017, SEC-018 | Самостоятельный exploit не подтверждён; control уменьшает вероятность или blast radius будущей цепочки |
+| Vulnerability | SEC-003—SEC-008, SEC-010—SEC-014 | Достижимый security или data-safety impact подтверждён статическим путём либо безопасным fixture |
+| Defense in depth | SEC-001, SEC-002, SEC-009, SEC-016—SEC-018 | Самостоятельный exploit не подтверждён; control уменьшает вероятность или blast radius будущей цепочки |
 | Documentation gap | SEC-015 | Целевой append-only контракт расходится с sidecar implementation, но sidecar не является активным Electron transport |
 | Limitation | Нет finding ID | Непроверенные области перечислены отдельно и не выданы за vulnerabilities |
 
@@ -446,23 +446,22 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 | Приоритет | Findings | Severity | Основной риск | Состояние |
 | --- | --- | --- | --- | --- |
-| P0 | SEC-016 | High | Известные advisories в install/build и Electron runtime graph | Open |
-| P1 | SEC-001, SEC-005, SEC-010 | Medium | Расширение renderer compromise до privileged IPC/native launch и отказ main process | Open |
+| P1 | SEC-005, SEC-010 | Medium | Native launch из выбранной папки и отказ main process из-за утечки descriptors | Open |
 | P1 | SEC-011, SEC-013 | Medium | Неавторизованные sidecar mutations и cross-workspace overwrite до активации sidecar | Open |
 | P1 | SEC-004 | Medium | Race-dependent filesystem escape из выбранного source root | Open |
 | P2 | SEC-003, SEC-006, SEC-007, SEC-008, SEC-012, SEC-014 | Low | Disclosure, permissions, metadata integrity и локальный denial of service | Open |
-| P3 | SEC-002, SEC-009, SEC-015, SEC-017, SEC-018 | Informational | Hardening, audit trail, artifact hygiene и provenance | Open |
+| P3 | SEC-001, SEC-002, SEC-009, SEC-015, SEC-016, SEC-017, SEC-018 | Informational | Trust-boundary hardening, advisory hygiene, audit trail, artifacts и provenance | Open |
 
 Residual severity учитывает текущие ограничения: sidecar не подключён к Electron transport, direct renderer call site для preview/reveal не найден, default listener loopback-only, а race для SEC-004 не воспроизводился как стабильный exploit. При появлении packaged sidecar lifecycle, rich preview или внешней navigation эти оценки следует пересмотреть до release.
 
 ## Приоритет и безопасный порядок remediation
 
-1. SEC-016 исправлять отдельным dependency change: удалить неиспользуемый runtime graph, обновить Electron/Vite и transitive packages, затем повторить audit и полный Electron smoke/build. Не смешивать lockfile migration с boundary fixes.
-2. SEC-001 закрыть до добавления любых external navigation, links или rich preview: сначала navigation/window/permission policy, затем sender/frame authorization и integration tests.
-3. SEC-005 и SEC-010 исправить вместе как сужение filesystem capability: заменить launch semantics на reveal-only, убрать невостребованный stream и добавить rate/lifecycle tests. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
-4. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
-5. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
-6. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
+1. SEC-005 и SEC-010 исправить вместе как сужение filesystem capability: заменить launch semantics на reveal-only, убрать невостребованный stream и добавить rate/lifecycle tests. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
+2. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
+3. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
+4. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
+5. SEC-001 закрыть до добавления любых external navigation, links или rich preview: сначала navigation/window/permission policy, затем sender/frame authorization и integration tests.
+6. SEC-016 исправлять отдельным dependency change до release: удалить неиспользуемый graph, обновить Electron/Vite и transitive packages, затем повторить reachability review, audit и полный Electron smoke/build. Не смешивать lockfile migration с boundary fixes.
 7. SEC-002, SEC-009, SEC-015, SEC-017 и SEC-018 выполнять после соответствующих boundary/data fixes либо в release-hardening потоке; каждую рекомендацию проверять собственным scope, не считать текущий audit доказательством исправления.
 
 ## Положительные security controls
@@ -478,7 +477,7 @@ Residual severity учитывает текущие ограничения: side
 
 ## Residual risks
 
-- Компрометация renderer остаётся способна использовать весь разрешённый preload API до исправления SEC-001; isolation не является IPC authorization.
+- Компрометация доверенного renderer остаётся способна использовать весь разрешённый preload API: navigation/sender hardening из SEC-001 предотвращает расширение capability на другой origin/frame, но не является authorization внутри уже скомпрометированного main renderer.
 - Вредоносная выбранная папка остаётся источником race, active-content и native-launch рисков до исправления SEC-004, SEC-005 и SEC-009.
 - Локальная multi-process среда остаётся вне единого trust domain: permissions, concurrent writers и будущий sidecar требуют явной защиты.
 - Lockfile integrity не устраняет известные advisories и риск lifecycle scripts; результаты npm registry отражают snapshot на дату аудита.
@@ -495,17 +494,17 @@ Residual severity учитывает текущие ограничения: side
 
 ## Рекомендуемые follow-up задачи
 
-Ниже перечислены самостоятельные implementation scopes. Они не являются выполненными исправлениями: все findings остаются `Open`, а каждую задачу следует планировать, реализовывать и принимать отдельно. Порядок строк следует приоритету и зависимостям из remediation-раздела.
+Ниже перечислены самостоятельные implementation scopes. Они не являются выполненными исправлениями: все findings остаются `Open`, а каждую задачу следует планировать, реализовывать и принимать отдельно. Строки расположены по фактическому приоритету и зависимостям; стабильные FUP IDs сохраняют тематическую нумерацию.
 
 | Задача | Findings | Отдельный scope | Verification criteria |
 | --- | --- | --- | --- |
-| FUP-01: Dependency remediation | SEC-016 | Удалить неиспользуемый runtime graph, обновить Electron/Vite и затронутые transitive packages без boundary-изменений | Clean install по lockfile; production и full `npm audit` не содержат принятых High advisories; проходят npm tests, typecheck, renderer/Electron build и smoke test |
-| FUP-02: Electron trust boundary | SEC-001, SEC-002, SEC-003 | Ввести navigation/window/permission policy, sender/frame authorization, CSP и безопасный IPC error/path contract | Electron integration tests отклоняют недоверенный URL, frame, popup и permission; renderer не получает внутренний stack или лишний абсолютный path; существующий trusted flow проходит |
-| FUP-03: Filesystem race safety | SEC-004 | Спроектировать platform-aware operation-by-handle или эквивалентную защиту от symlink/rename race отдельно от preview UI | Детерминированный temporary-fixture race harness не выходит за source root на поддерживаемых платформах; traversal/symlink regression suite проходит |
 | FUP-04: Preview и reveal capability | SEC-005, SEC-009, SEC-010 | Заменить native launch на reveal-only contract, определить isolated/download-only preview policy и закрыть stream lifecycle | `.app` и executable-like targets не запускаются; active content не исполняется в privileged origin; repeated preview не увеличивает число открытых descriptors |
-| FUP-05: Metadata durability и permissions | SEC-006, SEC-007, SEC-008 | Добавить restrictive modes, backup/version gate и single-writer/revision coordination с сохранением данных | Migration fixtures сохраняют values/history, future schema отклоняется без rewrite, concurrent update test не теряет данные, созданные файлы имеют ожидаемые permissions |
 | FUP-06: Sidecar transport hardening | SEC-011, SEC-012, SEC-014 | До подключения sidecar реализовать lifecycle-owned secret, loopback/Host/Origin/Content-Type policy, limits, timeouts, graceful shutdown и sanitized errors | Integration tests отклоняют неверный token/origin/content type и oversized body; slow-client test ограничен timeout; responses не раскрывают parser/storage internals |
 | FUP-07: Sidecar identity и history | SEC-013, SEC-015 | После transport hardening ввести workspace ownership для IDs и append-only history invariants с совместимой миграцией | Cross-workspace overwrite/delete отклоняются; history невозможно перезаписать тем же ID; migration и Go store tests сохраняют существующие документы |
+| FUP-03: Filesystem race safety | SEC-004 | Спроектировать platform-aware operation-by-handle или эквивалентную защиту от symlink/rename race отдельно от preview UI | Детерминированный temporary-fixture race harness не выходит за source root на поддерживаемых платформах; traversal/symlink regression suite проходит |
+| FUP-05: Metadata durability и permissions | SEC-006, SEC-007, SEC-008 | Добавить restrictive modes, backup/version gate и single-writer/revision coordination с сохранением данных | Migration fixtures сохраняют values/history, future schema отклоняется без rewrite, concurrent update test не теряет данные, созданные файлы имеют ожидаемые permissions |
+| FUP-02: Electron trust boundary | SEC-001, SEC-002, SEC-003 | Ввести navigation/window/permission policy, sender/frame authorization, CSP и безопасный IPC error/path contract | Electron integration tests отклоняют недоверенный URL, frame, popup и permission; renderer не получает внутренний stack или лишний абсолютный path; существующий trusted flow проходит |
+| FUP-01: Dependency remediation | SEC-016 | Удалить неиспользуемый runtime graph, обновить Electron/Vite и затронутые transitive packages без boundary-изменений | Clean install по lockfile; production и full `npm audit` не содержат принятых High advisories; проходят npm tests, typecheck, renderer/Electron build и smoke test |
 | FUP-08: Repository и release hardening | SEC-017, SEC-018 | Уточнить ignore policy, зафиксировать toolchain/clean-build contract и добавить SBOM/checksum/provenance без изменения application behavior | CI отклоняет runtime DB/audit artifacts, clean reproducible build использует pinned toolchain, release artifacts имеют проверяемые checksum/SBOM/provenance |
 
 ## Итоговый handoff
@@ -515,7 +514,7 @@ Residual severity учитывает текущие ограничения: side
 - Рекомендации и follow-up scopes описывают будущую работу. Ни один finding не помечен исправленным или mitigated, и production remediation в рамках этого аудита не выполнялась.
 - `README.md` проверен: описанные запуск, storage, endpoint boundary и команды проверки не изменились, поэтому обновление не требуется.
 - `AGENTS.md` проверен: архитектурные границы и рабочие правила не менялись, поэтому обновление не требуется.
-- Handoff state: отчёт готов к human review. Исправления Critical/High (фактически обнаружен один High, Critical отсутствуют) требуют отдельного implementation plan и явного разрешения.
+- Handoff state: отчёт готов к human review. Подтверждённых Critical/High vulnerabilities не обнаружено; remediation подтверждённых Medium/Low findings и release-hardening требует отдельных implementation scopes.
 
 ## Electron, renderer и IPC boundary
 
@@ -627,7 +626,7 @@ Affected locked versions и advisory IDs; строки с `via` наследую
 | `extract-zip` | 2.0.1 | Full/dev addition | 1139346, 1193685 |
 | `vite` | 6.4.2 | Full/dev addition | 1120784, 1123525 |
 
-`npm explain` связывает основную production-classified группу с прямой dependency `shadcn@4.7.0`; import/use `shadcn` в `src`, `electron` или build scripts не найден. Electron является direct devDependency, но представляет фактически запускаемый desktop runtime; Vite используется build script. Registry snapshot меняется со временем, поэтому counts и IDs относятся к проверке 2026-09-23 и должны обновляться перед remediation/release.
+`npm explain` связывает основную production-classified группу с прямой dependency `shadcn@4.7.0`; import/use `shadcn` в `src`, `electron` или build scripts не найден. Electron является direct devDependency, но представляет фактически запускаемый desktop runtime; приложение не использует custom protocol response, sandboxed iframe/`allow-popups` или application-controlled archive extraction, указанные в зафиксированных Electron/extract-zip advisories. Vite вызывается только для production build, dev server не запускается, а зафиксированные Vite advisories относятся к Windows-specific dev-server behavior. Поэтому SEC-016 сохраняет registry evidence и обязательную remediation до release, но классифицирован как defense in depth без подтверждённого project-specific exploit path. Registry snapshot меняется со временем, поэтому counts и IDs относятся к проверке 2026-09-23 и должны обновляться перед remediation/release.
 
 ### Secrets, generated artifacts и binary provenance
 

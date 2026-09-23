@@ -93,6 +93,46 @@ function parseFindings(report) {
   });
 }
 
+function parseRiskRegister(report) {
+  const riskRegister = report.match(/^## Risk register\s*$([\s\S]*?)(?=^##\s)/m)?.[1] ?? "";
+  return [...riskRegister.matchAll(
+    /^\| (P\d+) \| ([^|]+) \| (Critical|High|Medium|Low|Informational) \| ([^|]+) \| (Open|Accepted|Mitigated|False positive) \|$/gm,
+  )].map((row) => ({
+    priority: row[1],
+    ids: [...row[2].matchAll(/SEC-\d{3}/g)].map((match) => match[0]),
+    severity: row[3],
+    risk: row[4].trim(),
+    status: row[5],
+  }));
+}
+
+function assertExactFindingCoverage(findings, assignedIds, label) {
+  assert.equal(
+    new Set(assignedIds).size,
+    assignedIds.length,
+    `${label} must assign each finding exactly once`,
+  );
+  assert.deepEqual(
+    [...assignedIds].sort(),
+    findings.map(({ id }) => id).sort(),
+    `${label} must cover every finding exactly once`,
+  );
+}
+
+function validateRiskRegister(findings, rows) {
+  const assignedIds = rows.flatMap(({ ids }) => ids);
+  assertExactFindingCoverage(findings, assignedIds, "risk register");
+
+  const findingsById = new Map(findings.map((finding) => [finding.id, finding]));
+  for (const row of rows) {
+    for (const id of row.ids) {
+      const finding = findingsById.get(id);
+      assert.equal(row.severity, finding.severity, `${id} severity must match its finding`);
+      assert.equal(row.status, finding.status, `${id} status must match its finding`);
+    }
+  }
+}
+
 test("security audit report contains the required baseline sections", async () => {
   const report = await readFile(reportUrl, "utf8");
 
@@ -191,21 +231,52 @@ test("every finding has actionable evidence and valid repository file references
   }
 });
 
+test("risk register validation rejects stale severity, status, and duplicate assignments", () => {
+  const findings = [
+    { id: "SEC-001", severity: "Medium", status: "Open" },
+    { id: "SEC-002", severity: "Low", status: "Mitigated" },
+  ];
+
+  assert.throws(
+    () => validateRiskRegister(findings, [
+      { ids: ["SEC-001"], severity: "Low", status: "Open" },
+      { ids: ["SEC-002", "SEC-002"], severity: "Low", status: "Open" },
+    ]),
+    /SEC-001 severity|SEC-002 status|exactly once/,
+  );
+});
+
+test("exact finding coverage rejects duplicate follow-up assignments", () => {
+  assert.throws(
+    () => assertExactFindingCoverage(
+      [{ id: "SEC-001" }, { id: "SEC-002" }],
+      ["SEC-001", "SEC-001", "SEC-002"],
+      "follow-up backlog",
+    ),
+    /exactly once/,
+  );
+});
+
 test("consolidated audit includes every finding in the risk register and remediation order", async () => {
   const report = await readFile(reportUrl, "utf8");
   const findings = parseFindings(report);
-  const riskRegister = report.match(/^## Risk register\s*$([\s\S]*?)(?=^##\s)/m)?.[1] ?? "";
+  const riskRegisterRows = parseRiskRegister(report);
   const remediation = report.match(
     /^## Приоритет и безопасный порядок remediation\s*$([\s\S]*?)(?=^##\s)/m,
   )?.[1] ?? "";
 
-  for (const finding of findings) {
-    assert.match(riskRegister, new RegExp(`\\b${finding.id}\\b`), `${finding.id} is missing from risk register`);
-  }
+  validateRiskRegister(findings, riskRegisterRows);
 
-  assert.match(report, /18 уникальных findings: 1 High, 6 Medium, 6 Low и 5 Informational/);
+  const severityCounts = new Map(
+    ["High", "Medium", "Low", "Informational"].map((severity) => [
+      severity,
+      findings.filter((finding) => finding.severity === severity).length,
+    ]),
+  );
+  const summary = `${findings.length} уникальных findings: ${severityCounts.get("High")} High, ${severityCounts.get("Medium")} Medium, ${severityCounts.get("Low")} Low и ${severityCounts.get("Informational")} Informational`;
+  assert.match(report, new RegExp(summary));
   assert.match(report, /Critical findings не обнаружены/);
-  assert.match(remediation, /SEC-016[\s\S]+SEC-001[\s\S]+SEC-005 и SEC-010[\s\S]+SEC-011/);
+  assert.match(remediation, /SEC-005 и SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-001[\s\S]+SEC-016/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
@@ -219,14 +290,10 @@ test("final audit handoff contains a scoped remediation backlog for every findin
   assert.equal(rows.length, 8, "follow-up backlog must keep independent implementation scopes");
   assert.equal(new Set(rows.map((row) => row[1])).size, rows.length, "follow-up task IDs must be unique");
 
-  const coveredIds = new Set(
-    rows.flatMap((row) => [...row[2].matchAll(/SEC-\d{3}/g)].map((match) => match[0])),
-  );
-  assert.deepEqual(
-    [...coveredIds].sort(),
-    findings.map(({ id }) => id).sort(),
-    "follow-up backlog must cover every finding exactly by explicit ID",
-  );
+  const coveredIds = rows.flatMap((row) => [
+    ...row[2].matchAll(/SEC-\d{3}/g),
+  ].map((match) => match[0]));
+  assertExactFindingCoverage(findings, coveredIds, "follow-up backlog");
 
   for (const row of rows) {
     assert.ok(row[3].trim().length > 40, `${row[1]} must define a bounded scope`);
