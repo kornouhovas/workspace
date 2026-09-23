@@ -170,7 +170,7 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
-  assert.equal(findings.length, 20, "all consolidated findings must be parsed");
+  assert.equal(findings.length, 26, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
   assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
@@ -231,7 +231,22 @@ test("every finding has actionable evidence and valid repository file references
   }
 });
 
-test("risk register validation rejects stale severity, status, and duplicate assignments", () => {
+test("risk register validation rejects duplicate assignments", () => {
+  const findings = [
+    { id: "SEC-001", severity: "Medium", status: "Open" },
+    { id: "SEC-002", severity: "Low", status: "Mitigated" },
+  ];
+
+  assert.throws(
+    () => validateRiskRegister(findings, [
+      { ids: ["SEC-001"], severity: "Medium", status: "Open" },
+      { ids: ["SEC-002", "SEC-002"], severity: "Low", status: "Mitigated" },
+    ]),
+    /exactly once/,
+  );
+});
+
+test("risk register validation rejects stale severity", () => {
   const findings = [
     { id: "SEC-001", severity: "Medium", status: "Open" },
     { id: "SEC-002", severity: "Low", status: "Mitigated" },
@@ -240,9 +255,24 @@ test("risk register validation rejects stale severity, status, and duplicate ass
   assert.throws(
     () => validateRiskRegister(findings, [
       { ids: ["SEC-001"], severity: "Low", status: "Open" },
-      { ids: ["SEC-002", "SEC-002"], severity: "Low", status: "Open" },
+      { ids: ["SEC-002"], severity: "Low", status: "Mitigated" },
     ]),
-    /SEC-001 severity|SEC-002 status|exactly once/,
+    /SEC-001 severity/,
+  );
+});
+
+test("risk register validation rejects stale status", () => {
+  const findings = [
+    { id: "SEC-001", severity: "Medium", status: "Open" },
+    { id: "SEC-002", severity: "Low", status: "Mitigated" },
+  ];
+
+  assert.throws(
+    () => validateRiskRegister(findings, [
+      { ids: ["SEC-001"], severity: "Medium", status: "Open" },
+      { ids: ["SEC-002"], severity: "Low", status: "Open" },
+    ]),
+    /SEC-002 status/,
   );
 });
 
@@ -291,7 +321,25 @@ test("consolidated audit includes every finding in the risk register and remedia
     "Medium",
     "cross-root default view ID collisions must remain classified as Medium",
   );
-  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-020[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
+  assert.equal(
+    findings.find(({ id }) => id === "SEC-021")?.severity,
+    "Medium",
+    "cross-root property and select ID collisions must remain classified as Medium",
+  );
+  assert.equal(
+    findings.find(({ id }) => id === "SEC-022")?.severity,
+    "Medium",
+    "view routes without current-source authorization must remain classified as Medium",
+  );
+  for (const [id, message] of [
+    ["SEC-023", "path-derived project identity must remain classified as Medium"],
+    ["SEC-024", "source-root settings loss must remain classified as Medium"],
+    ["SEC-025", "status identifier collisions must remain classified as Medium"],
+    ["SEC-026", "select-value cascade inconsistency must remain classified as Medium"],
+  ]) {
+    assert.equal(findings.find((finding) => finding.id === id)?.severity, "Medium", message);
+  }
+  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-022[\s\S]+SEC-023[\s\S]+SEC-020[\s\S]+SEC-021[\s\S]+SEC-025[\s\S]+SEC-024[\s\S]+SEC-026[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
@@ -302,7 +350,7 @@ test("final audit handoff contains a scoped remediation backlog for every findin
   )?.[1] ?? "";
   const rows = [...backlog.matchAll(/^\| (FUP-\d{2}):[^\n]+\| (SEC-[^|]+) \| ([^|]+) \| ([^|]+) \|$/gm)];
 
-  assert.equal(rows.length, 9, "follow-up backlog must keep independent implementation scopes");
+  assert.equal(rows.length, 13, "follow-up backlog must keep independent implementation scopes");
   assert.equal(new Set(rows.map((row) => row[1])).size, rows.length, "follow-up task IDs must be unique");
 
   const coveredIds = rows.flatMap((row) => [

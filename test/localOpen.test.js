@@ -40,8 +40,9 @@ test("isPreviewablePath recognizes browser preview file types", () => {
   assert.equal(isPreviewablePath("archive.zip"), false);
 });
 
-test("createRevealResponse validates path, kind, and existing item before spawning", async () => {
+test("createRevealResponse validates path, kind, and existing item before spawning", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "workspace-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "Card"));
   await writeFile(join(root, "Card", "Brief.pdf"), "pdf");
   const calls = [];

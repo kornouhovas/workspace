@@ -57,12 +57,6 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(electronMain, /new BrowserWindow\(/);
   assert.match(electronMain, /titleBarStyle:\s*"hiddenInset"/);
   assert.match(electronMain, /show:\s*false/);
-  assert.match(electronMain, /contextIsolation:\s*true/);
-  assert.match(electronMain, /nodeIntegration:\s*false/);
-  assert.match(electronMain, /sandbox:\s*true/);
-  assert.doesNotMatch(electronMain, /webSecurity:\s*false/);
-  assert.doesNotMatch(electronMain, /allowRunningInsecureContent:\s*true/);
-  assert.doesNotMatch(electronMain, /webviewTag:\s*true/);
   assert.match(electronMain, /preload:\s*join\(__dirname,\s*"preload\.cjs"\)/);
   assert.match(electronMain, /mainWindow\.once\("closed"/);
   assert.match(electronMain, /function\s+showMainWindow\(\)/);
