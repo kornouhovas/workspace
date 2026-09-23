@@ -170,7 +170,7 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
-  assert.equal(findings.length, 19, "all consolidated findings must be parsed");
+  assert.equal(findings.length, 20, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
   assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
@@ -286,7 +286,12 @@ test("consolidated audit includes every finding in the risk register and remedia
     "High",
     "privileged file protocol access must remain classified as High",
   );
-  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
+  assert.equal(
+    findings.find(({ id }) => id === "SEC-020")?.severity,
+    "Medium",
+    "cross-root default view ID collisions must remain classified as Medium",
+  );
+  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-020[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
@@ -297,7 +302,7 @@ test("final audit handoff contains a scoped remediation backlog for every findin
   )?.[1] ?? "";
   const rows = [...backlog.matchAll(/^\| (FUP-\d{2}):[^\n]+\| (SEC-[^|]+) \| ([^|]+) \| ([^|]+) \|$/gm)];
 
-  assert.equal(rows.length, 8, "follow-up backlog must keep independent implementation scopes");
+  assert.equal(rows.length, 9, "follow-up backlog must keep independent implementation scopes");
   assert.equal(new Set(rows.map((row) => row[1])).size, rows.length, "follow-up task IDs must be unique");
 
   const coveredIds = rows.flatMap((row) => [
