@@ -142,15 +142,15 @@
 - Modify: `test/securityAuditReport.test.js`
 - Modify: `docs/security/20260923-project-security-audit.md`
 
-- [ ] Проверить lockfile integrity, lifecycle/build scripts, источники пакетов, прямые и транзитивные npm/Go dependencies.
-- [ ] Выполнить `npm audit --json` для production и полного dependency graph; сохранить в отчёте только итоговые counts, advisory IDs и затронутые версии.
-- [ ] Снять Go module inventory через `go list -m -json all`; не устанавливать `govulncheck`, если его нет в окружении, а отсутствие advisory scan отметить ограничением.
-- [ ] Просканировать tracked tree и reachable git history на ключи, токены, private keys, credentials и случайно закоммиченные локальные базы, не копируя секреты в отчёт.
-- [ ] Проверить `.workspace`, build output, sidecar database и audit artifacts на корректное исключение из Git.
-- [ ] Проверить воспроизводимость и безопасность build scripts, использование version ranges и наличие неподтверждённых binary artifacts.
-- [ ] Обновить тест полноты отчёта требованиями dependency, secret и build-chain evidence.
-- [ ] Запустить `node --test test/securityAuditReport.test.js`.
-- [ ] Запустить `npm test` и `go test ./...`; все тесты должны пройти до Task 6.
+- [x] Проверить lockfile integrity, lifecycle/build scripts, источники пакетов, прямые и транзитивные npm/Go dependencies.
+- [x] Выполнить `npm audit --json` для production и полного dependency graph; сохранить в отчёте только итоговые counts, advisory IDs и затронутые версии.
+- [x] Снять Go module inventory через `go list -m -json all`; не устанавливать `govulncheck`, если его нет в окружении, а отсутствие advisory scan отметить ограничением.
+- [x] Просканировать tracked tree и reachable git history на ключи, токены, private keys, credentials и случайно закоммиченные локальные базы, не копируя секреты в отчёт.
+- [x] Проверить `.workspace`, build output, sidecar database и audit artifacts на корректное исключение из Git.
+- [x] Проверить воспроизводимость и безопасность build scripts, использование version ranges и наличие неподтверждённых binary artifacts.
+- [x] Обновить тест полноты отчёта требованиями dependency, secret и build-chain evidence.
+- [x] Запустить `node --test test/securityAuditReport.test.js`.
+- [x] Запустить `npm test` и `go test ./...`; все тесты должны пройти до Task 6.
 
 ### Task 6: Свести findings и проверить критерии приёмки
 

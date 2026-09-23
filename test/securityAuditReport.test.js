@@ -22,6 +22,7 @@ const requiredSections = [
   "Electron, renderer и IPC boundary",
   "Filesystem и local metadata boundary",
   "Go sidecar и any-store boundary",
+  "Dependencies, secrets и build chain",
   "Матрица покрытия",
   "Правила работы с доказательствами",
   "Журнал проверки",
@@ -228,4 +229,44 @@ test("security audit includes sidecar and store evidence for Task 4", async () =
 
   assert.match(report, /\| Go sidecar HTTP \|[^\n]+\| Task 4 \| Covered \|/);
   assert.match(report, /\| any-store\/SQLite \|[^\n]+\| Task 4 \| Covered \|/);
+});
+
+test("security audit includes dependency, secret, and build-chain evidence for Task 5", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const section = report.match(
+    /^## Dependencies, secrets и build chain\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  for (const evidence of [
+    "package-lock.json",
+    "lockfileVersion 3",
+    "sha512 integrity",
+    "registry.npmjs.org",
+    "lifecycle",
+    "npm audit --json --omit=dev",
+    "npm audit --json",
+    "electron",
+    "41.5.0",
+    "1136584",
+    "go list -m -json all",
+    "go mod verify",
+    "govulncheck",
+    "tracked tree",
+    "reachable commits",
+    "private-key",
+    "high-entropy",
+    ".workspace/",
+    "workspace.db",
+    ".ralphex/",
+    "Mach-O/ELF/PE",
+    "scripts/build-renderer.mjs",
+  ]) {
+    assert.match(section, new RegExp(evidence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+
+  assert.match(section, /Production,[^\n]+\| 0 \| 8 \| 4 \| 3 \| 15 \|/);
+  assert.match(section, /Full,[^\n]+\| 0 \| 11 \| 4 \| 3 \| 18 \|/);
+  assert.match(report, /\| Dependencies \|[^\n]+\| Task 5 \| Covered \|/);
+  assert.match(report, /\| Secrets \|[^\n]+\| Task 5 \| Covered \|/);
+  assert.match(report, /\| Build configuration \|[^\n]+\| Task 5 \| Covered \|/);
 });

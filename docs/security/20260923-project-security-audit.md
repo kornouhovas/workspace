@@ -376,6 +376,51 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: на temporary store дважды вызвать `AppendPropertyHistory` с одним ID и разным payload либо выполнить sidecar property mutation и проверить отсутствие нового history event.
 - Recommendation: генерировать history IDs server-side, использовать insert-only constraint с duplicate rejection и атомарно записывать current document + history event в одной transaction; покрыть каждый mutation контрактным тестом до переключения Electron на sidecar.
 
+### SEC-016: Locked npm graph содержит известные high-severity advisories
+
+- Severity: High
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-1395
+- OWASP: A06:2021 Vulnerable and Outdated Components
+- Trust boundary: TB-07
+- Affected files: `package.json:20`, `package.json:43`, `package-lock.json:1`
+- Evidence: `npm audit --json --omit=dev` для locked production graph вернул 15 affected packages: 8 high, 4 moderate и 3 low; полный `npm audit --json` вернул 18: 11 high, 4 moderate и 3 low. Exact affected versions и advisory IDs перечислены в разделе dependency evidence. Production-classified advisories в основном достигаются через прямую dependency `shadcn@4.7.0`, которая не импортируется application source; full graph дополнительно включает `electron@41.5.0`, `extract-zip@2.0.1` и `vite@6.4.2`. Наличие advisories подтверждено registry audit, но индивидуальные exploit paths динамически не проверялись.
+- Impact: скомпрометированный или уязвимый transitive package может затронуть install/build environment, а advisories в Electron относятся к runtime, который запускает приложение. Фактический blast radius зависит от достижимости конкретного advisory; неиспользуемый `shadcn` уменьшает runtime-достижимость его graph, но не риск установки package и выполнения lifecycle/build tooling.
+- Reproduction: на зафиксированном `package-lock.json` выполнить production и full `npm audit --json`, сохранить только counts, advisory IDs и installed versions, затем подтвердить dependency roots через `npm explain`; audit exit code 1 ожидаем при найденных advisories.
+- Recommendation: удалить неиспользуемый `shadcn` из runtime dependencies либо перенести CLI tooling в dev-only workflow, обновить Electron/Vite и уязвимые transitive chains до исправленных версий, пересоздать lockfile контролируемым change, затем повторить оба audit, полный test/typecheck/build и Electron smoke test.
+
+### SEC-017: SQLite и audit-runner artifacts не покрыты ignore policy
+
+- Severity: Informational
+- Confidence: High
+- Status: Open
+- Class: Defense in depth
+- CWE: CWE-200
+- OWASP: A05:2021 Security Misconfiguration
+- Trust boundary: TB-07
+- Affected files: `.gitignore:1`, `cmd/workspace-sidecar/main.go:24`
+- Evidence: `.gitignore` исключает `.workspace/`, `node_modules/`, `build/`, `dist/` и root sidecar binaries, но `git check-ignore` не исключает default `workspace.db`, его `-wal`/`-shm`, `.ralphex/` или сохраняемый вручную `npm-audit.json`. В текущем tracked tree и reachable history таких runtime/audit artifacts не найдено, поэтому фактическая утечка не подтверждена.
+- Impact: случайный `git add` может сохранить SQLite metadata, абсолютные пути, audit logs или advisory output. Это потенциальное раскрытие, а не текущая vulnerability: проверенные artifacts остаются untracked и raw audit output в repository не сохранялся.
+- Reproduction: проверить representative paths через `git check-ignore -v`, затем искать tracked и historical names через `git ls-files` и `git rev-list --objects --all`; не открывать пользовательскую database.
+- Recommendation: добавить узкие root/project patterns для фактического sidecar database, WAL/SHM и локального audit-runner output; не использовать широкий `*.db`, если repository должен хранить test fixtures, и добавить CI-check, запрещающий неожиданные runtime databases/secrets.
+
+### SEC-018: Install/build chain не имеет полного hermetic provenance
+
+- Severity: Informational
+- Confidence: High
+- Status: Open
+- Class: Defense in depth
+- CWE: CWE-829
+- OWASP: A08:2021 Software and Data Integrity Failures
+- Trust boundary: TB-07
+- Affected files: `package.json:7`, `package.json:20`, `package-lock.json:1`, `scripts/build-renderer.mjs:1`, `scripts/disable-fsevents-loader.mjs:1`
+- Evidence: lockfile v3 фиксирует все 646 package entries с sha512 integrity и единственным source host `registry.npmjs.org`; `go mod verify` проходит, Go graph имеет exact versions и не содержит replacements. При этом 28 из 29 direct npm requirements используют caret ranges, `packageManager`/`engines` не заданы, а normal install допускает lifecycle scripts у Electron, esbuild и MSW (lock также маркирует fsevents). Root build scripts используют local Vite/Go tools и fixed output paths, но не формируют checksums, SBOM или provenance attestation. Tracked tree содержит только 154 PNG и 7 JPEG evidence/design assets, без executable mode и без Mach-O/ELF/PE artifacts.
+- Impact: lockfile и integrity существенно уменьшают дрейф, однако смена package-manager semantics, разрешённое обновление lockfile или compromised lifecycle package может изменить install/build result и выполнить код в developer/CI context. Неподтверждённого executable artifact в Git не найдено; finding относится к hardening/release provenance.
+- Reproduction: проверить manifest ranges и scripts, агрегировать `packages[*].resolved`, `integrity` и `hasInstallScript` из lockfile, выполнить `npm ci --ignore-scripts --dry-run --audit=false`, `go mod verify` и inventory tracked file modes/magic без запуска downloaded binaries.
+- Recommendation: зафиксировать поддерживаемые Node/npm через `engines` и `packageManager`, использовать `npm ci` на clean CI, review/allowlist lifecycle scripts, разделить runtime и tooling dependencies, генерировать checksums/SBOM/provenance для release artifacts и проверять их до публикации.
+
 ## Electron, renderer и IPC boundary
 
 Проверка охватила `BrowserWindow`, preload facade, main-process dispatcher, renderer import graph, navigation/new-window/permission controls, Content-Security-Policy, payload/error flow и раскрытие path. Production-код не изменялся.
@@ -440,6 +485,68 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 Подтверждённые положительные controls покрыты только characterization-тестами: method rejection, malformed JSON без mutation, active-view cross-workspace rejection, query encoding, workspace-scoped active lists, soft delete и history filtering. Тесты намеренно не закрепляют отсутствие authentication/limits, permissive Content-Type, raw error disclosure, глобальные ID collision или overwriteable history как допустимое поведение. Нагрузочная проверка timeout/concurrency не выполнялась, чтобы не превращать audit в denial-of-service; риск подтверждён конфигурацией server и non-atomic read-modify-write paths.
 
+## Dependencies, secrets и build chain
+
+Проверка выполнялась без изменения manifests, lockfiles, installed dependencies или production-кода. Raw `npm audit` JSON и совпавшие строки secret scan не сохранялись в repository; ниже находятся только безопасные агрегаты и identifiers.
+
+### Lockfiles и dependency inventory
+
+| Проверка | Evidence | Результат |
+| --- | --- | --- |
+| npm lock integrity | `package-lock.json`, programmatic inventory, `npm ci --ignore-scripts --dry-run --audit=false` | lockfileVersion 3; 646 package entries: 486 production-classified и 160 dev-only; у всех resolved entries есть sha512 integrity; все 646 source URLs относятся к `registry.npmjs.org`, git/file/non-registry sources отсутствуют |
+| Direct npm requirements | `package.json:20-51` и lock root entries | 29 direct requirements: 28 caret ranges и exact `typescript@5.9.3`; lock фиксирует exact versions для всех direct packages |
+| Lifecycle surface | lock `hasInstallScript` и installed package manifests | lock маркирует Electron, esbuild, fsevents и MSW; installed Electron/esbuild/MSW объявляют postinstall, installed fsevents lifecycle script не объявляет. Audit dry-run выполнялся с `--ignore-scripts`, поэтому эти scripts не запускались |
+| Go module integrity | `go.mod`, `go.sum`, `go mod verify` | Все downloaded modules verified; direct `github.com/anyproto/any-store@v0.4.6`, inventory содержит 36 modules с main module, exact versions и без replacements |
+| Go advisory tooling | `command -v govulncheck` | `govulncheck` отсутствует и по условиям аудита не устанавливался; Go advisory scan остаётся limitation, inventory получен через `go list -m -json all` |
+
+Build scripts вызывают project-local Vite и Go toolchain, используют фиксированные package paths и направляют sidecar output под ignored `build/`. `scripts/build-renderer.mjs` регистрирует только локальный loader для отключения optional `fsevents`, затем вызывает Vite. Shell interpolation из внешнего input в root scripts не обнаружена. Воспроизводимость ограничена незакреплённой версией Node/npm, разрешёнными manifest ranges, lifecycle scripts и отсутствием attestation/checksums для build outputs (SEC-018).
+
+### npm advisory snapshot
+
+| Graph | Critical | High | Moderate | Low | Total affected packages |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Production, `npm audit --json --omit=dev` | 0 | 8 | 4 | 3 | 15 |
+| Full, `npm audit --json` | 0 | 11 | 4 | 3 | 18 |
+
+Affected locked versions и advisory IDs; строки с `via` наследуют IDs от указанной dependency:
+
+| Package | Installed version | Graph | Advisory IDs |
+| --- | --- | --- | --- |
+| `@babel/core` | 7.29.0 | Production | 1123528 |
+| `@hono/node-server` | 1.19.14 | Production | 1139322 |
+| `baseline-browser-mapping` | 2.10.27 | Production | 1193686 |
+| `body-parser` | 2.2.2 | Production | 1123976 |
+| `brace-expansion` | 5.0.5 | Production | 1120311, 1123898, 1130591, 1130734 |
+| `browserslist` | 4.28.2 | Production | 1153171, 1153172 |
+| `express-rate-limit` | 8.5.0 | Production | via `ip-address`: 1118827, 1130722 |
+| `fast-uri` | 3.1.2 | Production | 1124064, 1130720, 1158524, 1158527, 1158530, 1204921 |
+| `hono` | 4.12.17 | Production | 1117915, 1118963, 1118964, 1120082, 1120083, 1120084, 1120085, 1123997, 1123998, 1123999, 1124000, 1124001, 1124005, 1124009, 1124010, 1130733, 1138771, 1138772, 1138773, 1193729, 1193730, 1193731 |
+| `ip-address` | 10.1.0 | Production | 1118827, 1130722 |
+| `js-yaml` | 4.1.1 | Production | 1121860, 1123911, 1138115, 1193727 |
+| `nanoid` | 3.3.12 | Production | 1138811, 1139427 |
+| `postcss` | 8.5.14 | Production | 1130709, 1139510 |
+| `postcss-selector-parser` | 7.1.1 | Production | 1153169 |
+| `qs` | 6.15.1 | Production | 1119502, 1158506, 1158507 |
+| `electron` | 41.5.0 | Full/dev addition | 1136584, 1136608; via `extract-zip`: 1139346, 1193685 |
+| `extract-zip` | 2.0.1 | Full/dev addition | 1139346, 1193685 |
+| `vite` | 6.4.2 | Full/dev addition | 1120784, 1123525 |
+
+`npm explain` связывает основную production-classified группу с прямой dependency `shadcn@4.7.0`; import/use `shadcn` в `src`, `electron` или build scripts не найден. Electron является direct devDependency, но представляет фактически запускаемый desktop runtime; Vite используется build script. Registry snapshot меняется со временем, поэтому counts и IDs относятся к проверке 2026-09-23 и должны обновляться перед remediation/release.
+
+### Secrets, generated artifacts и binary provenance
+
+Сигнатурный scan 1181 текущих tracked files, HEAD и всех 473 reachable commits проверил private-key headers, AWS/GitHub/Slack/Google/Stripe/OpenAI-style tokens, JWT, credential-bearing URLs и quoted credential assignments. Совпадений не найдено; raw candidate values не выводились. Дополнительная эвристика quoted high-entropy values по текущему tracked tree, исключая checksum-heavy `package-lock.json` и `go.sum`, дала 0 кандидатов. Это снижает риск случайно committed credentials, но не доказывает отсутствие неизвестного формата или секрета в binary/image payload.
+
+Проверка artifact paths и file provenance дала следующие результаты:
+
+- tracked tree и reachable object paths не содержат `.workspace/`, `build/`, `dist/`, `node_modules/`, `.ralphex/`, root sidecar binary, `workspace.db`/WAL/SHM или `npm-audit.json`;
+- `.workspace/`, `build/`, `dist/`, `node_modules/` и root sidecar binaries корректно игнорируются;
+- `workspace.db`, `workspace.db-wal`, `workspace.db-shm`, `.ralphex/` и ad-hoc `npm-audit.json` не игнорируются (SEC-017);
+- tracked executable modes и Mach-O/ELF/PE artifacts отсутствуют; 161 tracked media artifacts классифицированы как 154 PNG и 7 JPEG design/test evidence, а не исполняемые binaries;
+- `THIRD_PARTY_NOTICES.md` документирует direct Go dependency any-store; полнота license notices для npm graph относится к legal/release review и не использовалась как security finding.
+
+Secret scan был regex/entropy-oriented review, а не специализированный scanner: false negatives для нестандартных/зашифрованных credential formats и secrets внутри images остаются ограничением. Внешние Git hosting logs, CI secret stores, npm provenance service, code signing/notarization и upstream source audit не проверялись.
+
 ## Матрица покрытия
 
 | Область | Компоненты и вопросы | Метод evidence | Задача | Статус |
@@ -451,9 +558,9 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | Local metadata | JSON permissions, atomicity, backup, schema, concurrency | Adapter review + isolated corruption tests | Task 3 | Covered |
 | Go sidecar HTTP | Bind/auth, methods, content type, body limits, timeout, shutdown | Handler/client tests + code review | Task 4 | Covered |
 | any-store/SQLite | ID and scope validation, soft delete/history, permissions, errors | Store tests + document-flow review | Task 4 | Covered |
-| Dependencies | npm/Go graph, lock integrity, advisories, lifecycle scripts | Manifest/lock review + available native tooling | Task 5 | Planned |
-| Secrets | Tracked tree, reachable history, generated/local artifacts | Pattern/entropy-oriented scan with redacted output | Task 5 | Planned |
-| Build configuration | Scripts, version ranges, binary artifacts, reproducibility | Script and artifact provenance review | Task 5 | Planned |
+| Dependencies | npm/Go graph, lock integrity, advisories, lifecycle scripts | Manifest/lock review + available native tooling | Task 5 | Covered |
+| Secrets | Tracked tree, reachable history, generated/local artifacts | Pattern/entropy-oriented scan with redacted output | Task 5 | Covered |
+| Build configuration | Scripts, version ranges, binary artifacts, reproducibility | Script and artifact provenance review | Task 5 | Covered |
 
 Статусы coverage: `Planned`, `In progress`, `Covered`, `Limited`. `Covered` означает, что evidence и выводы внесены в отчёт; это не означает отсутствия findings.
 
@@ -474,3 +581,4 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | 2026-09-23 | Electron, renderer и IPC | Подтверждены isolation, preload/main allowlists и renderer import boundary; зарегистрированы SEC-001—SEC-003 |
 | 2026-09-23 | Filesystem и local metadata | Подтверждены traversal/symlink/atomic-write/soft-delete controls; зарегистрированы SEC-004—SEC-010 |
 | 2026-09-23 | Go sidecar и any-store | Подтверждены method/scope/soft-delete controls; зарегистрированы SEC-011—SEC-015 и расширен SEC-006 |
+| 2026-09-23 | Dependencies, secrets и build chain | Проверены npm/Go inventories, advisories, lifecycle/build scripts, 473 reachable commits и artifact provenance; зарегистрированы SEC-016—SEC-018 |
