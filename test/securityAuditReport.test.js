@@ -170,7 +170,7 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
-  assert.equal(findings.length, 33, "all consolidated findings must be parsed");
+  assert.equal(findings.length, 34, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
   assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
@@ -343,10 +343,11 @@ test("consolidated audit includes every finding in the risk register and remedia
     ["SEC-031", "view lifecycle partial commits must remain classified as Medium"],
     ["SEC-032", "workspace lifecycle partial commits must remain classified as Medium"],
     ["SEC-033", "property and select reorder partial commits must remain classified as Medium"],
+    ["SEC-034", "unbounded IPC and metadata payloads must remain classified as Medium"],
   ]) {
     assert.equal(findings.find((finding) => finding.id === id)?.severity, "Medium", message);
   }
-  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-022[\s\S]+SEC-023[\s\S]+SEC-020[\s\S]+SEC-021[\s\S]+SEC-025[\s\S]+SEC-030[\s\S]+SEC-024[\s\S]+SEC-026[\s\S]+SEC-027[\s\S]+SEC-029[\s\S]+SEC-033[\s\S]+SEC-031[\s\S]+SEC-032[\s\S]+SEC-010[\s\S]+SEC-028[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
+  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-022[\s\S]+SEC-023[\s\S]+SEC-020[\s\S]+SEC-021[\s\S]+SEC-025[\s\S]+SEC-030[\s\S]+SEC-024[\s\S]+SEC-026[\s\S]+SEC-027[\s\S]+SEC-029[\s\S]+SEC-033[\s\S]+SEC-031[\s\S]+SEC-032[\s\S]+SEC-010[\s\S]+SEC-028[\s\S]+SEC-034[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
 });
 
 test("second review findings retain concrete active-runtime evidence", async () => {
@@ -365,10 +366,25 @@ test("third review findings retain concrete availability, scope, and atomicity e
   const report = await readFile(reportUrl, "utf8");
   const findingsById = new Map(parseFindings(report).map((finding) => [finding.id, finding]));
 
-  assert.match(findingsById.get("SEC-028")?.evidence ?? "", /Promise\.all[\s\S]+depth[\s\S]+node-count[\s\S]+concurrency/);
+  assert.match(findingsById.get("SEC-028")?.evidence ?? "", /workspace\.scan[\s\S]+includeCardChildren[\s\S]+listWorkspaceAccessTree[\s\S]+workspace\.listEntries[\s\S]+listProjectFileTree[\s\S]+depth[\s\S]+node-count[\s\S]+concurrency/);
   assert.match(findingsById.get("SEC-029")?.evidence ?? "", /saveProjectPropertyValue[\s\S]+appendPropertyHistory[\s\S]+oldValue/);
   assert.match(findingsById.get("SEC-030")?.evidence ?? "", /sourceFolderId[\s\S]+shares object properties across workspaces[\s\S]+deletes custom properties/);
   assert.match(findingsById.get("SEC-031")?.evidence ?? "", /saveView[\s\S]+saveWorkspace[\s\S]+activeViewId/);
+});
+
+test("fifth review findings retain filesystem and IPC resource-exhaustion coverage", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const findingsById = new Map(parseFindings(report).map((finding) => [finding.id, finding]));
+  const backlog = report.match(
+    /^## Рекомендуемые follow-up задачи\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  assert.match(findingsById.get("SEC-028")?.affectedFiles ?? "", /src\/App\.tsx[\s\S]+electron\/workspaceIpc\.js[\s\S]+src\/workspaceBackend\.js/);
+  assert.match(findingsById.get("SEC-028")?.recommendation ?? "", /scan[\s\S]+listEntries[\s\S]+listProjectFileTree[\s\S]+pagination/);
+  assert.match(findingsById.get("SEC-034")?.evidence ?? "", /normalizePayload[\s\S]+normalizeProjectPropertyValue[\s\S]+saveProjectPropertyValue[\s\S]+appendPropertyHistory[\s\S]+JSON\.stringify/);
+  assert.match(findingsById.get("SEC-034")?.recommendation ?? "", /per-method[\s\S]+string[\s\S]+array[\s\S]+metadata[\s\S]+rate/);
+  assert.match(backlog, /FUP-14:[^\n]+workspace\.scan[\s\S]+workspace\.listEntries[\s\S]+workspace\.listProjectFileTree/);
+  assert.match(backlog, /FUP-18:[^\n]+SEC-034[\s\S]+oversized[\s\S]+до persistence/);
 });
 
 test("fourth review findings retain concrete workspace and reorder atomicity evidence", async () => {
@@ -389,7 +405,7 @@ test("final audit handoff contains a scoped remediation backlog for every findin
   )?.[1] ?? "";
   const rows = [...backlog.matchAll(/^\| (FUP-\d{2}):[^\n]+\| (SEC-[^|]+) \| ([^|]+) \| ([^|]+) \|$/gm)];
 
-  assert.equal(rows.length, 17, "follow-up backlog must keep independent implementation scopes");
+  assert.equal(rows.length, 18, "follow-up backlog must keep independent implementation scopes");
   assert.equal(new Set(rows.map((row) => row[1])).size, rows.length, "follow-up task IDs must be unique");
 
   const coveredIds = rows.flatMap((row) => [
