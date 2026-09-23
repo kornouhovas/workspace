@@ -176,6 +176,10 @@ test("writeWorkspaceSettings preserves corrupt existing settings before replacin
   const backups = (await readdir(directory)).filter((name) => name.startsWith("settings.json.corrupt-"));
   assert.equal(backups.length, 1);
   assert.equal(await readFile(join(directory, backups[0]), "utf8"), "{not json");
+  assert.deepEqual(
+    (await readdir(directory)).filter((name) => name.endsWith(".tmp")),
+    [],
+  );
 });
 
 test("readWorkspaceProperties migrates legacy properties from custom .workspace companion path", async () => {
@@ -487,11 +491,42 @@ test("createFileResponse rejects symlink previews outside root", async () => {
   assert.equal(response.status, 400);
 });
 
+test("createFileResponse rejects unsupported types and broken symlink previews", async () => {
+  const root = await createWorkspaceFixture();
+  const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  await symlink(join(outside, "Missing.pdf"), join(root, "Archive", "Completed", "Missing.pdf"));
+
+  const unsupportedResponse = await createFileResponse({
+    root,
+    path: "Archive/Completed/Archive.zip",
+  });
+  const brokenSymlinkResponse = await createFileResponse({
+    root,
+    path: "Archive/Completed/Missing.pdf",
+  });
+
+  assert.equal(unsupportedResponse.status, 415);
+  assert.equal(brokenSymlinkResponse.status, 404);
+});
+
 test("workspace backend rejects paths outside root", async () => {
   const root = await createWorkspaceFixture();
   const response = await createListEntriesResponse({ root, body: { path: "../outside" } });
 
   assert.equal(response.status, 400);
+});
+
+test("workspace backend rejects an explicit directory symlink outside root", async () => {
+  const root = await createWorkspaceFixture();
+  const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  await mkdir(join(outside, "External"));
+  await writeFile(join(outside, "External", "Secret.txt"), "secret");
+  await symlink(join(outside, "External"), join(root, "External"));
+
+  const response = await createListEntriesResponse({ root, body: { path: "External" } });
+
+  assert.equal(response.status, 400);
+  assert.match(response.payload.error, /outside workspace root/);
 });
 
 test("createCreateViewResponse creates a default active Board view", async () => {

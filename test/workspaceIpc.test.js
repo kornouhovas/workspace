@@ -383,9 +383,11 @@ test("workspace IPC handler creates renames reorders and deletes workspaces", as
   const rootPath = join(tempDirectory, "projects");
   const configPath = join(tempDirectory, "settings.json");
   const viewStorePath = join(tempDirectory, "views.json");
+  const projectFilePath = join(rootPath, "Active", "Project Alpha", "notes.txt");
 
   try {
     await mkdir(join(rootPath, "Active", "Project Alpha"), { recursive: true });
+    await writeFile(projectFilePath, "user-owned project data");
     const handler = createWorkspaceIpcHandler({
       configPath,
       viewStorePath,
@@ -429,6 +431,10 @@ test("workspace IPC handler creates renames reorders and deletes workspaces", as
     const remainingWorkspaces = await handler(null, "workspace.listWorkspaces", {});
     assert.equal(remainingWorkspaces.activeWorkspaceId, rootResponse.root.workspaceId);
     assert.deepEqual(remainingWorkspaces.workspaces.map((workspace) => workspace.id), [rootResponse.root.workspaceId]);
+    assert.equal(await readFile(projectFilePath, "utf8"), "user-owned project data");
+
+    const persistedViews = JSON.parse(await readFile(viewStorePath, "utf8"));
+    assert.equal(persistedViews.workspaces[createdWorkspace.workspace.id].deletedAt, "2026-05-15T10:00:00.000Z");
   } finally {
     await rm(tempDirectory, { recursive: true, force: true });
   }

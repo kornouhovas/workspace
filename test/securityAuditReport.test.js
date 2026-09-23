@@ -20,6 +20,7 @@ const requiredSections = [
   "Шаблон finding",
   "Findings",
   "Electron, renderer и IPC boundary",
+  "Filesystem и local metadata boundary",
   "Матрица покрытия",
   "Правила работы с доказательствами",
   "Журнал проверки",
@@ -156,4 +157,37 @@ test("security audit includes Electron and IPC evidence for Task 2", async () =>
   assert.match(report, /\| Electron shell \|[^\n]+\| Task 2 \| Covered \|/);
   assert.match(report, /\| Preload и IPC \|[^\n]+\| Task 2 \| Covered \|/);
   assert.match(report, /\| Renderer boundary \|[^\n]+\| Task 2 \| Covered \|/);
+});
+
+test("security audit includes filesystem and local metadata evidence for Task 3", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const section = report.match(
+    /^## Filesystem и local metadata boundary\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  for (const evidence of [
+    "readFile",
+    "writeFile",
+    "readdir",
+    "rename",
+    "rm",
+    "stat",
+    "realpath",
+    "spawn",
+    "symlink",
+    "TOCTOU",
+    "HTML/SVG/XML/JS",
+    "atomic",
+    "future-schema",
+    "concurrent",
+    "workspace.deleteWorkspace",
+    "test/localOpen.test.js",
+    "test/workspaceBackend.test.js",
+    "test/workspaceIpc.test.js",
+  ]) {
+    assert.match(section, new RegExp(evidence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+
+  assert.match(report, /\| Filesystem \|[^\n]+\| Task 3 \| Covered \|/);
+  assert.match(report, /\| Local metadata \|[^\n]+\| Task 3 \| Covered \|/);
 });

@@ -196,6 +196,111 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: на временном fixture выбрать source folder и вызвать `workspace.getRoot`/`workspace.previewFile`; ответы содержат абсолютный path. Создать повреждённый временный `views.json` и вызвать читающий метод; текст ошибки содержит путь fixture.
 - Recommendation: возвращать renderer opaque locator/display name вместо абсолютного path там, где путь не нужен действию пользователя; preview должен возвращать безопасный token или сразу подготовленные данные; на IPC boundary преобразовывать исключения в allowlisted `{code, field, message}` без stack, cause и filesystem paths, сохраняя подробности только в локальном redacted log.
 
+### SEC-004: Canonical-path проверка отделена от использования файла
+
+- Severity: Medium
+- Confidence: Medium
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-367
+- OWASP: A01:2021 Broken Access Control
+- Trust boundary: TB-03
+- Affected files: `src/localOpen.js:48`, `src/localOpen.js:77`, `src/workspaceBackend.js:170`, `src/workspaceBackend.js:567`, `src/workspaceBackend.js:605`, `src/workspaceBackend.js:640`
+- Evidence: `resolveExistingWorkspacePath` проверяет `existsSync` и canonical target через `realpathSync`, но возвращает исходный lexical path. Затем отдельные `statSync`, `readdir`, `createReadStream` или `spawn` повторно разрешают этот path. Рекурсивный scan также строит следующий lexical path из ранее полученного `Dirent`. Ни file descriptor, ни inode не удерживаются между validation и use.
+- Impact: процесс, способный менять вредоносную выбранную папку, может попытаться заменить проверенный файл или каталог symlink между проверкой и использованием и добиться чтения имён/файла либо открытия объекта вне выбранного root. Успешность зависит от race timing; стабильный exploit в рамках безопасного аудита не запускался.
+- Reproduction: на полностью временном fixture циклически менять in-root target между обычным объектом и symlink на отдельный temporary outside-root, параллельно вызывая list/preview/reveal; фиксировать только факт обращения к outside inode. Не использовать пользовательские каталоги.
+- Recommendation: выполнять operation по уже открытому descriptor и проверять descriptor-resolved identity, либо использовать platform-safe open-at/no-follow traversal для каждого сегмента; для spawn передавать проверенный descriptor-backed target или повторно проверять inode непосредственно перед operation. Добавить deterministic race harness с временными fixtures.
+
+### SEC-005: `workspace.reveal` может запускать macOS application bundle
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-749
+- OWASP: A01:2021 Broken Access Control
+- Trust boundary: TB-02, TB-03
+- Affected files: `electron/preload.cjs:36`, `electron/workspaceIpc.js:657`, `src/localOpen.js:64`, `src/localOpen.js:77`
+- Evidence: `kind: "directory"` принимает любой directory внутри source root, а `getMacOpenCommand` независимо от kind выполняет `open <target>`. Безопасный stub-fixture с каталогом `Untrusted.app` вернул status 200 и зафиксировал аргументы `open <fixture>/root/Untrusted.app`; shell не используется. В текущем renderer нет call site для `reveal`, но метод доступен через preload allowlist.
+- Impact: скомпрометированный renderer может без отдельного main-process подтверждения попросить LaunchServices запустить подготовленный application bundle из вредоносной выбранной папки, превращая renderer compromise в запуск native-кода от имени пользователя. Требуются одновременно доступ к bridge и наличие подходящего bundle внутри source root.
+- Reproduction: создать пустой `Untrusted.app` только во временном fixture и вызвать `createRevealResponse` с injected `spawnCommand`; проверить, что был бы вызван `open` с bundle path, не запуская приложение.
+- Recommendation: реализовать именно reveal-in-Finder (`shell.showItemInFolder` или эквивалент с явной семантикой), запретить executable/application/package targets, привязать вызов к подтверждённому user gesture и добавить main-process confirmation для потенциально запускаемых типов.
+
+### SEC-006: Transitional metadata создаются без явных restrictive permissions
+
+- Severity: Low
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-732
+- OWASP: A01:2021 Broken Access Control
+- Trust boundary: TB-04, TB-06
+- Affected files: `src/workspaceBackend.js:511`, `src/workspacePropertyStore.js:155`, `electron/workspaceIpc.js:1779`, `cmd/workspace-sidecar/main.go:24`, `internal/workspacestore/store.go:142`
+- Evidence: JSON adapters вызывают `mkdir`/`writeFile` без `mode`; temporary file после `rename` становится metadata-файлом с правами, определёнными umask. На текущем audit host временный `settings.json` был создан с mode `0644`. Sidecar передаёт database path в `any-store` без project-level `chmod`; активный Electron transport SQLite не создаёт, поэтому фактический mode SQLite будет отдельно проверен в Task 4.
+- Impact: если родительские каталоги доступны другим локальным accounts/processes, они могут читать source path, workspace/view/property metadata и историю. Ограничивающие права домашнего каталога часто уменьшают риск, но приложение само не обеспечивает требуемую конфиденциальность.
+- Reproduction: с restrictive-free default umask создать metadata через `writeWorkspaceSettings` во временном каталоге и проверить только mode через `stat`; на проверенном host результат `0644`, содержимое в evidence не копировать.
+- Recommendation: создавать metadata directories с `0700`, temporary/final JSON и SQLite с `0600`, проверять/исправлять права существующих файлов при безопасной миграции и добавить platform-aware permission tests; Windows ACL рассматривать отдельно.
+
+### SEC-007: Future-schema metadata принимаются с потерей неизвестных данных
+
+- Severity: Low
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-20
+- OWASP: A08:2021 Software and Data Integrity Failures
+- Trust boundary: TB-04
+- Affected files: `src/workspacePropertyStore.js:123`, `src/workspacePropertyStore.js:133`, `electron/workspaceIpc.js:1760`, `src/workspaceBackend.js:430`
+- Evidence: property store не проверяет входной `schemaVersion`, всегда возвращает version 1 и нормализует только известные top-level collections; view store и settings не имеют version gate. На временном fixture документ `schemaVersion: 99` с неизвестным top-level полем после обычного save был переписан как version 1, а неизвестное поле исчезло. Синтаксически corrupt JSON при этом корректно отклоняется и сохраняется без перезаписи.
+- Impact: запуск старой версии приложения над metadata от будущей версии или расширения может тихо уничтожить неподдерживаемые поля и привести к необратимой потере локального состояния после следующей записи.
+- Reproduction: во временном property-store JSON задать future `schemaVersion` и marker-поле, затем сохранить отдельное свойство штатным adapter API; повторное чтение файла показывает version 1 без marker.
+- Recommendation: отклонять версии выше поддерживаемой до любых записей, валидировать shape по версии, выполнять явные idempotent migrations с backup и сохранять неизвестные данные только по документированному forward-compatibility контракту.
+
+### SEC-008: Защита от concurrent lost update действует только внутри одного adapter instance
+
+- Severity: Low
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-362
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-04
+- Affected files: `src/workspaceBackend.js:489`, `src/workspacePropertyStore.js:5`, `electron/workspaceIpc.js:86`, `electron/workspaceIpc.js:1691`
+- Evidence: view/property stores сериализуют операции через in-memory Promise только внутри одного созданного instance; settings writer не имеет очереди или file lock. Два property-store instance на одном temporary path одновременно сохранили разные документы, но итоговый JSON содержал только один из них. Atomic rename предотвращает partial JSON, но не lost update между readers/writers.
+- Impact: два Electron instance, повторно созданные handlers или иной конкурентный writer могут молча терять корректные metadata. Скомпрометированный renderer в одном handler имеет меньший blast radius благодаря per-instance queue, но multi-process/external coordination отсутствует.
+- Reproduction: создать два `createFilePropertyStore` для одного temporary path и одновременно сохранить разные IDs; после завершения проверить число IDs, не используя production metadata.
+- Recommendation: назначить single-writer ownership, добавить межпроцессный lock или transactional store с compare-and-swap/revision, включить revision в schema и тестировать concurrent writers из независимых instances/processes.
+
+### SEC-009: Preview allowlist включает active-content форматы без отдельной policy
+
+- Severity: Informational
+- Confidence: High
+- Status: Open
+- Class: Defense in depth
+- CWE: CWE-434
+- OWASP: A05:2021 Security Misconfiguration
+- Trust boundary: TB-01, TB-03
+- Affected files: `src/localOpen.js:5`, `src/workspaceBackend.js:25`, `src/workspaceBackend.js:170`, `electron/workspaceIpc.js:661`
+- Evidence: extension allowlist включает `HTML/SVG/XML/JS` и CSS наряду с изображениями/media; response возвращает absolute `filePath` и browser-oriented content type, но не задаёт isolated preview origin, CSP или download-only disposition. В текущем renderer вызовов `previewFile`/`reveal` не найдено кроме client API и тестов, поэтому штатный active-content render path сейчас не подтверждён.
+- Impact: control не создаёт самостоятельной эксплуатации в текущем UI, но будущий preview component может загрузить attacker-controlled active content в Electron context и объединить риск с SEC-001/SEC-002.
+- Reproduction: статически сравнить allowlist и content-type map, затем подтвердить отсутствие renderer call site; active HTML не загружать в application window.
+- Recommendation: оставить в inline-preview allowlist только passive formats, преобразовывать text/markdown в inert text, SVG/XML sanitise или отдавать как download, а любой rich preview изолировать в отдельном origin/webContents без preload, navigation и permissions.
+
+### SEC-010: IPC preview создаёт и теряет незакрытый file stream
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-772
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-02, TB-03
+- Affected files: `src/workspaceBackend.js:170`, `src/workspaceBackend.js:185`, `electron/workspaceIpc.js:661`
+- Evidence: `createFileResponse` создаёт `createReadStream(filePath)`, но IPC branch возвращает только `filePath` и `contentType`, теряя ссылку на stream без чтения или `destroy`. На временном fixture 80 вызовов открыли 80 дополнительных descriptors; явный `destroy` вернул descriptor count к baseline. Через IPC renderer не получает stream и не может закрыть его.
+- Impact: renderer с bridge-доступом может повторять preview requests до исчерпания file descriptors и отказа main process или других файловых операций. Race удаления между `statSync` и asynchronous stream open также может породить необработанную stream error.
+- Reproduction: на temporary text file многократно вызвать `createFileResponse`, дождаться `open`, сравнить descriptor count и затем обязательно уничтожить все streams для очистки fixture.
+- Recommendation: не создавать stream в metadata-only IPC route; если preview должен передавать bytes, владеть lifecycle в main process, добавить error/close handlers, size/rate limits и гарантированный cleanup. Добавить regression test, подтверждающий отсутствие роста descriptors.
+
 ## Electron, renderer и IPC boundary
 
 Проверка охватила `BrowserWindow`, preload facade, main-process dispatcher, renderer import graph, navigation/new-window/permission controls, Content-Security-Policy, payload/error flow и раскрытие path. Production-код не изменялся.
@@ -215,6 +320,31 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 Разрешённые методы охватывают чтение дерева и projections, настройку root, CRUD workspace/view/property/value, preview и reveal. Preload и main используют одинаковый явный список. Это ограничивает произвольные IPC channels, но не является authorization для origin: скомпрометированный доверенный renderer по принятой модели угроз может вызвать весь список. Method-specific payload validation существует, однако глубина проверки неоднородна и будет дополнительно проверена на filesystem/storage и sidecar этапах.
 
+## Filesystem и local metadata boundary
+
+Проверка проследила renderer payload через `workspace.listEntries`, `workspace.listProjectFileTree`, `workspace.previewFile` и `workspace.reveal` до filesystem/process primitives. Все adversarial проверки выполнялись только на temporary fixtures; production-код и пользовательские project files не менялись.
+
+| Primitive/контроль | Путь данных и evidence | Результат |
+| --- | --- | --- |
+| `readFile` | `src/workspaceBackend.js:499-508`, `src/workspacePropertyStore.js:133-151`, `electron/workspaceIpc.js:1760-1776` | Читает transitional JSON; syntax corruption отклоняется. User project content через этот primitive не читается |
+| `writeFile` / `rename` / `rm` | `src/workspaceBackend.js:511-540`, `src/workspacePropertyStore.js:155-166`, `electron/workspaceIpc.js:1779-1790`, `test/securityControls.test.js` | Same-directory random temp + atomic rename; `rm` применяется только к failed temp. Нет `fsync`/directory sync, explicit mode или общего cross-instance lock; SEC-006/SEC-008 |
+| `readdir` | `src/workspaceBackend.js:567-663` | Возвращаются только не-hidden entries с `Dirent.isDirectory/isFile`; symlink entries не входят в обычную выдачу. Recursive validation остаётся race-prone; SEC-004 |
+| `stat` / `realpath` | `src/localOpen.js:29-59`, `src/workspaceBackend.js:152-189`, `test/localOpen.test.js`, `test/workspaceBackend.test.js` | Absolute path, lexical `..`, sibling-prefix escape и существующий symlink escape отклоняются; broken symlink даёт not-found и не запускается. Percent-encoding не декодируется backend и остаётся literal filename. Между check и use остаётся TOCTOU; SEC-004 |
+| `spawn` | `src/localOpen.js:64-125`, `src/workspaceBackend.js:493-496`, `test/securityControls.test.js` | Аргументы передаются массивом без shell, что блокирует shell metacharacter injection. `open` может запустить `.app` directory; SEC-005 |
+| Preview allowlist | `src/localOpen.js:5-27`, `src/workspaceBackend.js:25-45,170-190`, `electron/workspaceIpc.js:661-669` | Unknown extension получает 415; HTML/SVG/XML/JS разрешены без active-content policy, текущего UI consumer нет; SEC-009. IPC теряет созданный stream; SEC-010 |
+| Workspace deletion | `electron/workspaceIpc.js:517-553`, `test/workspaceIpc.test.js` | `workspace.deleteWorkspace` делает soft delete только metadata и меняет active ID; `rm`/`rename` source tree не вызываются, isolated test подтверждает сохранность project file |
+
+Проверка local metadata дала следующие результаты:
+
+- settings/properties backend при записи сохраняет синтаксически corrupt старый JSON как uniquely named `.bak`, затем делает atomic replacement; read corrupt JSON возвращает `WORKSPACE_STORAGE_CORRUPT` и не мигрирует legacy поверх него;
+- view/property stores отклоняют corrupt JSON и сохраняют исходный файл, но автоматического backup/recovery для них нет; это fail-closed поведение, а не восстановление;
+- property/view stores имеют per-instance Promise queue, но concurrent writers из разных instances/processes не координируются; воспроизведён lost update (SEC-008);
+- future-schema gate отсутствует: property metadata может быть понижена до schema 1 с потерей неизвестных top-level данных (SEC-007); settings/views отдельной version-модели не имеют;
+- temporary JSON создаются без explicit permissions и на текущем umask получили `0644` (SEC-006); SQLite не создаётся активным Electron transport, а mode, location и any-store error handling остаются предметом Task 4;
+- atomic rename защищает от partial target при обычной ошибке write, но нет `fsync` файла/каталога, общей revision и гарантии crash durability; это учитывается в remediation SEC-007/SEC-008.
+
+Расширенные fixture-тесты фиксируют только существующие защиты: rejection traversal/absolute/symlink/broken-symlink и kind mismatch, unsupported preview extensions, atomic temp cleanup и отсутствие удаления project file при workspace soft delete. Они намеренно не утверждают, что `.app` launch, active content, permissive mode, future-schema downgrade, lost update или descriptor leak являются допустимым поведением.
+
 ## Матрица покрытия
 
 | Область | Компоненты и вопросы | Метод evidence | Задача | Статус |
@@ -222,8 +352,8 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | Electron shell | BrowserWindow, isolation, sandbox, navigation, windows, permissions, CSP | Code review + existing/new tests | Task 2 | Covered |
 | Preload и IPC | Exposed API, allowlist, sender/frame, payload, errors | Data-flow review + adversarial tests | Task 2 | Covered |
 | Renderer boundary | Imports, transport, path/error disclosure, active content | Static boundary tests + code review | Task 2 | Covered |
-| Filesystem | Path resolution, traversal, symlink, TOCTOU, open/spawn/delete | Temporary fixtures + source tracing | Task 3 | Planned |
-| Local metadata | JSON permissions, atomicity, backup, schema, concurrency | Adapter review + isolated corruption tests | Task 3 | Planned |
+| Filesystem | Path resolution, traversal, symlink, TOCTOU, open/spawn/delete | Temporary fixtures + source tracing | Task 3 | Covered |
+| Local metadata | JSON permissions, atomicity, backup, schema, concurrency | Adapter review + isolated corruption tests | Task 3 | Covered |
 | Go sidecar HTTP | Bind/auth, methods, content type, body limits, timeout, shutdown | Handler/client tests + code review | Task 4 | Planned |
 | any-store/SQLite | ID and scope validation, soft delete/history, permissions, errors | Store tests + document-flow review | Task 4 | Planned |
 | Dependencies | npm/Go graph, lock integrity, advisories, lifecycle scripts | Manifest/lock review + available native tooling | Task 5 | Planned |
@@ -247,3 +377,4 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | --- | --- | --- |
 | 2026-09-23 | Scope и baseline | Зафиксированы ревизия, dirty-state, toolchain, модель угроз, finding contract и coverage matrix |
 | 2026-09-23 | Electron, renderer и IPC | Подтверждены isolation, preload/main allowlists и renderer import boundary; зарегистрированы SEC-001—SEC-003 |
+| 2026-09-23 | Filesystem и local metadata | Подтверждены traversal/symlink/atomic-write/soft-delete controls; зарегистрированы SEC-004—SEC-010 |

@@ -6,6 +6,9 @@ import vm from "node:vm";
 const mainUrl = new URL("../electron/main.js", import.meta.url);
 const preloadUrl = new URL("../electron/preload.cjs", import.meta.url);
 const ipcUrl = new URL("../electron/workspaceIpc.js", import.meta.url);
+const localOpenUrl = new URL("../src/localOpen.js", import.meta.url);
+const backendUrl = new URL("../src/workspaceBackend.js", import.meta.url);
+const propertyStoreUrl = new URL("../src/workspacePropertyStore.js", import.meta.url);
 
 function extractMethodSet(source, name) {
   const body = source.match(
@@ -85,4 +88,31 @@ test("preload and main process enforce the same explicit IPC method allowlist", 
   assert.equal(new Set(mainMethods).size, mainMethods.length);
   assert.deepEqual(preloadMethods, mainMethods);
   assert.match(ipc, /ipcMain\.handle\(ipcChannel,\s*createWorkspaceIpcHandler\(options\)\)/);
+});
+
+test("filesystem boundary canonicalizes existing targets and opens them without a shell", async () => {
+  const source = await readFile(localOpenUrl, "utf8");
+
+  assert.match(source, /isAbsolute\(relativePath\)/);
+  assert.match(source, /relative\(resolvedRoot,\s*targetPath\)/);
+  assert.match(source, /realpathSync\(root\)/);
+  assert.match(source, /realpathSync\(targetPath\)/);
+  assert.match(source, /spawn\(command,\s*args,\s*\{\s*stdio:\s*"ignore"\s*\}\)/);
+  assert.doesNotMatch(source, /shell:\s*true/);
+});
+
+test("transitional JSON stores use same-directory atomic replacement and only remove temp files", async () => {
+  const [backend, propertyStore, ipc] = await Promise.all([
+    readFile(backendUrl, "utf8"),
+    readFile(propertyStoreUrl, "utf8"),
+    readFile(ipcUrl, "utf8"),
+  ]);
+
+  for (const source of [backend, propertyStore, ipc]) {
+    assert.match(source, /const tempPath = join\(directory, `\.\$\{basename\(filePath\)\}\.\$\{randomUUID\(\)\}\.tmp`\)/);
+    assert.match(source, /await writeFile\(tempPath,/);
+    assert.match(source, /await rename\(tempPath,\s*filePath\)/);
+    assert.match(source, /await rm\(tempPath,\s*\{ force:\s*true \}\)\.catch/);
+    assert.doesNotMatch(source, /rm\((?!tempPath)/);
+  }
 });

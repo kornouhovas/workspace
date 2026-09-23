@@ -95,15 +95,15 @@
 - Modify: `test/securityAuditReport.test.js`
 - Modify: `docs/security/20260923-project-security-audit.md`
 
-- [ ] Проследить каждый путь от renderer payload до `readFile`, `writeFile`, `readdir`, `rename`, `rm`, `stat`, `realpath` и `spawn`.
-- [ ] Проверить absolute path, `..`, separator/encoding edge cases, symlink escape, broken symlink, TOCTOU и подмену файла между validation и use.
-- [ ] Проверить allowlist preview-типов, обработку HTML/SVG/XML/JS, раскрытие `filePath` и запуск локальных приложений.
-- [ ] Проверить права создаваемых `.workspace`/JSON/SQLite файлов, atomic write, backup/recovery, corrupt/future schema и конкурентные записи.
-- [ ] Подтвердить, что удаление Workspace и metadata не удаляет пользовательские проекты.
-- [ ] Расширить изолированные fixture-тесты существующих path/symlink/destructive-operation защит; findings не оформлять как разрешённое поведение.
-- [ ] Обновить тест полноты отчёта требованием filesystem/storage evidence.
-- [ ] Запустить `node --test test/localOpen.test.js test/workspaceBackend.test.js test/workspaceIpc.test.js test/securityControls.test.js test/securityAuditReport.test.js`.
-- [ ] Запустить `npm test`; все тесты должны пройти до Task 4.
+- [x] Проследить каждый путь от renderer payload до `readFile`, `writeFile`, `readdir`, `rename`, `rm`, `stat`, `realpath` и `spawn`.
+- [x] Проверить absolute path, `..`, separator/encoding edge cases, symlink escape, broken symlink, TOCTOU и подмену файла между validation и use.
+- [x] Проверить allowlist preview-типов, обработку HTML/SVG/XML/JS, раскрытие `filePath` и запуск локальных приложений.
+- [x] Проверить права создаваемых `.workspace`/JSON/SQLite файлов, atomic write, backup/recovery, corrupt/future schema и конкурентные записи.
+- [x] Подтвердить, что удаление Workspace и metadata не удаляет пользовательские проекты.
+- [x] Расширить изолированные fixture-тесты существующих path/symlink/destructive-operation защит; findings не оформлять как разрешённое поведение.
+- [x] Обновить тест полноты отчёта требованием filesystem/storage evidence.
+- [x] Запустить `node --test test/localOpen.test.js test/workspaceBackend.test.js test/workspaceIpc.test.js test/securityControls.test.js test/securityAuditReport.test.js`.
+- [x] Запустить `npm test`; все тесты должны пройти до Task 4.
 
 ### Task 4: Проверить Go sidecar, локальный HTTP и any-store
 

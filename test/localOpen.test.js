@@ -16,7 +16,10 @@ test("resolveWorkspacePath only allows relative paths inside the workspace root"
 
   assert.equal(resolveWorkspacePath(root, "Cards/Brief.pdf"), "/Users/example/projects/Cards/Brief.pdf");
   assert.throws(() => resolveWorkspacePath(root, "../Secrets/Brief.pdf"), /outside workspace root/);
+  assert.throws(() => resolveWorkspacePath(root, "../../projects-copy/Brief.pdf"), /outside workspace root/);
   assert.throws(() => resolveWorkspacePath(root, "/Users/example/Secrets/Brief.pdf"), /relative path/);
+  assert.throws(() => resolveWorkspacePath(root, ""), /Missing relative path/);
+  assert.throws(() => resolveWorkspacePath(root, null), /Missing relative path/);
 });
 
 test("getMacOpenCommand opens folders and files in macOS", () => {
@@ -65,6 +68,26 @@ test("createRevealResponse validates path, kind, and existing item before spawni
   });
 
   assert.equal(traversalResponse.status, 400);
+
+  const wrongKindResponse = await createRevealResponse({
+    body: { path: "Card/Brief.pdf", kind: "directory" },
+    root,
+    platform: "darwin",
+    spawnCommand: async () => {
+      throw new Error("should not spawn");
+    },
+  });
+  assert.equal(wrongKindResponse.status, 400);
+
+  const unsupportedPlatformResponse = await createRevealResponse({
+    body: { path: "Card/Brief.pdf", kind: "file" },
+    root,
+    platform: "linux",
+    spawnCommand: async () => {
+      throw new Error("should not spawn");
+    },
+  });
+  assert.equal(unsupportedPlatformResponse.status, 501);
 });
 
 test("resolveExistingWorkspacePath rejects symlinks that escape the workspace root", async () => {
@@ -74,4 +97,31 @@ test("resolveExistingWorkspacePath rejects symlinks that escape the workspace ro
   await symlink(join(outside, "Secret.pdf"), join(root, "Secret.pdf"));
 
   assert.throws(() => resolveExistingWorkspacePath(root, "Secret.pdf"), /outside workspace root/);
+});
+
+test("createRevealResponse does not spawn escaped or broken symlink targets", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-"));
+  const outside = await mkdtemp(join(tmpdir(), "workspace-outside-"));
+  await writeFile(join(outside, "Secret.pdf"), "secret");
+  await symlink(join(outside, "Secret.pdf"), join(root, "Escaped.pdf"));
+  await symlink(join(outside, "Missing.pdf"), join(root, "Broken.pdf"));
+  const calls = [];
+  const spawnCommand = async (...args) => calls.push(args);
+
+  const escapedResponse = await createRevealResponse({
+    body: { path: "Escaped.pdf", kind: "file" },
+    root,
+    platform: "darwin",
+    spawnCommand,
+  });
+  const brokenResponse = await createRevealResponse({
+    body: { path: "Broken.pdf", kind: "file" },
+    root,
+    platform: "darwin",
+    spawnCommand,
+  });
+
+  assert.equal(escapedResponse.status, 400);
+  assert.equal(brokenResponse.status, 404);
+  assert.deepEqual(calls, []);
 });
