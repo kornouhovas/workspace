@@ -170,7 +170,7 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
-  assert.equal(findings.length, 26, "all consolidated findings must be parsed");
+  assert.equal(findings.length, 27, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
   assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
@@ -332,14 +332,27 @@ test("consolidated audit includes every finding in the risk register and remedia
     "view routes without current-source authorization must remain classified as Medium",
   );
   for (const [id, message] of [
-    ["SEC-023", "path-derived project identity must remain classified as Medium"],
+    ["SEC-023", "path-derived project identity collisions must remain classified as Medium"],
     ["SEC-024", "source-root settings loss must remain classified as Medium"],
     ["SEC-025", "status identifier collisions must remain classified as Medium"],
-    ["SEC-026", "select-value cascade inconsistency must remain classified as Medium"],
+    ["SEC-026", "property lifecycle cascade inconsistency must remain classified as Medium"],
+    ["SEC-027", "active-runtime property history loss must remain classified as Medium"],
   ]) {
     assert.equal(findings.find((finding) => finding.id === id)?.severity, "Medium", message);
   }
-  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-022[\s\S]+SEC-023[\s\S]+SEC-020[\s\S]+SEC-021[\s\S]+SEC-025[\s\S]+SEC-024[\s\S]+SEC-026[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
+  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-022[\s\S]+SEC-023[\s\S]+SEC-020[\s\S]+SEC-021[\s\S]+SEC-025[\s\S]+SEC-024[\s\S]+SEC-026[\s\S]+SEC-027[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
+});
+
+test("second review findings retain concrete active-runtime evidence", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const findingsById = new Map(parseFindings(report).map((finding) => [finding.id, finding]));
+
+  assert.match(findingsById.get("SEC-023")?.evidence ?? "", /32-bit[\s\S]+14wmu3/);
+  assert.match(findingsById.get("SEC-023")?.reproduction ?? "", /Status\/A\(\[&_--B[\s\S]+Status\/A_!% --B/);
+  assert.match(findingsById.get("SEC-026")?.evidence ?? "", /deletePropertyResult[\s\S]+PROPERTY_NOT_FOUND/);
+  assert.match(findingsById.get("SEC-026")?.recommendation ?? "", /persisted idempotent[\s\S]+injected write failure/);
+  assert.match(findingsById.get("SEC-027")?.evidence ?? "", /appendPropertyHistory[\s\S]+properties\.json\.history/);
+  assert.match(findingsById.get("SEC-027")?.recommendation ?? "", /targetType[\s\S]+previous\/next snapshots/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
