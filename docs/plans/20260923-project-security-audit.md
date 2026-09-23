@@ -44,13 +44,13 @@
 - Inspect: `package.json`
 - Inspect: `go.mod`
 
-- [ ] Зафиксировать commit, состояние рабочего дерева, версии Node/Go/Electron и точные границы аудита.
-- [ ] Описать активы, доверительные границы, источники входных данных, атакующие модели и предположения.
-- [ ] Создать шаблон finding с ID, severity, confidence, CWE/OWASP, evidence, impact, reproduction, recommendation и статусом.
-- [ ] Составить матрицу покрытия Electron, IPC, filesystem, storage, sidecar, dependencies, secrets и build configuration.
-- [ ] Добавить `test/securityAuditReport.test.js`, проверяющий обязательные разделы, уникальность finding ID и допустимые значения severity/confidence.
-- [ ] Запустить `node --test test/securityAuditReport.test.js`.
-- [ ] Запустить `npm test`; все тесты должны пройти до Task 2.
+- [x] Зафиксировать commit, состояние рабочего дерева, версии Node/Go/Electron и точные границы аудита.
+- [x] Описать активы, доверительные границы, источники входных данных, атакующие модели и предположения.
+- [x] Создать шаблон finding с ID, severity, confidence, CWE/OWASP, evidence, impact, reproduction, recommendation и статусом.
+- [x] Составить матрицу покрытия Electron, IPC, filesystem, storage, sidecar, dependencies, secrets и build configuration.
+- [x] Добавить `test/securityAuditReport.test.js`, проверяющий обязательные разделы, уникальность finding ID и допустимые значения severity/confidence.
+- [x] Запустить `node --test test/securityAuditReport.test.js`.
+- [x] Запустить `npm test`; все тесты должны пройти до Task 2.
 
 ### Task 2: Проверить Electron, renderer и IPC boundary
 
