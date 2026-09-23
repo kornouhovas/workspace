@@ -19,6 +19,7 @@ const requiredSections = [
   "Классификация риска",
   "Шаблон finding",
   "Findings",
+  "Electron, renderer и IPC boundary",
   "Матрица покрытия",
   "Правила работы с доказательствами",
   "Журнал проверки",
@@ -127,4 +128,32 @@ test("security audit defines a complete reusable finding template", async () => 
   ]) {
     assert.match(template, new RegExp(field));
   }
+});
+
+test("security audit includes Electron and IPC evidence for Task 2", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const section = report.match(
+    /^## Electron, renderer и IPC boundary\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  for (const evidence of [
+    "contextIsolation",
+    "nodeIntegration",
+    "sandbox",
+    "preload",
+    "sender/frame",
+    "navigation",
+    "permission",
+    "Content-Security-Policy",
+    "absolute path",
+    "error",
+    "test/securityControls.test.js",
+    "test/rendererBoundary.test.js",
+  ]) {
+    assert.match(section, new RegExp(evidence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+
+  assert.match(report, /\| Electron shell \|[^\n]+\| Task 2 \| Covered \|/);
+  assert.match(report, /\| Preload и IPC \|[^\n]+\| Task 2 \| Covered \|/);
+  assert.match(report, /\| Renderer boundary \|[^\n]+\| Task 2 \| Covered \|/);
 });

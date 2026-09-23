@@ -70,15 +70,15 @@
 - Modify: `test/securityAuditReport.test.js`
 - Modify: `docs/security/20260923-project-security-audit.md`
 
-- [ ] Проверить `contextIsolation`, `nodeIntegration`, sandbox, preload API, список IPC methods и отсутствие Node/backend imports в renderer.
-- [ ] Проверить авторизацию IPC sender/frame, валидацию payload, обработку ошибок и возможность вызова привилегированных методов из скомпрометированного renderer.
-- [ ] Проверить navigation, новые окна, permission handlers, CSP, загрузку локального renderer и риски активного содержимого.
-- [ ] Проверить раскрытие абсолютных путей, stack traces и внутренних ошибок через IPC.
-- [ ] Добавить regression/characterization-тесты только для подтверждённых существующих защит Electron и renderer boundary.
-- [ ] Зафиксировать отсутствующие controls отдельными findings без изменения production-кода.
-- [ ] Обновить тест полноты отчёта требованием Electron/IPC evidence.
-- [ ] Запустить `node --test test/runtimeMode.test.js test/rendererBoundary.test.js test/securityControls.test.js test/securityAuditReport.test.js`.
-- [ ] Запустить `npm test`; все тесты должны пройти до Task 3.
+- [x] Проверить `contextIsolation`, `nodeIntegration`, sandbox, preload API, список IPC methods и отсутствие Node/backend imports в renderer.
+- [x] Проверить авторизацию IPC sender/frame, валидацию payload, обработку ошибок и возможность вызова привилегированных методов из скомпрометированного renderer.
+- [x] Проверить navigation, новые окна, permission handlers, CSP, загрузку локального renderer и риски активного содержимого.
+- [x] Проверить раскрытие абсолютных путей, stack traces и внутренних ошибок через IPC.
+- [x] Добавить regression/characterization-тесты только для подтверждённых существующих защит Electron и renderer boundary.
+- [x] Зафиксировать отсутствующие controls отдельными findings без изменения production-кода.
+- [x] Обновить тест полноты отчёта требованием Electron/IPC evidence.
+- [x] Запустить `node --test test/runtimeMode.test.js test/rendererBoundary.test.js test/securityControls.test.js test/securityAuditReport.test.js`.
+- [x] Запустить `npm test`; все тесты должны пройти до Task 3.
 
 ### Task 3: Проверить файловую систему, локальные данные и опасные операции
 
