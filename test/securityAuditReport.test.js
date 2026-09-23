@@ -25,6 +25,8 @@ const requiredSections = [
   "Положительные security controls",
   "Residual risks",
   "Непроверенные области и ограничения аудита",
+  "Рекомендуемые follow-up задачи",
+  "Итоговый handoff",
   "Electron, renderer и IPC boundary",
   "Filesystem и local metadata boundary",
   "Go sidecar и any-store boundary",
@@ -204,6 +206,57 @@ test("consolidated audit includes every finding in the risk register and remedia
   assert.match(report, /18 уникальных findings: 1 High, 6 Medium, 6 Low и 5 Informational/);
   assert.match(report, /Critical findings не обнаружены/);
   assert.match(remediation, /SEC-016[\s\S]+SEC-001[\s\S]+SEC-005 и SEC-010[\s\S]+SEC-011/);
+});
+
+test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const findings = parseFindings(report);
+  const backlog = report.match(
+    /^## Рекомендуемые follow-up задачи\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+  const rows = [...backlog.matchAll(/^\| (FUP-\d{2}):[^\n]+\| (SEC-[^|]+) \| ([^|]+) \| ([^|]+) \|$/gm)];
+
+  assert.equal(rows.length, 8, "follow-up backlog must keep independent implementation scopes");
+  assert.equal(new Set(rows.map((row) => row[1])).size, rows.length, "follow-up task IDs must be unique");
+
+  const coveredIds = new Set(
+    rows.flatMap((row) => [...row[2].matchAll(/SEC-\d{3}/g)].map((match) => match[0])),
+  );
+  assert.deepEqual(
+    [...coveredIds].sort(),
+    findings.map(({ id }) => id).sort(),
+    "follow-up backlog must cover every finding exactly by explicit ID",
+  );
+
+  for (const row of rows) {
+    assert.ok(row[3].trim().length > 40, `${row[1]} must define a bounded scope`);
+    assert.ok(row[4].trim().length > 40, `${row[1]} must define verification criteria`);
+  }
+});
+
+test("final audit report is redacted and records the non-production handoff", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const handoff = report.match(/^## Итоговый handoff\s*$([\s\S]*?)(?=^##\s)/m)?.[1] ?? "";
+
+  assert.doesNotMatch(report, /(?:\/Users\/|\/home\/|[A-Za-z]:\\\\)/);
+  assert.doesNotMatch(report, /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/);
+  assert.doesNotMatch(report, /\b(?:AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})\b/);
+
+  for (const statement of [
+    "production behavior",
+    "API contracts",
+    "storage schema",
+    "manifests/lockfiles/dependencies",
+    "Electron security settings",
+    "README.md",
+    "AGENTS.md",
+    "не выполнялась",
+    "human review",
+  ]) {
+    assert.match(handoff, new RegExp(statement.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+
+  assert.equal(parseFindings(report).every(({ status }) => status === "Open"), true);
 });
 
 test("security audit defines a complete reusable finding template", async () => {

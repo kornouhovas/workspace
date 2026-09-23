@@ -13,7 +13,7 @@
 | Go | `go1.26.2 darwin/arm64` |
 | Electron | `41.5.0` установлен; диапазон manifest — `^41.5.0` |
 | Тип анализа | Статический анализ, локальные тесты и безопасные изолированные fixtures |
-| Статус | Findings consolidated; final handoff pending |
+| Статус | Готов к human review; remediation не выполнялась |
 
 Ревизия фиксирует исходную точку анализа, а не утверждает чистоту рабочего дерева. Все ссылки на файлы в отчёте относительны корню репозитория. Содержимое посторонних untracked-артефактов и пользовательских папок не является источником evidence.
 
@@ -493,6 +493,30 @@ Residual severity учитывает текущие ограничения: side
 - Visual/runtime проверка будущего rich preview отсутствует, потому что active renderer call site для preview/reveal не найден.
 - Coverage новых audit helpers измерена Node test runner: 100% lines, 81.97% branches и 100% functions. `go test -cover ./...` показал 53.1% statements для sidecar command и 59.8% для store; Task 6 не добавляла Go helpers, а недостающий coverage существующего production-кода остаётся ограничением. Coverage production security paths report-oriented Node тестами не заявляется.
 
+## Рекомендуемые follow-up задачи
+
+Ниже перечислены самостоятельные implementation scopes. Они не являются выполненными исправлениями: все findings остаются `Open`, а каждую задачу следует планировать, реализовывать и принимать отдельно. Порядок строк следует приоритету и зависимостям из remediation-раздела.
+
+| Задача | Findings | Отдельный scope | Verification criteria |
+| --- | --- | --- | --- |
+| FUP-01: Dependency remediation | SEC-016 | Удалить неиспользуемый runtime graph, обновить Electron/Vite и затронутые transitive packages без boundary-изменений | Clean install по lockfile; production и full `npm audit` не содержат принятых High advisories; проходят npm tests, typecheck, renderer/Electron build и smoke test |
+| FUP-02: Electron trust boundary | SEC-001, SEC-002, SEC-003 | Ввести navigation/window/permission policy, sender/frame authorization, CSP и безопасный IPC error/path contract | Electron integration tests отклоняют недоверенный URL, frame, popup и permission; renderer не получает внутренний stack или лишний абсолютный path; существующий trusted flow проходит |
+| FUP-03: Filesystem race safety | SEC-004 | Спроектировать platform-aware operation-by-handle или эквивалентную защиту от symlink/rename race отдельно от preview UI | Детерминированный temporary-fixture race harness не выходит за source root на поддерживаемых платформах; traversal/symlink regression suite проходит |
+| FUP-04: Preview и reveal capability | SEC-005, SEC-009, SEC-010 | Заменить native launch на reveal-only contract, определить isolated/download-only preview policy и закрыть stream lifecycle | `.app` и executable-like targets не запускаются; active content не исполняется в privileged origin; repeated preview не увеличивает число открытых descriptors |
+| FUP-05: Metadata durability и permissions | SEC-006, SEC-007, SEC-008 | Добавить restrictive modes, backup/version gate и single-writer/revision coordination с сохранением данных | Migration fixtures сохраняют values/history, future schema отклоняется без rewrite, concurrent update test не теряет данные, созданные файлы имеют ожидаемые permissions |
+| FUP-06: Sidecar transport hardening | SEC-011, SEC-012, SEC-014 | До подключения sidecar реализовать lifecycle-owned secret, loopback/Host/Origin/Content-Type policy, limits, timeouts, graceful shutdown и sanitized errors | Integration tests отклоняют неверный token/origin/content type и oversized body; slow-client test ограничен timeout; responses не раскрывают parser/storage internals |
+| FUP-07: Sidecar identity и history | SEC-013, SEC-015 | После transport hardening ввести workspace ownership для IDs и append-only history invariants с совместимой миграцией | Cross-workspace overwrite/delete отклоняются; history невозможно перезаписать тем же ID; migration и Go store tests сохраняют существующие документы |
+| FUP-08: Repository и release hardening | SEC-017, SEC-018 | Уточнить ignore policy, зафиксировать toolchain/clean-build contract и добавить SBOM/checksum/provenance без изменения application behavior | CI отклоняет runtime DB/audit artifacts, clean reproducible build использует pinned toolchain, release artifacts имеют проверяемые checksum/SBOM/provenance |
+
+## Итоговый handoff
+
+- Отчёт проверен на raw-секреты и пользовательские абсолютные пути: такие значения в него не включены. Утверждения о результатах ограничены статическим анализом, выполненными тестами и явно указанными limitations; непроверенные области не представлены как подтверждённые vulnerabilities.
+- В рамках аудита не изменялись production behavior, публичные или внутренние API contracts, storage schema, manifests/lockfiles/dependencies и Electron security settings. Изменения ограничены audit-report, audit/security characterization tests и execution plan.
+- Рекомендации и follow-up scopes описывают будущую работу. Ни один finding не помечен исправленным или mitigated, и production remediation в рамках этого аудита не выполнялась.
+- `README.md` проверен: описанные запуск, storage, endpoint boundary и команды проверки не изменились, поэтому обновление не требуется.
+- `AGENTS.md` проверен: архитектурные границы и рабочие правила не менялись, поэтому обновление не требуется.
+- Handoff state: отчёт готов к human review. Исправления Critical/High (фактически обнаружен один High, Critical отсутствуют) требуют отдельного implementation plan и явного разрешения.
+
 ## Electron, renderer и IPC boundary
 
 Проверка охватила `BrowserWindow`, preload facade, main-process dispatcher, renderer import graph, navigation/new-window/permission controls, Content-Security-Policy, payload/error flow и раскрытие path. Production-код не изменялся.
@@ -655,3 +679,4 @@ Secret scan был regex/entropy-oriented review, а не специализир
 | 2026-09-23 | Go sidecar и any-store | Подтверждены method/scope/soft-delete controls; зарегистрированы SEC-011—SEC-015 и расширен SEC-006 |
 | 2026-09-23 | Dependencies, secrets и build chain | Проверены npm/Go inventories, advisories, lifecycle/build scripts, 473 reachable commits и artifact provenance; зарегистрированы SEC-016—SEC-018 |
 | 2026-09-23 | Сведение и критерии приёмки | 18 findings дедуплицированы и классифицированы; добавлены executive summary, risk register, remediation order, positive controls, residual risks и limitations; полный test/typecheck/build прошёл |
+| 2026-09-23 | Финальный handoff | Проверены redaction и границы утверждений; добавлен отдельный follow-up backlog; подтверждено отсутствие production/API/schema/dependency/security-setting изменений; README и AGENTS не требуют обновления |

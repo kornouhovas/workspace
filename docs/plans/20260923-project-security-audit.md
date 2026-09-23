@@ -180,14 +180,14 @@
 - Inspect: `README.md`
 - Inspect: `AGENTS.md`
 
-- [ ] Проверить, что отчёт не содержит raw-секретов, пользовательских абсолютных путей, непроверенных утверждений или предложений, представленных как уже выполненные исправления.
-- [ ] Добавить таблицу рекомендуемых follow-up задач с отдельными scopes и verification criteria, не реализуя их.
-- [ ] Зафиксировать, что production behavior, API, storage schema, зависимости и Electron security settings не изменялись.
-- [ ] Подтвердить, что README и AGENTS не требуют обновления, поскольку поведение и внутренние правила не меняются.
-- [ ] Обновить тест отчёта финальными требованиями к summary, risk register, limitations и remediation backlog.
-- [ ] Запустить `node --test test/documentation.test.js test/securityAuditReport.test.js`.
-- [ ] Запустить `git diff --check` и проверить итоговый diff только на audit-report и test artifacts.
-- [ ] Запустить финальный `npm test` и `go test ./...`; все проверки должны пройти.
+- [x] Проверить, что отчёт не содержит raw-секретов, пользовательских абсолютных путей, непроверенных утверждений или предложений, представленных как уже выполненные исправления.
+- [x] Добавить таблицу рекомендуемых follow-up задач с отдельными scopes и verification criteria, не реализуя их.
+- [x] Зафиксировать, что production behavior, API, storage schema, зависимости и Electron security settings не изменялись.
+- [x] Подтвердить, что README и AGENTS не требуют обновления, поскольку поведение и внутренние правила не меняются.
+- [x] Обновить тест отчёта финальными требованиями к summary, risk register, limitations и remediation backlog.
+- [x] Запустить `node --test test/documentation.test.js test/securityAuditReport.test.js`.
+- [x] Запустить `git diff --check` и проверить итоговый diff только на audit-report и test artifacts.
+- [x] Запустить финальный `npm test` и `go test ./...`; все проверки должны пройти.
 
 ## Post-Completion
 
