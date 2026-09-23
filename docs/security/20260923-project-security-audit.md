@@ -19,7 +19,7 @@
 
 ## Executive summary
 
-Аудит выявил 27 уникальных findings: 2 High, 12 Medium, 6 Low и 7 Informational; Critical findings не обнаружены. Двадцать findings являются подтверждёнными vulnerabilities, шесть — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Для активного Electron runtime наиболее приоритетны переход из скомпрометированного renderer к запуску native-кода через привилегированный reveal (SEC-005) и чтение произвольных локальных файлов из привилегированного `file://` origin (SEC-019); следом идут обход current-source authorization в view routes (SEC-022), нестабильная и collision-prone identity проектов (SEC-023), детерминированные collisions, потери metadata и неполная история property lifecycle (SEC-020, SEC-021, SEC-024—SEC-027) и утечка file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013). Отсутствующие navigation/sender controls (SEC-001) и известные advisories без подтверждённого project-specific exploit path (SEC-016) остаются обязательным hardening до расширения navigation surface или release, но не считаются подтверждёнными vulnerabilities текущего runtime.
+Аудит выявил 31 уникальных findings: 2 High, 16 Medium, 6 Low и 7 Informational; Critical findings не обнаружены. Двадцать четыре findings являются подтверждёнными vulnerabilities, шесть — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Для активного Electron runtime наиболее приоритетны переход из скомпрометированного renderer к запуску native-кода через привилегированный reveal (SEC-005) и чтение произвольных локальных файлов из привилегированного `file://` origin (SEC-019); следом идут обход current-source authorization в view routes (SEC-022), нестабильная и collision-prone identity проектов (SEC-023), детерминированные collisions, collapse Workspace scope и частично выполненные metadata/history mutations (SEC-020, SEC-021, SEC-024—SEC-027, SEC-029—SEC-031), а также отказ main process из-за preview leak или неограниченного project-tree enumeration (SEC-010, SEC-028). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013). Отсутствующие navigation/sender controls (SEC-001) и известные advisories без подтверждённого project-specific exploit path (SEC-016) остаются обязательным hardening до расширения navigation surface или release, но не считаются подтверждёнными vulnerabilities текущего runtime.
 
 Существующие controls существенно ограничивают blast radius: Electron включает isolation и sandbox, preload/main используют совпадающие allowlists, renderer не импортирует Node/backend modules, path helpers блокируют lexical traversal и стабильные symlink escapes, JSON writes используют atomic replacement, а sidecar по умолчанию слушает ephemeral loopback address. Это не компенсирует `file://` privileges, findings, зависящие от скомпрометированного renderer, конкурентного изменения filesystem или другого локального процесса.
 
@@ -564,15 +564,75 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: на temporary JSON store создать custom property, обновить её и удалить без project values, затем прочитать `history`: массив остаётся пустым. Повторить для create/update/reorder/delete select value; history появляется только при затронутых project values и описывает value change, а не lifecycle option.
 - Recommendation: для каждого property/select lifecycle mutation создавать server-generated append-only event с `targetType`, `targetId`, `action`, previous/next snapshots и timestamp. Current document, dependent cascade и history должны сохраняться атомарно либо через persisted idempotent recovery; добавить contract/failure-injection tests для каждого mutation и миграцию существующих stores без фабрикации прошлых событий.
 
+### SEC-028: Project file tree перечисляется без resource budgets
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-770
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-03, TB-04
+- Affected files: `electron/workspaceIpc.js:215`, `src/workspaceBackend.js:605`, `src/workspaceBackend.js:623`, `src/workspaceBackend.js:633`
+- Evidence: разрешённый IPC method `workspace.listProjectFileTree` напрямую вызывает recursive `listProjectFileTree`. Каждый уровень читает все видимые entries, запускает их обработку через `Promise.all` и рекурсивно обходит каждую directory; depth, node-count, concurrency, timeout и cancellation budgets отсутствуют. В отличие от Settings tree, обход не останавливается на project/card boundary, потому что его цель — построить полный file tree выбранного проекта.
+- Impact: скомпрометированный renderer может повторно запросить глубокое или широкое дерево, а вредоносное содержимое уже выбранной папки может само создать такое дерево. Electron main process одновременно накапливает filesystem operations, полный object graph и IPC serialization payload, поэтому bounded user action способен вызвать продолжительную недоступность UI, memory pressure или termination приложения.
+- Reproduction: только во временном source fixture создать ограниченное по размеру широкое и глубокое дерево, instrument-ировать число одновременных `readdir` и узлов ответа и вызвать `workspace.listProjectFileTree`. Подтвердить, что текущая реализация обходит fixture целиком без ранней остановки; не проводить нагрузочный DoS и не использовать пользовательскую папку.
+- Recommendation: ввести явные max depth/node/payload budgets, bounded concurrency, cancellation/timeout и lazy или paginated enumeration. Limit response должен быть различим от пустого дерева, а regression tests должны проверять каждый budget, освобождение pending work и обычные малые деревья.
+
+### SEC-029: Project value и history сохраняются как независимые commits
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-703
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-04
+- Affected files: `electron/workspaceIpc.js:1308`, `electron/workspaceIpc.js:1323`, `electron/workspaceIpc.js:1324`, `src/workspacePropertyStore.js:89`, `src/workspacePropertyStore.js:101`
+- Evidence: `updateProjectPropertyValueResult` сначала вызывает `saveProjectPropertyValue`, а затем отдельный `appendPropertyHistory`; оба метода выполняют самостоятельный read-modify-write всего JSON store. Если второй write падает, новое value уже committed без event. При повторе handler читает committed value как `existingValue`, поэтому новый event получает `oldValue`, равный уже сохранённому `newValue`, и исходный переход восстановить невозможно.
+- Impact: обычная ошибка второго write возвращается клиенту как failure после фактического изменения project data, но обязательная append-only history теряется. Retry не является идемпотентным recovery и закрепляет ложный old/new transition, поэтому audit trail и последующая migration не могут достоверно восстановить пользовательское изменение.
+- Reproduction: во временном property store сохранить исходное value, затем через injected store double разрешить `saveProjectPropertyValue` и один раз отклонить `appendPropertyHistory`. Подтвердить новое current value при отсутствии event; повторить тот же request и проверить, что без recovery marker исходная пара old/new уже недоступна. Пользовательский metadata file не использовать.
+- Recommendation: сохранять current value и server-generated history event одной atomic transaction либо persisted idempotent operation с stable operation ID и original old/new snapshot. Failure-injection tests должны пройти после отказа каждого write и подтвердить ровно одно событие с исходным переходом после безопасного retry/recovery.
+
+### SEC-030: Workspaces одного source разделяют Workspace-scoped metadata
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-668
+- OWASP: A01:2021 Broken Access Control
+- Trust boundary: TB-04
+- Affected files: `electron/workspaceIpc.js:177`, `electron/workspaceIpc.js:188`, `electron/workspaceIpc.js:249`, `electron/workspaceIpc.js:420`, `test/workspaceIpc.test.js:904`, `test/workspaceIpc.test.js:1005`, `docs/api/workspace-properties.md:41`, `docs/data-model.md:258`
+- Evidence: handler вычисляет один `sourceFolderId` и передаёт его как `propertyScopeId` во все property/select/value/history operations; folder roles также читаются и записываются в один global settings map. Тест `shares object properties across workspaces` подтверждает общие definitions и values, а тест `deletes custom properties from values and source views` удаляет property из второго Workspace и ожидает её исчезновение из первого. Это прямо расходится с contracts, где custom properties, values и folder roles Workspace-scoped.
+- Impact: обычное изменение или удаление property/value/role в одном Workspace без предупреждения меняет данные и projections соседних Workspaces того же source. Пользователь не может иметь две независимые интерпретации одной папки, а delete из одного saved configuration каскадно удаляет metadata другого, что нарушает isolation boundary и может привести к cross-Workspace data loss.
+- Reproduction: во временном source создать два Workspace, задать разные folder role и custom property/value в первом, затем прочитать и удалить property через второй. Текущий handler показывает общие definitions/value и очищает ссылки обоих наборов views; сравнить результат с Workspace-scoped API/data-model contract. Live metadata не использовать.
+- Recommendation: определить совместимую migration от source-scoped compatibility behavior к настоящим workspace-scoped keys для properties, select values, project values, history и folder roles. До migration не смешивать записи; cross-Workspace tests должны подтверждать независимые create/update/delete, status projections и history при общем source folder.
+
+### SEC-031: View lifecycle допускает частично выполненные mutations
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-703
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-04
+- Affected files: `src/workspaceBackend.js:267`, `src/workspaceBackend.js:268`, `src/workspaceBackend.js:327`, `src/workspaceBackend.js:401`, `src/workspaceBackend.js:413`, `electron/workspaceIpc.js:1707`, `electron/workspaceIpc.js:1749`
+- Evidence: create path последовательно вызывает `saveView` и `saveWorkspace`; reorder сохраняет каждый view отдельным `saveView`; delete сначала tombstone-ит view и только затем меняет `workspace.activeViewId`. File store атомарно заменяет JSON на каждом отдельном вызове, но общей transaction/recovery operation нет. Поэтому отказ `saveWorkspace` после `saveView` оставляет orphan create или deleted active view, а отказ посередине reorder — частично изменённые orders.
+- Impact: routine I/O failure может вернуть ошибку после необратимого partial commit и оставить active Workspace с missing/deleted active view либо неоднозначным порядком. Повтор create генерирует новый view, повтор delete не находит tombstoned view, а retry reorder не гарантирует восстановление исходного intent без сохранённого operation state.
+- Reproduction: использовать временный injected `viewStore`, который разрешает первый `saveView`, но отклоняет следующий `saveWorkspace` при create/delete, и отдельно падает после первого `saveView` при reorder. После каждого failure прочитать store и подтвердить orphan/deleted-active/partial-order state; пользовательский `views.json` не изменять.
+- Recommendation: выполнять create/reorder/delete и update `activeViewId` одной transaction либо persisted idempotent operation с recovery. Failure-injection suite должна отклонять или завершать каждый mutation целиком после отказа любого write и всегда сохранять существующий active view и уникальный согласованный order.
+
 ## Сведение и классификация findings
 
-Все 27 IDs проверены на дублирование по root cause, trust boundary, затронутому активу и минимальному сценарию воспроизведения. Дубликатов не осталось. Похожие наблюдения сохранены отдельно только там, где remediation и граница различаются: SEC-003 относится к раскрытию данных через Electron IPC, тогда как SEC-019 обходит IPC через привилегированный `file://` origin; SEC-014 относится к sidecar HTTP; SEC-001 ограничивает доверие к renderer, а SEC-011 — к локальному HTTP-клиенту; SEC-004 описывает TOCTOU, SEC-008 — lost update между конкурентными writers, SEC-010 — детерминированную утечку ресурса; SEC-020 и SEC-021 требуют cross-root identity migration разных document graphs, SEC-023 — стабильной collision-resistant identity проекта, SEC-024 — source-scoped settings, SEC-025 — уникальной status identity, SEC-026 — recoverable delete cascades, SEC-027 — active-runtime lifecycle history, а SEC-022 требует route-level authorization независимо от ID uniqueness. SEC-015 остаётся отдельным sidecar documentation gap: его transport, storage primitive и remediation отличаются от активного JSON runtime в SEC-027. Общая проблема permissions для JSON и SQLite уже объединена в SEC-006.
+Все 31 ID проверены на дублирование по root cause, trust boundary, затронутому активу и минимальному сценарию воспроизведения. Дубликатов не осталось. Похожие наблюдения сохранены отдельно только там, где remediation и граница различаются: SEC-003 относится к раскрытию данных через Electron IPC, тогда как SEC-019 обходит IPC через привилегированный `file://` origin; SEC-014 относится к sidecar HTTP; SEC-001 ограничивает доверие к renderer, а SEC-011 — к локальному HTTP-клиенту; SEC-004 описывает TOCTOU, SEC-008 — lost update между конкурентными writers, SEC-010 — детерминированную утечку descriptor, а SEC-028 — неограниченный single-request tree expansion; SEC-020 и SEC-021 требуют cross-root identity migration разных document graphs, SEC-023 — стабильной collision-resistant identity проекта, SEC-024 — source retention, SEC-025 — уникальной status identity, SEC-026 — recoverable delete cascades, SEC-027 — отсутствующие definition lifecycle events, SEC-029 — atomic value/history commit, SEC-030 — same-source Workspace isolation, SEC-031 — recoverable view lifecycle, а SEC-022 требует route-level authorization независимо от ID uniqueness. SEC-015 остаётся отдельным sidecar documentation gap: его transport и storage primitive отличаются от активного JSON runtime в SEC-027/SEC-029. Общая проблема permissions для JSON и SQLite уже объединена в SEC-006.
 
 Каждый finding содержит Trust boundary и минимальный Reproduction. Сценарии с race, native launch, resource exhaustion или повреждением данных описаны для isolated temporary fixture и не выполняются над пользовательскими данными.
 
 | Class | Findings | Интерпретация |
 | --- | --- | --- |
-| Vulnerability | SEC-003—SEC-008, SEC-010—SEC-014, SEC-019—SEC-027 | Достижимый security или data-safety impact подтверждён статическим путём либо безопасным fixture |
+| Vulnerability | SEC-003—SEC-008, SEC-010—SEC-014, SEC-019—SEC-031 | Достижимый security или data-safety impact подтверждён статическим путём либо безопасным fixture |
 | Defense in depth | SEC-001, SEC-002, SEC-009, SEC-016—SEC-018 | Самостоятельный exploit не подтверждён; control уменьшает вероятность или blast radius будущей цепочки |
 | Documentation gap | SEC-015 | Целевой append-only контракт расходится с sidecar implementation, но sidecar не является активным Electron transport |
 | Limitation | Нет finding ID | Непроверенные области перечислены отдельно и не выданы за vulnerabilities |
@@ -584,8 +644,8 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | P0 | SEC-005, SEC-019 | High | Запуск native-кода и чтение произвольных локальных файлов через скомпрометированный renderer | Open |
 | P1 | SEC-022 | Medium | Чтение и изменение retained view metadata чужого или удалённого workspace | Open |
 | P1 | SEC-023 | Medium | Потеря или alias project values/history из-за нестабильной и collision-prone identity | Open |
-| P1 | SEC-020, SEC-021, SEC-024, SEC-025, SEC-026, SEC-027 | Medium | Детерминированная потеря, collision, неполная история или рассогласование active JSON metadata | Open |
-| P1 | SEC-010 | Medium | Отказ main process из-за утечки descriptors | Open |
+| P1 | SEC-020, SEC-021, SEC-024, SEC-025, SEC-026, SEC-027, SEC-029, SEC-030, SEC-031 | Medium | Детерминированная потеря, scope collapse, partial commit или рассогласование active JSON metadata | Open |
+| P1 | SEC-010, SEC-028 | Medium | Отказ main process из-за утечки descriptors или неограниченного tree enumeration | Open |
 | P1 | SEC-011, SEC-013 | Medium | Неавторизованные sidecar mutations и cross-workspace overwrite до активации sidecar | Open |
 | P1 | SEC-004 | Medium | Race-dependent filesystem escape из выбранного source root | Open |
 | P2 | SEC-003, SEC-006, SEC-007, SEC-008, SEC-012, SEC-014 | Low | Disclosure, permissions, metadata integrity и локальный denial of service | Open |
@@ -600,20 +660,22 @@ Residual severity учитывает текущие ограничения: side
 3. SEC-022 исправить до любых view identity migrations: применить current-source/non-deleted authorization ко всем view routes и проверить полный method set на foreign/deleted workspace IDs.
 4. SEC-023 исправить до миграций path-keyed values/history: ввести collision-resistant stable opaque project identity, однозначное rename/move matching и collision/restart regressions, исключающие присвоение чужих данных.
 5. SEC-020, SEC-021 и SEC-025 исправить связанной identity/migration задачей для активных JSON stores: ввести source/workspace-scoped или locator-backed IDs, атомарно перенести views, properties, select/status values и ссылки и проверить сохранение обеих сторон последовательностью A → B → A.
-6. SEC-024, SEC-026 и SEC-027 исправить recovery-safe migrations/cascades: source-scoped settings не должны очищаться при выборе root, а property/select lifecycle mutations должны атомарно или идемпотентно обновлять documents, live references и append-only history и восстанавливаться после injected write failure.
-7. Закрыть утечку stream и добавить rate/lifecycle tests для SEC-010. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
-8. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
-9. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
-10. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
-11. SEC-016 исправлять отдельным dependency change до release: удалить неиспользуемый graph, обновить Electron/Vite и transitive packages, затем повторить reachability review, audit и полный Electron smoke/build. Не смешивать lockfile migration с boundary fixes.
-12. SEC-009, SEC-015, SEC-017 и SEC-018 выполнять после соответствующих boundary/data fixes либо в release-hardening потоке; каждую рекомендацию проверять собственным scope, не считать текущий audit доказательством исправления.
+6. SEC-030 закрыть до дальнейшего property/role развития: мигрировать source-scoped compatibility data в независимые Workspace scopes и проверить, что операции одного Workspace не читают, не изменяют и не удаляют metadata соседнего Workspace того же source.
+7. SEC-024, SEC-026, SEC-027 и SEC-029 исправить recovery-safe migrations/cascades: source settings не должны очищаться при выборе root, а property/select/value/history mutations должны атомарно или идемпотентно обновлять documents, live references и append-only history и восстанавливаться после injected write failure.
+8. SEC-031 исправить отдельной view-transaction задачей: create/reorder/delete и `activeViewId` должны иметь один commit или persisted recovery state; после каждого injected failure Workspace обязан сохранять валидный active view и согласованный order.
+9. Закрыть утечку stream (SEC-010) и ограничить depth/nodes/concurrency/payload/cancellation для project tree (SEC-028); добавить lifecycle и bounded-fixture tests. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
+10. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
+11. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
+12. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
+13. SEC-016 исправлять отдельным dependency change до release: удалить неиспользуемый graph, обновить Electron/Vite и transitive packages, затем повторить reachability review, audit и полный Electron smoke/build. Не смешивать lockfile migration с boundary fixes.
+14. SEC-009, SEC-015, SEC-017 и SEC-018 выполнять после соответствующих boundary/data fixes либо в release-hardening потоке; каждую рекомендацию проверять собственным scope, не считать текущий audit доказательством исправления.
 
 ## Положительные security controls
 
 - Electron использует `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` и не включает webview или отключение web security; preload экспортирует только `workspace.request`. Загрузка через `loadFile` не считается положительным control из-за SEC-019.
 - Preload и main имеют одинаковые явные allowlists из 34 IPC methods; renderer boundary tests не допускают imports Node builtins, Electron или backend modules.
 - Filesystem helpers отклоняют absolute paths, lexical traversal и существующие symlinks за canonical source root; native open запускается без shell interpolation.
-- Transitional JSON stores выполняют same-directory temporary write + atomic rename и удаляют только temporary files; corrupt JSON не перезаписывается. Это не предотвращает semantic overwrite при collision view/property/select/status/project IDs (SEC-020, SEC-021, SEC-023, SEC-025), смену path-derived project ID (SEC-023), destructive reset settings (SEC-024), частично выполненные delete cascades (SEC-026), неполную lifecycle history (SEC-027) или view access через foreign/deleted workspace ID (SEC-022). Workspace deletion soft-deletes metadata и не удаляет project files.
+- Transitional JSON stores выполняют same-directory temporary write + atomic rename и удаляют только temporary files; corrupt JSON не перезаписывается. Это не предотвращает semantic overwrite при collision view/property/select/status/project IDs (SEC-020, SEC-021, SEC-023, SEC-025), смену path-derived project ID (SEC-023), destructive reset settings (SEC-024), частично выполненные property/value/history/view mutations (SEC-026, SEC-029, SEC-031), неполную lifecycle history (SEC-027), same-source Workspace scope collapse (SEC-030) или view access через foreign/deleted workspace ID (SEC-022). Workspace deletion soft-deletes metadata и не удаляет project files.
 - Sidecar по умолчанию использует ephemeral `127.0.0.1:0`; handlers ограничивают HTTP methods, scoped list operations фильтруют workspace, soft delete исключает удалённые документы, history list сортируется и scoped по workspace.
 - npm lockfile v3 содержит integrity для registry packages, Go modules имеют exact versions и проходят `go mod verify`; tracked tree/history scan не обнаружил credentials, runtime databases или executable binaries.
 
@@ -622,19 +684,21 @@ Residual severity учитывает текущие ограничения: side
 ## Residual risks
 
 - Компрометация доверенного renderer остаётся способна использовать весь разрешённый preload API и привилегии `file://`: navigation/sender hardening из SEC-001 предотвращает расширение capability на другой origin/frame, но не является authorization внутри уже скомпрометированного main renderer и не устраняет SEC-019.
-- Вредоносная выбранная папка остаётся источником race, active-content и native-launch рисков до исправления SEC-004, SEC-005 и SEC-009.
+- Вредоносная выбранная папка остаётся источником race, active-content, native-launch и resource-exhaustion рисков до исправления SEC-004, SEC-005, SEC-009 и SEC-028.
 - Локальная multi-process среда остаётся вне единого trust domain: permissions, concurrent writers и будущий sidecar требуют явной защиты.
 - Rename/move project folder до внедрения stable identity отцепляет сохранённые property values и history от нового projection, а 32-bit path-hash collision присоединяет одни persisted values к двум разным проектам (SEC-023).
 - Смена или повторный выбор source root до миграции metadata identity/settings детерминированно теряет настройки default views, property definitions, select values, folder roles и active Workspace предыдущего root (SEC-020, SEC-021, SEC-024), даже при одном процессе и последовательных операциях.
 - Status slug collisions и незавершённые property/select deletion cascades оставляют board/filter/property metadata неоднозначными или взаимно несогласованными (SEC-025, SEC-026).
-- Property/select lifecycle mutations активного JSON runtime остаются без полной append-only history, поэтому definition changes и deletions нельзя реконструировать по product data (SEC-027).
+- Property/select lifecycle mutations активного JSON runtime остаются без полной append-only history, а value/history записываются независимыми commits, поэтому definition changes, deletions и отдельные value transitions нельзя достоверно реконструировать после write failure (SEC-027, SEC-029).
+- Workspaces одного source используют общие property/value/history и folder-role scopes вопреки контракту; изменение или delete в одном Workspace затрагивает соседние saved configurations (SEC-030).
+- Create/reorder/delete view состоят из нескольких независимых commits и после write failure могут оставить orphan view, deleted active view или частичный order (SEC-031).
 - Retained workspace/view IDs остаются usable через все view routes после смены source root или soft delete до внедрения current-source authorization (SEC-022).
 - Lockfile integrity не устраняет известные advisories и риск lifecycle scripts; результаты npm registry отражают snapshot на дату аудита.
 - Отсутствие найденных secrets снижает риск, но regex/entropy scan не гарантирует обнаружение нестандартных, зашифрованных или встроенных в media credentials.
 
 ## Непроверенные области и ограничения аудита
 
-- Не выполнялись dynamic fuzzing, нагрузочный DoS, стабильная эксплуатация TOCTOU, запуск native application bundle или тесты над пользовательскими folders/databases.
+- Не выполнялись dynamic fuzzing, нагрузочный DoS, стабильная эксплуатация TOCTOU, запуск native application bundle или тесты над пользовательскими folders/databases. SEC-028 подтверждён reachable unbounded traversal path; нагрузочная эксплуатация намеренно заменена bounded temporary-fixture reproduction.
 - Не проверялись Windows/Linux filesystem semantics и ACL, packaged Electron/sidecar lifecycle, installer, auto-update, code signing и notarization.
 - `govulncheck` отсутствовал и не устанавливался; Go advisory reachability не проверена внешней базой. npm audit зависит от доступного registry snapshot.
 - Не проводился upstream source audit Electron, Chromium, any-store и transitive packages, а также аудит CI secret stores, remote Git hosting logs и npm provenance service.
@@ -652,7 +716,10 @@ Residual severity учитывает текущие ограничения: side
 | FUP-11: Stable project identity | SEC-023 | Ввести collision-resistant opaque project registry и совместимую migration path-derived IDs, values и history с однозначным filesystem matching | Rename/move и restart сохраняют project ID, values и history; collision fixture получает разные IDs; ambiguous match не получает чужие данные; migration повторяется без новых изменений |
 | FUP-09: Source-scoped metadata identity | SEC-020, SEC-021 | Ввести уникальные для source/workspace view/property/select IDs или composite keys и мигрировать связанные documents/references без потери полей | Isolated A → B → A regression сохраняет независимые view customizations, system labels, custom properties и select options обоих roots; migration fixture сохраняет active/reference IDs |
 | FUP-12: Source settings и status identity | SEC-024, SEC-025 | Сохранять roles/active Workspace по source identity и заменить lossy status slugs locator-backed opaque IDs с миграцией filters/colors | Same-root и A → B → A сохраняют независимые settings; collision fixtures различают punctuation/groups/реальную `No status`, каждый проект появляется один раз |
-| FUP-13: Recoverable property lifecycle | SEC-026, SEC-027 | Атомарно или через persisted idempotent recovery обновлять property/select definitions, cascades, live references и server-generated append-only history | Все views/values сохраняют согласованные ссылки; каждый lifecycle mutation создаёт ровно одно событие; injected failure на каждом шаге безопасно завершается повторным запуском без потери history |
+| FUP-13: Recoverable property lifecycle | SEC-026, SEC-027, SEC-029 | Атомарно или через persisted idempotent recovery обновлять property/select definitions, values, cascades, live references и server-generated append-only history | Все views/values сохраняют согласованные ссылки; каждый lifecycle/value mutation создаёт ровно одно событие с исходным old/new; injected failure на каждом шаге безопасно завершается повторным запуском без потери history |
+| FUP-16: Workspace metadata isolation | SEC-030 | Мигрировать properties, select values, project values, history и folder roles с общего source scope в независимые Workspace scopes без потери существующих compatibility data | Два Workspace одного source имеют независимые roles/definitions/values/history; create/update/delete одного не изменяет второй; migration повторяется без новых изменений |
+| FUP-15: Recoverable view lifecycle | SEC-031 | Объединить create/reorder/delete view и изменение activeViewId в transaction либо persisted idempotent recovery operation | Injected failure после каждого write не оставляет orphan/deleted active view или partial order; retry/recovery завершается ровно один раз и сохраняет валидный active view |
+| FUP-14: Bounded project tree | SEC-028 | Ввести lazy/paginated traversal с depth, node, payload, concurrency, timeout и cancellation budgets в main process | Bounded fixtures получают явный limit response, pending filesystem work отменяется, memory/concurrency остаются в бюджете, обычные малые деревья возвращаются полностью |
 | FUP-06: Sidecar transport hardening | SEC-011, SEC-012, SEC-014 | До подключения sidecar реализовать lifecycle-owned secret, loopback/Host/Origin/Content-Type policy, limits, timeouts, graceful shutdown и sanitized errors | Integration tests отклоняют неверный token/origin/content type и oversized body; slow-client test ограничен timeout; responses не раскрывают parser/storage internals |
 | FUP-07: Sidecar identity и history | SEC-013, SEC-015 | После transport hardening ввести workspace ownership для IDs и append-only history invariants с совместимой миграцией | Cross-workspace overwrite/delete отклоняются; history невозможно перезаписать тем же ID; migration и Go store tests сохраняют существующие документы |
 | FUP-03: Filesystem race safety | SEC-004 | Спроектировать platform-aware operation-by-handle или эквивалентную защиту от symlink/rename race отдельно от preview UI | Детерминированный temporary-fixture race harness не выходит за source root на поддерживаемых платформах; traversal/symlink regression suite проходит |
@@ -668,7 +735,7 @@ Residual severity учитывает текущие ограничения: side
 - Рекомендации и follow-up scopes описывают будущую работу. Ни один finding не помечен исправленным или mitigated, и production remediation в рамках этого аудита не выполнялась.
 - `README.md` проверен: описанные запуск, storage, endpoint boundary и команды проверки не изменились, поэтому обновление не требуется.
 - `AGENTS.md` проверен: архитектурные границы и рабочие правила не менялись, поэтому обновление не требуется.
-- Handoff state: отчёт готов к human review. Обнаружены две подтверждённые High vulnerabilities (SEC-005 и SEC-019), восемь Medium vulnerabilities identity/integrity активного JSON runtime (SEC-020—SEC-027) и остальные Medium/Low findings; Critical findings нет. Их remediation и release-hardening требуют отдельных implementation scopes.
+- Handoff state: отчёт готов к human review. Обнаружены две подтверждённые High vulnerabilities (SEC-005 и SEC-019), одиннадцать Medium vulnerabilities identity/integrity активного JSON runtime (SEC-020—SEC-027, SEC-029—SEC-031), Medium availability finding SEC-028 и остальные Medium/Low findings; Critical findings нет. Их remediation и release-hardening требуют отдельных implementation scopes.
 
 ## Electron, renderer и IPC boundary
 
@@ -698,7 +765,7 @@ Residual severity учитывает текущие ограничения: side
 | --- | --- | --- |
 | `readFile` | `src/workspaceBackend.js:499-508`, `src/workspacePropertyStore.js:133-151`, `electron/workspaceIpc.js:1760-1776` | Читает transitional JSON; syntax corruption отклоняется. User project content через этот primitive не читается |
 | `writeFile` / `rename` / `rm` | `src/workspaceBackend.js:511-540`, `src/workspacePropertyStore.js:155-166`, `electron/workspaceIpc.js:1779-1790`, `test/securityControls.test.js` | Same-directory random temp + atomic rename; `rm` применяется только к failed temp. Нет `fsync`/directory sync, explicit mode или общего cross-instance lock; SEC-006/SEC-008 |
-| `readdir` | `src/workspaceBackend.js:567-663` | Возвращаются только не-hidden entries с `Dirent.isDirectory/isFile`; symlink entries не входят в обычную выдачу. Recursive validation остаётся race-prone; SEC-004 |
+| `readdir` | `src/workspaceBackend.js:567-663` | Возвращаются только не-hidden entries с `Dirent.isDirectory/isFile`; symlink entries не входят в обычную выдачу. Recursive validation остаётся race-prone (SEC-004), а project file tree не имеет depth/node/concurrency/cancellation budgets (SEC-028) |
 | `stat` / `realpath` | `src/localOpen.js:29-59`, `src/workspaceBackend.js:152-189`, `test/localOpen.test.js`, `test/workspaceBackend.test.js` | Absolute path, lexical `..`, sibling-prefix escape и существующий symlink escape отклоняются; broken symlink даёт not-found и не запускается. Percent-encoding не декодируется backend и остаётся literal filename. Между check и use остаётся TOCTOU; SEC-004 |
 | `spawn` | `src/localOpen.js:64-125`, `src/workspaceBackend.js:493-496`, `test/securityControls.test.js` | Аргументы передаются массивом без shell, что блокирует shell metacharacter injection. `open` может запустить `.app` directory; SEC-005 |
 | Preview allowlist | `src/localOpen.js:5-27`, `src/workspaceBackend.js:25-45,170-190`, `electron/workspaceIpc.js:661-669` | Unknown extension получает 415; HTML/SVG/XML/JS разрешены без active-content policy, текущего UI consumer нет; SEC-009. IPC теряет созданный stream; SEC-010 |
@@ -707,7 +774,9 @@ Residual severity учитывает текущие ограничения: side
 | Project identity | `src/workspaceObjects.js:1-35,103-140`, `src/workspacePropertyStore.js:69-116` | Project ID вычисляется из relative path через lossy slug и 32-bit hash; rename/move меняет identity, а collision разных paths объединяет persisted values/history; SEC-023 |
 | Source settings | `electron/workspaceIpc.js:132-164,188-208,556-572` | `workspace.setRoot` дважды очищает global `folderRules` и сбрасывает active Workspace; same-root и A → B → A теряют настройки; SEC-024 |
 | Status identity | `electron/workspaceIpc.js:1647-1676`, `src/workspaceViews.js:197-213` | Разные status names с одинаковым slug получают один ID, а реальная `No status` folder конфликтует с reserved value; SEC-025 |
-| Property lifecycle | `electron/workspaceIpc.js:858-1059,1110-1281`, `src/workspacePropertyStore.js:25-117`, `src/workspaceViews.js:295-343,370-387` | Property/select deletion cascades не имеют recoverable transaction marker, select delete не очищает view `valueVisibility`, а definition/option lifecycle не создаёт требуемую append-only history; SEC-026, SEC-027 |
+| Property lifecycle | `electron/workspaceIpc.js:858-1059,1110-1332`, `src/workspacePropertyStore.js:25-117`, `src/workspaceViews.js:295-343,370-387` | Property/select deletion cascades не имеют recoverable transaction marker, select delete не очищает view `valueVisibility`, definition/option lifecycle не создаёт требуемую history, а current value и history event записываются раздельно; SEC-026, SEC-027, SEC-029 |
+| Workspace metadata scope | `electron/workspaceIpc.js:177-423`, `test/workspaceIpc.test.js:904`, `test/workspaceIpc.test.js:1005` | Property/select/value/history operations используют sourceFolderId вместо requested workspaceId, а folder roles хранятся глобально; тесты подтверждают shared read/delete между Workspaces одного source вопреки contract; SEC-030 |
+| View lifecycle | `src/workspaceBackend.js:250-427`, `electron/workspaceIpc.js:1691-1757` | Create/reorder/delete view и activeViewId выполняются несколькими независимыми JSON commits без transaction/recovery marker; injected failure может оставить orphan/deleted-active/partial-order state; SEC-031 |
 | Workspace deletion | `electron/workspaceIpc.js:517-553`, `test/workspaceIpc.test.js` | `workspace.deleteWorkspace` делает soft delete только metadata и меняет active ID; `rm`/`rename` source tree не вызываются, isolated test подтверждает сохранность project file |
 
 Проверка local metadata дала следующие результаты:
@@ -720,11 +789,15 @@ Residual severity учитывает текущие ограничения: side
 - project IDs вычисляются из lossy path slug и 32-bit hash, поэтому rename/move разрывает ссылки persisted values/history, а разные paths могут получить один ID и общие values (SEC-023); global settings очищаются при каждом выборе root (SEC-024);
 - status IDs используют lossy name slug и могут дублировать board columns/projects (SEC-025); property/select deletion не восстанавливает незавершённые multi-document cascades, а delete select не очищает view filters (SEC-026);
 - active property/select definition mutations не добавляют требуемые history events: isolated create → update → delete оставляет history пустой (SEC-027);
+- project value и соответствующее history event сохраняются разными full-file writes; отказ второго write теряет исходный old/new transition, а retry его не восстанавливает (SEC-029);
+- properties, select values, project values, history и folder roles фактически source-scoped, поэтому два Workspace одного source не изолированы, а delete из одного изменяет metadata другого (SEC-030);
+- view create/reorder/delete и activeViewId не объединены transaction/recovery operation; отказ между writes оставляет partial state (SEC-031);
+- project file tree полностью разворачивается рекурсивно через nested `Promise.all` без depth/node/concurrency/cancellation budgets (SEC-028);
 - future-schema gate отсутствует: property metadata может быть понижена до schema 1 с потерей неизвестных top-level данных (SEC-007); settings/views отдельной version-модели не имеют;
 - temporary JSON, SQLite, WAL и SHM создаются без explicit restrictive permissions и на текущем host получили `0644`; packaged SQLite location пока не определён (SEC-006);
 - atomic rename защищает от partial target при обычной ошибке write, но нет `fsync` файла/каталога, общей revision и гарантии crash durability; это учитывается в remediation SEC-007/SEC-008.
 
-Расширенные fixture-тесты фиксируют только существующие защиты: rejection traversal/absolute/symlink/broken-symlink и kind mismatch, unsupported preview extensions, atomic temp cleanup и отсутствие удаления project file при workspace soft delete. Они намеренно не утверждают, что `.app` launch, active content, permissive mode, future-schema downgrade, lost update или descriptor leak являются допустимым поведением.
+Расширенные fixture-тесты фиксируют только существующие защиты: rejection traversal/absolute/symlink/broken-symlink и kind mismatch, unsupported preview extensions, atomic temp cleanup и отсутствие удаления project file при workspace soft delete. Они намеренно не утверждают, что `.app` launch, active content, permissive mode, future-schema downgrade, lost update, descriptor leak, unbounded traversal, cross-Workspace sharing или partial metadata commits являются допустимым поведением.
 
 ## Go sidecar и any-store boundary
 
@@ -815,8 +888,8 @@ Secret scan был regex/entropy-oriented review, а не специализир
 | Electron shell | BrowserWindow, isolation, sandbox, navigation, windows, permissions, CSP, protocol privileges/fuses | Code review + existing/new tests | Task 2 | Covered |
 | Preload и IPC | Exposed API, allowlist, sender/frame, payload, errors | Data-flow review + adversarial tests | Task 2 | Covered |
 | Renderer boundary | Imports, transport, path/error disclosure, active content | Static boundary tests + code review | Task 2 | Covered |
-| Filesystem | Path resolution, traversal, symlink, TOCTOU, open/spawn/delete | Temporary fixtures + source tracing | Task 3 | Covered |
-| Local metadata | JSON permissions, atomicity, backup, schema, concurrency, identity и cascade integrity | Adapter review + isolated corruption/identity tests | Task 3 | Covered |
+| Filesystem | Path resolution, traversal, symlink, TOCTOU, open/spawn/delete, recursive enumeration budgets | Temporary fixtures + source tracing | Task 3 | Covered |
+| Local metadata | JSON permissions, atomicity, backup, schema, concurrency, identity, Workspace scope и lifecycle integrity | Adapter review + isolated corruption/identity/failure-path tests | Task 3 | Covered |
 | Go sidecar HTTP | Bind/auth, methods, content type, body limits, timeout, shutdown | Handler/client tests + code review | Task 4 | Covered |
 | any-store/SQLite | ID and scope validation, soft delete/history, permissions, errors | Store tests + document-flow review | Task 4 | Covered |
 | Dependencies | npm/Go graph, lock integrity, advisories, lifecycle scripts | Manifest/lock review + available native tooling | Task 5 | Covered |
@@ -847,3 +920,4 @@ Secret scan был regex/entropy-oriented review, а не специализир
 | 2026-09-23 | Финальный handoff | Проверены redaction и границы утверждений; добавлен отдельный follow-up backlog; подтверждено отсутствие production/API/schema/dependency/security-setting изменений; README и AGENTS не требуют обновления |
 | 2026-09-24 | Review полноты active JSON runtime | Изолированно подтверждены path-derived project identity, reset source settings, status slug collision и stale select filter; зарегистрированы SEC-023—SEC-026 и отдельные follow-up scopes |
 | 2026-09-24 | Second review active metadata integrity | Подтверждены project-ID collision, нерековерабельный property-delete cascade и отсутствие active property/select lifecycle history; расширены SEC-023/SEC-026 и зарегистрирован SEC-027 |
+| 2026-09-24 | Third review availability, scope и atomicity | Подтверждены unbounded project-tree enumeration, partial value/history commit, same-source Workspace scope collapse и partial view lifecycle writes; зарегистрированы SEC-028—SEC-031 и отдельные follow-up scopes |
