@@ -21,6 +21,7 @@ const requiredSections = [
   "Findings",
   "Electron, renderer и IPC boundary",
   "Filesystem и local metadata boundary",
+  "Go sidecar и any-store boundary",
   "Матрица покрытия",
   "Правила работы с доказательствами",
   "Журнал проверки",
@@ -190,4 +191,41 @@ test("security audit includes filesystem and local metadata evidence for Task 3"
 
   assert.match(report, /\| Filesystem \|[^\n]+\| Task 3 \| Covered \|/);
   assert.match(report, /\| Local metadata \|[^\n]+\| Task 3 \| Covered \|/);
+});
+
+test("security audit includes sidecar and store evidence for Task 4", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const section = report.match(
+    /^## Go sidecar и any-store boundary\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  for (const evidence of [
+    "127.0.0.1:0",
+    "authentication/session secret",
+    "Origin",
+    "HTTP methods",
+    "Content-Type",
+    "malformed",
+    "trailing",
+    "body limit",
+    "timeout",
+    "concurrency",
+    "graceful shutdown",
+    "workspace",
+    "project",
+    "property",
+    "soft delete",
+    "history",
+    "SQLite",
+    "0644",
+    "any-store errors",
+    "test/sidecarClient.test.js",
+    "cmd/workspace-sidecar/main_test.go",
+    "internal/workspacestore/store_test.go",
+  ]) {
+    assert.match(section, new RegExp(evidence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  }
+
+  assert.match(report, /\| Go sidecar HTTP \|[^\n]+\| Task 4 \| Covered \|/);
+  assert.match(report, /\| any-store\/SQLite \|[^\n]+\| Task 4 \| Covered \|/);
 });

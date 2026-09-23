@@ -488,6 +488,74 @@ func TestReorderPropertiesRejectsIncompleteOrderWithoutPartialUpdate(t *testing.
 	}
 }
 
+func TestWorkspaceMuxRejectsUnsupportedMethodAndMalformedJSON(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx)
+	mux := newWorkspaceMux(store)
+
+	methodRequest := httptest.NewRequest(http.MethodPost, "/workspace/root", bytes.NewBufferString(`{"rootPath":"/tmp/workspace"}`))
+	methodRequest.Header.Set("content-type", "application/json")
+	methodRecorder := httptest.NewRecorder()
+	mux.ServeHTTP(methodRecorder, methodRequest)
+	if methodRecorder.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected unsupported method to be rejected, got %d: %s", methodRecorder.Code, methodRecorder.Body.String())
+	}
+	if contentType := methodRecorder.Header().Get("content-type"); contentType != "application/json" {
+		t.Fatalf("expected JSON error response, got content-type %q", contentType)
+	}
+
+	malformedRequest := httptest.NewRequest(http.MethodPut, "/workspace/root", bytes.NewBufferString(`{"rootPath":`))
+	malformedRequest.Header.Set("content-type", "application/json")
+	malformedRecorder := httptest.NewRecorder()
+	mux.ServeHTTP(malformedRecorder, malformedRequest)
+	if malformedRecorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected malformed JSON to be rejected, got %d: %s", malformedRecorder.Code, malformedRecorder.Body.String())
+	}
+
+	root, err := store.GetRoot(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root != (workspacestore.RootDocument{}) {
+		t.Fatalf("expected rejected requests not to mutate root, got %#v", root)
+	}
+}
+
+func TestSetActiveViewRejectsCrossWorkspaceView(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx)
+	if err := store.UpsertWorkspace(ctx, workspacestore.WorkspaceDocument{
+		ID:           "workspace:ops",
+		ActiveViewID: "view:ops",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.UpsertView(ctx, workspacestore.ViewDocument{
+		ID:          "view:foreign",
+		WorkspaceID: "workspace:other",
+		Name:        "Foreign",
+		ViewType:    "board",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := performJSONRequest(t, newWorkspaceMux(store), http.MethodPut, "/workspace/active-view", map[string]any{
+		"workspaceId": "workspace:ops",
+		"viewId":      "view:foreign",
+	})
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected cross-workspace active view to be rejected, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+
+	workspace, err := store.GetWorkspace(ctx, "workspace:ops")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if workspace.ActiveViewID != "view:ops" {
+		t.Fatalf("expected active view to remain unchanged, got %#v", workspace)
+	}
+}
+
 func openTestStore(t *testing.T, ctx context.Context) *workspacestore.Store {
 	t.Helper()
 	store, err := workspacestore.Open(ctx, filepath.Join(t.TempDir(), "workspace.db"))

@@ -118,15 +118,15 @@
 - Modify: `test/securityAuditReport.test.js`
 - Modify: `docs/security/20260923-project-security-audit.md`
 
-- [ ] Проверить bind address, доступность endpoint другим локальным процессам, отсутствие или наличие authentication/session secret и возможные browser-origin атаки.
-- [ ] Проверить HTTP methods, Content-Type, malformed JSON, trailing data, размер body, timeouts, concurrency и graceful shutdown.
-- [ ] Проверить валидацию document IDs, workspace/project/property scope, soft delete, history и возможность cross-workspace доступа.
-- [ ] Проверить права и расположение SQLite-файла, обработку ошибок any-store и утечку внутренних сведений.
-- [ ] Добавить Go/Node тесты подтверждённых method, validation и malformed-request controls.
-- [ ] Зафиксировать отсутствующие лимиты, authentication или transport controls как findings, не меняя sidecar.
-- [ ] Обновить тест полноты отчёта требованием sidecar/store evidence.
-- [ ] Запустить `node --test test/sidecarClient.test.js test/securityAuditReport.test.js`.
-- [ ] Запустить `go test ./...`; все тесты должны пройти до Task 5.
+- [x] Проверить bind address, доступность endpoint другим локальным процессам, отсутствие или наличие authentication/session secret и возможные browser-origin атаки.
+- [x] Проверить HTTP methods, Content-Type, malformed JSON, trailing data, размер body, timeouts, concurrency и graceful shutdown.
+- [x] Проверить валидацию document IDs, workspace/project/property scope, soft delete, history и возможность cross-workspace доступа.
+- [x] Проверить права и расположение SQLite-файла, обработку ошибок any-store и утечку внутренних сведений.
+- [x] Добавить Go/Node тесты подтверждённых method, validation и malformed-request controls.
+- [x] Зафиксировать отсутствующие лимиты, authentication или transport controls как findings, не меняя sidecar.
+- [x] Обновить тест полноты отчёта требованием sidecar/store evidence.
+- [x] Запустить `node --test test/sidecarClient.test.js test/securityAuditReport.test.js`.
+- [x] Запустить `go test ./...`; все тесты должны пройти до Task 5.
 
 ### Task 5: Проверить зависимости, секреты и цепочку сборки
 

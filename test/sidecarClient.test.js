@@ -305,3 +305,41 @@ test("createSidecarHttpTransport rejects unsupported service methods", async () 
 
   await assert.rejects(() => transport.request("workspace.scan"), /Unsupported sidecar method: workspace\.scan/);
 });
+
+test("createSidecarHttpTransport encodes workspace ids in query parameters", async () => {
+  const urls = [];
+  const transport = createSidecarHttpTransport("http://127.0.0.1:5000", async (url) => {
+    urls.push(url);
+    return {
+      ok: true,
+      async json() {
+        return { views: [] };
+      },
+    };
+  });
+
+  await transport.request("workspace.listViews", {
+    workspaceId: "workspace:ops&other=workspace:admin#fragment",
+  });
+
+  assert.deepEqual(urls, [
+    "http://127.0.0.1:5000/workspace/views?workspaceId=workspace%3Aops%26other%3Dworkspace%3Aadmin%23fragment",
+  ]);
+});
+
+test("createSidecarHttpTransport does not reflect a non-JSON error body", async () => {
+  const transport = createSidecarHttpTransport("http://127.0.0.1:5000", async () => ({
+    ok: false,
+    async json() {
+      throw new SyntaxError("invalid JSON");
+    },
+  }));
+
+  await assert.rejects(
+    () => transport.request("workspace.getRoot"),
+    (error) => {
+      assert.equal(error.message, "Sidecar request failed: workspace.getRoot");
+      return true;
+    },
+  );
+});

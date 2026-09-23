@@ -226,7 +226,7 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: создать пустой `Untrusted.app` только во временном fixture и вызвать `createRevealResponse` с injected `spawnCommand`; проверить, что был бы вызван `open` с bundle path, не запуская приложение.
 - Recommendation: реализовать именно reveal-in-Finder (`shell.showItemInFolder` или эквивалент с явной семантикой), запретить executable/application/package targets, привязать вызов к подтверждённому user gesture и добавить main-process confirmation для потенциально запускаемых типов.
 
-### SEC-006: Transitional metadata создаются без явных restrictive permissions
+### SEC-006: Локальные metadata и SQLite создаются без явных restrictive permissions
 
 - Severity: Low
 - Confidence: High
@@ -236,9 +236,9 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - OWASP: A01:2021 Broken Access Control
 - Trust boundary: TB-04, TB-06
 - Affected files: `src/workspaceBackend.js:511`, `src/workspacePropertyStore.js:155`, `electron/workspaceIpc.js:1779`, `cmd/workspace-sidecar/main.go:24`, `internal/workspacestore/store.go:142`
-- Evidence: JSON adapters вызывают `mkdir`/`writeFile` без `mode`; temporary file после `rename` становится metadata-файлом с правами, определёнными umask. На текущем audit host временный `settings.json` был создан с mode `0644`. Sidecar передаёт database path в `any-store` без project-level `chmod`; активный Electron transport SQLite не создаёт, поэтому фактический mode SQLite будет отдельно проверен в Task 4.
+- Evidence: JSON adapters вызывают `mkdir`/`writeFile` без `mode`; temporary file после `rename` становится metadata-файлом с правами, определёнными umask. На текущем audit host временный `settings.json` был создан с mode `0644`. Sidecar передаёт default `workspace.db` или произвольный `-db` path в `any-store` без `chmod`; в temporary-каталоге с mode `0700` SQLite database, WAL и SHM были созданы с mode `0644`. Активный Electron transport sidecar не запускает, поэтому фактический packaged location пока не определён.
 - Impact: если родительские каталоги доступны другим локальным accounts/processes, они могут читать source path, workspace/view/property metadata и историю. Ограничивающие права домашнего каталога часто уменьшают риск, но приложение само не обеспечивает требуемую конфиденциальность.
-- Reproduction: с restrictive-free default umask создать metadata через `writeWorkspaceSettings` во временном каталоге и проверить только mode через `stat`; на проверенном host результат `0644`, содержимое в evidence не копировать.
+- Reproduction: с default umask создать JSON metadata и запустить sidecar с `-db` во временном каталоге; проверить только mode через `stat`. На проверенном host JSON, SQLite, WAL и SHM получили `0644`; содержимое в evidence не копировать.
 - Recommendation: создавать metadata directories с `0700`, temporary/final JSON и SQLite с `0600`, проверять/исправлять права существующих файлов при безопасной миграции и добавить platform-aware permission tests; Windows ACL рассматривать отдельно.
 
 ### SEC-007: Future-schema metadata принимаются с потерей неизвестных данных
@@ -301,6 +301,81 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: на temporary text file многократно вызвать `createFileResponse`, дождаться `open`, сравнить descriptor count и затем обязательно уничтожить все streams для очистки fixture.
 - Recommendation: не создавать stream в metadata-only IPC route; если preview должен передавать bytes, владеть lifecycle в main process, добавить error/close handlers, size/rate limits и гарантированный cleanup. Добавить regression test, подтверждающий отсутствие роста descriptors.
 
+### SEC-011: Sidecar принимает неаутентифицированные запросы от локальных клиентов и browser origins
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-306
+- OWASP: A07:2021 Identification and Authentication Failures
+- Trust boundary: TB-05
+- Affected files: `cmd/workspace-sidecar/main.go:23`, `cmd/workspace-sidecar/main.go:35`, `cmd/workspace-sidecar/main.go:44`, `src/workspaceSidecarClient.js:1`
+- Evidence: default bind — loopback `127.0.0.1:0`, что исключает обычный внешний network access, но listener может быть переопределён через `-addr`. Handler не проверяет session secret, `Authorization`, `Host` или `Origin`. CORS response headers отсутствуют, поэтому обычный cross-origin JavaScript не читает ответы и preflight блокирует PUT/PATCH/DELETE; однако POST handlers декодируют JSON независимо от `Content-Type`, и browser может отправить simple `no-cors` POST с `text/plain` после обнаружения порта. Любой локальный процесс с доступом к порту может читать root path и менять все sidecar metadata.
+- Impact: вредоносная локальная программа, а при port discovery и web origin — blind POST, может создавать или изменять metadata без участия пользователя. Если `-addr` выставлен на non-loopback interface, тот же capability становится доступен сети. Риск ограничен тем, что текущий Electron runtime sidecar автоматически не запускает.
+- Reproduction: запустить sidecar только с temporary database, определить выведенный loopback port и отправить POST `/workspace/properties` с валидным JSON body и `Content-Type: text/plain`; mutation принимается без credential или Origin check. Production database не использовать.
+- Recommendation: lifecycle должен генерировать per-launch cryptographic bearer secret и передавать его Node client через непубличный канал; проверять secret constant-time на каждом route, фиксировать loopback bind без unrestricted override в production, проверять Host/Origin и отклонять non-JSON mutation requests. Добавить integration tests для отсутствующего/неверного token и browser-style request.
+
+### SEC-012: HTTP server не ограничивает body и connection lifetime
+
+- Severity: Low
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-400
+- OWASP: A04:2021 Insecure Design
+- Trust boundary: TB-05
+- Affected files: `cmd/workspace-sidecar/main.go:35`, `cmd/workspace-sidecar/main.go:41`, `cmd/workspace-sidecar/main.go:56`, `cmd/workspace-sidecar/main.go:85`
+- Evidence: server запускается через `http.Serve(listener, mux)` без `ReadHeaderTimeout`, `ReadTimeout`, `WriteTimeout` или `IdleTimeout`; request bodies читаются напрямую через `json.Decoder` без `http.MaxBytesReader`. Decoder вызывается один раз, поэтому trailing JSON после первого значения не проверяется. Signal handling и `Server.Shutdown` отсутствуют; `log.Fatal(http.Serve(...))` завершает process через `os.Exit`, из-за чего отложенный `store.Close` не выполняется при возврате Serve.
+- Impact: клиент, достигший endpoint, может удерживать connections или послать чрезмерный body и исчерпать память/descriptors, вызывая отказ локального storage service; abrupt shutdown увеличивает риск незавершённого checkpoint/cleanup. Default loopback и отсутствие packaged lifecycle ограничивают blast radius.
+- Reproduction: только на отдельной temporary database открыть медленный/неограниченный request к mutation route и наблюдать отсутствие server deadline; для parser отдельно отправить два последовательных JSON values и проверить, что первый принимается. Не выполнять нагрузочный тест против пользовательского процесса.
+- Recommendation: использовать явный `http.Server` с conservative timeouts и `MaxHeaderBytes`, оборачивать bodies в `http.MaxBytesReader`, требовать ровно один JSON value и EOF, ограничивать concurrency, обрабатывать SIGINT/SIGTERM через `Shutdown`, затем закрывать/flush store с bounded context.
+
+### SEC-013: Глобальные document IDs позволяют перезапись между workspace scopes
+
+- Severity: Medium
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-639
+- OWASP: A01:2021 Broken Access Control
+- Trust boundary: TB-05, TB-06
+- Affected files: `cmd/workspace-sidecar/main.go:181`, `cmd/workspace-sidecar/main.go:411`, `cmd/workspace-sidecar/main.go:431`, `cmd/workspace-sidecar/main.go:508`, `internal/workspacestore/store.go:218`, `internal/workspacestore/store.go:432`
+- Evidence: `/workspace/views` PUT передаёт client-controlled `id` и `workspaceId` прямо в global `views` collection. `UpsertView` не проверяет существующего owner, поэтому повторный ID заменяет документ другого workspace. Property create проверяет duplicate ID только среди `ListPropertyDefinitions(targetWorkspace)`, после чего global upsert с тем же ID может заменить property другого workspace. Напротив, active-view и reorder paths проверяют workspace ownership, а list methods фильтруют по `workspaceId`; эти положительные controls подтверждены Go tests. `projectId` для property value проверяется только на непустоту и не связывается с registry/source folder.
+- Impact: collision или атакующий internal caller может переназначить view/property другому workspace, скрыть исходный документ из его scoped list и нарушить ссылки/active state. Произвольный `projectId` создаёт orphan или неверно scoped values. Отсутствие authentication в SEC-011 делает exploit прямым для любого достигшего sidecar клиента.
+- Reproduction: в temporary database сохранить view с ID `view:shared` в workspace A, затем PUT документа с тем же ID и workspace B; `GetView` возвращает B, а list A теряет исходный view. Этот unsafe case не закрепляется regression-тестом как допустимый behavior.
+- Recommendation: определить глобально уникальные opaque server-generated IDs либо composite storage key `(workspaceId, id)`; перед каждым update/upsert проверять immutable ownership, существование workspace/project/property и согласованность всех references. Добавить rejection tests для cross-workspace collision и orphan project IDs после исправления.
+
+### SEC-014: Sidecar возвращает клиенту raw parser и storage errors
+
+- Severity: Low
+- Confidence: High
+- Status: Open
+- Class: Vulnerability
+- CWE: CWE-209
+- OWASP: A05:2021 Security Misconfiguration
+- Trust boundary: TB-05, TB-06
+- Affected files: `cmd/workspace-sidecar/main.go:56`, `cmd/workspace-sidecar/main.go:1418`, `src/workspaceSidecarClient.js:12`
+- Evidence: malformed JSON responses содержат `json.Decoder` error verbatim, а `writeResult` возвращает любой `any-store`/SQLite `err.Error()` как JSON `error`; Node client затем выбрасывает эту строку без sanitization. Non-JSON response body клиент не отражает и использует generic method error, что подтверждено `test/sidecarClient.test.js`.
+- Impact: достигший endpoint клиент может получить детали parser, database schema/path или внутреннего состояния, полезные для дальнейшей атаки; при проксировании через IPC эти сведения могут дойти до renderer. Самостоятельный высокий impact не подтверждён.
+- Reproduction: на temporary sidecar отправить malformed JSON и вызвать storage error на invalid/corrupt fixture; сравнить ответ с исходным internal error, не копируя абсолютный path в audit artifacts.
+- Recommendation: логировать подробную ошибку только в privileged process с redaction, наружу возвращать стабильный code и безопасное сообщение; различать validation 4xx и internal 5xx, добавить correlation ID и tests, запрещающие path/schema leakage.
+
+### SEC-015: Property history не является append-only на sidecar boundary
+
+- Severity: Informational
+- Confidence: High
+- Status: Open
+- Class: Documentation gap
+- CWE: CWE-778
+- OWASP: A09:2021 Security Logging and Monitoring Failures
+- Trust boundary: TB-05, TB-06
+- Affected files: `cmd/workspace-sidecar/main.go:65`, `cmd/workspace-sidecar/main.go:156`, `internal/workspacestore/store.go:637`, `docs/data-model.md:616`, `docs/api/workspace-properties.md:502`
+- Evidence: store предоставляет `AppendPropertyHistory`, но реализация использует обычный global upsert по caller-controlled ID, поэтому повтор ID перезапишет событие. Sidecar routes для property/value create, update и delete не вызывают history method; HTTP route чтения history также отсутствует. При этом контракт требует append-only history и запись history при mutation. `ListPropertyHistory` корректно фильтрует по workspace и сортирует события; это подтверждено `internal/workspacestore/store_test.go`.
+- Impact: если sidecar станет активным durable transport без дополнительного orchestration, изменения и удаления properties/values не создадут полный audit trail, а collision history ID может изменить прошлое. Сейчас Electron использует transitional JSON adapters, поэтому это расхождение целевой архитектуры, а не подтверждённая потеря истории в активном runtime.
+- Reproduction: на temporary store дважды вызвать `AppendPropertyHistory` с одним ID и разным payload либо выполнить sidecar property mutation и проверить отсутствие нового history event.
+- Recommendation: генерировать history IDs server-side, использовать insert-only constraint с duplicate rejection и атомарно записывать current document + history event в одной transaction; покрыть каждый mutation контрактным тестом до переключения Electron на sidecar.
+
 ## Electron, renderer и IPC boundary
 
 Проверка охватила `BrowserWindow`, preload facade, main-process dispatcher, renderer import graph, navigation/new-window/permission controls, Content-Security-Policy, payload/error flow и раскрытие path. Production-код не изменялся.
@@ -340,10 +415,30 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - view/property stores отклоняют corrupt JSON и сохраняют исходный файл, но автоматического backup/recovery для них нет; это fail-closed поведение, а не восстановление;
 - property/view stores имеют per-instance Promise queue, но concurrent writers из разных instances/processes не координируются; воспроизведён lost update (SEC-008);
 - future-schema gate отсутствует: property metadata может быть понижена до schema 1 с потерей неизвестных top-level данных (SEC-007); settings/views отдельной version-модели не имеют;
-- temporary JSON создаются без explicit permissions и на текущем umask получили `0644` (SEC-006); SQLite не создаётся активным Electron transport, а mode, location и any-store error handling остаются предметом Task 4;
+- temporary JSON, SQLite, WAL и SHM создаются без explicit restrictive permissions и на текущем host получили `0644`; packaged SQLite location пока не определён (SEC-006);
 - atomic rename защищает от partial target при обычной ошибке write, но нет `fsync` файла/каталога, общей revision и гарантии crash durability; это учитывается в remediation SEC-007/SEC-008.
 
 Расширенные fixture-тесты фиксируют только существующие защиты: rejection traversal/absolute/symlink/broken-symlink и kind mismatch, unsupported preview extensions, atomic temp cleanup и отсутствие удаления project file при workspace soft delete. Они намеренно не утверждают, что `.app` launch, active content, permissive mode, future-schema downgrade, lost update или descriptor leak являются допустимым поведением.
+
+## Go sidecar и any-store boundary
+
+Проверка проследила `WorkspaceSidecarClient` до HTTP handlers и `any-store` collections. Sidecar сейчас является отдельным CLI и автоматически не запускается Electron runtime; выводы относятся к реализованному transport и обязательны до его включения как durable store.
+
+| Контроль | Evidence | Результат |
+| --- | --- | --- |
+| Bind и authentication | `cmd/workspace-sidecar/main.go:23-41` | Default bind — `127.0.0.1:0`; authentication/session secret, Host и Origin checks отсутствуют, а `-addr` допускает non-loopback bind; SEC-011 |
+| Browser-origin boundary | mutation handlers и CORS review | ACAO отсутствует, поэтому обычное чтение response и preflighted methods блокируются браузером; POST с `text/plain` JSON принимается без preflight/content-type gate; SEC-011 |
+| HTTP methods и Content-Type | `cmd/workspace-sidecar/main.go:49-493`, `cmd/workspace-sidecar/main_test.go` | Privileged routes имеют method allowlists и возвращают 405; health принимает любой method. Response всегда JSON, request `Content-Type` не проверяется |
+| Malformed и trailing JSON | все `json.NewDecoder(...).Decode` call sites, `cmd/workspace-sidecar/main_test.go` | Синтаксически malformed JSON отклоняется до mutation; trailing second value не проверяется, unknown fields обычно принимаются; SEC-012 |
+| Body, timeout, concurrency, shutdown | `cmd/workspace-sidecar/main.go:35-41` | Нет body limit, request/server timeouts, concurrency limit и graceful shutdown. Batch store writes используют один `WriteTx`, но handler read-modify-write не объединён общей transaction; SEC-012, concurrent lost-update остаётся follow-up risk |
+| Node transport | `src/workspaceSidecarClient.js`, `test/sidecarClient.test.js` | Явное отображение service method → method/path; unknown methods отклоняются до fetch, query IDs проходят `encodeURIComponent`, mutation body отправляется как JSON. Abort timeout и credential отсутствуют |
+| Workspace/view scope | `cmd/workspace-sidecar/main.go:359-492`, `internal/workspacestore/store.go:193-368` | Active-view и reorder валидируют workspace ownership, active lists фильтруют soft-deleted документы; direct upsert/global ID collision обходит owner check; SEC-013 |
+| Project/property/select scope | `cmd/workspace-sidecar/main.go:508-738`, store list methods | Property/select references сверяются внутри workspace/property; project existence не проверяется. Soft-deleted properties/select/property-values исключаются из active lists |
+| Soft delete и history | cascade handlers, `internal/workspacestore/store.go:385-687`, `internal/workspacestore/store_test.go` | Cascade writes объединены `WriteTx`, active lists скрывают `deletedAt`; history list workspace-scoped, но history не append-only и handlers его не создают; SEC-015 |
+| SQLite location и permissions | `cmd/workspace-sidecar/main.go:24`, `internal/workspacestore/store.go:142` | Default — `workspace.db` относительно CWD, `-db` принимает arbitrary path. Temporary evidence: database/WAL/SHM mode `0644`, parent fixture `0700`; SEC-006 |
+| any-store errors | `cmd/workspace-sidecar/main.go:1418-1429`, `src/workspaceSidecarClient.js:12-15` | Internal errors возвращаются verbatim как 400 и client повторяет message; non-JSON body не отражается; SEC-014 |
+
+Подтверждённые положительные controls покрыты только characterization-тестами: method rejection, malformed JSON без mutation, active-view cross-workspace rejection, query encoding, workspace-scoped active lists, soft delete и history filtering. Тесты намеренно не закрепляют отсутствие authentication/limits, permissive Content-Type, raw error disclosure, глобальные ID collision или overwriteable history как допустимое поведение. Нагрузочная проверка timeout/concurrency не выполнялась, чтобы не превращать audit в denial-of-service; риск подтверждён конфигурацией server и non-atomic read-modify-write paths.
 
 ## Матрица покрытия
 
@@ -354,8 +449,8 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | Renderer boundary | Imports, transport, path/error disclosure, active content | Static boundary tests + code review | Task 2 | Covered |
 | Filesystem | Path resolution, traversal, symlink, TOCTOU, open/spawn/delete | Temporary fixtures + source tracing | Task 3 | Covered |
 | Local metadata | JSON permissions, atomicity, backup, schema, concurrency | Adapter review + isolated corruption tests | Task 3 | Covered |
-| Go sidecar HTTP | Bind/auth, methods, content type, body limits, timeout, shutdown | Handler/client tests + code review | Task 4 | Planned |
-| any-store/SQLite | ID and scope validation, soft delete/history, permissions, errors | Store tests + document-flow review | Task 4 | Planned |
+| Go sidecar HTTP | Bind/auth, methods, content type, body limits, timeout, shutdown | Handler/client tests + code review | Task 4 | Covered |
+| any-store/SQLite | ID and scope validation, soft delete/history, permissions, errors | Store tests + document-flow review | Task 4 | Covered |
 | Dependencies | npm/Go graph, lock integrity, advisories, lifecycle scripts | Manifest/lock review + available native tooling | Task 5 | Planned |
 | Secrets | Tracked tree, reachable history, generated/local artifacts | Pattern/entropy-oriented scan with redacted output | Task 5 | Planned |
 | Build configuration | Scripts, version ranges, binary artifacts, reproducibility | Script and artifact provenance review | Task 5 | Planned |
@@ -378,3 +473,4 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 | 2026-09-23 | Scope и baseline | Зафиксированы ревизия, dirty-state, toolchain, модель угроз, finding contract и coverage matrix |
 | 2026-09-23 | Electron, renderer и IPC | Подтверждены isolation, preload/main allowlists и renderer import boundary; зарегистрированы SEC-001—SEC-003 |
 | 2026-09-23 | Filesystem и local metadata | Подтверждены traversal/symlink/atomic-write/soft-delete controls; зарегистрированы SEC-004—SEC-010 |
+| 2026-09-23 | Go sidecar и any-store | Подтверждены method/scope/soft-delete controls; зарегистрированы SEC-011—SEC-015 и расширен SEC-006 |

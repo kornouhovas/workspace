@@ -500,6 +500,18 @@ func TestStorePersistsCustomPropertyDocuments(t *testing.T) {
 			NextValue:     "Priority",
 			CreatedAt:     "2026-05-15T09:00:00.000Z",
 		},
+		{
+			ID:            "propertyHistory:foreign",
+			Type:          "propertyHistory",
+			SchemaVersion: 1,
+			WorkspaceID:   "workspace:other",
+			PropertyID:    "property:foreign",
+			TargetType:    "propertyDefinition",
+			TargetID:      "property:foreign",
+			Action:        "created",
+			NextValue:     "Foreign",
+			CreatedAt:     "2026-05-15T08:00:00.000Z",
+		},
 	} {
 		if err := store.AppendPropertyHistory(ctx, event); err != nil {
 			t.Fatal(err)
@@ -511,7 +523,7 @@ func TestStorePersistsCustomPropertyDocuments(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(history) != 2 || history[0].ID != "propertyHistory:1" || history[1].ID != "propertyHistory:2" {
-		t.Fatalf("expected property history sorted by createdAt, got %#v", history)
+		t.Fatalf("expected workspace-scoped property history sorted by createdAt, got %#v", history)
 	}
 }
 
