@@ -170,7 +170,7 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
-  assert.equal(findings.length, 18, "all consolidated findings must be parsed");
+  assert.equal(findings.length, 19, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
   assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
@@ -281,7 +281,12 @@ test("consolidated audit includes every finding in the risk register and remedia
     "High",
     "native launch through workspace.reveal must remain classified as High",
   );
-  assert.match(remediation, /SEC-005[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-001[\s\S]+SEC-016/);
+  assert.equal(
+    findings.find(({ id }) => id === "SEC-019")?.severity,
+    "High",
+    "privileged file protocol access must remain classified as High",
+  );
+  assert.match(remediation, /SEC-005[\s\S]+SEC-019[\s\S]+SEC-001[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-016/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
@@ -370,6 +375,8 @@ test("security audit includes Electron and IPC evidence for Task 2", async () =>
     "navigation",
     "permission",
     "Content-Security-Policy",
+    "file://",
+    "GrantFileProtocolExtraPrivileges",
     "absolute path",
     "error",
     "test/securityControls.test.js",
