@@ -160,16 +160,16 @@
 - Modify: `test/securityAuditReport.test.js`
 - Modify: `test/securityControls.test.js`
 
-- [ ] Удалить дубликаты и для каждого finding подтвердить затронутую доверительную границу и минимальный воспроизводимый сценарий.
-- [ ] Разделить подтверждённые vulnerabilities, defense-in-depth рекомендации, документационные расхождения и ограничения аудита.
-- [ ] Приоритизировать remediation: Critical/High сначала, затем Medium/Low; указать зависимости и безопасный порядок исправлений.
-- [ ] Добавить executive summary, risk register, положительные controls, residual risks и перечень областей, которые не удалось проверить.
-- [ ] Обновить report-тест, чтобы каждый finding имел evidence, impact, recommendation и корректные file references.
-- [ ] Обновить security-control tests только для уже существующих защит, выявленных во время сведения результатов.
-- [ ] Запустить `node --test test/securityAuditReport.test.js test/securityControls.test.js`.
-- [ ] Запустить полный набор: `npm test`, `npm run typecheck`, `npm run build:renderer`, `go test ./...`, `npm run build:sidecar`, `git diff --check`.
-- [ ] Выполнить `node --experimental-test-coverage --test test/securityAuditReport.test.js test/securityControls.test.js` и `go test -cover ./...`; подтвердить не менее 80% покрытия новых audit helpers либо явно зафиксировать недостающее покрытие как ограничение.
-- [ ] Не переходить к Task 7, пока тесты, typecheck и builds не завершатся успешно.
+- [x] Удалить дубликаты и для каждого finding подтвердить затронутую доверительную границу и минимальный воспроизводимый сценарий.
+- [x] Разделить подтверждённые vulnerabilities, defense-in-depth рекомендации, документационные расхождения и ограничения аудита.
+- [x] Приоритизировать remediation: Critical/High сначала, затем Medium/Low; указать зависимости и безопасный порядок исправлений.
+- [x] Добавить executive summary, risk register, положительные controls, residual risks и перечень областей, которые не удалось проверить.
+- [x] Обновить report-тест, чтобы каждый finding имел evidence, impact, recommendation и корректные file references.
+- [x] Обновить security-control tests только для уже существующих защит, выявленных во время сведения результатов.
+- [x] Запустить `node --test test/securityAuditReport.test.js test/securityControls.test.js`.
+- [x] Запустить полный набор: `npm test`, `npm run typecheck`, `npm run build:renderer`, `go test ./...`, `npm run build:sidecar`, `git diff --check`.
+- [x] Выполнить `node --experimental-test-coverage --test test/securityAuditReport.test.js test/securityControls.test.js` и `go test -cover ./...`; подтвердить не менее 80% покрытия новых audit helpers либо явно зафиксировать недостающее покрытие как ограничение.
+- [x] Не переходить к Task 7, пока тесты, typecheck и builds не завершатся успешно.
 
 ### Task 7: Завершить документацию и подготовить handoff
 

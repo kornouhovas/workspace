@@ -18,6 +18,14 @@ function extractMethodSet(source, name) {
   return [...body.matchAll(/"(workspace\.[^"]+)"/g)].map((match) => match[1]);
 }
 
+function extractStringSet(source, name) {
+  const body = source.match(
+    new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\);`),
+  )?.[1];
+  assert.ok(body, `${name} must be declared as an explicit Set`);
+  return [...body.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+}
+
 test("Electron window keeps the renderer isolated from Node privileges", async () => {
   const main = await readFile(mainUrl, "utf8");
 
@@ -99,6 +107,17 @@ test("filesystem boundary canonicalizes existing targets and opens them without 
   assert.match(source, /realpathSync\(targetPath\)/);
   assert.match(source, /spawn\(command,\s*args,\s*\{\s*stdio:\s*"ignore"\s*\}\)/);
   assert.doesNotMatch(source, /shell:\s*true/);
+});
+
+test("preview allowlist excludes native executable and package extensions", async () => {
+  const source = await readFile(localOpenUrl, "utf8");
+  const extensions = extractStringSet(source, "previewExtensions");
+
+  assert.ok(extensions.length > 0);
+  assert.equal(new Set(extensions).size, extensions.length);
+  for (const extension of ["app", "bat", "command", "dmg", "exe", "pkg", "ps1", "sh"]) {
+    assert.equal(extensions.includes(extension), false, `.${extension} must not be previewable`);
+  }
 });
 
 test("transitional JSON stores use same-directory atomic replacement and only remove temp files", async () => {

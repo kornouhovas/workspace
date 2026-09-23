@@ -13,9 +13,17 @@
 | Go | `go1.26.2 darwin/arm64` |
 | Electron | `41.5.0` установлен; диапазон manifest — `^41.5.0` |
 | Тип анализа | Статический анализ, локальные тесты и безопасные изолированные fixtures |
-| Статус | In progress |
+| Статус | Findings consolidated; final handoff pending |
 
 Ревизия фиксирует исходную точку анализа, а не утверждает чистоту рабочего дерева. Все ссылки на файлы в отчёте относительны корню репозитория. Содержимое посторонних untracked-артефактов и пользовательских папок не является источником evidence.
+
+## Executive summary
+
+Аудит выявил 18 уникальных findings: 1 High, 6 Medium, 6 Low и 5 Informational; Critical findings не обнаружены. Тринадцать findings являются подтверждёнными vulnerabilities, четыре — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Наиболее приоритетный риск — известные high-severity advisories в зафиксированном npm graph (SEC-016). Для активного Electron runtime главные цепочки риска проходят через отсутствие navigation/sender policy (SEC-001), привилегированный reveal (SEC-005) и утечку file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013).
+
+Существующие controls существенно ограничивают blast radius: Electron включает isolation и sandbox, preload/main используют совпадающие allowlists, renderer не импортирует Node/backend modules, path helpers блокируют lexical traversal и стабильные symlink escapes, JSON writes используют atomic replacement, а sidecar по умолчанию слушает ephemeral loopback address. Это не компенсирует findings, зависящие от скомпрометированного renderer, конкурентного изменения filesystem или другого локального процесса.
+
+Аудит не менял production behavior и не доказывает release readiness. Dynamic fuzzing, multi-platform behavior, packaged sidecar lifecycle, code signing/notarization, внешний Go advisory scan и upstream-аудит dependencies остались вне проверенной области.
 
 ## Цель и границы аудита
 
@@ -421,6 +429,70 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: проверить manifest ranges и scripts, агрегировать `packages[*].resolved`, `integrity` и `hasInstallScript` из lockfile, выполнить `npm ci --ignore-scripts --dry-run --audit=false`, `go mod verify` и inventory tracked file modes/magic без запуска downloaded binaries.
 - Recommendation: зафиксировать поддерживаемые Node/npm через `engines` и `packageManager`, использовать `npm ci` на clean CI, review/allowlist lifecycle scripts, разделить runtime и tooling dependencies, генерировать checksums/SBOM/provenance для release artifacts и проверять их до публикации.
 
+## Сведение и классификация findings
+
+Все 18 IDs проверены на дублирование по root cause, trust boundary, затронутому активу и минимальному сценарию воспроизведения. Дубликатов не осталось. Похожие наблюдения сохранены отдельно только там, где remediation и граница различаются: SEC-003 относится к Electron IPC, а SEC-014 — к sidecar HTTP; SEC-001 ограничивает доверие к renderer, а SEC-011 — к локальному HTTP-клиенту; SEC-004 описывает TOCTOU, тогда как SEC-010 — детерминированную утечку ресурса. Общая проблема permissions для JSON и SQLite уже объединена в SEC-006.
+
+Каждый finding содержит Trust boundary и минимальный Reproduction. Сценарии с race, native launch, resource exhaustion или повреждением данных описаны для isolated temporary fixture и не выполняются над пользовательскими данными.
+
+| Class | Findings | Интерпретация |
+| --- | --- | --- |
+| Vulnerability | SEC-001, SEC-003—SEC-008, SEC-010—SEC-014, SEC-016 | Достижимый security или data-safety impact подтверждён статическим путём, безопасным fixture либо advisory evidence |
+| Defense in depth | SEC-002, SEC-009, SEC-017, SEC-018 | Самостоятельный exploit не подтверждён; control уменьшает вероятность или blast radius будущей цепочки |
+| Documentation gap | SEC-015 | Целевой append-only контракт расходится с sidecar implementation, но sidecar не является активным Electron transport |
+| Limitation | Нет finding ID | Непроверенные области перечислены отдельно и не выданы за vulnerabilities |
+
+## Risk register
+
+| Приоритет | Findings | Severity | Основной риск | Состояние |
+| --- | --- | --- | --- | --- |
+| P0 | SEC-016 | High | Известные advisories в install/build и Electron runtime graph | Open |
+| P1 | SEC-001, SEC-005, SEC-010 | Medium | Расширение renderer compromise до privileged IPC/native launch и отказ main process | Open |
+| P1 | SEC-011, SEC-013 | Medium | Неавторизованные sidecar mutations и cross-workspace overwrite до активации sidecar | Open |
+| P1 | SEC-004 | Medium | Race-dependent filesystem escape из выбранного source root | Open |
+| P2 | SEC-003, SEC-006, SEC-007, SEC-008, SEC-012, SEC-014 | Low | Disclosure, permissions, metadata integrity и локальный denial of service | Open |
+| P3 | SEC-002, SEC-009, SEC-015, SEC-017, SEC-018 | Informational | Hardening, audit trail, artifact hygiene и provenance | Open |
+
+Residual severity учитывает текущие ограничения: sidecar не подключён к Electron transport, direct renderer call site для preview/reveal не найден, default listener loopback-only, а race для SEC-004 не воспроизводился как стабильный exploit. При появлении packaged sidecar lifecycle, rich preview или внешней navigation эти оценки следует пересмотреть до release.
+
+## Приоритет и безопасный порядок remediation
+
+1. SEC-016 исправлять отдельным dependency change: удалить неиспользуемый runtime graph, обновить Electron/Vite и transitive packages, затем повторить audit и полный Electron smoke/build. Не смешивать lockfile migration с boundary fixes.
+2. SEC-001 закрыть до добавления любых external navigation, links или rich preview: сначала navigation/window/permission policy, затем sender/frame authorization и integration tests.
+3. SEC-005 и SEC-010 исправить вместе как сужение filesystem capability: заменить launch semantics на reveal-only, убрать невостребованный stream и добавить rate/lifecycle tests. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
+4. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
+5. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
+6. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
+7. SEC-002, SEC-009, SEC-015, SEC-017 и SEC-018 выполнять после соответствующих boundary/data fixes либо в release-hardening потоке; каждую рекомендацию проверять собственным scope, не считать текущий audit доказательством исправления.
+
+## Положительные security controls
+
+- Electron использует `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, локальный `loadFile` и не включает webview или отключение web security; preload экспортирует только `workspace.request`.
+- Preload и main имеют одинаковые явные allowlists из 34 IPC methods; renderer boundary tests не допускают imports Node builtins, Electron или backend modules.
+- Filesystem helpers отклоняют absolute paths, lexical traversal и существующие symlinks за canonical source root; native open запускается без shell interpolation.
+- Transitional JSON stores выполняют same-directory temporary write + atomic rename и удаляют только temporary files; corrupt JSON не перезаписывается. Workspace deletion soft-deletes metadata и не удаляет project files.
+- Sidecar по умолчанию использует ephemeral `127.0.0.1:0`; handlers ограничивают HTTP methods, scoped list operations фильтруют workspace, soft delete исключает удалённые документы, history list сортируется и scoped по workspace.
+- npm lockfile v3 содержит integrity для registry packages, Go modules имеют exact versions и проходят `go mod verify`; tracked tree/history scan не обнаружил credentials, runtime databases или executable binaries.
+
+Эти controls зафиксированы characterization/regression tests. Тесты подтверждают только существующее поведение и не утверждают, что отсутствующие controls уже реализованы.
+
+## Residual risks
+
+- Компрометация renderer остаётся способна использовать весь разрешённый preload API до исправления SEC-001; isolation не является IPC authorization.
+- Вредоносная выбранная папка остаётся источником race, active-content и native-launch рисков до исправления SEC-004, SEC-005 и SEC-009.
+- Локальная multi-process среда остаётся вне единого trust domain: permissions, concurrent writers и будущий sidecar требуют явной защиты.
+- Lockfile integrity не устраняет известные advisories и риск lifecycle scripts; результаты npm registry отражают snapshot на дату аудита.
+- Отсутствие найденных secrets снижает риск, но regex/entropy scan не гарантирует обнаружение нестандартных, зашифрованных или встроенных в media credentials.
+
+## Непроверенные области и ограничения аудита
+
+- Не выполнялись dynamic fuzzing, нагрузочный DoS, стабильная эксплуатация TOCTOU, запуск native application bundle или тесты над пользовательскими folders/databases.
+- Не проверялись Windows/Linux filesystem semantics и ACL, packaged Electron/sidecar lifecycle, installer, auto-update, code signing и notarization.
+- `govulncheck` отсутствовал и не устанавливался; Go advisory reachability не проверена внешней базой. npm audit зависит от доступного registry snapshot.
+- Не проводился upstream source audit Electron, Chromium, any-store и transitive packages, а также аудит CI secret stores, remote Git hosting logs и npm provenance service.
+- Visual/runtime проверка будущего rich preview отсутствует, потому что active renderer call site для preview/reveal не найден.
+- Coverage новых audit helpers измерена Node test runner: 100% lines, 81.97% branches и 100% functions. `go test -cover ./...` показал 53.1% statements для sidecar command и 59.8% для store; Task 6 не добавляла Go helpers, а недостающий coverage существующего production-кода остаётся ограничением. Coverage production security paths report-oriented Node тестами не заявляется.
+
 ## Electron, renderer и IPC boundary
 
 Проверка охватила `BrowserWindow`, preload facade, main-process dispatcher, renderer import graph, navigation/new-window/permission controls, Content-Security-Policy, payload/error flow и раскрытие path. Production-код не изменялся.
@@ -582,3 +654,4 @@ Secret scan был regex/entropy-oriented review, а не специализир
 | 2026-09-23 | Filesystem и local metadata | Подтверждены traversal/symlink/atomic-write/soft-delete controls; зарегистрированы SEC-004—SEC-010 |
 | 2026-09-23 | Go sidecar и any-store | Подтверждены method/scope/soft-delete controls; зарегистрированы SEC-011—SEC-015 и расширен SEC-006 |
 | 2026-09-23 | Dependencies, secrets и build chain | Проверены npm/Go inventories, advisories, lifecycle/build scripts, 473 reachable commits и artifact provenance; зарегистрированы SEC-016—SEC-018 |
+| 2026-09-23 | Сведение и критерии приёмки | 18 findings дедуплицированы и классифицированы; добавлены executive summary, risk register, remediation order, positive controls, residual risks и limitations; полный test/typecheck/build прошёл |

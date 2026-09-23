@@ -19,6 +19,12 @@ const requiredSections = [
   "Классификация риска",
   "Шаблон finding",
   "Findings",
+  "Сведение и классификация findings",
+  "Risk register",
+  "Приоритет и безопасный порядок remediation",
+  "Положительные security controls",
+  "Residual risks",
+  "Непроверенные области и ограничения аудита",
   "Electron, renderer и IPC boundary",
   "Filesystem и local metadata boundary",
   "Go sidecar и any-store boundary",
@@ -36,10 +42,26 @@ const allowedSeverities = new Set([
   "Informational",
 ]);
 const allowedConfidences = new Set(["High", "Medium", "Low"]);
+const allowedStatuses = new Set(["Open", "Accepted", "Mitigated", "False positive"]);
+const allowedClasses = new Set([
+  "Vulnerability",
+  "Defense in depth",
+  "Documentation gap",
+  "Limitation",
+]);
+const allowedBoundaries = new Set([
+  "TB-01",
+  "TB-02",
+  "TB-03",
+  "TB-04",
+  "TB-05",
+  "TB-06",
+  "TB-07",
+]);
 
 function parseFindings(report) {
   const findingsSection = report.match(
-    /^## Findings\s*$([\s\S]*?)(?=^##\s|\z)/m,
+    /^## Findings\s*$([\s\S]*?)(?=^##\s|(?![\s\S]))/m,
   )?.[1] ?? "";
   const headings = [...findingsSection.matchAll(/^### (SEC-\d{3}): .+$/gm)];
 
@@ -52,8 +74,19 @@ function parseFindings(report) {
 
     return {
       id: heading[1],
+      title: heading[0].replace(/^### SEC-\d{3}: /, "").trim(),
       severity: field("Severity"),
       confidence: field("Confidence"),
+      status: field("Status"),
+      className: field("Class"),
+      cwe: field("CWE"),
+      owasp: field("OWASP"),
+      trustBoundary: field("Trust boundary"),
+      affectedFiles: field("Affected files"),
+      evidence: field("Evidence"),
+      impact: field("Impact"),
+      reproduction: field("Reproduction"),
+      recommendation: field("Recommendation"),
     };
   });
 }
@@ -95,7 +128,9 @@ test("security audit findings have unique IDs and allowed classifications", asyn
   const findings = parseFindings(report);
   const ids = findings.map(({ id }) => id);
 
+  assert.equal(findings.length, 18, "all consolidated findings must be parsed");
   assert.equal(new Set(ids).size, ids.length, "finding IDs must be unique");
+  assert.equal(new Set(findings.map(({ title }) => title)).size, findings.length, "finding titles must be unique");
 
   for (const finding of findings) {
     assert.ok(
@@ -106,7 +141,69 @@ test("security audit findings have unique IDs and allowed classifications", asyn
       allowedConfidences.has(finding.confidence),
       `${finding.id} has unsupported confidence: ${finding.confidence}`,
     );
+    assert.ok(
+      allowedStatuses.has(finding.status),
+      `${finding.id} has unsupported status: ${finding.status}`,
+    );
+    assert.ok(
+      allowedClasses.has(finding.className),
+      `${finding.id} has unsupported class: ${finding.className}`,
+    );
   }
+});
+
+test("every finding has actionable evidence and valid repository file references", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const findings = parseFindings(report);
+  const fileCache = new Map();
+
+  for (const finding of findings) {
+    for (const field of ["evidence", "impact", "reproduction", "recommendation"]) {
+      assert.ok(finding[field]?.length > 20, `${finding.id} must define ${field}`);
+    }
+
+    assert.match(finding.cwe ?? "", /^CWE-\d+$/);
+    assert.ok(finding.owasp?.length > 0, `${finding.id} must define OWASP mapping`);
+
+    const boundaries = finding.trustBoundary?.split(",").map((value) => value.trim()) ?? [];
+    assert.ok(boundaries.length > 0, `${finding.id} must identify a trust boundary`);
+    for (const boundary of boundaries) {
+      assert.ok(allowedBoundaries.has(boundary), `${finding.id} has invalid boundary: ${boundary}`);
+    }
+
+    const references = [...(finding.affectedFiles ?? "").matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+    assert.ok(references.length > 0, `${finding.id} must reference affected files`);
+
+    for (const reference of references) {
+      const match = reference.match(/^([^:]+):(\d+)$/);
+      assert.ok(match, `${finding.id} has invalid file reference: ${reference}`);
+      const [, relativePath, lineText] = match;
+      assert.doesNotMatch(relativePath, /^(?:\/|[A-Za-z]:|\.\.\/)/, `${finding.id} uses a non-repository path`);
+
+      if (!fileCache.has(relativePath)) {
+        fileCache.set(relativePath, await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"));
+      }
+      const lineCount = fileCache.get(relativePath).split(/\r?\n/).length;
+      assert.ok(Number(lineText) >= 1 && Number(lineText) <= lineCount, `${finding.id} points outside ${relativePath}`);
+    }
+  }
+});
+
+test("consolidated audit includes every finding in the risk register and remediation order", async () => {
+  const report = await readFile(reportUrl, "utf8");
+  const findings = parseFindings(report);
+  const riskRegister = report.match(/^## Risk register\s*$([\s\S]*?)(?=^##\s)/m)?.[1] ?? "";
+  const remediation = report.match(
+    /^## Приоритет и безопасный порядок remediation\s*$([\s\S]*?)(?=^##\s)/m,
+  )?.[1] ?? "";
+
+  for (const finding of findings) {
+    assert.match(riskRegister, new RegExp(`\\b${finding.id}\\b`), `${finding.id} is missing from risk register`);
+  }
+
+  assert.match(report, /18 уникальных findings: 1 High, 6 Medium, 6 Low и 5 Informational/);
+  assert.match(report, /Critical findings не обнаружены/);
+  assert.match(remediation, /SEC-016[\s\S]+SEC-001[\s\S]+SEC-005 и SEC-010[\s\S]+SEC-011/);
 });
 
 test("security audit defines a complete reusable finding template", async () => {
