@@ -21,7 +21,7 @@ import {
   createRendererErrorState,
   resolveRendererErrorState,
 } from "@/i18n/errors.js";
-import { FolderIcon, PanelLeftIcon, PanelsTopLeftIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
+import { FolderIcon, PanelLeftIcon, PanelRightCloseIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
@@ -1979,7 +1979,7 @@ export default function App() {
                   projectActions={selectedProject ? (
                     <>
                       <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t(projectExpanded ? "detail.restore" : "detail.expand")} title={t(projectExpanded ? "detail.restore" : "detail.expand")} onClick={toggleProjectExpanded}>
-                        {projectExpanded ? <PanelsTopLeftIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
+                        {projectExpanded ? <PanelRightCloseIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
                       </Button>
                       <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t("detail.close")} title={t("detail.close")} onClick={closeSelectedProject}>
                         <XIcon className="size-4" aria-hidden="true" />

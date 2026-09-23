@@ -4,7 +4,7 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type M
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileIcon, PanelsTopLeftIcon, XIcon } from "@/lib/lucide-icons";
+import { FileIcon, PanelRightCloseIcon, XIcon } from "@/lib/lucide-icons";
 import { useI18n } from "@/i18n";
 import type { ProjectTab as ProjectTabState } from "@/workspaceProjectTabs";
 import { workspaceMenuContentClassName, workspaceMenuItemClassName, workspaceMenuDangerItemClassName } from "./menu-styles";
@@ -67,7 +67,7 @@ function ProjectTab({ project, onDuplicate, onRestore, onClose }: {
             <FileIcon className="size-4" aria-hidden="true" />{t("detail.duplicateTab")}
           </ContextMenu.Item>
           <ContextMenu.Item className={workspaceMenuItemClassName} onSelect={() => onRestore(project.tabId)}>
-            <PanelsTopLeftIcon className="size-4" aria-hidden="true" />{t("detail.restoreTab")}
+            <PanelRightCloseIcon className="size-4" aria-hidden="true" />{t("detail.restoreTab")}
           </ContextMenu.Item>
           <ContextMenu.Item className={workspaceMenuDangerItemClassName} onSelect={() => onClose(project.tabId)}>
             <XIcon className="size-4" aria-hidden="true" />{t("detail.closeTab")}

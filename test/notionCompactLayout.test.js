@@ -48,6 +48,20 @@ test("expanded project uses common compact headings and exposes a numeric file c
   assert.match(detailSource, /\{displayedProject\.fileTree\.length\}/);
 });
 
+test("expanded restore actions use the reference-matched right-panel glyph without changing behavior", async () => {
+  const [appSource, projectTabsSource, iconsSource] = await Promise.all([
+    readProjectFile("src/App.tsx"),
+    readProjectFile("src/components/workspace/project-tabs.tsx"),
+    readProjectFile("src/lib/lucide-icons.ts"),
+  ]);
+
+  assert.match(iconsSource, /PanelRightCloseIcon[^\n]*panel-right-close\.mjs/);
+  assert.match(appSource, /aria-label=\{t\(projectExpanded \? "detail\.restore" : "detail\.expand"\)\}[\s\S]*onClick=\{toggleProjectExpanded\}[\s\S]*projectExpanded \? <PanelRightCloseIcon/);
+  assert.match(projectTabsSource, /onSelect=\{\(\) => onRestore\(project\.tabId\)\}[\s\S]*<PanelRightCloseIcon[^>]*>[\s\S]*t\("detail\.restoreTab"\)/);
+  assert.doesNotMatch(appSource, /PanelsTopLeftIcon/);
+  assert.doesNotMatch(projectTabsSource, /PanelsTopLeftIcon/);
+});
+
 test("tabs and shared workspace menus use the compact component scale", async () => {
   const [viewTabsSource, projectTabsSource, menuStylesSource] = await Promise.all([
     readProjectFile("src/components/workspace/view-tabs.tsx"),
