@@ -19,7 +19,7 @@
 
 ## Executive summary
 
-Аудит выявил 18 уникальных findings: 0 High, 5 Medium, 6 Low и 7 Informational; Critical findings не обнаружены. Одиннадцать findings являются подтверждёнными vulnerabilities, шесть — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Для активного Electron runtime наиболее приоритетны привилегированный reveal (SEC-005) и утечка file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013). Отсутствующие navigation/sender controls (SEC-001) и известные advisories без подтверждённого project-specific exploit path (SEC-016) остаются обязательным hardening до расширения navigation surface или release, но не считаются подтверждёнными vulnerabilities текущего runtime.
+Аудит выявил 18 уникальных findings: 1 High, 4 Medium, 6 Low и 7 Informational; Critical findings не обнаружены. Одиннадцать findings являются подтверждёнными vulnerabilities, шесть — defense-in-depth рекомендациями и одно — расхождением документации с ещё не подключённым sidecar-контрактом. Для активного Electron runtime наиболее приоритетен переход из скомпрометированного renderer к запуску native-кода через привилегированный reveal (SEC-005); следом идёт утечка file descriptors при preview (SEC-010). До включения Go sidecar в production transport необходимо закрыть authentication/origin boundary (SEC-011) и cross-workspace ownership (SEC-013). Отсутствующие navigation/sender controls (SEC-001) и известные advisories без подтверждённого project-specific exploit path (SEC-016) остаются обязательным hardening до расширения navigation surface или release, но не считаются подтверждёнными vulnerabilities текущего runtime.
 
 Существующие controls существенно ограничивают blast radius: Electron включает isolation и sandbox, preload/main используют совпадающие allowlists, renderer не импортирует Node/backend modules, path helpers блокируют lexical traversal и стабильные symlink escapes, JSON writes используют atomic replacement, а sidecar по умолчанию слушает ephemeral loopback address. Это не компенсирует findings, зависящие от скомпрометированного renderer, конкурентного изменения filesystem или другого локального процесса.
 
@@ -219,9 +219,9 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - Reproduction: на полностью временном fixture циклически менять in-root target между обычным объектом и symlink на отдельный temporary outside-root, параллельно вызывая list/preview/reveal; фиксировать только факт обращения к outside inode. Не использовать пользовательские каталоги.
 - Recommendation: выполнять operation по уже открытому descriptor и проверять descriptor-resolved identity, либо использовать platform-safe open-at/no-follow traversal для каждого сегмента; для spawn передавать проверенный descriptor-backed target или повторно проверять inode непосредственно перед operation. Добавить deterministic race harness с временными fixtures.
 
-### SEC-005: `workspace.reveal` может запускать macOS application bundle
+### SEC-005: `workspace.reveal` может запускать native-код через macOS `open`
 
-- Severity: Medium
+- Severity: High
 - Confidence: High
 - Status: Open
 - Class: Vulnerability
@@ -229,8 +229,8 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 - OWASP: A01:2021 Broken Access Control
 - Trust boundary: TB-02, TB-03
 - Affected files: `electron/preload.cjs:36`, `electron/workspaceIpc.js:657`, `src/localOpen.js:64`, `src/localOpen.js:77`
-- Evidence: `kind: "directory"` принимает любой directory внутри source root, а `getMacOpenCommand` независимо от kind выполняет `open <target>`. Безопасный stub-fixture с каталогом `Untrusted.app` вернул status 200 и зафиксировал аргументы `open <fixture>/root/Untrusted.app`; shell не используется. В текущем renderer нет call site для `reveal`, но метод доступен через preload allowlist.
-- Impact: скомпрометированный renderer может без отдельного main-process подтверждения попросить LaunchServices запустить подготовленный application bundle из вредоносной выбранной папки, превращая renderer compromise в запуск native-кода от имени пользователя. Требуются одновременно доступ к bridge и наличие подходящего bundle внутри source root.
+- Evidence: `workspace.reveal` принимает как файлы, так и каталоги внутри source root, а `getMacOpenCommand` независимо от kind выполняет `open <target>`. Такой контракт передаёт LaunchServices любой application bundle или executable-associated file, включая `.command`, вместо его безопасного показа в Finder. Безопасный stub-fixture с каталогом `Untrusted.app` вернул status 200 и зафиксировал аргументы `open <fixture>/root/Untrusted.app`; shell не используется. В текущем renderer нет UI call site для `reveal`, но метод доступен любому скомпрометированному renderer через preload allowlist.
+- Impact: скомпрометированный renderer может без user gesture и отдельного main-process подтверждения попросить LaunchServices запустить подготовленный native target из выбранной папки, превращая renderer compromise в выполнение native-кода от имени пользователя. Скомпрометированный renderer и контролируемое атакующим содержимое source root уже являются явными условиями модели атакующего, а impact пересекает renderer sandbox и не ограничен самим приложением.
 - Reproduction: создать пустой `Untrusted.app` только во временном fixture и вызвать `createRevealResponse` с injected `spawnCommand`; проверить, что был бы вызван `open` с bundle path, не запуская приложение.
 - Recommendation: реализовать именно reveal-in-Finder (`shell.showItemInFolder` или эквивалент с явной семантикой), запретить executable/application/package targets, привязать вызов к подтверждённому user gesture и добавить main-process confirmation для потенциально запускаемых типов.
 
@@ -446,17 +446,18 @@ ID имеет формат `SEC-NNN`, уникален и после публи�
 
 | Приоритет | Findings | Severity | Основной риск | Состояние |
 | --- | --- | --- | --- | --- |
-| P1 | SEC-005, SEC-010 | Medium | Native launch из выбранной папки и отказ main process из-за утечки descriptors | Open |
+| P0 | SEC-005 | High | Запуск native-кода из выбранной папки через скомпрометированный renderer | Open |
+| P1 | SEC-010 | Medium | Отказ main process из-за утечки descriptors | Open |
 | P1 | SEC-011, SEC-013 | Medium | Неавторизованные sidecar mutations и cross-workspace overwrite до активации sidecar | Open |
 | P1 | SEC-004 | Medium | Race-dependent filesystem escape из выбранного source root | Open |
 | P2 | SEC-003, SEC-006, SEC-007, SEC-008, SEC-012, SEC-014 | Low | Disclosure, permissions, metadata integrity и локальный denial of service | Open |
 | P3 | SEC-001, SEC-002, SEC-009, SEC-015, SEC-016, SEC-017, SEC-018 | Informational | Trust-boundary hardening, advisory hygiene, audit trail, artifacts и provenance | Open |
 
-Residual severity учитывает текущие ограничения: sidecar не подключён к Electron transport, direct renderer call site для preview/reveal не найден, default listener loopback-only, а race для SEC-004 не воспроизводился как стабильный exploit. При появлении packaged sidecar lifecycle, rich preview или внешней navigation эти оценки следует пересмотреть до release.
+Residual severity учитывает текущие ограничения: sidecar не подключён к Electron transport, default listener loopback-only, а race для SEC-004 не воспроизводился как стабильный exploit. Отсутствие штатного UI call site для preview/reveal не снижает SEC-005: по принятой модели угроз скомпрометированный renderer может вызвать метод напрямую через preload bridge. При появлении packaged sidecar lifecycle, rich preview или внешней navigation остальные оценки следует пересмотреть до release.
 
 ## Приоритет и безопасный порядок remediation
 
-1. SEC-005 и SEC-010 исправить вместе как сужение filesystem capability: заменить launch semantics на reveal-only, убрать невостребованный stream и добавить rate/lifecycle tests. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
+1. SEC-005 исправить как немедленное сужение filesystem capability: заменить launch semantics на reveal-only, запретить executable/application/package targets и добавить main-process authorization и user-gesture tests. В том же ограниченном scope закрыть утечку stream и добавить rate/lifecycle tests для SEC-010. После этого пересмотреть SEC-003 и SEC-009, поскольку preview contract может измениться.
 2. До активации sidecar сначала ввести lifecycle-owned session secret и loopback/Host/Origin/Content-Type policy (SEC-011), затем bounded HTTP server и sanitized errors (SEC-012, SEC-014), и только потом исправлять ownership/ID invariants (SEC-013) и подключать transport.
 3. SEC-004 требует platform-aware filesystem design и deterministic race harness; выполнять его отдельной data-safety задачей, не маскируя повторной lexical проверкой.
 4. SEC-006—SEC-008 исправлять миграционно: backup и version gate перед изменением permissions/schema, затем single-writer/revision coordination. Это сохраняет существующие значения и не превращает recovery в destructive rewrite.
@@ -514,7 +515,7 @@ Residual severity учитывает текущие ограничения: side
 - Рекомендации и follow-up scopes описывают будущую работу. Ни один finding не помечен исправленным или mitigated, и production remediation в рамках этого аудита не выполнялась.
 - `README.md` проверен: описанные запуск, storage, endpoint boundary и команды проверки не изменились, поэтому обновление не требуется.
 - `AGENTS.md` проверен: архитектурные границы и рабочие правила не менялись, поэтому обновление не требуется.
-- Handoff state: отчёт готов к human review. Подтверждённых Critical/High vulnerabilities не обнаружено; remediation подтверждённых Medium/Low findings и release-hardening требует отдельных implementation scopes.
+- Handoff state: отчёт готов к human review. Обнаружена одна подтверждённая High vulnerability (SEC-005); Critical findings нет. Её remediation, а также remediation Medium/Low findings и release-hardening требуют отдельных implementation scopes.
 
 ## Electron, renderer и IPC boundary
 

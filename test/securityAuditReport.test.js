@@ -276,7 +276,12 @@ test("consolidated audit includes every finding in the risk register and remedia
   const summary = `${findings.length} уникальных findings: ${severityCounts.get("High")} High, ${severityCounts.get("Medium")} Medium, ${severityCounts.get("Low")} Low и ${severityCounts.get("Informational")} Informational`;
   assert.match(report, new RegExp(summary));
   assert.match(report, /Critical findings не обнаружены/);
-  assert.match(remediation, /SEC-005 и SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-001[\s\S]+SEC-016/);
+  assert.equal(
+    findings.find(({ id }) => id === "SEC-005")?.severity,
+    "High",
+    "native launch through workspace.reveal must remain classified as High",
+  );
+  assert.match(remediation, /SEC-005[\s\S]+SEC-010[\s\S]+SEC-011[\s\S]+SEC-004[\s\S]+SEC-001[\s\S]+SEC-016/);
 });
 
 test("final audit handoff contains a scoped remediation backlog for every finding", async () => {
