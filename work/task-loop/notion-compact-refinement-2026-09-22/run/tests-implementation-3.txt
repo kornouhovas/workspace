@@ -1,0 +1,1893 @@
+
+> workspace@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+not ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 11.846667
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/dashboardStructure.test.js:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /pt-7/. Input:
+    
+    'import {\n' +
+      '  useEffect,\n' +
+      '  useRef,\n' +
+      '  useState,\n' +
+      '  type CSSProperties,\n' +
+      '  type PointerEvent as ReactPointerEvent,\n' +
+      '} from "react";\n' +
+      '\n' +
+      'import {\n' +
+      '  DropdownMenu,\n' +
+      '  DropdownMenuContent,\n' +
+      '  DropdownMenuGroup,\n' +
+      '  DropdownMenuItem,\n' +
+      '  DropdownMenuSeparator,\n' +
+      '  DropdownMenuTrigger,\n' +
+      '} from "@/components/ui/dropdown-menu";\n' +
+      'import {\n' +
+      '  FolderIcon,\n' +
+      '  MoreHorizontalIcon,\n' +
+      '  PencilIcon,\n' +
+      '  PlusIcon,\n' +
+      '  SearchIcon,\n' +
+      '  SettingsIcon,\n' +
+      '  Trash2Icon,\n' +
+      '} from "@/lib/lucide-icons";\n' +
+      'import {\n' +
+      '  workspaceMenuContentClassName,\n' +
+      '  workspaceMenuDangerIconClassName,\n' +
+      '  workspaceMenuDangerItemClassName,\n' +
+      '  workspaceMenuIconClassName,\n' +
+      '  workspaceMenuItemClassName,\n' +
+      '  workspaceMenuSeparatorClassName,\n' +
+      '} from "@/components/workspace/menu-styles";\n' +
+      'import { useI18n } from "@/i18n";\n' +
+      'import { cn } from "@/lib/utils";\n' +
+      '\n' +
+      'type WorkspaceNavigationItem = {\n' +
+      '  readonly id: string;\n' +
+      '  readonly name: string;\n' +
+      '};\n' +
+      '\n' +
+      'type WorkspaceLeftPanelProps = {\n' +
+      '  readonly collapsed?: boolean;\n' +
+      '  readonly activeSurface: "workspace" | "settings";\n' +
+      '  readonly activeWorkspaceId: string | null;\n' +
+      '  readonly workspaces: readonly WorkspaceNavigationItem[];\n' +
+      '  readonly searchQuery: string;\n' +
+      '  readonly onAddWorkspace: () => void;\n' +
+      '  readonly onRenameWorkspace: (workspaceId: string, name: string) => void;\n' +
+      '  readonly onDeleteWorkspace: (workspaceId: string) => void;\n' +
+      '  readonly onReorderWorkspaces: (orderedWorkspaceIds: readonly string[]) => void;\n' +
+      '  readonly onWorkspaceOpen: (workspaceId: string) => void;\n' +
+      '  readonly onSearchQueryChange: (searchQuery: string) => void;\n' +
+      '  readonly onOpenSettings: () => void;\n' +
+      '};\n' +
+      '\n' +
+      'type WorkspaceDragPreviewRow = {\n' +
+      '  readonly workspaceId: string;\n' +
+      '  readonly top: number;\n' +
+      '  readonly height: number;\n' +
+      '};\n' +
+      '\n' +
+      'type WorkspacePointerDragState = {\n' +
+      '  readonly workspaceId: string;\n' +
+      '  readonly startY: number;\n' +
+      '  readonly currentY: number;\n' +
+      '  readonly dropIndex: number;\n' +
+      '  readonly rows: readonly WorkspaceDragPreviewRow[];\n' +
+      '};\n' +
+      '\n' +
+      'function getWorkspaceDragOrder(\n' +
+      '  orderedWorkspaceIds: readonly string[],\n' +
+      '  sourceWorkspaceId: string,\n' +
+      '  dropIndex: number,\n' +
+      ') {\n' +
+      '  const remainingWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) => workspaceId !== sourceWorkspaceId);\n' +
+      '  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingWorkspaceIds.length);\n' +
+      '  return [\n' +
+      '    ...remainingWorkspaceIds.slice(0, boundedDropIndex),\n' +
+      '    sourceWorkspaceId,\n' +
+      '    ...remainingWorkspaceIds.slice(boundedDropIndex),\n' +
+      '  ];\n' +
+      '}\n' +
+      '\n' +
+      'export function WorkspaceLeftPanel({\n' +
+      '  collapsed = false,\n' +
+      '  activeSurface,\n' +
+      '  activeWorkspaceId,\n' +
+      '  workspaces,\n' +
+      '  searchQuery,\n' +
+      '  onAddWorkspace,\n' +
+      '  onRenameWorkspace,\n' +
+      '  onDeleteWorkspace,\n' +
+      '  onReorderWorkspaces,\n' +
+      '  onWorkspaceOpen,\n' +
+      '  onSearchQueryChange,\n' +
+      '  onOpenSettings,\n' +
+      '}: WorkspaceLeftPanelProps) {\n' +
+      '  const { t } = useI18n();\n' +
+      '  const [workspaceDragState, setWorkspaceDragState] = useState<WorkspacePointerDragState | null>(null);\n' +
+      '  const [contextMenuWorkspaceId, setContextMenuWorkspaceId] = useState<string | null>(null);\n' +
+      '  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);\n' +
+      '  const [editingWorkspaceName, setEditingWorkspaceName] = useState("");\n' +
+      '  const editingWorkspaceInputRef = useRef<HTMLInputElement | null>(null);\n' +
+      '  const cancelWorkspaceRenameRef = useRef(false);\n' +
+      '  const suppressWorkspaceClickRef = useRef<string | null>(null);\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    if (editingWorkspaceId) {\n' +
+      '      editingWorkspaceInputRef.current?.focus();\n' +
+      '      editingWorkspaceInputRef.current?.select();\n' +
+      '    }\n' +
+      '  }, [editingWorkspaceId]);\n' +
+      '\n' +
+      '  function startRenameWorkspace(workspace: WorkspaceNavigationItem) {\n' +
+      '    cancelWorkspaceRenameRef.current = false;\n' +
+      '    setContextMenuWorkspaceId(null);\n' +
+      '    setEditingWorkspaceId(workspace.id);\n' +
+      '    setEditingWorkspaceName(workspace.name);\n' +
+      '  }\n' +
+      '\n' +
+      '  function submitWorkspaceRename(workspace: WorkspaceNavigationItem) {\n' +
+      '    if (cancelWorkspaceRenameRef.current) {\n' +
+      '      cancelWorkspaceRenameRef.current = false;\n' +
+      '      return;\n' +
+      '    }\n' +
+      '\n' +
+      '    const nextName = editingWorkspaceName.trim();\n' +
+      '    cancelWorkspaceRenameRef.current = true;\n' +
+      '    setEditingWorkspaceId(null);\n' +
+      '    setEditingWorkspaceName("");\n' +
+      '\n' +
+      '    if (nextName && nextName !== workspace.name) {\n' +
+      '      onRenameWorkspace(workspace.id, nextName);\n' +
+      '    }\n' +
+      '  }\n' +
+      '\n' +
+      '  function cancelWorkspaceRename() {\n' +
+      '    cancelWorkspaceRenameRef.current = true;\n' +
+      '    setEditingWorkspaceId(null);\n' +
+      '    setEditingWorkspaceName("");\n' +
+      '  }\n' +
+      '\n' +
+      '  function deleteWorkspace(workspace: WorkspaceNavigationItem) {\n' +
+      '    if (window.confirm(t("confirm.deleteWorkspace", { name: workspace.name }))) {\n' +
+      '      onDeleteWorkspace(workspace.id);\n' +
+      '    }\n' +
+      '  }\n' +
+      '\n' +
+      '  function getWorkspaceDragPreviewRows() {\n' +
+      '    return Array.from(document.querySelectorAll<HTMLElement>("[data-workspace-row-id]"))\n' +
+      '      .map((row) => {\n' +
+      '        const workspaceId = row.dataset.workspaceRowId;\n' +
+      '        const rect = row.getBoundingClientRect();\n' +
+      '\n' +
+      '        if (!workspaceId) {\n' +
+      '          return null;\n' +
+      '        }\n' +
+      '\n' +
+      '        return {\n' +
+      '          workspaceId,\n' +
+      '          top: rect.top,\n' +
+      '          height: rect.height,\n' +
+      '        };\n' +
+      '      })\n' +
+      '      .filter((row): row is WorkspaceDragPreviewRow => row !== null);\n' +
+      '  }\n' +
+      '\n' +
+      '  function findWorkspaceDragTarget(clientY: number, rows: readonly WorkspaceDragPreviewRow[]) {\n' +
+      '    let dropIndex = 0;\n' +
+      '\n' +
+      '    for (const row of rows) {\n' +
+      '      if (clientY >= row.top + row.height / 2) {\n' +
+      '        dropIndex += 1;\n' +
+      '      }\n' +
+      '    }\n' +
+      '\n' +
+      '    return dropIndex;\n' +
+      '  }\n' +
+      '\n' +
+      '  function findWorkspaceDropIndex(\n' +
+      '    clientY: number,\n' +
+      '    rows: readonly WorkspaceDragPreviewRow[],\n' +
+      '    sourceWorkspaceId: string,\n' +
+      '  ) {\n' +
+      '    return findWorkspaceDragTarget(\n' +
+      '      clientY,\n' +
+      '      rows.filter((row) => row.workspaceId !== sourceWorkspaceId),\n' +
+      '    );\n' +
+      '  }\n' +
+      '\n' +
+      '  function getWorkspaceDragTops(\n' +
+      '    orderedWorkspaceIds: readonly string[],\n' +
+      '    rows: readonly WorkspaceDragPreviewRow[],\n' +
+      '  ) {\n' +
+      '    const tops = new Map<string, number>();\n' +
+      '\n' +
+      '    orderedWorkspaceIds.forEach((workspaceId, index) => {\n' +
+      '      const row = rows[index];\n' +
+      '      if (row) {\n' +
+      '        tops.set(workspaceId, row.top);\n' +
+      '      }\n' +
+      '    });\n' +
+      '\n' +
+      '    return tops;\n' +
+      '  }\n' +
+      '\n' +
+      '  function getWorkspaceDragStyle(workspaceId: string): CSSProperties | undefined {\n' +
+      '    if (!workspaceDragState) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    const orderedWorkspaceIds = workspaces.map((workspace) => workspace.id);\n' +
+      '    const currentRow = workspaceDragState.rows.find((row) => row.workspaceId === workspaceId);\n' +
+      '\n' +
+      '    if (!currentRow || !orderedWorkspaceIds.includes(workspaceId)) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    if (workspaceId === workspaceDragState.workspaceId) {\n' +
+      '      return {\n' +
+      '        transform: `translateY(${workspaceDragState.currentY - workspaceDragState.startY}px)`,\n' +
+      '        transitionDuration: "0ms",\n' +
+      '        zIndex: 30,\n' +
+      '      };\n' +
+      '    }\n' +
+      '\n' +
+      '    const previewOrder = getWorkspaceDragOrder(\n' +
+      '      orderedWorkspaceIds,\n' +
+      '      workspaceDragState.workspaceId,\n' +
+      '      workspaceDragState.dropIndex,\n' +
+      '    );\n' +
+      '    const previewTops = getWorkspaceDragTops(previewOrder, workspaceDragState.rows);\n' +
+      '    const previewTop = previewTops.get(workspaceId);\n' +
+      '\n' +
+      '    if (previewTop === undefined) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    const offset = previewTop - currentRow.top;\n' +
+      '\n' +
+      '    if (Math.abs(offset) < 0.5) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    return {\n' +
+      '      transform: `translateY(${offset}px)`,\n' +
+      '      transitionDuration: "180ms",\n' +
+      '    };\n' +
+      '  }\n' +
+      '\n' +
+      '  function startPointerWorkspaceDrag(event: ReactPointerEvent<HTMLButtonElement>, workspaceId: string) {\n' +
+      '    if (event.button !== 0 || editingWorkspaceId === workspaceId) {\n' +
+      '      return;\n' +
+      '    }\n' +
+      '\n' +
+      '    event.stopPropagation();\n' +
+      '\n' +
+      '    const workspaceDragPreviewRows = getWorkspaceDragPreviewRows();\n' +
+      '    const previousCursor = document.body.style.cursor;\n' +
+      '    const previousUserSelect = document.body.style.userSelect;\n' +
+      '\n' +
+      '    document.body.style.cursor = "grabbing";\n' +
+      '    document.body.style.userSelect = "none";\n' +
+      '\n' +
+      '    let frameId = 0;\n' +
+      '    let pendingClientY = event.clientY;\n' +
+      '    let moved = false;\n' +
+      '\n' +
+      '    setContextMenuWorkspaceId(null);\n' +
+      '    setWorkspaceDragState({\n' +
+      '      workspaceId,\n' +
+      '      startY: event.clientY,\n' +
+      '      currentY: event.clientY,\n' +
+      '      dropIndex: findWorkspaceDropIndex(event.clientY, workspaceDragPreviewRows, workspaceId),\n' +
+      '      rows: workspaceDragPreviewRows,\n' +
+      '    });\n' +
+      '\n' +
+      '    function updateDraggedWorkspace() {\n' +
+      '      frameId = 0;\n' +
+      '\n' +
+      '      const dropIndex = findWorkspaceDropIndex(\n' +
+      '        pendingClientY,\n' +
+      '        workspaceDragPreviewRows,\n' +
+      '        workspaceId,\n' +
+      '      );\n' +
+      '\n' +
+      '      setWorkspaceDragState((currentDrag) => {\n' +
+      '        if (!currentDrag || currentDrag.workspaceId !== workspaceId) {\n' +
+      '          return currentDrag;\n' +
+      '        }\n' +
+      '\n' +
+      '        return {\n' +
+      '          ...currentDrag,\n' +
+      '          currentY: pendingClientY,\n' +
+      '          dropIndex,\n' +
+      '        };\n' +
+      '      });\n' +
+      '    }\n' +
+      '\n' +
+      '    function moveWorkspace(pointerEvent: PointerEvent) {\n' +
+      '      pendingClientY = pointerEvent.clientY;\n' +
+      '      moved ||= Math.abs(pointerEvent.clientY - event.clientY) > 4;\n' +
+      '\n' +
+      '      if (frameId === 0) {\n' +
+      '        frameId = window.requestAnimationFrame(updateDraggedWorkspace);\n' +
+      '      }\n' +
+      '    }\n' +
+      '\n' +
+      '    function finishWorkspaceDrag(pointerEvent: PointerEvent) {\n' +
+      '      const dropIndex = findWorkspaceDropIndex(\n' +
+      '        pointerEvent.clientY,\n' +
+      '        workspaceDragPreviewRows,\n' +
+      '        workspaceId,\n' +
+      '      );\n' +
+      '      const orderedWorkspaceIds = workspaceDragPreviewRows.map((row) => row.workspaceId);\n' +
+      '      const nextWorkspaceIds = getWorkspaceDragOrder(orderedWorkspaceIds, workspaceId, dropIndex);\n' +
+      '\n' +
+      '      document.body.style.cursor = previousCursor;\n' +
+      '      document.body.style.userSelect = previousUserSelect;\n' +
+      '      window.removeEventListener("pointermove", moveWorkspace);\n' +
+      '      window.cancelAnimationFrame(frameId);\n' +
+      '      window.removeEventListener("pointerup", finishWorkspaceDrag);\n' +
+      '      setWorkspaceDragState(null);\n' +
+      '\n' +
+      '      if (moved) {\n' +
+      '        suppressWorkspaceClickRef.current = workspaceId;\n' +
+      '        window.setTimeout(() => {\n' +
+      '          if (suppressWorkspaceClickRef.current === workspaceId) {\n' +
+      '            suppressWorkspaceClickRef.current = null;\n' +
+      '          }\n' +
+      '        }, 0);\n' +
+      '\n' +
+      '        if (nextWorkspaceIds.join("\\0") !== workspaces.map((workspace) => workspace.id).join("\\0")) {\n' +
+      '          onReorderWorkspaces(nextWorkspaceIds);\n' +
+      '        }\n' +
+      '      }\n' +
+      '    }\n' +
+      '\n' +
+      '    window.addEventListener("pointermove", moveWorkspace);\n' +
+      '    window.addEventListener("pointerup", finishWorkspace'... 8403 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import {
+      useEffect,
+      useRef,
+      useState,
+      type CSSProperties,
+      type PointerEvent as ReactPointerEvent,
+    } from "react";
+    
+    import {
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuSeparator,
+      DropdownMenuTrigger,
+    } from "@/components/ui/dropdown-menu";
+    import {
+      FolderIcon,
+      MoreHorizontalIcon,
+      PencilIcon,
+      PlusIcon,
+      SearchIcon,
+      SettingsIcon,
+      Trash2Icon,
+    } from "@/lib/lucide-icons";
+    import {
+      workspaceMenuContentClassName,
+      workspaceMenuDangerIconClassName,
+      workspaceMenuDangerItemClassName,
+      workspaceMenuIconClassName,
+      workspaceMenuItemClassName,
+      workspaceMenuSeparatorClassName,
+    } from "@/components/workspace/menu-styles";
+    import { useI18n } from "@/i18n";
+    import { cn } from "@/lib/utils";
+    
+    type WorkspaceNavigationItem = {
+      readonly id: string;
+      readonly name: string;
+    };
+    
+    type WorkspaceLeftPanelProps = {
+      readonly collapsed?: boolean;
+      readonly activeSurface: "workspace" | "settings";
+      readonly activeWorkspaceId: string | null;
+      readonly workspaces: readonly WorkspaceNavigationItem[];
+      readonly searchQuery: string;
+      readonly onAddWorkspace: () => void;
+      readonly onRenameWorkspace: (workspaceId: string, name: string) => void;
+      readonly onDeleteWorkspace: (workspaceId: string) => void;
+      readonly onReorderWorkspaces: (orderedWorkspaceIds: readonly string[]) => void;
+      readonly onWorkspaceOpen: (workspaceId: string) => void;
+      readonly onSearchQueryChange: (searchQuery: string) => void;
+      readonly onOpenSettings: () => void;
+    };
+    
+    type WorkspaceDragPreviewRow = {
+      readonly workspaceId: string;
+      readonly top: number;
+      readonly height: number;
+    };
+    
+    type WorkspacePointerDragState = {
+      readonly workspaceId: string;
+      readonly startY: number;
+      readonly currentY: number;
+      readonly dropIndex: number;
+      readonly rows: readonly WorkspaceDragPreviewRow[];
+    };
+    
+    function getWorkspaceDragOrder(
+      orderedWorkspaceIds: readonly string[],
+      sourceWorkspaceId: string,
+      dropIndex: number,
+    ) {
+      const remainingWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) => workspaceId !== sourceWorkspaceId);
+      const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingWorkspaceIds.length);
+      return [
+        ...remainingWorkspaceIds.slice(0, boundedDropIndex),
+        sourceWorkspaceId,
+        ...remainingWorkspaceIds.slice(boundedDropIndex),
+      ];
+    }
+    
+    export function WorkspaceLeftPanel({
+      collapsed = false,
+      activeSurface,
+      activeWorkspaceId,
+      workspaces,
+      searchQuery,
+      onAddWorkspace,
+      onRenameWorkspace,
+      onDeleteWorkspace,
+      onReorderWorkspaces,
+      onWorkspaceOpen,
+      onSearchQueryChange,
+      onOpenSettings,
+    }: WorkspaceLeftPanelProps) {
+      const { t } = useI18n();
+      const [workspaceDragState, setWorkspaceDragState] = useState<WorkspacePointerDragState | null>(null);
+      const [contextMenuWorkspaceId, setContextMenuWorkspaceId] = useState<string | null>(null);
+      const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
+      const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
+      const editingWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
+      const cancelWorkspaceRenameRef = useRef(false);
+      const suppressWorkspaceClickRef = useRef<string | null>(null);
+    
+      useEffect(() => {
+        if (editingWorkspaceId) {
+          editingWorkspaceInputRef.current?.focus();
+          editingWorkspaceInputRef.current?.select();
+        }
+      }, [editingWorkspaceId]);
+    
+      function startRenameWorkspace(workspace: WorkspaceNavigationItem) {
+        cancelWorkspaceRenameRef.current = false;
+        setContextMenuWorkspaceId(null);
+        setEditingWorkspaceId(workspace.id);
+        setEditingWorkspaceName(workspace.name);
+      }
+    
+      function submitWorkspaceRename(workspace: WorkspaceNavigationItem) {
+        if (cancelWorkspaceRenameRef.current) {
+          cancelWorkspaceRenameRef.current = false;
+          return;
+        }
+    
+        const nextName = editingWorkspaceName.trim();
+        cancelWorkspaceRenameRef.current = true;
+        setEditingWorkspaceId(null);
+        setEditingWorkspaceName("");
+    
+        if (nextName && nextName !== workspace.name) {
+          onRenameWorkspace(workspace.id, nextName);
+        }
+      }
+    
+      function cancelWorkspaceRename() {
+        cancelWorkspaceRenameRef.current = true;
+        setEditingWorkspaceId(null);
+        setEditingWorkspaceName("");
+      }
+    
+      function deleteWorkspace(workspace: WorkspaceNavigationItem) {
+        if (window.confirm(t("confirm.deleteWorkspace", { name: workspace.name }))) {
+          onDeleteWorkspace(workspace.id);
+        }
+      }
+    
+      function getWorkspaceDragPreviewRows() {
+        return Array.from(document.querySelectorAll<HTMLElement>("[data-workspace-row-id]"))
+          .map((row) => {
+            const workspaceId = row.dataset.workspaceRowId;
+            const rect = row.getBoundingClientRect();
+    
+            if (!workspaceId) {
+              return null;
+            }
+    
+            return {
+              workspaceId,
+              top: rect.top,
+              height: rect.height,
+            };
+          })
+          .filter((row): row is WorkspaceDragPreviewRow => row !== null);
+      }
+    
+      function findWorkspaceDragTarget(clientY: number, rows: readonly WorkspaceDragPreviewRow[]) {
+        let dropIndex = 0;
+    
+        for (const row of rows) {
+          if (clientY >= row.top + row.height / 2) {
+            dropIndex += 1;
+          }
+        }
+    
+        return dropIndex;
+      }
+    
+      function findWorkspaceDropIndex(
+        clientY: number,
+        rows: readonly WorkspaceDragPreviewRow[],
+        sourceWorkspaceId: string,
+      ) {
+        return findWorkspaceDragTarget(
+          clientY,
+          rows.filter((row) => row.workspaceId !== sourceWorkspaceId),
+        );
+      }
+    
+      function getWorkspaceDragTops(
+        orderedWorkspaceIds: readonly string[],
+        rows: readonly WorkspaceDragPreviewRow[],
+      ) {
+        const tops = new Map<string, number>();
+    
+        orderedWorkspaceIds.forEach((workspaceId, index) => {
+          const row = rows[index];
+          if (row) {
+            tops.set(workspaceId, row.top);
+          }
+        });
+    
+        return tops;
+      }
+    
+      function getWorkspaceDragStyle(workspaceId: string): CSSProperties | undefined {
+        if (!workspaceDragState) {
+          return undefined;
+        }
+    
+        const orderedWorkspaceIds = workspaces.map((workspace) => workspace.id);
+        const currentRow = workspaceDragState.rows.find((row) => row.workspaceId === workspaceId);
+    
+        if (!currentRow || !orderedWorkspaceIds.includes(workspaceId)) {
+          return undefined;
+        }
+    
+        if (workspaceId === workspaceDragState.workspaceId) {
+          return {
+            transform: `translateY(${workspaceDragState.currentY - workspaceDragState.startY}px)`,
+            transitionDuration: "0ms",
+            zIndex: 30,
+          };
+        }
+    
+        const previewOrder = getWorkspaceDragOrder(
+          orderedWorkspaceIds,
+          workspaceDragState.workspaceId,
+          workspaceDragState.dropIndex,
+        );
+        const previewTops = getWorkspaceDragTops(previewOrder, workspaceDragState.rows);
+        const previewTop = previewTops.get(workspaceId);
+    
+        if (previewTop === undefined) {
+          return undefined;
+        }
+    
+        const offset = previewTop - currentRow.top;
+    
+        if (Math.abs(offset) < 0.5) {
+          return undefined;
+        }
+    
+        return {
+          transform: `translateY(${offset}px)`,
+          transitionDuration: "180ms",
+        };
+      }
+    
+      function startPointerWorkspaceDrag(event: ReactPointerEvent<HTMLButtonElement>, workspaceId: string) {
+        if (event.button !== 0 || editingWorkspaceId === workspaceId) {
+          return;
+        }
+    
+        event.stopPropagation();
+    
+        const workspaceDragPreviewRows = getWorkspaceDragPreviewRows();
+        const previousCursor = document.body.style.cursor;
+        const previousUserSelect = document.body.style.userSelect;
+    
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+    
+        let frameId = 0;
+        let pendingClientY = event.clientY;
+        let moved = false;
+    
+        setContextMenuWorkspaceId(null);
+        setWorkspaceDragState({
+          workspaceId,
+          startY: event.clientY,
+          currentY: event.clientY,
+          dropIndex: findWorkspaceDropIndex(event.clientY, workspaceDragPreviewRows, workspaceId),
+          rows: workspaceDragPreviewRows,
+        });
+    
+        function updateDraggedWorkspace() {
+          frameId = 0;
+    
+          const dropIndex = findWorkspaceDropIndex(
+            pendingClientY,
+            workspaceDragPreviewRows,
+            workspaceId,
+          );
+    
+          setWorkspaceDragState((currentDrag) => {
+            if (!currentDrag || currentDrag.workspaceId !== workspaceId) {
+              return currentDrag;
+            }
+    
+            return {
+              ...currentDrag,
+              currentY: pendingClientY,
+              dropIndex,
+            };
+          });
+        }
+    
+        function moveWorkspace(pointerEvent: PointerEvent) {
+          pendingClientY = pointerEvent.clientY;
+          moved ||= Math.abs(pointerEvent.clientY - event.clientY) > 4;
+    
+          if (frameId === 0) {
+            frameId = window.requestAnimationFrame(updateDraggedWorkspace);
+          }
+        }
+    
+        function finishWorkspaceDrag(pointerEvent: PointerEvent) {
+          const dropIndex = findWorkspaceDropIndex(
+            pointerEvent.clientY,
+            workspaceDragPreviewRows,
+            workspaceId,
+          );
+          const orderedWorkspaceIds = workspaceDragPreviewRows.map((row) => row.workspaceId);
+          const nextWorkspaceIds = getWorkspaceDragOrder(orderedWorkspaceIds, workspaceId, dropIndex);
+    
+          document.body.style.cursor = previousCursor;
+          document.body.style.userSelect = previousUserSelect;
+          window.removeEventListener("pointermove", moveWorkspace);
+          window.cancelAnimationFrame(frameId);
+          window.removeEventListener("pointerup", finishWorkspaceDrag);
+          setWorkspaceDragState(null);
+    
+          if (moved) {
+            suppressWorkspaceClickRef.current = workspaceId;
+            window.setTimeout(() => {
+              if (suppressWorkspaceClickRef.current === workspaceId) {
+                suppressWorkspaceClickRef.current = null;
+              }
+            }, 0);
+    
+            if (nextWorkspaceIds.join("\0") !== workspaces.map((workspace) => workspace.id).join("\0")) {
+              onReorderWorkspaces(nextWorkspaceIds);
+            }
+          }
+        }
+    
+        window.addEventListener("pointermove", moveWorkspace);
+        window.addEventListener("pointerup", finishWorkspaceDrag, { once: true });
+      }
+    
+      function openWorkspace(workspaceId: string) {
+        if (suppressWorkspaceClickRef.current === workspaceId) {
+          suppressWorkspaceClickRef.current = null;
+          return;
+        }
+    
+        onWorkspaceOpen(workspaceId);
+      }
+    
+      return (
+        <aside className="workspace-sidebar flex h-full w-[var(--workspace-sidebar-width)] shrink-0 flex-col border-r border-border bg-sidebar">
+          <div className={`mr-10 min-h-[var(--workspace-header-height)] ${collapsed ? "" : "electron-window-drag"}`} />
+          <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1">
+            <button
+              type="button"
+              className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-md border border-border bg-card px-2.5 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              title={t("sidebar.addWorkspace")}
+              onClick={onAddWorkspace}
+            >
+              <PlusIcon className="size-4" aria-hidden="true" />
+              {t("sidebar.addWorkspace")}
+            </button>
+            <label className="grid gap-1 text-xs text-muted-foreground">
+              <span className="sr-only">{t("sidebar.search")}</span>
+              <span className="relative block">
+                <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className="h-8 w-full rounded-md border border-input bg-card pl-8 pr-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
+                  value={searchQuery}
+                  onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
+                  placeholder={t("sidebar.searchPlaceholder")}
+                  type="search"
+                />
+              </span>
+            </label>
+            <div className="h-px bg-border" />
+            <div className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
+              <p className="px-1 text-xs font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
+              {workspaces.map((workspace) => {
+                const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
+                const editing = editingWorkspaceId === workspace.id;
+    
+                return (
+                  <div
+                    key={workspace.id}
+                    data-workspace-row-id={workspace.id}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setContextMenuWorkspaceId(workspace.id);
+                    }}
+                    className={cn(
+                      "group/workspace relative flex items-center gap-1 rounded-lg transition-colors duration-100",
+                      active && "bg-sidebar-accent",
+                      workspaceDragState && "transition-transform ease-out",
+                    )}
+                    style={getWorkspaceDragStyle(workspace.id)}
+                  >
+                    {editing ? (
+                      <form
+                        className="min-w-0 flex-1"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          submitWorkspaceRename(workspace);
+                        }}
+                      >
+                        <input
+                          ref={editingWorkspaceInputRef}
+                          aria-label={t("sidebar.renameWorkspaceInput")}
+                          className="h-8 w-full rounded-md border border-ring bg-background px-2.5 text-sm text-foreground outline-none ring-2 ring-ring/30"
+                          value={editingWorkspaceName}
+                          onChange={(event) => setEditingWorkspaceName(event.currentTarget.value)}
+                          onBlur={() => submitWorkspaceRename(workspace)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              event.preventDefault();
+                              cancelWorkspaceRename();
+                            }
+                          }}
+                        />
+                      </form>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "inline-flex h-8 min-w-0 flex-1 cursor-grab items-center justify-start gap-2 rounded-md px-2.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                            active && "text-sidebar-accent-foreground",
+                          )}
+                          title={workspace.name}
+                          onPointerDown={(event) => startPointerWorkspaceDrag(event, workspace.id)}
+                          onClick={() => openWorkspace(workspace.id)}
+                        >
+                          <FolderIcon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden="true" />
+                          <span className="truncate">{workspace.name}</span>
+                        </button>
+                        <DropdownMenu
+                          open={contextMenuWorkspaceId === workspace.id}
+                          onOpenChange={(open) => setContextMenuWorkspaceId(open ? workspace.id : null)}
+                        >
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className={cn("inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100", active && "opacity-100")}
+                              aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
+                              title={t("sidebar.workspaceActions", { name: workspace.name })}
+                            >
+                              <MoreHorizontalIcon className="size-4" aria-hidden="true" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className={cn(workspaceMenuContentClassName, "min-w-52")}>
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem
+                                className={workspaceMenuItemClassName}
+                                onSelect={() => startRenameWorkspace(workspace)}
+                              >
+                                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                                {t("sidebar.renameWorkspace")}
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem
+                                className={workspaceMenuDangerItemClassName}
+                                variant="destructive"
+                                onSelect={() => deleteWorkspace(workspace)}
+                              >
+                                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                                {t("sidebar.deleteWorkspace")}
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-auto shrink-0 pt-1">
+              <button
+                type="button"
+                aria-current={activeSurface === "settings" ? "page" : undefined}
+                className={cn(
+                  "inline-flex h-8 w-full items-center justify-start gap-2 rounded-md px-2.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  activeSurface === "settings" && "bg-sidebar-accent text-sidebar-accent-foreground",
+                )}
+                title={t("sidebar.settings")}
+                onClick={onOpenSettings}
+              >
+                <SettingsIcon className="size-4" aria-hidden="true" />
+                {t("sidebar.settings")}
+              </button>
+            </div>
+          </div>
+        </aside>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/dashboardStructure.test.js:264:10)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: third party notices document any-store MIT license
+ok 2 - third party notices document any-store MIT license
+  ---
+  duration_ms: 4.360292
+  ...
+# Subtest: agent instructions define the spec-first Codex workflow
+ok 3 - agent instructions define the spec-first Codex workflow
+  ---
+  duration_ms: 2.321041
+  ...
+# Subtest: duplicates board settings, inserts beside source and activates copy
+ok 4 - duplicates board settings, inserts beside source and activates copy
+  ---
+  duration_ms: 1.171208
+  ...
+# Subtest: duplicates table settings, inserts beside source and activates copy
+ok 5 - duplicates table settings, inserts beside source and activates copy
+  ---
+  duration_ms: 0.185667
+  ...
+# Subtest: failure removes the partial copy and restores the previous active view
+ok 6 - failure removes the partial copy and restores the previous active view
+  ---
+  duration_ms: 0.356875
+  ...
+# Subtest: listDirectFolders returns only direct directory entries sorted by name
+ok 7 - listDirectFolders returns only direct directory entries sorted by name
+  ---
+  duration_ms: 8.851542
+  ...
+# Subtest: filterFolders matches folder names case-insensitively
+ok 8 - filterFolders matches folder names case-insensitively
+  ---
+  duration_ms: 0.11825
+  ...
+# Subtest: listFolderEntries returns visible folders first then visible files for a nested folder path
+ok 9 - listFolderEntries returns visible folders first then visible files for a nested folder path
+  ---
+  duration_ms: 0.657625
+  ...
+# Subtest: listStatusCards uses root child folders as statuses and their child folders as cards
+ok 10 - listStatusCards uses root child folders as statuses and their child folders as cards
+  ---
+  duration_ms: 0.48725
+  ...
+# Subtest: listFolderAccessTree recursively builds access rules for nested folders
+ok 11 - listFolderAccessTree recursively builds access rules for nested folders
+  ---
+  duration_ms: 0.4525
+  ...
+# Subtest: listFolderAccessTree treats explicitly configured card folders as scan leaves
+ok 12 - listFolderAccessTree treats explicitly configured card folders as scan leaves
+  ---
+  duration_ms: 0.108167
+  ...
+# Subtest: listFolderAccessTree creates distinct ids for Cyrillic folder paths
+ok 13 - listFolderAccessTree creates distinct ids for Cyrillic folder paths
+  ---
+  duration_ms: 0.484875
+  ...
+# Subtest: flattenAccessTreeCards uses status folders as statuses and skips status containers
+ok 14 - flattenAccessTreeCards uses status folders as statuses and skips status containers
+  ---
+  duration_ms: 0.136292
+  ...
+# Subtest: flattenAccessTreeCards treats group folders as transparent storage containers
+ok 15 - flattenAccessTreeCards treats group folders as transparent storage containers
+  ---
+  duration_ms: 0.185417
+  ...
+# Subtest: flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+ok 16 - flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+  ---
+  duration_ms: 0.171417
+  ...
+# Subtest: card dates use the detail editor locale format without UTC conversion
+ok 17 - card dates use the detail editor locale format without UTC conversion
+  ---
+  duration_ms: 14.2145
+  ...
+# Subtest: duplicate view names interpolate the source title in both locales
+ok 18 - duplicate view names interpolate the source title in both locales
+  ---
+  duration_ms: 0.785625
+  ...
+# Subtest: normalizes unsupported locales to English
+ok 19 - normalizes unsupported locales to English
+  ---
+  duration_ms: 0.067375
+  ...
+# Subtest: English and Russian catalogs have the same keys
+ok 20 - English and Russian catalogs have the same keys
+  ---
+  duration_ms: 0.473542
+  ...
+# Subtest: all statically referenced renderer translation keys exist
+ok 21 - all statically referenced renderer translation keys exist
+  ---
+  duration_ms: 61.902833
+  ...
+# Subtest: dynamic renderer translation keys exist in both catalogs
+ok 22 - dynamic renderer translation keys exist in both catalogs
+  ---
+  duration_ms: 0.219583
+  ...
+# Subtest: localized renderer surfaces do not contain app-owned English UI literals
+ok 23 - localized renderer surfaces do not contain app-owned English UI literals
+  ---
+  duration_ms: 11.358042
+  ...
+# Subtest: translates interpolation and Russian plural forms
+ok 24 - translates interpolation and Russian plural forms
+  ---
+  duration_ms: 0.4465
+  ...
+# Subtest: falls back to the English catalog and then to the key
+ok 25 - falls back to the English catalog and then to the key
+  ---
+  duration_ms: 0.12875
+  ...
+# Subtest: reads and writes locale preferences without failing when storage is unavailable
+ok 26 - reads and writes locale preferences without failing when storage is unavailable
+  ---
+  duration_ms: 0.222167
+  ...
+# Subtest: localizes only the stable app-owned no-status value
+ok 27 - localizes only the stable app-owned no-status value
+  ---
+  duration_ms: 0.1625
+  ...
+# Subtest: re-resolves app-owned errors after a locale switch and preserves backend messages
+ok 28 - re-resolves app-owned errors after a locale switch and preserves backend messages
+  ---
+  duration_ms: 0.119875
+  ...
+# Subtest: resolveWorkspacePath only allows relative paths inside the workspace root
+ok 29 - resolveWorkspacePath only allows relative paths inside the workspace root
+  ---
+  duration_ms: 1.916125
+  ...
+# Subtest: getMacOpenCommand opens folders and files in macOS
+ok 30 - getMacOpenCommand opens folders and files in macOS
+  ---
+  duration_ms: 2.623708
+  ...
+# Subtest: isPreviewablePath recognizes browser preview file types
+ok 31 - isPreviewablePath recognizes browser preview file types
+  ---
+  duration_ms: 0.338542
+  ...
+# Subtest: createRevealResponse validates path, kind, and existing item before spawning
+ok 32 - createRevealResponse validates path, kind, and existing item before spawning
+  ---
+  duration_ms: 5.013083
+  ...
+# Subtest: resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+ok 33 - resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+  ---
+  duration_ms: 3.550958
+  ...
+# Subtest: compact shell keeps native controls, workspace identity, and content on one stable row
+ok 34 - compact shell keeps native controls, workspace identity, and content on one stable row
+  ---
+  duration_ms: 3.737875
+  ...
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+ok 35 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 1.32425
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+ok 36 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 1.795125
+  ...
+# Subtest: tabs and shared workspace menus use the compact component scale
+ok 37 - tabs and shared workspace menus use the compact component scale
+  ---
+  duration_ms: 1.01525
+  ...
+# Subtest: renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+ok 38 - renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+  ---
+  duration_ms: 30.347125
+  ...
+# Subtest: workspace runs as an Electron-only app shell
+ok 39 - workspace runs as an Electron-only app shell
+  ---
+  duration_ms: 8.155958
+  ...
+# Subtest: legacy browser dev server is not shipped
+ok 40 - legacy browser dev server is not shipped
+  ---
+  duration_ms: 0.574208
+  ...
+# Subtest: createSidecarHttpTransport maps service methods to sidecar routes
+ok 41 - createSidecarHttpTransport maps service methods to sidecar routes
+  ---
+  duration_ms: 2.521583
+  ...
+# Subtest: createSidecarHttpTransport returns parsed response JSON
+ok 42 - createSidecarHttpTransport returns parsed response JSON
+  ---
+  duration_ms: 0.113375
+  ...
+# Subtest: createSidecarHttpTransport throws sidecar error messages
+ok 43 - createSidecarHttpTransport throws sidecar error messages
+  ---
+  duration_ms: 0.269916
+  ...
+# Subtest: createSidecarHttpTransport rejects unsupported service methods
+ok 44 - createSidecarHttpTransport rejects unsupported service methods
+  ---
+  duration_ms: 0.162709
+  ...
+# Subtest: workspace app state represents a missing source folder
+ok 45 - workspace app state represents a missing source folder
+  ---
+  duration_ms: 94.235042
+  ...
+# Subtest: workspace app state stores loaded service projection responses
+ok 46 - workspace app state stores loaded service projection responses
+  ---
+  duration_ms: 55.965083
+  ...
+# Subtest: workspace app state stores custom property catalog responses
+ok 47 - workspace app state stores custom property catalog responses
+  ---
+  duration_ms: 28.630709
+  ...
+# Subtest: workspace app state refreshes visible property labels from catalog without clearing projection
+ok 48 - workspace app state refreshes visible property labels from catalog without clearing projection
+  ---
+  duration_ms: 25.138417
+  ...
+# Subtest: workspace app state updates visible view properties without clearing projection rows
+ok 49 - workspace app state updates visible view properties without clearing projection rows
+  ---
+  duration_ms: 18.651875
+  ...
+# Subtest: workspace app state updates view value visibility without clearing projection rows
+ok 50 - workspace app state updates view value visibility without clearing projection rows
+  ---
+  duration_ms: 15.887417
+  ...
+# Subtest: workspace app state updates view property layout without clearing projection rows
+ok 51 - workspace app state updates view property layout without clearing projection rows
+  ---
+  duration_ms: 15.100458
+  ...
+# Subtest: workspace app state previews Board column width without clearing projection columns
+ok 52 - workspace app state previews Board column width without clearing projection columns
+  ---
+  duration_ms: 13.217667
+  ...
+# Subtest: workspace app state removes a deleted property from catalog and projections
+ok 53 - workspace app state removes a deleted property from catalog and projections
+  ---
+  duration_ms: 15.257917
+  ...
+# Subtest: workspace app state applies project property value updates without closing details
+ok 54 - workspace app state applies project property value updates without closing details
+  ---
+  duration_ms: 15.156792
+  ...
+# Subtest: workspace app state stores property save errors without clearing projection data
+ok 55 - workspace app state stores property save errors without clearing projection data
+  ---
+  duration_ms: 10.038458
+  ...
+# Subtest: workspace app state stores selected root before projection loading completes
+ok 56 - workspace app state stores selected root before projection loading completes
+  ---
+  duration_ms: 16.443458
+  ...
+# Subtest: workspace app state keeps current workspace content visible while another workspace loads
+ok 57 - workspace app state keeps current workspace content visible while another workspace loads
+  ---
+  duration_ms: 9.405292
+  ...
+# Subtest: workspace app state keeps current view state as a stale visual surface when another workspace is activated
+ok 58 - workspace app state keeps current view state as a stale visual surface when another workspace is activated
+  ---
+  duration_ms: 9.459
+  ...
+# Subtest: workspace app state stores service errors
+ok 59 - workspace app state stores service errors
+  ---
+  duration_ms: 9.701042
+  ...
+# Subtest: workspace app state updates search query without changing service responses
+ok 60 - workspace app state updates search query without changing service responses
+  ---
+  duration_ms: 7.892
+  ...
+# Subtest: workspace app state updates projection without returning to loading
+ok 61 - workspace app state updates projection without returning to loading
+  ---
+  duration_ms: 10.128667
+  ...
+# Subtest: workspace app state ignores projection updates for stale workspace or view
+ok 62 - workspace app state ignores projection updates for stale workspace or view
+  ---
+  duration_ms: 8.490583
+  ...
+# Subtest: workspace app state ignores full projection loads after workspace or view changes
+ok 63 - workspace app state ignores full projection loads after workspace or view changes
+  ---
+  duration_ms: 10.331292
+  ...
+# Subtest: workspace app state switches the active view
+ok 64 - workspace app state switches the active view
+  ---
+  duration_ms: 8.590625
+  ...
+# Subtest: workspace app state ignores older property save completions for the same cell
+ok 65 - workspace app state ignores older property save completions for the same cell
+  ---
+  duration_ms: 8.270375
+  ...
+# Subtest: workspace app state adds a created view to only the active workspace state
+ok 66 - workspace app state adds a created view to only the active workspace state
+  ---
+  duration_ms: 10.104167
+  ...
+# Subtest: workspace app state ignores a created view for another workspace
+ok 67 - workspace app state ignores a created view for another workspace
+  ---
+  duration_ms: 8.284833
+  ...
+# Subtest: workspace app state renames a loaded view locally
+ok 68 - workspace app state renames a loaded view locally
+  ---
+  duration_ms: 12.604791
+  ...
+# Subtest: workspace app state reorders loaded views locally
+ok 69 - workspace app state reorders loaded views locally
+  ---
+  duration_ms: 8.135833
+  ...
+# Subtest: workspace projection search filter narrows board and table locally by project name
+ok 70 - workspace projection search filter narrows board and table locally by project name
+  ---
+  duration_ms: 8.227584
+  ...
+# Subtest: workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+ok 71 - workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+  ---
+  duration_ms: 0.689083
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+ok 72 - readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+  ---
+  duration_ms: 11.930542
+  ...
+# Subtest: workspace backend uses existing .workspace settings over legacy settings without overwriting it
+ok 73 - workspace backend uses existing .workspace settings over legacy settings without overwriting it
+  ---
+  duration_ms: 6.623292
+  ...
+# Subtest: readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+ok 74 - readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+  ---
+  duration_ms: 4.406916
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+ok 75 - readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+  ---
+  duration_ms: 3.594666
+  ...
+# Subtest: readWorkspaceSettings custom path without .workspace does not read default legacy settings
+ok 76 - readWorkspaceSettings custom path without .workspace does not read default legacy settings
+  ---
+  duration_ms: 8.790375
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+ok 77 - readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+  ---
+  duration_ms: 4.732125
+  ...
+# Subtest: readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+ok 78 - readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+  ---
+  duration_ms: 5.871167
+  ...
+# Subtest: writeWorkspaceSettings preserves corrupt existing settings before replacing them
+ok 79 - writeWorkspaceSettings preserves corrupt existing settings before replacing them
+  ---
+  duration_ms: 5.895583
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+ok 80 - readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+  ---
+  duration_ms: 4.957834
+  ...
+# Subtest: readWorkspaceProperties custom path without .workspace does not read default legacy properties
+ok 81 - readWorkspaceProperties custom path without .workspace does not read default legacy properties
+  ---
+  duration_ms: 6.849875
+  ...
+# Subtest: createSelectRootResponse saves the selected backend root
+ok 82 - createSelectRootResponse saves the selected backend root
+  ---
+  duration_ms: 13.412916
+  ...
+# Subtest: createScanResponse builds access tree and cards from saved root
+ok 83 - createScanResponse builds access tree and cards from saved root
+  ---
+  duration_ms: 25.68125
+  ...
+# Subtest: createScanResponse can include card descendants for settings folder role configuration
+ok 84 - createScanResponse can include card descendants for settings folder role configuration
+  ---
+  duration_ms: 8.257125
+  ...
+# Subtest: createScanResponse does not expose legacy text as a default card property
+ok 85 - createScanResponse does not expose legacy text as a default card property
+  ---
+  duration_ms: 9.443209
+  ...
+# Subtest: createProjectFileTreeResponse returns a selected project folder tree on demand
+ok 86 - createProjectFileTreeResponse returns a selected project folder tree on demand
+  ---
+  duration_ms: 5.598125
+  ...
+# Subtest: createPropertiesResponse requires an explicit user property id
+ok 87 - createPropertiesResponse requires an explicit user property id
+  ---
+  duration_ms: 5.442083
+  ...
+# Subtest: createPropertiesResponse validates custom properties without overwriting text json
+ok 88 - createPropertiesResponse validates custom properties without overwriting text json
+  ---
+  duration_ms: 6.557958
+  ...
+# Subtest: createPropertiesResponse rejects properties outside workspace root
+ok 89 - createPropertiesResponse rejects properties outside workspace root
+  ---
+  duration_ms: 4.282583
+  ...
+# Subtest: createListEntriesResponse returns visible folders first then files
+ok 90 - createListEntriesResponse returns visible folders first then files
+  ---
+  duration_ms: 5.344458
+  ...
+# Subtest: createListEntriesResponse can list the selected root folder
+ok 91 - createListEntriesResponse can list the selected root folder
+  ---
+  duration_ms: 3.2365
+  ...
+# Subtest: createFileResponse streams previewable files inside root
+ok 92 - createFileResponse streams previewable files inside root
+  ---
+  duration_ms: 7.405375
+  ...
+# Subtest: createFileResponse rejects symlink previews outside root
+ok 93 - createFileResponse rejects symlink previews outside root
+  ---
+  duration_ms: 5.087834
+  ...
+# Subtest: workspace backend rejects paths outside root
+ok 94 - workspace backend rejects paths outside root
+  ---
+  duration_ms: 4.332375
+  ...
+# Subtest: createCreateViewResponse creates a default active Board view
+ok 95 - createCreateViewResponse creates a default active Board view
+  ---
+  duration_ms: 1.128291
+  ...
+# Subtest: createListViewsResponse preserves explicit view property visibility while normalizing defaults
+ok 96 - createListViewsResponse preserves explicit view property visibility while normalizing defaults
+  ---
+  duration_ms: 0.259667
+  ...
+# Subtest: createReorderViewsResponse updates orders and preserves active view
+ok 97 - createReorderViewsResponse updates orders and preserves active view
+  ---
+  duration_ms: 0.288916
+  ...
+# Subtest: createReorderViewsResponse rejects invalid view orders without mutation
+    # Subtest: duplicate active id
+    ok 1 - duplicate active id
+      ---
+      duration_ms: 0.208125
+      ...
+    # Subtest: missing active id
+    ok 2 - missing active id
+      ---
+      duration_ms: 0.075375
+      ...
+    # Subtest: extra foreign id
+    ok 3 - extra foreign id
+      ---
+      duration_ms: 0.061875
+      ...
+    # Subtest: deleted id
+    ok 4 - deleted id
+      ---
+      duration_ms: 0.079917
+      ...
+    # Subtest: missing payload
+    ok 5 - missing payload
+      ---
+      duration_ms: 0.146208
+      ...
+    # Subtest: non-array payload
+    ok 6 - non-array payload
+      ---
+      duration_ms: 0.065958
+      ...
+    1..6
+ok 98 - createReorderViewsResponse rejects invalid view orders without mutation
+  ---
+  duration_ms: 1.015875
+  ...
+# Subtest: createSetActiveViewResponse rejects missing foreign and deleted views
+ok 99 - createSetActiveViewResponse rejects missing foreign and deleted views
+  ---
+  duration_ms: 0.161416
+  ...
+# Subtest: createSetActiveViewResponse saves a valid active view
+ok 100 - createSetActiveViewResponse saves a valid active view
+  ---
+  duration_ms: 0.093125
+  ...
+# Subtest: createUpdateViewResponse validates patch references and saves normalized updated view
+ok 101 - createUpdateViewResponse validates patch references and saves normalized updated view
+  ---
+  duration_ms: 0.559958
+  ...
+# Subtest: createUpdateViewResponse forbids invalid view patches
+ok 102 - createUpdateViewResponse forbids invalid view patches
+  ---
+  duration_ms: 0.097167
+  ...
+# Subtest: createUpdateViewResponse rejects property order for hidden properties
+ok 103 - createUpdateViewResponse rejects property order for hidden properties
+  ---
+  duration_ms: 0.164625
+  ...
+# Subtest: createDeleteViewResponse blocks deleting the last non-deleted view
+ok 104 - createDeleteViewResponse blocks deleting the last non-deleted view
+  ---
+  duration_ms: 0.11125
+  ...
+# Subtest: createDeleteViewResponse soft-deletes a non-last active view and switches active view
+ok 105 - createDeleteViewResponse soft-deletes a non-last active view and switches active view
+  ---
+  duration_ms: 0.123042
+  ...
+# Subtest: createViewProjectionResponse projects board and table views with async providers
+ok 106 - createViewProjectionResponse projects board and table views with async providers
+  ---
+  duration_ms: 0.454667
+  ...
+# Subtest: createViewProjectionResponse rejects missing active view when view id is omitted
+ok 107 - createViewProjectionResponse rejects missing active view when view id is omitted
+  ---
+  duration_ms: 0.058917
+  ...
+# Subtest: normalizeBoardColumnWidth applies default and persisted bounds
+ok 108 - normalizeBoardColumnWidth applies default and persisted bounds
+  ---
+  duration_ms: 1.005416
+  ...
+# Subtest: getBoardColumnWidthMax limits the slider to one third of the Workspace area
+ok 109 - getBoardColumnWidthMax limits the slider to one third of the Workspace area
+  ---
+  duration_ms: 0.090791
+  ...
+# Subtest: loadWorkspaceList falls back when workspace list API is unsupported
+ok 110 - loadWorkspaceList falls back when workspace list API is unsupported
+  ---
+  duration_ms: 64.341167
+  ...
+# Subtest: loadWorkspaceList rethrows non-compatibility workspace list errors
+ok 111 - loadWorkspaceList rethrows non-compatibility workspace list errors
+  ---
+  duration_ms: 22.196708
+  ...
+# Subtest: addWorkspaceListFallback appends and activates a local workspace
+ok 112 - addWorkspaceListFallback appends and activates a local workspace
+  ---
+  duration_ms: 14.260834
+  ...
+# Subtest: addWorkspaceListFallback uses plain Workspace as the default local name
+ok 113 - addWorkspaceListFallback uses plain Workspace as the default local name
+  ---
+  duration_ms: 10.149041
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+ok 114 - reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+  ---
+  duration_ms: 47.205125
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+ok 115 - reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+  ---
+  duration_ms: 6.899292
+  ...
+# Subtest: reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+ok 116 - reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+  ---
+  duration_ms: 13.518917
+  ...
+# Subtest: mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+ok 117 - mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+  ---
+  duration_ms: 4.180417
+  ...
+# Subtest: workspace IPC handler returns null when source folder is not selected
+ok 118 - workspace IPC handler returns null when source folder is not selected
+  ---
+  duration_ms: 9.4815
+  ...
+# Subtest: workspace IPC handler surfaces corrupt settings JSON without overwriting it
+ok 119 - workspace IPC handler surfaces corrupt settings JSON without overwriting it
+  ---
+  duration_ms: 7.356375
+  ...
+# Subtest: workspace IPC handler surfaces corrupt views JSON without overwriting it
+ok 120 - workspace IPC handler surfaces corrupt views JSON without overwriting it
+  ---
+  duration_ms: 6.852042
+  ...
+# Subtest: workspace IPC handler serves default views and projection for selected source folder
+ok 121 - workspace IPC handler serves default views and projection for selected source folder
+  ---
+  duration_ms: 58.373208
+  ...
+# Subtest: workspace IPC handler preserves table views that hide Status
+ok 122 - workspace IPC handler preserves table views that hide Status
+  ---
+  duration_ms: 34.297042
+  ...
+# Subtest: workspace IPC handler tolerates concurrent default workspace initialization
+ok 123 - workspace IPC handler tolerates concurrent default workspace initialization
+  ---
+  duration_ms: 58.628916
+  ...
+# Subtest: workspace IPC handler tolerates concurrent root selection across process handlers
+ok 124 - workspace IPC handler tolerates concurrent root selection across process handlers
+  ---
+  duration_ms: 73.165292
+  ...
+# Subtest: workspace IPC handler repairs a stale active view when selecting a root
+ok 125 - workspace IPC handler repairs a stale active view when selecting a root
+  ---
+  duration_ms: 72.788333
+  ...
+# Subtest: workspace IPC handler persists folder role rules for scans and projections
+ok 126 - workspace IPC handler persists folder role rules for scans and projections
+  ---
+  duration_ms: 53.026375
+  ...
+# Subtest: workspace IPC handler keeps Cyrillic status values distinct
+ok 127 - workspace IPC handler keeps Cyrillic status values distinct
+  ---
+  duration_ms: 16.860875
+  ...
+# Subtest: workspace IPC handler creates renames reorders and deletes workspaces
+ok 128 - workspace IPC handler creates renames reorders and deletes workspaces
+  ---
+  duration_ms: 29.747167
+  ...
+# Subtest: workspace IPC handler uses plain Workspace as the default created workspace name
+ok 129 - workspace IPC handler uses plain Workspace as the default created workspace name
+  ---
+  duration_ms: 8.485584
+  ...
+# Subtest: workspace IPC handler does not recreate a deleted default source workspace
+ok 130 - workspace IPC handler does not recreate a deleted default source workspace
+  ---
+  duration_ms: 16.644625
+  ...
+# Subtest: workspace IPC handler persists view state outside the process handler instance
+ok 131 - workspace IPC handler persists view state outside the process handler instance
+  ---
+  duration_ms: 8.348709
+  ...
+# Subtest: workspace IPC handler persists custom properties and projects them into views
+ok 132 - workspace IPC handler persists custom properties and projects them into views
+  ---
+  duration_ms: 33.670625
+  ...
+# Subtest: workspace IPC handler renames system property labels without changing system semantics
+ok 133 - workspace IPC handler renames system property labels without changing system semantics
+  ---
+  duration_ms: 11.287833
+  ...
+# Subtest: workspace IPC handler creates duplicate property names as distinct id-backed properties
+ok 134 - workspace IPC handler creates duplicate property names as distinct id-backed properties
+  ---
+  duration_ms: 12.914042
+  ...
+# Subtest: workspace IPC handler persists derived status value colors
+ok 135 - workspace IPC handler persists derived status value colors
+  ---
+  duration_ms: 11.528208
+  ...
+# Subtest: workspace IPC handler shares object properties across workspaces for the same source folder
+ok 136 - workspace IPC handler shares object properties across workspaces for the same source folder
+  ---
+  duration_ms: 25.575333
+  ...
+# Subtest: workspace IPC handler deletes custom properties from values and source views
+ok 137 - workspace IPC handler deletes custom properties from values and source views
+  ---
+  duration_ms: 36.060875
+  ...
+# Subtest: createFolderObjectId creates stable workspace-scoped slugs from folder paths
+ok 138 - createFolderObjectId creates stable workspace-scoped slugs from folder paths
+  ---
+  duration_ms: 1.268584
+  ...
+# Subtest: createFolderObjectId keeps distinct paths with the same readable slug unique
+ok 139 - createFolderObjectId keeps distinct paths with the same readable slug unique
+  ---
+  duration_ms: 0.15425
+  ...
+# Subtest: createPropertyValueId combines object and property identifiers
+ok 140 - createPropertyValueId combines object and property identifiers
+  ---
+  duration_ms: 0.069709
+  ...
+# Subtest: projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+ok 141 - projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+  ---
+  duration_ms: 0.5485
+  ...
+# Subtest: readSystemPropertyValue returns derived system values
+ok 142 - readSystemPropertyValue returns derived system values
+  ---
+  duration_ms: 1.791791
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 143 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 1.269875
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 144 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.18375
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 145 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.198542
+  ...
+# Subtest: duplicate is inserted immediately after its source, preserving surrounding tabs
+ok 146 - duplicate is inserted immediately after its source, preserving surrounding tabs
+  ---
+  duration_ms: 1.291458
+  ...
+# Subtest: duplicates have independent identities while sharing project updates
+ok 147 - duplicates have independent identities while sharing project updates
+  ---
+  duration_ms: 0.23725
+  ...
+# Subtest: reordering keeps every project once and leaves other workspaces unchanged
+ok 148 - reordering keeps every project once and leaves other workspaces unchanged
+  ---
+  duration_ms: 0.092333
+  ...
+# Subtest: expanded projects accumulate without duplicates and remain isolated by workspace
+ok 149 - expanded projects accumulate without duplicates and remain isolated by workspace
+  ---
+  duration_ms: 0.402709
+  ...
+# Subtest: refreshing an open tab preserves edits but never recreates a closed or restored tab
+ok 150 - refreshing an open tab preserves edits but never recreates a closed or restored tab
+  ---
+  duration_ms: 1.243208
+  ...
+# Subtest: a save completing after switching projects refreshes the original tab only
+ok 151 - a save completing after switching projects refreshes the original tab only
+  ---
+  duration_ms: 0.143875
+  ...
+# Subtest: propertyTypeIds lists supported property types in storage order
+ok 152 - propertyTypeIds lists supported property types in storage order
+  ---
+  duration_ms: 0.933041
+  ...
+# Subtest: isSystemPropertyId recognizes immutable system property ids
+ok 153 - isSystemPropertyId recognizes immutable system property ids
+  ---
+  duration_ms: 0.076959
+  ...
+# Subtest: createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+ok 154 - createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+  ---
+  duration_ms: 0.229458
+  ...
+# Subtest: normalizePropertyValue normalizes text values
+ok 155 - normalizePropertyValue normalizes text values
+  ---
+  duration_ms: 0.077375
+  ...
+# Subtest: normalizePropertyValue normalizes number values
+ok 156 - normalizePropertyValue normalizes number values
+  ---
+  duration_ms: 0.089791
+  ...
+# Subtest: normalizePropertyValue preserves number expressions with computed values
+ok 157 - normalizePropertyValue preserves number expressions with computed values
+  ---
+  duration_ms: 0.43775
+  ...
+# Subtest: normalizePropertyValue normalizes date values
+ok 158 - normalizePropertyValue normalizes date values
+  ---
+  duration_ms: 0.133666
+  ...
+# Subtest: normalizePropertyValue normalizes select values
+ok 159 - normalizePropertyValue normalizes select values
+  ---
+  duration_ms: 0.063125
+  ...
+# Subtest: normalizePropertyValue normalizes multi-select values
+ok 160 - normalizePropertyValue normalizes multi-select values
+  ---
+  duration_ms: 0.151792
+  ...
+# Subtest: normalizePropertySchema preserves select config and normalizes options
+ok 161 - normalizePropertySchema preserves select config and normalizes options
+  ---
+  duration_ms: 0.265542
+  ...
+# Subtest: normalizePropertySchema filters invalid select options
+ok 162 - normalizePropertySchema filters invalid select options
+  ---
+  duration_ms: 0.092959
+  ...
+# Subtest: normalizePropertySchema clones nested non-select config objects
+ok 163 - normalizePropertySchema clones nested non-select config objects
+  ---
+  duration_ms: 0.074542
+  ...
+# Subtest: normalizePropertySchema falls back unknown types to text
+ok 164 - normalizePropertySchema falls back unknown types to text
+  ---
+  duration_ms: 0.197667
+  ...
+# Subtest: normalizePropertyDefinition rejects unsupported custom property types
+ok 165 - normalizePropertyDefinition rejects unsupported custom property types
+  ---
+  duration_ms: 0.985667
+  ...
+# Subtest: normalizePropertyDefinition marks system properties immutable but preserves display names
+ok 166 - normalizePropertyDefinition marks system properties immutable but preserves display names
+  ---
+  duration_ms: 0.128417
+  ...
+# Subtest: normalizePropertyDefinition normalizes custom properties
+ok 167 - normalizePropertyDefinition normalizes custom properties
+  ---
+  duration_ms: 0.187625
+  ...
+# Subtest: normalizeSelectValue normalizes select value documents
+ok 168 - normalizeSelectValue normalizes select value documents
+  ---
+  duration_ms: 0.175875
+  ...
+# Subtest: normalizeProjectPropertyValue validates type-specific project values
+ok 169 - normalizeProjectPropertyValue validates type-specific project values
+  ---
+  duration_ms: 0.860625
+  ...
+# Subtest: normalizeProjectPropertyValue rejects invalid select references and system properties
+ok 170 - normalizeProjectPropertyValue rejects invalid select references and system properties
+  ---
+  duration_ms: 0.111708
+  ...
+# Subtest: file property store surfaces corrupt JSON and preserves the file on write attempts
+ok 171 - file property store surfaces corrupt JSON and preserves the file on write attempts
+  ---
+  duration_ms: 4.457917
+  ...
+# Subtest: renderer workspace transport delegates to window.workspace.request
+ok 172 - renderer workspace transport delegates to window.workspace.request
+  ---
+  duration_ms: 27.156791
+  ...
+# Subtest: renderer workspace transport rejects missing preload bridge
+ok 173 - renderer workspace transport rejects missing preload bridge
+  ---
+  duration_ms: 3.962958
+  ...
+# Subtest: WorkspaceServiceClient sends named service methods through transport
+ok 174 - WorkspaceServiceClient sends named service methods through transport
+  ---
+  duration_ms: 2.867958
+  ...
+# Subtest: WorkspaceServiceClient constructor rejects missing transport.request
+ok 175 - WorkspaceServiceClient constructor rejects missing transport.request
+  ---
+  duration_ms: 0.308
+  ...
+# Subtest: createNextVisiblePropertyIds removes stale property ids when showing a property
+ok 176 - createNextVisiblePropertyIds removes stale property ids when showing a property
+  ---
+  duration_ms: 1.008166
+  ...
+# Subtest: createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+ok 177 - createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+  ---
+  duration_ms: 0.088209
+  ...
+# Subtest: createPropertyOrder stores stable ten-step ordering
+ok 178 - createPropertyOrder stores stable ten-step ordering
+  ---
+  duration_ms: 0.145
+  ...
+# Subtest: createDefaultView creates Board and Table views with default system properties
+ok 179 - createDefaultView creates Board and Table views with default system properties
+  ---
+  duration_ms: 1.194958
+  ...
+# Subtest: createDefaultView rejects invalid view types
+ok 180 - createDefaultView rejects invalid view types
+  ---
+  duration_ms: 0.23525
+  ...
+# Subtest: normalizeViewDocument preserves known fields and visible property order after Name
+ok 181 - normalizeViewDocument preserves known fields and visible property order after Name
+  ---
+  duration_ms: 0.199417
+  ...
+# Subtest: normalizeViewDocument stores text wrap layout as a view setting
+ok 182 - normalizeViewDocument stores text wrap layout as a view setting
+  ---
+  duration_ms: 0.117
+  ...
+# Subtest: normalizeViewDocument stores a bounded Board column width
+ok 183 - normalizeViewDocument stores a bounded Board column width
+  ---
+  duration_ms: 0.099
+  ...
+# Subtest: validateViewPatch rejects Board column widths outside the persisted range
+ok 184 - validateViewPatch rejects Board column widths outside the persisted range
+  ---
+  duration_ms: 0.267708
+  ...
+# Subtest: validateViewPatch accepts text wrap layout for active text properties
+ok 185 - validateViewPatch accepts text wrap layout for active text properties
+  ---
+  duration_ms: 0.117458
+  ...
+# Subtest: validateViewPatch rejects text wrap layout for non-text properties
+ok 186 - validateViewPatch rejects text wrap layout for non-text properties
+  ---
+  duration_ms: 1.274667
+  ...
+# Subtest: validateViewPatch rejects removing the required Name property
+ok 187 - validateViewPatch rejects removing the required Name property
+  ---
+  duration_ms: 0.534042
+  ...
+# Subtest: validateViewPatch allows hiding the system Status property
+ok 188 - validateViewPatch allows hiding the system Status property
+  ---
+  duration_ms: 0.232291
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside visible properties
+ok 189 - validateViewPatch rejects propertyOrder keys outside visible properties
+  ---
+  duration_ms: 0.11875
+  ...
+# Subtest: validateViewPatch allows propertyOrder-only patches for active custom properties
+ok 190 - validateViewPatch allows propertyOrder-only patches for active custom properties
+  ---
+  duration_ms: 0.075875
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside active properties
+ok 191 - validateViewPatch rejects propertyOrder keys outside active properties
+  ---
+  duration_ms: 0.078625
+  ...
+# Subtest: validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+ok 192 - validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+  ---
+  duration_ms: 0.16125
+  ...
+# Subtest: filterProjectsForView applies search by Name only and select value filters
+ok 193 - filterProjectsForView applies search by Name only and select value filters
+  ---
+  duration_ms: 0.281334
+  ...
+# Subtest: filterProjectsForView supports system Status filters and No status
+ok 194 - filterProjectsForView supports system Status filters and No status
+  ---
+  duration_ms: 0.250417
+  ...
+# Subtest: filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+ok 195 - filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+  ---
+  duration_ms: 0.104584
+  ...
+# Subtest: createViewProjection returns board columns and table rows from the same filtered project set
+ok 196 - createViewProjection returns board columns and table rows from the same filtered project set
+  ---
+  duration_ms: 0.37775
+  ...
+# Subtest: createViewProjection omits empty board columns while value filters are active
+ok 197 - createViewProjection omits empty board columns while value filters are active
+  ---
+  duration_ms: 0.213208
+  ...
+# Subtest: createViewProjection adds No status column when matching projects have no status
+ok 198 - createViewProjection adds No status column when matching projects have no status
+  ---
+  duration_ms: 0.160666
+  ...
+1..198
+# tests 204
+# suites 0
+# pass 203
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 904.015417

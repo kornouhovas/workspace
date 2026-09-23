@@ -1,0 +1,15 @@
+{
+  "tag": "BUTTON",
+  "text": "Вернуться в Workspace",
+  "aria": null,
+  "focusVisible": true,
+  "rect": {
+    "x": 838,
+    "y": 17.5,
+    "width": 170,
+    "height": 28
+  },
+  "outlineStyle": "solid",
+  "outlineWidth": "1.5px",
+  "boxShadow": "none"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "notion-compact-native-after-capture-unavailable",
+  "scenario": "native-visual-acceptance",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run",
+  "phase": "evaluating",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "source": "Executor CoreGraphics/main-process recovery evidence, coordinator root CUA attempt and independent verifier report",
+  "symptom": "The required post-change full-window Electron screenshots could not be captured: the isolated window remained a 148x151 Stage Manager thumbnail and root exact-path CUA failed with ScreenCaptureKit -3811 before bind/raise.",
+  "summary": "Renderer and functional evidence are valid, but the predeclared native traffic-light/full-frame checks cannot be decided. Resume only when the latest isolated Electron window can be brought to the foreground or an environment with working macOS screen capture can capture the exact app at both requested sizes. Repeating the same CUA call or using a schema-invalid macOS window-id selector is not a distinct recovery route.",
+  "basis": "observed",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-attempt-errors.md",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-window-list-pid13188-after-inspector.txt",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/verifier-attempt-1/report.md"
+  ]
+}

@@ -1,0 +1,703 @@
+[
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-variable-board-1440x960.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1440x960.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-final-expanded-1440x960.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1440x960.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-expanded-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-expanded-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-collapsed-board-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-collapsed-board-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-collapsed-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-collapsed-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-collapsed-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-collapsed-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-expanded-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-long-name-many-tabs-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-long-name-many-tabs-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-long-name-many-tabs-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-long-name-many-tabs-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-scroll-filter-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-scroll-filter-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-scroll-filter-final-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-scroll-filter-final-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-scroll-filter-final-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-scroll-filter-final-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-filtered-empty-columns-1440x960.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1440x960.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-filtered-empty-columns-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-expanded-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-settings-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-settings-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-settings-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-settings-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-long-name-many-tabs-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-long-name-many-tabs-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-long-name-many-tabs-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-long-name-many-tabs-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-variable-board-*.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1024x720.png",
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1440x960.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-table-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-table-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-settings-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-settings-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-open-tab-context-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-open-tab-context-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-final-expanded-*.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1440x960.png",
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-focus-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-focus-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-expanded-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-board-scroll-filter-final-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-scroll-filter-final-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-click-table-tab-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-click-table-tab-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-table-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-table-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-create-many-tabs-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-create-many-tabs-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-project-tab-actions-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-project-tab-actions-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-reload-persistence-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-reload-persistence-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-set-text-property-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-set-text-property-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-property-persistence-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-property-persistence-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-no-results-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-no-results-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "renderer-after-no-results-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-no-results-1024x720.png"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-key-tab-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-key-tab-result.json"
+    ]
+  },
+  {
+    "source": "final-evidence-map.md",
+    "ref": "cdp-probe-focus-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-focus-result.json"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-npm-test-2.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-npm-test-2.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-typecheck.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-typecheck.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-build-renderer.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-build-renderer.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-git-diff-check.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-git-diff-check.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-link-check.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-link-check.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "red-notion-compact-layout.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "red-empty-board-columns.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/red-empty-board-columns.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "green-empty-board-columns.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/green-empty-board-columns.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "green-workspace-backend-empty-columns.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/green-workspace-backend-empty-columns.txt"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "final-evidence-map.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-evidence-map.md"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "root-cua-attempt-2026-09-23.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md"
+    ]
+  },
+  {
+    "source": "final-quality-summary.md",
+    "ref": "native-capture-attempt-errors.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-attempt-errors.md"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "main-restore-window-flags-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/main-restore-window-flags-result.json"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "main-show-window-1440-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/main-show-window-1440-result.json"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "main-steal-focus-window-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/main-steal-focus-window-result.json"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "main-force-visible-window-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/main-force-visible-window-result.json"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "main-restore-window-flags-result.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/main-restore-window-flags-result.json"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "raise-native-window-pid10313.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/raise-native-window-pid10313.txt"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "native-window-list-pid13188-after-inspector.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-window-list-pid13188-after-inspector.txt"
+    ]
+  },
+  {
+    "source": "native-capture-attempt-errors.md",
+    "ref": "root-cua-attempt-2026-09-23.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "freeze-manifest-attempt-1.json",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/freeze-manifest-attempt-1.json"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "acceptance-matrix.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/acceptance-matrix.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-evidence-map.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-evidence-map.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "root-cua-attempt-2026-09-23.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-quality-summary.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-quality-summary.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-npm-test-2.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-npm-test-2.txt"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-typecheck.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-typecheck.txt"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-build-renderer.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-build-renderer.txt"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-git-diff-check.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-git-diff-check.txt"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "acceptance-matrix.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/acceptance-matrix.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "final-evidence-map.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/final-evidence-map.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "design-qa.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/design-qa.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "native-capture-attempt-errors.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-attempt-errors.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "native-capture-plan.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-plan.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "root-cua-attempt-2026-09-23.md",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "native-window-list-pid13188-after-inspector.txt",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/native-window-list-pid13188-after-inspector.txt"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-variable-board-*.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1024x720.png",
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1440x960.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-final-expanded-*.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1440x960.png",
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-collapsed-board-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-collapsed-board-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-filtered-empty-columns-*.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1440x960.png",
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-long-name-many-tabs-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-long-name-many-tabs-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-table-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-table-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "renderer-after-settings-1024x720.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-settings-1024x720.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "comparison-board-reference-vs-renderer.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/comparison-board-reference-vs-renderer.png"
+    ]
+  },
+  {
+    "source": "verifier-request-attempt-1.md",
+    "ref": "comparison-expanded-reference-vs-renderer.png",
+    "exists": true,
+    "matches": [
+      "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/comparison-expanded-reference-vs-renderer.png"
+    ]
+  }
+]

@@ -1,0 +1,1035 @@
+
+> workspace@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 27.0275
+  ...
+# Subtest: third party notices document any-store MIT license
+ok 2 - third party notices document any-store MIT license
+  ---
+  duration_ms: 5.419416
+  ...
+# Subtest: agent instructions define the spec-first Codex workflow
+ok 3 - agent instructions define the spec-first Codex workflow
+  ---
+  duration_ms: 2.896125
+  ...
+# Subtest: duplicates board settings, inserts beside source and activates copy
+ok 4 - duplicates board settings, inserts beside source and activates copy
+  ---
+  duration_ms: 1.190791
+  ...
+# Subtest: duplicates table settings, inserts beside source and activates copy
+ok 5 - duplicates table settings, inserts beside source and activates copy
+  ---
+  duration_ms: 0.188584
+  ...
+# Subtest: failure removes the partial copy and restores the previous active view
+ok 6 - failure removes the partial copy and restores the previous active view
+  ---
+  duration_ms: 0.359459
+  ...
+# Subtest: listDirectFolders returns only direct directory entries sorted by name
+ok 7 - listDirectFolders returns only direct directory entries sorted by name
+  ---
+  duration_ms: 8.586375
+  ...
+# Subtest: filterFolders matches folder names case-insensitively
+ok 8 - filterFolders matches folder names case-insensitively
+  ---
+  duration_ms: 0.106458
+  ...
+# Subtest: listFolderEntries returns visible folders first then visible files for a nested folder path
+ok 9 - listFolderEntries returns visible folders first then visible files for a nested folder path
+  ---
+  duration_ms: 0.435
+  ...
+# Subtest: listStatusCards uses root child folders as statuses and their child folders as cards
+ok 10 - listStatusCards uses root child folders as statuses and their child folders as cards
+  ---
+  duration_ms: 0.360833
+  ...
+# Subtest: listFolderAccessTree recursively builds access rules for nested folders
+ok 11 - listFolderAccessTree recursively builds access rules for nested folders
+  ---
+  duration_ms: 0.477042
+  ...
+# Subtest: listFolderAccessTree treats explicitly configured card folders as scan leaves
+ok 12 - listFolderAccessTree treats explicitly configured card folders as scan leaves
+  ---
+  duration_ms: 0.105333
+  ...
+# Subtest: listFolderAccessTree creates distinct ids for Cyrillic folder paths
+ok 13 - listFolderAccessTree creates distinct ids for Cyrillic folder paths
+  ---
+  duration_ms: 0.482667
+  ...
+# Subtest: flattenAccessTreeCards uses status folders as statuses and skips status containers
+ok 14 - flattenAccessTreeCards uses status folders as statuses and skips status containers
+  ---
+  duration_ms: 0.136333
+  ...
+# Subtest: flattenAccessTreeCards treats group folders as transparent storage containers
+ok 15 - flattenAccessTreeCards treats group folders as transparent storage containers
+  ---
+  duration_ms: 0.18075
+  ...
+# Subtest: flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+ok 16 - flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+  ---
+  duration_ms: 0.179959
+  ...
+# Subtest: card dates use the detail editor locale format without UTC conversion
+ok 17 - card dates use the detail editor locale format without UTC conversion
+  ---
+  duration_ms: 13.511
+  ...
+# Subtest: duplicate view names interpolate the source title in both locales
+ok 18 - duplicate view names interpolate the source title in both locales
+  ---
+  duration_ms: 0.750583
+  ...
+# Subtest: normalizes unsupported locales to English
+ok 19 - normalizes unsupported locales to English
+  ---
+  duration_ms: 0.067541
+  ...
+# Subtest: English and Russian catalogs have the same keys
+ok 20 - English and Russian catalogs have the same keys
+  ---
+  duration_ms: 0.460292
+  ...
+# Subtest: all statically referenced renderer translation keys exist
+ok 21 - all statically referenced renderer translation keys exist
+  ---
+  duration_ms: 49.250792
+  ...
+# Subtest: dynamic renderer translation keys exist in both catalogs
+ok 22 - dynamic renderer translation keys exist in both catalogs
+  ---
+  duration_ms: 0.207041
+  ...
+# Subtest: localized renderer surfaces do not contain app-owned English UI literals
+ok 23 - localized renderer surfaces do not contain app-owned English UI literals
+  ---
+  duration_ms: 12.052416
+  ...
+# Subtest: translates interpolation and Russian plural forms
+ok 24 - translates interpolation and Russian plural forms
+  ---
+  duration_ms: 0.425958
+  ...
+# Subtest: falls back to the English catalog and then to the key
+ok 25 - falls back to the English catalog and then to the key
+  ---
+  duration_ms: 0.127375
+  ...
+# Subtest: reads and writes locale preferences without failing when storage is unavailable
+ok 26 - reads and writes locale preferences without failing when storage is unavailable
+  ---
+  duration_ms: 0.221417
+  ...
+# Subtest: localizes only the stable app-owned no-status value
+ok 27 - localizes only the stable app-owned no-status value
+  ---
+  duration_ms: 0.164916
+  ...
+# Subtest: re-resolves app-owned errors after a locale switch and preserves backend messages
+ok 28 - re-resolves app-owned errors after a locale switch and preserves backend messages
+  ---
+  duration_ms: 0.118916
+  ...
+# Subtest: resolveWorkspacePath only allows relative paths inside the workspace root
+ok 29 - resolveWorkspacePath only allows relative paths inside the workspace root
+  ---
+  duration_ms: 0.965
+  ...
+# Subtest: getMacOpenCommand opens folders and files in macOS
+ok 30 - getMacOpenCommand opens folders and files in macOS
+  ---
+  duration_ms: 0.971583
+  ...
+# Subtest: isPreviewablePath recognizes browser preview file types
+ok 31 - isPreviewablePath recognizes browser preview file types
+  ---
+  duration_ms: 0.131083
+  ...
+# Subtest: createRevealResponse validates path, kind, and existing item before spawning
+ok 32 - createRevealResponse validates path, kind, and existing item before spawning
+  ---
+  duration_ms: 4.417166
+  ...
+# Subtest: resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+ok 33 - resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+  ---
+  duration_ms: 1.966459
+  ...
+# Subtest: compact shell keeps native controls, workspace identity, and content on one stable row
+ok 34 - compact shell keeps native controls, workspace identity, and content on one stable row
+  ---
+  duration_ms: 4.114334
+  ...
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+ok 35 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 1.358666
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+ok 36 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 1.321416
+  ...
+# Subtest: tabs and shared workspace menus use the compact component scale
+ok 37 - tabs and shared workspace menus use the compact component scale
+  ---
+  duration_ms: 0.998167
+  ...
+# Subtest: renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+ok 38 - renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+  ---
+  duration_ms: 28.55525
+  ...
+# Subtest: workspace runs as an Electron-only app shell
+ok 39 - workspace runs as an Electron-only app shell
+  ---
+  duration_ms: 9.142084
+  ...
+# Subtest: legacy browser dev server is not shipped
+ok 40 - legacy browser dev server is not shipped
+  ---
+  duration_ms: 0.540583
+  ...
+# Subtest: createSidecarHttpTransport maps service methods to sidecar routes
+ok 41 - createSidecarHttpTransport maps service methods to sidecar routes
+  ---
+  duration_ms: 2.572333
+  ...
+# Subtest: createSidecarHttpTransport returns parsed response JSON
+ok 42 - createSidecarHttpTransport returns parsed response JSON
+  ---
+  duration_ms: 0.124417
+  ...
+# Subtest: createSidecarHttpTransport throws sidecar error messages
+ok 43 - createSidecarHttpTransport throws sidecar error messages
+  ---
+  duration_ms: 0.449166
+  ...
+# Subtest: createSidecarHttpTransport rejects unsupported service methods
+ok 44 - createSidecarHttpTransport rejects unsupported service methods
+  ---
+  duration_ms: 0.234209
+  ...
+# Subtest: workspace app state represents a missing source folder
+ok 45 - workspace app state represents a missing source folder
+  ---
+  duration_ms: 85.092834
+  ...
+# Subtest: workspace app state stores loaded service projection responses
+ok 46 - workspace app state stores loaded service projection responses
+  ---
+  duration_ms: 39.951208
+  ...
+# Subtest: workspace app state stores custom property catalog responses
+ok 47 - workspace app state stores custom property catalog responses
+  ---
+  duration_ms: 26.693375
+  ...
+# Subtest: workspace app state refreshes visible property labels from catalog without clearing projection
+ok 48 - workspace app state refreshes visible property labels from catalog without clearing projection
+  ---
+  duration_ms: 26.558
+  ...
+# Subtest: workspace app state updates visible view properties without clearing projection rows
+ok 49 - workspace app state updates visible view properties without clearing projection rows
+  ---
+  duration_ms: 16.10275
+  ...
+# Subtest: workspace app state updates view value visibility without clearing projection rows
+ok 50 - workspace app state updates view value visibility without clearing projection rows
+  ---
+  duration_ms: 15.691167
+  ...
+# Subtest: workspace app state updates view property layout without clearing projection rows
+ok 51 - workspace app state updates view property layout without clearing projection rows
+  ---
+  duration_ms: 15.684542
+  ...
+# Subtest: workspace app state previews Board column width without clearing projection columns
+ok 52 - workspace app state previews Board column width without clearing projection columns
+  ---
+  duration_ms: 15.764583
+  ...
+# Subtest: workspace app state removes a deleted property from catalog and projections
+ok 53 - workspace app state removes a deleted property from catalog and projections
+  ---
+  duration_ms: 22.991125
+  ...
+# Subtest: workspace app state applies project property value updates without closing details
+ok 54 - workspace app state applies project property value updates without closing details
+  ---
+  duration_ms: 14.061208
+  ...
+# Subtest: workspace app state stores property save errors without clearing projection data
+ok 55 - workspace app state stores property save errors without clearing projection data
+  ---
+  duration_ms: 9.944
+  ...
+# Subtest: workspace app state stores selected root before projection loading completes
+ok 56 - workspace app state stores selected root before projection loading completes
+  ---
+  duration_ms: 8.851084
+  ...
+# Subtest: workspace app state keeps current workspace content visible while another workspace loads
+ok 57 - workspace app state keeps current workspace content visible while another workspace loads
+  ---
+  duration_ms: 10.572584
+  ...
+# Subtest: workspace app state keeps current view state as a stale visual surface when another workspace is activated
+ok 58 - workspace app state keeps current view state as a stale visual surface when another workspace is activated
+  ---
+  duration_ms: 9.635083
+  ...
+# Subtest: workspace app state stores service errors
+ok 59 - workspace app state stores service errors
+  ---
+  duration_ms: 11.168167
+  ...
+# Subtest: workspace app state updates search query without changing service responses
+ok 60 - workspace app state updates search query without changing service responses
+  ---
+  duration_ms: 9.424667
+  ...
+# Subtest: workspace app state updates projection without returning to loading
+ok 61 - workspace app state updates projection without returning to loading
+  ---
+  duration_ms: 9.023833
+  ...
+# Subtest: workspace app state ignores projection updates for stale workspace or view
+ok 62 - workspace app state ignores projection updates for stale workspace or view
+  ---
+  duration_ms: 10.709375
+  ...
+# Subtest: workspace app state ignores full projection loads after workspace or view changes
+ok 63 - workspace app state ignores full projection loads after workspace or view changes
+  ---
+  duration_ms: 8.345916
+  ...
+# Subtest: workspace app state switches the active view
+ok 64 - workspace app state switches the active view
+  ---
+  duration_ms: 10.909292
+  ...
+# Subtest: workspace app state ignores older property save completions for the same cell
+ok 65 - workspace app state ignores older property save completions for the same cell
+  ---
+  duration_ms: 8.497333
+  ...
+# Subtest: workspace app state adds a created view to only the active workspace state
+ok 66 - workspace app state adds a created view to only the active workspace state
+  ---
+  duration_ms: 8.235041
+  ...
+# Subtest: workspace app state ignores a created view for another workspace
+ok 67 - workspace app state ignores a created view for another workspace
+  ---
+  duration_ms: 10.435583
+  ...
+# Subtest: workspace app state renames a loaded view locally
+ok 68 - workspace app state renames a loaded view locally
+  ---
+  duration_ms: 8.096041
+  ...
+# Subtest: workspace app state reorders loaded views locally
+ok 69 - workspace app state reorders loaded views locally
+  ---
+  duration_ms: 9.690916
+  ...
+# Subtest: workspace projection search filter narrows board and table locally by project name
+ok 70 - workspace projection search filter narrows board and table locally by project name
+  ---
+  duration_ms: 8.197458
+  ...
+# Subtest: workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+ok 71 - workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+  ---
+  duration_ms: 0.780625
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+ok 72 - readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+  ---
+  duration_ms: 13.735667
+  ...
+# Subtest: workspace backend uses existing .workspace settings over legacy settings without overwriting it
+ok 73 - workspace backend uses existing .workspace settings over legacy settings without overwriting it
+  ---
+  duration_ms: 6.143166
+  ...
+# Subtest: readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+ok 74 - readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+  ---
+  duration_ms: 3.980542
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+ok 75 - readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+  ---
+  duration_ms: 6.002791
+  ...
+# Subtest: readWorkspaceSettings custom path without .workspace does not read default legacy settings
+ok 76 - readWorkspaceSettings custom path without .workspace does not read default legacy settings
+  ---
+  duration_ms: 6.68925
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+ok 77 - readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+  ---
+  duration_ms: 5.576959
+  ...
+# Subtest: readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+ok 78 - readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+  ---
+  duration_ms: 5.735709
+  ...
+# Subtest: writeWorkspaceSettings preserves corrupt existing settings before replacing them
+ok 79 - writeWorkspaceSettings preserves corrupt existing settings before replacing them
+  ---
+  duration_ms: 8.078375
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+ok 80 - readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+  ---
+  duration_ms: 8.429667
+  ...
+# Subtest: readWorkspaceProperties custom path without .workspace does not read default legacy properties
+ok 81 - readWorkspaceProperties custom path without .workspace does not read default legacy properties
+  ---
+  duration_ms: 6.642417
+  ...
+# Subtest: createSelectRootResponse saves the selected backend root
+ok 82 - createSelectRootResponse saves the selected backend root
+  ---
+  duration_ms: 8.870458
+  ...
+# Subtest: createScanResponse builds access tree and cards from saved root
+ok 83 - createScanResponse builds access tree and cards from saved root
+  ---
+  duration_ms: 14.136375
+  ...
+# Subtest: createScanResponse can include card descendants for settings folder role configuration
+ok 84 - createScanResponse can include card descendants for settings folder role configuration
+  ---
+  duration_ms: 8.585083
+  ...
+# Subtest: createScanResponse does not expose legacy text as a default card property
+ok 85 - createScanResponse does not expose legacy text as a default card property
+  ---
+  duration_ms: 4.734625
+  ...
+# Subtest: createProjectFileTreeResponse returns a selected project folder tree on demand
+ok 86 - createProjectFileTreeResponse returns a selected project folder tree on demand
+  ---
+  duration_ms: 5.972958
+  ...
+# Subtest: createPropertiesResponse requires an explicit user property id
+ok 87 - createPropertiesResponse requires an explicit user property id
+  ---
+  duration_ms: 5.130292
+  ...
+# Subtest: createPropertiesResponse validates custom properties without overwriting text json
+ok 88 - createPropertiesResponse validates custom properties without overwriting text json
+  ---
+  duration_ms: 4.963625
+  ...
+# Subtest: createPropertiesResponse rejects properties outside workspace root
+ok 89 - createPropertiesResponse rejects properties outside workspace root
+  ---
+  duration_ms: 6.624167
+  ...
+# Subtest: createListEntriesResponse returns visible folders first then files
+ok 90 - createListEntriesResponse returns visible folders first then files
+  ---
+  duration_ms: 8.805083
+  ...
+# Subtest: createListEntriesResponse can list the selected root folder
+ok 91 - createListEntriesResponse can list the selected root folder
+  ---
+  duration_ms: 3.753167
+  ...
+# Subtest: createFileResponse streams previewable files inside root
+ok 92 - createFileResponse streams previewable files inside root
+  ---
+  duration_ms: 4.495458
+  ...
+# Subtest: createFileResponse rejects symlink previews outside root
+ok 93 - createFileResponse rejects symlink previews outside root
+  ---
+  duration_ms: 4.098416
+  ...
+# Subtest: workspace backend rejects paths outside root
+ok 94 - workspace backend rejects paths outside root
+  ---
+  duration_ms: 4.467625
+  ...
+# Subtest: createCreateViewResponse creates a default active Board view
+ok 95 - createCreateViewResponse creates a default active Board view
+  ---
+  duration_ms: 0.830708
+  ...
+# Subtest: createListViewsResponse preserves explicit view property visibility while normalizing defaults
+ok 96 - createListViewsResponse preserves explicit view property visibility while normalizing defaults
+  ---
+  duration_ms: 0.269375
+  ...
+# Subtest: createReorderViewsResponse updates orders and preserves active view
+ok 97 - createReorderViewsResponse updates orders and preserves active view
+  ---
+  duration_ms: 0.289958
+  ...
+# Subtest: createReorderViewsResponse rejects invalid view orders without mutation
+    # Subtest: duplicate active id
+    ok 1 - duplicate active id
+      ---
+      duration_ms: 0.164417
+      ...
+    # Subtest: missing active id
+    ok 2 - missing active id
+      ---
+      duration_ms: 0.072
+      ...
+    # Subtest: extra foreign id
+    ok 3 - extra foreign id
+      ---
+      duration_ms: 0.063292
+      ...
+    # Subtest: deleted id
+    ok 4 - deleted id
+      ---
+      duration_ms: 0.061875
+      ...
+    # Subtest: missing payload
+    ok 5 - missing payload
+      ---
+      duration_ms: 0.164208
+      ...
+    # Subtest: non-array payload
+    ok 6 - non-array payload
+      ---
+      duration_ms: 0.064708
+      ...
+    1..6
+ok 98 - createReorderViewsResponse rejects invalid view orders without mutation
+  ---
+  duration_ms: 0.996458
+  ...
+# Subtest: createSetActiveViewResponse rejects missing foreign and deleted views
+ok 99 - createSetActiveViewResponse rejects missing foreign and deleted views
+  ---
+  duration_ms: 0.161167
+  ...
+# Subtest: createSetActiveViewResponse saves a valid active view
+ok 100 - createSetActiveViewResponse saves a valid active view
+  ---
+  duration_ms: 0.095458
+  ...
+# Subtest: createUpdateViewResponse validates patch references and saves normalized updated view
+ok 101 - createUpdateViewResponse validates patch references and saves normalized updated view
+  ---
+  duration_ms: 0.577125
+  ...
+# Subtest: createUpdateViewResponse forbids invalid view patches
+ok 102 - createUpdateViewResponse forbids invalid view patches
+  ---
+  duration_ms: 0.091959
+  ...
+# Subtest: createUpdateViewResponse rejects property order for hidden properties
+ok 103 - createUpdateViewResponse rejects property order for hidden properties
+  ---
+  duration_ms: 0.165125
+  ...
+# Subtest: createDeleteViewResponse blocks deleting the last non-deleted view
+ok 104 - createDeleteViewResponse blocks deleting the last non-deleted view
+  ---
+  duration_ms: 0.11225
+  ...
+# Subtest: createDeleteViewResponse soft-deletes a non-last active view and switches active view
+ok 105 - createDeleteViewResponse soft-deletes a non-last active view and switches active view
+  ---
+  duration_ms: 0.12325
+  ...
+# Subtest: createViewProjectionResponse projects board and table views with async providers
+ok 106 - createViewProjectionResponse projects board and table views with async providers
+  ---
+  duration_ms: 1.290375
+  ...
+# Subtest: createViewProjectionResponse rejects missing active view when view id is omitted
+ok 107 - createViewProjectionResponse rejects missing active view when view id is omitted
+  ---
+  duration_ms: 0.091917
+  ...
+# Subtest: normalizeBoardColumnWidth applies default and persisted bounds
+ok 108 - normalizeBoardColumnWidth applies default and persisted bounds
+  ---
+  duration_ms: 0.733709
+  ...
+# Subtest: getBoardColumnWidthMax limits the slider to one third of the Workspace area
+ok 109 - getBoardColumnWidthMax limits the slider to one third of the Workspace area
+  ---
+  duration_ms: 0.136625
+  ...
+# Subtest: loadWorkspaceList falls back when workspace list API is unsupported
+ok 110 - loadWorkspaceList falls back when workspace list API is unsupported
+  ---
+  duration_ms: 43.920292
+  ...
+# Subtest: loadWorkspaceList rethrows non-compatibility workspace list errors
+ok 111 - loadWorkspaceList rethrows non-compatibility workspace list errors
+  ---
+  duration_ms: 20.935292
+  ...
+# Subtest: addWorkspaceListFallback appends and activates a local workspace
+ok 112 - addWorkspaceListFallback appends and activates a local workspace
+  ---
+  duration_ms: 19.242542
+  ...
+# Subtest: addWorkspaceListFallback uses plain Workspace as the default local name
+ok 113 - addWorkspaceListFallback uses plain Workspace as the default local name
+  ---
+  duration_ms: 15.627125
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+ok 114 - reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+  ---
+  duration_ms: 33.627041
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+ok 115 - reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+  ---
+  duration_ms: 7.714
+  ...
+# Subtest: reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+ok 116 - reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+  ---
+  duration_ms: 8.725291
+  ...
+# Subtest: mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+ok 117 - mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+  ---
+  duration_ms: 9.551792
+  ...
+# Subtest: workspace IPC handler returns null when source folder is not selected
+ok 118 - workspace IPC handler returns null when source folder is not selected
+  ---
+  duration_ms: 8.779083
+  ...
+# Subtest: workspace IPC handler surfaces corrupt settings JSON without overwriting it
+ok 119 - workspace IPC handler surfaces corrupt settings JSON without overwriting it
+  ---
+  duration_ms: 7.12125
+  ...
+# Subtest: workspace IPC handler surfaces corrupt views JSON without overwriting it
+ok 120 - workspace IPC handler surfaces corrupt views JSON without overwriting it
+  ---
+  duration_ms: 4.287417
+  ...
+# Subtest: workspace IPC handler serves default views and projection for selected source folder
+ok 121 - workspace IPC handler serves default views and projection for selected source folder
+  ---
+  duration_ms: 56.63675
+  ...
+# Subtest: workspace IPC handler preserves table views that hide Status
+ok 122 - workspace IPC handler preserves table views that hide Status
+  ---
+  duration_ms: 23.402417
+  ...
+# Subtest: workspace IPC handler tolerates concurrent default workspace initialization
+ok 123 - workspace IPC handler tolerates concurrent default workspace initialization
+  ---
+  duration_ms: 55.160709
+  ...
+# Subtest: workspace IPC handler tolerates concurrent root selection across process handlers
+ok 124 - workspace IPC handler tolerates concurrent root selection across process handlers
+  ---
+  duration_ms: 143.007
+  ...
+# Subtest: workspace IPC handler repairs a stale active view when selecting a root
+ok 125 - workspace IPC handler repairs a stale active view when selecting a root
+  ---
+  duration_ms: 46.35675
+  ...
+# Subtest: workspace IPC handler persists folder role rules for scans and projections
+ok 126 - workspace IPC handler persists folder role rules for scans and projections
+  ---
+  duration_ms: 43.387417
+  ...
+# Subtest: workspace IPC handler keeps Cyrillic status values distinct
+ok 127 - workspace IPC handler keeps Cyrillic status values distinct
+  ---
+  duration_ms: 12.684458
+  ...
+# Subtest: workspace IPC handler creates renames reorders and deletes workspaces
+ok 128 - workspace IPC handler creates renames reorders and deletes workspaces
+  ---
+  duration_ms: 35.779125
+  ...
+# Subtest: workspace IPC handler uses plain Workspace as the default created workspace name
+ok 129 - workspace IPC handler uses plain Workspace as the default created workspace name
+  ---
+  duration_ms: 13.530459
+  ...
+# Subtest: workspace IPC handler does not recreate a deleted default source workspace
+ok 130 - workspace IPC handler does not recreate a deleted default source workspace
+  ---
+  duration_ms: 18.573458
+  ...
+# Subtest: workspace IPC handler persists view state outside the process handler instance
+ok 131 - workspace IPC handler persists view state outside the process handler instance
+  ---
+  duration_ms: 10.044417
+  ...
+# Subtest: workspace IPC handler persists custom properties and projects them into views
+ok 132 - workspace IPC handler persists custom properties and projects them into views
+  ---
+  duration_ms: 49.237125
+  ...
+# Subtest: workspace IPC handler renames system property labels without changing system semantics
+ok 133 - workspace IPC handler renames system property labels without changing system semantics
+  ---
+  duration_ms: 17.874167
+  ...
+# Subtest: workspace IPC handler creates duplicate property names as distinct id-backed properties
+ok 134 - workspace IPC handler creates duplicate property names as distinct id-backed properties
+  ---
+  duration_ms: 17.449584
+  ...
+# Subtest: workspace IPC handler persists derived status value colors
+ok 135 - workspace IPC handler persists derived status value colors
+  ---
+  duration_ms: 12.397625
+  ...
+# Subtest: workspace IPC handler shares object properties across workspaces for the same source folder
+ok 136 - workspace IPC handler shares object properties across workspaces for the same source folder
+  ---
+  duration_ms: 21.567333
+  ...
+# Subtest: workspace IPC handler deletes custom properties from values and source views
+ok 137 - workspace IPC handler deletes custom properties from values and source views
+  ---
+  duration_ms: 30.462667
+  ...
+# Subtest: createFolderObjectId creates stable workspace-scoped slugs from folder paths
+ok 138 - createFolderObjectId creates stable workspace-scoped slugs from folder paths
+  ---
+  duration_ms: 1.214667
+  ...
+# Subtest: createFolderObjectId keeps distinct paths with the same readable slug unique
+ok 139 - createFolderObjectId keeps distinct paths with the same readable slug unique
+  ---
+  duration_ms: 0.149542
+  ...
+# Subtest: createPropertyValueId combines object and property identifiers
+ok 140 - createPropertyValueId combines object and property identifiers
+  ---
+  duration_ms: 0.067584
+  ...
+# Subtest: projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+ok 141 - projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+  ---
+  duration_ms: 1.169417
+  ...
+# Subtest: readSystemPropertyValue returns derived system values
+ok 142 - readSystemPropertyValue returns derived system values
+  ---
+  duration_ms: 0.910125
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 143 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 1.1725
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 144 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.180458
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 145 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.187
+  ...
+# Subtest: duplicate is inserted immediately after its source, preserving surrounding tabs
+ok 146 - duplicate is inserted immediately after its source, preserving surrounding tabs
+  ---
+  duration_ms: 1.0515
+  ...
+# Subtest: duplicates have independent identities while sharing project updates
+ok 147 - duplicates have independent identities while sharing project updates
+  ---
+  duration_ms: 0.220708
+  ...
+# Subtest: reordering keeps every project once and leaves other workspaces unchanged
+ok 148 - reordering keeps every project once and leaves other workspaces unchanged
+  ---
+  duration_ms: 0.090667
+  ...
+# Subtest: expanded projects accumulate without duplicates and remain isolated by workspace
+ok 149 - expanded projects accumulate without duplicates and remain isolated by workspace
+  ---
+  duration_ms: 0.109333
+  ...
+# Subtest: refreshing an open tab preserves edits but never recreates a closed or restored tab
+ok 150 - refreshing an open tab preserves edits but never recreates a closed or restored tab
+  ---
+  duration_ms: 0.471459
+  ...
+# Subtest: a save completing after switching projects refreshes the original tab only
+ok 151 - a save completing after switching projects refreshes the original tab only
+  ---
+  duration_ms: 0.125083
+  ...
+# Subtest: propertyTypeIds lists supported property types in storage order
+ok 152 - propertyTypeIds lists supported property types in storage order
+  ---
+  duration_ms: 1.904917
+  ...
+# Subtest: isSystemPropertyId recognizes immutable system property ids
+ok 153 - isSystemPropertyId recognizes immutable system property ids
+  ---
+  duration_ms: 0.254209
+  ...
+# Subtest: createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+ok 154 - createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+  ---
+  duration_ms: 0.659
+  ...
+# Subtest: normalizePropertyValue normalizes text values
+ok 155 - normalizePropertyValue normalizes text values
+  ---
+  duration_ms: 0.226667
+  ...
+# Subtest: normalizePropertyValue normalizes number values
+ok 156 - normalizePropertyValue normalizes number values
+  ---
+  duration_ms: 0.262417
+  ...
+# Subtest: normalizePropertyValue preserves number expressions with computed values
+ok 157 - normalizePropertyValue preserves number expressions with computed values
+  ---
+  duration_ms: 1.407083
+  ...
+# Subtest: normalizePropertyValue normalizes date values
+ok 158 - normalizePropertyValue normalizes date values
+  ---
+  duration_ms: 0.18875
+  ...
+# Subtest: normalizePropertyValue normalizes select values
+ok 159 - normalizePropertyValue normalizes select values
+  ---
+  duration_ms: 0.07575
+  ...
+# Subtest: normalizePropertyValue normalizes multi-select values
+ok 160 - normalizePropertyValue normalizes multi-select values
+  ---
+  duration_ms: 0.169542
+  ...
+# Subtest: normalizePropertySchema preserves select config and normalizes options
+ok 161 - normalizePropertySchema preserves select config and normalizes options
+  ---
+  duration_ms: 0.226875
+  ...
+# Subtest: normalizePropertySchema filters invalid select options
+ok 162 - normalizePropertySchema filters invalid select options
+  ---
+  duration_ms: 0.098041
+  ...
+# Subtest: normalizePropertySchema clones nested non-select config objects
+ok 163 - normalizePropertySchema clones nested non-select config objects
+  ---
+  duration_ms: 0.078625
+  ...
+# Subtest: normalizePropertySchema falls back unknown types to text
+ok 164 - normalizePropertySchema falls back unknown types to text
+  ---
+  duration_ms: 0.207042
+  ...
+# Subtest: normalizePropertyDefinition rejects unsupported custom property types
+ok 165 - normalizePropertyDefinition rejects unsupported custom property types
+  ---
+  duration_ms: 1.112625
+  ...
+# Subtest: normalizePropertyDefinition marks system properties immutable but preserves display names
+ok 166 - normalizePropertyDefinition marks system properties immutable but preserves display names
+  ---
+  duration_ms: 0.119
+  ...
+# Subtest: normalizePropertyDefinition normalizes custom properties
+ok 167 - normalizePropertyDefinition normalizes custom properties
+  ---
+  duration_ms: 0.184792
+  ...
+# Subtest: normalizeSelectValue normalizes select value documents
+ok 168 - normalizeSelectValue normalizes select value documents
+  ---
+  duration_ms: 0.119208
+  ...
+# Subtest: normalizeProjectPropertyValue validates type-specific project values
+ok 169 - normalizeProjectPropertyValue validates type-specific project values
+  ---
+  duration_ms: 0.277584
+  ...
+# Subtest: normalizeProjectPropertyValue rejects invalid select references and system properties
+ok 170 - normalizeProjectPropertyValue rejects invalid select references and system properties
+  ---
+  duration_ms: 0.811958
+  ...
+# Subtest: file property store surfaces corrupt JSON and preserves the file on write attempts
+ok 171 - file property store surfaces corrupt JSON and preserves the file on write attempts
+  ---
+  duration_ms: 5.310625
+  ...
+# Subtest: renderer workspace transport delegates to window.workspace.request
+ok 172 - renderer workspace transport delegates to window.workspace.request
+  ---
+  duration_ms: 28.491375
+  ...
+# Subtest: renderer workspace transport rejects missing preload bridge
+ok 173 - renderer workspace transport rejects missing preload bridge
+  ---
+  duration_ms: 4.165334
+  ...
+# Subtest: WorkspaceServiceClient sends named service methods through transport
+ok 174 - WorkspaceServiceClient sends named service methods through transport
+  ---
+  duration_ms: 6.273291
+  ...
+# Subtest: WorkspaceServiceClient constructor rejects missing transport.request
+ok 175 - WorkspaceServiceClient constructor rejects missing transport.request
+  ---
+  duration_ms: 0.3245
+  ...
+# Subtest: createNextVisiblePropertyIds removes stale property ids when showing a property
+ok 176 - createNextVisiblePropertyIds removes stale property ids when showing a property
+  ---
+  duration_ms: 1.013417
+  ...
+# Subtest: createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+ok 177 - createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+  ---
+  duration_ms: 0.086458
+  ...
+# Subtest: createPropertyOrder stores stable ten-step ordering
+ok 178 - createPropertyOrder stores stable ten-step ordering
+  ---
+  duration_ms: 0.1485
+  ...
+# Subtest: createDefaultView creates Board and Table views with default system properties
+ok 179 - createDefaultView creates Board and Table views with default system properties
+  ---
+  duration_ms: 3.478042
+  ...
+# Subtest: createDefaultView rejects invalid view types
+ok 180 - createDefaultView rejects invalid view types
+  ---
+  duration_ms: 0.748917
+  ...
+# Subtest: normalizeViewDocument preserves known fields and visible property order after Name
+ok 181 - normalizeViewDocument preserves known fields and visible property order after Name
+  ---
+  duration_ms: 0.296667
+  ...
+# Subtest: normalizeViewDocument stores text wrap layout as a view setting
+ok 182 - normalizeViewDocument stores text wrap layout as a view setting
+  ---
+  duration_ms: 0.137792
+  ...
+# Subtest: normalizeViewDocument stores a bounded Board column width
+ok 183 - normalizeViewDocument stores a bounded Board column width
+  ---
+  duration_ms: 0.112875
+  ...
+# Subtest: validateViewPatch rejects Board column widths outside the persisted range
+ok 184 - validateViewPatch rejects Board column widths outside the persisted range
+  ---
+  duration_ms: 0.308791
+  ...
+# Subtest: validateViewPatch accepts text wrap layout for active text properties
+ok 185 - validateViewPatch accepts text wrap layout for active text properties
+  ---
+  duration_ms: 0.131625
+  ...
+# Subtest: validateViewPatch rejects text wrap layout for non-text properties
+ok 186 - validateViewPatch rejects text wrap layout for non-text properties
+  ---
+  duration_ms: 0.100625
+  ...
+# Subtest: validateViewPatch rejects removing the required Name property
+ok 187 - validateViewPatch rejects removing the required Name property
+  ---
+  duration_ms: 0.15375
+  ...
+# Subtest: validateViewPatch allows hiding the system Status property
+ok 188 - validateViewPatch allows hiding the system Status property
+  ---
+  duration_ms: 0.151916
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside visible properties
+ok 189 - validateViewPatch rejects propertyOrder keys outside visible properties
+  ---
+  duration_ms: 0.091375
+  ...
+# Subtest: validateViewPatch allows propertyOrder-only patches for active custom properties
+ok 190 - validateViewPatch allows propertyOrder-only patches for active custom properties
+  ---
+  duration_ms: 0.067417
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside active properties
+ok 191 - validateViewPatch rejects propertyOrder keys outside active properties
+  ---
+  duration_ms: 0.069916
+  ...
+# Subtest: validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+ok 192 - validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+  ---
+  duration_ms: 0.1525
+  ...
+# Subtest: filterProjectsForView applies search by Name only and select value filters
+ok 193 - filterProjectsForView applies search by Name only and select value filters
+  ---
+  duration_ms: 0.263208
+  ...
+# Subtest: filterProjectsForView supports system Status filters and No status
+ok 194 - filterProjectsForView supports system Status filters and No status
+  ---
+  duration_ms: 0.259667
+  ...
+# Subtest: filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+ok 195 - filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+  ---
+  duration_ms: 0.107083
+  ...
+# Subtest: createViewProjection returns board columns and table rows from the same filtered project set
+ok 196 - createViewProjection returns board columns and table rows from the same filtered project set
+  ---
+  duration_ms: 0.37325
+  ...
+# Subtest: createViewProjection omits empty board columns while value filters are active
+ok 197 - createViewProjection omits empty board columns while value filters are active
+  ---
+  duration_ms: 0.202917
+  ...
+# Subtest: createViewProjection adds No status column when matching projects have no status
+ok 198 - createViewProjection adds No status column when matching projects have no status
+  ---
+  duration_ms: 0.154167
+  ...
+1..198
+# tests 204
+# suites 0
+# pass 204
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 910.835292

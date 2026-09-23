@@ -69,7 +69,7 @@ function FolderRoleNode({
   return (
     <li>
       <div
-        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border bg-card px-3 py-2"
+        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5"
         style={{ marginLeft: `${depth * 1.25}rem` }}
       >
         <Button
@@ -118,7 +118,7 @@ function FolderRoleNode({
         </ToggleGroup>
       </div>
       {hasChildren && expanded ? (
-        <ul className="mt-2 grid gap-2">
+        <ul className="mt-1.5 grid gap-1.5">
           {node.children.map((child) => (
             <FolderRoleNode
               key={child.id}
@@ -162,15 +162,15 @@ export function WorkspaceSettingsView({
   }
 
   return (
-    <section className="grid min-w-0 gap-3 px-4 py-4 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
-      <div className="grid content-start gap-3">
-        <div className="rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between gap-3 px-3 py-2">
+    <section className="grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
+      <div className="grid content-start gap-2">
+        <div className="rounded-md border border-border bg-card">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="text-sm font-semibold">{t("settings.source")}</h3>
             <Badge variant="secondary">{t("settings.localOnly")}</Badge>
           </div>
           <Separator />
-          <div className="grid gap-3 p-3">
+          <div className="grid gap-2 p-3">
             <div className="grid gap-1">
               <p className="text-xs font-medium text-muted-foreground">{t("settings.sourceFolder")}</p>
               <p className="truncate text-sm font-medium" title={sourceFolder.name}>{sourceFolder.name}</p>
@@ -187,8 +187,8 @@ export function WorkspaceSettingsView({
             </Button>
           </div>
         </div>
-        <section className="rounded-lg border border-border bg-card" aria-labelledby="workspace-language-heading">
-          <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <section className="rounded-md border border-border bg-card" aria-labelledby="workspace-language-heading">
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
               <h3 id="workspace-language-heading" className="text-sm font-semibold">{t("language.title")}</h3>
               <p className="truncate text-xs text-muted-foreground">{t("language.description")}</p>
@@ -214,8 +214,8 @@ export function WorkspaceSettingsView({
           </div>
         </section>
       </div>
-      <div className="min-w-0 rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between gap-3 px-3 py-2">
+      <div className="min-w-0 rounded-md border border-border bg-card">
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t("settings.folderRoleTree")}</h3>
             <p className="truncate text-xs text-muted-foreground" title={sourceFolder.path}>{sourceFolder.path}</p>
@@ -223,7 +223,7 @@ export function WorkspaceSettingsView({
           <Badge variant="outline">{t("settings.roots", { count: folderRoleTree.length })}</Badge>
         </div>
         <Separator />
-        <ul className="grid max-h-80 gap-2 overflow-auto p-3">
+        <ul className="grid max-h-80 gap-1.5 overflow-auto p-3">
           {folderRoleTree.map((node) => (
             <FolderRoleNode
               key={node.id}

@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => { const host=document.querySelector('.workspace-current-name'); const label=host?.querySelector('.truncate'); if(host&&label){label.textContent=host.dataset.originalName||'Operations';host.title=label.textContent;delete host.dataset.originalName;} return {workspace:label?.textContent}; })()"
+}

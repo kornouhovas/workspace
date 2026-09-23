@@ -1,0 +1,15 @@
+{
+  "check": "shell-header-sidebar",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent verifier audit of frozen renderer geometry and required native evidence boundary",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "summary": "Renderer geometry satisfies the measurable header, toggle, title, Settings and tab-spacing subchecks, but required full-window open/collapsed frames and the macOS traffic-light relation are absent.",
+  "verdict": "inconclusive",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/acceptance-row-audit.json",
+    "root-cua-attempt-2026-09-23.md"
+  ]
+}

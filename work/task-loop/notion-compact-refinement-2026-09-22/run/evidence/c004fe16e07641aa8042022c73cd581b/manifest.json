@@ -1,0 +1,17 @@
+{
+  "check": "native-responsive-evidence",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent verifier inspection of available images, CoreGraphics provenance and root CUA failure",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "summary": "No settled CoreGraphics full-window after pair exists at 1440x960 or 1024x720. Available after images are renderer diagnostics, CoreGraphics exposed only a 148x151 Stage Manager thumbnail, and root exact-path CUA failed with ScreenCaptureKit -3811 before bind or raise.",
+  "verdict": "inconclusive",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/image-inventory.json",
+    "root-cua-attempt-2026-09-23.md",
+    "native-capture-attempt-errors.md",
+    "native-window-list-pid13188-after-inspector.txt"
+  ]
+}

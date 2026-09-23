@@ -1,0 +1,9 @@
+[ {
+   "description": "",
+   "devtoolsFrontendUrl": "/devtools/inspector.html?ws=127.0.0.1:9236/devtools/page/5E27A31FC3AB520BE12C7C6A037782BF",
+   "id": "5E27A31FC3AB520BE12C7C6A037782BF",
+   "title": "Workspace",
+   "type": "page",
+   "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html",
+   "webSocketDebuggerUrl": "ws://127.0.0.1:9236/devtools/page/5E27A31FC3AB520BE12C7C6A037782BF"
+} ]

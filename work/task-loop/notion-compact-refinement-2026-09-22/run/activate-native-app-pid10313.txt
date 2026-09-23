@@ -1,0 +1,12 @@
+work/task-loop/notion-compact-refinement-2026-09-22/run/activate-native-app.swift:12:59: warning: 'activateIgnoringOtherApps' was deprecated in macOS 14.0: ignoringOtherApps is deprecated in macOS 14 and will have no effect. [#DeprecatedDeclaration]
+10 | print("before active=\(app.isActive) hidden=\(app.isHidden) terminated=\(app.isTerminated)")
+11 | app.unhide()
+12 | let result = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+   |                                                           `- warning: 'activateIgnoringOtherApps' was deprecated in macOS 14.0: ignoringOtherApps is deprecated in macOS 14 and will have no effect. [#DeprecatedDeclaration]
+13 | print("activate=\(result)")
+14 | usleep(700_000)
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+before active=false hidden=false terminated=false
+activate=true
+after active=false hidden=false terminated=false

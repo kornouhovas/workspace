@@ -1,0 +1,16 @@
+{
+  "id": "compact-notion-scope-expanded-after-native-pass",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run",
+  "scenario": "native-visual-acceptance",
+  "phase": "intake",
+  "symptom": "The previously verified Compact native composition does not satisfy the user's new, more compact Notion-like target and twelve explicit shell, Board, detail, counter and scrolling requirements.",
+  "basis": "observed",
+  "source": "User request relayed by the coordinator on 2026-09-22",
+  "observed_at": "2026-09-22T23:41:12+03:00",
+  "summary": "The prior run remains valid for its older target, but its successful screenshots cannot be reused as acceptance for the expanded scope. This linked run supersedes density and top-row criteria while retaining behavior and architecture constraints.",
+  "artifacts": [
+    "acceptance-matrix.md",
+    "references/board.png",
+    "references/expanded.png"
+  ]
+}

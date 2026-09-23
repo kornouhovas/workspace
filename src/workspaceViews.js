@@ -195,8 +195,6 @@ export function createViewProjection({
   }
 
   const boardStatusValues = createBoardStatusValues({ statusValues, filteredProjects });
-  const hasActiveFilter = Boolean(normalizeString(searchQuery).trim())
-    || Object.keys(normalizedView.valueVisibility).length > 0;
   const boardColumns = boardStatusValues.map((statusValue) => ({
     statusValueId: statusValue.id,
     name: statusValue.name,
@@ -211,9 +209,7 @@ export function createViewProjection({
       capabilities: {
         canMoveBetweenStatuses: false,
       },
-      columns: hasActiveFilter
-        ? boardColumns.filter((column) => column.projects.length > 0)
-        : boardColumns,
+      columns: boardColumns,
     },
   };
 }

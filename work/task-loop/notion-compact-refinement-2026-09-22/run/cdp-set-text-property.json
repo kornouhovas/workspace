@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(async()=>{const pause=(ms)=>new Promise(r=>setTimeout(r,ms)); const el=document.querySelector('.workspace-project-detail-expanded textarea[aria-label=\"Изменить значение свойства Text\"]'); if(!el) throw new Error('text editor missing'); const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set; setter.call(el,'Compact persistence proof'); el.dispatchEvent(new Event('input',{bubbles:true})); await pause(250); el.dispatchEvent(new FocusEvent('blur',{bubbles:true})); el.blur(); await pause(650); return {value:el.value,active:document.activeElement?.tagName,panelText:document.querySelector('.workspace-project-detail-expanded')?.textContent?.trim()?.slice(0,400)};})()"
+}

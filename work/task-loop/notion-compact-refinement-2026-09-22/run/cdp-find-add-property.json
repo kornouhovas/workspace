@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => [...document.querySelectorAll('button[aria-label=\"Добавить свойство\"]')].map(el=>({html:el.outerHTML.slice(0,500),rect:(r=>({x:r.x,y:r.y,width:r.width,height:r.height}))(el.getBoundingClientRect()),ancestors:[...function*(){let p=el.parentElement;while(p){yield p.className;p=p.parentElement}}()].slice(0,5)})))()"
+}

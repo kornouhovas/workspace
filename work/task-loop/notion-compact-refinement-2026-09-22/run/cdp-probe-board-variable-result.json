@@ -1,0 +1,209 @@
+{
+  "viewport": {
+    "width": 1070,
+    "height": 875,
+    "dpr": 2
+  },
+  "viewportRect": {
+    "x": 272,
+    "y": 76,
+    "width": 782,
+    "height": 783,
+    "right": 1054,
+    "bottom": 859,
+    "centerY": 467.5
+  },
+  "gridRect": {
+    "x": 272,
+    "y": 76,
+    "width": 1104,
+    "height": 1216,
+    "right": 1376,
+    "bottom": 1292,
+    "centerY": 684
+  },
+  "scroll": {
+    "scrollWidth": 1104,
+    "clientWidth": 782,
+    "scrollHeight": 1216,
+    "clientHeight": 783,
+    "scrollLeft": 0,
+    "scrollTop": 0,
+    "overflowX": "auto",
+    "overflowY": "auto"
+  },
+  "columns": [
+    {
+      "index": 0,
+      "label": "Проекты со статусом Done",
+      "rect": {
+        "x": 272,
+        "y": 76,
+        "width": 360,
+        "height": 1216,
+        "right": 632,
+        "bottom": 1292,
+        "centerY": 684
+      },
+      "overflowY": "visible",
+      "lastCard": {
+        "x": 280,
+        "y": 1208,
+        "width": 344,
+        "height": 76,
+        "right": 624,
+        "bottom": 1284,
+        "centerY": 1246
+      }
+    },
+    {
+      "index": 1,
+      "label": "Проекты со статусом In Progress",
+      "rect": {
+        "x": 644,
+        "y": 76,
+        "width": 360,
+        "height": 544,
+        "right": 1004,
+        "bottom": 620,
+        "centerY": 348
+      },
+      "overflowY": "visible",
+      "lastCard": {
+        "x": 652,
+        "y": 536,
+        "width": 344,
+        "height": 76,
+        "right": 996,
+        "bottom": 612,
+        "centerY": 574
+      }
+    },
+    {
+      "index": 2,
+      "label": "Проекты со статусом Planned",
+      "rect": {
+        "x": 1016,
+        "y": 76,
+        "width": 360,
+        "height": 208,
+        "right": 1376,
+        "bottom": 284,
+        "centerY": 180
+      },
+      "overflowY": "visible",
+      "lastCard": {
+        "x": 1024,
+        "y": 200,
+        "width": 344,
+        "height": 76,
+        "right": 1368,
+        "bottom": 276,
+        "centerY": 238
+      }
+    }
+  ],
+  "counts": [
+    {
+      "text": "14",
+      "aria": "14 видимых проектов",
+      "rect": {
+        "x": 593.59375,
+        "y": 88,
+        "width": 26.40625,
+        "height": 16,
+        "right": 620,
+        "bottom": 104,
+        "centerY": 96
+      }
+    },
+    {
+      "text": "6",
+      "aria": "6 видимых проектов",
+      "rect": {
+        "x": 972,
+        "y": 88,
+        "width": 20,
+        "height": 16,
+        "right": 992,
+        "bottom": 104,
+        "centerY": 96
+      }
+    },
+    {
+      "text": "2",
+      "aria": "2 видимых проекта",
+      "rect": {
+        "x": 1344,
+        "y": 88,
+        "width": 20,
+        "height": 16,
+        "right": 1364,
+        "bottom": 104,
+        "centerY": 96
+      }
+    }
+  ],
+  "toggle": {
+    "aria": "Скрыть боковую панель",
+    "rect": {
+      "x": 216,
+      "y": 16,
+      "width": 32,
+      "height": 32,
+      "right": 248,
+      "bottom": 48,
+      "centerY": 32
+    }
+  },
+  "actions": [
+    {
+      "aria": "Скрыть боковую панель",
+      "rect": {
+        "x": 216,
+        "y": 16,
+        "width": 32,
+        "height": 32,
+        "right": 248,
+        "bottom": 48,
+        "centerY": 32
+      }
+    },
+    {
+      "aria": "Добавить доску или таблицу",
+      "rect": {
+        "x": 986,
+        "y": 15.5,
+        "width": 32,
+        "height": 32,
+        "right": 1018,
+        "bottom": 47.5,
+        "centerY": 31.5
+      }
+    },
+    {
+      "aria": "Настроить колонки",
+      "rect": {
+        "x": 1022,
+        "y": 15.5,
+        "width": 32,
+        "height": 32,
+        "right": 1054,
+        "bottom": 47.5,
+        "centerY": 31.5
+      }
+    }
+  ],
+  "workspace": {
+    "text": "Operations",
+    "rect": {
+      "x": 272,
+      "y": 21.5,
+      "width": 160,
+      "height": 20,
+      "right": 432,
+      "bottom": 41.5,
+      "centerY": 31.5
+    }
+  }
+}

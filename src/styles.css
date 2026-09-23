@@ -78,6 +78,8 @@
     --chart-5: oklch(0.269 0 0);
     --radius: 0.5rem;
     --header-height: 6rem;
+    --workspace-header-height: 4rem;
+    --workspace-sidebar-width: 16rem;
     --sidebar: #f6f8ff;
     --sidebar-foreground: #192238;
     --sidebar-primary: #6544d5;
@@ -174,8 +176,8 @@
 }
 
 .workspace-top-action svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .workspace-sidebar {
@@ -189,9 +191,9 @@
 .workspace-tab-scroll [role="tab"][data-state="active"]::after {
   position: absolute;
   right: 0;
-  bottom: -3px;
+  bottom: -2px;
   left: 0;
-  height: 3px;
+  height: 2px;
   border-radius: 999px;
   background: var(--primary);
   opacity: 1;
@@ -210,32 +212,23 @@
 
 .workspace-project-detail-expanded [data-card-property-row-id],
 .workspace-project-detail-expanded #project-visible-properties > button {
-  min-height: 3rem;
+  min-height: 2.25rem;
 }
 
-.workspace-project-detail-expanded [data-card-property-row-id] dt button,
-.workspace-project-detail-expanded [data-card-property-row-id] dd,
-.workspace-project-detail-expanded #project-visible-properties > button {
-  font-size: 1rem;
+.workspace-project-detail-heading {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.workspace-project-detail-content-inset {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 .workspace-project-detail-expanded .workspace-file-tree button {
-  min-height: 2rem;
-  font-size: 1rem;
-}
-
-.workspace-project-detail-expanded [data-card-property-row-id] dt button,
-.workspace-project-detail-expanded #project-visible-properties > button > span:first-child {
-  grid-template-columns: 3.25rem minmax(0, 1fr);
-}
-
-.workspace-project-detail-expanded [data-card-property-row-id] dd {
-  padding-left: 1.25rem;
-}
-
-.workspace-project-detail-expanded [data-card-property-row-id] dt button span:last-child,
-.workspace-project-detail-expanded #project-visible-properties > button span {
-  font-size: 1rem;
+  min-height: 1.75rem;
+  font-size: 0.8125rem;
 }
 
 .workspace-project-detail-expanded [data-workspace-status-value] {

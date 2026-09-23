@@ -84,6 +84,7 @@ export const ru = {
   "view.columnWidthDescription": "Изменить ширину всех колонок доски",
   "board.moveDisabled": "Перемещение отключено",
   "board.projectsAria": "Проекты со статусом {{name}}",
+  "board.visibleCount": { "one": "{{count}} видимый проект", "few": "{{count}} видимых проекта", "many": "{{count}} видимых проектов", "other": "{{count}} видимого проекта" },
   "board.noProjects": "Проектов нет",
   "table.name": "Название",
   "table.status": "Статус",

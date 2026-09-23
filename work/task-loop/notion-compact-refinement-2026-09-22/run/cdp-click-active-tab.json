@@ -1,0 +1,4 @@
+{
+  "type": "click",
+  "expression": "document.querySelector('[data-project-tab-id][title=\"Active 01\"]')"
+}

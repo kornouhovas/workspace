@@ -1,0 +1,3 @@
+command: python3 local Markdown target check for design-qa.md, docs/design/compact-redesign-handoff.md, final-evidence-map.md, native-capture-plan.md, native-capture-attempt-errors.md
+result: checked=13 missing=0
+exit_code: 0

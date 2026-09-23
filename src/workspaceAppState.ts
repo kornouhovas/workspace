@@ -890,8 +890,7 @@ export function filterWorkspaceProjectionBySearch(
         .map((column) => ({
           ...column,
           projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
-        }))
-        .filter((column) => column.projects.length > 0),
+        })),
     },
   };
 }

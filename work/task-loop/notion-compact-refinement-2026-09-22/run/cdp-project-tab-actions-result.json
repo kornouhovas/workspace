@@ -1,0 +1,157 @@
+{
+  "initial": [
+    {
+      "id": "project-tab:8e72d719-9ae6-4889-862c-5fe7dd3d7883",
+      "title": "Workspace App",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:232f454e-65e5-4499-b622-49800fa6e780",
+      "title": "Archive 01",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:413c47a3-9987-4c7b-b80a-2bf55a138b3f",
+      "title": "Active 01",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:36b3ffc7-6371-4d4a-be1b-d1140b30968f",
+      "title": "Atlas Website",
+      "selected": "true"
+    }
+  ],
+  "afterDuplicate": [
+    {
+      "id": "project-tab:8e72d719-9ae6-4889-862c-5fe7dd3d7883",
+      "title": "Workspace App",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:232f454e-65e5-4499-b622-49800fa6e780",
+      "title": "Archive 01",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:413c47a3-9987-4c7b-b80a-2bf55a138b3f",
+      "title": "Active 01",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:36b3ffc7-6371-4d4a-be1b-d1140b30968f",
+      "title": "Atlas Website",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:44f3ddee-ea75-4264-8659-78ac321bd2da",
+      "title": "Atlas Website",
+      "selected": "true"
+    }
+  ],
+  "afterRestore": {
+    "tabs": [
+      {
+        "id": "project-tab:8e72d719-9ae6-4889-862c-5fe7dd3d7883",
+        "title": "Workspace App",
+        "selected": "false"
+      },
+      {
+        "id": "project-tab:232f454e-65e5-4499-b622-49800fa6e780",
+        "title": "Archive 01",
+        "selected": "false"
+      },
+      {
+        "id": "project-tab:413c47a3-9987-4c7b-b80a-2bf55a138b3f",
+        "title": "Active 01",
+        "selected": "false"
+      },
+      {
+        "id": "project-tab:36b3ffc7-6371-4d4a-be1b-d1140b30968f",
+        "title": "Atlas Website",
+        "selected": "false"
+      }
+    ],
+    "expanded": false,
+    "sidePanel": true
+  },
+  "afterClose": [
+    {
+      "id": "project-tab:8e72d719-9ae6-4889-862c-5fe7dd3d7883",
+      "title": "Workspace App",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:413c47a3-9987-4c7b-b80a-2bf55a138b3f",
+      "title": "Active 01",
+      "selected": "false"
+    },
+    {
+      "id": "project-tab:36b3ffc7-6371-4d4a-be1b-d1140b30968f",
+      "title": "Atlas Website",
+      "selected": "false"
+    }
+  ],
+  "storage": {
+    "key": "workspace.project-tabs.v1",
+    "version": 2,
+    "targetWorkspaceId": "workspace:6f52df4e56a2dd35",
+    "targetTabs": [
+      {
+        "id": "object:workspace-6f52df4e56a2dd35:in-progress-workspace-app-ui7ak3",
+        "name": "Workspace App",
+        "currentRelativePath": "In Progress/Workspace App",
+        "status": {
+          "id": "statusValue:workspace-6f52df4e56a2dd35:in-progress",
+          "name": "In Progress",
+          "relativePath": "In Progress",
+          "source": "folderRole",
+          "color": "blue"
+        },
+        "propertyValues": {
+          "property:name": "Workspace App",
+          "property:status": "statusValue:workspace-6f52df4e56a2dd35:in-progress"
+        },
+        "tabId": "project-tab:8e72d719-9ae6-4889-862c-5fe7dd3d7883"
+      },
+      {
+        "id": "object:workspace-6f52df4e56a2dd35:in-progress-active-01-12niwt",
+        "name": "Active 01",
+        "currentRelativePath": "In Progress/Active 01",
+        "status": {
+          "id": "statusValue:workspace-6f52df4e56a2dd35:in-progress",
+          "name": "In Progress",
+          "relativePath": "In Progress",
+          "source": "folderRole",
+          "color": "blue"
+        },
+        "propertyValues": {
+          "property:name": "Active 01",
+          "property:status": "statusValue:workspace-6f52df4e56a2dd35:in-progress"
+        },
+        "tabId": "project-tab:413c47a3-9987-4c7b-b80a-2bf55a138b3f"
+      },
+      {
+        "id": "object:workspace-6f52df4e56a2dd35:planned-atlas-website-172fqs",
+        "name": "Atlas Website",
+        "currentRelativePath": "Planned/Atlas Website",
+        "status": {
+          "id": "statusValue:workspace-6f52df4e56a2dd35:planned",
+          "name": "Planned",
+          "relativePath": "Planned",
+          "source": "folderRole",
+          "color": "yellow"
+        },
+        "propertyValues": {
+          "property:name": "Atlas Website",
+          "property:status": "statusValue:workspace-6f52df4e56a2dd35:planned"
+        },
+        "tabId": "project-tab:36b3ffc7-6371-4d4a-be1b-d1140b30968f"
+      }
+    ],
+    "targetScreen": {
+      "viewId": "view:default-board",
+      "tabId": null
+    },
+    "redaction": "Other workspace entries omitted from the run artifact."
+  }
+}

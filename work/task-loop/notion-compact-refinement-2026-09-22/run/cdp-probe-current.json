@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => ({headings:[...document.querySelectorAll('h1,h2')].map(el=>el.textContent?.trim()),tabs:[...document.querySelectorAll('[data-project-tab-id]')].map(el=>({title:el.getAttribute('title'),selected:el.getAttribute('aria-selected'),rect:(r=>({x:r.x,y:r.y,width:r.width,height:r.height}))(el.getBoundingClientRect())})),buttons:[...document.querySelectorAll('button')].map(el=>({text:el.textContent?.trim(),aria:el.getAttribute('aria-label'),title:el.getAttribute('title')})).filter(x=>x.text||x.aria).slice(0,40)}))()"
+}

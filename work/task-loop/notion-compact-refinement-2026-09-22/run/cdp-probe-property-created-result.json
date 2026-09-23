@@ -1,0 +1,36 @@
+{
+  "panelText": "Active 01СвойстваTextДобавить свойствоВыберите типСкрытые свойства1Дерево файлов1README.md",
+  "inputs": [],
+  "buttons": [
+    {
+      "text": "Свойства",
+      "aria": null,
+      "title": null
+    },
+    {
+      "text": "Text",
+      "aria": "Действия свойства Text",
+      "title": null
+    },
+    {
+      "text": "",
+      "aria": "Изменить значение свойства Text",
+      "title": null
+    },
+    {
+      "text": "Добавить свойствоВыберите тип",
+      "aria": null,
+      "title": null
+    },
+    {
+      "text": "Скрытые свойства",
+      "aria": null,
+      "title": null
+    },
+    {
+      "text": "README.md",
+      "aria": "Файл: README.md",
+      "title": "In Progress/Active 01/README.md"
+    }
+  ]
+}

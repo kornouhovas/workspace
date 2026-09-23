@@ -21,6 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
 import { useI18n } from "@/i18n";
 import {
+  Columns2Icon,
   KanbanIcon,
   PencilIcon,
   PlusIcon,
@@ -96,13 +97,13 @@ const viewDropdownMenuSurfaceSelector =
   "[data-workspace-view-create-menu='true']";
 
 function renderViewIcon(view: WorkspaceView) {
-  const iconClassName = "size-5 shrink-0";
+  const iconClassName = "size-4 shrink-0";
 
   if (view.viewType === "table") {
     return <TableIcon className={iconClassName} aria-hidden="true" />;
   }
 
-  return <KanbanIcon className={iconClassName} aria-hidden="true" />;
+  return <Columns2Icon className={iconClassName} aria-hidden="true" />;
 }
 
 function getViewTabDragOrder(
@@ -485,20 +486,20 @@ export function WorkspaceViewTabs({
   }
 
   return (
-    <div className="relative flex min-w-0 items-center justify-between gap-2">
+    <div className="relative flex min-w-0 items-center justify-between gap-1">
       <div className="relative z-40 flex min-w-0 flex-1 items-center gap-0">
       <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="workspace-tab-scroll min-w-0 max-w-[50%] shrink-0 overflow-x-auto overflow-y-hidden">
         <TabsList
           ref={viewTabListRef}
           aria-label={t("view.actions")}
-          className="!h-14 w-max max-w-none flex-nowrap justify-start gap-2 rounded-none bg-transparent p-0 shadow-none"
+          className="!h-10 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none"
         >
           {views.map((view) => {
             if (editingViewId === view.id) {
               return (
                 <form
                   key={view.id}
-                  className="h-12 min-w-32"
+                  className="h-8 min-w-24"
                   onSubmit={(event) => {
                     event.preventDefault();
                     submitViewRename(view);
@@ -507,7 +508,7 @@ export function WorkspaceViewTabs({
                   <input
                     ref={editingViewInputRef}
                     aria-label={t("view.renameInput")}
-                    className="h-full w-full rounded-lg border border-ring bg-background px-2.5 text-sm font-normal text-foreground outline-none ring-2 ring-ring/30"
+                    className="h-full w-full rounded-md border border-ring bg-background px-2 text-sm font-normal text-foreground outline-none ring-2 ring-ring/30"
                     value={editingViewName}
                     onChange={(event) => setEditingViewName(event.currentTarget.value)}
                     onBlur={() => submitViewRename(view)}
@@ -530,7 +531,7 @@ export function WorkspaceViewTabs({
                 title={view.name}
                 aria-label={view.name}
                 className={[
-                  "h-12 max-w-52 min-w-30 flex-none cursor-grab rounded-lg px-3.5 text-base font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                  "h-8 max-w-40 min-w-20 flex-none cursor-grab rounded-md px-2 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                 ].join(" ")}
                 style={getViewTabDragStyle(view.id)}
                 onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}
@@ -551,10 +552,10 @@ export function WorkspaceViewTabs({
           })}
         </TabsList>
       </Tabs>
-      <div aria-hidden="true" className="mx-3 h-7 w-px shrink-0 bg-border" />
+      <div aria-hidden="true" className="mx-2 h-5 w-px shrink-0 bg-border" />
       {projectTabs}
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1">
         {actionsHidden ? projectActions : <>
         <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
           <DropdownMenuTrigger asChild>

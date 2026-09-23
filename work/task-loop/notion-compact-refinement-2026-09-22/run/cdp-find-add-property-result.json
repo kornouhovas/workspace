@@ -1,0 +1,18 @@
+[
+  {
+    "html": "<button data-slot=\"dropdown-menu-trigger\" data-variant=\"ghost\" data-size=\"icon-sm\" class=\"group/button inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invali",
+    "rect": {
+      "x": 717,
+      "y": 82.75,
+      "width": 28,
+      "height": 28
+    },
+    "ancestors": [
+      "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 min-w-12 bg-background/95 shadow-[inset_1px_0_0_var(--border)]",
+      "border-b transition-colors has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted h-8 hover:bg-transparent",
+      "[&_tr]:border-b sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85",
+      "w-full caption-bottom text-sm min-w-full table-fixed",
+      "relative w-full overflow-x-auto"
+    ]
+  }
+]

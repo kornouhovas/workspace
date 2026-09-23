@@ -84,6 +84,7 @@ export const en = {
   "view.columnWidthDescription": "Resize every Board column",
   "board.moveDisabled": "Move disabled",
   "board.projectsAria": "{{name}} projects",
+  "board.visibleCount": { "one": "{{count}} visible project", "other": "{{count}} visible projects" },
   "board.noProjects": "No projects",
   "table.name": "Name",
   "table.status": "Status",

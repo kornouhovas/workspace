@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(async()=>{const pause=(ms)=>new Promise(r=>setTimeout(r,ms)); const back=[...document.querySelectorAll('button')].find(el=>el.textContent?.trim()==='Вернуться в Workspace');back?.click();await pause(350);const tab=[...document.querySelectorAll('[data-project-tab-id]')].find(el=>el.getAttribute('title')==='Active 01');if(!tab)throw new Error('Active 01 tab missing');tab.click();await pause(450);return {expanded:Boolean(document.querySelector('.workspace-project-detail-expanded')),heading:document.querySelector('.workspace-project-detail-heading')?.textContent?.trim(),buttons:[...document.querySelectorAll('.workspace-project-detail-expanded button')].map(el=>({text:el.textContent?.trim(),aria:el.getAttribute('aria-label')})).slice(0,30)};})()"
+}

@@ -1,0 +1,139 @@
+{
+  "audited_at": "2026-09-23T05:40:53.063053+00:00",
+  "base": "3ea0073ae0c1fca627d8ba4f2e28a0f46ea8b7b3",
+  "files": [
+    {
+      "path": "src/App.tsx",
+      "sha256": "7891cacc02b1e550f21635eee30cc2d4324199e6f751bb43bc4697ed9d2962ab",
+      "lines": 2168,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 3
+      }
+    },
+    {
+      "path": "src/components/workspace/board-view.tsx",
+      "sha256": "13389e16acec7373d6e0088b0b2ecc22a1599c99cab79f7c0e4f73c62b17a248",
+      "lines": 227,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/left-panel.tsx",
+      "sha256": "e6a8e5d34b91157e77858740af6c456c5371bb57c2e9e0ee7bb8d458c0ea0850",
+      "lines": 501,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/project-detail-panel.tsx",
+      "sha256": "a763811870e83bcea6873b0af8e43ed89fb6d6e81a3349b1411bb6f37f35bf70",
+      "lines": 1875,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/view-tabs.tsx",
+      "sha256": "da1ae8e04e9377ebb9b599a84bf0a3b2e6de21d8e40a3bb76f086811b9cdaaac",
+      "lines": 647,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/project-tabs.tsx",
+      "sha256": "f607c24335531804c5e65e41a380f530d54bf757fee221343079b57d30f5309c",
+      "lines": 133,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/settings-view.tsx",
+      "sha256": "62cfa6eb0c60f0fdada54ab7f22237566748885d17c50b5a9724c028c7c46781",
+      "lines": 247,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/table-view.tsx",
+      "sha256": "3a32f55b3bbae158c8d005f3d0eeb0bdcd4405a9560d2fe88ee19e6a52df4864",
+      "lines": 1451,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/components/workspace/menu-styles.ts",
+      "sha256": "1b9625ecc03107f7904fbd0750ac7b89e11da966c8fb0470bc9cd5056cbf9be3",
+      "lines": 29,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/styles.css",
+      "sha256": "deea91a9818f140247288ba20b638b356edd90ca5f15885ea2a73561255635f2",
+      "lines": 439,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/workspaceAppState.ts",
+      "sha256": "cafa6122faf2c1e892b226f220166a11c4fffa59d392d247bd685cc477c11d99",
+      "lines": 1200,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    },
+    {
+      "path": "src/workspaceViews.js",
+      "sha256": "577b8619107edb489033ab1b26363c200d2d258a319c0afc63188ddb1196cc11",
+      "lines": 485,
+      "prohibited_terms": {
+        "contextIsolation": 0,
+        "nodeIntegration": 0,
+        "sandbox": 0,
+        "WorkspaceServiceClient": 0
+      }
+    }
+  ],
+  "boundary_note": "No electron/, preload, IPC, backend, sidecar, identity, dependency or security file is in product diff; workspaceAppState/workspaceViews change preserves empty status columns under search/filter per criterion."
+}

@@ -9,6 +9,7 @@ export { default as ChevronsRightIcon } from "lucide-react/dist/esm/icons/chevro
 export { default as CircleCheckIcon } from "lucide-react/dist/esm/icons/circle-check.mjs";
 export { default as CircleDotIcon } from "lucide-react/dist/esm/icons/circle-dot.mjs";
 export { default as Columns3Icon } from "lucide-react/dist/esm/icons/columns-3.mjs";
+export { default as Columns2Icon } from "lucide-react/dist/esm/icons/columns-2.mjs";
 export { default as CopyIcon } from "lucide-react/dist/esm/icons/copy.mjs";
 export { default as EllipsisVerticalIcon } from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
 export { default as EyeIcon } from "lucide-react/dist/esm/icons/eye.mjs";
@@ -29,6 +30,7 @@ export { default as OctagonXIcon } from "lucide-react/dist/esm/icons/octagon-x.m
 export { default as PaletteIcon } from "lucide-react/dist/esm/icons/palette.mjs";
 export { default as PanelLeftIcon } from "lucide-react/dist/esm/icons/panel-left.mjs";
 export { default as SquareIcon } from "lucide-react/dist/esm/icons/square.mjs";
+export { default as SlidersHorizontalIcon } from "lucide-react/dist/esm/icons/sliders-horizontal.mjs";
 export { default as PanelsTopLeftIcon } from "lucide-react/dist/esm/icons/panels-top-left.mjs";
 export { default as PencilIcon } from "lucide-react/dist/esm/icons/pencil.mjs";
 export { default as PlusIcon } from "lucide-react/dist/esm/icons/plus.mjs";

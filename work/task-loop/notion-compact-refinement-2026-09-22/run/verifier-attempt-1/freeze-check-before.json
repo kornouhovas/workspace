@@ -1,0 +1,482 @@
+{
+  "checked_at": "2026-09-23T05:37:24.515836+00:00",
+  "manifest_root_sha256": "eff900ae9f03b2a93158c8b60f857c4bc3de6562d4e31ac2f49abd6b28930e7d",
+  "count": 79,
+  "matched": 79,
+  "files": [
+    {
+      "path": "design-qa.md",
+      "expected": "c1c6e8baf7b8be8ed25e1bb7c62773301b1e27e0cc6da7f19c909ebf6e3f7d29",
+      "actual": "c1c6e8baf7b8be8ed25e1bb7c62773301b1e27e0cc6da7f19c909ebf6e3f7d29",
+      "match": true
+    },
+    {
+      "path": "docs/design/compact-redesign-handoff.md",
+      "expected": "99a744e043fd3910a7816b9c193ce63699251ee097987ddc5061e4b6164fd5d2",
+      "actual": "99a744e043fd3910a7816b9c193ce63699251ee097987ddc5061e4b6164fd5d2",
+      "match": true
+    },
+    {
+      "path": "src/App.tsx",
+      "expected": "7891cacc02b1e550f21635eee30cc2d4324199e6f751bb43bc4697ed9d2962ab",
+      "actual": "7891cacc02b1e550f21635eee30cc2d4324199e6f751bb43bc4697ed9d2962ab",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/board-view.tsx",
+      "expected": "13389e16acec7373d6e0088b0b2ecc22a1599c99cab79f7c0e4f73c62b17a248",
+      "actual": "13389e16acec7373d6e0088b0b2ecc22a1599c99cab79f7c0e4f73c62b17a248",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/left-panel.tsx",
+      "expected": "e6a8e5d34b91157e77858740af6c456c5371bb57c2e9e0ee7bb8d458c0ea0850",
+      "actual": "e6a8e5d34b91157e77858740af6c456c5371bb57c2e9e0ee7bb8d458c0ea0850",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/menu-styles.ts",
+      "expected": "1b9625ecc03107f7904fbd0750ac7b89e11da966c8fb0470bc9cd5056cbf9be3",
+      "actual": "1b9625ecc03107f7904fbd0750ac7b89e11da966c8fb0470bc9cd5056cbf9be3",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/project-detail-panel.tsx",
+      "expected": "a763811870e83bcea6873b0af8e43ed89fb6d6e81a3349b1411bb6f37f35bf70",
+      "actual": "a763811870e83bcea6873b0af8e43ed89fb6d6e81a3349b1411bb6f37f35bf70",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/project-tabs.tsx",
+      "expected": "f607c24335531804c5e65e41a380f530d54bf757fee221343079b57d30f5309c",
+      "actual": "f607c24335531804c5e65e41a380f530d54bf757fee221343079b57d30f5309c",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/settings-view.tsx",
+      "expected": "62cfa6eb0c60f0fdada54ab7f22237566748885d17c50b5a9724c028c7c46781",
+      "actual": "62cfa6eb0c60f0fdada54ab7f22237566748885d17c50b5a9724c028c7c46781",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/table-view.tsx",
+      "expected": "3a32f55b3bbae158c8d005f3d0eeb0bdcd4405a9560d2fe88ee19e6a52df4864",
+      "actual": "3a32f55b3bbae158c8d005f3d0eeb0bdcd4405a9560d2fe88ee19e6a52df4864",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/view-filter-menu.tsx",
+      "expected": "36a7de91ef0271d7ba924b9c0e169ada371c47137eb6933af80543950b8eb9fa",
+      "actual": "36a7de91ef0271d7ba924b9c0e169ada371c47137eb6933af80543950b8eb9fa",
+      "match": true
+    },
+    {
+      "path": "src/components/workspace/view-tabs.tsx",
+      "expected": "da1ae8e04e9377ebb9b599a84bf0a3b2e6de21d8e40a3bb76f086811b9cdaaac",
+      "actual": "da1ae8e04e9377ebb9b599a84bf0a3b2e6de21d8e40a3bb76f086811b9cdaaac",
+      "match": true
+    },
+    {
+      "path": "src/i18n/locales/en.js",
+      "expected": "136211f5cb99f941e519be06b89271b3917c9fc34045da836a2deaac6dd25ffd",
+      "actual": "136211f5cb99f941e519be06b89271b3917c9fc34045da836a2deaac6dd25ffd",
+      "match": true
+    },
+    {
+      "path": "src/i18n/locales/ru.js",
+      "expected": "a275ff6e3c25f412b2a842f58c01f32602424d15488dc933aa200d628b3487ff",
+      "actual": "a275ff6e3c25f412b2a842f58c01f32602424d15488dc933aa200d628b3487ff",
+      "match": true
+    },
+    {
+      "path": "src/lib/lucide-icons.ts",
+      "expected": "1768d909ded71bd29044ce296a8016ddf2f5fcec616c3273aa0756cc41f35114",
+      "actual": "1768d909ded71bd29044ce296a8016ddf2f5fcec616c3273aa0756cc41f35114",
+      "match": true
+    },
+    {
+      "path": "src/styles.css",
+      "expected": "deea91a9818f140247288ba20b638b356edd90ca5f15885ea2a73561255635f2",
+      "actual": "deea91a9818f140247288ba20b638b356edd90ca5f15885ea2a73561255635f2",
+      "match": true
+    },
+    {
+      "path": "src/workspaceAppState.ts",
+      "expected": "cafa6122faf2c1e892b226f220166a11c4fffa59d392d247bd685cc477c11d99",
+      "actual": "cafa6122faf2c1e892b226f220166a11c4fffa59d392d247bd685cc477c11d99",
+      "match": true
+    },
+    {
+      "path": "src/workspaceViews.js",
+      "expected": "577b8619107edb489033ab1b26363c200d2d258a319c0afc63188ddb1196cc11",
+      "actual": "577b8619107edb489033ab1b26363c200d2d258a319c0afc63188ddb1196cc11",
+      "match": true
+    },
+    {
+      "path": "test/dashboardStructure.test.js",
+      "expected": "75b4a4bcda9b365f01f4320d25fe72ad75bfb6c23d0387952dd3c5b9db714c63",
+      "actual": "75b4a4bcda9b365f01f4320d25fe72ad75bfb6c23d0387952dd3c5b9db714c63",
+      "match": true
+    },
+    {
+      "path": "test/notionCompactLayout.test.js",
+      "expected": "8efe75387f36f005906e3caed75ed99f46a57d5139be9ce7a5a669eb1e53baa3",
+      "actual": "8efe75387f36f005906e3caed75ed99f46a57d5139be9ce7a5a669eb1e53baa3",
+      "match": true
+    },
+    {
+      "path": "test/workspaceAppState.test.js",
+      "expected": "6d142c2f32e7daa49878e76e962a9f219181d1d2a091a08b1e104c424e894de0",
+      "actual": "6d142c2f32e7daa49878e76e962a9f219181d1d2a091a08b1e104c424e894de0",
+      "match": true
+    },
+    {
+      "path": "test/workspaceBackend.test.js",
+      "expected": "946ec1e4d4827f1e303f4c5e1bffbe317171ec55549a966d0517774d080d62a3",
+      "actual": "946ec1e4d4827f1e303f4c5e1bffbe317171ec55549a966d0517774d080d62a3",
+      "match": true
+    },
+    {
+      "path": "test/workspaceViews.test.js",
+      "expected": "51bc9a7f537ab72602a286f7eb5966f3fa46413621fe200fd595760c09a4141a",
+      "actual": "51bc9a7f537ab72602a286f7eb5966f3fa46413621fe200fd595760c09a4141a",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/acceptance-matrix.md",
+      "expected": "c4ba356c1a48e4415a550e22c17d3a7d14e72c7ad15bd24e2273589360010508",
+      "actual": "c4ba356c1a48e4415a550e22c17d3a7d14e72c7ad15bd24e2273589360010508",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/baseline-deviation-map.md",
+      "expected": "2d3a11d4bf6a6c57389c2b97871831d53296d880967ac58443e7b41430780efe",
+      "actual": "2d3a11d4bf6a6c57389c2b97871831d53296d880967ac58443e7b41430780efe",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/baseline-provenance.md",
+      "expected": "ceac01aef752846fc569a2901273923e64d8c717171498b66d7928dc9df677a4",
+      "actual": "ceac01aef752846fc569a2901273923e64d8c717171498b66d7928dc9df677a4",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-long-name-many-tabs-result.json",
+      "expected": "595d15447a3d70df23ff38da06efc31e8ca4f532b4fc0319b19ad078c75d560e",
+      "actual": "595d15447a3d70df23ff38da06efc31e8ca4f532b4fc0319b19ad078c75d560e",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-board-scroll-filter-final-result.json",
+      "expected": "0dececb6e9501677f4f13f777b6c58ab410f3659bc07505396ef49fcdab9b672",
+      "actual": "0dececb6e9501677f4f13f777b6c58ab410f3659bc07505396ef49fcdab9b672",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-collapsed-result.json",
+      "expected": "4bf8adf78d782a8ffcbfc3b53f0c0bf86239108a8df1fdfffee79964723fb14b",
+      "actual": "4bf8adf78d782a8ffcbfc3b53f0c0bf86239108a8df1fdfffee79964723fb14b",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-expanded-result.json",
+      "expected": "d7c6b410064c3a7fd5bbff27305e9d46a045e8f395c7f842903e2d276b8707d7",
+      "actual": "d7c6b410064c3a7fd5bbff27305e9d46a045e8f395c7f842903e2d276b8707d7",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-focus-result.json",
+      "expected": "5a48cd0b05a089c74ca9bcefd762a77df3fea507e95e4fdaf89bcf8bc538f06b",
+      "actual": "5a48cd0b05a089c74ca9bcefd762a77df3fea507e95e4fdaf89bcf8bc538f06b",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-no-results-result.json",
+      "expected": "b52a66a8954369ba4ce33979950f7ea6c584951f9fca1e6e0852983c3f9a8fa5",
+      "actual": "b52a66a8954369ba4ce33979950f7ea6c584951f9fca1e6e0852983c3f9a8fa5",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-property-persistence-result.json",
+      "expected": "6d85172ecea6befb505bc865d58f27ac0f04e1d1b07ecbaf5608d1d81acabfd4",
+      "actual": "6d85172ecea6befb505bc865d58f27ac0f04e1d1b07ecbaf5608d1d81acabfd4",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-reload-persistence-result.json",
+      "expected": "1a964d9915beedfca85c9ab46d84b6d411758230fb4ea71f488d8d354c3f1ff1",
+      "actual": "1a964d9915beedfca85c9ab46d84b6d411758230fb4ea71f488d8d354c3f1ff1",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-probe-settings-result.json",
+      "expected": "f53685e00b49acc88fe9ea02c7b288ba125b1694e161a85c760e6b23f5c7f725",
+      "actual": "f53685e00b49acc88fe9ea02c7b288ba125b1694e161a85c760e6b23f5c7f725",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/cdp-project-tab-actions-result.json",
+      "expected": "557d3c0e91ce089f368bd48cf35b8b6b1d3ce2e50f83f904869e33f4df3199a4",
+      "actual": "557d3c0e91ce089f368bd48cf35b8b6b1d3ce2e50f83f904869e33f4df3199a4",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/comparison-board-reference-vs-renderer.png",
+      "expected": "43a5da54fc052a4349164831c34918410196ef786b32e6430a121b9c50302183",
+      "actual": "43a5da54fc052a4349164831c34918410196ef786b32e6430a121b9c50302183",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/comparison-expanded-reference-vs-renderer.png",
+      "expected": "f4c50004b5e6efb5375329a7001cf1ebfdd97a665d135d0b2d136c32cb01beb8",
+      "actual": "f4c50004b5e6efb5375329a7001cf1ebfdd97a665d135d0b2d136c32cb01beb8",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-build-renderer.txt",
+      "expected": "732b5f9f2a95cca13572dbc47c1a728a3ac151795301c09bf54e1d487f4b26d0",
+      "actual": "732b5f9f2a95cca13572dbc47c1a728a3ac151795301c09bf54e1d487f4b26d0",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-evidence-map.md",
+      "expected": "3dcd83b41bf4948fdeea8f01a7f3fcb7862416fd9c7f701d33342cf29fa10f94",
+      "actual": "3dcd83b41bf4948fdeea8f01a7f3fcb7862416fd9c7f701d33342cf29fa10f94",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-git-diff-check.txt",
+      "expected": "eb48e1ec9b5162ef1a0ba730208bfe4e31c60117933eabef09cfcd5280b89f21",
+      "actual": "eb48e1ec9b5162ef1a0ba730208bfe4e31c60117933eabef09cfcd5280b89f21",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-link-check.txt",
+      "expected": "1c361f29c47c5f202ebfc33dcc60047880c3d00134f7f7a9a16dbc295f130b0d",
+      "actual": "1c361f29c47c5f202ebfc33dcc60047880c3d00134f7f7a9a16dbc295f130b0d",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-npm-test-2.txt",
+      "expected": "00f7ddfeb7f03ba8976c9dc300ed113ceaca5ea1e841fdccaeed5883a0b8f088",
+      "actual": "00f7ddfeb7f03ba8976c9dc300ed113ceaca5ea1e841fdccaeed5883a0b8f088",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-quality-summary.md",
+      "expected": "4dee30cfa000d201dad886fccf8b4891851b7c154c654c57d6e741010b4bd0a8",
+      "actual": "4dee30cfa000d201dad886fccf8b4891851b7c154c654c57d6e741010b4bd0a8",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/final-typecheck.txt",
+      "expected": "96a27d83a001329c2432224b5c120df9f94a511adff948cca07ac2e72d883286",
+      "actual": "96a27d83a001329c2432224b5c120df9f94a511adff948cca07ac2e72d883286",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/green-empty-board-columns.txt",
+      "expected": "3418d8975fa333b5e33cd990d6bc2e42a25f09c1ed53dacacff757c0dac44d4e",
+      "actual": "3418d8975fa333b5e33cd990d6bc2e42a25f09c1ed53dacacff757c0dac44d4e",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/green-workspace-backend-empty-columns.txt",
+      "expected": "4eaefe1558e66fff245a31c4e0226b49d2118f95cd633a3f942cd4cc9b8d26f1",
+      "actual": "4eaefe1558e66fff245a31c4e0226b49d2118f95cd633a3f942cd4cc9b8d26f1",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/main-force-visible-window-result.json",
+      "expected": "f9717e13893b481fbcfe88597c46c23e80c1c2b32d3a2371794deb485387c751",
+      "actual": "f9717e13893b481fbcfe88597c46c23e80c1c2b32d3a2371794deb485387c751",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/main-restore-window-flags-result.json",
+      "expected": "069d885aa215ab6af1c79db657e73e7519f373a39f30d2e97e64a770087fced5",
+      "actual": "069d885aa215ab6af1c79db657e73e7519f373a39f30d2e97e64a770087fced5",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/main-show-window-1440-result.json",
+      "expected": "eb50123e7ba17374311a1af886aa1be7907a9a36aba0dc69b81a86f8b13885e6",
+      "actual": "eb50123e7ba17374311a1af886aa1be7907a9a36aba0dc69b81a86f8b13885e6",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/main-steal-focus-window-result.json",
+      "expected": "c0c8ef1a0c2b7462d1cc8ac99000af77b2f1d3f412b918502c9569e58918252c",
+      "actual": "c0c8ef1a0c2b7462d1cc8ac99000af77b2f1d3f412b918502c9569e58918252c",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1024x720.png",
+      "expected": "74e4215651b138c02dc7ef9100735996a803f410e9a7c7496e64f9c38adbc3f6",
+      "actual": "74e4215651b138c02dc7ef9100735996a803f410e9a7c7496e64f9c38adbc3f6",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1440x960.png",
+      "expected": "667788da4d2b636d02f06f75b4e09660d3c82a8e895394529a60805fcce8ee11",
+      "actual": "667788da4d2b636d02f06f75b4e09660d3c82a8e895394529a60805fcce8ee11",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1024x720.png",
+      "expected": "c0532c25811246622379c4f93d57c759410957edef597dbfc76fc7f8a1084af1",
+      "actual": "c0532c25811246622379c4f93d57c759410957edef597dbfc76fc7f8a1084af1",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1440x960.png",
+      "expected": "b9e93af2ae434ee3cda763ad7d0f4b8c9383b358be7f558f702e3ceec3a19538",
+      "actual": "b9e93af2ae434ee3cda763ad7d0f4b8c9383b358be7f558f702e3ceec3a19538",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-attempt-errors.md",
+      "expected": "2f1220dd58b576c2977034503bdda350a034ee6ea74ed4a304fa6a8106b77229",
+      "actual": "2f1220dd58b576c2977034503bdda350a034ee6ea74ed4a304fa6a8106b77229",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-capture-plan.md",
+      "expected": "dd2c821bbda8af9d9e4655b486a193199cf04904647edfba6038560e1699989c",
+      "actual": "dd2c821bbda8af9d9e4655b486a193199cf04904647edfba6038560e1699989c",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/native-window-list-pid13188-after-inspector.txt",
+      "expected": "f9175b4a711fe87fb72cc5a9acc2aa4a2af218c60f3de97a6234ec77b6ecdeff",
+      "actual": "f9175b4a711fe87fb72cc5a9acc2aa4a2af218c60f3de97a6234ec77b6ecdeff",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/process-assessment.md",
+      "expected": "8c9dc9c72e73ad174f000485ad68c1b0a8889c3495670619100affa38f369661",
+      "actual": "8c9dc9c72e73ad174f000485ad68c1b0a8889c3495670619100affa38f369661",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/red-empty-board-columns.txt",
+      "expected": "155ffcfcee1d6d30b0e210891130a8f23bd537d3f25690464b84a7e4e3f21022",
+      "actual": "155ffcfcee1d6d30b0e210891130a8f23bd537d3f25690464b84a7e4e3f21022",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt",
+      "expected": "0f7e7f7d02a78b517c448afa1af4fce80e4beb11db30045d79cb6aa9fb2960aa",
+      "actual": "0f7e7f7d02a78b517c448afa1af4fce80e4beb11db30045d79cb6aa9fb2960aa",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/reference-provenance.md",
+      "expected": "bb4608557813b2d058d6bf956060b13706b70d949869eb4a6c72c26d404c9bb4",
+      "actual": "bb4608557813b2d058d6bf956060b13706b70d949869eb4a6c72c26d404c9bb4",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/references/board.png",
+      "expected": "692d6db00bd9780c1d92477883cbc1bbfcfd14bed01b987f53690d23fc61887e",
+      "actual": "692d6db00bd9780c1d92477883cbc1bbfcfd14bed01b987f53690d23fc61887e",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/references/expanded.png",
+      "expected": "b0de8e1a2866c660aa43b4497567b4894f4fcabcfceea79d058baedd16deaf87",
+      "actual": "b0de8e1a2866c660aa43b4497567b4894f4fcabcfceea79d058baedd16deaf87",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-collapsed-board-1024x720.png",
+      "expected": "bbb8bcca00d52fe4f3e6ab81dca062a56825bdcb00da2b1fe8b8e2f5b6eed4dc",
+      "actual": "bbb8bcca00d52fe4f3e6ab81dca062a56825bdcb00da2b1fe8b8e2f5b6eed4dc",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1024x720.png",
+      "expected": "7dd55739cd8e155394e30bb22331aedc6c34aa72a60bc4f68f4be5fd64350bb7",
+      "actual": "7dd55739cd8e155394e30bb22331aedc6c34aa72a60bc4f68f4be5fd64350bb7",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-filtered-empty-columns-1440x960.png",
+      "expected": "50c7218f234da3f7d92e94f10f32eb458e92e435c48baf4a2ee5d72c818c2f24",
+      "actual": "50c7218f234da3f7d92e94f10f32eb458e92e435c48baf4a2ee5d72c818c2f24",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1024x720.png",
+      "expected": "905c4d760991f5277b655d672c576aee1e4122c8c46b3692ae3a56c731a9634b",
+      "actual": "905c4d760991f5277b655d672c576aee1e4122c8c46b3692ae3a56c731a9634b",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1440x960.png",
+      "expected": "dbd00a9d444f293eb2a681e4f842bd2caf7345470528068bdbef5f82e1c8fdb9",
+      "actual": "dbd00a9d444f293eb2a681e4f842bd2caf7345470528068bdbef5f82e1c8fdb9",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-long-name-many-tabs-1024x720.png",
+      "expected": "94b6e43f9f094eaf73c4b2c528b17302b5511b098bda31f4266474805a3ae6e6",
+      "actual": "94b6e43f9f094eaf73c4b2c528b17302b5511b098bda31f4266474805a3ae6e6",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-no-results-1024x720.png",
+      "expected": "37cf617e9217ef36b2474872caef956127ab7cdfeddd4c8bcc08891341d715d8",
+      "actual": "37cf617e9217ef36b2474872caef956127ab7cdfeddd4c8bcc08891341d715d8",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-settings-1024x720.png",
+      "expected": "8c3733a67f91f612e510aee9c9f2ec3d56df1333b3eda826337fb120a657512f",
+      "actual": "8c3733a67f91f612e510aee9c9f2ec3d56df1333b3eda826337fb120a657512f",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-table-1024x720.png",
+      "expected": "4aaf51e450cc086a71e5e8e03f940f29b1ec3c6ce7c0fdcc6c8ee483dbf8e3d6",
+      "actual": "4aaf51e450cc086a71e5e8e03f940f29b1ec3c6ce7c0fdcc6c8ee483dbf8e3d6",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1024x720.png",
+      "expected": "f17eab7c347d0579bebf581e9ad682e84a8022d724b4a3b31f48345c70c37d86",
+      "actual": "f17eab7c347d0579bebf581e9ad682e84a8022d724b4a3b31f48345c70c37d86",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-variable-board-1440x960.png",
+      "expected": "f9730a8e8113825aef6292539cfd97340eb038f75fc222ed7772e65a4a04b5ec",
+      "actual": "f9730a8e8113825aef6292539cfd97340eb038f75fc222ed7772e65a4a04b5ec",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md",
+      "expected": "1fd674fc8b2cd656c808c6b297d53c5ede94699b8a29f30e2e0bf65a48e006b5",
+      "actual": "1fd674fc8b2cd656c808c6b297d53c5ede94699b8a29f30e2e0bf65a48e006b5",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/verifier-request-attempt-1.md",
+      "expected": "fcdc83bbccdbfe173216a5b6ac9afcce650bf0dc697c587bf5503007f23500c4",
+      "actual": "fcdc83bbccdbfe173216a5b6ac9afcce650bf0dc697c587bf5503007f23500c4",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/run/workflow.yaml",
+      "expected": "53803c5b7c22dcf55e3a41a194080bc5dcfdff8d47d558e5133c7d66f408a78f",
+      "actual": "53803c5b7c22dcf55e3a41a194080bc5dcfdff8d47d558e5133c7d66f408a78f",
+      "match": true
+    },
+    {
+      "path": "work/task-loop/notion-compact-refinement-2026-09-22/task.json",
+      "expected": "7ce47852f8894018a4088fe88c0efaf2d489217708d073dbe7d338083fe37c52",
+      "actual": "7ce47852f8894018a4088fe88c0efaf2d489217708d073dbe7d338083fe37c52",
+      "match": true
+    }
+  ]
+}

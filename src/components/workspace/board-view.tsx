@@ -87,9 +87,9 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
   return (
     <Badge
       variant="secondary"
-      className="h-8 max-w-full cursor-default select-none gap-3 rounded-none border-0 bg-transparent px-0 text-base font-normal text-muted-foreground shadow-none"
+      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-none border-0 bg-transparent px-0 text-[13px] font-normal text-muted-foreground shadow-none"
     >
-      <span className="size-3 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
+      <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
       <span className="truncate">{label}</span>
     </Badge>
   );
@@ -136,29 +136,35 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pb-11 pl-7 pr-7 pt-6" aria-label={t("view.boardDefault")}>
-      <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="grid h-full min-w-full w-max grid-flow-col gap-4" style={boardGridStyle}>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-4 pt-3" aria-label={t("view.boardDefault")}>
+      <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
+        <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3" style={boardGridStyle}>
           {projection.columns.map((column) => {
             const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (
               <section
               key={column.statusValueId}
-              className="workspace-board-column flex min-h-0 min-w-0 flex-col rounded-xl bg-[#f3f6fc]"
+              className="workspace-board-column flex min-w-0 self-start flex-col rounded-lg bg-[#f3f6fc]"
               aria-label={t("board.projectsAria", {
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}
             >
-              <header className="flex h-[60px] shrink-0 items-center justify-between px-5">
-                <h3 className="flex min-w-0 items-center gap-3 truncate text-lg font-medium">
-                  <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
+              <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-3">
+                <h3 className="flex min-w-0 items-center gap-2 truncate text-sm font-medium">
+                  <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
                   {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
                 </h3>
-                <span className="sr-only">{column.projects.length}</span>
+                <span
+                  data-workspace-column-count
+                  aria-label={t("board.visibleCount", { count: column.projects.length })}
+                  className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-background/75 px-1.5 text-xs tabular-nums text-muted-foreground"
+                >
+                  {column.projects.length}
+                </span>
               </header>
-              <div className="grid min-h-0 flex-1 auto-rows-max content-start gap-3 overflow-y-auto overflow-x-hidden px-2.5 pb-2.5">
+              <div className="grid auto-rows-max content-start gap-2 px-2 pb-2">
                 {column.projects.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     {t("board.noProjects")}
                   </div>
                 ) : (
@@ -170,22 +176,22 @@ export function WorkspaceBoardView({
                     return (
                     <article
                       key={project.id}
-                      className="workspace-board-card relative flex min-h-12 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-xl border border-border bg-card px-3 pb-[9px] pt-[19px] text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
+                      className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
                     >
                       <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
-                      <h4 className="relative min-w-0 text-lg font-medium leading-7">
-                        <button type="button" title={project.name} className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                      <h4 className="relative min-w-0 text-sm font-medium leading-5">
+                        <button type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
                           <span className="truncate">{project.name}</span>
                         </button>
                       </h4>
                       {populatedProperties.length > 0 ? (
                         <dl className="relative grid gap-0.5">
                           {populatedProperties.map(({ property, value }) => (
-                          <div key={property.id} className="min-w-0 text-base">
+                          <div key={property.id} className="min-w-0 text-[13px]">
                               <dt className="sr-only">{property.name}</dt>
                               <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
                                 {property.id === "property:status" ? (
-                                  <div className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5">
+                                  <div className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2">
                                     {renderBoardStatusValue(project.status, t)}
                                   </div>
                                 ) : property.system ? <span className="block truncate">{value}</span> : (

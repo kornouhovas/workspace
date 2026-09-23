@@ -1,0 +1,1 @@
+{"type":"screenshot","viewport":[1440,960],"waitFor":"document.querySelector('[role=dialog].workspace-project-detail-expanded') && document.querySelector('[data-project-tab-id][aria-selected=true]')","path":"/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-expanded-1440x960.png"}

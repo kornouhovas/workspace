@@ -21,7 +21,7 @@ import {
   createRendererErrorState,
   resolveRendererErrorState,
 } from "@/i18n/errors.js";
-import { PanelLeftIcon, PanelsTopLeftIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
+import { FolderIcon, PanelLeftIcon, PanelsTopLeftIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
@@ -1829,6 +1829,10 @@ export default function App() {
     : state.root
       ? [{ id: state.workspaceId || state.root.workspaceId, name: state.root.name || "Workspace", order: 10 }]
       : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
+  const currentWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+  const currentWorkspaceName = navigationWorkspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name
+    || navigationWorkspaces[0]?.name
+    || "Workspace";
   const sourceFolder = state.root
     ? {
         name: state.root.name,
@@ -1915,25 +1919,25 @@ export default function App() {
 
   return (
     <>
-      <div className="relative flex h-screen min-h-0 bg-background text-foreground">
+      <div className="workspace-shell relative flex h-screen min-h-0 bg-background text-foreground">
         <button
           type="button"
           className={[
-            "electron-window-no-drag workspace-top-action absolute top-4 z-40 inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground",
-            sidebarCollapsed ? "left-4" : "left-[17.25rem]",
+            "electron-window-no-drag workspace-top-action absolute top-4 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
+            sidebarCollapsed ? "left-20" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           onClick={() => setSidebarCollapsed((value) => !value)}
         >
-          <PanelLeftIcon className="size-5" aria-hidden="true" />
+          <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
         <div
           aria-hidden={sidebarCollapsed}
           inert={sidebarCollapsed || undefined}
           className={[
             "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
-            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-80 opacity-100",
+            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[var(--workspace-sidebar-width)] opacity-100",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
@@ -1956,17 +1960,19 @@ export default function App() {
         <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header
             className={[
-              "electron-window-drag flex shrink-0 gap-2 border-b border-border pr-6",
-              projectExpanded ? "h-[113px]" : "h-24",
-              activeSurface === "settings" ? "items-center" : "items-end",
-              sidebarCollapsed ? "pl-16" : "pl-7",
+              "electron-window-drag flex h-[var(--workspace-header-height)] shrink-0 items-center gap-2 border-b border-border pr-4",
+              sidebarCollapsed ? "pl-32" : "pl-4",
             ].join(" ")}
           >
+            <div className="workspace-current-name electron-window-no-drag flex w-40 max-w-[28%] shrink-0 items-center gap-2 border-r border-border pr-3 text-sm font-medium text-foreground" title={currentWorkspaceName}>
+              <FolderIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="truncate">{currentWorkspaceName}</span>
+            </div>
             {activeSurface !== "settings" ? (
               <div
                 aria-busy={isWorkspaceSwitchPendingSurface || undefined}
                 inert={isWorkspaceSwitchPendingSurface || undefined}
-                className="electron-window-no-drag min-w-0 flex-1"
+                className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
               >
                 <WorkspaceViewTabs
                   projectActive={projectExpanded}

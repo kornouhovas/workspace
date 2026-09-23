@@ -1,0 +1,16 @@
+{
+  "check": "project-detail-alignment",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent verifier audit of frozen detail DOM metrics and native evidence boundary",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "summary": "Frozen DOM metrics and source show 13px/500/20px shared headings, common left inset, visible file count 1 and aria label '1 элемент'. The specified native expanded-project observation is absent, so the whole check remains inconclusive.",
+  "verdict": "inconclusive",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/functional-evidence-audit.json",
+    "cdp-probe-expanded-result.json",
+    "renderer-after-final-expanded-1024x720.png"
+  ]
+}

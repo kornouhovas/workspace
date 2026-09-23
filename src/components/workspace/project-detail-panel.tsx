@@ -1460,8 +1460,8 @@ export function WorkspaceProjectDetailPanel({
     <div
       className={[
         "electron-window-no-drag pointer-events-none fixed bottom-0 right-0 z-30 flex justify-end",
-        expanded ? "top-[113px]" : "top-24",
-        expanded && !sidebarCollapsed ? "left-80" : "left-0",
+        "top-[var(--workspace-header-height)]",
+        expanded && !sidebarCollapsed ? "left-[var(--workspace-sidebar-width)]" : "left-0",
       ].join(" ")}
       aria-hidden={!panelVisible}
     >
@@ -1500,26 +1500,26 @@ export function WorkspaceProjectDetailPanel({
           <span className="sr-only">{t("detail.resizePanel")}</span>
         </button> : null}
         <>
-          <header className={expanded ? "px-9 pb-3 pt-[43px]" : "px-5 pb-2 pt-4"}>
-            <h2 id="project-detail-title" className={expanded ? "break-words text-[30px] font-semibold leading-10 tracking-normal text-foreground" : "break-words text-xl font-normal leading-7 tracking-normal text-foreground"}>
+          <header className={expanded ? "workspace-project-detail-content-inset pb-2 pt-3" : "px-5 pb-2 pt-3"}>
+            <h2 id="project-detail-title" className="workspace-project-detail-heading break-words text-sm font-medium text-foreground">
               {displayedProject.name}
             </h2>
           </header>
-          <div className={expanded ? "min-h-0 flex-1 overflow-auto px-9 pb-9 pt-2" : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"}>
-            <div className={expanded ? "grid gap-8" : "grid gap-4"}>
-              <section className={`grid ${propertiesExpanded ? "gap-2.5" : "gap-0"}`} aria-labelledby="project-properties-heading">
-                <h3 id="project-properties-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
+          <div className={expanded ? "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto pb-6 pt-1" : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"}>
+            <div className={expanded ? "grid gap-4" : "grid gap-4"}>
+              <section className={`grid ${propertiesExpanded ? "gap-2" : "gap-0"}`} aria-labelledby="project-properties-heading">
+                <h3 id="project-properties-heading" className="workspace-project-detail-heading text-sm font-medium text-foreground">
                   <button
                     type="button"
                     aria-controls="project-visible-properties"
                     aria-expanded={propertiesExpanded}
-                    className={expanded ? "group/section-heading -ml-1 flex h-9 w-[calc(100%+0.25rem)] items-center gap-2 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40" : "group/section-heading -ml-4 flex h-8 w-[calc(100%+1rem)] items-center gap-1 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"}
+                    className="workspace-project-detail-section-toggle group/section-heading relative flex h-7 w-full items-center rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
                     onClick={() => toggleCardSection("properties")}
                   >
                     {propertiesExpanded ? (
-                      <ChevronDownIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
+                      <ChevronDownIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
                     ) : (
-                      <ChevronRightIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
+                      <ChevronRightIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
                     )}
                     {t("property.properties")}
                   </button>
@@ -1694,18 +1694,18 @@ export function WorkspaceProjectDetailPanel({
                 </dl> : null}
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
-                    <div className="workspace-project-detail-hidden-properties-heading group/section-heading flex items-center justify-between gap-3">
+                    <div className="workspace-project-detail-hidden-properties-heading workspace-project-detail-heading group/section-heading flex items-center justify-between gap-3 text-sm font-medium">
                       <button
                         type="button"
                         aria-controls="project-hidden-properties"
                         aria-expanded={hiddenPropertiesExpanded}
-                        className="workspace-project-detail-hidden-properties-toggle group/section-toggle -ml-4 flex h-8 min-w-0 flex-1 items-center gap-1 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                        className="workspace-project-detail-hidden-properties-toggle group/section-toggle relative flex h-7 min-w-0 flex-1 items-center rounded-md pr-2 text-left text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
                         onClick={() => toggleCardSection("hidden")}
                       >
                         {hiddenPropertiesExpanded ? (
-                          <ChevronDownIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
+                          <ChevronDownIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRightIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
+                          <ChevronRightIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
                         )}
                         <span className="truncate">{t("view.hiddenProperties")}</span>
                       </button>
@@ -1842,13 +1842,17 @@ export function WorkspaceProjectDetailPanel({
                   </div>
                 ) : null}
               </section>
-              <section className={expanded ? "grid gap-4" : "grid gap-2"} aria-labelledby="project-file-tree-heading">
+              <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 id="project-file-tree-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
+                  <h3 id="project-file-tree-heading" className="workspace-project-detail-heading text-sm font-medium text-foreground">
                     {t("detail.fileTree")}
                   </h3>
-                  <Badge variant="secondary" className={expanded ? "h-8 rounded-full px-3 text-sm" : "h-6 px-2 text-xs"}>
-                    {t("detail.items", { count: displayedProject.fileTree.length })}
+                  <Badge
+                    variant="secondary"
+                    aria-label={t("detail.items", { count: displayedProject.fileTree.length })}
+                    className="h-5 min-w-5 rounded-full px-1.5 text-xs tabular-nums"
+                  >
+                    {displayedProject.fileTree.length}
                   </Badge>
                 </div>
                 <ul className="workspace-file-tree grid gap-0">

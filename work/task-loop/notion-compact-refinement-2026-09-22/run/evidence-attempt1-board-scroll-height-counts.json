@@ -1,0 +1,17 @@
+{
+  "check": "board-scroll-height-counts",
+  "attempt": 1,
+  "basis": "observed",
+  "source": "Independent verifier consistency audit of frozen Board probe JSON, source and renderer images",
+  "observer": "/root/compact_verifier",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "summary": "One shared vertical Board scroll moves all columns while internal column scrollTop remains zero; horizontal overflow remains available; 14/6/2 content heights and filtered 1/0/0 compact columns match visible-card counts before, during and after search.",
+  "verdict": "pass",
+  "artifacts": [
+    "verifier-attempt-1/report.md",
+    "verifier-attempt-1/functional-evidence-audit.json",
+    "verifier-attempt-1/source-audit.json",
+    "cdp-probe-board-scroll-filter-final-result.json",
+    "renderer-after-filtered-empty-columns-1440x960.png"
+  ]
+}

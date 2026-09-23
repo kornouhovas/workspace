@@ -22,6 +22,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   Columns3Icon,
+  SlidersHorizontalIcon,
   EyeIcon,
   EyeOffIcon,
   ListFilterIcon,
@@ -648,16 +649,16 @@ export function WorkspaceViewFilterMenu({
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t("view.customizeColumns")} title={t("view.customizeColumns")}>
-          <Columns3Icon aria-hidden="true" />
+          <SlidersHorizontalIcon aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         data-workspace-view-filter-menu="true"
         align="end"
-        className={`${workspaceMenuContentClassName} max-h-[calc(100vh-6.5rem)] w-80 overflow-x-hidden overflow-y-auto p-0`}
+        className={`${workspaceMenuContentClassName} max-h-[calc(100vh-4.5rem)] w-72 overflow-x-hidden overflow-y-auto p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
       >
-        <div className="grid gap-2.5 p-3">
+        <div className="grid gap-2 p-2.5">
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-semibold leading-none">
@@ -691,7 +692,7 @@ export function WorkspaceViewFilterMenu({
           ) : null}
         </div>
         <Separator className={workspaceMenuSeparatorClassName} />
-        <div className="grid gap-2.5 p-3">
+        <div className="grid gap-2 p-2.5">
           <div className="grid gap-1.5">
             <p className="flex items-center gap-2 text-sm font-semibold leading-none">
               <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />

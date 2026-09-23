@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => ({panels:[...document.querySelectorAll('[aria-labelledby=project-detail-title]')].map(el=>({class:el.className,rect:(r=>({x:r.x,y:r.y,width:r.width,height:r.height}))(el.getBoundingClientRect()),text:el.textContent?.trim()?.slice(0,250)})),addButtons:[...document.querySelectorAll('button')].filter(el=>el.textContent?.includes('Добавить свойство')||el.getAttribute('aria-label')==='Добавить свойство').map(el=>({class:el.className,text:el.textContent?.trim(),aria:el.getAttribute('aria-label'),rect:(r=>({x:r.x,y:r.y,width:r.width,height:r.height}))(el.getBoundingClientRect())}))}))()"
+}

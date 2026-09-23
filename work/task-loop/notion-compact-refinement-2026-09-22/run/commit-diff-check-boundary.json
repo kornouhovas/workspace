@@ -1,0 +1,30 @@
+{
+  "command": "git diff --cached --check",
+  "exit_code": 2,
+  "diagnostic_lines": 1664,
+  "files_with_diagnostics": 10,
+  "product_files_with_diagnostics": [],
+  "boundary": "Diagnostics are confined to verbatim task-run logs and evidence snapshots; frozen/raw evidence was not rewritten. Independent product/source diff check passed.",
+  "sample": [
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/evidence/154a38f0e3824066a885c4e4d71664b7/2-typecheck.txt:5: new blank line at EOF.",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/final-npm-test.txt:571: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/final-typecheck.txt:4: new blank line at EOF.",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/node-inspector-target-pid13188.json:12: new blank line at EOF.",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-empty-board-columns.txt:136: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-empty-board-columns.txt:257: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:10: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:366: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:377: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:379: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:424: trailing whitespace.",
+    "+    ",
+    "work/task-loop/notion-compact-refinement-2026-09-22/run/red-notion-compact-layout.txt:460: trailing whitespace."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "ready": "complete",
+  "activeTab": "Active 01",
+  "expanded": true,
+  "heading": "Active 01",
+  "values": [
+    {
+      "aria": "Изменить значение свойства Text",
+      "text": "Compact persistence proof"
+    }
+  ],
+  "persistedText": true
+}

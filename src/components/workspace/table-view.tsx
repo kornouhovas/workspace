@@ -286,20 +286,20 @@ function hasActiveValueFilter(
 
 function getBodyCellClassName(property: WorkspaceMockVisibleProperty, editable: boolean, wrapContent: boolean) {
   if (property.id === "property:name") {
-    return `h-9 ${tableColumnDividerClassName} align-top p-0.5`;
+    return `h-8 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.id === "property:status") {
-    return `h-9 ${tableColumnDividerClassName} align-top p-0.5`;
+    return `h-8 ${tableColumnDividerClassName} align-top p-0.5`;
   }
 
   if (property.propertyType === "text" && wrapContent) {
-    return `h-9 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
+    return `h-8 ${tableColumnDividerClassName} whitespace-normal align-top p-0.5`;
   }
 
   return editable
-    ? `h-9 ${tableColumnDividerClassName} align-top p-0.5`
-    : `h-9 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
+    ? `h-8 ${tableColumnDividerClassName} align-top p-0.5`
+    : `h-8 ${tableColumnDividerClassName} align-top truncate px-3 py-0`;
 }
 
 function renderTableStatusValue(value: unknown, t: (key: string) => string) {
@@ -1105,7 +1105,7 @@ export function WorkspaceTableView({
   }
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-0 pt-4" aria-label={t("app.title")}>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-3 pb-0 pt-3" aria-label={t("app.title")}>
       <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
         <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
@@ -1118,7 +1118,7 @@ export function WorkspaceTableView({
             className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
             onPointerDownCapture={dismissHeaderTransientState}
           >
-            <TableRow className="h-9 hover:bg-transparent">
+            <TableRow className="h-8 hover:bg-transparent">
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
                 const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
@@ -1394,7 +1394,7 @@ export function WorkspaceTableView({
             {projection.rows.map((project) => (
               <TableRow
                 key={project.id}
-                className="h-9 hover:bg-accent/15"
+                className="h-8 hover:bg-accent/15"
               >
                 {visibleProperties.map((property) => {
                   const editable = isEditableProperty(property);
@@ -1440,7 +1440,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-9 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
+                <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
               </TableRow>
             ))}
           </TableBody>

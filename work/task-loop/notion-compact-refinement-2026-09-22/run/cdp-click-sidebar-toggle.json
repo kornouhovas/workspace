@@ -1,0 +1,4 @@
+{
+  "type": "click",
+  "expression": "[...document.querySelectorAll('button')].find((el) => /боковую панель/i.test(el.getAttribute('aria-label') || ''))"
+}

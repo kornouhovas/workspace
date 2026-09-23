@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => { const rect=(el)=>el?((r)=>({x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom,centerY:r.y+r.height/2}))(el.getBoundingClientRect()):null; const toggle=[...document.querySelectorAll('button')].find(el=>/боковую панель/i.test(el.getAttribute('aria-label')||'')); const actions=[...document.querySelectorAll('.workspace-top-action')]; const workspace=document.querySelector('.workspace-current-name'); const board=document.querySelector('.workspace-board-scroll'); return {viewport:{width:innerWidth,height:innerHeight},toggle:{aria:toggle?.getAttribute('aria-label'),rect:rect(toggle)},workspace:{text:workspace?.textContent?.trim(),rect:rect(workspace)},actions:actions.map(el=>({aria:el.getAttribute('aria-label'),rect:rect(el)})),board:rect(board),sidebarPresent:Boolean([...document.querySelectorAll('aside')].find(el=>el.getBoundingClientRect().width>0))}; })()"
+}

@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(async()=>{const pause=(ms)=>new Promise(r=>setTimeout(r,ms)); const search=[...document.querySelectorAll('input')].find(el=>(el.getAttribute('placeholder')||'').includes('Название проекта')); const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(search,'project-that-does-not-exist');search.dispatchEvent(new Event('input',{bubbles:true}));await pause(400);const status=document.querySelector('[role=status]');return {query:search.value,status:status?.textContent?.trim(),board:Boolean(document.querySelector('.workspace-board-scroll')),table:Boolean(document.querySelector('table'))};})()"
+}

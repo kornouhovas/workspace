@@ -1,0 +1,3 @@
+{
+  "expression": "(async () => { const { app, BrowserWindow } = require('electron'); const w = BrowserWindow.getAllWindows().find(item => item.getTitle() === 'Workspace') || BrowserWindow.getAllWindows()[0]; if (!w) throw new Error('Workspace BrowserWindow missing'); app.focus({ steal: true }); w.show(); w.moveTop(); w.focus(); await new Promise(resolve => setTimeout(resolve, 500)); return { title: w.getTitle(), visible: w.isVisible(), focused: w.isFocused(), bounds: w.getBounds(), contentBounds: w.getContentBounds(), appFocused: BrowserWindow.getFocusedWindow()?.id === w.id }; })()"
+}

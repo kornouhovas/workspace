@@ -1,0 +1,4453 @@
+TAP version 13
+# Subtest: compact shell keeps native controls, workspace identity, and content on one stable row
+not ok 1 - compact shell keeps native controls, workspace identity, and content on one stable row
+  ---
+  duration_ms: 11.776291
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /--workspace-header-height:\s*4rem/. Input:
+    
+    '@import "tailwindcss" source(none);\n' +
+      '@source ".";\n' +
+      '@source "../index.html";\n' +
+      '@import "tw-animate-css";\n' +
+      '@import "shadcn/tailwind.css";\n' +
+      '@import "@fontsource-variable/geist";\n' +
+      '\n' +
+      '@custom-variant dark (&:is(.dark *));\n' +
+      '\n' +
+      '@theme inline {\n' +
+      '    --text-sm: 0.8125rem;\n' +
+      '    --text-sm--line-height: 1.25rem;\n' +
+      '    --font-heading: var(--font-sans);\n' +
+      "    --font-sans: 'Geist Variable', sans-serif;\n" +
+      '    --color-sidebar-ring: var(--sidebar-ring);\n' +
+      '    --color-sidebar-border: var(--sidebar-border);\n' +
+      '    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);\n' +
+      '    --color-sidebar-accent: var(--sidebar-accent);\n' +
+      '    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);\n' +
+      '    --color-sidebar-primary: var(--sidebar-primary);\n' +
+      '    --color-sidebar-foreground: var(--sidebar-foreground);\n' +
+      '    --color-sidebar: var(--sidebar);\n' +
+      '    --color-chart-5: var(--chart-5);\n' +
+      '    --color-chart-4: var(--chart-4);\n' +
+      '    --color-chart-3: var(--chart-3);\n' +
+      '    --color-chart-2: var(--chart-2);\n' +
+      '    --color-chart-1: var(--chart-1);\n' +
+      '    --color-ring: var(--ring);\n' +
+      '    --color-input: var(--input);\n' +
+      '    --color-border: var(--border);\n' +
+      '    --color-destructive: var(--destructive);\n' +
+      '    --color-accent-foreground: var(--accent-foreground);\n' +
+      '    --color-accent: var(--accent);\n' +
+      '    --color-muted-foreground: var(--muted-foreground);\n' +
+      '    --color-muted: var(--muted);\n' +
+      '    --color-secondary-foreground: var(--secondary-foreground);\n' +
+      '    --color-secondary: var(--secondary);\n' +
+      '    --color-primary-foreground: var(--primary-foreground);\n' +
+      '    --color-primary: var(--primary);\n' +
+      '    --color-popover-foreground: var(--popover-foreground);\n' +
+      '    --color-popover: var(--popover);\n' +
+      '    --color-card-foreground: var(--card-foreground);\n' +
+      '    --color-card: var(--card);\n' +
+      '    --color-foreground: var(--foreground);\n' +
+      '    --color-background: var(--background);\n' +
+      '    --radius-sm: calc(var(--radius) * 0.6);\n' +
+      '    --radius-md: calc(var(--radius) * 0.8);\n' +
+      '    --radius-lg: var(--radius);\n' +
+      '    --radius-xl: calc(var(--radius) * 1.4);\n' +
+      '    --radius-2xl: calc(var(--radius) * 1.8);\n' +
+      '    --radius-3xl: calc(var(--radius) * 2.2);\n' +
+      '    --radius-4xl: calc(var(--radius) * 2.6);\n' +
+      '}\n' +
+      '\n' +
+      ':root {\n' +
+      '    --background: #fafbfd;\n' +
+      '    --foreground: #192238;\n' +
+      '    --card: #ffffff;\n' +
+      '    --card-foreground: #192238;\n' +
+      '    --popover: #ffffff;\n' +
+      '    --popover-foreground: #192238;\n' +
+      '    --primary: #6544d5;\n' +
+      '    --primary-foreground: #ffffff;\n' +
+      '    --secondary: #eef0f6;\n' +
+      '    --secondary-foreground: #192238;\n' +
+      '    --muted: #eef0f6;\n' +
+      '    --muted-foreground: #59647a;\n' +
+      '    --accent: #eee8ff;\n' +
+      '    --accent-foreground: #192238;\n' +
+      '    --destructive: #b42338;\n' +
+      '    --border: #d9dfea;\n' +
+      '    --input: #8791a8;\n' +
+      '    --ring: #6544d5;\n' +
+      '    --chart-1: oklch(0.87 0 0);\n' +
+      '    --chart-2: oklch(0.556 0 0);\n' +
+      '    --chart-3: oklch(0.439 0 0);\n' +
+      '    --chart-4: oklch(0.371 0 0);\n' +
+      '    --chart-5: oklch(0.269 0 0);\n' +
+      '    --radius: 0.5rem;\n' +
+      '    --header-height: 6rem;\n' +
+      '    --sidebar: #f6f8ff;\n' +
+      '    --sidebar-foreground: #192238;\n' +
+      '    --sidebar-primary: #6544d5;\n' +
+      '    --sidebar-primary-foreground: #ffffff;\n' +
+      '    --sidebar-accent: #eee8ff;\n' +
+      '    --sidebar-accent-foreground: #192238;\n' +
+      '    --sidebar-border: #d9dfea;\n' +
+      '    --sidebar-ring: #6544d5;\n' +
+      '}\n' +
+      '\n' +
+      '.dark {\n' +
+      '    --background: oklch(0.145 0 0);\n' +
+      '    --foreground: oklch(0.985 0 0);\n' +
+      '    --card: oklch(0.205 0 0);\n' +
+      '    --card-foreground: oklch(0.985 0 0);\n' +
+      '    --popover: oklch(0.205 0 0);\n' +
+      '    --popover-foreground: oklch(0.985 0 0);\n' +
+      '    --primary: oklch(0.922 0 0);\n' +
+      '    --primary-foreground: oklch(0.205 0 0);\n' +
+      '    --secondary: oklch(0.269 0 0);\n' +
+      '    --secondary-foreground: oklch(0.985 0 0);\n' +
+      '    --muted: oklch(0.269 0 0);\n' +
+      '    --muted-foreground: oklch(0.708 0 0);\n' +
+      '    --accent: oklch(0.269 0 0);\n' +
+      '    --accent-foreground: oklch(0.985 0 0);\n' +
+      '    --destructive: oklch(0.704 0.191 22.216);\n' +
+      '    --border: oklch(1 0 0 / 10%);\n' +
+      '    --input: oklch(1 0 0 / 15%);\n' +
+      '    --ring: oklch(0.556 0 0);\n' +
+      '    --chart-1: oklch(0.87 0 0);\n' +
+      '    --chart-2: oklch(0.556 0 0);\n' +
+      '    --chart-3: oklch(0.439 0 0);\n' +
+      '    --chart-4: oklch(0.371 0 0);\n' +
+      '    --chart-5: oklch(0.269 0 0);\n' +
+      '    --sidebar: oklch(0.205 0 0);\n' +
+      '    --sidebar-foreground: oklch(0.985 0 0);\n' +
+      '    --sidebar-primary: oklch(0.488 0.243 264.376);\n' +
+      '    --sidebar-primary-foreground: oklch(0.985 0 0);\n' +
+      '    --sidebar-accent: oklch(0.269 0 0);\n' +
+      '    --sidebar-accent-foreground: oklch(0.985 0 0);\n' +
+      '    --sidebar-border: oklch(1 0 0 / 10%);\n' +
+      '    --sidebar-ring: oklch(0.556 0 0);\n' +
+      '}\n' +
+      '\n' +
+      '@layer base {\n' +
+      '  * {\n' +
+      '    @apply border-border outline-ring/50;\n' +
+      '    }\n' +
+      '  body {\n' +
+      '    @apply text-foreground;\n' +
+      '    margin: 0;\n' +
+      '    background: var(--sidebar);\n' +
+      '    overflow-x: hidden;\n' +
+      '    scrollbar-gutter: stable;\n' +
+      '    color-scheme: light;\n' +
+      '    }\n' +
+      '  html {\n' +
+      '    @apply font-sans;\n' +
+      '    width: 100%;\n' +
+      '    min-height: 100%;\n' +
+      '    overflow-x: hidden;\n' +
+      '    scrollbar-gutter: stable;\n' +
+      '    color-scheme: light;\n' +
+      '    }\n' +
+      '  #root {\n' +
+      '    min-height: 100vh;\n' +
+      '    background: var(--sidebar);\n' +
+      '  }\n' +
+      '  body[data-scroll-locked] {\n' +
+      '    margin-right: 0 !important;\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      '.dashboard-01-shell {\n' +
+      '  min-height: 100vh;\n' +
+      '  width: 100%;\n' +
+      '  overflow-x: hidden;\n' +
+      '  background: var(--sidebar);\n' +
+      '  color: var(--foreground);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-top-action,\n' +
+      '.workspace-top-action:hover,\n' +
+      '.workspace-top-action:active,\n' +
+      '.workspace-top-action[aria-expanded="true"] {\n' +
+      '  border-color: transparent !important;\n' +
+      '  background: transparent !important;\n' +
+      '  box-shadow: none !important;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-top-action:focus-visible {\n' +
+      '  outline: 2px solid var(--ring) !important;\n' +
+      '  outline-offset: 2px;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-top-action svg {\n' +
+      '  width: 1.25rem;\n' +
+      '  height: 1.25rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-sidebar {\n' +
+      '  background: linear-gradient(155deg, #fbfcff 0%, #f6f8ff 55%, #f9fbff 100%);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-tab-scroll [role="tab"][data-state="active"] {\n' +
+      '  position: relative;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-tab-scroll [role="tab"][data-state="active"]::after {\n' +
+      '  position: absolute;\n' +
+      '  right: 0;\n' +
+      '  bottom: -3px;\n' +
+      '  left: 0;\n' +
+      '  height: 3px;\n' +
+      '  border-radius: 999px;\n' +
+      '  background: var(--primary);\n' +
+      '  opacity: 1;\n' +
+      '  content: "";\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-board-column {\n' +
+      '  background: linear-gradient(145deg, #f7faff 0%, #f3f7ff 52%, #f1f5fd 100%);\n' +
+      '  box-shadow: inset 0 0 0 1px #e8eef8;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-board-card {\n' +
+      '  border-color: #dce5f5;\n' +
+      '  box-shadow: 0 1px 2px rgb(33 53 89 / 5%);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id],\n' +
+      '.workspace-project-detail-expanded #project-visible-properties > button {\n' +
+      '  min-height: 3rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id] dt button,\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id] dd,\n' +
+      '.workspace-project-detail-expanded #project-visible-properties > button {\n' +
+      '  font-size: 1rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded .workspace-file-tree button {\n' +
+      '  min-height: 2rem;\n' +
+      '  font-size: 1rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id] dt button,\n' +
+      '.workspace-project-detail-expanded #project-visible-properties > button > span:first-child {\n' +
+      '  grid-template-columns: 3.25rem minmax(0, 1fr);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id] dd {\n' +
+      '  padding-left: 1.25rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-card-property-row-id] dt button span:last-child,\n' +
+      '.workspace-project-detail-expanded #project-visible-properties > button span {\n' +
+      '  font-size: 1rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-workspace-status-value] {\n' +
+      '  height: 1.75rem;\n' +
+      '  gap: 0.5rem;\n' +
+      '  font-size: 1rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [data-workspace-status-value] [data-color] {\n' +
+      '  width: 0.625rem;\n' +
+      '  height: 0.625rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded #project-file-tree-heading + span,\n' +
+      '.workspace-project-detail-expanded [aria-label^="File:"] {\n' +
+      '  font-size: 1rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-expanded [aria-label^="File:"],\n' +
+      '.workspace-project-detail-expanded [aria-label^="Folder:"] {\n' +
+      '  height: 2.25rem;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-tab-scroll {\n' +
+      '  scrollbar-width: thin;\n' +
+      '  scrollbar-color: var(--border) transparent;\n' +
+      '}\n' +
+      '\n' +
+      '.dashboard-main-inset {\n' +
+      '  min-width: 0;\n' +
+      '  overflow: clip;\n' +
+      '  background: var(--background);\n' +
+      '  transition:\n' +
+      '    margin 200ms ease,\n' +
+      '    width 200ms ease,\n' +
+      '    border-radius 200ms ease;\n' +
+      '}\n' +
+      '\n' +
+      '@media (min-width: 768px) {\n' +
+      '  .dashboard-main-inset {\n' +
+      '    min-height: calc(100svh - calc(var(--spacing) * 2));\n' +
+      '    margin: 0 0 calc(var(--spacing) * 2);\n' +
+      '    margin-left: 0;\n' +
+      '    border-radius: var(--radius-2xl);\n' +
+      '    box-shadow: 0 0 0 1px var(--border);\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      '.site-header-content {\n' +
+      '  padding-inline: calc(var(--spacing) * 4);\n' +
+      '  transform: translateY(calc(var(--spacing) * -1));\n' +
+      '  transition:\n' +
+      '    padding 200ms ease,\n' +
+      '    transform 200ms ease;\n' +
+      '}\n' +
+      '\n' +
+      '@media (min-width: 1024px) {\n' +
+      '  .site-header-content {\n' +
+      '    padding-inline: calc(var(--spacing) * 6);\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      '@media (min-width: 768px) {\n' +
+      '  [data-variant="inset"][data-state="collapsed"] ~ .dashboard-main-inset .site-header-content {\n' +
+      '    padding-left: calc(var(--spacing) * 26);\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      '.electron-window-drag {\n' +
+      '  -webkit-app-region: drag;\n' +
+      '}\n' +
+      '\n' +
+      '.electron-window-drag :is(a, button, input, textarea, select, [role="button"], [data-slot="dropdown-menu-trigger"]),\n' +
+      '.electron-window-no-drag {\n' +
+      '  -webkit-app-region: no-drag;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-number-input {\n' +
+      '  -moz-appearance: textfield;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-number-input::-webkit-outer-spin-button,\n' +
+      '.workspace-number-input::-webkit-inner-spin-button {\n' +
+      '  margin: 0;\n' +
+      '  -webkit-appearance: none;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-table-cell-control {\n' +
+      '  cursor: default;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-table-cell-control:hover {\n' +
+      '  background-color: color-mix(in oklch, var(--muted) 58%, transparent);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-table-cell-control:has(.workspace-table-select-value-chip:hover):hover {\n' +
+      '  background-color: transparent;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-table-cell-control .workspace-table-value-chip,\n' +
+      '.workspace-table-cell-control .workspace-table-select-value-chip,\n' +
+      '.workspace-table-cell-control .workspace-table-empty-value,\n' +
+      '.workspace-table-cell-control .workspace-table-text-value {\n' +
+      '  transition:\n' +
+      '    background-color 150ms ease,\n' +
+      '    color 150ms ease,\n' +
+      '    box-shadow 150ms ease;\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-table-cell-control .workspace-table-select-value-chip:hover {\n' +
+      '  background-color: color-mix(in oklch, var(--muted) 84%, var(--foreground) 16%);\n' +
+      '  color: var(--foreground);\n' +
+      '  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, var(--foreground) 25%);\n' +
+      '}\n' +
+      '\n' +
+      '.workspace-project-detail-value-trigger[data-empty-value="true"] {\n' +
+      '  min-wi'... 2105 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    @import "tailwindcss" source(none);
+    @source ".";
+    @source "../index.html";
+    @import "tw-animate-css";
+    @import "shadcn/tailwind.css";
+    @import "@fontsource-variable/geist";
+    
+    @custom-variant dark (&:is(.dark *));
+    
+    @theme inline {
+        --text-sm: 0.8125rem;
+        --text-sm--line-height: 1.25rem;
+        --font-heading: var(--font-sans);
+        --font-sans: 'Geist Variable', sans-serif;
+        --color-sidebar-ring: var(--sidebar-ring);
+        --color-sidebar-border: var(--sidebar-border);
+        --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+        --color-sidebar-accent: var(--sidebar-accent);
+        --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+        --color-sidebar-primary: var(--sidebar-primary);
+        --color-sidebar-foreground: var(--sidebar-foreground);
+        --color-sidebar: var(--sidebar);
+        --color-chart-5: var(--chart-5);
+        --color-chart-4: var(--chart-4);
+        --color-chart-3: var(--chart-3);
+        --color-chart-2: var(--chart-2);
+        --color-chart-1: var(--chart-1);
+        --color-ring: var(--ring);
+        --color-input: var(--input);
+        --color-border: var(--border);
+        --color-destructive: var(--destructive);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-accent: var(--accent);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-muted: var(--muted);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-secondary: var(--secondary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-primary: var(--primary);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-popover: var(--popover);
+        --color-card-foreground: var(--card-foreground);
+        --color-card: var(--card);
+        --color-foreground: var(--foreground);
+        --color-background: var(--background);
+        --radius-sm: calc(var(--radius) * 0.6);
+        --radius-md: calc(var(--radius) * 0.8);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) * 1.4);
+        --radius-2xl: calc(var(--radius) * 1.8);
+        --radius-3xl: calc(var(--radius) * 2.2);
+        --radius-4xl: calc(var(--radius) * 2.6);
+    }
+    
+    :root {
+        --background: #fafbfd;
+        --foreground: #192238;
+        --card: #ffffff;
+        --card-foreground: #192238;
+        --popover: #ffffff;
+        --popover-foreground: #192238;
+        --primary: #6544d5;
+        --primary-foreground: #ffffff;
+        --secondary: #eef0f6;
+        --secondary-foreground: #192238;
+        --muted: #eef0f6;
+        --muted-foreground: #59647a;
+        --accent: #eee8ff;
+        --accent-foreground: #192238;
+        --destructive: #b42338;
+        --border: #d9dfea;
+        --input: #8791a8;
+        --ring: #6544d5;
+        --chart-1: oklch(0.87 0 0);
+        --chart-2: oklch(0.556 0 0);
+        --chart-3: oklch(0.439 0 0);
+        --chart-4: oklch(0.371 0 0);
+        --chart-5: oklch(0.269 0 0);
+        --radius: 0.5rem;
+        --header-height: 6rem;
+        --sidebar: #f6f8ff;
+        --sidebar-foreground: #192238;
+        --sidebar-primary: #6544d5;
+        --sidebar-primary-foreground: #ffffff;
+        --sidebar-accent: #eee8ff;
+        --sidebar-accent-foreground: #192238;
+        --sidebar-border: #d9dfea;
+        --sidebar-ring: #6544d5;
+    }
+    
+    .dark {
+        --background: oklch(0.145 0 0);
+        --foreground: oklch(0.985 0 0);
+        --card: oklch(0.205 0 0);
+        --card-foreground: oklch(0.985 0 0);
+        --popover: oklch(0.205 0 0);
+        --popover-foreground: oklch(0.985 0 0);
+        --primary: oklch(0.922 0 0);
+        --primary-foreground: oklch(0.205 0 0);
+        --secondary: oklch(0.269 0 0);
+        --secondary-foreground: oklch(0.985 0 0);
+        --muted: oklch(0.269 0 0);
+        --muted-foreground: oklch(0.708 0 0);
+        --accent: oklch(0.269 0 0);
+        --accent-foreground: oklch(0.985 0 0);
+        --destructive: oklch(0.704 0.191 22.216);
+        --border: oklch(1 0 0 / 10%);
+        --input: oklch(1 0 0 / 15%);
+        --ring: oklch(0.556 0 0);
+        --chart-1: oklch(0.87 0 0);
+        --chart-2: oklch(0.556 0 0);
+        --chart-3: oklch(0.439 0 0);
+        --chart-4: oklch(0.371 0 0);
+        --chart-5: oklch(0.269 0 0);
+        --sidebar: oklch(0.205 0 0);
+        --sidebar-foreground: oklch(0.985 0 0);
+        --sidebar-primary: oklch(0.488 0.243 264.376);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.269 0 0);
+        --sidebar-accent-foreground: oklch(0.985 0 0);
+        --sidebar-border: oklch(1 0 0 / 10%);
+        --sidebar-ring: oklch(0.556 0 0);
+    }
+    
+    @layer base {
+      * {
+        @apply border-border outline-ring/50;
+        }
+      body {
+        @apply text-foreground;
+        margin: 0;
+        background: var(--sidebar);
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        color-scheme: light;
+        }
+      html {
+        @apply font-sans;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        color-scheme: light;
+        }
+      #root {
+        min-height: 100vh;
+        background: var(--sidebar);
+      }
+      body[data-scroll-locked] {
+        margin-right: 0 !important;
+      }
+    }
+    
+    .dashboard-01-shell {
+      min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
+      background: var(--sidebar);
+      color: var(--foreground);
+    }
+    
+    .workspace-top-action,
+    .workspace-top-action:hover,
+    .workspace-top-action:active,
+    .workspace-top-action[aria-expanded="true"] {
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    
+    .workspace-top-action:focus-visible {
+      outline: 2px solid var(--ring) !important;
+      outline-offset: 2px;
+    }
+    
+    .workspace-top-action svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+    
+    .workspace-sidebar {
+      background: linear-gradient(155deg, #fbfcff 0%, #f6f8ff 55%, #f9fbff 100%);
+    }
+    
+    .workspace-tab-scroll [role="tab"][data-state="active"] {
+      position: relative;
+    }
+    
+    .workspace-tab-scroll [role="tab"][data-state="active"]::after {
+      position: absolute;
+      right: 0;
+      bottom: -3px;
+      left: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--primary);
+      opacity: 1;
+      content: "";
+    }
+    
+    .workspace-board-column {
+      background: linear-gradient(145deg, #f7faff 0%, #f3f7ff 52%, #f1f5fd 100%);
+      box-shadow: inset 0 0 0 1px #e8eef8;
+    }
+    
+    .workspace-board-card {
+      border-color: #dce5f5;
+      box-shadow: 0 1px 2px rgb(33 53 89 / 5%);
+    }
+    
+    .workspace-project-detail-expanded [data-card-property-row-id],
+    .workspace-project-detail-expanded #project-visible-properties > button {
+      min-height: 3rem;
+    }
+    
+    .workspace-project-detail-expanded [data-card-property-row-id] dt button,
+    .workspace-project-detail-expanded [data-card-property-row-id] dd,
+    .workspace-project-detail-expanded #project-visible-properties > button {
+      font-size: 1rem;
+    }
+    
+    .workspace-project-detail-expanded .workspace-file-tree button {
+      min-height: 2rem;
+      font-size: 1rem;
+    }
+    
+    .workspace-project-detail-expanded [data-card-property-row-id] dt button,
+    .workspace-project-detail-expanded #project-visible-properties > button > span:first-child {
+      grid-template-columns: 3.25rem minmax(0, 1fr);
+    }
+    
+    .workspace-project-detail-expanded [data-card-property-row-id] dd {
+      padding-left: 1.25rem;
+    }
+    
+    .workspace-project-detail-expanded [data-card-property-row-id] dt button span:last-child,
+    .workspace-project-detail-expanded #project-visible-properties > button span {
+      font-size: 1rem;
+    }
+    
+    .workspace-project-detail-expanded [data-workspace-status-value] {
+      height: 1.75rem;
+      gap: 0.5rem;
+      font-size: 1rem;
+    }
+    
+    .workspace-project-detail-expanded [data-workspace-status-value] [data-color] {
+      width: 0.625rem;
+      height: 0.625rem;
+    }
+    
+    .workspace-project-detail-expanded #project-file-tree-heading + span,
+    .workspace-project-detail-expanded [aria-label^="File:"] {
+      font-size: 1rem;
+    }
+    
+    .workspace-project-detail-expanded [aria-label^="File:"],
+    .workspace-project-detail-expanded [aria-label^="Folder:"] {
+      height: 2.25rem;
+    }
+    
+    .workspace-tab-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    
+    .dashboard-main-inset {
+      min-width: 0;
+      overflow: clip;
+      background: var(--background);
+      transition:
+        margin 200ms ease,
+        width 200ms ease,
+        border-radius 200ms ease;
+    }
+    
+    @media (min-width: 768px) {
+      .dashboard-main-inset {
+        min-height: calc(100svh - calc(var(--spacing) * 2));
+        margin: 0 0 calc(var(--spacing) * 2);
+        margin-left: 0;
+        border-radius: var(--radius-2xl);
+        box-shadow: 0 0 0 1px var(--border);
+      }
+    }
+    
+    .site-header-content {
+      padding-inline: calc(var(--spacing) * 4);
+      transform: translateY(calc(var(--spacing) * -1));
+      transition:
+        padding 200ms ease,
+        transform 200ms ease;
+    }
+    
+    @media (min-width: 1024px) {
+      .site-header-content {
+        padding-inline: calc(var(--spacing) * 6);
+      }
+    }
+    
+    @media (min-width: 768px) {
+      [data-variant="inset"][data-state="collapsed"] ~ .dashboard-main-inset .site-header-content {
+        padding-left: calc(var(--spacing) * 26);
+      }
+    }
+    
+    .electron-window-drag {
+      -webkit-app-region: drag;
+    }
+    
+    .electron-window-drag :is(a, button, input, textarea, select, [role="button"], [data-slot="dropdown-menu-trigger"]),
+    .electron-window-no-drag {
+      -webkit-app-region: no-drag;
+    }
+    
+    .workspace-number-input {
+      -moz-appearance: textfield;
+    }
+    
+    .workspace-number-input::-webkit-outer-spin-button,
+    .workspace-number-input::-webkit-inner-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+    
+    .workspace-table-cell-control {
+      cursor: default;
+    }
+    
+    .workspace-table-cell-control:hover {
+      background-color: color-mix(in oklch, var(--muted) 58%, transparent);
+    }
+    
+    .workspace-table-cell-control:has(.workspace-table-select-value-chip:hover):hover {
+      background-color: transparent;
+    }
+    
+    .workspace-table-cell-control .workspace-table-value-chip,
+    .workspace-table-cell-control .workspace-table-select-value-chip,
+    .workspace-table-cell-control .workspace-table-empty-value,
+    .workspace-table-cell-control .workspace-table-text-value {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease,
+        box-shadow 150ms ease;
+    }
+    
+    .workspace-table-cell-control .workspace-table-select-value-chip:hover {
+      background-color: color-mix(in oklch, var(--muted) 84%, var(--foreground) 16%);
+      color: var(--foreground);
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, var(--foreground) 25%);
+    }
+    
+    .workspace-project-detail-value-trigger[data-empty-value="true"] {
+      min-width: 100%;
+    }
+    
+    .workspace-project-detail-value-trigger[data-empty-value="true"]:hover {
+      background-color: color-mix(in oklch, var(--muted) 58%, transparent);
+    }
+    
+    .workspace-project-detail-value-trigger[data-empty-value="true"] .workspace-table-empty-value {
+      min-height: 1.5rem;
+      width: 100%;
+    }
+    
+    .workspace-project-detail-value-trigger:has(.workspace-table-select-value-chip:hover):hover {
+      background-color: transparent;
+    }
+    
+    .workspace-project-detail-value-trigger .workspace-table-select-value-chip {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease,
+        box-shadow 150ms ease;
+    }
+    
+    .workspace-project-detail-value-trigger .workspace-table-select-value-chip:hover {
+      background-color: color-mix(in oklch, var(--muted) 84%, var(--foreground) 16%);
+      color: var(--foreground);
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 75%, var(--foreground) 25%);
+    }
+    
+    .workspace-customize-property-row:hover {
+      background-color: color-mix(in oklch, var(--accent) 60%, transparent);
+    }
+    
+    .workspace-customize-property-row:has(.workspace-customize-property-action:hover):hover {
+      background-color: transparent;
+    }
+    
+    [data-color="gray"] {
+      background-color: oklch(0.66 0 0);
+    }
+    
+    [data-color="red"] {
+      background-color: oklch(0.64 0.22 25);
+    }
+    
+    [data-color="orange"] {
+      background-color: oklch(0.72 0.17 55);
+    }
+    
+    [data-color="yellow"] {
+      background-color: oklch(0.82 0.16 88);
+    }
+    
+    [data-color="green"] {
+      background-color: oklch(0.68 0.16 145);
+    }
+    
+    [data-color="blue"] {
+      background-color: oklch(0.64 0.17 250);
+    }
+    
+    [data-color="purple"] {
+      background-color: oklch(0.66 0.18 310);
+    }
+    
+    * {
+      scrollbar-color: oklch(1 0 0 / 22%) transparent;
+      scrollbar-width: thin;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      min-height: 48px;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: oklch(1 0 0 / 18%);
+      background-clip: padding-box;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: oklch(1 0 0 / 28%);
+      background-clip: padding-box;
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:16:10)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+not ok 2 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 2.618458
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:28:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /workspace-board-scroll[^"\n]*overflow-auto/. Input:
+    
+    'import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";\n' +
+      '\n' +
+      'import { Badge } from "@/components/ui/badge";\n' +
+      'import { useI18n } from "@/i18n";\n' +
+      'import { getStatusDisplayName } from "@/i18n/status";\n' +
+      'import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";\n' +
+      'import type { WorkspaceProjectionResponse, WorkspaceSelectValueState } from "@/workspaceAppState";\n' +
+      'import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";\n' +
+      'import { formatDateForDisplay } from "@/formatDateForDisplay.js";\n' +
+      'import { ProjectTablePropertyValueEditor } from "./table-view";\n' +
+      '\n' +
+      'type WorkspaceBoardColumn = {\n' +
+      '  readonly statusValueId: string;\n' +
+      '  readonly name: string;\n' +
+      '  readonly projects: readonly WorkspaceMockProject[];\n' +
+      '};\n' +
+      '\n' +
+      'type WorkspaceBoardProjection = {\n' +
+      '  readonly capabilities: {\n' +
+      '    readonly canMoveBetweenStatuses: boolean;\n' +
+      '  };\n' +
+      '  readonly columns: readonly WorkspaceBoardColumn[];\n' +
+      '};\n' +
+      '\n' +
+      'type BoardEditingProps = Pick<ComponentProps<typeof ProjectTablePropertyValueEditor>,\n' +
+      '  "onProjectPropertyValueChange" | "onCreateSelectValue" | "onRenameSelectValue" | "onColorSelectValue" | "onDeleteSelectValue">;\n' +
+      '\n' +
+      'type WorkspaceBoardViewProps = BoardEditingProps & {\n' +
+      '  readonly projection: WorkspaceBoardProjection;\n' +
+      '  readonly statusValues: WorkspaceProjectionResponse["statusValues"];\n' +
+      '  readonly columnWidth?: number;\n' +
+      '  readonly onViewportWidthChange?: (viewportWidth: number) => void;\n' +
+      '  readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];\n' +
+      '  readonly selectValues: readonly WorkspaceSelectValueState[];\n' +
+      '  readonly onProjectOpen: (project: WorkspaceMockProject) => void;\n' +
+      '};\n' +
+      '\n' +
+      'function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {\n' +
+      '  if (property.id === "property:name") {\n' +
+      '    return project.name;\n' +
+      '  }\n' +
+      '\n' +
+      '  if (property.id === "property:status") {\n' +
+      '    return project.status.name;\n' +
+      '  }\n' +
+      '\n' +
+      '  return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";\n' +
+      '}\n' +
+      '\n' +
+      'function formatPropertyValue(\n' +
+      '  value: unknown,\n' +
+      '  property: WorkspaceMockVisibleProperty,\n' +
+      '  selectValues: readonly WorkspaceSelectValueState[],\n' +
+      '  locale: string,\n' +
+      ') {\n' +
+      '  if (property.propertyType === "date") return formatDateForDisplay(value, locale);\n' +
+      '  if (property.propertyType === "select") {\n' +
+      '    return selectValues.find((selectValue) => selectValue.id === value)?.name || (typeof value === "string" ? value : "");\n' +
+      '  }\n' +
+      '\n' +
+      '  if (property.propertyType === "multi-select" && Array.isArray(value)) {\n' +
+      '    return value\n' +
+      '      .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name || (typeof valueId === "string" ? valueId : ""))\n' +
+      '      .filter(Boolean)\n' +
+      '      .join(", ");\n' +
+      '  }\n' +
+      '\n' +
+      '  return value == null ? "" : String(value);\n' +
+      '}\n' +
+      '\n' +
+      'function renderBoardStatusValue(value: unknown, t: (key: string) => string) {\n' +
+      '  const statusValue = value && typeof value === "object" && !Array.isArray(value)\n' +
+      '    ? value as {\n' +
+      '        readonly id?: string;\n' +
+      '        readonly name?: string;\n' +
+      '        readonly source?: string;\n' +
+      '        readonly color?: unknown;\n' +
+      '      }\n' +
+      '    : null;\n' +
+      '  const label = statusValue ? getStatusDisplayName(t, statusValue) : value == null ? "" : String(value);\n' +
+      '  const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";\n' +
+      '\n' +
+      '  if (!label) {\n' +
+      '    return null;\n' +
+      '  }\n' +
+      '\n' +
+      '  return (\n' +
+      '    <Badge\n' +
+      '      variant="secondary"\n' +
+      '      className="h-8 max-w-full cursor-default select-none gap-3 rounded-none border-0 bg-transparent px-0 text-base font-normal text-muted-foreground shadow-none"\n' +
+      '    >\n' +
+      '      <span className="size-3 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />\n' +
+      '      <span className="truncate">{label}</span>\n' +
+      '    </Badge>\n' +
+      '  );\n' +
+      '}\n' +
+      '\n' +
+      'export function WorkspaceBoardView({\n' +
+      '  projection,\n' +
+      '  statusValues,\n' +
+      '  columnWidth,\n' +
+      '  onViewportWidthChange,\n' +
+      '  visibleProperties,\n' +
+      '  selectValues,\n' +
+      '  onProjectOpen,\n' +
+      '  ...editingProps\n' +
+      '}: WorkspaceBoardViewProps) {\n' +
+      '  const { t, locale } = useI18n();\n' +
+      '  const [editingCellId, setEditingCellId] = useState<string | null>(null);\n' +
+      '  const cardProperties = visibleProperties.filter(\n' +
+      '    (property) => property.id !== "property:name",\n' +
+      '  );\n' +
+      '  const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);\n' +
+      '  const boardViewportRef = useRef<HTMLDivElement | null>(null);\n' +
+      '  const boardGridStyle = {\n' +
+      '    "--workspace-board-column-width": `${preferredColumnWidth}px`,\n' +
+      '    gridAutoColumns: "var(--workspace-board-column-width)",\n' +
+      '  } as CSSProperties;\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    const viewport = boardViewportRef.current;\n' +
+      '    if (!viewport) {\n' +
+      '      return;\n' +
+      '    }\n' +
+      '\n' +
+      '    const updateWidth = () => {\n' +
+      '      const viewportWidth = viewport.clientWidth;\n' +
+      '      onViewportWidthChange?.(viewportWidth);\n' +
+      '    };\n' +
+      '    updateWidth();\n' +
+      '\n' +
+      '    const resizeObserver = new ResizeObserver(updateWidth);\n' +
+      '    resizeObserver.observe(viewport);\n' +
+      '\n' +
+      '    return () => resizeObserver.disconnect();\n' +
+      '  }, [onViewportWidthChange]);\n' +
+      '\n' +
+      '  return (\n' +
+      '    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pb-11 pl-7 pr-7 pt-6" aria-label={t("view.boardDefault")}>\n' +
+      '      <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">\n' +
+      '        <div className="grid h-full min-w-full w-max grid-flow-col gap-4" style={boardGridStyle}>\n' +
+      '          {projection.columns.map((column) => {\n' +
+      '            const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";\n' +
+      '            return (\n' +
+      '              <section\n' +
+      '              key={column.statusValueId}\n' +
+      '              className="workspace-board-column flex min-h-0 min-w-0 flex-col rounded-xl bg-[#f3f6fc]"\n' +
+      '              aria-label={t("board.projectsAria", {\n' +
+      '                name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),\n' +
+      '              })}\n' +
+      '            >\n' +
+      '              <header className="flex h-[60px] shrink-0 items-center justify-between px-5">\n' +
+      '                <h3 className="flex min-w-0 items-center gap-3 truncate text-lg font-medium">\n' +
+      '                  <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />\n' +
+      '                  {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}\n' +
+      '                </h3>\n' +
+      '                <span className="sr-only">{column.projects.length}</span>\n' +
+      '              </header>\n' +
+      '              <div className="grid min-h-0 flex-1 auto-rows-max content-start gap-3 overflow-y-auto overflow-x-hidden px-2.5 pb-2.5">\n' +
+      '                {column.projects.length === 0 ? (\n' +
+      '                  <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">\n' +
+      '                    {t("board.noProjects")}\n' +
+      '                  </div>\n' +
+      '                ) : (\n' +
+      '                  column.projects.map((project) => {\n' +
+      '                    const populatedProperties = cardProperties.map((property) => ({\n' +
+      '                      property,\n' +
+      '                      value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),\n' +
+      '                    })).filter(({ property, value }) => value.trim() !== "" || editingCellId === `${project.id}:${property.id}`);\n' +
+      '                    return (\n' +
+      '                    <article\n' +
+      '                      key={project.id}\n' +
+      '                      className="workspace-board-card relative flex min-h-12 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-xl border border-border bg-card px-3 pb-[9px] pt-[19px] text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"\n' +
+      '                    >\n' +
+      '                      <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />\n' +
+      '                      <h4 className="relative min-w-0 text-lg font-medium leading-7">\n' +
+      '                        <button type="button" title={project.name} className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>\n' +
+      '                          <span className="truncate">{project.name}</span>\n' +
+      '                        </button>\n' +
+      '                      </h4>\n' +
+      '                      {populatedProperties.length > 0 ? (\n' +
+      '                        <dl className="relative grid gap-0.5">\n' +
+      '                          {populatedProperties.map(({ property, value }) => (\n' +
+      '                          <div key={property.id} className="min-w-0 text-base">\n' +
+      '                              <dt className="sr-only">{property.name}</dt>\n' +
+      '                              <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">\n' +
+      '                                {property.id === "property:status" ? (\n' +
+      '                                  <div className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5">\n' +
+      '                                    {renderBoardStatusValue(project.status, t)}\n' +
+      '                                  </div>\n' +
+      '                                ) : property.system ? <span className="block truncate">{value}</span> : (\n' +
+      '                                  <ProjectTablePropertyValueEditor\n' +
+      '                                    {...editingProps}\n' +
+      '                                    project={project}\n' +
+      '                                    property={property}\n' +
+      '                                    selectValues={selectValues}\n' +
+      '                                    wrapContent={false}\n' +
+      '                                    editing={editingCellId === `${project.id}:${property.id}`}\n' +
+      '                                    dismissSignal={0}\n' +
+      '                                    onStartEditingCell={setEditingCellId}\n' +
+      '                                    onStopEditingCell={() => setEditingCellId(null)}\n' +
+      '                                  />\n' +
+      '                                )}\n' +
+      '                              </dd>\n' +
+      '                            '... 318 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
+    
+    import { Badge } from "@/components/ui/badge";
+    import { useI18n } from "@/i18n";
+    import { getStatusDisplayName } from "@/i18n/status";
+    import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
+    import type { WorkspaceProjectionResponse, WorkspaceSelectValueState } from "@/workspaceAppState";
+    import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
+    import { formatDateForDisplay } from "@/formatDateForDisplay.js";
+    import { ProjectTablePropertyValueEditor } from "./table-view";
+    
+    type WorkspaceBoardColumn = {
+      readonly statusValueId: string;
+      readonly name: string;
+      readonly projects: readonly WorkspaceMockProject[];
+    };
+    
+    type WorkspaceBoardProjection = {
+      readonly capabilities: {
+        readonly canMoveBetweenStatuses: boolean;
+      };
+      readonly columns: readonly WorkspaceBoardColumn[];
+    };
+    
+    type BoardEditingProps = Pick<ComponentProps<typeof ProjectTablePropertyValueEditor>,
+      "onProjectPropertyValueChange" | "onCreateSelectValue" | "onRenameSelectValue" | "onColorSelectValue" | "onDeleteSelectValue">;
+    
+    type WorkspaceBoardViewProps = BoardEditingProps & {
+      readonly projection: WorkspaceBoardProjection;
+      readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+      readonly columnWidth?: number;
+      readonly onViewportWidthChange?: (viewportWidth: number) => void;
+      readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+      readonly onProjectOpen: (project: WorkspaceMockProject) => void;
+    };
+    
+    function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
+      if (property.id === "property:name") {
+        return project.name;
+      }
+    
+      if (property.id === "property:status") {
+        return project.status.name;
+      }
+    
+      return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
+    }
+    
+    function formatPropertyValue(
+      value: unknown,
+      property: WorkspaceMockVisibleProperty,
+      selectValues: readonly WorkspaceSelectValueState[],
+      locale: string,
+    ) {
+      if (property.propertyType === "date") return formatDateForDisplay(value, locale);
+      if (property.propertyType === "select") {
+        return selectValues.find((selectValue) => selectValue.id === value)?.name || (typeof value === "string" ? value : "");
+      }
+    
+      if (property.propertyType === "multi-select" && Array.isArray(value)) {
+        return value
+          .map((valueId) => selectValues.find((selectValue) => selectValue.id === valueId)?.name || (typeof valueId === "string" ? valueId : ""))
+          .filter(Boolean)
+          .join(", ");
+      }
+    
+      return value == null ? "" : String(value);
+    }
+    
+    function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
+      const statusValue = value && typeof value === "object" && !Array.isArray(value)
+        ? value as {
+            readonly id?: string;
+            readonly name?: string;
+            readonly source?: string;
+            readonly color?: unknown;
+          }
+        : null;
+      const label = statusValue ? getStatusDisplayName(t, statusValue) : value == null ? "" : String(value);
+      const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
+    
+      if (!label) {
+        return null;
+      }
+    
+      return (
+        <Badge
+          variant="secondary"
+          className="h-8 max-w-full cursor-default select-none gap-3 rounded-none border-0 bg-transparent px-0 text-base font-normal text-muted-foreground shadow-none"
+        >
+          <span className="size-3 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
+          <span className="truncate">{label}</span>
+        </Badge>
+      );
+    }
+    
+    export function WorkspaceBoardView({
+      projection,
+      statusValues,
+      columnWidth,
+      onViewportWidthChange,
+      visibleProperties,
+      selectValues,
+      onProjectOpen,
+      ...editingProps
+    }: WorkspaceBoardViewProps) {
+      const { t, locale } = useI18n();
+      const [editingCellId, setEditingCellId] = useState<string | null>(null);
+      const cardProperties = visibleProperties.filter(
+        (property) => property.id !== "property:name",
+      );
+      const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
+      const boardViewportRef = useRef<HTMLDivElement | null>(null);
+      const boardGridStyle = {
+        "--workspace-board-column-width": `${preferredColumnWidth}px`,
+        gridAutoColumns: "var(--workspace-board-column-width)",
+      } as CSSProperties;
+    
+      useEffect(() => {
+        const viewport = boardViewportRef.current;
+        if (!viewport) {
+          return;
+        }
+    
+        const updateWidth = () => {
+          const viewportWidth = viewport.clientWidth;
+          onViewportWidthChange?.(viewportWidth);
+        };
+        updateWidth();
+    
+        const resizeObserver = new ResizeObserver(updateWidth);
+        resizeObserver.observe(viewport);
+    
+        return () => resizeObserver.disconnect();
+      }, [onViewportWidthChange]);
+    
+      return (
+        <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pb-11 pl-7 pr-7 pt-6" aria-label={t("view.boardDefault")}>
+          <div ref={boardViewportRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
+            <div className="grid h-full min-w-full w-max grid-flow-col gap-4" style={boardGridStyle}>
+              {projection.columns.map((column) => {
+                const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
+                return (
+                  <section
+                  key={column.statusValueId}
+                  className="workspace-board-column flex min-h-0 min-w-0 flex-col rounded-xl bg-[#f3f6fc]"
+                  aria-label={t("board.projectsAria", {
+                    name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
+                  })}
+                >
+                  <header className="flex h-[60px] shrink-0 items-center justify-between px-5">
+                    <h3 className="flex min-w-0 items-center gap-3 truncate text-lg font-medium">
+                      <span className="size-3.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
+                      {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
+                    </h3>
+                    <span className="sr-only">{column.projects.length}</span>
+                  </header>
+                  <div className="grid min-h-0 flex-1 auto-rows-max content-start gap-3 overflow-y-auto overflow-x-hidden px-2.5 pb-2.5">
+                    {column.projects.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+                        {t("board.noProjects")}
+                      </div>
+                    ) : (
+                      column.projects.map((project) => {
+                        const populatedProperties = cardProperties.map((property) => ({
+                          property,
+                          value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),
+                        })).filter(({ property, value }) => value.trim() !== "" || editingCellId === `${project.id}:${property.id}`);
+                        return (
+                        <article
+                          key={project.id}
+                          className="workspace-board-card relative flex min-h-12 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-xl border border-border bg-card px-3 pb-[9px] pt-[19px] text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
+                        >
+                          <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
+                          <h4 className="relative min-w-0 text-lg font-medium leading-7">
+                            <button type="button" title={project.name} className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                              <span className="truncate">{project.name}</span>
+                            </button>
+                          </h4>
+                          {populatedProperties.length > 0 ? (
+                            <dl className="relative grid gap-0.5">
+                              {populatedProperties.map(({ property, value }) => (
+                              <div key={property.id} className="min-w-0 text-base">
+                                  <dt className="sr-only">{property.name}</dt>
+                                  <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
+                                    {property.id === "property:status" ? (
+                                      <div className="flex h-8 w-full min-w-0 items-center rounded-lg border border-transparent px-2.5">
+                                        {renderBoardStatusValue(project.status, t)}
+                                      </div>
+                                    ) : property.system ? <span className="block truncate">{value}</span> : (
+                                      <ProjectTablePropertyValueEditor
+                                        {...editingProps}
+                                        project={project}
+                                        property={property}
+                                        selectValues={selectValues}
+                                        wrapContent={false}
+                                        editing={editingCellId === `${project.id}:${property.id}`}
+                                        dismissSignal={0}
+                                        onStartEditingCell={setEditingCellId}
+                                        onStopEditingCell={() => setEditingCellId(null)}
+                                      />
+                                    )}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : null}
+                        </article>
+                        );
+                      })
+                    )}
+                  </div>
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:31:10)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+not ok 3 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 1.312375
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:40:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /top-\[var\(--workspace-header-height\)\]/. Input:
+    
+    'import {\n' +
+      '  useEffect,\n' +
+      '  useMemo,\n' +
+      '  useRef,\n' +
+      '  useState,\n' +
+      '  type CSSProperties,\n' +
+      '  type MouseEvent as ReactMouseEvent,\n' +
+      '  type PointerEvent as ReactPointerEvent,\n' +
+      '} from "react";\n' +
+      '\n' +
+      'import { Badge } from "@/components/ui/badge";\n' +
+      'import { Button } from "@/components/ui/button";\n' +
+      'import {\n' +
+      '  DropdownMenu,\n' +
+      '  DropdownMenuContent,\n' +
+      '  DropdownMenuGroup,\n' +
+      '  DropdownMenuItem,\n' +
+      '  DropdownMenuLabel,\n' +
+      '  DropdownMenuTrigger,\n' +
+      '} from "@/components/ui/dropdown-menu";\n' +
+      'import {\n' +
+      '  workspaceMenuContentClassName,\n' +
+      '  workspaceMenuDangerIconClassName,\n' +
+      '  workspaceMenuDangerItemClassName,\n' +
+      '  workspaceMenuDescriptionClassName,\n' +
+      '  workspaceMenuIconClassName,\n' +
+      '  workspaceMenuItemClassName,\n' +
+      '  workspaceMenuLabelClassName,\n' +
+      '  workspaceMenuOptionItemClassName,\n' +
+      '  workspaceMenuSeparatorClassName,\n' +
+      '} from "@/components/workspace/menu-styles";\n' +
+      'import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";\n' +
+      'import {\n' +
+      '  Popover,\n' +
+      '  PopoverAnchor,\n' +
+      '  PopoverContent,\n' +
+      '} from "@/components/ui/popover";\n' +
+      'import { Input } from "@/components/ui/input";\n' +
+      'import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";\n' +
+      'import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";\n' +
+      'import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";\n' +
+      'import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";\n' +
+      'import { useI18n } from "@/i18n";\n' +
+      'import { getStatusDisplayName } from "@/i18n/status";\n' +
+      'import {\n' +
+      '  CalendarIcon,\n' +
+      '  ChevronDownIcon,\n' +
+      '  ChevronRightIcon,\n' +
+      '  CircleDotIcon,\n' +
+      '  EyeIcon,\n' +
+      '  EyeOffIcon,\n' +
+      '  FileIcon,\n' +
+      '  FolderIcon,\n' +
+      '  GripVerticalIcon,\n' +
+      '  HashIcon,\n' +
+      '  ListChecksIcon,\n' +
+      '  PencilIcon,\n' +
+      '  PlusIcon,\n' +
+      '  Trash2Icon,\n' +
+      '  TypeIcon,\n' +
+      '} from "@/lib/lucide-icons";\n' +
+      'import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";\n' +
+      'import type {\n' +
+      '  WorkspaceMockFileTreeNode,\n' +
+      '  WorkspaceMockProject,\n' +
+      '} from "@/workspaceMockData";\n' +
+      'import type {\n' +
+      '  WorkspacePropertyDefinitionState,\n' +
+      '  WorkspaceSelectValueState,\n' +
+      '} from "@/workspaceAppState";\n' +
+      '\n' +
+      'type WorkspaceProjectDetailPanelProps = {\n' +
+      '  readonly expanded?: boolean;\n' +
+      '  readonly sidebarCollapsed?: boolean;\n' +
+      '  readonly open: boolean;\n' +
+      '  readonly onOpenChange: (open: boolean) => void;\n' +
+      '  readonly project: WorkspaceMockProject | null;\n' +
+      '  readonly visibleProperties: readonly WorkspacePropertyDefinitionState[];\n' +
+      '  readonly selectValues: readonly WorkspaceSelectValueState[];\n' +
+      '  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;\n' +
+      '  readonly onCreateSelectValue: (\n' +
+      '    propertyId: string,\n' +
+      '    input: { readonly name: string; readonly color: string },\n' +
+      '  ) => Promise<WorkspaceSelectValueState | null>;\n' +
+      '  readonly onRenameSelectValue: (selectValueId: string, name: string) => void;\n' +
+      '  readonly onColorSelectValue: (selectValueId: string, color: string) => void;\n' +
+      '  readonly onDeleteSelectValue: (selectValueId: string) => void;\n' +
+      '  readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;\n' +
+      '  readonly onRenameProperty: (propertyId: string, name: string) => void;\n' +
+      '  readonly onHideProperty: (propertyId: string, hidden: boolean) => void;\n' +
+      '  readonly onDeleteProperty: (propertyId: string) => void;\n' +
+      '};\n' +
+      '\n' +
+      'type ProjectDetailPropertyTypeOption = {\n' +
+      '  readonly value: WorkspaceCustomPropertyType;\n' +
+      '  readonly label: string;\n' +
+      '  readonly description: string;\n' +
+      '};\n' +
+      '\n' +
+      'type CardPropertyDragPreviewRow = {\n' +
+      '  readonly propertyId: string;\n' +
+      '  readonly top: number;\n' +
+      '  readonly height: number;\n' +
+      '};\n' +
+      '\n' +
+      'type CardPropertyGroup = "visible" | "hidden";\n' +
+      '\n' +
+      'type CardPropertyDragState = {\n' +
+      '  readonly propertyId: string;\n' +
+      '  readonly group: CardPropertyGroup;\n' +
+      '  readonly startY: number;\n' +
+      '  readonly currentY: number;\n' +
+      '  readonly dropIndex: number;\n' +
+      '  readonly rows: readonly CardPropertyDragPreviewRow[];\n' +
+      '};\n' +
+      '\n' +
+      'type CardPropertyDragOptions = {\n' +
+      '  readonly group?: CardPropertyGroup;\n' +
+      '  readonly openActionsOnClick?: boolean;\n' +
+      '};\n' +
+      '\n' +
+      'const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";\n' +
+      'const defaultProjectDetailPanelWidth = 480;\n' +
+      'const minProjectDetailPanelWidth = 360;\n' +
+      'const maxProjectDetailPanelWidth = 760;\n' +
+      'const projectDetailPanelAnimationMs = 360;\n' +
+      'const projectDetailPanelUnmountBufferMs = 80;\n' +
+      'const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";\n' +
+      'const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";\n' +
+      'const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";\n' +
+      'const projectDetailPlainValueClassName =\n' +
+      '  "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-normal text-foreground";\n' +
+      'const projectDetailMultilineValueClassName =\n' +
+      '  "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-normal leading-5 text-foreground";\n' +
+      'const projectDetailPlainTriggerClassName =\n' +
+      '  "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";\n' +
+      `const detailAddPropertyMenuSurfaceSelector = "[data-workspace-detail-add-property-menu='true']";\n` +
+      'const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);\n' +
+      'const defaultPropertyNameByType: Readonly<Record<WorkspaceCustomPropertyType, string>> = {\n' +
+      '  text: "Text",\n' +
+      '  number: "Number",\n' +
+      '  date: "Date",\n' +
+      '  select: "Select",\n' +
+      '  "multi-select": "Multi-select",\n' +
+      '};\n' +
+      '\n' +
+      'function getMaxProjectDetailPanelWidth() {\n' +
+      '  if (typeof window === "undefined") {\n' +
+      '    return maxProjectDetailPanelWidth;\n' +
+      '  }\n' +
+      '\n' +
+      '  return Math.min(\n' +
+      '    maxProjectDetailPanelWidth,\n' +
+      '    Math.max(minProjectDetailPanelWidth, window.innerWidth - 96),\n' +
+      '  );\n' +
+      '}\n' +
+      '\n' +
+      'function clampProjectDetailPanelWidth(value: number) {\n' +
+      '  const fallbackWidth = Number.isFinite(value) ? value : defaultProjectDetailPanelWidth;\n' +
+      '  return Math.min(\n' +
+      '    getMaxProjectDetailPanelWidth(),\n' +
+      '    Math.max(minProjectDetailPanelWidth, Math.round(fallbackWidth)),\n' +
+      '  );\n' +
+      '}\n' +
+      '\n' +
+      'function readSavedProjectDetailPanelWidth() {\n' +
+      '  if (typeof window === "undefined") {\n' +
+      '    return defaultProjectDetailPanelWidth;\n' +
+      '  }\n' +
+      '\n' +
+      '  return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));\n' +
+      '}\n' +
+      '\n' +
+      'function readSavedCardPropertyOrder() {\n' +
+      '  if (typeof window === "undefined") {\n' +
+      '    return [];\n' +
+      '  }\n' +
+      '\n' +
+      '  try {\n' +
+      '    const parsedValue = JSON.parse(window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]");\n' +
+      '    return Array.isArray(parsedValue)\n' +
+      '      ? parsedValue.filter((item): item is string => typeof item === "string")\n' +
+      '      : [];\n' +
+      '  } catch {\n' +
+      '    return [];\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'const cardSectionsStorageKey = "workspace.card-property-sections.v1";\n' +
+      '\n' +
+      'function readSavedCardSections() {\n' +
+      '  try {\n' +
+      '    const saved = JSON.parse(window.localStorage.getItem(cardSectionsStorageKey) || "null");\n' +
+      '    return {\n' +
+      '      properties: typeof saved?.properties === "boolean" ? saved.properties : true,\n' +
+      '      hidden: typeof saved?.hidden === "boolean" ? saved.hidden : true,\n' +
+      '    };\n' +
+      '  } catch {\n' +
+      '    return { properties: true, hidden: true };\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'function readSavedCardHiddenPropertyIds() {\n' +
+      '  if (typeof window === "undefined") {\n' +
+      '    return [];\n' +
+      '  }\n' +
+      '\n' +
+      '  try {\n' +
+      '    const parsedValue = JSON.parse(window.localStorage.getItem(cardHiddenPropertyIdsStorageKey) || "[]");\n' +
+      '    return Array.isArray(parsedValue)\n' +
+      '      ? parsedValue.filter((item): item is string => typeof item === "string")\n' +
+      '      : [];\n' +
+      '  } catch {\n' +
+      '    return [];\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'function createOrderedCardProperties(\n' +
+      '  properties: readonly WorkspacePropertyDefinitionState[],\n' +
+      '  orderedPropertyIds: readonly string[],\n' +
+      ') {\n' +
+      '  const propertiesById = new Map(properties.map((property) => [property.id, property]));\n' +
+      '  const orderedProperties = orderedPropertyIds\n' +
+      '    .map((propertyId) => propertiesById.get(propertyId))\n' +
+      '    .filter((property): property is WorkspacePropertyDefinitionState => property !== undefined);\n' +
+      '  const orderedPropertyIdSet = new Set(orderedProperties.map((property) => property.id));\n' +
+      '  const newProperties = properties.filter((property) => !orderedPropertyIdSet.has(property.id));\n' +
+      '\n' +
+      '  return [...orderedProperties, ...newProperties];\n' +
+      '}\n' +
+      '\n' +
+      'function getCardPropertyDragOrder(\n' +
+      '  orderedPropertyIds: readonly string[],\n' +
+      '  sourcePropertyId: string,\n' +
+      '  dropIndex: number,\n' +
+      ') {\n' +
+      '  const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);\n' +
+      '  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);\n' +
+      '  return [\n' +
+      '    ...remainingPropertyIds.slice(0, boundedDropIndex),\n' +
+      '    sourcePropertyId,\n' +
+      '    ...remainingPropertyIds.slice(boundedDropIndex),\n' +
+      '  ];\n' +
+      '}\n' +
+      '\n' +
+      'function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {\n' +
+      '  if (property.id === "property:name") {\n' +
+      '    return project.name;\n' +
+      '  }\n' +
+      '\n' +
+      '  if (property.id === "property:status") {\n' +
+      '    return project.status;\n' +
+      '  }\n' +
+      '\n' +
+      '  return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";\n' +
+      '}\n' +
+      '\n' +
+      'function stringifyPropertyValue(value: unknown) {\n' +
+      '  if (value && typeof value === "object" && !Array.isArray(value) && "name" in value) {\n' +
+      '    return String((value as { readonly name?: unknown }).name || "");\n' +
+      '  }\n' +
+      '\n' +
+      '  if (Array.isArray(value)) {\n' +
+      '    return value.filter((item) => typeof item === "string").join(", ");\n' +
+      '  }\n' +
+      '\n' +
+      '  if (value == null) {\n' +
+      '    return "";\n' +
+      '  }\n' +
+      '\n' +
+      '  return String(value);\n' +
+      '}\n' +
+      '\n' +
+      'function isProtectedCardProperty(property: WorkspacePropertyDefinitionState) {\n' +
+      '  return property.system || property.id === "property:name" || property.id === "property:status";\n' +
+      '}\n' +
+      '\n' +
+      'function isProjectDetailProperty(property: WorkspacePropertyDefinitionState) {\n' +
+      '  return property.id !== "property:name";\n' +
+      '}\n' +
+      '\n' +
+      'function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {\n' +
+      '  return property.id === "property:name"\n' +
+      '    || property.id === "property:status"\n' +
+      '    || !isProtectedCardProperty(property);\n' +
+      '}\n' +
+      '\n' +
+      'function canHideCardProperty(property: WorkspacePropertyDefinitionState) {\n' +
+      '  return property.id === "property:status" || !isProtectedCardProperty(property);\n' +
+      '}\n' +
+      '\n' +
+      'function isCardProper'... 63969 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import {
+      useEffect,
+      useMemo,
+      useRef,
+      useState,
+      type CSSProperties,
+      type MouseEvent as ReactMouseEvent,
+      type PointerEvent as ReactPointerEvent,
+    } from "react";
+    
+    import { Badge } from "@/components/ui/badge";
+    import { Button } from "@/components/ui/button";
+    import {
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuLabel,
+      DropdownMenuTrigger,
+    } from "@/components/ui/dropdown-menu";
+    import {
+      workspaceMenuContentClassName,
+      workspaceMenuDangerIconClassName,
+      workspaceMenuDangerItemClassName,
+      workspaceMenuDescriptionClassName,
+      workspaceMenuIconClassName,
+      workspaceMenuItemClassName,
+      workspaceMenuLabelClassName,
+      workspaceMenuOptionItemClassName,
+      workspaceMenuSeparatorClassName,
+    } from "@/components/workspace/menu-styles";
+    import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
+    import {
+      Popover,
+      PopoverAnchor,
+      PopoverContent,
+    } from "@/components/ui/popover";
+    import { Input } from "@/components/ui/input";
+    import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
+    import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
+    import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
+    import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
+    import { useI18n } from "@/i18n";
+    import { getStatusDisplayName } from "@/i18n/status";
+    import {
+      CalendarIcon,
+      ChevronDownIcon,
+      ChevronRightIcon,
+      CircleDotIcon,
+      EyeIcon,
+      EyeOffIcon,
+      FileIcon,
+      FolderIcon,
+      GripVerticalIcon,
+      HashIcon,
+      ListChecksIcon,
+      PencilIcon,
+      PlusIcon,
+      Trash2Icon,
+      TypeIcon,
+    } from "@/lib/lucide-icons";
+    import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
+    import type {
+      WorkspaceMockFileTreeNode,
+      WorkspaceMockProject,
+    } from "@/workspaceMockData";
+    import type {
+      WorkspacePropertyDefinitionState,
+      WorkspaceSelectValueState,
+    } from "@/workspaceAppState";
+    
+    type WorkspaceProjectDetailPanelProps = {
+      readonly expanded?: boolean;
+      readonly sidebarCollapsed?: boolean;
+      readonly open: boolean;
+      readonly onOpenChange: (open: boolean) => void;
+      readonly project: WorkspaceMockProject | null;
+      readonly visibleProperties: readonly WorkspacePropertyDefinitionState[];
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+      readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+      readonly onCreateSelectValue: (
+        propertyId: string,
+        input: { readonly name: string; readonly color: string },
+      ) => Promise<WorkspaceSelectValueState | null>;
+      readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+      readonly onColorSelectValue: (selectValueId: string, color: string) => void;
+      readonly onDeleteSelectValue: (selectValueId: string) => void;
+      readonly onCreateProperty: (input: { name: string; type: WorkspaceCustomPropertyType }) => void;
+      readonly onRenameProperty: (propertyId: string, name: string) => void;
+      readonly onHideProperty: (propertyId: string, hidden: boolean) => void;
+      readonly onDeleteProperty: (propertyId: string) => void;
+    };
+    
+    type ProjectDetailPropertyTypeOption = {
+      readonly value: WorkspaceCustomPropertyType;
+      readonly label: string;
+      readonly description: string;
+    };
+    
+    type CardPropertyDragPreviewRow = {
+      readonly propertyId: string;
+      readonly top: number;
+      readonly height: number;
+    };
+    
+    type CardPropertyGroup = "visible" | "hidden";
+    
+    type CardPropertyDragState = {
+      readonly propertyId: string;
+      readonly group: CardPropertyGroup;
+      readonly startY: number;
+      readonly currentY: number;
+      readonly dropIndex: number;
+      readonly rows: readonly CardPropertyDragPreviewRow[];
+    };
+    
+    type CardPropertyDragOptions = {
+      readonly group?: CardPropertyGroup;
+      readonly openActionsOnClick?: boolean;
+    };
+    
+    const projectDetailPanelWidthStorageKey = "workspace.projectDetailPanelWidth";
+    const defaultProjectDetailPanelWidth = 480;
+    const minProjectDetailPanelWidth = 360;
+    const maxProjectDetailPanelWidth = 760;
+    const projectDetailPanelAnimationMs = 360;
+    const projectDetailPanelUnmountBufferMs = 80;
+    const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
+    const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";
+    const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";
+    const projectDetailPlainValueClassName =
+      "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-normal text-foreground";
+    const projectDetailMultilineValueClassName =
+      "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-normal leading-5 text-foreground";
+    const projectDetailPlainTriggerClassName =
+      "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+    const detailAddPropertyMenuSurfaceSelector = "[data-workspace-detail-add-property-menu='true']";
+    const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
+    const defaultPropertyNameByType: Readonly<Record<WorkspaceCustomPropertyType, string>> = {
+      text: "Text",
+      number: "Number",
+      date: "Date",
+      select: "Select",
+      "multi-select": "Multi-select",
+    };
+    
+    function getMaxProjectDetailPanelWidth() {
+      if (typeof window === "undefined") {
+        return maxProjectDetailPanelWidth;
+      }
+    
+      return Math.min(
+        maxProjectDetailPanelWidth,
+        Math.max(minProjectDetailPanelWidth, window.innerWidth - 96),
+      );
+    }
+    
+    function clampProjectDetailPanelWidth(value: number) {
+      const fallbackWidth = Number.isFinite(value) ? value : defaultProjectDetailPanelWidth;
+      return Math.min(
+        getMaxProjectDetailPanelWidth(),
+        Math.max(minProjectDetailPanelWidth, Math.round(fallbackWidth)),
+      );
+    }
+    
+    function readSavedProjectDetailPanelWidth() {
+      if (typeof window === "undefined") {
+        return defaultProjectDetailPanelWidth;
+      }
+    
+      return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));
+    }
+    
+    function readSavedCardPropertyOrder() {
+      if (typeof window === "undefined") {
+        return [];
+      }
+    
+      try {
+        const parsedValue = JSON.parse(window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]");
+        return Array.isArray(parsedValue)
+          ? parsedValue.filter((item): item is string => typeof item === "string")
+          : [];
+      } catch {
+        return [];
+      }
+    }
+    
+    const cardSectionsStorageKey = "workspace.card-property-sections.v1";
+    
+    function readSavedCardSections() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(cardSectionsStorageKey) || "null");
+        return {
+          properties: typeof saved?.properties === "boolean" ? saved.properties : true,
+          hidden: typeof saved?.hidden === "boolean" ? saved.hidden : true,
+        };
+      } catch {
+        return { properties: true, hidden: true };
+      }
+    }
+    
+    function readSavedCardHiddenPropertyIds() {
+      if (typeof window === "undefined") {
+        return [];
+      }
+    
+      try {
+        const parsedValue = JSON.parse(window.localStorage.getItem(cardHiddenPropertyIdsStorageKey) || "[]");
+        return Array.isArray(parsedValue)
+          ? parsedValue.filter((item): item is string => typeof item === "string")
+          : [];
+      } catch {
+        return [];
+      }
+    }
+    
+    function createOrderedCardProperties(
+      properties: readonly WorkspacePropertyDefinitionState[],
+      orderedPropertyIds: readonly string[],
+    ) {
+      const propertiesById = new Map(properties.map((property) => [property.id, property]));
+      const orderedProperties = orderedPropertyIds
+        .map((propertyId) => propertiesById.get(propertyId))
+        .filter((property): property is WorkspacePropertyDefinitionState => property !== undefined);
+      const orderedPropertyIdSet = new Set(orderedProperties.map((property) => property.id));
+      const newProperties = properties.filter((property) => !orderedPropertyIdSet.has(property.id));
+    
+      return [...orderedProperties, ...newProperties];
+    }
+    
+    function getCardPropertyDragOrder(
+      orderedPropertyIds: readonly string[],
+      sourcePropertyId: string,
+      dropIndex: number,
+    ) {
+      const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+      const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
+      return [
+        ...remainingPropertyIds.slice(0, boundedDropIndex),
+        sourcePropertyId,
+        ...remainingPropertyIds.slice(boundedDropIndex),
+      ];
+    }
+    
+    function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {
+      if (property.id === "property:name") {
+        return project.name;
+      }
+    
+      if (property.id === "property:status") {
+        return project.status;
+      }
+    
+      return project.propertyValues[property.id as keyof typeof project.propertyValues] ?? "";
+    }
+    
+    function stringifyPropertyValue(value: unknown) {
+      if (value && typeof value === "object" && !Array.isArray(value) && "name" in value) {
+        return String((value as { readonly name?: unknown }).name || "");
+      }
+    
+      if (Array.isArray(value)) {
+        return value.filter((item) => typeof item === "string").join(", ");
+      }
+    
+      if (value == null) {
+        return "";
+      }
+    
+      return String(value);
+    }
+    
+    function isProtectedCardProperty(property: WorkspacePropertyDefinitionState) {
+      return property.system || property.id === "property:name" || property.id === "property:status";
+    }
+    
+    function isProjectDetailProperty(property: WorkspacePropertyDefinitionState) {
+      return property.id !== "property:name";
+    }
+    
+    function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {
+      return property.id === "property:name"
+        || property.id === "property:status"
+        || !isProtectedCardProperty(property);
+    }
+    
+    function canHideCardProperty(property: WorkspacePropertyDefinitionState) {
+      return property.id === "property:status" || !isProtectedCardProperty(property);
+    }
+    
+    function isCardPropertyHidden(
+      property: WorkspacePropertyDefinitionState,
+      cardHiddenPropertyIds: readonly string[],
+    ) {
+      return property.hidden || cardHiddenPropertyIds.includes(property.id);
+    }
+    
+    function getFileExtension(fileName: string) {
+      const extensionMatch = /\.([^.]+)$/.exec(fileName);
+      return extensionMatch ? extensionMatch[1].toLowerCase() : "";
+    }
+    
+    function getFileTreeNodeIconClassName(node: WorkspaceMockFileTreeNode) {
+      if (node.kind === "folder") {
+        return "size-4 text-amber-300";
+      }
+    
+      const extension = getFileExtension(node.name);
+    
+      if (extension === "pdf") {
+        return "size-4 text-rose-300";
+      }
+    
+      if (spreadsheetFileExtensions.has(extension)) {
+        return "size-4 text-emerald-300";
+      }
+    
+      if (extension === "md" || extension === "markdown") {
+        return "size-4 text-sky-300";
+      }
+    
+      return "size-4 text-muted-foreground";
+    }
+    
+    function getFileTreeNodeNameClassName(node: WorkspaceMockFileTreeNode) {
+      return node.kind === "folder"
+        ? "min-w-0 truncate text-sm font-normal leading-5 text-foreground"
+        : "min-w-0 truncate text-sm font-normal leading-5 text-foreground/90";
+    }
+    
+    function renderPropertyTypeIcon(propertyType: WorkspaceCustomPropertyType) {
+      const className = "mt-0.5 size-4 text-muted-foreground";
+    
+      if (propertyType === "number") {
+        return <HashIcon className={className} aria-hidden="true" />;
+      }
+    
+      if (propertyType === "date") {
+        return <CalendarIcon className={className} aria-hidden="true" />;
+      }
+    
+      if (propertyType === "select") {
+        return <CircleDotIcon className={className} aria-hidden="true" />;
+      }
+    
+      if (propertyType === "multi-select") {
+        return <ListChecksIcon className={className} aria-hidden="true" />;
+      }
+    
+      return <TypeIcon className={className} aria-hidden="true" />;
+    }
+    
+    function getSelectValuesForProperty(
+      selectValues: readonly WorkspaceSelectValueState[],
+      propertyId: string,
+    ) {
+      return selectValues
+        .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
+        .sort((left, right) => (
+          Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
+        ));
+    }
+    
+    function getSelectedSelectValueItems(
+      value: unknown,
+      property: WorkspacePropertyDefinitionState,
+      selectValues: readonly WorkspaceSelectValueState[],
+    ) {
+      const values = getSelectValuesForProperty(selectValues, property.id);
+    
+      if (property.propertyType === "multi-select") {
+        const selectedValues = Array.isArray(value)
+          ? value.filter((item): item is string => typeof item === "string")
+          : [];
+    
+        return selectedValues.map((valueId) => (
+          values.find((selectValue) => selectValue.id === valueId) || {
+            id: valueId,
+            propertyId: property.id,
+            name: valueId,
+            color: "gray",
+          }
+        ));
+      }
+    
+      if (typeof value !== "string" || !value) {
+        return [];
+      }
+    
+      return [
+        values.find((selectValue) => selectValue.id === value) || {
+          id: value,
+          propertyId: property.id,
+          name: value,
+          color: "gray",
+        },
+      ];
+    }
+    
+    function ProjectSelectValuePills({
+      value,
+      property,
+      selectValues,
+    }: {
+      readonly value: unknown;
+      readonly property: WorkspacePropertyDefinitionState;
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+    }) {
+      const selectedItems = getSelectedSelectValueItems(value, property, selectValues);
+    
+      if (selectedItems.length === 0) {
+        return <span className="flex min-h-7 min-w-0 items-center" aria-hidden="true" />;
+      }
+    
+      return (
+        <span className="flex min-h-7 min-w-0 flex-wrap items-center gap-1.5 py-0.5">
+          {selectedItems.map((selectValue) => (
+            <span
+              key={selectValue.id}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-secondary/80 px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+            >
+              <span className="size-2 rounded-full" data-color={selectValue.color || "gray"} aria-hidden="true" />
+              <span className="truncate">{selectValue.name}</span>
+            </span>
+          ))}
+        </span>
+      );
+    }
+    
+    function ProjectPropertyValueDisplay({
+      value,
+      property,
+      selectValues,
+      onStartEditing,
+    }: {
+      readonly value: unknown;
+      readonly property: WorkspacePropertyDefinitionState;
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+      readonly onStartEditing: () => void;
+    }) {
+      const { t } = useI18n();
+    
+      if (property.id === "property:status") {
+        const statusValue = value && typeof value === "object" && !Array.isArray(value)
+          ? value as {
+              readonly id?: string;
+              readonly name?: string;
+              readonly source?: string;
+              readonly color?: unknown;
+            }
+          : null;
+        const label = statusValue
+          ? getStatusDisplayName(t, statusValue)
+          : stringifyPropertyValue(value);
+        const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
+        return label
+          ? (
+            <Badge variant="secondary" data-workspace-status-value className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal">
+              <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
+              <span className="truncate">{label}</span>
+            </Badge>
+          )
+          : <span className={projectDetailPlainValueClassName} />;
+      }
+    
+      if (property.id === "property:name" || property.system) {
+        return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+      }
+    
+      if (property.propertyType === "text") {
+        return (
+          <button
+            type="button"
+            aria-label={t("property.editValue", { name: property.name })}
+            className={projectDetailMultilineValueClassName}
+            onClick={onStartEditing}
+          >
+            <span className="min-w-0 whitespace-pre-wrap break-words">{stringifyPropertyValue(value)}</span>
+          </button>
+        );
+      }
+    
+      if (property.propertyType === "number") {
+        return (
+          <button
+            type="button"
+            aria-label={t("property.editValue", { name: property.name })}
+            className={projectDetailPlainValueClassName}
+            onClick={onStartEditing}
+          >
+            <span className="min-w-0 truncate">{formatNumberDisplayValue(value)}</span>
+          </button>
+        );
+      }
+    
+      if (property.propertyType === "date") {
+        return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+      }
+    
+      if (property.propertyType === "select" || property.propertyType === "multi-select") {
+        return (
+          <ProjectSelectValuePills
+            value={value}
+            property={property}
+            selectValues={selectValues}
+          />
+        );
+      }
+    
+      return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+    }
+    
+    type FileTreeNodeProps = {
+      readonly node: WorkspaceMockFileTreeNode;
+      readonly depth?: number;
+      readonly expandedFolderIds: ReadonlySet<string>;
+      readonly onToggleFolder: (folderId: string) => void;
+    };
+    
+    function FileTreeNode({
+      node,
+      depth = 0,
+      expandedFolderIds,
+      onToggleFolder,
+    }: FileTreeNodeProps) {
+      const { t } = useI18n();
+      const isFolder = node.kind === "folder";
+      const hasChildren = isFolder && node.children !== undefined && node.children.length > 0;
+      const isExpanded = isFolder && expandedFolderIds.has(node.id);
+    
+      return (
+        <li>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={!node.available}
+            className="h-7 w-full justify-start px-1.5 py-0 text-left text-sm font-normal text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+            title={node.relativePath}
+            aria-label={`${t(isFolder ? "detail.folder" : "detail.file")}: ${node.name}`}
+            aria-expanded={isFolder ? isExpanded : undefined}
+            onClick={() => {
+              if (hasChildren) {
+                onToggleFolder(node.id);
+              }
+            }}
+          >
+            <span className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 0.9}rem` }}>
+              {hasChildren ? (
+                isExpanded ? (
+                  <ChevronDownIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                ) : (
+                  <ChevronRightIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                )
+              ) : (
+                <span className="size-3.5" aria-hidden="true" />
+              )}
+              {isFolder ? (
+                <FolderIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
+              ) : (
+                <FileIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
+              )}
+              <span className={getFileTreeNodeNameClassName(node)}>{node.name}</span>
+              {!node.available ? <Badge variant="destructive">{t("detail.fileUnavailable")}</Badge> : null}
+            </span>
+          </Button>
+          {isFolder && isExpanded && node.children && node.children.length > 0 ? (
+            <ul className="grid gap-0">
+              {node.children.map((child) => (
+                <FileTreeNode
+                  key={child.id}
+                  node={child}
+                  depth={depth + 1}
+                  expandedFolderIds={expandedFolderIds}
+                  onToggleFolder={onToggleFolder}
+                />
+              ))}
+            </ul>
+          ) : null}
+        </li>
+      );
+    }
+    
+    function ProjectPropertyValueEditor({
+      project,
+      property,
+      selectValues,
+      editing,
+      onStartEditing,
+      onStopEditing,
+      onProjectPropertyValueChange,
+      onCreateSelectValue,
+      onRenameSelectValue,
+      onColorSelectValue,
+      onDeleteSelectValue,
+    }: {
+      readonly project: WorkspaceMockProject;
+      readonly property: WorkspacePropertyDefinitionState;
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+      readonly editing: boolean;
+      readonly onStartEditing: () => void;
+      readonly onStopEditing: () => void;
+      readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+      readonly onCreateSelectValue: (
+        propertyId: string,
+        input: { readonly name: string; readonly color: string },
+      ) => Promise<WorkspaceSelectValueState | null>;
+      readonly onRenameSelectValue: (selectValueId: string, name: string) => void;
+      readonly onColorSelectValue: (selectValueId: string, color: string) => void;
+      readonly onDeleteSelectValue: (selectValueId: string) => void;
+    }) {
+      const { t } = useI18n();
+      const value = getPropertyValue(project, property);
+    
+      if (isProtectedCardProperty(property)) {
+        return (
+          <ProjectPropertyValueDisplay
+            value={value}
+            property={property}
+            selectValues={selectValues}
+            onStartEditing={onStartEditing}
+          />
+        );
+      }
+    
+      if (property.propertyType === "text") {
+        if (!editing) {
+          return (
+            <ProjectPropertyValueDisplay
+              value={value}
+              property={property}
+              selectValues={selectValues}
+              onStartEditing={onStartEditing}
+            />
+          );
+        }
+    
+        return (
+          <WorkspaceTextValueTextarea
+            key={`${project.id}:${property.id}:${stringifyPropertyValue(value)}`}
+            autoFocus
+            defaultValue={stringifyPropertyValue(value)}
+            aria-label={t("property.editValue", { name: property.name })}
+            className="min-h-8 border-transparent bg-transparent px-0 text-[13px] font-normal leading-5 shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
+            onBlur={(event) => {
+              onProjectPropertyValueChange(project.id, property.id, event.target.value);
+              onStopEditing();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
+          />
+        );
+      }
+    
+      if (property.propertyType === "number") {
+        if (!editing) {
+          return (
+            <ProjectPropertyValueDisplay
+              value={value}
+              property={property}
+              selectValues={selectValues}
+              onStartEditing={onStartEditing}
+            />
+          );
+        }
+    
+        return (
+          <Input
+            key={`${project.id}:${property.id}:${formatNumberEditorValue(value)}`}
+            autoFocus
+            type="text"
+            inputMode="decimal"
+            defaultValue={formatNumberEditorValue(value)}
+            aria-label={t("property.editValue", { name: property.name })}
+            className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
+            onBlur={(event) => {
+              const text = event.target.value.trim();
+              onProjectPropertyValueChange(project.id, property.id, text === "" ? null : text);
+              onStopEditing();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+              if (event.key === "Escape") {
+                onStopEditing();
+              }
+            }}
+          />
+        );
+      }
+    
+      if (property.propertyType === "date") {
+        return (
+          <WorkspaceDateValueEditor
+            value={value}
+            containerClassName="w-full min-w-0"
+            triggerClassName={projectDetailPlainTriggerClassName}
+            onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
+          />
+        );
+      }
+    
+      if (property.propertyType === "select" || property.propertyType === "multi-select") {
+        return (
+          <WorkspaceSelectValueEditor
+            property={property}
+            value={value}
+            selectValues={selectValues}
+            containerClassName="w-full min-w-0"
+            triggerClassName={projectDetailPlainTriggerClassName}
+            onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
+            onCreateSelectValue={onCreateSelectValue}
+            onRenameSelectValue={onRenameSelectValue}
+            onColorSelectValue={onColorSelectValue}
+            onDeleteSelectValue={onDeleteSelectValue}
+          />
+        );
+      }
+    
+      return (
+        <ProjectPropertyValueDisplay
+          value={value}
+          property={property}
+          selectValues={selectValues}
+          onStartEditing={onStartEditing}
+        />
+      );
+    }
+    
+    export function WorkspaceProjectDetailPanel({
+      expanded = false,
+      sidebarCollapsed = false,
+      open,
+      onOpenChange,
+      project,
+      visibleProperties,
+      selectValues,
+      onProjectPropertyValueChange,
+      onCreateSelectValue,
+      onRenameSelectValue,
+      onColorSelectValue,
+      onDeleteSelectValue,
+      onCreateProperty,
+      onRenameProperty,
+      onHideProperty,
+      onDeleteProperty,
+    }: WorkspaceProjectDetailPanelProps) {
+      const { t } = useI18n();
+      const propertyTypeOptions = useMemo<readonly ProjectDetailPropertyTypeOption[]>(() => [
+        {
+          value: "text",
+          label: t("property.type.text"),
+          description: t("property.type.textDescription"),
+        },
+        {
+          value: "number",
+          label: t("property.type.number"),
+          description: t("property.type.numberDescription"),
+        },
+        {
+          value: "date",
+          label: t("property.type.date"),
+          description: t("property.type.dateDescription"),
+        },
+        {
+          value: "select",
+          label: t("property.type.select"),
+          description: t("property.type.selectDescription"),
+        },
+        {
+          value: "multi-select",
+          label: t("property.type.multiSelect"),
+          description: t("property.type.multiSelectDescription"),
+        },
+      ], [t]);
+      const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
+      const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
+      const [panelVisible, setPanelVisible] = useState(false);
+      const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
+      const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+      const [propertyActionsId, setPropertyActionsId] = useState<string | null>(null);
+      const [renamingPropertyId, setRenamingPropertyId] = useState<string | null>(null);
+      const [renamingPropertyName, setRenamingPropertyName] = useState("");
+      const [cardSections, setCardSections] = useState(readSavedCardSections);
+      const propertiesExpanded = cardSections.properties;
+      const hiddenPropertiesExpanded = cardSections.hidden;
+      function toggleCardSection(section: "properties" | "hidden") {
+        setCardSections((current) => ({ ...current, [section]: !current[section] }));
+      }
+      useEffect(() => {
+        try {
+          window.localStorage.setItem(cardSectionsStorageKey, JSON.stringify(cardSections));
+        } catch { /* Keep the controls usable when local storage is unavailable. */ }
+      }, [cardSections]);
+      const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
+      const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
+      const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(readSavedCardHiddenPropertyIds);
+      const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
+      const renamingPropertyInputRef = useRef<HTMLInputElement | null>(null);
+      const panelWidthRef = useRef(projectDetailPanelWidth);
+      const panelMountedRef = useRef(false);
+      const cardPropertyOrderRef = useRef<readonly string[]>(cardPropertyOrder);
+      const cardPropertyPressMoved = useRef(false);
+      const suppressCardPropertyClickRef = useRef(false);
+      const isOpen = open && project !== null;
+      const detailVisibleProperties = useMemo(
+        () => visibleProperties.filter(isProjectDetailProperty),
+        [visibleProperties],
+      );
+      const orderedCardProperties = useMemo(
+        () => createOrderedCardProperties(detailVisibleProperties, cardPropertyOrder),
+        [detailVisibleProperties, cardPropertyOrder],
+      );
+      const orderedVisibleProperties = useMemo(
+        () => orderedCardProperties.filter((property) => !isCardPropertyHidden(property, cardHiddenPropertyIds)),
+        [orderedCardProperties, cardHiddenPropertyIds],
+      );
+      const hiddenCardProperties = useMemo(
+        () => orderedCardProperties.filter((property) => isCardPropertyHidden(property, cardHiddenPropertyIds)),
+        [orderedCardProperties, cardHiddenPropertyIds],
+      );
+    
+      useEffect(() => {
+        panelMountedRef.current = panelProject !== null;
+      }, [panelProject]);
+    
+      useEffect(() => {
+        cardPropertyOrderRef.current = cardPropertyOrder;
+      }, [cardPropertyOrder]);
+    
+      useEffect(() => {
+        if (renamingPropertyId) {
+          renamingPropertyInputRef.current?.focus();
+          renamingPropertyInputRef.current?.select();
+        }
+      }, [renamingPropertyId]);
+    
+      useEffect(() => {
+        const detailPropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
+        const nextHiddenPropertyIds = cardHiddenPropertyIds.filter((propertyId) => detailPropertyIdSet.has(propertyId));
+    
+        if (
+          nextHiddenPropertyIds.length !== cardHiddenPropertyIds.length ||
+          nextHiddenPropertyIds.some((propertyId, index) => propertyId !== cardHiddenPropertyIds[index])
+        ) {
+          setCardHiddenPropertyIds(nextHiddenPropertyIds);
+    
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+          }
+        }
+      }, [detailVisibleProperties, cardHiddenPropertyIds]);
+    
+      useEffect(() => {
+        if (isOpen) {
+          setExpandedFolderIds(new Set());
+          setEditingPropertyId(null);
+          setPropertyActionsId(null);
+          setRenamingPropertyId(null);
+          setRenamingPropertyName("");
+          setOpenAddPropertyMenu(false);
+        }
+      }, [isOpen, project?.id]);
+    
+      useEffect(() => {
+        const visiblePropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
+        const mergedPropertyIds = [
+          ...cardPropertyOrder.filter((propertyId) => visiblePropertyIdSet.has(propertyId)),
+          ...detailVisibleProperties.map((property) => property.id).filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
+        ];
+    
+        if (
+          mergedPropertyIds.length !== cardPropertyOrder.length ||
+          mergedPropertyIds.some((propertyId, index) => propertyId !== cardPropertyOrder[index])
+        ) {
+          setCardPropertyOrder(mergedPropertyIds);
+        }
+      }, [detailVisibleProperties, cardPropertyOrder]);
+    
+      useEffect(() => {
+        if (!isOpen || !project) {
+          setPanelVisible(false);
+          return undefined;
+        }
+    
+        const shouldAnimateOpen = !panelMountedRef.current;
+        setPanelProject(project);
+    
+        if (!shouldAnimateOpen) {
+          setPanelVisible(true);
+          return undefined;
+        }
+    
+        setPanelVisible(false);
+        let secondFrameId: number | null = null;
+        const firstFrameId = window.requestAnimationFrame(() => {
+          secondFrameId = window.requestAnimationFrame(() => {
+            setPanelVisible(true);
+          });
+        });
+    
+        return () => {
+          window.cancelAnimationFrame(firstFrameId);
+    
+          if (secondFrameId !== null) {
+            window.cancelAnimationFrame(secondFrameId);
+          }
+        };
+      }, [isOpen, project]);
+    
+      useEffect(() => {
+        if (isOpen || panelVisible || panelProject === null) {
+          return undefined;
+        }
+    
+        const timeoutId = window.setTimeout(() => {
+          setPanelProject(null);
+        }, projectDetailPanelAnimationMs + projectDetailPanelUnmountBufferMs);
+    
+        return () => window.clearTimeout(timeoutId);
+      }, [isOpen, panelProject, panelVisible]);
+    
+      useEffect(() => {
+        panelWidthRef.current = projectDetailPanelWidth;
+      }, [projectDetailPanelWidth]);
+    
+      useEffect(() => {
+        if (!isOpen || typeof window === "undefined") {
+          return;
+        }
+    
+        window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(projectDetailPanelWidth));
+      }, [isOpen, projectDetailPanelWidth]);
+    
+      useEffect(() => {
+        if (typeof window === "undefined") {
+          return undefined;
+        }
+    
+        function handleResize() {
+          setProjectDetailPanelWidth((currentWidth) => clampProjectDetailPanelWidth(currentWidth));
+        }
+    
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+      }, []);
+    
+      useEffect(() => {
+        if (!isOpen) {
+          return undefined;
+        }
+    
+        function handleKeyDown(event: KeyboardEvent) {
+          if (event.key === "Escape") {
+            onOpenChange(false);
+          }
+        }
+    
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+      }, [isOpen, onOpenChange]);
+    
+      useEffect(() => {
+        if (!openAddPropertyMenu) {
+          return undefined;
+        }
+    
+        function closeAddPropertyMenuOnOutsidePointerDown(event: PointerEvent) {
+          blockOutsideWorkspaceMenuPointerDown(event, detailAddPropertyMenuSurfaceSelector, () => {
+            setOpenAddPropertyMenu(false);
+          });
+        }
+    
+        document.addEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+    
+        return () => {
+          document.removeEventListener("pointerdown", closeAddPropertyMenuOnOutsidePointerDown, true);
+        };
+      }, [openAddPropertyMenu]);
+    
+      function updatePanelWidth(nextWidth: number) {
+        const clampedWidth = clampProjectDetailPanelWidth(nextWidth);
+        panelWidthRef.current = clampedWidth;
+        setProjectDetailPanelWidth(clampedWidth);
+      }
+    
+      function startPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
+        event.preventDefault();
+        const startX = event.clientX;
+        const startWidth = panelWidthRef.current;
+        const previousCursor = document.body.style.cursor;
+        const previousUserSelect = document.body.style.userSelect;
+    
+        function handlePointerMove(pointerEvent: PointerEvent) {
+          updatePanelWidth(startWidth + startX - pointerEvent.clientX);
+        }
+    
+        function handlePointerUp() {
+          window.removeEventListener("pointermove", handlePointerMove);
+          window.removeEventListener("pointerup", handlePointerUp);
+          document.body.style.cursor = previousCursor;
+          document.body.style.userSelect = previousUserSelect;
+          window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(panelWidthRef.current));
+        }
+    
+        document.body.style.cursor = "ew-resize";
+        document.body.style.userSelect = "none";
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp, { once: true });
+      }
+    
+      function closeProjectDetails(
+        event: ReactMouseEvent<HTMLButtonElement> | ReactPointerEvent<HTMLButtonElement>,
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenChange(false);
+      }
+    
+      function finishPanelTransition() {
+        if (!panelVisible) {
+          setPanelProject(null);
+        }
+      }
+    
+      function toggleProjectFileFolder(folderId: string) {
+        setExpandedFolderIds((currentFolderIds) => {
+          const nextFolderIds = new Set(currentFolderIds);
+          if (nextFolderIds.has(folderId)) {
+            nextFolderIds.delete(folderId);
+          } else {
+            nextFolderIds.add(folderId);
+          }
+    
+          return nextFolderIds;
+        });
+      }
+    
+      function beginRenameProperty(property: WorkspacePropertyDefinitionState) {
+        if (!canRenameCardProperty(property)) {
+          return;
+        }
+    
+        setPropertyActionsId(null);
+        setRenamingPropertyId(property.id);
+        setRenamingPropertyName(property.name);
+      }
+    
+      function commitRenameProperty(property: WorkspacePropertyDefinitionState) {
+        const nextName = renamingPropertyName.trim();
+        setRenamingPropertyId(null);
+        setRenamingPropertyName("");
+    
+        if (nextName && nextName !== property.name) {
+          onRenameProperty(property.id, nextName);
+        }
+      }
+    
+      function cancelRenameProperty() {
+        setRenamingPropertyId(null);
+        setRenamingPropertyName("");
+      }
+    
+      function deleteProperty(property: WorkspacePropertyDefinitionState) {
+        if (!isProtectedCardProperty(property) && window.confirm(t("confirm.deleteProperty", { name: property.name }))) {
+          onDeleteProperty(property.id);
+        }
+      }
+    
+      function createPropertyFromType(option: ProjectDetailPropertyTypeOption) {
+        setOpenAddPropertyMenu(false);
+        onCreateProperty({ name: defaultPropertyNameByType[option.value], type: option.value });
+      }
+    
+      function onReorderCardProperties(nextPropertyIds: readonly string[]) {
+        setCardPropertyOrder(nextPropertyIds);
+        cardPropertyOrderRef.current = nextPropertyIds;
+    
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(cardPropertyOrderStorageKey, JSON.stringify(nextPropertyIds));
+        }
+      }
+    
+      function setCardPropertyHidden(property: WorkspacePropertyDefinitionState, hidden: boolean) {
+        if (property.id === "property:status") {
+          const nextHiddenPropertyIds = hidden
+            ? [...cardHiddenPropertyIds.filter((propertyId) => propertyId !== property.id), property.id]
+            : cardHiddenPropertyIds.filter((propertyId) => propertyId !== property.id);
+    
+          setCardHiddenPropertyIds(nextHiddenPropertyIds);
+    
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+          }
+    
+          return;
+        }
+    
+        if (!isProtectedCardProperty(property)) {
+          onHideProperty(property.id, hidden);
+        }
+      }
+    
+      function getCardPropertiesForGroup(group: CardPropertyGroup) {
+        return group === "hidden" ? hiddenCardProperties : orderedVisibleProperties;
+      }
+    
+      function mergeCardPropertyGroupOrder(group: CardPropertyGroup, nextGroupPropertyIds: readonly string[]) {
+        const groupPropertyIds = new Set(getCardPropertiesForGroup(group).map((property) => property.id));
+        const nextGroupOrder = [...nextGroupPropertyIds];
+        const completePropertyOrder = createOrderedCardProperties(detailVisibleProperties, cardPropertyOrderRef.current)
+          .map((property) => property.id);
+    
+        return completePropertyOrder.map((propertyId) => {
+          if (!groupPropertyIds.has(propertyId)) {
+            return propertyId;
+          }
+    
+          return nextGroupOrder.shift() || propertyId;
+        });
+      }
+    
+      function getCardPropertyDragPreviewRows(group: CardPropertyGroup) {
+        return Array.from(document.querySelectorAll<HTMLElement>(`[data-card-property-row-group="${group}"]`))
+          .map((row) => {
+            const propertyId = row.dataset.cardPropertyRowId;
+            const rect = row.getBoundingClientRect();
+    
+            if (!propertyId) {
+              return null;
+            }
+    
+            return {
+              propertyId,
+              top: rect.top,
+              height: rect.height,
+            };
+          })
+          .filter((row): row is CardPropertyDragPreviewRow => row !== null);
+      }
+    
+      function findCardPropertyDragTarget(clientY: number, rows: readonly CardPropertyDragPreviewRow[]) {
+        let dropIndex = 0;
+    
+        for (const row of rows) {
+          if (clientY >= row.top + row.height / 2) {
+            dropIndex += 1;
+          }
+        }
+    
+        return dropIndex;
+      }
+    
+      function findCardPropertyDropIndex(
+        clientY: number,
+        rows: readonly CardPropertyDragPreviewRow[],
+        sourcePropertyId: string,
+      ) {
+        return findCardPropertyDragTarget(
+          clientY,
+          rows.filter((row) => row.propertyId !== sourcePropertyId),
+        );
+      }
+    
+      function getCardPropertyDragTops(
+        orderedPropertyIds: readonly string[],
+        rows: readonly CardPropertyDragPreviewRow[],
+      ) {
+        const tops = new Map<string, number>();
+    
+        orderedPropertyIds.forEach((propertyId, index) => {
+          const row = rows[index];
+          if (row) {
+            tops.set(propertyId, row.top);
+          }
+        });
+    
+        return tops;
+      }
+    
+      function getCardPropertyDragStyle(
+        propertyId: string,
+        group: CardPropertyGroup,
+      ): CSSProperties | undefined {
+        if (!cardPropertyDrag) {
+          return undefined;
+        }
+    
+        if (cardPropertyDrag.group !== group) {
+          return undefined;
+        }
+    
+        const orderedPropertyIds = getCardPropertiesForGroup(group).map((property) => property.id);
+        const currentRow = cardPropertyDrag.rows.find((row) => row.propertyId === propertyId);
+    
+        if (!currentRow || !orderedPropertyIds.includes(propertyId)) {
+          return undefined;
+        }
+    
+        if (propertyId === cardPropertyDrag.propertyId) {
+          return {
+            transform: `translateY(${cardPropertyDrag.currentY - cardPropertyDrag.startY}px)`,
+            transitionDuration: "0ms",
+            pointerEvents: "none",
+            zIndex: 30,
+          };
+        }
+    
+        const previewOrder = getCardPropertyDragOrder(
+          orderedPropertyIds,
+          cardPropertyDrag.propertyId,
+          cardPropertyDrag.dropIndex,
+        );
+        const previewTops = getCardPropertyDragTops(previewOrder, cardPropertyDrag.rows);
+        const previewTop = previewTops.get(propertyId);
+    
+        if (previewTop === undefined) {
+          return undefined;
+        }
+    
+        const offset = previewTop - currentRow.top;
+    
+        if (Math.abs(offset) < 0.5) {
+          return undefined;
+        }
+    
+        return {
+          transform: `translateY(${offset}px)`,
+          transitionDuration: "180ms",
+        };
+      }
+    
+      function closePropertyMenuBeforeAction(
+        event: ReactPointerEvent<HTMLElement> | ReactMouseEvent<HTMLElement>,
+      ) {
+        if (!propertyActionsId) {
+          return false;
+        }
+    
+        event.preventDefault();
+        event.stopPropagation();
+        setPropertyActionsId(null);
+        return true;
+      }
+    
+      function openCardPropertyMenu(propertyId: string) {
+        setPropertyActionsId(propertyId);
+      }
+    
+      function startCardPropertyDrag(
+        event: ReactPointerEvent<HTMLElement>,
+        propertyId: string,
+        options: CardPropertyDragOptions = {},
+      ) {
+        if (event.button !== 0) {
+          return;
+        }
+    
+        if (closePropertyMenuBeforeAction(event)) {
+          return;
+        }
+    
+        event.preventDefault();
+        event.stopPropagation();
+    
+        const group = options.group ?? "visible";
+        const cardPropertyDragPreviewRows = getCardPropertyDragPreviewRows(group);
+        const previousCursor = document.body.style.cursor;
+        const previousUserSelect = document.body.style.userSelect;
+    
+        cardPropertyPressMoved.current = false;
+    
+        let frameId = 0;
+        let pendingClientX = event.clientX;
+        let pendingClientY = event.clientY;
+        let dragActive = false;
+    
+        function beginCardPropertyDrag() {
+          if (dragActive) {
+            return;
+          }
+    
+          dragActive = true;
+          document.body.style.cursor = "grabbing";
+          document.body.style.userSelect = "none";
+          setEditingPropertyId(null);
+          setPropertyActionsId(null);
+          setCardPropertyDrag({
+            propertyId,
+            group,
+            startY: event.clientY,
+            currentY: pendingClientY,
+            dropIndex: findCardPropertyDropIndex(pendingClientY, cardPropertyDragPreviewRows, propertyId),
+            rows: cardPropertyDragPreviewRows,
+          });
+        }
+    
+        function updateDraggedCardProperty() {
+          frameId = 0;
+    
+          const dropIndex = findCardPropertyDropIndex(
+            pendingClientY,
+            cardPropertyDragPreviewRows,
+            propertyId,
+          );
+    
+          setCardPropertyDrag((currentDrag) => {
+            if (!currentDrag || currentDrag.propertyId !== propertyId) {
+              return currentDrag;
+            }
+    
+            return {
+              ...currentDrag,
+              currentY: pendingClientY,
+              dropIndex,
+            };
+          });
+        }
+    
+        function moveCardProperty(pointerEvent: PointerEvent) {
+          pendingClientX = pointerEvent.clientX;
+          pendingClientY = pointerEvent.clientY;
+          cardPropertyPressMoved.current = Math.hypot(
+            pendingClientX - event.clientX,
+            pendingClientY - event.clientY,
+          ) > 4;
+    
+          if (!cardPropertyPressMoved.current) {
+            return;
+          }
+    
+          pointerEvent.preventDefault();
+          beginCardPropertyDrag();
+    
+          if (frameId === 0) {
+            frameId = window.requestAnimationFrame(updateDraggedCardProperty);
+          }
+        }
+    
+        function finishCardPropertyDrag(pointerEvent: PointerEvent) {
+          const dropIndex = findCardPropertyDropIndex(
+            pointerEvent.clientY,
+            cardPropertyDragPreviewRows,
+            propertyId,
+          );
+          const orderedPropertyIds = cardPropertyDragPreviewRows.map((row) => row.propertyId);
+          const nextGroupPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
+          const moved = cardPropertyPressMoved.current || Math.hypot(
+            pointerEvent.clientX - event.clientX,
+            pointerEvent.clientY - event.clientY,
+          ) > 4;
+    
+          window.removeEventListener("pointermove", moveCardProperty);
+          window.cancelAnimationFrame(frameId);
+          window.removeEventListener("pointerup", finishCardPropertyDrag);
+    
+          if (dragActive) {
+            document.body.style.cursor = previousCursor;
+            document.body.style.userSelect = previousUserSelect;
+            setCardPropertyDrag(null);
+          }
+    
+          if (moved) {
+            suppressCardPropertyClickRef.current = true;
+            window.setTimeout(() => {
+              suppressCardPropertyClickRef.current = false;
+            }, 0);
+            onReorderCardProperties(mergeCardPropertyGroupOrder(group, nextGroupPropertyIds));
+          } else if (options.openActionsOnClick) {
+            openCardPropertyMenu(propertyId);
+          }
+    
+          cardPropertyPressMoved.current = false;
+        }
+    
+        window.addEventListener("pointermove", moveCardProperty);
+        window.addEventListener("pointerup", finishCardPropertyDrag, { once: true });
+      }
+    
+      function renderCardPropertyActionsMenu(
+        property: WorkspacePropertyDefinitionState,
+        visibilityAction: "hide" | "show",
+      ) {
+        const visibilityLabel = visibilityAction === "hide"
+          ? t("property.hideFromView")
+          : t("property.showInView");
+        const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
+        const propertyProtected = isProtectedCardProperty(property);
+        const renameableProperty = canRenameCardProperty(property);
+        const hideableProperty = canHideCardProperty(property);
+    
+        return (
+          <PopoverContent
+            align="start"
+            className={`${workspaceMenuContentClassName} w-52`}
+            onOpenAutoFocus={(event) => event.preventDefault()}
+          >
+            <div role="menu" aria-label={t("table.propertyActions", { name: property.name })} className="grid gap-0.5">
+              {renameableProperty ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={workspaceMenuItemClassName}
+                  onClick={() => beginRenameProperty(property)}
+                >
+                  <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                  {t("property.rename")}
+                </button>
+              ) : null}
+              {hideableProperty ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={workspaceMenuItemClassName}
+                    onClick={() => {
+                      setPropertyActionsId(null);
+                      setCardPropertyHidden(property, visibilityAction === "hide");
+                    }}
+                  >
+                    <VisibilityIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    {visibilityLabel}
+                  </button>
+                  {!propertyProtected ? (
+                    <>
+                      <div className={workspaceMenuSeparatorClassName} />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className={workspaceMenuDangerItemClassName}
+                        onClick={() => {
+                          setPropertyActionsId(null);
+                          deleteProperty(property);
+                        }}
+                      >
+                        <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                        {t("property.delete")}
+                      </button>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </PopoverContent>
+        );
+      }
+    
+      if (!panelProject) {
+        return null;
+      }
+    
+      const displayedProject = panelProject;
+    
+      return (
+        <div
+          className={[
+            "electron-window-no-drag pointer-events-none fixed bottom-0 right-0 z-30 flex justify-end",
+            expanded ? "top-[113px]" : "top-24",
+            expanded && !sidebarCollapsed ? "left-80" : "left-0",
+          ].join(" ")}
+          aria-hidden={!panelVisible}
+        >
+          {!expanded ? <button
+            type="button"
+            aria-label={t("detail.close")}
+            className={`electron-window-no-drag absolute inset-0 cursor-default bg-transparent ${panelVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+            tabIndex={panelVisible ? 0 : -1}
+            onClick={closeProjectDetails}
+          /> : null}
+          <aside
+            aria-labelledby="project-detail-title"
+            aria-modal="false"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+            onTransitionEnd={(event) => {
+              if (event.currentTarget === event.target) {
+                finishPanelTransition();
+              }
+            }}
+            className={[
+              "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+              expanded ? "workspace-project-detail-expanded" : "",
+              expanded ? "w-full max-w-none" : "max-w-[calc(100vw-6rem)]",
+              panelVisible ? "pointer-events-auto" : "pointer-events-none",
+              panelVisible ? "translate-x-0" : "translate-x-full",
+            ].join(" ")}
+            style={{ width: expanded ? "100%" : projectDetailPanelWidth }}
+          >
+            {!expanded ? <button
+              type="button"
+              aria-label={t("detail.resizePanel")}
+              className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
+              onPointerDown={startPanelResize}
+            >
+              <span className="sr-only">{t("detail.resizePanel")}</span>
+            </button> : null}
+            <>
+              <header className={expanded ? "px-9 pb-3 pt-[43px]" : "px-5 pb-2 pt-4"}>
+                <h2 id="project-detail-title" className={expanded ? "break-words text-[30px] font-semibold leading-10 tracking-normal text-foreground" : "break-words text-xl font-normal leading-7 tracking-normal text-foreground"}>
+                  {displayedProject.name}
+                </h2>
+              </header>
+              <div className={expanded ? "min-h-0 flex-1 overflow-auto px-9 pb-9 pt-2" : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"}>
+                <div className={expanded ? "grid gap-8" : "grid gap-4"}>
+                  <section className={`grid ${propertiesExpanded ? "gap-2.5" : "gap-0"}`} aria-labelledby="project-properties-heading">
+                    <h3 id="project-properties-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
+                      <button
+                        type="button"
+                        aria-controls="project-visible-properties"
+                        aria-expanded={propertiesExpanded}
+                        className={expanded ? "group/section-heading -ml-1 flex h-9 w-[calc(100%+0.25rem)] items-center gap-2 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40" : "group/section-heading -ml-4 flex h-8 w-[calc(100%+1rem)] items-center gap-1 rounded-md pr-2 text-left hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"}
+                        onClick={() => toggleCardSection("properties")}
+                      >
+                        {propertiesExpanded ? (
+                          <ChevronDownIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
+                        ) : (
+                          <ChevronRightIcon className={expanded ? "size-4 shrink-0" : "size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-heading:opacity-100"} aria-hidden="true" />
+                        )}
+                        {t("property.properties")}
+                      </button>
+                    </h3>
+                    {propertiesExpanded ? <dl id="project-visible-properties" className="overflow-hidden rounded-md border border-border/45 bg-background/15">
+                      {orderedVisibleProperties.map((property) => {
+                        const propertyProtected = isProtectedCardProperty(property);
+                        const propertyMenuAvailable = canRenameCardProperty(property)
+                          || canHideCardProperty(property)
+                          || !propertyProtected;
+                        const renamingProperty = renamingPropertyId === property.id;
+    
+                        return (
+                          <Popover
+                            key={property.id}
+                            open={propertyActionsId === property.id}
+                            onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
+                          >
+                            <div
+                              data-card-property-row-id={property.id}
+                              data-card-property-row-group="visible"
+                              className={[
+                                "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
+                                cardPropertyDrag ? "transition-transform ease-out" : "",
+                                cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
+                              ].filter(Boolean).join(" ")}
+                              style={{
+                                gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
+                                ...getCardPropertyDragStyle(property.id, "visible"),
+                              }}
+                            >
+                              <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                                {renamingProperty ? (
+                                  <span className="col-span-2 flex min-w-0 items-center px-2">
+                                    <Input
+                                      ref={renamingPropertyInputRef}
+                                      value={renamingPropertyName}
+                                      aria-label={t("property.rename")}
+                                      className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
+                                      onChange={(event) => setRenamingPropertyName(event.target.value)}
+                                      onBlur={() => commitRenameProperty(property)}
+                                      onKeyDown={(event) => {
+                                        if (event.key === "Enter") {
+                                          event.preventDefault();
+                                          event.currentTarget.blur();
+                                        }
+                                        if (event.key === "Escape") {
+                                          event.preventDefault();
+                                          cancelRenameProperty();
+                                        }
+                                      }}
+                                    />
+                                  </span>
+                                ) : propertyMenuAvailable ? (
+                                  <PopoverAnchor asChild>
+                                    <button
+                                      type="button"
+                                      aria-label={t("table.propertyActions", { name: property.name })}
+                                      className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      onPointerDown={(event) => (
+                                        startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
+                                      )}
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        if (suppressCardPropertyClickRef.current) {
+                                          event.stopPropagation();
+                                          suppressCardPropertyClickRef.current = false;
+                                          return;
+                                        }
+    
+                                        openCardPropertyMenu(property.id);
+                                      }}
+                                      onContextMenu={(event) => {
+                                        if (closePropertyMenuBeforeAction(event)) {
+                                          return;
+                                        }
+    
+                                        event.preventDefault();
+                                        openCardPropertyMenu(property.id);
+                                      }}
+                                    >
+                                      <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                        <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                      </span>
+                                      <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                    </button>
+                                  </PopoverAnchor>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    aria-label={t("detail.reorderProperty", { name: property.name })}
+                                    className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                    onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
+                                  >
+                                    <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                      <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                    </span>
+                                    <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                  </button>
+                                )}
+                              </dt>
+                              <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
+                                <ProjectPropertyValueEditor
+                                  project={displayedProject}
+                                  property={property}
+                                  selectValues={selectValues}
+                                  editing={editingPropertyId === property.id}
+                                  onStartEditing={() => setEditingPropertyId(property.id)}
+                                  onStopEditing={() => setEditingPropertyId(null)}
+                                  onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                  onCreateSelectValue={onCreateSelectValue}
+                                  onRenameSelectValue={onRenameSelectValue}
+                                  onColorSelectValue={onColorSelectValue}
+                                  onDeleteSelectValue={onDeleteSelectValue}
+                                />
+                              </dd>
+                            </div>
+                            {propertyMenuAvailable ? (
+                              renderCardPropertyActionsMenu(property, "hide")
+                            ) : null}
+                          </Popover>
+                        );
+                      })}
+                      <DropdownMenu
+                        open={openAddPropertyMenu}
+                        onOpenChange={setOpenAddPropertyMenu}
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="grid min-h-9 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                            style={{ gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns }}
+                          >
+                            <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
+                              <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                <PlusIcon className="size-3.5" aria-hidden="true" />
+                              </span>
+                              <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
+                                {t("property.add")}
+                              </span>
+                            </span>
+                            <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
+                              {t("property.addDescription")}
+                            </span>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          data-workspace-detail-add-property-menu="true"
+                          align="start"
+                          className={`${workspaceMenuContentClassName} w-64`}
+                        >
+                          <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("property.add")}</DropdownMenuLabel>
+                          <DropdownMenuGroup>
+                            {propertyTypeOptions.map((option) => (
+                              <DropdownMenuItem
+                                key={option.value}
+                                className={workspaceMenuOptionItemClassName}
+                                onSelect={() => createPropertyFromType(option)}
+                              >
+                                {renderPropertyTypeIcon(option.value)}
+                                <span className="grid min-w-0 gap-0.5">
+                                  <span className="truncate font-medium">{option.label}</span>
+                                  <span className={workspaceMenuDescriptionClassName}>
+                                    {option.description}
+                                  </span>
+                                </span>
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </dl> : null}
+                    {hiddenCardProperties.length > 0 ? (
+                      <div className="grid gap-2">
+                        <div className="workspace-project-detail-hidden-properties-heading group/section-heading flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            aria-controls="project-hidden-properties"
+                            aria-expanded={hiddenPropertiesExpanded}
+                            className="workspace-project-detail-hidden-properties-toggle group/section-toggle -ml-4 flex h-8 min-w-0 flex-1 items-center gap-1 rounded-md pr-2 text-left text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/40"
+                            onClick={() => toggleCardSection("hidden")}
+                          >
+                            {hiddenPropertiesExpanded ? (
+                              <ChevronDownIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
+                            ) : (
+                              <ChevronRightIcon className="size-3 shrink-0 opacity-0 group-hover/section-heading:opacity-100 group-focus-visible/section-toggle:opacity-100" aria-hidden="true" />
+                            )}
+                            <span className="truncate">{t("view.hiddenProperties")}</span>
+                          </button>
+                          <Badge variant="secondary">{hiddenCardProperties.length}</Badge>
+                        </div>
+                        {hiddenPropertiesExpanded ? (
+                          <dl
+                            id="project-hidden-properties"
+                            className="overflow-hidden rounded-md border border-border/45 bg-background/15"
+                          >
+                            {hiddenCardProperties.map((property) => {
+                              const propertyProtected = isProtectedCardProperty(property);
+                              const propertyMenuAvailable = canRenameCardProperty(property)
+                                || canHideCardProperty(property)
+                                || !propertyProtected;
+                              const renamingProperty = renamingPropertyId === property.id;
+    
+                              return (
+                                <Popover
+                                  key={property.id}
+                                  open={propertyActionsId === property.id}
+                                  onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
+                                >
+                                  <div
+                                    data-card-property-row-id={property.id}
+                                    data-card-property-row-group="hidden"
+                                    className={[
+                                      "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
+                                      cardPropertyDrag ? "transition-transform ease-out" : "",
+                                      cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
+                                    ].filter(Boolean).join(" ")}
+                                    style={{
+                                      gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
+                                      ...getCardPropertyDragStyle(property.id, "hidden"),
+                                    }}
+                                  >
+                                    <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                                      {renamingProperty ? (
+                                        <span className="col-span-2 flex min-w-0 items-center px-2">
+                                          <Input
+                                            ref={renamingPropertyInputRef}
+                                            value={renamingPropertyName}
+                                            aria-label={t("property.rename")}
+                                            className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
+                                            onChange={(event) => setRenamingPropertyName(event.target.value)}
+                                            onBlur={() => commitRenameProperty(property)}
+                                            onKeyDown={(event) => {
+                                              if (event.key === "Enter") {
+                                                event.preventDefault();
+                                                event.currentTarget.blur();
+                                              }
+                                              if (event.key === "Escape") {
+                                                event.preventDefault();
+                                                cancelRenameProperty();
+                                              }
+                                            }}
+                                          />
+                                        </span>
+                                      ) : propertyMenuAvailable ? (
+                                        <PopoverAnchor asChild>
+                                          <button
+                                            type="button"
+                                            aria-label={t("table.propertyActions", { name: property.name })}
+                                            className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                            onPointerDown={(event) => (
+                                              startCardPropertyDrag(event, property.id, {
+                                                group: "hidden",
+                                                openActionsOnClick: true,
+                                              })
+                                            )}
+                                            onClick={(event) => {
+                                              event.preventDefault();
+                                              if (suppressCardPropertyClickRef.current) {
+                                                event.stopPropagation();
+                                                suppressCardPropertyClickRef.current = false;
+                                                return;
+                                              }
+    
+                                              openCardPropertyMenu(property.id);
+                                            }}
+                                            onContextMenu={(event) => {
+                                              if (closePropertyMenuBeforeAction(event)) {
+                                                return;
+                                              }
+    
+                                              event.preventDefault();
+                                              openCardPropertyMenu(property.id);
+                                            }}
+                                          >
+                                            <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                              <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                            </span>
+                                            <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                          </button>
+                                        </PopoverAnchor>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          aria-label={t("detail.reorderProperty", { name: property.name })}
+                                          className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                          onPointerDown={(event) =>
+                                            startCardPropertyDrag(event, property.id, { group: "hidden" })
+                                          }
+                                        >
+                                          <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                            <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                          </span>
+                                          <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                        </button>
+                                      )}
+                                    </dt>
+                                    <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
+                                      <ProjectPropertyValueEditor
+                                        project={displayedProject}
+                                        property={property}
+                                        selectValues={selectValues}
+                                        editing={editingPropertyId === property.id}
+                                        onStartEditing={() => setEditingPropertyId(property.id)}
+                                        onStopEditing={() => setEditingPropertyId(null)}
+                                        onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                        onCreateSelectValue={onCreateSelectValue}
+                                        onRenameSelectValue={onRenameSelectValue}
+                                        onColorSelectValue={onColorSelectValue}
+                                        onDeleteSelectValue={onDeleteSelectValue}
+                                      />
+                                    </dd>
+                                  </div>
+                                  {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}
+                                </Popover>
+                              );
+                            })}
+                          </dl>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </section>
+                  <section className={expanded ? "grid gap-4" : "grid gap-2"} aria-labelledby="project-file-tree-heading">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 id="project-file-tree-heading" className={expanded ? "text-lg font-medium text-foreground" : "text-sm font-medium text-muted-foreground"}>
+                        {t("detail.fileTree")}
+                      </h3>
+                      <Badge variant="secondary" className={expanded ? "h-8 rounded-full px-3 text-sm" : "h-6 px-2 text-xs"}>
+                        {t("detail.items", { count: displayedProject.fileTree.length })}
+                      </Badge>
+                    </div>
+                    <ul className="workspace-file-tree grid gap-0">
+                      {displayedProject.fileTree.map((node) => (
+                        <FileTreeNode
+                          key={node.id}
+                          node={node}
+                          expandedFolderIds={expandedFolderIds}
+                          onToggleFolder={toggleProjectFileFolder}
+                        />
+                      ))}
+                    </ul>
+                  </section>
+                </div>
+              </div>
+            </>
+          </aside>
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:43:10)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: tabs and shared workspace menus use the compact component scale
+not ok 4 - tabs and shared workspace menus use the compact component scale
+  ---
+  duration_ms: 1.764625
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:51:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /!h-10/. Input:
+    
+    'import {\n' +
+      '  useEffect,\n' +
+      '  useRef,\n' +
+      '  useState,\n' +
+      '  type CSSProperties,\n' +
+      '  type ReactNode,\n' +
+      '  type MouseEvent as ReactMouseEvent,\n' +
+      '  type PointerEvent as ReactPointerEvent,\n' +
+      '} from "react";\n' +
+      '\n' +
+      'import {\n' +
+      '  DropdownMenu,\n' +
+      '  DropdownMenuContent,\n' +
+      '  DropdownMenuGroup,\n' +
+      '  DropdownMenuItem,\n' +
+      '  DropdownMenuLabel,\n' +
+      '  DropdownMenuTrigger,\n' +
+      '} from "@/components/ui/dropdown-menu";\n' +
+      'import { Button } from "@/components/ui/button";\n' +
+      'import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";\n' +
+      'import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";\n' +
+      'import { useI18n } from "@/i18n";\n' +
+      'import {\n' +
+      '  KanbanIcon,\n' +
+      '  PencilIcon,\n' +
+      '  PlusIcon,\n' +
+      '  CopyIcon,\n' +
+      '  TableIcon,\n' +
+      '  Trash2Icon,\n' +
+      '} from "@/lib/lucide-icons";\n' +
+      'import {\n' +
+      '  workspaceMenuContentClassName,\n' +
+      '  workspaceMenuDangerIconClassName,\n' +
+      '  workspaceMenuDangerItemClassName,\n' +
+      '  workspaceMenuIconClassName,\n' +
+      '  workspaceMenuItemClassName,\n' +
+      '  workspaceMenuLabelClassName,\n' +
+      '} from "@/components/workspace/menu-styles";\n' +
+      'import {\n' +
+      '  blockOutsideWorkspaceMenuPointerDown,\n' +
+      '  isWorkspaceMenuSurfaceTarget,\n' +
+      '} from "@/components/workspace/menu-dismissal";\n' +
+      'import type {\n' +
+      '  WorkspacePropertyDefinitionState,\n' +
+      '  WorkspaceProjectionResponse,\n' +
+      '  WorkspaceSelectValueState,\n' +
+      '  WorkspaceViewState,\n' +
+      '} from "@/workspaceAppState";\n' +
+      '\n' +
+      'type WorkspaceView = WorkspaceViewState;\n' +
+      '\n' +
+      'type WorkspaceViewTabsProps = {\n' +
+      '  readonly actionsHidden?: boolean;\n' +
+      '  readonly projectActions?: ReactNode;\n' +
+      '  readonly projectTabs?: ReactNode;\n' +
+      '  readonly projectActive?: boolean;\n' +
+      '  readonly onShowView?: () => void;\n' +
+      '  readonly activeViewId: string;\n' +
+      '  readonly views: readonly WorkspaceView[];\n' +
+      '  readonly onActiveViewChange: (viewId: string) => void;\n' +
+      '  readonly onCreateView: (viewType: "board" | "table") => void;\n' +
+      '  readonly onDuplicateView: (viewId: string) => void;\n' +
+      '  readonly onRenameView: (viewId: string, name: string) => void;\n' +
+      '  readonly onDeleteView: (viewId: string) => void;\n' +
+      '  readonly onReorderViews: (orderedViewIds: readonly string[]) => void;\n' +
+      '  readonly dismissSignal?: number;\n' +
+      '  readonly properties: readonly WorkspacePropertyDefinitionState[];\n' +
+      '  readonly selectValues: readonly WorkspaceSelectValueState[];\n' +
+      '  readonly statusValues: WorkspaceProjectionResponse["statusValues"];\n' +
+      '  readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;\n' +
+      '  readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;\n' +
+      '  readonly boardColumnWidthMax: number;\n' +
+      '  readonly onBoardColumnWidthPreview: (columnWidth: number) => void;\n' +
+      '  readonly onBoardColumnWidthCommit: (columnWidth: number, previousColumnWidth: number) => void;\n' +
+      '  readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;\n' +
+      '  readonly onRenameProperty: (propertyId: string, name: string) => void;\n' +
+      '  readonly onDeleteProperty: (propertyId: string) => void;\n' +
+      '};\n' +
+      '\n' +
+      'type ViewTabDragPreviewItem = {\n' +
+      '  readonly viewId: string;\n' +
+      '  readonly left: number;\n' +
+      '  readonly width: number;\n' +
+      '};\n' +
+      '\n' +
+      'type ViewTabPointerDragState = {\n' +
+      '  readonly viewId: string;\n' +
+      '  readonly startX: number;\n' +
+      '  readonly currentX: number;\n' +
+      '  readonly dropIndex: number;\n' +
+      '  readonly tabs: readonly ViewTabDragPreviewItem[];\n' +
+      '};\n' +
+      '\n' +
+      `const viewContextMenuSurfaceSelector = "[data-workspace-view-context-menu='true']";\n` +
+      'const viewDropdownMenuSurfaceSelector =\n' +
+      `  "[data-workspace-view-create-menu='true']";\n` +
+      '\n' +
+      'function renderViewIcon(view: WorkspaceView) {\n' +
+      '  const iconClassName = "size-5 shrink-0";\n' +
+      '\n' +
+      '  if (view.viewType === "table") {\n' +
+      '    return <TableIcon className={iconClassName} aria-hidden="true" />;\n' +
+      '  }\n' +
+      '\n' +
+      '  return <KanbanIcon className={iconClassName} aria-hidden="true" />;\n' +
+      '}\n' +
+      '\n' +
+      'function getViewTabDragOrder(\n' +
+      '  orderedViewIds: readonly string[],\n' +
+      '  sourceViewId: string,\n' +
+      '  dropIndex: number,\n' +
+      ') {\n' +
+      '  const remainingViewIds = orderedViewIds.filter((viewId) => viewId !== sourceViewId);\n' +
+      '  const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingViewIds.length);\n' +
+      '\n' +
+      '  return [\n' +
+      '    ...remainingViewIds.slice(0, boundedDropIndex),\n' +
+      '    sourceViewId,\n' +
+      '    ...remainingViewIds.slice(boundedDropIndex),\n' +
+      '  ];\n' +
+      '}\n' +
+      '\n' +
+      'function isViewContextMenuTarget(target: EventTarget | null) {\n' +
+      '  return isWorkspaceMenuSurfaceTarget(target, viewContextMenuSurfaceSelector);\n' +
+      '}\n' +
+      '\n' +
+      'export function WorkspaceViewTabs({\n' +
+      '  actionsHidden = false,\n' +
+      '  projectActions,\n' +
+      '  projectTabs,\n' +
+      '  projectActive = false,\n' +
+      '  onShowView,\n' +
+      '  activeViewId,\n' +
+      '  views,\n' +
+      '  onActiveViewChange,\n' +
+      '  onCreateView,\n' +
+      '  onDuplicateView,\n' +
+      '  onRenameView,\n' +
+      '  onDeleteView,\n' +
+      '  onReorderViews,\n' +
+      '  dismissSignal,\n' +
+      '  properties,\n' +
+      '  selectValues,\n' +
+      '  statusValues,\n' +
+      '  onTogglePropertyVisibility,\n' +
+      '  onToggleValueFilter,\n' +
+      '  boardColumnWidthMax,\n' +
+      '  onBoardColumnWidthPreview,\n' +
+      '  onBoardColumnWidthCommit,\n' +
+      '  onReorderViewProperties,\n' +
+      '  onRenameProperty,\n' +
+      '  onDeleteProperty,\n' +
+      '}: WorkspaceViewTabsProps) {\n' +
+      '  const { t } = useI18n();\n' +
+      '  const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;\n' +
+      '  const [viewTabDragState, setViewTabDragState] = useState<ViewTabPointerDragState | null>(null);\n' +
+      '  const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);\n' +
+      '  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });\n' +
+      '  const [editingViewId, setEditingViewId] = useState<string | null>(null);\n' +
+      '  const [editingViewName, setEditingViewName] = useState("");\n' +
+      '  const [openCreateViewMenu, setOpenCreateViewMenu] = useState(false);\n' +
+      '  const editingViewInputRef = useRef<HTMLInputElement | null>(null);\n' +
+      '  const viewTabListRef = useRef<HTMLDivElement | null>(null);\n' +
+      '  const cancelViewRenameRef = useRef(false);\n' +
+      '  const suppressViewClickRef = useRef<string | null>(null);\n' +
+      '  const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    if (editingViewId) {\n' +
+      '      editingViewInputRef.current?.focus();\n' +
+      '      editingViewInputRef.current?.select();\n' +
+      '    }\n' +
+      '  }, [editingViewId]);\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    const list = viewTabListRef.current;\n' +
+      '    const scroller = list?.parentElement;\n' +
+      '    if (!scroller || projectActive) return;\n' +
+      '    const revealActiveTab = () => {\n' +
+      `      list?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });\n` +
+      '    };\n' +
+      '    revealActiveTab();\n' +
+      '    const resizeObserver = new ResizeObserver(revealActiveTab);\n' +
+      '    resizeObserver.observe(scroller);\n' +
+      '    return () => resizeObserver.disconnect();\n' +
+      '  }, [activeViewId, projectActive, views]);\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    setContextMenuViewId(null);\n' +
+      '    setOpenCreateViewMenu(false);\n' +
+      '    setViewTabDragState(null);\n' +
+      '    suppressViewClickRef.current = null;\n' +
+      '  }, [dismissSignal]);\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    if (!contextMenuViewId) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    function closeViewContextMenuOnOutsidePointerDown(event: PointerEvent) {\n' +
+      '      blockOutsideWorkspaceMenuPointerDown(event, viewContextMenuSurfaceSelector, () => {\n' +
+      '        setContextMenuViewId(null);\n' +
+      '      });\n' +
+      '    }\n' +
+      '\n' +
+      '    function closeViewContextMenuOnEscape(event: KeyboardEvent) {\n' +
+      '      if (event.key === "Escape") {\n' +
+      '        setContextMenuViewId(null);\n' +
+      '      }\n' +
+      '    }\n' +
+      '\n' +
+      '    document.addEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);\n' +
+      '    document.addEventListener("keydown", closeViewContextMenuOnEscape);\n' +
+      '\n' +
+      '    return () => {\n' +
+      '      document.removeEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);\n' +
+      '      document.removeEventListener("keydown", closeViewContextMenuOnEscape);\n' +
+      '    };\n' +
+      '  }, [contextMenuViewId]);\n' +
+      '\n' +
+      '  useEffect(() => {\n' +
+      '    if (!openCreateViewMenu) {\n' +
+      '      return undefined;\n' +
+      '    }\n' +
+      '\n' +
+      '    function closeViewDropdownMenusOnOutsidePointerDown(event: PointerEvent) {\n' +
+      '      blockOutsideWorkspaceMenuPointerDown(event, viewDropdownMenuSurfaceSelector, () => {\n' +
+      '        setOpenCreateViewMenu(false);\n' +
+      '      });\n' +
+      '    }\n' +
+      '\n' +
+      '    document.addEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);\n' +
+      '\n' +
+      '    return () => {\n' +
+      '      document.removeEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);\n' +
+      '    };\n' +
+      '  }, [openCreateViewMenu]);\n' +
+      '\n' +
+      '  function startRenameView(view: WorkspaceView) {\n' +
+      '    cancelViewRenameRef.current = false;\n' +
+      '    setContextMenuViewId(null);\n' +
+      '    setEditingViewId(view.id);\n' +
+      '    setEditingViewName(view.name);\n' +
+      '  }\n' +
+      '\n' +
+      '  function submitViewRename(view: WorkspaceView) {\n' +
+      '    if (cancelViewRenameRef.current) {\n' +
+      '      cancelViewRenameRef.current = false;\n' +
+      '      return;\n' +
+      '    }\n' +
+      '\n' +
+      '    const nextName = editingViewName.trim();\n' +
+      '    cancelViewRenameRef.current = true;\n' +
+      '    setEditingViewId(null);\n' +
+      '    setEditingViewName("");\n' +
+      '\n' +
+      '    if (nextName && nextName !== view.name) {\n' +
+      '      onRenameView(view.id, nextName);\n' +
+      '    }\n' +
+      '  }\n' +
+      '\n' +
+      '  function cancelViewRename() {\n' +
+      '    cancelViewRenameRef.current = true;\n' +
+      '    setEditingViewId(null);\n' +
+      '    setEditingViewName("");\n' +
+      '  }\n' +
+      '\n' +
+      '  function deleteView(view: WorkspaceView) {\n' +
+      '    if (window.confirm(t("confirm.deleteView", { name: view.name }))) {\n' +
+      '      onDeleteView(view.id);\n' +
+      '    }\n' +
+      '    setContextMenuViewId(null);\n' +
+      '  }\n' +
+      '\n' +
+      '  function getViewTabDragPreviewItems() {\n' +
+      '    return Array.from(document.querySelectorAll<HTMLElement>("[data-view-tab-id]"))\n' +
+      '      .map((tab) => {\n' +
+      '        const viewId = tab.dataset.viewTabId;\n' +
+      '        const rect = tab.getBoundingClientRect();\n' +
+      '\n' +
+      '        if (!viewId) {\n' +
+      '          return null;\n' +
+      '        }\n' +
+      '\n' +
+      '        return {\n' +
+      '          viewId,\n' +
+      '          left: rect.left,\n' +
+      '          width: rect.width,\n' +
+      '        };\n' +
+      '      })\n' +
+      '      .filter((tab): tab is ViewTabDragPreviewItem => tab !== null);\n' +
+      '  }\n' +
+      '\n' +
+      '  function findViewTabDragTarget(clientX: number, tabs: readonly ViewTabDragPreviewItem[]) {\n' +
+      '    let dropIndex = 0;\n' +
+      '\n' +
+      '    for (const tab of tabs) {\n' +
+      '      if (clientX >= tab.left + tab.width / 2) {\n' +
+      '        dropIndex += 1;\n' +
+      '      }\n' +
+      '    }\n' +
+      '\n' +
+      '    return dropIndex;\n' +
+      '  }\n' +
+      '\n' +
+      '  function findViewTabDropIndex(\n' +
+      '    clientX: number,\n' +
+      '    tabs: readonly ViewTabDragPreviewItem[],\n' +
+      '    sourceViewId: string,\n' +
+      '  ) {\n' +
+      '    return findViewTabDragTarget(\n' +
+      '      clientX,\n' +
+      '      tabs.filter((tab) => tab.viewId !== sourceViewId),\n' +
+      '    );\n' +
+      '  }\n' +
+      '\n' +
+      '  function getViewTabDragLefts(\n' +
+      '    orderedViewIds: readonly string[],\n' +
+      '    tabs: readonly ViewTabDragPreviewItem[],\n' +
+      '  ) {\n' +
+      '    const lefts = new Map<string, number>();\n' +
+      '\n' +
+      '    orderedViewIds.forEach((viewI'... 11291 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import {
+      useEffect,
+      useRef,
+      useState,
+      type CSSProperties,
+      type ReactNode,
+      type MouseEvent as ReactMouseEvent,
+      type PointerEvent as ReactPointerEvent,
+    } from "react";
+    
+    import {
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuLabel,
+      DropdownMenuTrigger,
+    } from "@/components/ui/dropdown-menu";
+    import { Button } from "@/components/ui/button";
+    import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    import { WorkspaceViewFilterMenu } from "@/components/workspace/view-filter-menu";
+    import { useI18n } from "@/i18n";
+    import {
+      KanbanIcon,
+      PencilIcon,
+      PlusIcon,
+      CopyIcon,
+      TableIcon,
+      Trash2Icon,
+    } from "@/lib/lucide-icons";
+    import {
+      workspaceMenuContentClassName,
+      workspaceMenuDangerIconClassName,
+      workspaceMenuDangerItemClassName,
+      workspaceMenuIconClassName,
+      workspaceMenuItemClassName,
+      workspaceMenuLabelClassName,
+    } from "@/components/workspace/menu-styles";
+    import {
+      blockOutsideWorkspaceMenuPointerDown,
+      isWorkspaceMenuSurfaceTarget,
+    } from "@/components/workspace/menu-dismissal";
+    import type {
+      WorkspacePropertyDefinitionState,
+      WorkspaceProjectionResponse,
+      WorkspaceSelectValueState,
+      WorkspaceViewState,
+    } from "@/workspaceAppState";
+    
+    type WorkspaceView = WorkspaceViewState;
+    
+    type WorkspaceViewTabsProps = {
+      readonly actionsHidden?: boolean;
+      readonly projectActions?: ReactNode;
+      readonly projectTabs?: ReactNode;
+      readonly projectActive?: boolean;
+      readonly onShowView?: () => void;
+      readonly activeViewId: string;
+      readonly views: readonly WorkspaceView[];
+      readonly onActiveViewChange: (viewId: string) => void;
+      readonly onCreateView: (viewType: "board" | "table") => void;
+      readonly onDuplicateView: (viewId: string) => void;
+      readonly onRenameView: (viewId: string, name: string) => void;
+      readonly onDeleteView: (viewId: string) => void;
+      readonly onReorderViews: (orderedViewIds: readonly string[]) => void;
+      readonly dismissSignal?: number;
+      readonly properties: readonly WorkspacePropertyDefinitionState[];
+      readonly selectValues: readonly WorkspaceSelectValueState[];
+      readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+      readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
+      readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+      readonly boardColumnWidthMax: number;
+      readonly onBoardColumnWidthPreview: (columnWidth: number) => void;
+      readonly onBoardColumnWidthCommit: (columnWidth: number, previousColumnWidth: number) => void;
+      readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
+      readonly onRenameProperty: (propertyId: string, name: string) => void;
+      readonly onDeleteProperty: (propertyId: string) => void;
+    };
+    
+    type ViewTabDragPreviewItem = {
+      readonly viewId: string;
+      readonly left: number;
+      readonly width: number;
+    };
+    
+    type ViewTabPointerDragState = {
+      readonly viewId: string;
+      readonly startX: number;
+      readonly currentX: number;
+      readonly dropIndex: number;
+      readonly tabs: readonly ViewTabDragPreviewItem[];
+    };
+    
+    const viewContextMenuSurfaceSelector = "[data-workspace-view-context-menu='true']";
+    const viewDropdownMenuSurfaceSelector =
+      "[data-workspace-view-create-menu='true']";
+    
+    function renderViewIcon(view: WorkspaceView) {
+      const iconClassName = "size-5 shrink-0";
+    
+      if (view.viewType === "table") {
+        return <TableIcon className={iconClassName} aria-hidden="true" />;
+      }
+    
+      return <KanbanIcon className={iconClassName} aria-hidden="true" />;
+    }
+    
+    function getViewTabDragOrder(
+      orderedViewIds: readonly string[],
+      sourceViewId: string,
+      dropIndex: number,
+    ) {
+      const remainingViewIds = orderedViewIds.filter((viewId) => viewId !== sourceViewId);
+      const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingViewIds.length);
+    
+      return [
+        ...remainingViewIds.slice(0, boundedDropIndex),
+        sourceViewId,
+        ...remainingViewIds.slice(boundedDropIndex),
+      ];
+    }
+    
+    function isViewContextMenuTarget(target: EventTarget | null) {
+      return isWorkspaceMenuSurfaceTarget(target, viewContextMenuSurfaceSelector);
+    }
+    
+    export function WorkspaceViewTabs({
+      actionsHidden = false,
+      projectActions,
+      projectTabs,
+      projectActive = false,
+      onShowView,
+      activeViewId,
+      views,
+      onActiveViewChange,
+      onCreateView,
+      onDuplicateView,
+      onRenameView,
+      onDeleteView,
+      onReorderViews,
+      dismissSignal,
+      properties,
+      selectValues,
+      statusValues,
+      onTogglePropertyVisibility,
+      onToggleValueFilter,
+      boardColumnWidthMax,
+      onBoardColumnWidthPreview,
+      onBoardColumnWidthCommit,
+      onReorderViewProperties,
+      onRenameProperty,
+      onDeleteProperty,
+    }: WorkspaceViewTabsProps) {
+      const { t } = useI18n();
+      const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
+      const [viewTabDragState, setViewTabDragState] = useState<ViewTabPointerDragState | null>(null);
+      const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
+      const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+      const [editingViewId, setEditingViewId] = useState<string | null>(null);
+      const [editingViewName, setEditingViewName] = useState("");
+      const [openCreateViewMenu, setOpenCreateViewMenu] = useState(false);
+      const editingViewInputRef = useRef<HTMLInputElement | null>(null);
+      const viewTabListRef = useRef<HTMLDivElement | null>(null);
+      const cancelViewRenameRef = useRef(false);
+      const suppressViewClickRef = useRef<string | null>(null);
+      const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
+    
+      useEffect(() => {
+        if (editingViewId) {
+          editingViewInputRef.current?.focus();
+          editingViewInputRef.current?.select();
+        }
+      }, [editingViewId]);
+    
+      useEffect(() => {
+        const list = viewTabListRef.current;
+        const scroller = list?.parentElement;
+        if (!scroller || projectActive) return;
+        const revealActiveTab = () => {
+          list?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+        };
+        revealActiveTab();
+        const resizeObserver = new ResizeObserver(revealActiveTab);
+        resizeObserver.observe(scroller);
+        return () => resizeObserver.disconnect();
+      }, [activeViewId, projectActive, views]);
+    
+      useEffect(() => {
+        setContextMenuViewId(null);
+        setOpenCreateViewMenu(false);
+        setViewTabDragState(null);
+        suppressViewClickRef.current = null;
+      }, [dismissSignal]);
+    
+      useEffect(() => {
+        if (!contextMenuViewId) {
+          return undefined;
+        }
+    
+        function closeViewContextMenuOnOutsidePointerDown(event: PointerEvent) {
+          blockOutsideWorkspaceMenuPointerDown(event, viewContextMenuSurfaceSelector, () => {
+            setContextMenuViewId(null);
+          });
+        }
+    
+        function closeViewContextMenuOnEscape(event: KeyboardEvent) {
+          if (event.key === "Escape") {
+            setContextMenuViewId(null);
+          }
+        }
+    
+        document.addEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);
+        document.addEventListener("keydown", closeViewContextMenuOnEscape);
+    
+        return () => {
+          document.removeEventListener("pointerdown", closeViewContextMenuOnOutsidePointerDown, true);
+          document.removeEventListener("keydown", closeViewContextMenuOnEscape);
+        };
+      }, [contextMenuViewId]);
+    
+      useEffect(() => {
+        if (!openCreateViewMenu) {
+          return undefined;
+        }
+    
+        function closeViewDropdownMenusOnOutsidePointerDown(event: PointerEvent) {
+          blockOutsideWorkspaceMenuPointerDown(event, viewDropdownMenuSurfaceSelector, () => {
+            setOpenCreateViewMenu(false);
+          });
+        }
+    
+        document.addEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);
+    
+        return () => {
+          document.removeEventListener("pointerdown", closeViewDropdownMenusOnOutsidePointerDown, true);
+        };
+      }, [openCreateViewMenu]);
+    
+      function startRenameView(view: WorkspaceView) {
+        cancelViewRenameRef.current = false;
+        setContextMenuViewId(null);
+        setEditingViewId(view.id);
+        setEditingViewName(view.name);
+      }
+    
+      function submitViewRename(view: WorkspaceView) {
+        if (cancelViewRenameRef.current) {
+          cancelViewRenameRef.current = false;
+          return;
+        }
+    
+        const nextName = editingViewName.trim();
+        cancelViewRenameRef.current = true;
+        setEditingViewId(null);
+        setEditingViewName("");
+    
+        if (nextName && nextName !== view.name) {
+          onRenameView(view.id, nextName);
+        }
+      }
+    
+      function cancelViewRename() {
+        cancelViewRenameRef.current = true;
+        setEditingViewId(null);
+        setEditingViewName("");
+      }
+    
+      function deleteView(view: WorkspaceView) {
+        if (window.confirm(t("confirm.deleteView", { name: view.name }))) {
+          onDeleteView(view.id);
+        }
+        setContextMenuViewId(null);
+      }
+    
+      function getViewTabDragPreviewItems() {
+        return Array.from(document.querySelectorAll<HTMLElement>("[data-view-tab-id]"))
+          .map((tab) => {
+            const viewId = tab.dataset.viewTabId;
+            const rect = tab.getBoundingClientRect();
+    
+            if (!viewId) {
+              return null;
+            }
+    
+            return {
+              viewId,
+              left: rect.left,
+              width: rect.width,
+            };
+          })
+          .filter((tab): tab is ViewTabDragPreviewItem => tab !== null);
+      }
+    
+      function findViewTabDragTarget(clientX: number, tabs: readonly ViewTabDragPreviewItem[]) {
+        let dropIndex = 0;
+    
+        for (const tab of tabs) {
+          if (clientX >= tab.left + tab.width / 2) {
+            dropIndex += 1;
+          }
+        }
+    
+        return dropIndex;
+      }
+    
+      function findViewTabDropIndex(
+        clientX: number,
+        tabs: readonly ViewTabDragPreviewItem[],
+        sourceViewId: string,
+      ) {
+        return findViewTabDragTarget(
+          clientX,
+          tabs.filter((tab) => tab.viewId !== sourceViewId),
+        );
+      }
+    
+      function getViewTabDragLefts(
+        orderedViewIds: readonly string[],
+        tabs: readonly ViewTabDragPreviewItem[],
+      ) {
+        const lefts = new Map<string, number>();
+    
+        orderedViewIds.forEach((viewId, index) => {
+          const tab = tabs[index];
+          if (tab) {
+            lefts.set(viewId, tab.left);
+          }
+        });
+    
+        return lefts;
+      }
+    
+      function getViewTabDragStyle(viewId: string): CSSProperties | undefined {
+        if (!viewTabDragState) {
+          return undefined;
+        }
+    
+        const orderedViewIds = views.map((view) => view.id);
+        const currentTab = viewTabDragState.tabs.find((tab) => tab.viewId === viewId);
+    
+        if (!currentTab || !orderedViewIds.includes(viewId)) {
+          return undefined;
+        }
+    
+        if (viewId === viewTabDragState.viewId) {
+          return {
+            transform: `translateX(${viewTabDragState.currentX - viewTabDragState.startX}px)`,
+            transitionDuration: "0ms",
+            zIndex: 30,
+          };
+        }
+    
+        const previewOrder = getViewTabDragOrder(
+          orderedViewIds,
+          viewTabDragState.viewId,
+          viewTabDragState.dropIndex,
+        );
+        const previewLefts = getViewTabDragLefts(previewOrder, viewTabDragState.tabs);
+        const previewLeft = previewLefts.get(viewId);
+    
+        if (previewLeft === undefined) {
+          return undefined;
+        }
+    
+        const offset = previewLeft - currentTab.left;
+    
+        if (Math.abs(offset) < 0.5) {
+          return undefined;
+        }
+    
+        return {
+          transform: `translateX(${offset}px)`,
+          transitionDuration: "180ms",
+        };
+      }
+    
+      function startPointerViewTabDrag(event: ReactPointerEvent<HTMLButtonElement>, viewId: string) {
+        if (event.button !== 0 || editingViewId === viewId) {
+          return;
+        }
+    
+        const viewTabDragPreviewItems = getViewTabDragPreviewItems();
+        if (viewTabDragPreviewItems.length <= 1) {
+          return;
+        }
+    
+        event.stopPropagation();
+    
+        const previousCursor = document.body.style.cursor;
+        const previousUserSelect = document.body.style.userSelect;
+    
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+    
+        let frameId = 0;
+        let pendingClientX = event.clientX;
+        let moved = false;
+    
+        setContextMenuViewId(null);
+        setOpenCreateViewMenu(false);
+        setViewTabDragState({
+          viewId,
+          startX: event.clientX,
+          currentX: event.clientX,
+          dropIndex: findViewTabDropIndex(event.clientX, viewTabDragPreviewItems, viewId),
+          tabs: viewTabDragPreviewItems,
+        });
+    
+        function updateDraggedViewTab() {
+          frameId = 0;
+    
+          const dropIndex = findViewTabDropIndex(
+            pendingClientX,
+            viewTabDragPreviewItems,
+            viewId,
+          );
+    
+          setViewTabDragState((currentDrag) => {
+            if (!currentDrag || currentDrag.viewId !== viewId) {
+              return currentDrag;
+            }
+    
+            return {
+              ...currentDrag,
+              currentX: pendingClientX,
+              dropIndex,
+            };
+          });
+        }
+    
+        function moveViewTab(pointerEvent: PointerEvent) {
+          pendingClientX = pointerEvent.clientX;
+          moved ||= Math.abs(pointerEvent.clientX - event.clientX) > 4;
+    
+          if (frameId === 0) {
+            frameId = window.requestAnimationFrame(updateDraggedViewTab);
+          }
+        }
+    
+        function finishViewTabDrag(pointerEvent: PointerEvent) {
+          const dropIndex = findViewTabDropIndex(
+            pointerEvent.clientX,
+            viewTabDragPreviewItems,
+            viewId,
+          );
+          const orderedViewIds = viewTabDragPreviewItems.map((tab) => tab.viewId);
+          const nextViewIds = getViewTabDragOrder(orderedViewIds, viewId, dropIndex);
+    
+          document.body.style.cursor = previousCursor;
+          document.body.style.userSelect = previousUserSelect;
+          window.removeEventListener("pointermove", moveViewTab);
+          window.cancelAnimationFrame(frameId);
+          window.removeEventListener("pointerup", finishViewTabDrag);
+          setViewTabDragState(null);
+    
+          if (!moved) {
+            return;
+          }
+    
+          suppressViewClickRef.current = viewId;
+          window.setTimeout(() => {
+            if (suppressViewClickRef.current === viewId) {
+              suppressViewClickRef.current = null;
+            }
+          }, 0);
+    
+          if (nextViewIds.join("\0") !== views.map((view) => view.id).join("\0")) {
+            onReorderViews(nextViewIds);
+          }
+        }
+    
+        window.addEventListener("pointermove", moveViewTab);
+        window.addEventListener("pointerup", finishViewTabDrag, { once: true });
+      }
+    
+      function handleViewTabClick(event: ReactMouseEvent<HTMLButtonElement>, viewId: string) {
+        if (suppressViewClickRef.current !== viewId) {
+          onShowView?.();
+          return;
+        }
+    
+        suppressViewClickRef.current = null;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    
+      return (
+        <div className="relative flex min-w-0 items-center justify-between gap-2">
+          <div className="relative z-40 flex min-w-0 flex-1 items-center gap-0">
+          <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="workspace-tab-scroll min-w-0 max-w-[50%] shrink-0 overflow-x-auto overflow-y-hidden">
+            <TabsList
+              ref={viewTabListRef}
+              aria-label={t("view.actions")}
+              className="!h-14 w-max max-w-none flex-nowrap justify-start gap-2 rounded-none bg-transparent p-0 shadow-none"
+            >
+              {views.map((view) => {
+                if (editingViewId === view.id) {
+                  return (
+                    <form
+                      key={view.id}
+                      className="h-12 min-w-32"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        submitViewRename(view);
+                      }}
+                    >
+                      <input
+                        ref={editingViewInputRef}
+                        aria-label={t("view.renameInput")}
+                        className="h-full w-full rounded-lg border border-ring bg-background px-2.5 text-sm font-normal text-foreground outline-none ring-2 ring-ring/30"
+                        value={editingViewName}
+                        onChange={(event) => setEditingViewName(event.currentTarget.value)}
+                        onBlur={() => submitViewRename(view)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") {
+                            event.preventDefault();
+                            cancelViewRename();
+                          }
+                        }}
+                      />
+                    </form>
+                  );
+                }
+    
+                return (
+                  <TabsTrigger
+                    key={view.id}
+                    value={view.id}
+                    data-view-tab-id={view.id}
+                    title={view.name}
+                    aria-label={view.name}
+                    className={[
+                      "h-12 max-w-52 min-w-30 flex-none cursor-grab rounded-lg px-3.5 text-base font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                    ].join(" ")}
+                    style={getViewTabDragStyle(view.id)}
+                    onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}
+                    onClick={(event) => handleViewTabClick(event, view.id)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setContextMenuViewId(view.id);
+                      setContextMenuPosition({
+                        x: Math.max(8, Math.min(event.clientX, window.innerWidth - 232)),
+                        y: Math.max(8, Math.min(event.clientY, window.innerHeight - 144)),
+                      });
+                    }}
+                  >
+                    {renderViewIcon(view)}
+                    <span className="truncate">{view.name}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </Tabs>
+          <div aria-hidden="true" className="mx-3 h-7 w-px shrink-0 bg-border" />
+          {projectTabs}
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            {actionsHidden ? projectActions : <>
+            <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="workspace-top-action"
+                  aria-label={t("view.addAria")}
+                  title={t("view.add")}
+                >
+                  <PlusIcon aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                data-workspace-view-create-menu="true"
+                align="end"
+                className={`${workspaceMenuContentClassName} min-w-56`}
+              >
+                <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("view.add")}</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("board")}>
+                    <KanbanIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    {t("view.newBoard")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onCreateView("table")}>
+                    <TableIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                    {t("view.newTable")}
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <WorkspaceViewFilterMenu
+              view={activeView}
+              dismissSignal={dismissSignal}
+              properties={properties}
+              selectValues={selectValues}
+              statusValues={statusValues}
+              boardColumnWidthMax={boardColumnWidthMax}
+              onTogglePropertyVisibility={onTogglePropertyVisibility}
+              onToggleValueFilter={onToggleValueFilter}
+              onBoardColumnWidthPreview={onBoardColumnWidthPreview}
+              onBoardColumnWidthCommit={onBoardColumnWidthCommit}
+              onReorderViewProperties={onReorderViewProperties}
+              onRenameProperty={onRenameProperty}
+              onDeleteProperty={onDeleteProperty}
+            />
+            </>}
+          </div>
+          {contextMenuView ? (
+            <div
+              data-workspace-view-context-menu="true"
+              className={`fixed z-50 min-w-56 ${workspaceMenuContentClassName}`}
+              style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
+              role="menu"
+            >
+              <button
+                type="button"
+                className={workspaceMenuItemClassName}
+                onClick={() => {
+                  onDuplicateView(contextMenuView.id);
+                  setContextMenuViewId(null);
+                }}
+              >
+                <CopyIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                {t("detail.duplicateTab")}
+              </button>
+              <button
+                type="button"
+                className={workspaceMenuItemClassName}
+                onClick={() => startRenameView(contextMenuView)}
+              >
+                <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                {t("view.rename")}
+              </button>
+              <button
+                type="button"
+                className={workspaceMenuDangerItemClassName}
+                disabled={views.length <= 1}
+                onClick={() => deleteView(contextMenuView)}
+              >
+                <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                {t("view.delete")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/notionCompactLayout.test.js:59:12)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.422416

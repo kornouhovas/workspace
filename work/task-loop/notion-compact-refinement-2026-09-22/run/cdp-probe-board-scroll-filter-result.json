@@ -1,0 +1,143 @@
+{
+  "initial": {
+    "scroll": {
+      "top": 0,
+      "left": 0,
+      "maxTop": 433,
+      "maxLeft": 322
+    },
+    "columnRects": [
+      {
+        "x": 272,
+        "y": 76,
+        "width": 360,
+        "height": 1216,
+        "right": 632,
+        "bottom": 1292
+      },
+      {
+        "x": 644,
+        "y": 76,
+        "width": 360,
+        "height": 544,
+        "right": 1004,
+        "bottom": 620
+      },
+      {
+        "x": 1016,
+        "y": 76,
+        "width": 360,
+        "height": 208,
+        "right": 1376,
+        "bottom": 284
+      }
+    ],
+    "counts": [
+      {
+        "text": "14",
+        "aria": "14 видимых проектов"
+      },
+      {
+        "text": "6",
+        "aria": "6 видимых проектов"
+      },
+      {
+        "text": "2",
+        "aria": "2 видимых проекта"
+      }
+    ],
+    "cards": [
+      14,
+      6,
+      2
+    ]
+  },
+  "scrolled": {
+    "scroll": {
+      "top": 400,
+      "left": 240
+    },
+    "columnRects": [
+      {
+        "x": 32,
+        "y": -324,
+        "width": 360,
+        "height": 1216,
+        "right": 392,
+        "bottom": 892
+      },
+      {
+        "x": 404,
+        "y": -324,
+        "width": 360,
+        "height": 544,
+        "right": 764,
+        "bottom": 220
+      },
+      {
+        "x": 776,
+        "y": -324,
+        "width": 360,
+        "height": 208,
+        "right": 1136,
+        "bottom": -116
+      }
+    ],
+    "columnInternalScroll": [
+      0,
+      0,
+      0
+    ]
+  },
+  "filtered": {
+    "query": "Archive 01",
+    "counts": [
+      {
+        "text": "1",
+        "aria": "1 видимый проект"
+      }
+    ],
+    "cards": [
+      1
+    ],
+    "columnRects": [
+      {
+        "x": 272,
+        "y": 76,
+        "width": 360,
+        "height": 124,
+        "right": 632,
+        "bottom": 200
+      }
+    ],
+    "emptyMessages": [
+      false
+    ]
+  },
+  "restored": {
+    "query": "",
+    "counts": [
+      {
+        "text": "14",
+        "aria": "14 видимых проектов"
+      },
+      {
+        "text": "6",
+        "aria": "6 видимых проектов"
+      },
+      {
+        "text": "2",
+        "aria": "2 видимых проекта"
+      }
+    ],
+    "cards": [
+      14,
+      6,
+      2
+    ],
+    "scroll": {
+      "top": 0,
+      "left": 0
+    }
+  }
+}

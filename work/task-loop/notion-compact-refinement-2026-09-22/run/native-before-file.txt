@@ -1,0 +1,4 @@
+work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1024x720.png:    PNG image data, 1024 x 720, 8-bit/color RGBA, non-interlaced
+work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1440x960.png:    PNG image data, 1440 x 960, 8-bit/color RGBA, non-interlaced
+work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1024x720.png: PNG image data, 1024 x 720, 8-bit/color RGBA, non-interlaced
+work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1440x960.png: PNG image data, 1440 x 960, 8-bit/color RGBA, non-interlaced

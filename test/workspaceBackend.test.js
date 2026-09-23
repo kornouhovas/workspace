@@ -934,7 +934,10 @@ test("createViewProjectionResponse projects board and table views with async pro
       column.statusValueId,
       column.projects.map((project) => project.id),
     ]),
-    [["statusValue:active", ["project:alpha"]]],
+    [
+      ["statusValue:active", ["project:alpha"]],
+      ["statusValue:no-status", []],
+    ],
   );
   assert.equal(boardResponse.payload.projection.capabilities.canMoveBetweenStatuses, false);
   assert.equal(tableResponse.status, 200);

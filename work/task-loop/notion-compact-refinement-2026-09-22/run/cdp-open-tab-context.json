@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(async()=>{const pause=(ms)=>new Promise(r=>setTimeout(r,ms)); const tab=[...document.querySelectorAll('[data-project-tab-id]')].find(el=>el.getAttribute('title')==='Atlas Website'); if(!tab) throw new Error('tab missing'); const r=tab.getBoundingClientRect(); tab.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:2,buttons:2,clientX:r.x+r.width/2,clientY:r.y+r.height/2,pointerType:'mouse'})); tab.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,buttons:2,clientX:r.x+r.width/2,clientY:r.y+r.height/2})); await pause(300); return {open:Boolean(document.querySelector('[data-project-tab-menu=true]')),items:[...document.querySelectorAll('[data-project-tab-menu=true] [role=menuitem]')].map(el=>el.textContent?.trim())};})()"
+}

@@ -439,7 +439,7 @@ test("createViewProjection returns board columns and table rows from the same fi
   );
 });
 
-test("createViewProjection omits empty board columns while value filters are active", () => {
+test("createViewProjection retains compact empty board columns while value filters are active", () => {
   const statusValues = [
     { id: "statusValue:active", name: "Active", relativePath: "Active", source: "folderRole" },
     { id: "statusValue:done", name: "Done", relativePath: "Done", source: "folderRole" },
@@ -477,7 +477,10 @@ test("createViewProjection omits empty board columns while value filters are act
       column.statusValueId,
       column.projects.map((project) => project.id),
     ]),
-    [["statusValue:done", ["project:done"]]],
+    [
+      ["statusValue:active", []],
+      ["statusValue:done", ["project:done"]],
+    ],
   );
 });
 

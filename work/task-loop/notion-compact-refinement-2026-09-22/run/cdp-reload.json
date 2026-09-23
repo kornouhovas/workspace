@@ -1,0 +1,4 @@
+{
+  "type": "eval",
+  "expression": "(() => { location.reload(); return true; })()"
+}

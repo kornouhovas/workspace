@@ -1,0 +1,18 @@
+{
+  "id": "notion-compact-refinement-first-review",
+  "scenario": "native-visual-acceptance",
+  "task_run": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run",
+  "process_version": "task-loop-v1-native-notion-compact",
+  "observed_at": "2026-09-23T05:43:00+00:00",
+  "source": "Independent verifier attempt 1 over 79 frozen files, quality commands, functional probes and native-evidence inventory",
+  "summary": "Quality boundaries, shared Board scrolling/counts and frozen behavior/persistence evidence pass. The overall native visual result is inconclusive because no settled full-window after pair with macOS frame/traffic lights exists; renderer diagnostics cannot replace it.",
+  "result": "inconclusive",
+  "guardrail": "pass",
+  "basis": "observed",
+  "artifacts": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/verifier-attempt-1/report.md",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/verifier-attempt-1/freeze-check-after.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/verifier-attempt-1/functional-evidence-audit.json",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/root-cua-attempt-2026-09-23.md"
+  ]
+}

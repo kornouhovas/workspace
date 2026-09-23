@@ -1,0 +1,6 @@
+{
+  "type": "screenshot",
+  "viewport": [1440, 960],
+  "waitFor": "document.querySelector('.workspace-project-detail-expanded .workspace-project-detail-heading')?.textContent?.trim() === 'Active 01' && document.querySelector('.workspace-project-detail-expanded')?.textContent?.includes('Compact persistence proof') && Math.abs(document.querySelector('.workspace-project-detail-expanded').getBoundingClientRect().x - 256) < 1",
+  "path": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/notion-compact-refinement-2026-09-22/run/renderer-after-final-expanded-1440x960.png"
+}
