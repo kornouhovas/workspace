@@ -47,7 +47,7 @@ import {
   PlusIcon,
   Trash2Icon,
   TypeIcon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import {
   workspaceMenuCheckboxClassName,
   workspaceMenuContentClassName,

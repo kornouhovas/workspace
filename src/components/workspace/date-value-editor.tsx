@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
 import { useI18n } from "@/i18n";
 import { formatDateForDisplay } from "@/formatDateForDisplay.js";
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/lucide-icons";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, XIcon } from "@/lib/workspace-icons";
 
 type WorkspaceDateValueEditorProps = {
   readonly value: unknown;

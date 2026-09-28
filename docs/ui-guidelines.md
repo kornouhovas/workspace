@@ -4,7 +4,7 @@
 
 This document defines UI implementation rules for Workspace Project Board. It should be read before building or reviewing UI for Settings, Workspaces, Board view, Table view, Project Detail Panel, properties, values, and local file browsing.
 
-The goal is to avoid pixel-level micromanagement while keeping the UI consistent, practical, and reviewable.
+The shell and shared chrome follow the pinned bb 0.44.0 reference. Workspace supplies the working data and product functions; visual acceptance requires equivalent states and measured geometry (see [reference matrix](../work/bb-interface-1wx/reference-matrix.md)).
 
 ## UI Stack
 
@@ -12,11 +12,11 @@ The goal is to avoid pixel-level micromanagement while keeping the UI consistent
 - Styling: Tailwind CSS v4 in `src/styles.css`.
 - Component system: shadcn/ui with `radix-nova` style.
 - Primitive base: Radix UI primitives through shadcn components.
-- Icons: `lucide` as configured in `components.json`.
-- Font: Geist Variable from `@fontsource-variable/geist`.
-- The selected Compact №3 Board, sidebar, top row and expanded project use the larger visual scale shown in the two approved mockups: primary labels and tabs near 16px, board card names and section headings near 18px, expanded project title near 30px. Dense table cells, menus and editors keep their working scale near 13px. Preserve accessible icon button areas and visible focus.
+- Icons: bb stroke-rounded Hugeicons through `src/lib/workspace-icons.tsx`; remaining product-specific glyphs use the existing lucide exports.
+- Font: Inter Variable from `@fontsource-variable/inter` (SIL Open Font License).
+- Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px. Shared neutral colours come from bb 0.44.0.
 - Table rows start at 36px; expanded project property rows use 48px; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
-- Theme: Compact uses the light ink/canvas semantic ramp and shared surface/hover/active tokens in `src/styles.css` (see [bb adaptation](design/bb-stack-design.md)). Status and Select colors still come from project data.
+- Theme: Light, Dark and System in Settings use bb neutral ink/canvas, hover/active and seam tokens in `src/styles.css`. Status and Select colours still come from project data.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.
 
@@ -76,7 +76,7 @@ Rules:
 - Board and Table must share the same active project set.
 - Switching views must not imply data changes.
 - View controls should sit close to the view tabs and use familiar icon actions where possible.
-- Keep view tabs, project tabs, and their existing actions in one top row: 96px for Board/Table and 113px for expanded project details. Tabs keep text and scroll horizontally when they overflow; actions remain visible at the right.
+- Keep view tabs, project tabs, and their existing actions in one top row: 48px for Board/Table and expanded project details. Tabs keep text and scroll horizontally when they overflow; actions remain visible at the right.
 - `Add View` and `Customize Columns` are icon-only actions with accessible names and tooltips. Hover does not add a background; keyboard focus stays visible.
 - Keep primary content full-width and unframed; avoid wrapping entire page sections in cards.
 
@@ -116,8 +116,7 @@ Rules:
 
 Rules:
 
-- Use `Sheet` for the desktop right-side panel.
-- Every `Sheet` must include `SheetTitle`; use visually hidden text only when the visible header already names the project.
+- Project Detail composes into the right panel, a project tab, or the centre split. Its labelled dialog and heading remain accessible in every host. Keep its property/file logic independent of pane chrome.
 - The panel header should show project identity first: `Name`. Do not repeat `Name` inside the Properties table.
 - Properties should appear before file structure.
 - `Status` should appear in the Properties table by default and may be hidden or shown from the Project Detail property menu as a panel-local visibility preference, not as a system property definition mutation.
@@ -140,7 +139,7 @@ Rules:
 
 Settings owns:
 
-- interface language selection;
+- interface language and Light/Dark/System appearance selection;
 - project source folder selection;
 - folder tree role configuration;
 - Workspace-level configuration when relevant;
@@ -234,7 +233,7 @@ Rules:
 
 Rules:
 
-- Use the configured lucide icon library for new controls.
+- Use the bb stroke-rounded icon adapter for shared chrome. Use a remaining product glyph only when it has no equivalent bb affordance.
 - Use icons for repeated tool actions: add, search, settings, rename, delete, hide/show, filter, columns, folder, file, open, back.
 - In `Button`, icons should use `data-icon="inline-start"` or `data-icon="inline-end"`.
 - Do not apply custom sizing classes to icons inside shadcn components unless the component pattern requires it.

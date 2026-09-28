@@ -26,7 +26,7 @@ import {
   PlusIcon,
   Trash2Icon,
   XIcon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import {
   workspaceMenuContentClassName,
   workspaceMenuDangerIconClassName,

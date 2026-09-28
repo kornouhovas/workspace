@@ -19,7 +19,8 @@ The app opens as an Electron desktop app with:
 
 - a left sidebar;
 - a main content area;
-- an optional right Project Detail Panel that opens only after the user selects a project.
+- an optional right panel with fixed Workspace Navigation and a project preview;
+- an ordered centre split tree for the working view and multiple Project Detail areas. Pane chrome follows bb 0.44.0 ([reference matrix](../work/bb-interface-1wx/reference-matrix.md)).
 
 On initial app open:
 
@@ -33,7 +34,7 @@ The app must not open with mock project details visible.
 
 The left sidebar contains:
 
-- app title and product icon;
+- native traffic lights with back/forward history;
 - collapse/expand toggle;
 - Add Workspace action;
 - Search input;
@@ -45,7 +46,7 @@ Layout requirements:
 - The app title must not overlap the macOS traffic-light window controls.
 - The title area should be vertically offset enough for the hidden-inset titlebar.
 - The sidebar can be collapsed with a toggle icon.
-- In collapsed mode, keep icon-only navigation with accessible labels and tooltips.
+- Collapsed mode hides the sidebar; the visible toggle restores it. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
 - Settings must look like navigation, not a passive label.
 - Clicking Settings opens the Settings screen in the main area.
 - Clicking a Workspace opens that Workspace working surface.
@@ -77,6 +78,8 @@ Exit:
 - Clicking a Workspace in the sidebar also leaves Settings and opens that Workspace.
 
 Settings contains:
+
+- Light, Dark and System appearance, persisted in the renderer session;
 
 - Language section;
 - Source folder section;
@@ -387,3 +390,13 @@ The current app implementation must be reviewed against this list:
 - View menu includes Rename View and Delete View.
 - Sidebar title does not overlap macOS window controls.
 - Sidebar can collapse and expand.
+
+## Pane session and keyboard
+
+Renderer session chrome stores layout under `workspace.pane-layout.v1`, keyed by opaque Workspace ID. Project snapshots retain the existing `workspace.project-tabs.v1` format. UI preferences do not replace the active service transport, JSON adapters or Go sidecar store. See [ADR 005](adr/005-bb-pane-session-chrome.md).
+
+Project tabs expose a leading close control on hover/keyboard focus, middle-click close, close-other/close-right, reopen and drag reorder. Closing multiple tabs chooses a surviving neighbour before the active view fallback. Project tabs dropped over a pane use left/right/top/bottom edge zones to split and the centre to replace content. Drops outside panes or over titlebars do not create a split. Existing pane titles may be moved to an edge or swapped at the centre. Primary-status project drag remains restricted.
+
+`Cmd/Ctrl+J` toggles the right panel, `Cmd/Ctrl+T` opens its deduplicated empty launcher, `Cmd/Ctrl+W` closes the focused content tab, `Shift+Cmd/Ctrl+T` reopens a closed content tab and `Shift+Cmd/Ctrl+E` maximizes/restores the focused pane. Input, textarea, select, contenteditable and menu focus retain editing shortcuts. Empty launchers are excluded from reopen history. The fixed Workspace Navigation survives closing the last empty launcher.
+
+Opening a project in split preserves the active Board/Table and stores the project tab so the session can restore it. Close pane collapses its branch and focuses a surviving neighbour. Navigation restores/focuses the Workspace host while preserving other leaves; Settings remains reachable after its previous host was closed or replaced. Split and right-panel separators support pointer resize and keyboard arrows/Home/End.

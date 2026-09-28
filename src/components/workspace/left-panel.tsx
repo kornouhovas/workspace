@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
   FolderIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -22,7 +24,7 @@ import {
   SearchIcon,
   SettingsIcon,
   Trash2Icon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import {
   workspaceMenuContentClassName,
   workspaceMenuDangerIconClassName,
@@ -32,6 +34,7 @@ import {
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import { useI18n } from "@/i18n";
+import { ChromeAction } from "./pane-chrome";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavigationItem = {
@@ -73,7 +76,9 @@ function getWorkspaceDragOrder(
   sourceWorkspaceId: string,
   dropIndex: number,
 ) {
-  const remainingWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) => workspaceId !== sourceWorkspaceId);
+  const remainingWorkspaceIds = orderedWorkspaceIds.filter(
+    (workspaceId) => workspaceId !== sourceWorkspaceId,
+  );
   const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingWorkspaceIds.length);
   return [
     ...remainingWorkspaceIds.slice(0, boundedDropIndex),
@@ -97,7 +102,38 @@ export function WorkspaceLeftPanel({
   onOpenSettings,
 }: WorkspaceLeftPanelProps) {
   const { t } = useI18n();
-  const [workspaceDragState, setWorkspaceDragState] = useState<WorkspacePointerDragState | null>(null);
+  const [history, setHistory] = useState<{ entries: string[]; index: number }>({
+    entries: [],
+    index: -1,
+  });
+  const navigatingHistory = useRef(false);
+  useEffect(() => {
+    const destination = activeSurface === "settings" ? "settings" : activeWorkspaceId;
+    if (!destination) return;
+    if (navigatingHistory.current) {
+      navigatingHistory.current = false;
+      return;
+    }
+    setHistory((current) =>
+      current.entries[current.index] === destination
+        ? current
+        : {
+            entries: [...current.entries.slice(0, current.index + 1), destination],
+            index: current.index + 1,
+          },
+    );
+  }, [activeSurface, activeWorkspaceId]);
+  function goHistory(index: number) {
+    const destination = history.entries[index];
+    if (!destination) return;
+    navigatingHistory.current = true;
+    setHistory((current) => ({ ...current, index }));
+    if (destination === "settings") onOpenSettings();
+    else onWorkspaceOpen(destination);
+  }
+  const [workspaceDragState, setWorkspaceDragState] = useState<WorkspacePointerDragState | null>(
+    null,
+  );
   const [contextMenuWorkspaceId, setContextMenuWorkspaceId] = useState<string | null>(null);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
@@ -249,7 +285,10 @@ export function WorkspaceLeftPanel({
     };
   }
 
-  function startPointerWorkspaceDrag(event: ReactPointerEvent<HTMLButtonElement>, workspaceId: string) {
+  function startPointerWorkspaceDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    workspaceId: string,
+  ) {
     if (event.button !== 0 || editingWorkspaceId === workspaceId) {
       return;
     }
@@ -331,7 +370,9 @@ export function WorkspaceLeftPanel({
           }
         }, 0);
 
-        if (nextWorkspaceIds.join("\0") !== workspaces.map((workspace) => workspace.id).join("\0")) {
+        if (
+          nextWorkspaceIds.join("\0") !== workspaces.map((workspace) => workspace.id).join("\0")
+        ) {
           onReorderWorkspaces(nextWorkspaceIds);
         }
       }
@@ -352,7 +393,24 @@ export function WorkspaceLeftPanel({
 
   return (
     <aside className="workspace-sidebar flex h-full w-[var(--workspace-sidebar-width)] shrink-0 flex-col border-r border-border bg-sidebar">
-      <div className={`mr-10 min-h-[var(--workspace-header-height)] ${collapsed ? "" : "electron-window-drag"}`} />
+      <div
+        className={`mr-10 flex min-h-[var(--workspace-header-height)] items-center gap-1 pl-24 ${collapsed ? "" : "electron-window-drag"}`}
+      >
+        <ChromeAction
+          label={t("chrome.back")}
+          disabled={history.index <= 0}
+          onClick={() => goHistory(history.index - 1)}
+        >
+          <ChevronLeftIcon className="size-4" />
+        </ChromeAction>
+        <ChromeAction
+          label={t("chrome.forward")}
+          disabled={history.index >= history.entries.length - 1}
+          onClick={() => goHistory(history.index + 1)}
+        >
+          <ChevronRightIcon className="size-4" />
+        </ChromeAction>
+      </div>
       <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1">
         <button
           type="button"
@@ -378,7 +436,9 @@ export function WorkspaceLeftPanel({
         </label>
         <div className="h-px bg-border" />
         <div className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
-          <p className="px-1 text-xs font-medium text-muted-foreground">{t("sidebar.workspaces")}</p>
+          <p className="px-1 text-xs font-medium text-muted-foreground">
+            {t("sidebar.workspaces")}
+          </p>
           {workspaces.map((workspace) => {
             const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
             const editing = editingWorkspaceId === workspace.id;
@@ -434,7 +494,10 @@ export function WorkspaceLeftPanel({
                       onPointerDown={(event) => startPointerWorkspaceDrag(event, workspace.id)}
                       onClick={() => openWorkspace(workspace.id)}
                     >
-                      <FolderIcon className={cn("size-4 shrink-0", active && "text-primary")} aria-hidden="true" />
+                      <FolderIcon
+                        className={cn("size-4 shrink-0", active && "text-primary")}
+                        aria-hidden="true"
+                      />
                       <span className="truncate">{workspace.name}</span>
                     </button>
                     <DropdownMenu
@@ -444,14 +507,20 @@ export function WorkspaceLeftPanel({
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className={cn("inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100", active && "opacity-100")}
+                          className={cn(
+                            "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100",
+                            active && "opacity-100",
+                          )}
                           aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
                           title={t("sidebar.workspaceActions", { name: workspace.name })}
                         >
                           <MoreHorizontalIcon className="size-4" aria-hidden="true" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className={cn(workspaceMenuContentClassName, "min-w-52")}>
+                      <DropdownMenuContent
+                        align="end"
+                        className={cn(workspaceMenuContentClassName, "min-w-52")}
+                      >
                         <DropdownMenuGroup>
                           <DropdownMenuItem
                             className={workspaceMenuItemClassName}
@@ -468,7 +537,10 @@ export function WorkspaceLeftPanel({
                             variant="destructive"
                             onSelect={() => deleteWorkspace(workspace)}
                           >
-                            <Trash2Icon className={workspaceMenuDangerIconClassName} aria-hidden="true" />
+                            <Trash2Icon
+                              className={workspaceMenuDangerIconClassName}
+                              aria-hidden="true"
+                            />
                             {t("sidebar.deleteWorkspace")}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>

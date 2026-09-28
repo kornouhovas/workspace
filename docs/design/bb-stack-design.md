@@ -35,7 +35,7 @@ bb's screenshot shows quiet desktop chrome, small seams, muted secondary text an
 
 The previous pale purple/blue surfaces and decorative sidebar/board gradients become a neutral ramp. Sidebar selection, active tabs, Board lanes/cards, Table cells, project section headings and Settings share those tokens. Floating cards/menus use the canvas with borders and small shadows. Existing property/status dot colors remain data-driven. Scrollbars derive from ink so they stay visible on light surfaces. Focus uses the semantic ring; reduced-motion preferences disable transitions.
 
-This is an adaptation to the approved Compact geometry: Geist Variable remains the font (bb uses Inter), existing sidebar/header widths, Board column width behavior, table/property/file row heights and primary label scales are preserved. No theme switcher or new product flow is introduced; dark token values remain available for component inspection.
+The initial adaptation above was superseded by workspace-1wx: shared chrome now targets bb 0.44.0 using Inter, stroke-rounded Hugeicons, 48px pane headers, 28px tabs/rows, a resizable 320px sidebar and a right panel initially taking half the working width. Light/Dark/System appearance is available in Settings. Board/Table and project property/file behavior retain their Workspace service boundaries. [Reference and verification](../../work/bb-interface-1wx/reference-matrix.md) distinguish measured matches from remaining acceptance gaps.
 
 ## Verification evidence
 

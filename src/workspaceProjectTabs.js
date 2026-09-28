@@ -29,3 +29,13 @@ export function projectTabsReducer(state, action) {
   return { ...state, [action.workspaceId]: tabs.map(tab => tab.id === action.project.id
     ? { ...action.project, tabId: tab.tabId } : tab) };
 }
+
+// Closing a group is one operation: never focus a neighbour that is also closing.
+export function projectTabCloseSelection(tabs, activeId, closingIds) {
+  const closed = new Set(closingIds);
+  const remaining = tabs.filter(tab => !closed.has(tab.tabId));
+  if (!closed.has(activeId)) return remaining.find(tab => tab.tabId === activeId) || null;
+  const index = tabs.findIndex(tab => tab.tabId === activeId);
+  return tabs.slice(0, index).reverse().find(tab => !closed.has(tab.tabId))
+    || tabs.slice(index + 1).find(tab => !closed.has(tab.tabId)) || null;
+}

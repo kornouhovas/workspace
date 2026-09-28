@@ -29,7 +29,7 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   Trash2Icon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import {
   workspaceMenuCheckboxClassName,
   workspaceMenuContentClassName,

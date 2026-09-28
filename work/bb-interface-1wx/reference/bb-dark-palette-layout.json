@@ -1,0 +1,82 @@
+{
+  "buttons": [
+    {
+      "font": "13px / 18.5714px \"Inter Variable\", Inter, sans-serif",
+      "name": "New thread",
+      "rect": {
+        "height": 28
+      }
+    },
+    {
+      "font": "500 13px / 18.5714px \"Inter Variable\", Inter, sans-serif",
+      "name": "",
+      "rect": {
+        "height": 20
+      }
+    },
+    {
+      "font": "13px / 18.5714px \"Inter Variable\", Inter, sans-serif",
+      "name": "Plugins",
+      "rect": {
+        "height": 28
+      }
+    },
+    {
+      "font": "500 13px / 18.5714px \"Inter Variable\", Inter, sans-serif",
+      "name": "",
+      "rect": {
+        "height": 20
+      }
+    },
+    {
+      "font": "13px / 18.5714px \"Inter Variable\", Inter, sans-serif",
+      "name": "Skills",
+      "rect": {
+        "height": 28
+      }
+    }
+  ],
+  "rightPanels": [
+    {
+      "bg": "oklch(0.221445 0 0)",
+      "rect": {
+        "height": 500,
+        "width": 192,
+        "x": 1039.453125
+      }
+    },
+    {
+      "bg": "oklch(0.221445 0 0)",
+      "rect": {
+        "height": 960,
+        "width": 560,
+        "x": 1013.453125
+      }
+    }
+  ],
+  "separators": [
+    {
+      "label": "Resize thread and right panel",
+      "rect": {
+        "height": 960,
+        "width": 0,
+        "x": 1030.453125
+      },
+      "value": "50"
+    }
+  ],
+  "variables": {
+    "--background": "oklch(19.5% 0 0)",
+    "--border": "color-mix(in oklch, oklch(81% 0 0) 19.4%, oklch(19.5% 0 0))",
+    "--canvas": "oklch(19.5% 0 0)",
+    "--font-sans": "\"Inter Variable\", Inter, sans-serif",
+    "--foreground": "oklch(81% 0 0)",
+    "--ink": "oklch(81% 0 0)",
+    "--muted": "color-mix(in oklch, oklch(81% 0 0) 16%, oklch(19.5% 0 0))",
+    "--muted-foreground": "oklch(78% 0 0)",
+    "--radius": ".5rem",
+    "--sidebar": "color-mix(in oklch, oklch(81% 0 0) 4.3%, oklch(19.5% 0 0))",
+    "--sidebar-accent": "color-mix(in oklch, oklch(81% 0 0) 12%, oklch(19.5% 0 0))",
+    "--state-hover": "color-mix(in oklab, oklch(81% 0 0) 13.8%, transparent)"
+  }
+}

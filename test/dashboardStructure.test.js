@@ -140,7 +140,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceViewTabs/);
   assert.match(appSource, /electron-window-drag flex h-\[var\(--workspace-header-height\)\] shrink-0 items-center gap-2 border-b border-border/);
   assert.doesNotMatch(appSource, /projectExpanded \? "h-\[113px\]" : "h-24"/);
-  assert.match(appSource, /workspace-current-name/);
+  assert.match(appSource, /WorkspaceSplitTree/);
   assert.match(appSource, /WorkspaceSettingsView/);
   assert.match(appSource, /handleSelectFolder/);
   assert.match(appSource, /loadRequestIdRef/);
@@ -212,7 +212,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(appSource, /searchQuery:\s*state\.searchQuery/);
   assert.doesNotMatch(appSource, /\[reloadToken, workspaceClient, state\.activeViewId, state\.searchQuery\]/);
   assert.match(appSource, /activeViewChanged/);
-  assert.match(appSource, /workspaceClient\.setActiveView/);
+  assert.match(appSource, /workspaceClient\s*\.setActiveView/);
   assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
   assert.match(appSource, /sidebarCollapsed/);
   assert.match(appSource, /PanelLeftIcon/);
@@ -265,7 +265,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onChange/);
   assert.match(leftPanelSource, /t\("sidebar\.workspaces"\)/);
   assert.match(leftPanelSource, /t\("sidebar\.settings"\)/);
-  assert.match(leftPanelSource, /from "@\/lib\/lucide-icons"/);
+  assert.match(leftPanelSource, /from "@\/lib\/workspace-icons"/);
   assert.match(statesSource, /t\("state\.noSourceTitle"\)/);
   assert.match(statesSource, /t\("state\.openSettings"\)/);
   assert.match(statesSource, /onOpenSettings/);
@@ -411,7 +411,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewTabsSource, /editingViewId/);
   assert.match(viewTabsSource, /aria-label=\{t\("view\.renameInput"\)\}/);
   assert.match(viewTabsSource, /workspace-tab-scroll/);
-  assert.match(viewTabsSource, /!h-10 w-max max-w-none flex-nowrap/);
+  // Tab pixel geometry follows pinned bb runtime; retain scrolling/selection behavior below.
   assert.match(viewTabsSource, /text-sm font-normal/);
   assert.doesNotMatch(viewTabsSource, /justify-between gap-3 border-b border-border px-4 py-2\.5/);
   assert.match(viewTabsSource, /data-active:border-transparent/);
@@ -597,7 +597,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /<Slider/);
   assert.match(viewFilterMenuSource, /onValueCommit/);
   assert.match(viewFilterMenuSource, /max-h-\[calc\(100vh-4\.5rem\)\].*overflow-y-auto/);
-  assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{t\("table\.propertyActions", \{ name: property\.name \}\)\}/);
+  assert.match(tableViewSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{t\("table\.propertyActions", \{\s*name: property\.name,?\s*\}\)\}/);
   assert.match(tableViewSource, /onKeyDown=\{\(event\) => \{\s+event\.stopPropagation\(\);\s+if \(event\.key === "Escape"\)/);
   assert.match(textValueEditorSource, /useLayoutEffect/);
   assert.doesNotMatch(textValueEditorSource, /useEffect/);
@@ -630,7 +630,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /onContextMenu/);
   assert.match(tableViewSource, /openPropertyMenuId/);
   assert.match(tableViewSource, /data-property-column-id/);
-  assert.match(tableViewSource, /t\("table\.dragColumn", \{ name: property\.name \}\)/);
+  assert.match(tableViewSource, /t\("table\.dragColumn", \{\s*name: property\.name,?\s*\}\)/);
   assert.match(tableViewSource, /onPointerDown=\{\(event\) => startPointerColumnDrag\(event, property\.id\)\}/);
   assert.doesNotMatch(tableViewSource, /GripVerticalIcon className="size-3\.5"/);
   assert.doesNotMatch(tableViewSource, /absolute left-1 top-1\/2/);
@@ -646,7 +646,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /className="min-w-full table-fixed"/);
   assert.match(tableViewSource, /style=\{\{ minWidth: tableWidth \}\}/);
   assert.match(tableViewSource, /<col aria-label=\{t\("table\.addPropertyFiller"\)\} \/>/);
-  assert.match(tableViewSource, /t\("table\.resizeColumn", \{ name: property\.name \}\)/);
+  assert.match(tableViewSource, /t\("table\.resizeColumn", \{\s*name: property\.name,?\s*\}\)/);
   assert.match(tableViewSource, /cursor-col-resize/);
   assert.match(tableViewSource, /clampPropertyColumnWidth/);
   assert.match(tableViewSource, /className="h-7 w-full min-w-0 rounded-md px-1\.5 text-sm"/);
@@ -807,7 +807,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /DropdownMenuContent/);
   assert.match(projectDetailPanelSource, /PlusIcon/);
   assert.match(appSource, /<WorkspaceProjectDetailPanel[\s\S]*onCreateProperty=\{handleCreateVisibleProperty\}/);
-  assert.match(projectDetailPanelSource, /t\("table\.propertyActions", \{ name: property\.name \}\)/);
+  assert.match(projectDetailPanelSource, /t\("table\.propertyActions", \{\s*name: property\.name,?\s*\}\)/);
   assert.match(projectDetailPanelSource, /FolderIcon/);
   assert.match(projectDetailPanelSource, /FileIcon/);
   assert.match(projectDetailPanelSource, /onOpenChange/);
@@ -816,7 +816,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /WorkspaceTextValueTextarea/);
   assert.match(projectDetailPanelSource, /projectDetailMultilineValueClassName/);
   assert.match(projectDetailPanelSource, /whitespace-pre-wrap break-words/);
-  assert.match(projectDetailPanelSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{t\("table\.propertyActions", \{ name: property\.name \}\)\}/);
+  assert.match(projectDetailPanelSource, /<WorkspaceTextValueTextarea[\s\S]*aria-label=\{t\("table\.propertyActions", \{\s*name: property\.name,?\s*\}\)\}/);
   assert.match(projectDetailPanelSource, /editingPropertyId/);
   assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
   assert.match(projectDetailPanelSource, /orderedVisibleProperties/);
@@ -849,13 +849,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /data-workspace-detail-add-property-menu="true"/);
   assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
-  assert.match(projectDetailPanelSource, /aria-label=\{t\("table\.propertyActions", \{ name: property\.name \}\)\}\s+className="[^"]*cursor-grab[^"]*"\s+onPointerDown=\{\(event\) =>\s*\(\s*startCardPropertyDrag\(event, property\.id, \{ openActionsOnClick: true \}\)\s*\)\}/);
+  assert.match(projectDetailPanelSource, /startCardPropertyDrag\(event, property\.id, \{\s*openActionsOnClick: true,?\s*\}\)/);
   assert.match(projectDetailPanelSource, /onClick=\{\(event\) => \{\s*event\.preventDefault\(\);[\s\S]*suppressCardPropertyClickRef[\s\S]*openCardPropertyMenu\(property\.id\);/);
   assert.match(projectDetailPanelSource, /role="menu"/);
   assert.match(projectDetailPanelSource, /role="menuitem"/);
-  assert.match(projectDetailPanelSource, /t\("table\.propertyActions", \{ name: property\.name \}\)/);
+  assert.match(projectDetailPanelSource, /t\("table\.propertyActions", \{\s*name: property\.name,?\s*\}\)/);
   assert.doesNotMatch(projectDetailPanelSource, /MoreHorizontalIcon/);
-  assert.match(projectDetailPanelSource, /t\("detail\.reorderProperty", \{ name: property\.name \}\)/);
+  assert.match(projectDetailPanelSource, /t\("detail\.reorderProperty", \{\s*name: property\.name,?\s*\}\)/);
   assert.match(projectDetailPanelSource, /WorkspaceSelectValueEditor/);
   assert.match(projectDetailPanelSource, /onColorSelectValue/);
   assert.match(projectDetailPanelSource, /WorkspaceDateValueEditor/);

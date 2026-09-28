@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { WorkspacePropertyControls } from "@/components/workspace/property-controls";
 import { useI18n } from "@/i18n";
-import { ChevronDownIcon, ChevronRightIcon } from "@/lib/lucide-icons";
+import { ChevronDownIcon, ChevronRightIcon } from "@/lib/workspace-icons";
 import type {
   WorkspaceFolderRoleNode,
   WorkspaceProjectionResponse,
@@ -28,12 +28,17 @@ type WorkspaceSourceFolder = {
 };
 
 type WorkspaceSettingsViewProps = {
+  readonly theme?: "light" | "dark" | "system";
+  readonly onThemeChange?: (theme: "light" | "dark" | "system") => void;
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly onSelectFolder: () => void;
-  readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
+  readonly onFolderRoleChange: (
+    node: WorkspaceFolderRoleNode,
+    role: WorkspaceFolderRoleNode["role"],
+  ) => void;
   readonly onColorStatusValue: (statusValueId: string, color: string) => void;
   readonly selectingFolder?: boolean;
 };
@@ -57,7 +62,10 @@ function FolderRoleNode({
   readonly depth?: number;
   readonly expandedFolderIds: ReadonlySet<string>;
   readonly onToggleFolderExpanded: (nodeId: string) => void;
-  readonly onFolderRoleChange: (node: WorkspaceFolderRoleNode, role: WorkspaceFolderRoleNode["role"]) => void;
+  readonly onFolderRoleChange: (
+    node: WorkspaceFolderRoleNode,
+    role: WorkspaceFolderRoleNode["role"],
+  ) => void;
 }) {
   const { t } = useI18n();
   const hasChildren = node.children.length > 0;
@@ -78,7 +86,11 @@ function FolderRoleNode({
           size="icon"
           className="size-7"
           disabled={!hasChildren}
-          aria-label={expanded ? t("settings.collapseFolder", { name: node.name }) : t("settings.expandFolder", { name: node.name })}
+          aria-label={
+            expanded
+              ? t("settings.collapseFolder", { name: node.name })
+              : t("settings.expandFolder", { name: node.name })
+          }
           onClick={() => onToggleFolderExpanded(node.id)}
         >
           {expanded ? (
@@ -92,7 +104,9 @@ function FolderRoleNode({
             <span className="truncate text-sm font-medium">{node.name}</span>
             <Badge variant="outline">{statusLabel}</Badge>
           </div>
-          <p className="truncate text-xs text-muted-foreground" title={node.relativePath}>{node.relativePath}</p>
+          <p className="truncate text-xs text-muted-foreground" title={node.relativePath}>
+            {node.relativePath}
+          </p>
         </div>
         <ToggleGroup
           aria-label={t("settings.roleFor", { name: node.name })}
@@ -109,7 +123,10 @@ function FolderRoleNode({
           {roleOptions.map((role) => (
             <ToggleGroupItem
               key={role}
-              aria-label={t("settings.setRole", { name: node.name, role: t(`settings.role.${role}`) })}
+              aria-label={t("settings.setRole", {
+                name: node.name,
+                role: t(`settings.role.${role}`),
+              })}
               value={role}
             >
               {t(`settings.role.${role}`)}
@@ -136,6 +153,8 @@ function FolderRoleNode({
 }
 
 export function WorkspaceSettingsView({
+  theme = "system",
+  onThemeChange,
   sourceFolder,
   folderRoleTree,
   statusValues,
@@ -162,8 +181,41 @@ export function WorkspaceSettingsView({
   }
 
   return (
-    <section className="workspace-settings grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
+    <section
+      className="workspace-settings grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]"
+      aria-label={t("settings.title")}
+    >
       <div className="grid content-start gap-2">
+        {onThemeChange && (
+          <section
+            className="rounded-md border border-border bg-card"
+            aria-labelledby="workspace-appearance-heading"
+          >
+            <div className="flex items-center justify-between gap-2 px-3 py-2">
+              <h3 id="workspace-appearance-heading" className="text-sm font-semibold">
+                {t("chrome.appearance")}
+              </h3>
+              <Select
+                value={theme}
+                onValueChange={(value) => {
+                  if (value === "light" || value === "dark" || value === "system")
+                    onThemeChange(value);
+                }}
+              >
+                <SelectTrigger className="w-28" aria-label={t("chrome.appearance")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="light">{t("chrome.light")}</SelectItem>
+                    <SelectItem value="dark">{t("chrome.dark")}</SelectItem>
+                    <SelectItem value="system">{t("chrome.systemTheme")}</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
+        )}
         <div className="rounded-md border border-border bg-card">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <h3 className="text-sm font-semibold">{t("settings.source")}</h3>
@@ -172,8 +224,12 @@ export function WorkspaceSettingsView({
           <Separator />
           <div className="grid gap-2 p-3">
             <div className="grid gap-1">
-              <p className="text-xs font-medium text-muted-foreground">{t("settings.sourceFolder")}</p>
-              <p className="truncate text-sm font-medium" title={sourceFolder.name}>{sourceFolder.name}</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("settings.sourceFolder")}
+              </p>
+              <p className="truncate text-sm font-medium" title={sourceFolder.name}>
+                {sourceFolder.name}
+              </p>
               <p className="break-all text-xs text-muted-foreground">{sourceFolder.path}</p>
             </div>
             <Button
@@ -187,10 +243,15 @@ export function WorkspaceSettingsView({
             </Button>
           </div>
         </div>
-        <section className="rounded-md border border-border bg-card" aria-labelledby="workspace-language-heading">
+        <section
+          className="rounded-md border border-border bg-card"
+          aria-labelledby="workspace-language-heading"
+        >
           <div className="flex items-center justify-between gap-2 px-3 py-2">
             <div className="min-w-0">
-              <h3 id="workspace-language-heading" className="text-sm font-semibold">{t("language.title")}</h3>
+              <h3 id="workspace-language-heading" className="text-sm font-semibold">
+                {t("language.title")}
+              </h3>
               <p className="truncate text-xs text-muted-foreground">{t("language.description")}</p>
             </div>
             <Select
@@ -218,7 +279,9 @@ export function WorkspaceSettingsView({
         <div className="flex items-center justify-between gap-2 px-3 py-2">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t("settings.folderRoleTree")}</h3>
-            <p className="truncate text-xs text-muted-foreground" title={sourceFolder.path}>{sourceFolder.path}</p>
+            <p className="truncate text-xs text-muted-foreground" title={sourceFolder.path}>
+              {sourceFolder.path}
+            </p>
           </div>
           <Badge variant="outline">{t("settings.roots", { count: folderRoleTree.length })}</Badge>
         </div>

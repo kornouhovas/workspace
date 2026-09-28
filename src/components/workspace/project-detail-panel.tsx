@@ -8,6 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { shouldClosePaneOnEscape } from "@/workspacePaneKeyboard.js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,14 +31,13 @@ import {
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { WorkspaceDateValueEditor } from "@/components/workspace/date-value-editor";
-import { formatNumberDisplayValue, formatNumberEditorValue } from "@/components/workspace/number-value";
+import {
+  formatNumberDisplayValue,
+  formatNumberEditorValue,
+} from "@/components/workspace/number-value";
 import { WorkspaceSelectValueEditor } from "@/components/workspace/select-value-editor";
 import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-editor";
 import { useI18n } from "@/i18n";
@@ -58,26 +58,30 @@ import {
   PlusIcon,
   Trash2Icon,
   TypeIcon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
-import type {
-  WorkspaceMockFileTreeNode,
-  WorkspaceMockProject,
-} from "@/workspaceMockData";
+import type { WorkspaceMockFileTreeNode, WorkspaceMockProject } from "@/workspaceMockData";
 import type {
   WorkspacePropertyDefinitionState,
   WorkspaceSelectValueState,
 } from "@/workspaceAppState";
 
 type WorkspaceProjectDetailPanelProps = {
+  readonly onOpenLocalItem?: (node: WorkspaceMockFileTreeNode) => void;
   readonly expanded?: boolean;
+  readonly inline?: boolean;
+  readonly keyboardActive?: boolean;
   readonly sidebarCollapsed?: boolean;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly project: WorkspaceMockProject | null;
   readonly visibleProperties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
-  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onProjectPropertyValueChange: (
+    projectId: string,
+    propertyId: string,
+    value: unknown,
+  ) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
     input: { readonly name: string; readonly color: string },
@@ -168,7 +172,9 @@ function readSavedProjectDetailPanelWidth() {
     return defaultProjectDetailPanelWidth;
   }
 
-  return clampProjectDetailPanelWidth(Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)));
+  return clampProjectDetailPanelWidth(
+    Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)),
+  );
 }
 
 function readSavedCardPropertyOrder() {
@@ -177,7 +183,9 @@ function readSavedCardPropertyOrder() {
   }
 
   try {
-    const parsedValue = JSON.parse(window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]");
+    const parsedValue = JSON.parse(
+      window.localStorage.getItem(cardPropertyOrderStorageKey) || "[]",
+    );
     return Array.isArray(parsedValue)
       ? parsedValue.filter((item): item is string => typeof item === "string")
       : [];
@@ -206,7 +214,9 @@ function readSavedCardHiddenPropertyIds() {
   }
 
   try {
-    const parsedValue = JSON.parse(window.localStorage.getItem(cardHiddenPropertyIdsStorageKey) || "[]");
+    const parsedValue = JSON.parse(
+      window.localStorage.getItem(cardHiddenPropertyIdsStorageKey) || "[]",
+    );
     return Array.isArray(parsedValue)
       ? parsedValue.filter((item): item is string => typeof item === "string")
       : [];
@@ -234,7 +244,9 @@ function getCardPropertyDragOrder(
   sourcePropertyId: string,
   dropIndex: number,
 ) {
-  const remainingPropertyIds = orderedPropertyIds.filter((propertyId) => propertyId !== sourcePropertyId);
+  const remainingPropertyIds = orderedPropertyIds.filter(
+    (propertyId) => propertyId !== sourcePropertyId,
+  );
   const boundedDropIndex = Math.min(Math.max(dropIndex, 0), remainingPropertyIds.length);
   return [
     ...remainingPropertyIds.slice(0, boundedDropIndex),
@@ -243,7 +255,10 @@ function getCardPropertyDragOrder(
   ];
 }
 
-function getPropertyValue(project: WorkspaceMockProject, property: WorkspacePropertyDefinitionState) {
+function getPropertyValue(
+  project: WorkspaceMockProject,
+  property: WorkspacePropertyDefinitionState,
+) {
   if (property.id === "property:name") {
     return project.name;
   }
@@ -280,9 +295,11 @@ function isProjectDetailProperty(property: WorkspacePropertyDefinitionState) {
 }
 
 function canRenameCardProperty(property: WorkspacePropertyDefinitionState) {
-  return property.id === "property:name"
-    || property.id === "property:status"
-    || !isProtectedCardProperty(property);
+  return (
+    property.id === "property:name" ||
+    property.id === "property:status" ||
+    !isProtectedCardProperty(property)
+  );
 }
 
 function canHideCardProperty(property: WorkspacePropertyDefinitionState) {
@@ -357,9 +374,10 @@ function getSelectValuesForProperty(
 ) {
   return selectValues
     .filter((selectValue) => selectValue.propertyId === propertyId && !selectValue.hidden)
-    .sort((left, right) => (
-      Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id)
-    ));
+    .sort(
+      (left, right) =>
+        Number(left.order || 0) - Number(right.order || 0) || left.id.localeCompare(right.id),
+    );
 }
 
 function getSelectedSelectValueItems(
@@ -374,14 +392,15 @@ function getSelectedSelectValueItems(
       ? value.filter((item): item is string => typeof item === "string")
       : [];
 
-    return selectedValues.map((valueId) => (
-      values.find((selectValue) => selectValue.id === valueId) || {
-        id: valueId,
-        propertyId: property.id,
-        name: valueId,
-        color: "gray",
-      }
-    ));
+    return selectedValues.map(
+      (valueId) =>
+        values.find((selectValue) => selectValue.id === valueId) || {
+          id: valueId,
+          propertyId: property.id,
+          name: valueId,
+          color: "gray",
+        },
+    );
   }
 
   if (typeof value !== "string" || !value) {
@@ -420,7 +439,11 @@ function ProjectSelectValuePills({
           key={selectValue.id}
           className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-secondary/80 px-2 py-0.5 text-xs font-medium text-secondary-foreground"
         >
-          <span className="size-2 rounded-full" data-color={selectValue.color || "gray"} aria-hidden="true" />
+          <span
+            className="size-2 rounded-full"
+            data-color={selectValue.color || "gray"}
+            aria-hidden="true"
+          />
           <span className="truncate">{selectValue.name}</span>
         </span>
       ))}
@@ -442,30 +465,42 @@ function ProjectPropertyValueDisplay({
   const { t } = useI18n();
 
   if (property.id === "property:status") {
-    const statusValue = value && typeof value === "object" && !Array.isArray(value)
-      ? value as {
-          readonly id?: string;
-          readonly name?: string;
-          readonly source?: string;
-          readonly color?: unknown;
-        }
-      : null;
+    const statusValue =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? (value as {
+            readonly id?: string;
+            readonly name?: string;
+            readonly source?: string;
+            readonly color?: unknown;
+          })
+        : null;
     const label = statusValue
       ? getStatusDisplayName(t, statusValue)
       : stringifyPropertyValue(value);
-    const color = typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
-    return label
-      ? (
-        <Badge variant="secondary" data-workspace-status-value className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal">
-          <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
-          <span className="truncate">{label}</span>
-        </Badge>
-      )
-      : <span className={projectDetailPlainValueClassName} />;
+    const color =
+      typeof statusValue?.color === "string" && statusValue.color ? statusValue.color : "gray";
+    return label ? (
+      <Badge
+        variant="secondary"
+        data-workspace-status-value
+        className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal"
+      >
+        <span
+          className="size-2 rounded-full bg-muted-foreground/70"
+          data-color={color}
+          aria-hidden="true"
+        />
+        <span className="truncate">{label}</span>
+      </Badge>
+    ) : (
+      <span className={projectDetailPlainValueClassName} />
+    );
   }
 
   if (property.id === "property:name" || property.system) {
-    return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+    return (
+      <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>
+    );
   }
 
   if (property.propertyType === "text") {
@@ -476,7 +511,9 @@ function ProjectPropertyValueDisplay({
         className={projectDetailMultilineValueClassName}
         onClick={onStartEditing}
       >
-        <span className="min-w-0 whitespace-pre-wrap break-words">{stringifyPropertyValue(value)}</span>
+        <span className="min-w-0 whitespace-pre-wrap break-words">
+          {stringifyPropertyValue(value)}
+        </span>
       </button>
     );
   }
@@ -495,16 +532,14 @@ function ProjectPropertyValueDisplay({
   }
 
   if (property.propertyType === "date") {
-    return <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>;
+    return (
+      <span className={projectDetailPlainValueClassName}>{stringifyPropertyValue(value)}</span>
+    );
   }
 
   if (property.propertyType === "select" || property.propertyType === "multi-select") {
     return (
-      <ProjectSelectValuePills
-        value={value}
-        property={property}
-        selectValues={selectValues}
-      />
+      <ProjectSelectValuePills value={value} property={property} selectValues={selectValues} />
     );
   }
 
@@ -516,6 +551,7 @@ type FileTreeNodeProps = {
   readonly depth?: number;
   readonly expandedFolderIds: ReadonlySet<string>;
   readonly onToggleFolder: (folderId: string) => void;
+  readonly onOpenLocalItem?: (node: WorkspaceMockFileTreeNode) => void;
 };
 
 function FileTreeNode({
@@ -523,6 +559,7 @@ function FileTreeNode({
   depth = 0,
   expandedFolderIds,
   onToggleFolder,
+  onOpenLocalItem,
 }: FileTreeNodeProps) {
   const { t } = useI18n();
   const isFolder = node.kind === "folder";
@@ -542,10 +579,15 @@ function FileTreeNode({
         onClick={() => {
           if (hasChildren) {
             onToggleFolder(node.id);
+          } else {
+            onOpenLocalItem?.(node);
           }
         }}
       >
-        <span className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2" style={{ paddingLeft: `${depth * 0.9}rem` }}>
+        <span
+          className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2"
+          style={{ paddingLeft: `${depth * 0.9}rem` }}
+        >
           {hasChildren ? (
             isExpanded ? (
               <ChevronDownIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
@@ -561,7 +603,9 @@ function FileTreeNode({
             <FileIcon className={getFileTreeNodeIconClassName(node)} aria-hidden="true" />
           )}
           <span className={getFileTreeNodeNameClassName(node)}>{node.name}</span>
-          {!node.available ? <Badge variant="destructive">{t("detail.fileUnavailable")}</Badge> : null}
+          {!node.available ? (
+            <Badge variant="destructive">{t("detail.fileUnavailable")}</Badge>
+          ) : null}
         </span>
       </Button>
       {isFolder && isExpanded && node.children && node.children.length > 0 ? (
@@ -573,6 +617,7 @@ function FileTreeNode({
               depth={depth + 1}
               expandedFolderIds={expandedFolderIds}
               onToggleFolder={onToggleFolder}
+              onOpenLocalItem={onOpenLocalItem}
             />
           ))}
         </ul>
@@ -600,7 +645,11 @@ function ProjectPropertyValueEditor({
   readonly editing: boolean;
   readonly onStartEditing: () => void;
   readonly onStopEditing: () => void;
-  readonly onProjectPropertyValueChange: (projectId: string, propertyId: string, value: unknown) => void;
+  readonly onProjectPropertyValueChange: (
+    projectId: string,
+    propertyId: string,
+    value: unknown,
+  ) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
     input: { readonly name: string; readonly color: string },
@@ -700,7 +749,9 @@ function ProjectPropertyValueEditor({
         value={value}
         containerClassName="w-full min-w-0"
         triggerClassName={projectDetailPlainTriggerClassName}
-        onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
+        onValueChange={(nextValue) =>
+          onProjectPropertyValueChange(project.id, property.id, nextValue)
+        }
       />
     );
   }
@@ -713,7 +764,9 @@ function ProjectPropertyValueEditor({
         selectValues={selectValues}
         containerClassName="w-full min-w-0"
         triggerClassName={projectDetailPlainTriggerClassName}
-        onValueChange={(nextValue) => onProjectPropertyValueChange(project.id, property.id, nextValue)}
+        onValueChange={(nextValue) =>
+          onProjectPropertyValueChange(project.id, property.id, nextValue)
+        }
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
         onColorSelectValue={onColorSelectValue}
@@ -734,6 +787,9 @@ function ProjectPropertyValueEditor({
 
 export function WorkspaceProjectDetailPanel({
   expanded = false,
+  inline = false,
+  keyboardActive = true,
+  onOpenLocalItem,
   sidebarCollapsed = false,
   open,
   onOpenChange,
@@ -751,34 +807,39 @@ export function WorkspaceProjectDetailPanel({
   onDeleteProperty,
 }: WorkspaceProjectDetailPanelProps) {
   const { t } = useI18n();
-  const propertyTypeOptions = useMemo<readonly ProjectDetailPropertyTypeOption[]>(() => [
-    {
-      value: "text",
-      label: t("property.type.text"),
-      description: t("property.type.textDescription"),
-    },
-    {
-      value: "number",
-      label: t("property.type.number"),
-      description: t("property.type.numberDescription"),
-    },
-    {
-      value: "date",
-      label: t("property.type.date"),
-      description: t("property.type.dateDescription"),
-    },
-    {
-      value: "select",
-      label: t("property.type.select"),
-      description: t("property.type.selectDescription"),
-    },
-    {
-      value: "multi-select",
-      label: t("property.type.multiSelect"),
-      description: t("property.type.multiSelectDescription"),
-    },
-  ], [t]);
-  const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(readSavedProjectDetailPanelWidth);
+  const propertyTypeOptions = useMemo<readonly ProjectDetailPropertyTypeOption[]>(
+    () => [
+      {
+        value: "text",
+        label: t("property.type.text"),
+        description: t("property.type.textDescription"),
+      },
+      {
+        value: "number",
+        label: t("property.type.number"),
+        description: t("property.type.numberDescription"),
+      },
+      {
+        value: "date",
+        label: t("property.type.date"),
+        description: t("property.type.dateDescription"),
+      },
+      {
+        value: "select",
+        label: t("property.type.select"),
+        description: t("property.type.selectDescription"),
+      },
+      {
+        value: "multi-select",
+        label: t("property.type.multiSelect"),
+        description: t("property.type.multiSelectDescription"),
+      },
+    ],
+    [t],
+  );
+  const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(
+    readSavedProjectDetailPanelWidth,
+  );
   const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
   const [panelVisible, setPanelVisible] = useState(false);
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -795,11 +856,17 @@ export function WorkspaceProjectDetailPanel({
   useEffect(() => {
     try {
       window.localStorage.setItem(cardSectionsStorageKey, JSON.stringify(cardSections));
-    } catch { /* Keep the controls usable when local storage is unavailable. */ }
+    } catch {
+      /* Keep the controls usable when local storage is unavailable. */
+    }
   }, [cardSections]);
   const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
-  const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(readSavedCardPropertyOrder);
-  const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(readSavedCardHiddenPropertyIds);
+  const [cardPropertyOrder, setCardPropertyOrder] = useState<readonly string[]>(
+    readSavedCardPropertyOrder,
+  );
+  const [cardHiddenPropertyIds, setCardHiddenPropertyIds] = useState<readonly string[]>(
+    readSavedCardHiddenPropertyIds,
+  );
   const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
   const renamingPropertyInputRef = useRef<HTMLInputElement | null>(null);
   const panelWidthRef = useRef(projectDetailPanelWidth);
@@ -817,11 +884,17 @@ export function WorkspaceProjectDetailPanel({
     [detailVisibleProperties, cardPropertyOrder],
   );
   const orderedVisibleProperties = useMemo(
-    () => orderedCardProperties.filter((property) => !isCardPropertyHidden(property, cardHiddenPropertyIds)),
+    () =>
+      orderedCardProperties.filter(
+        (property) => !isCardPropertyHidden(property, cardHiddenPropertyIds),
+      ),
     [orderedCardProperties, cardHiddenPropertyIds],
   );
   const hiddenCardProperties = useMemo(
-    () => orderedCardProperties.filter((property) => isCardPropertyHidden(property, cardHiddenPropertyIds)),
+    () =>
+      orderedCardProperties.filter((property) =>
+        isCardPropertyHidden(property, cardHiddenPropertyIds),
+      ),
     [orderedCardProperties, cardHiddenPropertyIds],
   );
 
@@ -842,7 +915,9 @@ export function WorkspaceProjectDetailPanel({
 
   useEffect(() => {
     const detailPropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
-    const nextHiddenPropertyIds = cardHiddenPropertyIds.filter((propertyId) => detailPropertyIdSet.has(propertyId));
+    const nextHiddenPropertyIds = cardHiddenPropertyIds.filter((propertyId) =>
+      detailPropertyIdSet.has(propertyId),
+    );
 
     if (
       nextHiddenPropertyIds.length !== cardHiddenPropertyIds.length ||
@@ -851,7 +926,10 @@ export function WorkspaceProjectDetailPanel({
       setCardHiddenPropertyIds(nextHiddenPropertyIds);
 
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+        window.localStorage.setItem(
+          cardHiddenPropertyIdsStorageKey,
+          JSON.stringify(nextHiddenPropertyIds),
+        );
       }
     }
   }, [detailVisibleProperties, cardHiddenPropertyIds]);
@@ -871,7 +949,9 @@ export function WorkspaceProjectDetailPanel({
     const visiblePropertyIdSet = new Set(detailVisibleProperties.map((property) => property.id));
     const mergedPropertyIds = [
       ...cardPropertyOrder.filter((propertyId) => visiblePropertyIdSet.has(propertyId)),
-      ...detailVisibleProperties.map((property) => property.id).filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
+      ...detailVisibleProperties
+        .map((property) => property.id)
+        .filter((propertyId) => !cardPropertyOrder.includes(propertyId)),
     ];
 
     if (
@@ -956,14 +1036,27 @@ export function WorkspaceProjectDetailPanel({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (
+        shouldClosePaneOnEscape({
+          key: event.key,
+          defaultPrevented: event.defaultPrevented,
+          active: keyboardActive,
+          editing: Boolean(
+            event.target instanceof Element &&
+            event.target.closest(
+              "input,textarea,select,[contenteditable=true],[role=menu],[data-slot=popover-content],[role=dialog][data-state=open]",
+            ),
+          ),
+        })
+      ) {
+        event.preventDefault();
         onOpenChange(false);
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onOpenChange]);
+  }, [isOpen, onOpenChange, keyboardActive]);
 
   useEffect(() => {
     if (!openAddPropertyMenu) {
@@ -1067,7 +1160,10 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function deleteProperty(property: WorkspacePropertyDefinitionState) {
-    if (!isProtectedCardProperty(property) && window.confirm(t("confirm.deleteProperty", { name: property.name }))) {
+    if (
+      !isProtectedCardProperty(property) &&
+      window.confirm(t("confirm.deleteProperty", { name: property.name }))
+    ) {
       onDeleteProperty(property.id);
     }
   }
@@ -1095,7 +1191,10 @@ export function WorkspaceProjectDetailPanel({
       setCardHiddenPropertyIds(nextHiddenPropertyIds);
 
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(cardHiddenPropertyIdsStorageKey, JSON.stringify(nextHiddenPropertyIds));
+        window.localStorage.setItem(
+          cardHiddenPropertyIdsStorageKey,
+          JSON.stringify(nextHiddenPropertyIds),
+        );
       }
 
       return;
@@ -1110,11 +1209,18 @@ export function WorkspaceProjectDetailPanel({
     return group === "hidden" ? hiddenCardProperties : orderedVisibleProperties;
   }
 
-  function mergeCardPropertyGroupOrder(group: CardPropertyGroup, nextGroupPropertyIds: readonly string[]) {
-    const groupPropertyIds = new Set(getCardPropertiesForGroup(group).map((property) => property.id));
+  function mergeCardPropertyGroupOrder(
+    group: CardPropertyGroup,
+    nextGroupPropertyIds: readonly string[],
+  ) {
+    const groupPropertyIds = new Set(
+      getCardPropertiesForGroup(group).map((property) => property.id),
+    );
     const nextGroupOrder = [...nextGroupPropertyIds];
-    const completePropertyOrder = createOrderedCardProperties(detailVisibleProperties, cardPropertyOrderRef.current)
-      .map((property) => property.id);
+    const completePropertyOrder = createOrderedCardProperties(
+      detailVisibleProperties,
+      cardPropertyOrderRef.current,
+    ).map((property) => property.id);
 
     return completePropertyOrder.map((propertyId) => {
       if (!groupPropertyIds.has(propertyId)) {
@@ -1126,7 +1232,9 @@ export function WorkspaceProjectDetailPanel({
   }
 
   function getCardPropertyDragPreviewRows(group: CardPropertyGroup) {
-    return Array.from(document.querySelectorAll<HTMLElement>(`[data-card-property-row-group="${group}"]`))
+    return Array.from(
+      document.querySelectorAll<HTMLElement>(`[data-card-property-row-group="${group}"]`),
+    )
       .map((row) => {
         const propertyId = row.dataset.cardPropertyRowId;
         const rect = row.getBoundingClientRect();
@@ -1144,7 +1252,10 @@ export function WorkspaceProjectDetailPanel({
       .filter((row): row is CardPropertyDragPreviewRow => row !== null);
   }
 
-  function findCardPropertyDragTarget(clientY: number, rows: readonly CardPropertyDragPreviewRow[]) {
+  function findCardPropertyDragTarget(
+    clientY: number,
+    rows: readonly CardPropertyDragPreviewRow[],
+  ) {
     let dropIndex = 0;
 
     for (const row of rows) {
@@ -1295,7 +1406,11 @@ export function WorkspaceProjectDetailPanel({
         group,
         startY: event.clientY,
         currentY: pendingClientY,
-        dropIndex: findCardPropertyDropIndex(pendingClientY, cardPropertyDragPreviewRows, propertyId),
+        dropIndex: findCardPropertyDropIndex(
+          pendingClientY,
+          cardPropertyDragPreviewRows,
+          propertyId,
+        ),
         rows: cardPropertyDragPreviewRows,
       });
     }
@@ -1325,10 +1440,8 @@ export function WorkspaceProjectDetailPanel({
     function moveCardProperty(pointerEvent: PointerEvent) {
       pendingClientX = pointerEvent.clientX;
       pendingClientY = pointerEvent.clientY;
-      cardPropertyPressMoved.current = Math.hypot(
-        pendingClientX - event.clientX,
-        pendingClientY - event.clientY,
-      ) > 4;
+      cardPropertyPressMoved.current =
+        Math.hypot(pendingClientX - event.clientX, pendingClientY - event.clientY) > 4;
 
       if (!cardPropertyPressMoved.current) {
         return;
@@ -1349,11 +1462,14 @@ export function WorkspaceProjectDetailPanel({
         propertyId,
       );
       const orderedPropertyIds = cardPropertyDragPreviewRows.map((row) => row.propertyId);
-      const nextGroupPropertyIds = getCardPropertyDragOrder(orderedPropertyIds, propertyId, dropIndex);
-      const moved = cardPropertyPressMoved.current || Math.hypot(
-        pointerEvent.clientX - event.clientX,
-        pointerEvent.clientY - event.clientY,
-      ) > 4;
+      const nextGroupPropertyIds = getCardPropertyDragOrder(
+        orderedPropertyIds,
+        propertyId,
+        dropIndex,
+      );
+      const moved =
+        cardPropertyPressMoved.current ||
+        Math.hypot(pointerEvent.clientX - event.clientX, pointerEvent.clientY - event.clientY) > 4;
 
       window.removeEventListener("pointermove", moveCardProperty);
       window.cancelAnimationFrame(frameId);
@@ -1386,9 +1502,8 @@ export function WorkspaceProjectDetailPanel({
     property: WorkspacePropertyDefinitionState,
     visibilityAction: "hide" | "show",
   ) {
-    const visibilityLabel = visibilityAction === "hide"
-      ? t("property.hideFromView")
-      : t("property.showInView");
+    const visibilityLabel =
+      visibilityAction === "hide" ? t("property.hideFromView") : t("property.showInView");
     const VisibilityIcon = visibilityAction === "hide" ? EyeOffIcon : EyeIcon;
     const propertyProtected = isProtectedCardProperty(property);
     const renameableProperty = canRenameCardProperty(property);
@@ -1400,7 +1515,11 @@ export function WorkspaceProjectDetailPanel({
         className={`${workspaceMenuContentClassName} w-52`}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <div role="menu" aria-label={t("table.propertyActions", { name: property.name })} className="grid gap-0.5">
+        <div
+          role="menu"
+          aria-label={t("table.propertyActions", { name: property.name })}
+          className="grid gap-0.5"
+        >
           {renameableProperty ? (
             <button
               type="button"
@@ -1459,19 +1578,22 @@ export function WorkspaceProjectDetailPanel({
   return (
     <div
       className={[
-        "electron-window-no-drag pointer-events-none fixed bottom-0 right-0 z-30 flex justify-end",
-        "top-[var(--workspace-header-height)]",
-        expanded && !sidebarCollapsed ? "left-[var(--workspace-sidebar-width)]" : "left-0",
+        inline
+          ? "electron-window-no-drag relative flex h-full min-h-0 min-w-0 flex-1"
+          : "electron-window-no-drag pointer-events-none fixed bottom-0 right-0 z-30 flex justify-end top-[var(--workspace-header-height)]",
+        !inline && expanded && !sidebarCollapsed ? "left-[var(--workspace-sidebar-width)]" : "",
       ].join(" ")}
       aria-hidden={!panelVisible}
     >
-      {!expanded ? <button
-        type="button"
-        aria-label={t("detail.close")}
-        className={`electron-window-no-drag absolute inset-0 cursor-default bg-transparent ${panelVisible ? "pointer-events-auto" : "pointer-events-none"}`}
-        tabIndex={panelVisible ? 0 : -1}
-        onClick={closeProjectDetails}
-      /> : null}
+      {!expanded && !inline ? (
+        <button
+          type="button"
+          aria-label={t("detail.close")}
+          className={`electron-window-no-drag absolute inset-0 cursor-default bg-transparent ${panelVisible ? "pointer-events-auto" : "pointer-events-none"}`}
+          tabIndex={panelVisible ? 0 : -1}
+          onClick={closeProjectDetails}
+        />
+      ) : null}
       <aside
         aria-labelledby="project-detail-title"
         aria-modal="false"
@@ -1485,30 +1607,53 @@ export function WorkspaceProjectDetailPanel({
         className={[
           "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           expanded ? "workspace-project-detail-expanded" : "",
-          expanded ? "w-full max-w-none" : "max-w-[calc(100vw-6rem)]",
+          expanded || inline
+            ? "w-full max-w-none border-l-0 shadow-none"
+            : "max-w-[calc(100vw-6rem)]",
           panelVisible ? "pointer-events-auto" : "pointer-events-none",
           panelVisible ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
-        style={{ width: expanded ? "100%" : projectDetailPanelWidth }}
+        style={{ width: expanded || inline ? "100%" : projectDetailPanelWidth }}
       >
-        {!expanded ? <button
-          type="button"
-          aria-label={t("detail.resizePanel")}
-          className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
-          onPointerDown={startPanelResize}
-        >
-          <span className="sr-only">{t("detail.resizePanel")}</span>
-        </button> : null}
+        {!expanded && !inline ? (
+          <button
+            type="button"
+            aria-label={t("detail.resizePanel")}
+            className="electron-window-no-drag absolute inset-y-0 left-0 z-10 w-2 cursor-ew-resize border-l border-transparent hover:border-ring focus-visible:border-ring focus-visible:outline-none"
+            onPointerDown={startPanelResize}
+          >
+            <span className="sr-only">{t("detail.resizePanel")}</span>
+          </button>
+        ) : null}
         <>
-          <header className={expanded ? "workspace-project-detail-content-inset pb-2 pt-3" : "px-5 pb-2 pt-3"}>
-            <h2 id="project-detail-title" className="workspace-project-detail-heading break-words text-sm font-medium text-foreground">
+          <header
+            className={
+              expanded ? "workspace-project-detail-content-inset pb-2 pt-3" : "px-5 pb-2 pt-3"
+            }
+          >
+            <h2
+              id="project-detail-title"
+              className="workspace-project-detail-heading break-words text-sm font-medium text-foreground"
+            >
               {displayedProject.name}
             </h2>
           </header>
-          <div className={expanded ? "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto pb-6 pt-1" : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"}>
+          <div
+            className={
+              expanded
+                ? "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto pb-6 pt-1"
+                : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"
+            }
+          >
             <div className={expanded ? "grid gap-4" : "grid gap-4"}>
-              <section className={`grid ${propertiesExpanded ? "gap-2" : "gap-0"}`} aria-labelledby="project-properties-heading">
-                <h3 id="project-properties-heading" className="workspace-project-detail-heading text-sm font-medium text-foreground">
+              <section
+                className={`grid ${propertiesExpanded ? "gap-2" : "gap-0"}`}
+                aria-labelledby="project-properties-heading"
+              >
+                <h3
+                  id="project-properties-heading"
+                  className="workspace-project-detail-heading text-sm font-medium text-foreground"
+                >
                   <button
                     type="button"
                     aria-controls="project-visible-properties"
@@ -1517,181 +1662,208 @@ export function WorkspaceProjectDetailPanel({
                     onClick={() => toggleCardSection("properties")}
                   >
                     {propertiesExpanded ? (
-                      <ChevronDownIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
+                      <ChevronDownIcon
+                        className="absolute -left-4 size-3 shrink-0"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <ChevronRightIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
+                      <ChevronRightIcon
+                        className="absolute -left-4 size-3 shrink-0"
+                        aria-hidden="true"
+                      />
                     )}
                     {t("property.properties")}
                   </button>
                 </h3>
-                {propertiesExpanded ? <dl id="project-visible-properties" className="overflow-hidden rounded-md border border-border/45 bg-background/15">
-                  {orderedVisibleProperties.map((property) => {
-                    const propertyProtected = isProtectedCardProperty(property);
-                    const propertyMenuAvailable = canRenameCardProperty(property)
-                      || canHideCardProperty(property)
-                      || !propertyProtected;
-                    const renamingProperty = renamingPropertyId === property.id;
+                {propertiesExpanded ? (
+                  <dl
+                    id="project-visible-properties"
+                    className="overflow-hidden rounded-md border border-border/45 bg-background/15"
+                  >
+                    {orderedVisibleProperties.map((property) => {
+                      const propertyProtected = isProtectedCardProperty(property);
+                      const propertyMenuAvailable =
+                        canRenameCardProperty(property) ||
+                        canHideCardProperty(property) ||
+                        !propertyProtected;
+                      const renamingProperty = renamingPropertyId === property.id;
 
-                    return (
-                      <Popover
-                        key={property.id}
-                        open={propertyActionsId === property.id}
-                        onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
-                      >
-                        <div
-                          data-card-property-row-id={property.id}
-                          data-card-property-row-group="visible"
-                          className={[
-                            "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
-                            cardPropertyDrag ? "transition-transform ease-out" : "",
-                            cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
-                          ].filter(Boolean).join(" ")}
-                          style={{
-                            gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
-                            ...getCardPropertyDragStyle(property.id, "visible"),
-                          }}
+                      return (
+                        <Popover
+                          key={property.id}
+                          open={propertyActionsId === property.id}
+                          onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
                         >
-                          <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
-                            {renamingProperty ? (
-                              <span className="col-span-2 flex min-w-0 items-center px-2">
-                                <Input
-                                  ref={renamingPropertyInputRef}
-                                  value={renamingPropertyName}
-                                  aria-label={t("property.rename")}
-                                  className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
-                                  onChange={(event) => setRenamingPropertyName(event.target.value)}
-                                  onBlur={() => commitRenameProperty(property)}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                      event.preventDefault();
-                                      event.currentTarget.blur();
+                          <div
+                            data-card-property-row-id={property.id}
+                            data-card-property-row-group="visible"
+                            className={[
+                              "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
+                              cardPropertyDrag ? "transition-transform ease-out" : "",
+                              cardPropertyDrag?.propertyId === property.id
+                                ? "bg-muted/40 shadow-sm"
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            style={{
+                              gridTemplateColumns: expanded
+                                ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                                : projectDetailPropertiesGridTemplateColumns,
+                              ...getCardPropertyDragStyle(property.id, "visible"),
+                            }}
+                          >
+                            <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                              {renamingProperty ? (
+                                <span className="col-span-2 flex min-w-0 items-center px-2">
+                                  <Input
+                                    ref={renamingPropertyInputRef}
+                                    value={renamingPropertyName}
+                                    aria-label={t("property.rename")}
+                                    className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
+                                    onChange={(event) =>
+                                      setRenamingPropertyName(event.target.value)
                                     }
-                                    if (event.key === "Escape") {
-                                      event.preventDefault();
-                                      cancelRenameProperty();
+                                    onBlur={() => commitRenameProperty(property)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        event.currentTarget.blur();
+                                      }
+                                      if (event.key === "Escape") {
+                                        event.preventDefault();
+                                        cancelRenameProperty();
+                                      }
+                                    }}
+                                  />
+                                </span>
+                              ) : propertyMenuAvailable ? (
+                                <PopoverAnchor asChild>
+                                  <button
+                                    type="button"
+                                    aria-label={t("table.propertyActions", { name: property.name })}
+                                    className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                    onPointerDown={(event) =>
+                                      startCardPropertyDrag(event, property.id, {
+                                        openActionsOnClick: true,
+                                      })
                                     }
-                                  }}
-                                />
-                              </span>
-                            ) : propertyMenuAvailable ? (
-                              <PopoverAnchor asChild>
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      if (suppressCardPropertyClickRef.current) {
+                                        event.stopPropagation();
+                                        suppressCardPropertyClickRef.current = false;
+                                        return;
+                                      }
+
+                                      openCardPropertyMenu(property.id);
+                                    }}
+                                    onContextMenu={(event) => {
+                                      if (closePropertyMenuBeforeAction(event)) {
+                                        return;
+                                      }
+
+                                      event.preventDefault();
+                                      openCardPropertyMenu(property.id);
+                                    }}
+                                  >
+                                    <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                                      <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                    </span>
+                                    <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                  </button>
+                                </PopoverAnchor>
+                              ) : (
                                 <button
                                   type="button"
-                                  aria-label={t("table.propertyActions", { name: property.name })}
+                                  aria-label={t("detail.reorderProperty", { name: property.name })}
                                   className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
-                                  onPointerDown={(event) => (
-                                    startCardPropertyDrag(event, property.id, { openActionsOnClick: true })
-                                  )}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    if (suppressCardPropertyClickRef.current) {
-                                      event.stopPropagation();
-                                      suppressCardPropertyClickRef.current = false;
-                                      return;
-                                    }
-
-                                    openCardPropertyMenu(property.id);
-                                  }}
-                                  onContextMenu={(event) => {
-                                    if (closePropertyMenuBeforeAction(event)) {
-                                      return;
-                                    }
-
-                                    event.preventDefault();
-                                    openCardPropertyMenu(property.id);
-                                  }}
+                                  onPointerDown={(event) =>
+                                    startCardPropertyDrag(event, property.id)
+                                  }
                                 >
                                   <span className="flex h-full items-center justify-center text-muted-foreground/70">
                                     <GripVerticalIcon className="size-3.5" aria-hidden="true" />
                                   </span>
                                   <span className="min-w-0 truncate pr-3">{property.name}</span>
                                 </button>
-                              </PopoverAnchor>
-                            ) : (
-                              <button
-                                type="button"
-                                aria-label={t("detail.reorderProperty", { name: property.name })}
-                                className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
-                                onPointerDown={(event) => startCardPropertyDrag(event, property.id)}
-                              >
-                                <span className="flex h-full items-center justify-center text-muted-foreground/70">
-                                  <GripVerticalIcon className="size-3.5" aria-hidden="true" />
-                                </span>
-                                <span className="min-w-0 truncate pr-3">{property.name}</span>
-                              </button>
-                            )}
-                          </dt>
-                          <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
-                            <ProjectPropertyValueEditor
-                              project={displayedProject}
-                              property={property}
-                              selectValues={selectValues}
-                              editing={editingPropertyId === property.id}
-                              onStartEditing={() => setEditingPropertyId(property.id)}
-                              onStopEditing={() => setEditingPropertyId(null)}
-                              onProjectPropertyValueChange={onProjectPropertyValueChange}
-                              onCreateSelectValue={onCreateSelectValue}
-                              onRenameSelectValue={onRenameSelectValue}
-                              onColorSelectValue={onColorSelectValue}
-                              onDeleteSelectValue={onDeleteSelectValue}
-                            />
-                          </dd>
-                        </div>
-                        {propertyMenuAvailable ? (
-                          renderCardPropertyActionsMenu(property, "hide")
-                        ) : null}
-                      </Popover>
-                    );
-                  })}
-                  <DropdownMenu
-                    open={openAddPropertyMenu}
-                    onOpenChange={setOpenAddPropertyMenu}
-                  >
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="grid min-h-9 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                        style={{ gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns }}
-                      >
-                        <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
-                          <span className="flex h-full items-center justify-center text-muted-foreground/70">
-                            <PlusIcon className="size-3.5" aria-hidden="true" />
-                          </span>
-                          <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
-                            {t("property.add")}
-                          </span>
-                        </span>
-                        <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
-                          {t("property.addDescription")}
-                        </span>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      data-workspace-detail-add-property-menu="true"
-                      align="start"
-                      className={`${workspaceMenuContentClassName} w-64`}
-                    >
-                      <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("property.add")}</DropdownMenuLabel>
-                      <DropdownMenuGroup>
-                        {propertyTypeOptions.map((option) => (
-                          <DropdownMenuItem
-                            key={option.value}
-                            className={workspaceMenuOptionItemClassName}
-                            onSelect={() => createPropertyFromType(option)}
-                          >
-                            {renderPropertyTypeIcon(option.value)}
-                            <span className="grid min-w-0 gap-0.5">
-                              <span className="truncate font-medium">{option.label}</span>
-                              <span className={workspaceMenuDescriptionClassName}>
-                                {option.description}
-                              </span>
+                              )}
+                            </dt>
+                            <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
+                              <ProjectPropertyValueEditor
+                                project={displayedProject}
+                                property={property}
+                                selectValues={selectValues}
+                                editing={editingPropertyId === property.id}
+                                onStartEditing={() => setEditingPropertyId(property.id)}
+                                onStopEditing={() => setEditingPropertyId(null)}
+                                onProjectPropertyValueChange={onProjectPropertyValueChange}
+                                onCreateSelectValue={onCreateSelectValue}
+                                onRenameSelectValue={onRenameSelectValue}
+                                onColorSelectValue={onColorSelectValue}
+                                onDeleteSelectValue={onDeleteSelectValue}
+                              />
+                            </dd>
+                          </div>
+                          {propertyMenuAvailable
+                            ? renderCardPropertyActionsMenu(property, "hide")
+                            : null}
+                        </Popover>
+                      );
+                    })}
+                    <DropdownMenu open={openAddPropertyMenu} onOpenChange={setOpenAddPropertyMenu}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="grid min-h-9 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          style={{
+                            gridTemplateColumns: expanded
+                              ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                              : projectDetailPropertiesGridTemplateColumns,
+                          }}
+                        >
+                          <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
+                            <span className="flex h-full items-center justify-center text-muted-foreground/70">
+                              <PlusIcon className="size-3.5" aria-hidden="true" />
                             </span>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </dl> : null}
+                            <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
+                              {t("property.add")}
+                            </span>
+                          </span>
+                          <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
+                            {t("property.addDescription")}
+                          </span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        data-workspace-detail-add-property-menu="true"
+                        align="start"
+                        className={`${workspaceMenuContentClassName} w-64`}
+                      >
+                        <DropdownMenuLabel className={workspaceMenuLabelClassName}>
+                          {t("property.add")}
+                        </DropdownMenuLabel>
+                        <DropdownMenuGroup>
+                          {propertyTypeOptions.map((option) => (
+                            <DropdownMenuItem
+                              key={option.value}
+                              className={workspaceMenuOptionItemClassName}
+                              onSelect={() => createPropertyFromType(option)}
+                            >
+                              {renderPropertyTypeIcon(option.value)}
+                              <span className="grid min-w-0 gap-0.5">
+                                <span className="truncate font-medium">{option.label}</span>
+                                <span className={workspaceMenuDescriptionClassName}>
+                                  {option.description}
+                                </span>
+                              </span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </dl>
+                ) : null}
                 {hiddenCardProperties.length > 0 ? (
                   <div className="grid gap-2">
                     <div className="workspace-project-detail-hidden-properties-heading workspace-project-detail-heading group/section-heading flex items-center justify-between gap-3 text-sm font-medium">
@@ -1703,9 +1875,15 @@ export function WorkspaceProjectDetailPanel({
                         onClick={() => toggleCardSection("hidden")}
                       >
                         {hiddenPropertiesExpanded ? (
-                          <ChevronDownIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
+                          <ChevronDownIcon
+                            className="absolute -left-4 size-3 shrink-0"
+                            aria-hidden="true"
+                          />
                         ) : (
-                          <ChevronRightIcon className="absolute -left-4 size-3 shrink-0" aria-hidden="true" />
+                          <ChevronRightIcon
+                            className="absolute -left-4 size-3 shrink-0"
+                            aria-hidden="true"
+                          />
                         )}
                         <span className="truncate">{t("view.hiddenProperties")}</span>
                       </button>
@@ -1718,16 +1896,19 @@ export function WorkspaceProjectDetailPanel({
                       >
                         {hiddenCardProperties.map((property) => {
                           const propertyProtected = isProtectedCardProperty(property);
-                          const propertyMenuAvailable = canRenameCardProperty(property)
-                            || canHideCardProperty(property)
-                            || !propertyProtected;
+                          const propertyMenuAvailable =
+                            canRenameCardProperty(property) ||
+                            canHideCardProperty(property) ||
+                            !propertyProtected;
                           const renamingProperty = renamingPropertyId === property.id;
 
                           return (
                             <Popover
                               key={property.id}
                               open={propertyActionsId === property.id}
-                              onOpenChange={(open) => setPropertyActionsId(open ? property.id : null)}
+                              onOpenChange={(open) =>
+                                setPropertyActionsId(open ? property.id : null)
+                              }
                             >
                               <div
                                 data-card-property-row-id={property.id}
@@ -1735,10 +1916,16 @@ export function WorkspaceProjectDetailPanel({
                                 className={[
                                   "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
                                   cardPropertyDrag ? "transition-transform ease-out" : "",
-                                  cardPropertyDrag?.propertyId === property.id ? "bg-muted/40 shadow-sm" : "",
-                                ].filter(Boolean).join(" ")}
+                                  cardPropertyDrag?.propertyId === property.id
+                                    ? "bg-muted/40 shadow-sm"
+                                    : "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
                                 style={{
-                                  gridTemplateColumns: expanded ? "minmax(12rem, 16.5rem) minmax(0, 1fr)" : projectDetailPropertiesGridTemplateColumns,
+                                  gridTemplateColumns: expanded
+                                    ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                                    : projectDetailPropertiesGridTemplateColumns,
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
                                 }}
                               >
@@ -1750,7 +1937,9 @@ export function WorkspaceProjectDetailPanel({
                                         value={renamingPropertyName}
                                         aria-label={t("property.rename")}
                                         className="h-7 min-w-0 flex-1 border-ring bg-background px-1.5 text-sm text-foreground shadow-none"
-                                        onChange={(event) => setRenamingPropertyName(event.target.value)}
+                                        onChange={(event) =>
+                                          setRenamingPropertyName(event.target.value)
+                                        }
                                         onBlur={() => commitRenameProperty(property)}
                                         onKeyDown={(event) => {
                                           if (event.key === "Enter") {
@@ -1768,14 +1957,16 @@ export function WorkspaceProjectDetailPanel({
                                     <PopoverAnchor asChild>
                                       <button
                                         type="button"
-                                        aria-label={t("table.propertyActions", { name: property.name })}
+                                        aria-label={t("table.propertyActions", {
+                                          name: property.name,
+                                        })}
                                         className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
-                                        onPointerDown={(event) => (
+                                        onPointerDown={(event) =>
                                           startCardPropertyDrag(event, property.id, {
                                             group: "hidden",
                                             openActionsOnClick: true,
                                           })
-                                        )}
+                                        }
                                         onClick={(event) => {
                                           event.preventDefault();
                                           if (suppressCardPropertyClickRef.current) {
@@ -1796,18 +1987,27 @@ export function WorkspaceProjectDetailPanel({
                                         }}
                                       >
                                         <span className="flex h-full items-center justify-center text-muted-foreground/70">
-                                          <GripVerticalIcon className="size-3.5" aria-hidden="true" />
+                                          <GripVerticalIcon
+                                            className="size-3.5"
+                                            aria-hidden="true"
+                                          />
                                         </span>
-                                        <span className="min-w-0 truncate pr-3">{property.name}</span>
+                                        <span className="min-w-0 truncate pr-3">
+                                          {property.name}
+                                        </span>
                                       </button>
                                     </PopoverAnchor>
                                   ) : (
                                     <button
                                       type="button"
-                                      aria-label={t("detail.reorderProperty", { name: property.name })}
+                                      aria-label={t("detail.reorderProperty", {
+                                        name: property.name,
+                                      })}
                                       className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                       onPointerDown={(event) =>
-                                        startCardPropertyDrag(event, property.id, { group: "hidden" })
+                                        startCardPropertyDrag(event, property.id, {
+                                          group: "hidden",
+                                        })
                                       }
                                     >
                                       <span className="flex h-full items-center justify-center text-muted-foreground/70">
@@ -1833,7 +2033,9 @@ export function WorkspaceProjectDetailPanel({
                                   />
                                 </dd>
                               </div>
-                              {propertyMenuAvailable ? renderCardPropertyActionsMenu(property, "show") : null}
+                              {propertyMenuAvailable
+                                ? renderCardPropertyActionsMenu(property, "show")
+                                : null}
                             </Popover>
                           );
                         })}
@@ -1844,7 +2046,10 @@ export function WorkspaceProjectDetailPanel({
               </section>
               <section className="grid gap-2" aria-labelledby="project-file-tree-heading">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 id="project-file-tree-heading" className="workspace-project-detail-heading text-sm font-medium text-foreground">
+                  <h3
+                    id="project-file-tree-heading"
+                    className="workspace-project-detail-heading text-sm font-medium text-foreground"
+                  >
                     {t("detail.fileTree")}
                   </h3>
                   <Badge
@@ -1860,6 +2065,7 @@ export function WorkspaceProjectDetailPanel({
                     <FileTreeNode
                       key={node.id}
                       node={node}
+                      onOpenLocalItem={onOpenLocalItem}
                       expandedFolderIds={expandedFolderIds}
                       onToggleFolder={toggleProjectFileFolder}
                     />

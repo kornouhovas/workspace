@@ -28,7 +28,7 @@ import {
   CopyIcon,
   TableIcon,
   Trash2Icon,
-} from "@/lib/lucide-icons";
+} from "@/lib/workspace-icons";
 import {
   workspaceMenuContentClassName,
   workspaceMenuDangerIconClassName,
@@ -488,11 +488,11 @@ export function WorkspaceViewTabs({
   return (
     <div className="relative flex min-w-0 items-center justify-between gap-1">
       <div className="relative z-40 flex min-w-0 flex-1 items-center gap-0">
-      <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="workspace-tab-scroll min-w-0 max-w-[50%] shrink-0 overflow-x-auto overflow-y-hidden">
+      <Tabs value={projectActive ? "" : activeViewId} onValueChange={onActiveViewChange} className="workspace-tab-scroll min-w-0 max-w-[70%] shrink-0 overflow-x-auto overflow-y-hidden">
         <TabsList
           ref={viewTabListRef}
           aria-label={t("view.actions")}
-          className="!h-10 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none"
+          className="!h-7 w-max max-w-none flex-nowrap justify-start gap-1 rounded-none bg-transparent p-0 shadow-none"
         >
           {views.map((view) => {
             if (editingViewId === view.id) {
@@ -531,7 +531,7 @@ export function WorkspaceViewTabs({
                 title={view.name}
                 aria-label={view.name}
                 className={[
-                  "h-8 max-w-40 min-w-20 flex-none cursor-grab rounded-md px-2 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                  "h-7 max-w-[210px] min-w-0 flex-none cursor-grab rounded-md pl-1.5 pr-2 text-sm font-normal text-muted-foreground transition-transform ease-out active:cursor-grabbing data-active:border-transparent data-active:bg-accent data-active:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
                 ].join(" ")}
                 style={getViewTabDragStyle(view.id)}
                 onPointerDown={(event) => startPointerViewTabDrag(event, view.id)}

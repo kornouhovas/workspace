@@ -1,3 +1,4 @@
+import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,10 +11,30 @@ import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
 import { Button } from "@/components/ui/button";
-import { projectTabsReducer } from "@/workspaceProjectTabs.js";
+import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
 import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  createPaneLayout,
+  paneLayoutReducer,
+  readPaneLayouts,
+  writePaneLayouts,
+} from "@/workspacePaneLayout.js";
+import { WorkspaceSplitTree } from "@/components/workspace/split-tree";
+import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";
+import type { PaneAction } from "@/workspacePaneLayout";
+import {
+  ChromeAction,
+  ChromeIcon,
+  PaneResize,
+  WorkspaceRightPanel,
+} from "@/components/workspace/pane-chrome";
+import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
+import LayoutTwoColumnIcon from "@hugeicons/core-free-icons/LayoutTwoColumnIcon";
+import ArrowExpandIcon from "@hugeicons/core-free-icons/ArrowExpandIcon";
+import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { useI18n } from "@/i18n";
 import {
@@ -21,7 +42,13 @@ import {
   createRendererErrorState,
   resolveRendererErrorState,
 } from "@/i18n/errors.js";
-import { FolderIcon, PanelLeftIcon, PanelRightCloseIcon, SquareIcon, XIcon } from "@/lib/lucide-icons";
+import {
+  FolderIcon,
+  PanelLeftIcon,
+  PanelRightCloseIcon,
+  SquareIcon,
+  XIcon,
+} from "@/lib/workspace-icons";
 import {
   workspaceMockProjection,
   workspaceMockSettings,
@@ -62,10 +89,7 @@ import {
   type WorkspaceListItem,
   type WorkspaceListState,
 } from "@/workspaceCompatibility";
-import {
-  createNextVisiblePropertyIds,
-  createPropertyOrder,
-} from "@/workspaceViewVisibility.js";
+import { createNextVisiblePropertyIds, createPropertyOrder } from "@/workspaceViewVisibility.js";
 import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -80,7 +104,9 @@ function getNameFromPath(path: string) {
   return path.split(/[\\/]/).filter(Boolean).at(-1) || "Workspace";
 }
 
-function normalizeViewPropertyLayout(value: unknown): NonNullable<WorkspaceViewState["propertyLayout"]> | undefined {
+function normalizeViewPropertyLayout(
+  value: unknown,
+): NonNullable<WorkspaceViewState["propertyLayout"]> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -127,42 +153,49 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
   }
 
   const views = Array.isArray(response.views)
-    ? response.views.filter(isRecord).map((view) => ({
-        id: getString(view.id),
-        name: getString(view.name) || "Untitled view",
-        viewType: getString(view.viewType) || "board",
-        visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
-          ? view.visiblePropertyIds.filter((id): id is string => typeof id === "string")
-          : undefined,
-        propertyOrder: isRecord(view.propertyOrder)
-          ? Object.fromEntries(
-              Object.entries(view.propertyOrder)
-                .filter(([, order]) => Number.isFinite(Number(order)))
-                .map(([propertyId, order]) => [propertyId, Number(order)]),
-            )
-          : undefined,
-        valueVisibility: isRecord(view.valueVisibility)
-          ? Object.fromEntries(
-              Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
-                if (!isRecord(setting)) {
-                  return [];
-                }
+    ? response.views
+        .filter(isRecord)
+        .map((view) => ({
+          id: getString(view.id),
+          name: getString(view.name) || "Untitled view",
+          viewType: getString(view.viewType) || "board",
+          visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
+            ? view.visiblePropertyIds.filter((id): id is string => typeof id === "string")
+            : undefined,
+          propertyOrder: isRecord(view.propertyOrder)
+            ? Object.fromEntries(
+                Object.entries(view.propertyOrder)
+                  .filter(([, order]) => Number.isFinite(Number(order)))
+                  .map(([propertyId, order]) => [propertyId, Number(order)]),
+              )
+            : undefined,
+          valueVisibility: isRecord(view.valueVisibility)
+            ? Object.fromEntries(
+                Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
+                  if (!isRecord(setting)) {
+                    return [];
+                  }
 
-                return [[
-                  propertyId,
-                  {
-                    valueIds: Array.isArray(setting.valueIds)
-                      ? setting.valueIds.filter((valueId): valueId is string => typeof valueId === "string")
-                      : [],
-                    includeEmpty: setting.includeEmpty === true,
-                  },
-                ]];
-              }),
-            )
-          : undefined,
-        propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
-        boardLayout: normalizeViewBoardLayout(view.boardLayout),
-      })).filter((view) => view.id)
+                  return [
+                    [
+                      propertyId,
+                      {
+                        valueIds: Array.isArray(setting.valueIds)
+                          ? setting.valueIds.filter(
+                              (valueId): valueId is string => typeof valueId === "string",
+                            )
+                          : [],
+                        includeEmpty: setting.includeEmpty === true,
+                      },
+                    ],
+                  ];
+                }),
+              )
+            : undefined,
+          propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
+          boardLayout: normalizeViewBoardLayout(view.boardLayout),
+        }))
+        .filter((view) => view.id)
     : [];
 
   return {
@@ -180,24 +213,37 @@ function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResp
   return response as WorkspaceProjectionResponse;
 }
 
-function normalizePropertiesResponse(response: unknown, workspaceId: string): WorkspacePropertyCatalogState {
+function normalizePropertiesResponse(
+  response: unknown,
+  workspaceId: string,
+): WorkspacePropertyCatalogState {
   const body = isRecord(response) ? response : {};
   const properties = Array.isArray(body.properties)
-    ? body.properties.filter(isRecord).map(normalizePropertyDefinition).filter((property) => property.id)
+    ? body.properties
+        .filter(isRecord)
+        .map(normalizePropertyDefinition)
+        .filter((property) => property.id)
     : [];
   const selectValues = Array.isArray(body.selectValues)
-    ? body.selectValues.filter(isRecord).map(normalizeSelectValue).filter((value) => value.id && value.propertyId)
+    ? body.selectValues
+        .filter(isRecord)
+        .map(normalizeSelectValue)
+        .filter((value) => value.id && value.propertyId)
     : [];
 
   return {
     workspaceId: getString(body.workspaceId) || workspaceId,
     properties,
     selectValues,
-    usage: isRecord(body.usage) ? body.usage as WorkspacePropertyCatalogState["usage"] : undefined,
+    usage: isRecord(body.usage)
+      ? (body.usage as WorkspacePropertyCatalogState["usage"])
+      : undefined,
   };
 }
 
-function normalizePropertyDefinition(property: Record<string, unknown>): WorkspacePropertyDefinitionState {
+function normalizePropertyDefinition(
+  property: Record<string, unknown>,
+): WorkspacePropertyDefinitionState {
   const propertyType = getString(property.propertyType) || getString(property.type) || "text";
 
   return {
@@ -223,7 +269,9 @@ function normalizeSelectValue(value: Record<string, unknown>): WorkspaceSelectVa
   };
 }
 
-function normalizeProjectFileTreeNode(node: Record<string, unknown>): WorkspaceMockFileTreeNode | null {
+function normalizeProjectFileTreeNode(
+  node: Record<string, unknown>,
+): WorkspaceMockFileTreeNode | null {
   const name = getString(node.name);
   const relativePath = getString(node.relativePath) || getString(node.path);
   if (!name || !relativePath) {
@@ -231,12 +279,13 @@ function normalizeProjectFileTreeNode(node: Record<string, unknown>): WorkspaceM
   }
 
   const kind = node.kind === "file" ? "file" : "folder";
-  const children = kind === "folder" && Array.isArray(node.children)
-    ? node.children
-        .filter(isRecord)
-        .map(normalizeProjectFileTreeNode)
-        .filter((child): child is WorkspaceMockFileTreeNode => child !== null)
-    : undefined;
+  const children =
+    kind === "folder" && Array.isArray(node.children)
+      ? node.children
+          .filter(isRecord)
+          .map(normalizeProjectFileTreeNode)
+          .filter((child): child is WorkspaceMockFileTreeNode => child !== null)
+      : undefined;
 
   return {
     id: getString(node.id) || `${kind}:${relativePath}`,
@@ -256,7 +305,10 @@ function normalizeProjectFileTreeResponse(response: unknown): readonly Workspace
     .filter((node): node is WorkspaceMockFileTreeNode => node !== null);
 }
 
-function removeProjectPropertyValue(project: WorkspaceMockProject, propertyId: string): WorkspaceMockProject {
+function removeProjectPropertyValue(
+  project: WorkspaceMockProject,
+  propertyId: string,
+): WorkspaceMockProject {
   if (!Object.hasOwn(project.propertyValues, propertyId)) {
     return project;
   }
@@ -295,7 +347,6 @@ function removeProjectSelectValue(
     },
   };
 }
-
 
 function normalizeCreatedWorkspaceResponse(
   response: unknown,
@@ -342,7 +393,9 @@ function normalizeCreatedViewResponse(
       name: getString(view.name) || fallbackView.name,
       viewType,
       visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
-        ? view.visiblePropertyIds.filter((propertyId): propertyId is string => typeof propertyId === "string")
+        ? view.visiblePropertyIds.filter(
+            (propertyId): propertyId is string => typeof propertyId === "string",
+          )
         : fallbackView.visiblePropertyIds,
       propertyOrder: isRecord(view.propertyOrder)
         ? Object.fromEntries(
@@ -358,19 +411,24 @@ function normalizeCreatedViewResponse(
                 return [];
               }
 
-              return [[
-                propertyId,
-                {
-                  valueIds: Array.isArray(setting.valueIds)
-                    ? setting.valueIds.filter((valueId): valueId is string => typeof valueId === "string")
-                    : [],
-                  includeEmpty: setting.includeEmpty === true,
-                },
-              ]];
+              return [
+                [
+                  propertyId,
+                  {
+                    valueIds: Array.isArray(setting.valueIds)
+                      ? setting.valueIds.filter(
+                          (valueId): valueId is string => typeof valueId === "string",
+                        )
+                      : [],
+                    includeEmpty: setting.includeEmpty === true,
+                  },
+                ],
+              ];
             }),
           )
         : fallbackView.valueVisibility,
-      propertyLayout: normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
+      propertyLayout:
+        normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
       boardLayout: normalizeViewBoardLayout(view.boardLayout || fallbackView.boardLayout),
     },
   };
@@ -407,7 +465,10 @@ function getFolderRoleStatus(role: WorkspaceFolderRole, childCount: number) {
   return childCount > 0 ? "Contains folders" : "Discovered";
 }
 
-function normalizeFolderRoleNode(node: Record<string, unknown>, depth = 0): WorkspaceFolderRoleNode | null {
+function normalizeFolderRoleNode(
+  node: Record<string, unknown>,
+  depth = 0,
+): WorkspaceFolderRoleNode | null {
   const relativePath = getString(node.path) || getString(node.relativePath);
   const name = getString(node.name) || getNameFromPath(relativePath);
   if (!relativePath && !name) {
@@ -478,7 +539,8 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
 type WorkspaceSurface = "workspace" | "settings";
 
 function createClientDocumentId(prefix: string) {
-  const randomId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const randomId =
+    globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return `${prefix}:${randomId}`;
 }
 
@@ -490,70 +552,253 @@ export default function App() {
     createInitialWorkspaceAppState,
   );
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    try {
+      const saved = window.localStorage.getItem("workspace.theme");
+      return saved === "dark" || saved === "light" ? saved : "system";
+    } catch {
+      return "system";
+    }
+  });
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () =>
+      document.documentElement.classList.toggle(
+        "dark",
+        theme === "dark" || (theme === "system" && media.matches),
+      );
+    apply();
+    media.addEventListener("change", apply);
+    try {
+      window.localStorage.setItem("workspace.theme", theme);
+    } catch {
+      /* An unavailable session store must not block the UI. */
+    }
+    return () => media.removeEventListener("change", apply);
+  }, [theme]);
+
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
   const [activeProjectTabId, setActiveProjectTabId] = useState<string | null>(null);
   const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
-  const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(projectTabsReducer, savedProjectSession.tabs);
+  const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(
+    projectTabsReducer,
+    savedProjectSession.tabs,
+  );
   const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
   const restoreStartupScreen = useRef(true);
   const pendingWorkspaceScreen = useRef<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [paneLayouts, setPaneLayouts] = useState(() => readPaneLayouts(window.localStorage));
+  const [closedProjectTabs, setClosedProjectTabs] = useState<
+    Record<string, (typeof savedProjectSession.tabs)[string]>
+  >({});
   const [workspaceList, setWorkspaceList] = useState<WorkspaceListState>({
     activeWorkspaceId: null,
     workspaces: [],
   });
   const [reloadToken, setReloadToken] = useState(0);
   const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
+  const paneLayout = paneLayouts[projectTabsWorkspaceId] || createPaneLayout();
+  const sidebarCollapsed = paneLayout.sidebarCollapsed;
+  function sendPane(action: PaneAction) {
+    setPaneLayouts((current) => ({
+      ...current,
+      [projectTabsWorkspaceId]: paneLayoutReducer(
+        current[projectTabsWorkspaceId] || createPaneLayout(),
+        action,
+      ),
+    }));
+  }
+  useEffect(() => {
+    writePaneLayouts(window.localStorage, paneLayouts);
+  }, [paneLayouts]);
   const expandedProjectTabs = projectTabsByWorkspace[projectTabsWorkspaceId] || [];
-  const projectExpanded = selectedProject !== null && expandedProjectTabs.some((project) => project.tabId === activeProjectTabId && project.id === selectedProject.id);
+  useEffect(() => {
+    const valid = new Set(expandedProjectTabs.map((tab) => tab.tabId));
+    for (const pane of listWorkspacePanes(paneLayout.tree))
+      if (pane.tabId && !valid.has(pane.tabId))
+        sendPane({ type: "closePane", paneId: pane.paneId });
+  }, [projectTabsByWorkspace, projectTabsWorkspaceId]);
+  const projectExpanded =
+    selectedProject !== null &&
+    expandedProjectTabs.some(
+      (project) => project.tabId === activeProjectTabId && project.id === selectedProject.id,
+    );
 
   useEffect(() => {
-    if (state.status !== "ready" || state.workspaceSwitchPending || pendingWorkspaceScreen.current || restoreStartupScreen.current) return;
+    if (
+      state.status !== "ready" ||
+      state.workspaceSwitchPending ||
+      pendingWorkspaceScreen.current ||
+      restoreStartupScreen.current
+    )
+      return;
     if (activeSurface === "workspace") {
       workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
         viewId: state.activeViewId,
         tabId: projectExpanded ? activeProjectTabId : null,
       });
     }
-    writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
-  }, [projectTabsByWorkspace, projectTabsWorkspaceId, projectExpanded, activeProjectTabId, selectedProject, state.status, state.workspaceSwitchPending, state.activeViewId, activeSurface]);
+    writeProjectSession(
+      window.localStorage,
+      projectTabsByWorkspace,
+      Object.fromEntries(workspaceScreenMemory.current),
+    );
+  }, [
+    projectTabsByWorkspace,
+    projectTabsWorkspaceId,
+    projectExpanded,
+    activeProjectTabId,
+    selectedProject,
+    state.status,
+    state.workspaceSwitchPending,
+    state.activeViewId,
+    activeSurface,
+  ]);
 
   useEffect(() => {
     if (selectedProject) {
-      dispatchProjectTabs({ type: "update", workspaceId: projectTabsWorkspaceId, project: selectedProject });
+      dispatchProjectTabs({
+        type: "update",
+        workspaceId: projectTabsWorkspaceId,
+        project: selectedProject,
+      });
     }
   }, [selectedProject, projectTabsWorkspaceId]);
 
   function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
+    const existing = !afterTabId && expandedProjectTabs.find((tab) => tab.id === project.id);
+    if (existing) {
+      handleProjectOpen(project, existing.tabId);
+      return existing.tabId;
+    }
     const tabId = createClientDocumentId("project-tab");
-    dispatchProjectTabs({ type: "expand", workspaceId: projectTabsWorkspaceId, project, tabId, afterTabId });
+    dispatchProjectTabs({
+      type: "expand",
+      workspaceId: projectTabsWorkspaceId,
+      project,
+      tabId,
+      afterTabId,
+    });
     handleProjectOpen(project, tabId);
+    return tabId;
+  }
+
+  function openProjectInSplit(
+    project: WorkspaceMockProject,
+    tabId?: string,
+    target?: string,
+    side: SplitSide | "center" = "right",
+  ) {
+    const identity = tabId || createExpandedProject(project);
+    if (tabId) handleProjectOpen(project, tabId);
+    if (side === "center" && target) {
+      const existing = listWorkspacePanes(paneLayout.tree).find((p) => p.tabId === identity);
+      if (existing) sendPane({ type: "focus", pane: existing.paneId });
+      else sendPane({ type: "replacePane", paneId: target, tabId: identity });
+    } else
+      sendPane({
+        type: "split",
+        tabId: identity,
+        target,
+        paneId: createClientDocumentId("pane"),
+        side: side === "center" ? "right" : side,
+      });
+  }
+  function closeLayoutPane(paneId: string) {
+    const panes = listWorkspacePanes(paneLayout.tree);
+    const closed = panes.find((p) => p.paneId === paneId);
+    if (panes.length < 2) return;
+    sendPane({ type: "closePane", paneId });
+    if (paneLayout.focused === paneId || (closed?.tabId && activeProjectTabId === closed.tabId)) {
+      const remaining = panes.filter((p) => p.paneId !== paneId);
+      const next =
+        remaining[
+          Math.min(
+            panes.findIndex((p) => p.paneId === paneId),
+            remaining.length - 1,
+          )
+        ];
+      requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLElement>(`[data-pane-id="${CSS.escape(next.paneId)}"]`)
+          ?.focus({ preventScroll: true }),
+      );
+      const project = expandedProjectTabs.find((p) => p.tabId === next.tabId);
+      if (project) handleProjectOpen(project, project.tabId);
+      else {
+        setSelectedProject(null);
+        setActiveProjectTabId(null);
+      }
+    }
   }
 
   function toggleProjectExpanded() {
     if (!selectedProject) return;
     if (projectExpanded && activeProjectTabId) {
-      dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: activeProjectTabId });
+      dispatchProjectTabs({
+        type: "remove",
+        workspaceId: projectTabsWorkspaceId,
+        tabId: activeProjectTabId,
+      });
       setActiveProjectTabId(null);
     } else {
       createExpandedProject(selectedProject);
     }
   }
 
-  function closeProjectTab(tabId: string) {
-    const index = expandedProjectTabs.findIndex((tab) => tab.tabId === tabId);
-    if (index < 0) return;
-    const previousTab = expandedProjectTabs[index - 1];
-    dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId });
-    if (activeProjectTabId !== tabId) return;
-    if (selectedProject && previousTab) {
-      handleProjectOpen(previousTab, previousTab.tabId);
-      return;
+  function closeProjectTabs(tabIds: readonly string[]) {
+    const closed = expandedProjectTabs.filter((tab) => tabIds.includes(tab.tabId));
+    if (!closed.length) return;
+    const fallback = projectTabCloseSelection(expandedProjectTabs, activeProjectTabId, tabIds);
+    setClosedProjectTabs((current) => ({
+      ...current,
+      [projectTabsWorkspaceId]: [...(current[projectTabsWorkspaceId] || []), ...closed].slice(-20),
+    }));
+    for (const pane of listWorkspacePanes(paneLayout.tree))
+      if (pane.tabId && tabIds.includes(pane.tabId))
+        sendPane({ type: "closePane", paneId: pane.paneId });
+    for (const tab of closed)
+      dispatchProjectTabs({
+        type: "remove",
+        workspaceId: projectTabsWorkspaceId,
+        tabId: tab.tabId,
+      });
+    if (!activeProjectTabId || !tabIds.includes(activeProjectTabId)) return;
+    if (fallback) handleProjectOpen(fallback, fallback.tabId);
+    else {
+      setActiveProjectTabId(null);
+      setSelectedProject(null);
+      sendPane({ type: "closeSplit" });
     }
-    setActiveProjectTabId(null);
-    setSelectedProject(null);
+    requestAnimationFrame(() => {
+      const target = fallback
+        ? document.querySelector<HTMLButtonElement>(
+            `[data-project-tab-id="${CSS.escape(fallback.tabId)}"]`,
+          )
+        : document.querySelector<HTMLButtonElement>('[data-view-tab-id][aria-selected="true"]');
+      target?.focus({ preventScroll: true });
+    });
+  }
+  function closeProjectTab(tabId: string) {
+    closeProjectTabs([tabId]);
   }
 
+  function reopenProjectTab() {
+    const closed = closedProjectTabs[projectTabsWorkspaceId] || [];
+    const project = closed.at(-1);
+    if (!project) return;
+    setClosedProjectTabs((current) => ({
+      ...current,
+      [projectTabsWorkspaceId]: closed.slice(0, -1),
+    }));
+    dispatchProjectTabs({
+      type: "expand",
+      workspaceId: projectTabsWorkspaceId,
+      project,
+      tabId: project.tabId,
+    });
+    handleProjectOpen(project, project.tabId);
+  }
   function closeSelectedProject() {
     if (projectExpanded && activeProjectTabId) {
       closeProjectTab(activeProjectTabId);
@@ -561,9 +806,58 @@ export default function App() {
     }
     setActiveProjectTabId(null);
     setSelectedProject(null);
+    sendPane({ type: "closeSplit" });
   }
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [boardViewportWidth, setBoardViewportWidth] = useState(0);
+  useEffect(() => {
+    function keydown(event: KeyboardEvent) {
+      if (event.defaultPrevented || !(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const editing =
+        event.target instanceof Element &&
+        event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
+      if (editing) return;
+      const key = event.key.toLowerCase();
+      if (key === "j") {
+        event.preventDefault();
+        sendPane({ type: "rightToggle" });
+      }
+      if (key === "\\") {
+        event.preventDefault();
+        sendPane({ type: "sidebarToggle" });
+      }
+      if (key === "t" && !event.shiftKey) {
+        event.preventDefault();
+        sendPane({ type: "rightOpen", id: "launcher" });
+      }
+      if (key === "t" && event.shiftKey) {
+        event.preventDefault();
+        if (paneLayout.focused === "right") sendPane({ type: "rightReopen" });
+        else reopenProjectTab();
+      }
+      if (key === "w") {
+        event.preventDefault();
+        const command = focusedPaneCloseCommand(paneLayout, activeProjectTabId, projectExpanded);
+        if (command?.kind === "rightTab") sendPane({ type: "rightClose", id: command.id });
+        else if (command?.kind === "pane") closeLayoutPane(command.id);
+        else if (command?.kind === "projectTab") closeProjectTab(command.id);
+      }
+      if (key === "e" && event.shiftKey) {
+        event.preventDefault();
+        sendPane({ type: "maximize", pane: paneLayout.focused });
+      }
+    }
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, [
+    paneLayout,
+    projectTabsWorkspaceId,
+    selectedProject,
+    activeProjectTabId,
+    expandedProjectTabs,
+    closedProjectTabs,
+  ]);
+
   const [selectingFolder, setSelectingFolder] = useState(false);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
@@ -594,9 +888,14 @@ export default function App() {
     return requestVersion;
   }
 
-  function isCurrentPropertySaveRequest(projectId: string, propertyId: string, requestVersion: number) {
+  function isCurrentPropertySaveRequest(
+    projectId: string,
+    propertyId: string,
+    requestVersion: number,
+  ) {
     return (
-      propertySaveRequestVersionsRef.current.get(createPropertySaveKey(projectId, propertyId)) === requestVersion
+      propertySaveRequestVersionsRef.current.get(createPropertySaveKey(projectId, propertyId)) ===
+      requestVersion
     );
   }
 
@@ -626,22 +925,30 @@ export default function App() {
         const previousWorkspaceId = workspaceIdRef.current;
         dispatch({ type: "rootSelected", root });
 
-        const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] = await Promise.all([
-          workspaceClient.scan({ includeCardChildren: activeSurface === "settings" }),
-          workspaceClient.listViews({ workspaceId: root.workspaceId }),
-          loadWorkspaceList(workspaceClient, root),
-          workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
-        ]);
+        const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] =
+          await Promise.all([
+            workspaceClient.scan({ includeCardChildren: activeSurface === "settings" }),
+            workspaceClient.listViews({ workspaceId: root.workspaceId }),
+            loadWorkspaceList(workspaceClient, root),
+            workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
+          ]);
         const folderRoleTree = normalizeFolderRoleTree(scanResponse);
         const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
-        const propertiesResponse = normalizePropertiesResponse(propertiesRawResponse, root.workspaceId);
-        const requestedActiveViewId = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
-          ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId || viewsResponse.activeViewId
-          : workspaceIdRef.current === root.workspaceId ||
-          previousWorkspaceId === root.workspaceId
-          ? activeViewIdRef.current
-          : null;
-        const requestedViewExists = viewsResponse.views.some((view) => view.id === requestedActiveViewId);
+        const propertiesResponse = normalizePropertiesResponse(
+          propertiesRawResponse,
+          root.workspaceId,
+        );
+        const requestedActiveViewId =
+          restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
+            ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId ||
+              viewsResponse.activeViewId
+            : workspaceIdRef.current === root.workspaceId ||
+                previousWorkspaceId === root.workspaceId
+              ? activeViewIdRef.current
+              : null;
+        const requestedViewExists = viewsResponse.views.some(
+          (view) => view.id === requestedActiveViewId,
+        );
         const activeViewId = requestedViewExists
           ? requestedActiveViewId
           : viewsResponse.activeViewId || viewsResponse.views[0]?.id;
@@ -673,14 +980,19 @@ export default function App() {
             restoreStartupScreen.current = false;
             pendingWorkspaceScreen.current = null;
             const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
-            const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find((item) => item.tabId === tabId);
+            const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
+              (item) => item.tabId === tabId,
+            );
             const projectId = cachedProject?.id;
-            const projects = projectionResponse.projection.type === "board"
-              ? projectionResponse.projection.columns.flatMap((column) => column.projects)
-              : projectionResponse.projection.rows;
+            const projects =
+              projectionResponse.projection.type === "board"
+                ? projectionResponse.projection.columns.flatMap((column) => column.projects)
+                : projectionResponse.projection.rows;
             const freshProject = projects.find((item) => isRecord(item) && item.id === projectId);
-            const project = cachedProject && isRecord(freshProject)
-              ? { ...cachedProject, ...freshProject } as WorkspaceMockProject : cachedProject;
+            const project =
+              cachedProject && isRecord(freshProject)
+                ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
+                : cachedProject;
             setActiveProjectTabId(project ? tabId || null : null);
             setSelectedProject(project || null);
             if (project) void loadProjectFileTree(project, root.workspaceId);
@@ -727,11 +1039,9 @@ export default function App() {
       !state.workspaceId ||
       !state.activeViewId ||
       !state.root ||
-      (
-        state.projection?.workspaceId === state.workspaceId &&
+      (state.projection?.workspaceId === state.workspaceId &&
         state.projection.view.id === state.activeViewId &&
-        !state.projectionRefreshing
-      )
+        !state.projectionRefreshing)
     ) {
       return;
     }
@@ -822,9 +1132,7 @@ export default function App() {
           return {
             activeWorkspaceId,
             workspaces: existing
-              ? current.workspaces.map((item) => (
-                  item.id === workspace.id ? workspace : item
-                ))
+              ? current.workspaces.map((item) => (item.id === workspace.id ? workspace : item))
               : [...current.workspaces, workspace],
           };
         });
@@ -911,10 +1219,13 @@ export default function App() {
   async function handleDeleteWorkspace(workspaceId: string) {
     try {
       const response = await workspaceClient.deleteWorkspace({ workspaceId });
-      const responseActiveWorkspaceId = isRecord(response) ? getString(response.activeWorkspaceId) : "";
+      const responseActiveWorkspaceId = isRecord(response)
+        ? getString(response.activeWorkspaceId)
+        : "";
       const currentActiveWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
       const wasActiveWorkspace = workspaceId === currentActiveWorkspaceId;
-      const fallbackActiveWorkspaceId = workspaceList.workspaces.find((workspace) => workspace.id !== workspaceId)?.id || null;
+      const fallbackActiveWorkspaceId =
+        workspaceList.workspaces.find((workspace) => workspace.id !== workspaceId)?.id || null;
       const nextActiveWorkspaceId = responseActiveWorkspaceId || fallbackActiveWorkspaceId;
 
       setWorkspaceList((current) => {
@@ -946,9 +1257,9 @@ export default function App() {
   async function handleReorderWorkspaces(orderedWorkspaceIds: readonly string[]) {
     const currentWorkspaceIds = workspaceList.workspaces.map((workspace) => workspace.id);
     const currentWorkspaceIdSet = new Set(currentWorkspaceIds);
-    const nextOrderedWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) => (
-      currentWorkspaceIdSet.has(workspaceId)
-    ));
+    const nextOrderedWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) =>
+      currentWorkspaceIdSet.has(workspaceId),
+    );
 
     for (const workspaceId of currentWorkspaceIds) {
       if (!nextOrderedWorkspaceIds.includes(workspaceId)) {
@@ -1018,12 +1329,17 @@ export default function App() {
   const duplicatingViewRef = useRef(false);
   async function handleDuplicateView(sourceId: string) {
     if (!state.workspaceId || duplicatingViewRef.current) return;
-    const source = state.views.find(view => view.id === sourceId);
+    const source = state.views.find((view) => view.id === sourceId);
     if (!source) return;
     const workspaceId = state.workspaceId;
     duplicatingViewRef.current = true;
     try {
-      const viewId = await duplicateWorkspaceView(workspaceClient, workspaceId, sourceId, t("view.copyName", { name: source.name }));
+      const viewId = await duplicateWorkspaceView(
+        workspaceClient,
+        workspaceId,
+        sourceId,
+        t("view.copyName", { name: source.name }),
+      );
       if (workspaceIdRef.current !== workspaceId) return;
       setSelectedProject(null);
       setActiveProjectTabId(null);
@@ -1031,7 +1347,7 @@ export default function App() {
       await refreshActiveViewAfterPatch(viewId);
     } catch (error) {
       toast.error(t("view.duplicateFailed"), { description: getServiceErrorMessage(error, t) });
-      if (workspaceIdRef.current === workspaceId) setReloadToken(value => value + 1);
+      if (workspaceIdRef.current === workspaceId) setReloadToken((value) => value + 1);
     } finally {
       duplicatingViewRef.current = false;
     }
@@ -1182,17 +1498,21 @@ export default function App() {
 
     const activeViewId = state.activeViewId;
     const activeView = getActiveViewState();
-    const currentVisiblePropertyIds = activeView?.visiblePropertyIds
-      || state.projection?.visibleProperties.map((property) => property.id)
-      || ["property:name", "property:status"];
+    const currentVisiblePropertyIds = activeView?.visiblePropertyIds ||
+      state.projection?.visibleProperties.map((property) => property.id) || [
+        "property:name",
+        "property:status",
+      ];
     const nextVisiblePropertyIds = createNextVisiblePropertyIds({
       currentVisiblePropertyIds,
-      fallbackVisiblePropertyIds: state.projection?.visibleProperties.map((property) => property.id) || [],
+      fallbackVisiblePropertyIds:
+        state.projection?.visibleProperties.map((property) => property.id) || [],
       availablePropertyIds: settingsProperties.map((property) => property.id),
       propertyId,
       visible,
     });
-    const previousPropertyOrder = activeView?.propertyOrder || createPropertyOrder(currentVisiblePropertyIds);
+    const previousPropertyOrder =
+      activeView?.propertyOrder || createPropertyOrder(currentVisiblePropertyIds);
     const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
 
     try {
@@ -1202,12 +1522,15 @@ export default function App() {
         visiblePropertyIds: nextVisiblePropertyIds,
         propertyOrder,
       });
-      await updateActiveViewPatch({
-        visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder,
-      }, {
-        refreshProjection: false,
-      });
+      await updateActiveViewPatch(
+        {
+          visiblePropertyIds: nextVisiblePropertyIds,
+          propertyOrder,
+        },
+        {
+          refreshProjection: false,
+        },
+      );
     } catch (error) {
       dispatch({
         type: "viewPropertiesUpdated",
@@ -1332,7 +1655,9 @@ export default function App() {
       dispatch({
         type: "viewBoardLayoutUpdated",
         viewId: activeViewId,
-        boardLayout: { columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT) },
+        boardLayout: {
+          columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT),
+        },
       });
       toast.error(t("toast.boardWidthFailed"), {
         description: getServiceErrorMessage(error, t),
@@ -1348,10 +1673,13 @@ export default function App() {
     const activeViewId = state.activeViewId;
     const nextVisiblePropertyIds = [...new Set(orderedPropertyIds)];
     const activeView = getActiveViewState();
-    const previousVisiblePropertyIds = activeView?.visiblePropertyIds
-      || state.projection?.visibleProperties.map((property) => property.id)
-      || ["property:name", "property:status"];
-    const previousPropertyOrder = activeView?.propertyOrder || createPropertyOrder(previousVisiblePropertyIds);
+    const previousVisiblePropertyIds = activeView?.visiblePropertyIds ||
+      state.projection?.visibleProperties.map((property) => property.id) || [
+        "property:name",
+        "property:status",
+      ];
+    const previousPropertyOrder =
+      activeView?.propertyOrder || createPropertyOrder(previousVisiblePropertyIds);
     const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
 
     try {
@@ -1361,12 +1689,15 @@ export default function App() {
         visiblePropertyIds: nextVisiblePropertyIds,
         propertyOrder,
       });
-      await updateActiveViewPatch({
-        visiblePropertyIds: nextVisiblePropertyIds,
-        propertyOrder,
-      }, {
-        refreshProjection: false,
-      });
+      await updateActiveViewPatch(
+        {
+          visiblePropertyIds: nextVisiblePropertyIds,
+          propertyOrder,
+        },
+        {
+          refreshProjection: false,
+        },
+      );
     } catch (error) {
       dispatch({
         type: "viewPropertiesUpdated",
@@ -1380,7 +1711,10 @@ export default function App() {
     }
   }
 
-  async function handleCreateVisibleProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
+  async function handleCreateVisibleProperty(input: {
+    name: string;
+    type: WorkspaceCustomPropertyType;
+  }) {
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredProperties"));
       return;
@@ -1393,9 +1727,10 @@ export default function App() {
         name: input.name,
         type: input.type,
       });
-      const property = isRecord(response) && isRecord(response.property)
-        ? normalizePropertyDefinition(response.property)
-        : null;
+      const property =
+        isRecord(response) && isRecord(response.property)
+          ? normalizePropertyDefinition(response.property)
+          : null;
 
       await refreshPropertyCatalog();
 
@@ -1405,9 +1740,9 @@ export default function App() {
           ...new Set([
             "property:name",
             "property:status",
-            ...(activeView?.visiblePropertyIds
-              || state.projection?.visibleProperties.map((item) => item.id)
-              || []),
+            ...(activeView?.visiblePropertyIds ||
+              state.projection?.visibleProperties.map((item) => item.id) ||
+              []),
           ]),
         ];
         const nextVisiblePropertyIds = [...new Set([...currentVisiblePropertyIds, property.id])];
@@ -1538,9 +1873,9 @@ export default function App() {
         confirmDeleteValues: true,
       });
       dispatch({ type: "propertyDeleted", propertyId });
-      setSelectedProject((currentProject) => (
-        currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject
-      ));
+      setSelectedProject((currentProject) =>
+        currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject,
+      );
       await refreshPropertyCatalog();
       toast.success(t("toast.propertyDeleted"));
     } catch (error) {
@@ -1584,9 +1919,10 @@ export default function App() {
         name: input.name,
         color: input.color,
       });
-      const selectValue = isRecord(response) && isRecord(response.selectValue)
-        ? normalizeSelectValue(response.selectValue)
-        : null;
+      const selectValue =
+        isRecord(response) && isRecord(response.selectValue)
+          ? normalizeSelectValue(response.selectValue)
+          : null;
       await refreshPropertyCatalog();
       toast.success(t("toast.valueCreated"));
       return selectValue;
@@ -1683,7 +2019,8 @@ export default function App() {
       return;
     }
 
-    const selectValue = state.propertyCatalog?.selectValues.find((value) => value.id === selectValueId) || null;
+    const selectValue =
+      state.propertyCatalog?.selectValues.find((value) => value.id === selectValueId) || null;
 
     try {
       await workspaceClient.deleteSelectValue({
@@ -1692,11 +2029,11 @@ export default function App() {
         confirmDeleteUsages: true,
       });
       if (selectValue) {
-        setSelectedProject((currentProject) => (
+        setSelectedProject((currentProject) =>
           currentProject
             ? removeProjectSelectValue(currentProject, selectValue.propertyId, selectValue.id)
-            : currentProject
-        ));
+            : currentProject,
+        );
       }
       await refreshPropertyCatalog();
       setReloadToken((value) => value + 1);
@@ -1708,7 +2045,10 @@ export default function App() {
     }
   }
 
-  async function handleReorderSelectValues(propertyId: string, orderedSelectValueIds: readonly string[]) {
+  async function handleReorderSelectValues(
+    propertyId: string,
+    orderedSelectValueIds: readonly string[],
+  ) {
     if (!state.workspaceId) {
       return;
     }
@@ -1727,7 +2067,11 @@ export default function App() {
     }
   }
 
-  async function handleProjectPropertyValueChange(projectId: string, propertyId: string, value: unknown) {
+  async function handleProjectPropertyValueChange(
+    projectId: string,
+    propertyId: string,
+    value: unknown,
+  ) {
     if (!state.workspaceId) {
       return;
     }
@@ -1747,9 +2091,8 @@ export default function App() {
         propertyId,
         value,
       });
-      const savedValue = isRecord(response) && Object.hasOwn(response, "value")
-        ? response.value
-        : value;
+      const savedValue =
+        isRecord(response) && Object.hasOwn(response, "value") ? response.value : value;
       dispatch({
         type: "projectPropertyValueUpdated",
         projectId,
@@ -1758,8 +2101,14 @@ export default function App() {
         requestVersion,
       });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
-        dispatchProjectTabs({ type: "valueSaved", workspaceId: projectTabsWorkspaceId, projectId, propertyId, value: savedValue });
-        setSelectedProject((currentProject) => (
+        dispatchProjectTabs({
+          type: "valueSaved",
+          workspaceId: projectTabsWorkspaceId,
+          projectId,
+          propertyId,
+          value: savedValue,
+        });
+        setSelectedProject((currentProject) =>
           currentProject?.id === projectId
             ? {
                 ...currentProject,
@@ -1768,12 +2117,18 @@ export default function App() {
                   [propertyId]: savedValue,
                 },
               }
-            : currentProject
-        ));
+            : currentProject,
+        );
       }
     } catch (error) {
       const message = getServiceErrorMessage(error, t);
-      dispatch({ type: "propertySaveFailed", error: message, projectId, propertyId, requestVersion });
+      dispatch({
+        type: "propertySaveFailed",
+        error: message,
+        projectId,
+        propertyId,
+        requestVersion,
+      });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
         toast.error(t("toast.propertySaveFailed"), {
           description: message,
@@ -1782,15 +2137,19 @@ export default function App() {
     }
   }
 
-  async function loadProjectFileTree(project: WorkspaceMockProject, requestWorkspaceId = state.workspaceId) {
+  async function loadProjectFileTree(
+    project: WorkspaceMockProject,
+    requestWorkspaceId = state.workspaceId,
+  ) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
         await workspaceClient.listProjectFileTree({ path: project.currentRelativePath }),
       );
-      setSelectedProject((currentProject) => (
+      setSelectedProject((currentProject) =>
         workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id
-          ? { ...currentProject, fileTree } : currentProject
-      ));
+          ? { ...currentProject, fileTree }
+          : currentProject,
+      );
     } catch (error) {
       toast.error(t("toast.fileTreeLoadFailed"), {
         description: getServiceErrorMessage(error, t),
@@ -1811,28 +2170,45 @@ export default function App() {
   }
 
   function openWorkspaceSurface() {
+    sendPane({ type: "showWorkspace" });
     setActiveSurface("workspace");
   }
 
   function openSettingsSurface() {
+    sendPane({ type: "showWorkspace" });
+    setActiveProjectTabId(null);
     setSelectedProject(null);
     setActiveSurface("settings");
   }
 
   const shouldUseMockViews = !state.root && !state.workspaceId;
   const viewState = {
-    activeViewId: state.activeViewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
-    views: state.views.length > 0 ? state.views : shouldUseMockViews ? workspaceMockProjection.views : [],
+    activeViewId:
+      state.activeViewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
+    views:
+      state.views.length > 0
+        ? state.views
+        : shouldUseMockViews
+          ? workspaceMockProjection.views
+          : [],
   };
-  const navigationWorkspaces = workspaceList.workspaces.length > 0
-    ? workspaceList.workspaces
-    : state.root
-      ? [{ id: state.workspaceId || state.root.workspaceId, name: state.root.name || "Workspace", order: 10 }]
-      : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
+  const navigationWorkspaces =
+    workspaceList.workspaces.length > 0
+      ? workspaceList.workspaces
+      : state.root
+        ? [
+            {
+              id: state.workspaceId || state.root.workspaceId,
+              name: state.root.name || "Workspace",
+              order: 10,
+            },
+          ]
+        : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
   const currentWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
-  const currentWorkspaceName = navigationWorkspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name
-    || navigationWorkspaces[0]?.name
-    || "Workspace";
+  const currentWorkspaceName =
+    navigationWorkspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name ||
+    navigationWorkspaces[0]?.name ||
+    "Workspace";
   const sourceFolder = state.root
     ? {
         name: state.root.name,
@@ -1840,55 +2216,63 @@ export default function App() {
         state: "connected",
       }
     : workspaceMockSettings.sourceFolder;
-  const serviceProjection = useMemo(
-    () => {
-      if (!state.projection) {
-        return null;
-      }
+  const serviceProjection = useMemo(() => {
+    if (!state.projection) {
+      return null;
+    }
 
-      const projectionMatchesActiveWorkspace = state.projection.workspaceId === state.workspaceId &&
-        state.projection.view.id === state.activeViewId;
-      const projectionIsStaleWorkspaceSurface = state.workspaceSwitchPending &&
-        state.projection.workspaceId !== state.workspaceId;
+    const projectionMatchesActiveWorkspace =
+      state.projection.workspaceId === state.workspaceId &&
+      state.projection.view.id === state.activeViewId;
+    const projectionIsStaleWorkspaceSurface =
+      state.workspaceSwitchPending && state.projection.workspaceId !== state.workspaceId;
 
-      if (!projectionMatchesActiveWorkspace && !projectionIsStaleWorkspaceSurface) {
-        return null;
-      }
+    if (!projectionMatchesActiveWorkspace && !projectionIsStaleWorkspaceSurface) {
+      return null;
+    }
 
-      return filterWorkspaceProjectionBySearch(state.projection, state.searchQuery);
-    },
-    [state.activeViewId, state.projection, state.searchQuery, state.workspaceId, state.workspaceSwitchPending],
-  );
+    return filterWorkspaceProjectionBySearch(state.projection, state.searchQuery);
+  }, [
+    state.activeViewId,
+    state.projection,
+    state.searchQuery,
+    state.workspaceId,
+    state.workspaceSwitchPending,
+  ]);
   const mockBoardProjectionResponse = useMemo(
-    () => filterWorkspaceProjectionBySearch(
-      workspaceMockProjection as unknown as WorkspaceProjectionResponse,
-      state.searchQuery,
-    ),
+    () =>
+      filterWorkspaceProjectionBySearch(
+        workspaceMockProjection as unknown as WorkspaceProjectionResponse,
+        state.searchQuery,
+      ),
     [state.searchQuery],
   );
   const mockTableProjectionResponse = useMemo(
-    () => filterWorkspaceProjectionBySearch(
-      {
-        ...workspaceMockProjection,
-        view: workspaceMockProjection.tableView,
-        projection: workspaceMockProjection.tableProjection,
-      } as unknown as WorkspaceProjectionResponse,
-      state.searchQuery,
-    ),
+    () =>
+      filterWorkspaceProjectionBySearch(
+        {
+          ...workspaceMockProjection,
+          view: workspaceMockProjection.tableView,
+          projection: workspaceMockProjection.tableProjection,
+        } as unknown as WorkspaceProjectionResponse,
+        state.searchQuery,
+      ),
     [state.searchQuery],
   );
   const activeView = viewState.views.find((view) => view.id === viewState.activeViewId) as
     | WorkspaceViewState
     | undefined;
-  const activeViewType = serviceProjection?.projection.type === "table"
-    ? "table"
-    : serviceProjection?.projection.type === "board"
-      ? "board"
-      : activeView?.viewType === "table" ? "table" : "board";
+  const activeViewType =
+    serviceProjection?.projection.type === "table"
+      ? "table"
+      : serviceProjection?.projection.type === "board"
+        ? "board"
+        : activeView?.viewType === "table"
+          ? "table"
+          : "board";
   const visibleProperties =
     serviceProjection?.visibleProperties ?? workspaceMockProjection.visibleProperties;
-  const statusValues =
-    serviceProjection?.statusValues ?? workspaceMockProjection.statusValues;
+  const statusValues = serviceProjection?.statusValues ?? workspaceMockProjection.statusValues;
   const boardProjection =
     serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
@@ -1901,34 +2285,407 @@ export default function App() {
   const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
   const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
   const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
-  const isWorkspaceSwitchPendingSurface = activeSurface === "workspace" &&
+  const isWorkspaceSwitchPendingSurface =
+    activeSurface === "workspace" &&
     state.workspaceSwitchPending &&
     serviceProjection !== null &&
     serviceProjection.workspaceId !== state.workspaceId;
   const shouldShowWorkspaceLoadingState =
-    (
-      state.status === "loading" ||
-      state.status === "idle" ||
-      (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection)
-    );
-  const searchHasNoResults = state.searchQuery.trim().length > 0 && (
-    activeViewType === "board"
-      ? boardProjection.type === "board" && boardProjection.columns.every((column) => column.projects.length === 0)
-      : tableProjection.type === "table" && tableProjection.rows.length === 0
+    state.status === "loading" ||
+    state.status === "idle" ||
+    (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection);
+  const searchHasNoResults =
+    state.searchQuery.trim().length > 0 &&
+    (activeViewType === "board"
+      ? boardProjection.type === "board" &&
+        boardProjection.columns.every((column) => column.projects.length === 0)
+      : tableProjection.type === "table" && tableProjection.rows.length === 0);
+
+  const renderDetailPanel = (
+    project = selectedProject,
+    onClose = closeSelectedProject,
+    keyboardActive = paneLayout.focused === "workspace" || paneLayout.focused === "right",
+  ) => (
+    <WorkspaceProjectDetailPanel
+      inline
+      keyboardActive={keyboardActive}
+      expanded={projectExpanded}
+      sidebarCollapsed={sidebarCollapsed}
+      open={project !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      project={project}
+      visibleProperties={detailProperties}
+      selectValues={settingsSelectValues}
+      onProjectPropertyValueChange={handleProjectPropertyValueChange}
+      onCreateSelectValue={handleCreateSelectValue}
+      onRenameSelectValue={handleRenameSelectValue}
+      onColorSelectValue={handleColorSelectValue}
+      onDeleteSelectValue={handleDeleteSelectValue}
+      onCreateProperty={handleCreateVisibleProperty}
+      onRenameProperty={handleRenameProperty}
+      onHideProperty={handleHideProperty}
+      onDeleteProperty={handleDeleteProperty}
+      onOpenLocalItem={(node) => {
+        void workspaceClient
+          .reveal({ kind: node.kind === "folder" ? "directory" : "file", path: node.relativePath })
+          .catch((error) =>
+            toast.error(t("toast.previewUnavailable"), {
+              description: getServiceErrorMessage(error, t),
+            }),
+          );
+      }}
+    />
+  );
+  const detailPanel = renderDetailPanel();
+  const navigationPanel = (
+    <nav className="bb-navigation" aria-label={t("chrome.navigation")}>
+      <p className="bb-navigation-heading">
+        {listWorkspacePanes(paneLayout.tree).some(
+          (p) => p.paneId === paneLayout.focused && p.tabId,
+        ) && selectedProject
+          ? selectedProject.name
+          : currentWorkspaceName}
+      </p>
+      {viewState.views.map((view) => (
+        <button
+          type="button"
+          key={view.id}
+          className="bb-navigation-row"
+          onClick={() => {
+            setSelectedProject(null);
+            setActiveProjectTabId(null);
+            setActiveSurface("workspace");
+            sendPane({ type: "showWorkspace" });
+            dispatch({ type: "activeViewChanged", activeViewId: view.id });
+          }}
+        >
+          <FolderIcon className="size-4" aria-hidden="true" />
+          {view.name}
+        </button>
+      ))}
+      <button type="button" className="bb-navigation-row" onClick={openSettingsSurface}>
+        {t("sidebar.settings")}
+      </button>
+    </nav>
+  );
+
+  const primaryPane = (
+    <main
+      onFocusCapture={() => sendPane({ type: "focus", pane: "workspace" })}
+      data-testid="workspace-main"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+    >
+      <header
+        className={[
+          "electron-window-drag flex h-[var(--workspace-header-height)] shrink-0 items-center gap-2 border-b border-border pr-4",
+          sidebarCollapsed ? "pl-32" : "pl-4",
+        ].join(" ")}
+      >
+        {activeSurface !== "settings" ? (
+          <div
+            aria-busy={isWorkspaceSwitchPendingSurface || undefined}
+            inert={isWorkspaceSwitchPendingSurface || undefined}
+            className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
+          >
+            <WorkspaceViewTabs
+              projectActive={projectExpanded && !paneLayout.split}
+              projectActions={
+                selectedProject && !paneLayout.split ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="workspace-top-action"
+                      aria-label={t(projectExpanded ? "detail.restore" : "detail.expand")}
+                      title={t(projectExpanded ? "detail.restore" : "detail.expand")}
+                      onClick={toggleProjectExpanded}
+                    >
+                      {projectExpanded ? (
+                        <PanelRightCloseIcon className="size-4" aria-hidden="true" />
+                      ) : (
+                        <SquareIcon className="size-4" aria-hidden="true" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="workspace-top-action"
+                      aria-label={t("detail.close")}
+                      title={t("detail.close")}
+                      onClick={closeSelectedProject}
+                    >
+                      <XIcon className="size-4" aria-hidden="true" />
+                    </Button>
+                  </>
+                ) : null
+              }
+              onShowView={() => setSelectedProject(null)}
+              actionsHidden={selectedProject !== null && !paneLayout.split}
+              projectTabs={
+                <WorkspaceProjectTabs
+                  key={projectTabsWorkspaceId}
+                  projects={expandedProjectTabs}
+                  activeProjectId={
+                    projectExpanded && !paneLayout.split ? activeProjectTabId || "" : ""
+                  }
+                  onSelect={(id) => {
+                    const project = expandedProjectTabs.find((item) => item.tabId === id);
+                    if (project) handleProjectOpen(project, id);
+                  }}
+                  onDuplicate={(id) => {
+                    const project = expandedProjectTabs.find((item) => item.tabId === id);
+                    if (project) createExpandedProject(project, id);
+                  }}
+                  onRestore={(id) => {
+                    const project = expandedProjectTabs.find((item) => item.tabId === id);
+                    dispatchProjectTabs({
+                      type: "remove",
+                      workspaceId: projectTabsWorkspaceId,
+                      tabId: id,
+                    });
+                    if (project) handleProjectOpen(project);
+                  }}
+                  onClose={closeProjectTab}
+                  onSplit={(id, target, side) => {
+                    const project = expandedProjectTabs.find((p) => p.tabId === id);
+                    if (project) {
+                      openProjectInSplit(project, id, target, side);
+                    }
+                  }}
+                  onCloseOthers={(id) => {
+                    closeProjectTabs(
+                      expandedProjectTabs.filter((p) => p.tabId !== id).map((p) => p.tabId),
+                    );
+                    const project = expandedProjectTabs.find((p) => p.tabId === id);
+                    if (project) handleProjectOpen(project, id);
+                  }}
+                  onCloseAfter={(id) =>
+                    closeProjectTabs(
+                      expandedProjectTabs
+                        .slice(expandedProjectTabs.findIndex((p) => p.tabId === id) + 1)
+                        .map((p) => p.tabId),
+                    )
+                  }
+                  onReopen={reopenProjectTab}
+                  canReopen={!!closedProjectTabs[projectTabsWorkspaceId]?.length}
+                  onReorder={(tabIds) =>
+                    dispatchProjectTabs({
+                      type: "reorder",
+                      workspaceId: projectTabsWorkspaceId,
+                      tabIds,
+                    })
+                  }
+                />
+              }
+              activeViewId={viewState.activeViewId}
+              views={viewState.views}
+              onActiveViewChange={(activeViewId) => {
+                setSelectedProject(null);
+                dispatch({ type: "activeViewChanged", activeViewId });
+                if (state.workspaceId) {
+                  void workspaceClient
+                    .setActiveView({
+                      workspaceId: state.workspaceId,
+                      viewId: activeViewId,
+                    })
+                    .catch((error: unknown) => {
+                      toast.error(t("toast.activeViewSaveFailed"), {
+                        description: getServiceErrorMessage(error, t),
+                      });
+                    });
+                }
+              }}
+              onCreateView={handleCreateView}
+              onDuplicateView={handleDuplicateView}
+              onRenameView={handleRenameView}
+              onDeleteView={handleDeleteView}
+              onReorderViews={handleReorderViews}
+              dismissSignal={workspaceFloatingDismissToken}
+              properties={settingsProperties}
+              selectValues={settingsSelectValues}
+              statusValues={statusValues}
+              onTogglePropertyVisibility={handleTogglePropertyVisibility}
+              onToggleValueFilter={handleToggleValueFilter}
+              boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
+              onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
+              onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
+              onReorderViewProperties={handleReorderViewProperties}
+              onRenameProperty={handleRenameProperty}
+              onDeleteProperty={handleDeleteProperty}
+            />
+          </div>
+        ) : null}
+        {activeSurface === "settings" ? (
+          <div className="electron-window-no-drag flex min-w-0 flex-1 items-center justify-between gap-3">
+            <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="workspace-top-action"
+              onClick={openWorkspaceSurface}
+            >
+              {t("settings.back")}
+            </Button>
+          </div>
+        ) : null}
+        {(paneLayout.split || paneLayout.maximized === "workspace") && (
+          <ChromeAction
+            label={t(
+              paneLayout.maximized === "workspace" ? "chrome.restoreSplit" : "chrome.maximize",
+            )}
+            onClick={() => sendPane({ type: "maximize", pane: "workspace" })}
+          >
+            <ChromeIcon icon={ArrowExpandIcon} />
+          </ChromeAction>
+        )}
+        {paneLayout.split && (
+          <ChromeAction label={t("chrome.closePane")} onClick={() => closeLayoutPane("workspace")}>
+            <ChromeIcon icon={Cancel01Icon} />
+          </ChromeAction>
+        )}
+        <ChromeAction
+          label={t("chrome.showRight")}
+          onClick={() => sendPane({ type: "rightToggle" })}
+        >
+          <ChromeIcon icon={SidebarRightIcon} />
+        </ChromeAction>
+        {selectedProject && !paneLayout.split && (
+          <ChromeAction
+            label={t("chrome.openInSplit")}
+            onClick={() => {
+              if (selectedProject)
+                openProjectInSplit(selectedProject, activeProjectTabId || undefined);
+            }}
+          >
+            <ChromeIcon icon={LayoutTwoColumnIcon} />
+          </ChromeAction>
+        )}
+      </header>
+      {projectExpanded && !paneLayout.split ? (
+        detailPanel
+      ) : activeSurface === "settings" ? (
+        <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
+          {state.status === "loading" || state.status === "idle" ? (
+            <WorkspaceLoadingState />
+          ) : (
+            <>
+              <WorkspaceServiceError state={state} />
+              <WorkspaceSettingsView
+                theme={theme}
+                onThemeChange={setTheme}
+                sourceFolder={sourceFolder}
+                folderRoleTree={folderRoleTree}
+                statusValues={statusValues}
+                selectValues={settingsSelectValues}
+                onSelectFolder={handleSelectFolder}
+                onFolderRoleChange={handleFolderRoleChange}
+                onColorStatusValue={handleColorStatusValue}
+                selectingFolder={selectingFolder}
+              />
+            </>
+          )}
+        </div>
+      ) : (
+        <div
+          aria-busy={isWorkspaceSwitchPendingSurface || undefined}
+          className={[
+            "electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden",
+            isWorkspaceSwitchPendingSurface ? "pointer-events-none select-none" : "",
+          ].join(" ")}
+        >
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {shouldShowWorkspaceLoadingState ? (
+              <WorkspaceLoadingState />
+            ) : state.sourceFolderMissing ? (
+              <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
+            ) : (
+              <>
+                <WorkspaceServiceError state={state} />
+                {searchHasNoResults ? (
+                  <div
+                    className="flex h-full min-h-0 items-center justify-center px-6 text-center"
+                    role="status"
+                  >
+                    <p className="max-w-md break-words text-sm text-muted-foreground">
+                      {t("state.noSearchResults")}
+                    </p>
+                  </div>
+                ) : activeViewType === "board" ? (
+                  <WorkspaceBoardView
+                    projection={boardProjection as typeof workspaceMockProjection.projection}
+                    statusValues={statusValues}
+                    columnWidth={activeView?.boardLayout?.columnWidth}
+                    onViewportWidthChange={setBoardViewportWidth}
+                    visibleProperties={
+                      visibleProperties as typeof workspaceMockProjection.visibleProperties
+                    }
+                    selectValues={settingsSelectValues}
+                    onProjectOpen={handleProjectOpen}
+                    onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                    onCreateSelectValue={handleCreateSelectValue}
+                    onRenameSelectValue={handleRenameSelectValue}
+                    onColorSelectValue={handleColorSelectValue}
+                    onDeleteSelectValue={handleDeleteSelectValue}
+                  />
+                ) : null}
+                {!searchHasNoResults && activeViewType === "table" ? (
+                  <WorkspaceTableView
+                    projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                    view={activeView ?? null}
+                    visibleProperties={
+                      visibleProperties as typeof workspaceMockProjection.visibleProperties
+                    }
+                    properties={settingsProperties}
+                    selectValues={settingsSelectValues}
+                    statusValues={statusValues}
+                    onProjectOpen={handleProjectOpen}
+                    onCreateProperty={handleCreateVisibleProperty}
+                    onRenameProperty={handleRenameProperty}
+                    onDeleteProperty={handleDeleteProperty}
+                    onReorderViewProperties={handleReorderViewProperties}
+                    onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                    onToggleValueFilter={handleToggleValueFilter}
+                    onTogglePropertyWrapContent={handleTogglePropertyWrapContent}
+                    onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                    onCreateSelectValue={handleCreateSelectValue}
+                    onRenameSelectValue={handleRenameSelectValue}
+                    onColorSelectValue={handleColorSelectValue}
+                    onDeleteSelectValue={handleDeleteSelectValue}
+                    onDismissFloatingMenus={dismissWorkspaceFloatingMenus}
+                  />
+                ) : null}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
   );
 
   return (
-    <>
-      <div className="workspace-shell relative flex h-screen min-h-0 bg-background text-foreground">
+    <TooltipProvider delayDuration={500}>
+      <div
+        className="workspace-shell relative flex h-screen min-h-0 bg-background text-foreground"
+        style={
+          { "--workspace-sidebar-width": `${paneLayout.sidebarWidth}px` } as React.CSSProperties
+        }
+      >
         <button
           type="button"
           className={[
-            "electron-window-no-drag workspace-top-action absolute top-4 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
+            "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
             sidebarCollapsed ? "left-20" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          onClick={() => setSidebarCollapsed((value) => !value)}
+          onClick={() => sendPane({ type: "sidebarToggle" })}
         >
           <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
@@ -1937,7 +2694,9 @@ export default function App() {
           inert={sidebarCollapsed || undefined}
           className={[
             "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
-            sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[var(--workspace-sidebar-width)] opacity-100",
+            sidebarCollapsed
+              ? "w-0 opacity-0 pointer-events-none"
+              : "w-[var(--workspace-sidebar-width)] opacity-100",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
@@ -1957,212 +2716,76 @@ export default function App() {
             onOpenSettings={openSettingsSurface}
           />
         </div>
-        <main data-testid="workspace-main" className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <header
-            className={[
-              "electron-window-drag flex h-[var(--workspace-header-height)] shrink-0 items-center gap-2 border-b border-border pr-4",
-              sidebarCollapsed ? "pl-32" : "pl-4",
-            ].join(" ")}
-          >
-            <div className="workspace-current-name electron-window-no-drag flex w-40 max-w-[28%] shrink-0 items-center gap-2 border-r border-border pr-3 text-sm font-medium text-foreground" title={currentWorkspaceName}>
-              <FolderIcon className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              <span className="truncate">{currentWorkspaceName}</span>
-            </div>
-            {activeSurface !== "settings" ? (
-              <div
-                aria-busy={isWorkspaceSwitchPendingSurface || undefined}
-                inert={isWorkspaceSwitchPendingSurface || undefined}
-                className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
-              >
-                <WorkspaceViewTabs
-                  projectActive={projectExpanded}
-                  projectActions={selectedProject ? (
-                    <>
-                      <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t(projectExpanded ? "detail.restore" : "detail.expand")} title={t(projectExpanded ? "detail.restore" : "detail.expand")} onClick={toggleProjectExpanded}>
-                        {projectExpanded ? <PanelRightCloseIcon className="size-4" aria-hidden="true" /> : <SquareIcon className="size-4" aria-hidden="true" />}
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t("detail.close")} title={t("detail.close")} onClick={closeSelectedProject}>
-                        <XIcon className="size-4" aria-hidden="true" />
-                      </Button>
-                    </>
-                  ) : null}
-                  onShowView={() => setSelectedProject(null)}
-                  actionsHidden={selectedProject !== null}
-                  projectTabs={
-                    <WorkspaceProjectTabs
-                      key={projectTabsWorkspaceId}
-                      projects={expandedProjectTabs}
-                      activeProjectId={projectExpanded ? activeProjectTabId || "" : ""}
-                      onSelect={(id) => {
-                        const project = expandedProjectTabs.find((item) => item.tabId === id);
-                        if (project) handleProjectOpen(project, id);
-                      }}
-                      onDuplicate={(id) => {
-                        const project = expandedProjectTabs.find((item) => item.tabId === id);
-                        if (project) createExpandedProject(project, id);
-                      }}
-                      onRestore={(id) => {
-                        const project = expandedProjectTabs.find((item) => item.tabId === id);
-                        dispatchProjectTabs({ type: "remove", workspaceId: projectTabsWorkspaceId, tabId: id });
-                        if (project) handleProjectOpen(project);
-                      }}
-                      onClose={closeProjectTab}
-                      onReorder={(tabIds) => dispatchProjectTabs({ type: "reorder", workspaceId: projectTabsWorkspaceId, tabIds })}
-                    />
-                  }
-                  activeViewId={viewState.activeViewId}
-                  views={viewState.views}
-                  onActiveViewChange={(activeViewId) => {
-                    setSelectedProject(null);
-                    dispatch({ type: "activeViewChanged", activeViewId });
-                    if (state.workspaceId) {
-                      void workspaceClient.setActiveView({
-                        workspaceId: state.workspaceId,
-                        viewId: activeViewId,
-                      }).catch((error: unknown) => {
-                        toast.error(t("toast.activeViewSaveFailed"), {
-                          description: getServiceErrorMessage(error, t),
-                        });
-                      });
-                    }
-                  }}
-                  onCreateView={handleCreateView}
-                  onDuplicateView={handleDuplicateView}
-                  onRenameView={handleRenameView}
-                  onDeleteView={handleDeleteView}
-                  onReorderViews={handleReorderViews}
-                  dismissSignal={workspaceFloatingDismissToken}
-                  properties={settingsProperties}
-                  selectValues={settingsSelectValues}
-                  statusValues={statusValues}
-                  onTogglePropertyVisibility={handleTogglePropertyVisibility}
-                  onToggleValueFilter={handleToggleValueFilter}
-                  boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
-                  onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
-                  onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
-                  onReorderViewProperties={handleReorderViewProperties}
-                  onRenameProperty={handleRenameProperty}
-                  onDeleteProperty={handleDeleteProperty}
-                />
-              </div>
-            ) : null}
-            {activeSurface === "settings" ? (
-              <div className="electron-window-no-drag flex min-w-0 flex-1 items-center justify-between gap-3">
-                <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
-                <Button type="button" variant="ghost" size="sm" className="workspace-top-action" onClick={openWorkspaceSurface}>{t("settings.back")}</Button>
-              </div>
-            ) : null}
-          </header>
-          {activeSurface === "settings" ? (
-            <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
-              {state.status === "loading" || state.status === "idle" ? (
-                <WorkspaceLoadingState />
-              ) : (
-                <>
-                  <WorkspaceServiceError state={state} />
-                  <WorkspaceSettingsView
-                    sourceFolder={sourceFolder}
-                    folderRoleTree={folderRoleTree}
-                    statusValues={statusValues}
-                    selectValues={settingsSelectValues}
-                    onSelectFolder={handleSelectFolder}
-                    onFolderRoleChange={handleFolderRoleChange}
-                    onColorStatusValue={handleColorStatusValue}
-                    selectingFolder={selectingFolder}
-                  />
-                </>
-              )}
-            </div>
-          ) : (
-            <div
-              aria-busy={isWorkspaceSwitchPendingSurface || undefined}
-              className={[
-                "electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden",
-                isWorkspaceSwitchPendingSurface ? "pointer-events-none select-none" : "",
-              ].join(" ")}
-            >
-              <div className="min-h-0 flex-1 overflow-hidden">
-                {shouldShowWorkspaceLoadingState ? (
-                  <WorkspaceLoadingState />
-                ) : state.sourceFolderMissing ? (
-                  <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
-                ) : (
-                  <>
-                    <WorkspaceServiceError state={state} />
-                    {searchHasNoResults ? (
-                      <div className="flex h-full min-h-0 items-center justify-center px-6 text-center" role="status">
-                        <p className="max-w-md break-words text-sm text-muted-foreground">{t("state.noSearchResults")}</p>
-                      </div>
-                    ) : activeViewType === "board" ? (
-                      <WorkspaceBoardView
-                        projection={boardProjection as typeof workspaceMockProjection.projection}
-                        statusValues={statusValues}
-                        columnWidth={activeView?.boardLayout?.columnWidth}
-                        onViewportWidthChange={setBoardViewportWidth}
-                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                        selectValues={settingsSelectValues}
-                        onProjectOpen={handleProjectOpen}
-                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
-                        onCreateSelectValue={handleCreateSelectValue}
-                        onRenameSelectValue={handleRenameSelectValue}
-                        onColorSelectValue={handleColorSelectValue}
-                        onDeleteSelectValue={handleDeleteSelectValue}
-                      />
-                    ) : null}
-                    {!searchHasNoResults && activeViewType === "table" ? (
-                      <WorkspaceTableView
-                        projection={tableProjection as typeof workspaceMockProjection.tableProjection}
-                        view={activeView ?? null}
-                        visibleProperties={visibleProperties as typeof workspaceMockProjection.visibleProperties}
-                        properties={settingsProperties}
-                        selectValues={settingsSelectValues}
-                        statusValues={statusValues}
-                        onProjectOpen={handleProjectOpen}
-                        onCreateProperty={handleCreateVisibleProperty}
-                        onRenameProperty={handleRenameProperty}
-                        onDeleteProperty={handleDeleteProperty}
-                        onReorderViewProperties={handleReorderViewProperties}
-                        onTogglePropertyVisibility={handleTogglePropertyVisibility}
-                        onToggleValueFilter={handleToggleValueFilter}
-                        onTogglePropertyWrapContent={handleTogglePropertyWrapContent}
-                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
-                        onCreateSelectValue={handleCreateSelectValue}
-                        onRenameSelectValue={handleRenameSelectValue}
-                        onColorSelectValue={handleColorSelectValue}
-                        onDeleteSelectValue={handleDeleteSelectValue}
-                        onDismissFloatingMenus={dismissWorkspaceFloatingMenus}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </main>
-        <WorkspaceProjectDetailPanel
-          expanded={projectExpanded}
-          sidebarCollapsed={sidebarCollapsed}
-          open={selectedProject !== null}
-          onOpenChange={(open) => {
-            if (!open) {
-              closeSelectedProject();
+        {!sidebarCollapsed && (
+          <div className="bb-sidebar-resize">
+            <PaneResize
+              label={t("chrome.resizeSidebar")}
+              value={paneLayout.sidebarWidth}
+              min={240}
+              max={460}
+              onResize={(width) =>
+                sendPane({ type: "resizeSidebar", width: 2 * paneLayout.sidebarWidth - width })
+              }
+            />
+          </div>
+        )}
+        <div
+          className="bb-center flex min-h-0 min-w-0 flex-1"
+          style={{ display: paneLayout.maximized === "right" ? "none" : undefined }}
+          data-maximized={paneLayout.maximized || undefined}
+        >
+          <WorkspaceSplitTree
+            layout={paneLayout}
+            send={sendPane}
+            primary={primaryPane}
+            onPaneFocus={(pane) => {
+              if (pane.tabId) {
+                const project = expandedProjectTabs.find((tab) => tab.tabId === pane.tabId);
+                if (project && activeProjectTabId !== pane.tabId)
+                  handleProjectOpen(project, pane.tabId);
+              }
+            }}
+            titleForPane={(pane) =>
+              expandedProjectTabs.find((tab) => tab.tabId === pane.tabId)?.name ||
+              t("chrome.newTab")
             }
-          }}
-          project={selectedProject}
-          visibleProperties={detailProperties}
-          selectValues={settingsSelectValues}
-          onProjectPropertyValueChange={handleProjectPropertyValueChange}
-          onCreateSelectValue={handleCreateSelectValue}
-          onRenameSelectValue={handleRenameSelectValue}
-          onColorSelectValue={handleColorSelectValue}
-          onDeleteSelectValue={handleDeleteSelectValue}
-          onCreateProperty={handleCreateVisibleProperty}
-          onRenameProperty={handleRenameProperty}
-          onHideProperty={handleHideProperty}
-          onDeleteProperty={handleDeleteProperty}
-        />
+            renderProject={(pane) =>
+              renderDetailPanel(
+                expandedProjectTabs.find((tab) => tab.tabId === pane.tabId) || null,
+                () => closeLayoutPane(pane.paneId),
+                paneLayout.focused === pane.paneId,
+              )
+            }
+            onClosePane={closeLayoutPane}
+          />
+        </div>
+        {(!paneLayout.maximized || paneLayout.maximized === "right") && (
+          <WorkspaceRightPanel
+            layout={paneLayout}
+            send={sendPane}
+            navigation={navigationPanel}
+            project={
+              !projectExpanded &&
+              !paneLayout.split &&
+              activeSurface !== "settings" &&
+              selectedProject
+                ? detailPanel
+                : undefined
+            }
+            projectName={selectedProject?.name}
+            onCloseProject={closeSelectedProject}
+            onSplitProject={() => {
+              if (selectedProject)
+                openProjectInSplit(selectedProject, activeProjectTabId || undefined);
+            }}
+            onMaximizeProject={() => {
+              if (selectedProject) createExpandedProject(selectedProject);
+            }}
+            onNewTab={() => "launcher"}
+          />
+        )}
       </div>
       <Toaster richColors />
-    </>
+    </TooltipProvider>
   );
 }

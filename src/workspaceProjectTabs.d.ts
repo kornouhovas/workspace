@@ -8,3 +8,4 @@ export type ProjectTabsAction =
   | { type: "update"; workspaceId: string; project: WorkspaceMockProject }
   | { type: "remove"; workspaceId: string; tabId: string };
 export function projectTabsReducer(state: ProjectTabsState, action: ProjectTabsAction): ProjectTabsState;
+export function projectTabCloseSelection(tabs:readonly ProjectTab[],activeId:string|null,closingIds:readonly string[]):ProjectTab|null;

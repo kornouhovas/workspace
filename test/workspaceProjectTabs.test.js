@@ -67,3 +67,12 @@ test("a save completing after switching projects refreshes the original tab only
   state = reduce(state, { type: "valueSaved", workspaceId: "one", projectId: "a", propertyId: "text", value: "late" });
   assert.deepEqual(state.one.map(p => p.id), ["b"]);
 });
+
+test("bulk close never selects a tab also being closed and preserves inactive selection", async()=>{
+ const {projectTabCloseSelection}=await import("../src/workspaceProjectTabs.js");
+ const tabs=[{tabId:"a"},{tabId:"b"},{tabId:"c"},{tabId:"d"}];
+ assert.equal(projectTabCloseSelection(tabs,"d",["c","d"]).tabId,"b");
+ assert.equal(projectTabCloseSelection(tabs,"b",["a","c","d"]).tabId,"b");
+ assert.equal(projectTabCloseSelection(tabs,"a",["a","b"]).tabId,"c");
+ assert.equal(projectTabCloseSelection(tabs,"b",["a","b","c","d"]),null);
+});

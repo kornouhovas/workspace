@@ -81,8 +81,8 @@ async function createWindow() {
     minHeight: 720,
     title: "Workspace",
     titleBarStyle: "hiddenInset",
-    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 12, y: 25 } } : {}),
-    backgroundColor: "#171717",
+    ...(process.platform === "darwin" ? { trafficLightPosition: { x: 18, y: 18 } } : {}),
+    backgroundColor: "#151515",
     show: false,
     webPreferences: {
       contextIsolation: true,

@@ -1,0 +1,17 @@
+{
+  "body": "oklch(1 0 0)",
+  "theme": "bb-app-shell-root",
+  "variables": {
+    "--background": "oklch(100% 0 0)",
+    "--border": "color-mix(in oklch, oklch(32.11% 0 0) 14%, oklch(100% 0 0))",
+    "--canvas": "oklch(100% 0 0)",
+    "--foreground": "oklch(32.11% 0 0)",
+    "--ink": "oklch(32.11% 0 0)",
+    "--muted": "color-mix(in oklch, oklch(32.11% 0 0) 11%, oklch(100% 0 0))",
+    "--muted-foreground": "oklch(44% 0 0)",
+    "--radius": ".5rem",
+    "--sidebar": "color-mix(in oklch, oklch(32.11% 0 0) 2.2%, oklch(100% 0 0))",
+    "--sidebar-accent": "color-mix(in oklch, oklch(32.11% 0 0) 8%, oklch(100% 0 0))",
+    "--state-hover": "color-mix(in oklab, oklch(32.11% 0 0) 5.9%, transparent)"
+  }
+}
