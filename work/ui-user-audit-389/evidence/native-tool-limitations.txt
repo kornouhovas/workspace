@@ -1,0 +1,14 @@
+2026-09-28, native CUA tool observations (transcribed from tool outputs).
+getApp exact fixture bundle selects Window Workspace, App WorkspaceAudit389,
+HTML URL file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html.
+getScreenshot returns JPEG 250x290 perspective thumbnail. Raise, Window > Bring All to Front,
+and Window > Workspace leave the same perspective thumbnail. Geometry evidence rejected.
+After opening Table empty Notes editor, following setValue reports:
+Computer Use server error -10005: The element ID is no longer valid.
+Fresh AX shows popup closed. No value save claimed.
+Following three calls (click, getAXState, getApp local.workspace.audit389) each report:
+Computer Use server error -10005: Error Domain=com.apple.ScreenCaptureKit.SCStreamErrorDomain Code=-3812 "Failed due to an invalid parameter".
+Process 74440 remains running, so tool failure is not evidence of application crash.
+Middle-click with an AX element selected that tab instead of closing; without trusted coordinate
+mapping this remains an unverified tool/product ambiguity, not a confirmed product defect.
+No external Playwright/Electron API, OS event automation, or system permission changes used.

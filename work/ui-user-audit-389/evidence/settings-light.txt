@@ -1,0 +1,115 @@
+Window: "Workspace", App: WorkspaceAudit389.
+0 standard window Workspace, Secondary Actions: Raise
+	1 container Workspace
+		2 container
+			3 HTML content Workspace, URL: file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html
+				4 container
+					5 button Hide sidebar
+					6 container
+						7 button Go back
+							8 image
+						9 button (disabled) Go forward
+							10 image
+						11 button Add Workspace
+						12 text Search
+						13 image
+						14 search text field (settable) Search, Placeholder: Project name
+						15 text Workspaces
+						16 button Operations
+						17 pop up button Workspace actions for Operations
+						18 button Settings
+					19 splitter Description: Resize sidebar, Value: 320
+					20 container
+						21 heading Settings, Value: 1
+							22 text Settings
+						23 button Back to workspace
+						24 button Show right panel (⌘ J)
+						25 container Settings
+							26 container Appearance
+								27 heading Appearance, Value: 3
+									28 text Appearance
+								29 combo box (settable) Description: Appearance, Value: Light
+									30 text Light
+							31 heading Source, Value: 3
+								32 text Source
+							33 text Local only
+							34 text Source folder
+							35 text projects
+							36 text /var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-user-audit-389-FHQv5H/projects
+							37 button Select folder
+							38 container Language
+								39 heading Language, Value: 3
+									40 text Language
+								41 text Application interface language
+								42 combo box (settable) Description: Interface language, Value: English
+									43 text English
+							44 heading Folder role tree, Value: 3
+								45 text Folder role tree
+							46 text /var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-user-audit-389-FHQv5H/projects
+							47 text 3 roots
+							48 content list
+								49 container
+									50 button Expand Active
+									51 text Active Ready Active
+									52 container Role for Active
+										53 radio button Description: Set Active as Group, Value: 0
+										54 radio button Description: Set Active as Status, Value: 1
+										55 radio button Description: Set Active as Project, Value: 0
+								56 container
+									57 button Expand Done
+									58 text Done Ready Done
+									59 container Role for Done
+										60 radio button Description: Set Done as Group, Value: 0
+										61 radio button Description: Set Done as Status, Value: 1
+										62 radio button Description: Set Done as Project, Value: 0
+								63 container
+									64 button Expand Waiting
+									65 text Waiting Ready Waiting
+									66 container Role for Waiting
+										67 radio button Description: Set Waiting as Group, Value: 0
+										68 radio button Description: Set Waiting as Status, Value: 1
+										69 radio button Description: Set Waiting as Project, Value: 0
+							70 container Properties
+								71 heading Properties, Value: 3
+									72 text Properties
+								73 text Colors for folder-derived project statuses
+								74 text 3 values Status Select System
+								75 text Colors for folder-derived project statuses
+								76 content list
+									77 container
+										78 text Active
+										79 combo box (settable) Description: Color, Value: Gray
+											80 text Gray
+									81 container
+										82 text Done
+										83 combo box (settable) Description: Color, Value: Gray
+											84 text Gray
+									85 container
+										86 text Waiting
+										87 combo box (settable) Description: Color, Value: Gray
+											88 text Gray
+					89 container
+						90 splitter Description: Resize right panel, Value: 519
+						91 tab group Right panel views
+							92 tab (selected) Description: Navigation, Value: 1
+								93 text Navigation
+						94 button Open new tab (⌘ T)
+						95 button Maximize pane (⇧ ⌘ E)
+						96 button Hide right panel (⌘ J)
+						97 container Navigation
+							98 text Operations
+							99 button Board
+							100 button Table
+							101 button Settings
+					102 container Notifications alt+T
+	103 close button
+	104 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	105 minimize button
+106 menu bar
+	107 WorkspaceAudit389
+	108 File
+	109 Edit
+	110 View
+	111 Window
+
+The focused UI element is 29 combo box (settable) Description: Appearance, Value: Light

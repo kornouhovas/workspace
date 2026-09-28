@@ -1,0 +1,177 @@
+Browser tab: 1, Title: "Workspace", URL: "http://127.0.0.1:38913/".
+1 AXWebArea Workspace, URL: 127.0.0.1:38913/
+	2 container
+		3 container root
+			4 container
+				5 button Hide sidebar
+				6 container
+					7 button Go back
+						8 image
+					9 button (disabled) Go forward
+						10 image
+					11 button Add Workspace
+					12 text Search
+					13 image
+					14 search text field (settable) Search
+					15 text Workspaces
+					16 button Operations
+					17 pop up button (collapsed) Description: Workspace actions for Operations, ID: radix-_r_c_, Secondary Actions: Expand
+					18 button Workspace
+					19 pop up button (collapsed) Description: Workspace actions for Workspace, ID: radix-_r_14_, Secondary Actions: Expand
+					20 button Settings
+				21 splitter Description: Resize sidebar, Value: 320
+				22 container
+					23 container
+						24 tab group View actions
+							25 tab (selected, settable, boolean) Description: Board, Value: 1, ID: radix-_r_71_-trigger-view:751ba99f-d4ba-439c-9b68-1689e2bbc655-board
+							26 tab (selectable, settable, boolean) Description: Table, Value: 0, ID: radix-_r_71_-trigger-view:751ba99f-d4ba-439c-9b68-1689e2bbc655-table
+						27 tab group Expanded projects
+							28 tab (selectable, settable, boolean) Description: Project Alpha, Value: 0, ID: radix-_r_74_-trigger-project-tab:a8f62b8d-04d7-4dc1-8916-33e6e53c87d1
+							29 button Close view: Project Alpha
+						30 button Expand project
+						31 button Close project details
+					32 button Show right panel (⌘ J)
+					33 button Open in split
+					34 container Board
+						35 container
+							36 container Active projects
+								37 container
+									38 heading Active, Value: 3
+										39 text Active
+									40 container 3 visible projects
+										41 text 3
+								42 container
+									43 heading Project Alpha, Value: 4
+										44 button Project Alpha
+									45 definition list
+										46 container Status
+											47 text Status
+										48 text Active
+										49 container Date
+											50 text Date
+										51 pop up button (collapsed) Description: Choose date, Secondary Actions: Expand
+								52 container
+									53 heading Project Beta, Value: 4
+										54 button Project Beta
+									55 definition list
+										56 container Status
+											57 text Status
+										58 text Active
+								59 container
+									60 heading Project with an exceptionally long title for overflow and tab reorder verification, Value: 4
+										61 button Project with an exceptionally long title for overflow and tab reorder verification
+									62 definition list
+										63 container Status
+											64 text Status
+										65 text Active
+							66 container Done projects
+								67 container
+									68 heading Done, Value: 3
+										69 text Done
+									70 container 1 visible project
+										71 text 1
+								72 container
+									73 heading Project Gamma, Value: 4
+										74 button Project Gamma
+									75 definition list
+										76 container Status
+											77 text Status
+										78 text Done
+							79 container Waiting projects
+								80 container
+									81 heading Waiting, Value: 3
+										82 text Waiting
+									83 container 1 visible project
+										84 text 1
+								85 container
+									86 heading Empty project, Value: 4
+										87 button Empty project
+									88 definition list
+										89 container Status
+											90 text Status
+										91 text Waiting
+				92 splitter Description: Resize right panel, Value: 480
+				93 container
+					94 tab group Right panel views
+						95 container
+							96 tab (selected, settable, boolean) Description: Project Alpha, Value: 1
+Project Alpha
+							97 button Close Project Alpha
+					98 button Open new tab (⌘ T)
+					99 button Open in split
+					100 button Maximize pane (⇧ ⌘ E)
+					101 button Hide right panel (⌘ J)
+				102 container Project Alpha
+					103 heading Project Alpha, Value: 2, ID: project-detail-title
+						104 text Project Alpha
+					105 container Properties
+						106 heading Properties, Value: 3, ID: project-properties-heading
+							107 button (expanded) Properties, Secondary Actions: Collapse
+						108 definition list project-visible-properties
+							109 container Status property actions
+								110 button Status property actions
+							111 text Active
+							112 container Notes property actions
+								113 button Notes property actions
+							114 button Edit Notes value
+							115 container Number property actions
+								116 button Number property actions
+							117 button Edit Number value
+							118 container Date property actions
+								119 button Date property actions
+							120 pop up button (expanded) Description: Choose date, Secondary Actions: Collapse
+							121 pop up button (collapsed) Add property Choose type, ID: radix-_r_7i_, Secondary Actions: Expand
+					122 container File tree
+						123 heading File tree, Value: 3, ID: project-file-tree-heading
+							124 text File tree
+						125 container 2 items
+							126 text 2
+						127 content list
+							128 button (collapsed) Description: Folder: docs, Help: Active/Project Alpha/docs, Secondary Actions: Expand
+							129 button Description: File: README.md, Help: Active/Project Alpha/README.md
+			130 container Notifications alt+T
+		131 container radix-_r_7q_
+			132 button Previous month
+			133 text September 2026
+			134 button Next month
+			135 text Mon
+			136 text Tue
+			137 text Wed
+			138 text Thu
+			139 text Fri
+			140 text Sat
+			141 text Sun
+			142 button 1
+			143 button 2
+			144 button 3
+			145 button 4
+			146 button 5
+			147 button 6
+			148 button 7
+			149 button 8
+			150 button 9
+			151 button 10
+			152 button 11
+			153 button 12
+			154 button 13
+			155 button 14
+			156 button 15
+			157 button 16
+			158 button 17
+			159 button 18
+			160 button 19
+			161 button 20
+			162 button 21
+			163 button 22
+			164 button 23
+			165 button 24
+			166 button 25
+			167 button 26
+			168 button 27
+			169 button 28
+			170 button 29
+			171 button 30
+			172 text field (settable) Description: Date, Value: 2026-09-30
+			173 button Clear selection
+
+The focused UI element is 132 button Previous month

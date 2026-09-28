@@ -1,0 +1,96 @@
+Window: "Workspace", App: WorkspaceAudit389.
+0 standard window Workspace, Secondary Actions: Raise
+	1 container Workspace
+		2 container
+			3 HTML content Workspace, URL: file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html
+				4 container
+					5 button Hide sidebar
+					6 container
+						7 button Go back
+							8 image
+						9 button (disabled) Go forward
+							10 image
+						11 button Add Workspace
+						12 text Search
+						13 image
+						14 search text field (settable) Search, Placeholder: Project name
+						15 text Workspaces
+						16 button Operations
+						17 pop up button Workspace actions for Operations
+						18 button Settings
+					19 splitter Description: Resize sidebar, Value: 320
+					20 container
+						21 container
+							22 tab group View actions
+								23 tab (settable, integer) Description: Board, Value: 0
+								24 tab (selected) Description: Table, Value: 1
+							25 tab group Expanded projects
+								26 tab (settable, integer) Description: Project Alpha, Value: 0
+								27 button Close view: Project Alpha
+							28 pop up button Description: Add Board or Table view, Help: Add View
+							29 pop up button Customize Columns
+						30 button Show right panel (⌘ J)
+						31 container Workspace Project Board
+							32 table
+								33 row
+									34 column header
+										35 button Drag Name column
+										36 button Name property actions
+										37 button Resize Name column
+									38 column header
+										39 button Drag Status column
+										40 container Status value filter active
+										41 button Status property actions
+										42 button Resize Status column
+									43 column header
+										44 button Drag Notes column
+										45 button Notes property actions
+										46 button Resize Notes column
+									47 column header
+										48 pop up button Add property
+								49 row
+									50 cell
+										51 button Project Alpha
+									52 cell
+										53 text Active
+									54 cell
+										55 pop up button Audit note 389
+								56 row
+									57 cell
+										58 button Project Beta
+									59 cell
+										60 text Active
+									61 cell
+										62 pop up button
+								63 row
+									64 cell
+										65 button Project with an exceptionally long title for overflow and tab reorder verification
+									66 cell
+										67 text Active
+									68 cell
+										69 pop up button
+					70 container
+						71 splitter Description: Resize right panel, Value: 519
+						72 tab group Right panel views
+							73 tab (selected) Description: Navigation, Value: 1
+								74 text Navigation
+						75 button Open new tab (⌘ T)
+						76 button Maximize pane (⇧ ⌘ E)
+						77 button Hide right panel (⌘ J)
+						78 container Navigation
+							79 text Operations
+							80 button Board
+							81 button Table
+							82 button Settings
+					83 container Notifications alt+T
+	84 close button
+	85 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	86 minimize button
+87 menu bar
+	88 WorkspaceAudit389
+	89 File
+	90 Edit
+	91 View
+	92 Window
+
+The focused UI element is 29 pop up button Customize Columns

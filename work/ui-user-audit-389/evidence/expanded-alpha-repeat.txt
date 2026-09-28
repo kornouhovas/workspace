@@ -1,0 +1,80 @@
+Window: "Workspace", App: WorkspaceAudit389.
+0 standard window Workspace, Secondary Actions: Raise
+	1 container Workspace
+		2 container
+			3 HTML content Workspace, URL: file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html
+				4 container
+					5 button Hide sidebar
+					6 container
+						7 button Go back
+							8 image
+						9 button (disabled) Go forward
+							10 image
+						11 button Add Workspace
+						12 text Search
+						13 image
+						14 search text field (settable) Search, Placeholder: Project name
+						15 text Workspaces
+						16 button Operations
+						17 pop up button Workspace actions for Operations
+						18 button Settings
+					19 splitter Description: Resize sidebar, Value: 320
+					20 container
+						21 container
+							22 tab group View actions
+								23 tab (settable, integer) Description: Board, Value: 0
+								24 tab (settable, integer) Description: Table, Value: 0
+							25 tab group Expanded projects
+								26 tab (selected) Description: Project Alpha, Value: 1
+								27 button Close view: Project Alpha
+							28 button Restore side panel
+							29 button Close project details
+						30 button Show right panel (⌘ J)
+						31 button Open in split
+						32 container Project Alpha
+							33 heading Project Alpha, Value: 2
+								34 text Project Alpha
+							35 container Properties
+								36 heading Properties, Value: 3
+									37 button Properties
+								38 definition list
+									39 container Status property actions
+										40 button Status property actions
+									41 text Active
+									42 container Notes property actions
+										43 button Notes property actions
+									44 button Edit Notes value
+									45 pop up button Add property Choose type
+							46 container File tree
+								47 heading File tree, Value: 3
+									48 text File tree
+								49 container 2 items
+									50 text 2
+								51 content list
+									52 button Description: Folder: docs, Help: Active/Project Alpha/docs
+									53 button Description: File: README.md, Help: Active/Project Alpha/README.md
+					54 container
+						55 splitter Description: Resize right panel, Value: 519
+						56 tab group Right panel views
+							57 tab (selected) Description: Navigation, Value: 1
+								58 text Navigation
+						59 button Open new tab (⌘ T)
+						60 button Maximize pane (⇧ ⌘ E)
+						61 button Hide right panel (⌘ J)
+						62 container Navigation
+							63 text Operations
+							64 button Board
+							65 button Table
+							66 button Settings
+					67 container Notifications alt+T
+	68 close button
+	69 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	70 minimize button
+71 menu bar
+	72 WorkspaceAudit389
+	73 File
+	74 Edit
+	75 View
+	76 Window
+
+The focused UI element is 28 button Restore side panel

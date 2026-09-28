@@ -1,0 +1,135 @@
+Browser tab: 1, Title: "Workspace", URL: "http://127.0.0.1:38913/".
+1 AXWebArea Workspace, URL: 127.0.0.1:38913/
+	2 container root
+		3 container
+			4 button Hide sidebar
+			5 container
+				6 button Go back
+					7 image
+				8 button (disabled) Go forward
+					9 image
+				10 button Add Workspace
+				11 text Search
+				12 image
+				13 search text field (settable) Search
+				14 text Workspaces
+				15 button Operations
+				16 pop up button (collapsed) Description: Workspace actions for Operations, ID: radix-_r_c_, Secondary Actions: Expand
+				17 button Workspace
+				18 pop up button (collapsed) Description: Workspace actions for Workspace, ID: radix-_r_14_, Secondary Actions: Expand
+				19 button Settings
+			20 splitter Description: Resize sidebar, Value: 320
+			216 container
+				217 container
+					218 tab group View actions
+						219 tab (selected, settable, boolean) Description: Board, Value: 1, ID: radix-_r_2c_-trigger-view:751ba99f-d4ba-439c-9b68-1689e2bbc655-board
+						220 tab (selectable, settable, boolean) Description: Table, Value: 0, ID: radix-_r_2c_-trigger-view:751ba99f-d4ba-439c-9b68-1689e2bbc655-table
+					221 tab group Expanded projects
+						222 tab (selectable, settable, boolean) Description: Project Alpha, Value: 0, ID: radix-_r_2f_-trigger-project-tab:a8f62b8d-04d7-4dc1-8916-33e6e53c87d1
+						223 button Close view: Project Alpha
+					224 pop up button (collapsed) Description: Add Board or Table view, Help: Add View, ID: radix-_r_2h_, Secondary Actions: Expand
+					225 pop up button (collapsed) Description: Customize Columns, ID: radix-_r_2j_, Secondary Actions: Expand
+				226 button Maximize pane (⇧ ⌘ E)
+				227 button Close pane
+				228 button Show right panel (⌘ J)
+				229 container Board
+					230 container
+						231 container Active projects
+							232 container
+								233 heading Active, Value: 3
+									234 text Active
+								235 container 3 visible projects
+									236 text 3
+							237 container
+								238 heading Project Alpha, Value: 4
+									239 button Project Alpha
+								240 definition list
+									241 container Status
+										242 text Status
+									243 text Active
+							244 container
+								245 heading Project Beta, Value: 4
+									246 button Project Beta
+								247 definition list
+									248 container Status
+										249 text Status
+									250 text Active
+							251 container
+								252 heading Project with an exceptionally long title for overflow and tab reorder verification, Value: 4
+									253 button Project with an exceptionally long title for overflow and tab reorder verification
+								254 definition list
+									255 container Status
+										256 text Status
+									257 text Active
+						258 container Done projects
+							259 container
+								260 heading Done, Value: 3
+									261 text Done
+								262 container 1 visible project
+									263 text 1
+							264 container
+								265 heading Project Gamma, Value: 4
+									266 button Project Gamma
+								267 definition list
+									268 container Status
+										269 text Status
+									270 text Done
+						271 container Waiting projects
+							272 container
+								273 heading Waiting, Value: 3
+									274 text Waiting
+								275 container 1 visible project
+									276 text 1
+							277 container
+								278 heading Empty project, Value: 4
+									279 button Empty project
+								280 definition list
+									281 container Status
+										282 text Status
+									283 text Waiting
+			284 splitter Description: Resize split, Value: 50
+			285 container
+				286 text Project Alpha
+				287 button Maximize pane (⇧ ⌘ E)
+				288 button Close pane
+			289 container Project Alpha
+				290 heading Project Alpha, Value: 2, ID: project-detail-title
+					291 text Project Alpha
+				292 container Properties
+					293 heading Properties, Value: 3, ID: project-properties-heading
+						294 button (expanded) Properties, Secondary Actions: Collapse
+					295 definition list project-visible-properties
+						296 container Status property actions
+							297 button Status property actions
+						298 text Active
+						299 container Notes property actions
+							300 button Notes property actions
+						301 button Edit Notes value
+						302 container Number property actions
+							303 button Number property actions
+						304 button Edit Number value
+						305 pop up button (collapsed) Add property Choose type, ID: radix-_r_2t_, Secondary Actions: Expand
+				306 container File tree
+					307 heading File tree, Value: 3, ID: project-file-tree-heading
+						308 text File tree
+					309 container 2 items
+						310 text 2
+					311 content list
+						312 button (collapsed) Description: Folder: docs, Help: Active/Project Alpha/docs, Secondary Actions: Expand
+						313 button Description: File: README.md, Help: Active/Project Alpha/README.md
+			206 splitter Description: Resize right panel, Value: 560
+			207 container
+				208 tab group Right panel views
+					314 tab (selected, settable, boolean) Description: Navigation, Value: 1
+Navigation
+				212 button Open new tab (⌘ T)
+				214 button Maximize pane (⇧ ⌘ E)
+				215 button Hide right panel (⌘ J)
+			315 container Navigation
+				316 text Workspace
+				317 button Board
+				318 button Table
+				319 button Settings
+		139 container Notifications alt+T
+
+The focused UI element is 246 button Project Beta

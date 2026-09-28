@@ -1,0 +1,133 @@
+Window: "Workspace", App: WorkspaceAudit389.
+0 standard window Workspace, Secondary Actions: Raise
+	1 container Workspace
+		2 container
+			3 HTML content Workspace, URL: file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html
+				4 container
+					5 button Hide sidebar
+					6 container
+						7 button (disabled) Go back
+							8 image
+						9 button (disabled) Go forward
+							10 image
+						11 button Add Workspace
+						12 text Search
+						13 image
+						14 search text field (settable) Search, Placeholder: Project name
+						15 text Workspaces
+						16 button Operations
+						17 pop up button Workspace actions for Operations
+						18 button Settings
+					19 splitter Description: Resize sidebar, Value: 320
+					20 container
+						21 container
+							22 tab group View actions
+								23 tab (selected) Description: Board, Value: 1
+								24 tab (settable, integer) Description: Table, Value: 0
+							25 button Expand project
+							26 button Close project details
+						27 button Show right panel (⌘ J)
+						28 button Open in split
+						29 container Board
+							30 container
+								31 container Active projects
+									32 container
+										33 heading Active, Value: 3
+											34 text Active
+										35 container 3 visible projects
+											36 text 3
+									37 container
+										38 heading Project Alpha, Value: 4
+											39 button Project Alpha
+										40 definition list
+											41 container Status
+												42 text Status
+											43 text Active
+											44 container Notes
+												45 text Notes
+											46 pop up button Audit note 389
+									47 container
+										48 heading Project Beta, Value: 4
+											49 button Project Beta
+										50 definition list
+											51 container Status
+												52 text Status
+											53 text Active
+									54 container
+										55 heading Project with an exceptionally long title for overflow and tab reorder verification, Value: 4
+											56 button Project with an exceptionally long title for overflow and tab reorder verification
+										57 definition list
+											58 container Status
+												59 text Status
+											60 text Active
+								61 container Done projects
+									62 container
+										63 heading Done, Value: 3
+											64 text Done
+										65 container 1 visible project
+											66 text 1
+									67 container
+										68 heading Project Gamma, Value: 4
+											69 button Project Gamma
+										70 definition list
+											71 container Status
+												72 text Status
+											73 text Done
+								74 container Waiting projects
+									75 container
+										76 heading Waiting, Value: 3
+											77 text Waiting
+										78 container 1 visible project
+											79 text 1
+									80 container
+										81 heading Empty project, Value: 4
+											82 button Empty project
+										83 definition list
+											84 container Status
+												85 text Status
+											86 text Waiting
+					87 container
+						88 splitter Description: Resize right panel, Value: 519
+						89 tab group Right panel views
+							90 container
+								91 tab (selected) Description: Project Alpha, Value: 1
+									92 text Project Alpha
+								93 button Close Project Alpha
+						94 button Open new tab (⌘ T)
+						95 button Open in split
+						96 button Maximize pane (⇧ ⌘ E)
+						97 button Hide right panel (⌘ J)
+						98 container Project Alpha
+							99 heading Project Alpha, Value: 2
+								100 text Project Alpha
+							101 container Properties
+								102 heading Properties, Value: 3
+									103 button Properties
+								104 definition list
+									105 container Status property actions
+										106 button Status property actions
+									107 text Active
+									108 container Notes property actions
+										109 button Notes property actions
+									110 button Edit Notes value
+									111 pop up button Add property Choose type
+							112 container File tree
+								113 heading File tree, Value: 3
+									114 text File tree
+								115 container 2 items
+									116 text 2
+								117 content list
+									118 button Description: Folder: docs, Help: Active/Project Alpha/docs
+									119 button Description: File: README.md, Help: Active/Project Alpha/README.md
+					120 container Notifications alt+T
+	121 close button
+	122 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	123 minimize button
+124 menu bar
+	125 WorkspaceAudit389
+	126 File
+	127 Edit
+	128 View
+	129 Window
+
+The focused UI element is 111 pop up button Add property Choose type
