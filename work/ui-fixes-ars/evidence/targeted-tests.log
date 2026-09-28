@@ -1,0 +1,200 @@
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 35.612542
+  ...
+# Subtest: duplicate view names interpolate the source title in both locales
+ok 2 - duplicate view names interpolate the source title in both locales
+  ---
+  duration_ms: 0.782292
+  ...
+# Subtest: normalizes unsupported locales to English
+ok 3 - normalizes unsupported locales to English
+  ---
+  duration_ms: 0.069542
+  ...
+# Subtest: English and Russian catalogs have the same keys
+ok 4 - English and Russian catalogs have the same keys
+  ---
+  duration_ms: 0.487083
+  ...
+# Subtest: all statically referenced renderer translation keys exist
+ok 5 - all statically referenced renderer translation keys exist
+  ---
+  duration_ms: 27.781917
+  ...
+# Subtest: dynamic renderer translation keys exist in both catalogs
+ok 6 - dynamic renderer translation keys exist in both catalogs
+  ---
+  duration_ms: 0.220917
+  ...
+# Subtest: localized renderer surfaces do not contain app-owned English UI literals
+ok 7 - localized renderer surfaces do not contain app-owned English UI literals
+  ---
+  duration_ms: 4.240625
+  ...
+# Subtest: translates interpolation and Russian plural forms
+ok 8 - translates interpolation and Russian plural forms
+  ---
+  duration_ms: 0.4965
+  ...
+# Subtest: falls back to the English catalog and then to the key
+ok 9 - falls back to the English catalog and then to the key
+  ---
+  duration_ms: 0.126709
+  ...
+# Subtest: reads and writes locale preferences without failing when storage is unavailable
+ok 10 - reads and writes locale preferences without failing when storage is unavailable
+  ---
+  duration_ms: 0.235
+  ...
+# Subtest: localizes only the stable app-owned no-status value
+ok 11 - localizes only the stable app-owned no-status value
+  ---
+  duration_ms: 0.138291
+  ...
+# Subtest: re-resolves app-owned errors after a locale switch and preserves backend messages
+ok 12 - re-resolves app-owned errors after a locale switch and preserves backend messages
+  ---
+  duration_ms: 0.114458
+  ...
+# Subtest: Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+ok 13 - Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+  ---
+  duration_ms: 3.798791
+  ...
+# Subtest: CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+ok 14 - CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+  ---
+  duration_ms: 0.275958
+  ...
+# Subtest: right tabs deduplicate, close active/inactive/last with neighbour fallback, reopen
+ok 15 - right tabs deduplicate, close active/inactive/last with neighbour fallback, reopen
+  ---
+  duration_ms: 1.782625
+  ...
+# Subtest: context close variants and reorder preserve identities
+ok 16 - context close variants and reorder preserve identities
+  ---
+  duration_ms: 2.760166
+  ...
+# Subtest: split maximize restore close retains ratio and follows focus
+ok 17 - split maximize restore close retains ratio and follows focus
+  ---
+  duration_ms: 0.345375
+  ...
+# Subtest: session round trip validates surviving maximize/focus and validates malformed storage
+ok 18 - session round trip validates surviving maximize/focus and validates malformed storage
+  ---
+  duration_ms: 0.587292
+  ...
+# Subtest: empty launcher is deduplicated and excluded from reopen history
+ok 19 - empty launcher is deduplicated and excluded from reopen history
+  ---
+  duration_ms: 0.105125
+  ...
+# Subtest: persisted invalid focus/maximize recover to surviving leaf without changing content
+ok 20 - persisted invalid focus/maximize recover to surviving leaf without changing content
+  ---
+  duration_ms: 0.144167
+  ...
+# Subtest: opening an independent project preview preserves a restored split and its tab identities
+ok 21 - opening an independent project preview preserves a restored split and its tab identities
+  ---
+  duration_ms: 0.21425
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 22 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 1.22175
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 23 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.189542
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 24 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.337958
+  ...
+# Subtest: duplicate is inserted immediately after its source, preserving surrounding tabs
+ok 25 - duplicate is inserted immediately after its source, preserving surrounding tabs
+  ---
+  duration_ms: 1.116666
+  ...
+# Subtest: duplicates have independent identities while sharing project updates
+ok 26 - duplicates have independent identities while sharing project updates
+  ---
+  duration_ms: 0.211917
+  ...
+# Subtest: reordering keeps every project once and leaves other workspaces unchanged
+ok 27 - reordering keeps every project once and leaves other workspaces unchanged
+  ---
+  duration_ms: 0.0855
+  ...
+# Subtest: expanded projects accumulate without duplicates and remain isolated by workspace
+ok 28 - expanded projects accumulate without duplicates and remain isolated by workspace
+  ---
+  duration_ms: 0.746292
+  ...
+# Subtest: refreshing an open tab preserves edits but never recreates a closed or restored tab
+ok 29 - refreshing an open tab preserves edits but never recreates a closed or restored tab
+  ---
+  duration_ms: 0.148875
+  ...
+# Subtest: a save completing after switching projects refreshes the original tab only
+ok 30 - a save completing after switching projects refreshes the original tab only
+  ---
+  duration_ms: 0.1075
+  ...
+# Subtest: bulk close never selects a tab also being closed and preserves inactive selection
+ok 31 - bulk close never selects a tab also being closed and preserves inactive selection
+  ---
+  duration_ms: 0.222
+  ...
+# Subtest: nested vertical split preserves ordered content; middle close collapses with right neighbour focus
+ok 32 - nested vertical split preserves ordered content; middle close collapses with right neighbour focus
+  ---
+  duration_ms: 1.850209
+  ...
+# Subtest: nested resize changes the addressed pair only; malformed tree rejects duplicate identities
+ok 33 - nested resize changes the addressed pair only; malformed tree rejects duplicate identities
+  ---
+  duration_ms: 1.685
+  ...
+# Subtest: moving nested existing pane to an edge removes original and center swaps identities
+ok 34 - moving nested existing pane to an edge removes original and center swaps identities
+  ---
+  duration_ms: 0.300208
+  ...
+# Subtest: closing sole project restores Workspace and removes dangling content
+ok 35 - closing sole project restores Workspace and removes dangling content
+  ---
+  duration_ms: 0.08825
+  ...
+# Subtest: pane drop rejects outside/titlebar, distinguishes edge directions and center
+ok 36 - pane drop rejects outside/titlebar, distinguishes edge directions and center
+  ---
+  duration_ms: 0.224958
+  ...
+# Subtest: eight-pane source limit replaces focused content without increasing leaves
+ok 37 - eight-pane source limit replaces focused content without increasing leaves
+  ---
+  duration_ms: 0.215583
+  ...
+# Subtest: Workspace and Settings remain reachable after primary close or content replacement without discarding other leaves
+ok 38 - Workspace and Settings remain reachable after primary close or content replacement without discarding other leaves
+  ---
+  duration_ms: 0.243833
+  ...
+1..38
+# tests 38
+# suites 0
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 113.539417

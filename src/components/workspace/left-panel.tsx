@@ -392,9 +392,9 @@ export function WorkspaceLeftPanel({
   }
 
   return (
-    <aside className="workspace-sidebar flex h-full w-[var(--workspace-sidebar-width)] shrink-0 flex-col border-r border-border bg-sidebar">
+    <aside className={`workspace-sidebar flex h-full shrink-0 flex-col bg-sidebar ${collapsed ? "w-0" : "w-[var(--workspace-sidebar-width)] border-r border-border"}`}>
       <div
-        className={`mr-10 flex min-h-[var(--workspace-header-height)] items-center gap-1 pl-24 ${collapsed ? "" : "electron-window-drag"}`}
+        className={`flex min-h-[var(--workspace-header-height)] items-center gap-1 ${collapsed ? "absolute left-32 top-0 z-40" : "mr-10 pl-24 electron-window-drag"}`}
       >
         <ChromeAction
           label={t("chrome.back")}
@@ -411,7 +411,7 @@ export function WorkspaceLeftPanel({
           <ChevronRightIcon className="size-4" />
         </ChromeAction>
       </div>
-      <div className="electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1">
+      <div className={`electron-window-no-drag min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1 ${collapsed ? "hidden" : "flex"}`}>
         <button
           type="button"
           className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-md border border-border bg-card px-2.5 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"

@@ -421,6 +421,7 @@ export function ProjectTablePropertyValueEditor({
     return (
       <button
         type="button"
+        aria-label={`${property.name} — ${project.name}${label ? `: ${label}` : ""}`}
         className="workspace-table-cell-display workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
@@ -438,6 +439,7 @@ export function ProjectTablePropertyValueEditor({
     return (
       <button
         type="button"
+        aria-label={`${property.name} — ${project.name}${label ? `: ${label}` : ""}`}
         className="workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
@@ -475,7 +477,7 @@ export function ProjectTablePropertyValueEditor({
             <WorkspaceTextValueTextarea
               key={editorKey}
               defaultValue={label}
-              aria-label={`${property.name}: ${t("property.type.text")}`}
+              aria-label={`${property.name} — ${project.name}: ${t("property.type.text")}`}
               autoFocus
               className="max-h-64 min-h-8 min-w-0 overflow-y-auto rounded-lg border-border bg-popover px-2 shadow-none focus-visible:border-ring focus-visible:bg-popover"
               onPointerDown={stopCellActivation}
@@ -507,7 +509,7 @@ export function ProjectTablePropertyValueEditor({
         <WorkspaceTextValueTextarea
           key={editorKey}
           defaultValue={label}
-          aria-label={`${property.name}: ${t("property.type.text")}`}
+          aria-label={`${property.name} — ${project.name}: ${t("property.type.text")}`}
           autoFocus
           className="workspace-table-text-value block w-full min-w-0 min-h-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-md border-0 bg-transparent px-1 py-0.5 shadow-none focus-visible:border-0 focus-visible:bg-transparent focus-visible:ring-0"
           onPointerDown={stopCellActivation}
@@ -538,7 +540,7 @@ export function ProjectTablePropertyValueEditor({
         type="text"
         inputMode="decimal"
         defaultValue={formatNumberEditorValue(value)}
-        aria-label={`${property.name}: ${t("property.type.number")}`}
+        aria-label={`${property.name} — ${project.name}: ${t("property.type.number")}`}
         autoFocus
         className="workspace-number-input h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
@@ -563,6 +565,7 @@ export function ProjectTablePropertyValueEditor({
       <WorkspaceDateValueEditor
         value={value}
         dismissSignal={dismissSignal}
+        triggerLabel={`${property.name} — ${project.name}`}
         triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
       />
@@ -576,6 +579,7 @@ export function ProjectTablePropertyValueEditor({
         value={value}
         selectValues={selectValues}
         dismissSignal={dismissSignal}
+        triggerLabel={`${property.name} — ${project.name}`}
         triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}

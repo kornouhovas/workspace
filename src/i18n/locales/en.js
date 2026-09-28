@@ -227,7 +227,7 @@ export const en = {
   "chrome.openNewTab": "Open new tab (⌘ T)",
   "chrome.maximize": "Maximize pane (⇧ ⌘ E)",
   "chrome.restoreSplit": "Restore split",
-  "chrome.openInSplit": "Open in split",
+  "chrome.movePane": "Move pane",
   "chrome.closePane": "Close pane",
   "chrome.resizeRight": "Resize right panel",
   "chrome.resizeSplit": "Resize split",

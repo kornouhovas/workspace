@@ -1,0 +1,157 @@
+{
+  "phase": "integrated",
+  "checks": [
+    {
+      "name": "native isolated security",
+      "passed": true
+    },
+    {
+      "name": "empty Notes has property and project name",
+      "passed": true
+    },
+    {
+      "name": "no Open in split command",
+      "passed": true
+    },
+    {
+      "name": "expanded hides right panel",
+      "passed": true
+    },
+    {
+      "name": "expanded content visible immediately without transform animation",
+      "passed": true
+    },
+    {
+      "name": "switch expanded tabs retains identities and correct content",
+      "passed": true
+    },
+    {
+      "name": "close and keyboard reopen retains Beta",
+      "passed": true
+    },
+    {
+      "name": "Beta opens beside restored split without replacing Alpha",
+      "passed": false,
+      "error": "locator.waitFor: Error: strict mode violation: getByRole('heading', { name: 'Project Beta', exact: true }) resolved to 2 elements:\n    1) <h4 class=\"relative min-w-0 text-sm font-medium leading-5\">…</h4> aka getByTestId('workspace-main').getByRole('heading', { name: 'Project Beta' })\n    2) <h2 id=\"project-detail-title\" class=\"workspace-project-detail-heading break-words text-sm font-medium text-foreground\">Project Beta</h2> aka getByTestId('workspace-right-panel').getByRole('heading', { name: 'Project Beta' })\n\nCall log:\n\u001b[2m  - waiting for getByRole('heading', { name: 'Project Beta', exact: true }) to be visible\u001b[22m\n"
+    },
+    {
+      "name": "Table Beta opens with existing split",
+      "passed": true
+    },
+    {
+      "name": "viewport Light 1440",
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1440,
+            960
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Light 1440",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Light 1440",
+      "passed": false,
+      "error": "locator.boundingBox: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Back', exact: true })\u001b[22m\n"
+    },
+    {
+      "name": "viewport Light 1024",
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1024,
+            720
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Light 1024",
+      "passed": false,
+      "error": "[\"Set Active as Group\",\"Set Active as Status\",\"Set Active as Project\",\"Set Done as Group\",\"Set Done as Status\",\"Set Done as Project\",\"Set Waiting as Group\",\"Set Waiting as Status\",\"Set Waiting as Project\"]"
+    },
+    {
+      "name": "collapsed toolbar disjoint Light 1024",
+      "passed": false,
+      "error": "locator.boundingBox: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Back', exact: true })\u001b[22m\n"
+    },
+    {
+      "name": "viewport Dark 1440",
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1440,
+            960
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Dark 1440",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Dark 1440",
+      "passed": false,
+      "error": "locator.boundingBox: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Back', exact: true })\u001b[22m\n"
+    },
+    {
+      "name": "viewport Dark 1024",
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1024,
+            720
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Dark 1024",
+      "passed": false,
+      "error": "[\"Set Active as Group\",\"Set Active as Status\",\"Set Active as Project\",\"Set Done as Group\",\"Set Done as Status\",\"Set Done as Project\",\"Set Waiting as Group\",\"Set Waiting as Status\",\"Set Waiting as Project\"]"
+    },
+    {
+      "name": "collapsed toolbar disjoint Dark 1024",
+      "passed": false,
+      "error": "locator.boundingBox: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Back', exact: true })\u001b[22m\n"
+    },
+    {
+      "name": "expanded hides explicit Navigation and fills available area",
+      "passed": true
+    },
+    {
+      "name": "reload keeps active expanded Alpha and Beta identity",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

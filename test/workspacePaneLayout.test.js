@@ -117,3 +117,21 @@ test("persisted invalid focus/maximize recover to surviving leaf without changin
   assert.equal(loaded.maximized, null);
   assert.deepEqual(loaded.tree, state.tree);
 });
+
+test("opening an independent project preview preserves a restored split and its tab identities", () => {
+  let state = reduce(createPaneLayout(), { type: "split", tabId: "alpha", paneId: "alpha-pane", target: "workspace", side: "right" });
+  state = reduce(state, { type: "rightOpen", id: "launcher" });
+  state = reduce(state, { type: "maximize", pane: "alpha-pane" });
+  let raw;
+  const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
+  writePaneLayouts(storage, { workspace: state });
+  const restored = readPaneLayouts(storage).workspace;
+  const preview = reduce(restored, { type: "previewProject" });
+  assert.deepEqual(preview.tree, restored.tree);
+  assert.equal(preview.split, true);
+  assert.equal(preview.rightVisible, true);
+  assert.equal(preview.activeRightTab, "navigation");
+  assert.equal(preview.focused, "right");
+  assert.equal(preview.maximized, null);
+  assert.deepEqual(preview.rightTabs, ["launcher"]);
+});

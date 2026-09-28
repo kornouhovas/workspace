@@ -6,8 +6,8 @@ import PlusSignIcon from "@hugeicons/core-free-icons/PlusSignIcon";
 import ArrowLeft01Icon from "@hugeicons/core-free-icons/ArrowLeft01Icon";
 import ArrowRight01Icon from "@hugeicons/core-free-icons/ArrowRight01Icon";
 import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
-import ArrowExpandIcon from "@hugeicons/core-free-icons/ArrowExpandIcon";
-import LayoutTwoColumnIcon from "@hugeicons/core-free-icons/LayoutTwoColumnIcon";
+import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
+import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
 import Navigation03Icon from "@hugeicons/core-free-icons/Navigation03Icon";
 import File01Icon from "@hugeicons/core-free-icons/File01Icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -194,7 +194,6 @@ export function WorkspaceRightPanel({
   project,
   projectName,
   onCloseProject,
-  onSplitProject,
   onMaximizeProject,
   onNewTab,
 }: {
@@ -204,7 +203,6 @@ export function WorkspaceRightPanel({
   project?: ReactNode;
   projectName?: string;
   onCloseProject: () => void;
-  onSplitProject: () => void;
   onMaximizeProject: () => void;
   onNewTab: () => string;
 }) {
@@ -251,6 +249,7 @@ export function WorkspaceRightPanel({
     <aside
       className="bb-right-panel"
       data-testid="workspace-right-panel"
+      data-leading={layout.maximized === "right"}
       style={{
         width: layout.maximized === "right" ? availableWidth : rightWidth,
         maxWidth: undefined,
@@ -352,18 +351,13 @@ export function WorkspaceRightPanel({
             </ChromeAction>
           </>
         )}
-        {showProject && (
-          <ChromeAction label={t("chrome.openInSplit")} onClick={onSplitProject}>
-            <ChromeIcon icon={LayoutTwoColumnIcon} />
-          </ChromeAction>
-        )}
         <ChromeAction
           label={t(layout.maximized === "right" ? "chrome.restoreSplit" : "chrome.maximize")}
           onClick={
             showProject ? onMaximizeProject : () => send({ type: "maximize", pane: "right" })
           }
         >
-          <ChromeIcon icon={ArrowExpandIcon} />
+          <ChromeIcon icon={layout.maximized === "right" ? CollapseIcon : ExpandIcon} className="size-[13px]" />
         </ChromeAction>
         <ChromeAction
           label={t("chrome.hideRight")}

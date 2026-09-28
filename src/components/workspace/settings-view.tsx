@@ -77,8 +77,8 @@ function FolderRoleNode({
   return (
     <li>
       <div
-        className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5"
-        style={{ marginLeft: `${depth * 1.25}rem` }}
+        className="workspace-folder-role-row grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5"
+        style={{ marginLeft: `${Math.min(depth, 4) * 0.5}rem` }}
       >
         <Button
           type="button"
@@ -101,7 +101,7 @@ function FolderRoleNode({
         </Button>
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-sm font-medium">{node.name}</span>
+            <span className="min-w-0 break-words text-sm font-medium" title={node.name}>{node.name}</span>
             <Badge variant="outline">{statusLabel}</Badge>
           </div>
           <p className="truncate text-xs text-muted-foreground" title={node.relativePath}>
@@ -109,6 +109,7 @@ function FolderRoleNode({
           </p>
         </div>
         <ToggleGroup
+          className="col-start-2 flex-wrap justify-start"
           aria-label={t("settings.roleFor", { name: node.name })}
           value={node.role}
           onValueChange={(value) => {
@@ -182,7 +183,7 @@ export function WorkspaceSettingsView({
 
   return (
     <section
-      className="workspace-settings grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]"
+      className="workspace-settings grid min-w-0 gap-2 px-3 py-3"
       aria-label={t("settings.title")}
     >
       <div className="grid content-start gap-2">
@@ -298,7 +299,7 @@ export function WorkspaceSettingsView({
           ))}
         </ul>
       </div>
-      <div className="lg:col-span-2">
+      <div className="col-span-full min-w-0">
         <WorkspacePropertyControls
           statusValues={statusValues}
           selectValues={selectValues}

@@ -227,7 +227,7 @@ export const ru = {
   "chrome.openNewTab": "Новая вкладка (⌘ T)",
   "chrome.maximize": "Развернуть область (⇧ ⌘ E)",
   "chrome.restoreSplit": "Восстановить области",
-  "chrome.openInSplit": "Открыть в разделённой области",
+  "chrome.movePane": "Переместить область",
   "chrome.closePane": "Закрыть область",
   "chrome.resizeRight": "Размер правой панели",
   "chrome.resizeSplit": "Размер областей",

@@ -31,8 +31,8 @@ import {
   WorkspaceRightPanel,
 } from "@/components/workspace/pane-chrome";
 import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
-import LayoutTwoColumnIcon from "@hugeicons/core-free-icons/LayoutTwoColumnIcon";
-import ArrowExpandIcon from "@hugeicons/core-free-icons/ArrowExpandIcon";
+import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
+import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -45,8 +45,6 @@ import {
 import {
   FolderIcon,
   PanelLeftIcon,
-  PanelRightCloseIcon,
-  SquareIcon,
   XIcon,
 } from "@/lib/workspace-icons";
 import {
@@ -579,6 +577,7 @@ export default function App() {
 
   const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
   const [activeProjectTabId, setActiveProjectTabId] = useState<string | null>(null);
+  const [projectTabSelected, setProjectTabSelected] = useState(false);
   const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
   const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(
     projectTabsReducer,
@@ -624,6 +623,8 @@ export default function App() {
       (project) => project.tabId === activeProjectTabId && project.id === selectedProject.id,
     );
 
+  const projectFullScreen = projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
+
   useEffect(() => {
     if (
       state.status !== "ready" ||
@@ -636,6 +637,7 @@ export default function App() {
       workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
         viewId: state.activeViewId,
         tabId: projectExpanded ? activeProjectTabId : null,
+        fullScreen: projectFullScreen,
       });
     }
     writeProjectSession(
@@ -647,6 +649,7 @@ export default function App() {
     projectTabsByWorkspace,
     projectTabsWorkspaceId,
     projectExpanded,
+    projectFullScreen,
     activeProjectTabId,
     selectedProject,
     state.status,
@@ -668,7 +671,7 @@ export default function App() {
   function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
     const existing = !afterTabId && expandedProjectTabs.find((tab) => tab.id === project.id);
     if (existing) {
-      handleProjectOpen(project, existing.tabId);
+      handleProjectOpen(project, existing.tabId, true);
       return existing.tabId;
     }
     const tabId = createClientDocumentId("project-tab");
@@ -679,7 +682,7 @@ export default function App() {
       tabId,
       afterTabId,
     });
-    handleProjectOpen(project, tabId);
+    handleProjectOpen(project, tabId, true);
     return tabId;
   }
 
@@ -995,6 +998,7 @@ export default function App() {
                 : cachedProject;
             setActiveProjectTabId(project ? tabId || null : null);
             setSelectedProject(project || null);
+            setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
             if (project) void loadProjectFileTree(project, root.workspaceId);
           }
           if (folderSelectionPendingRef.current) {
@@ -1168,6 +1172,7 @@ export default function App() {
     workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
       viewId: state.activeViewId,
       tabId: projectExpanded ? activeProjectTabId : null,
+        fullScreen: projectFullScreen,
     });
 
     try {
@@ -2157,9 +2162,11 @@ export default function App() {
     }
   }
 
-  function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null) {
+  function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
+    setProjectTabSelected(fullScreen);
     setActiveProjectTabId(tabId);
     setSelectedProject(project);
+    if (!tabId) sendPane({ type: "previewProject" });
     if (state.status === "ready" && state.root) {
       void loadProjectFileTree(project);
     }
@@ -2382,7 +2389,7 @@ export default function App() {
       <header
         className={[
           "electron-window-drag flex h-[var(--workspace-header-height)] shrink-0 items-center gap-2 border-b border-border pr-4",
-          sidebarCollapsed ? "pl-32" : "pl-4",
+          "pl-4",
         ].join(" ")}
       >
         {activeSurface !== "settings" ? (
@@ -2392,9 +2399,9 @@ export default function App() {
             className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
           >
             <WorkspaceViewTabs
-              projectActive={projectExpanded && !paneLayout.split}
+              projectActive={projectFullScreen}
               projectActions={
-                selectedProject && !paneLayout.split ? (
+                selectedProject && (!paneLayout.split || projectFullScreen) ? (
                   <>
                     <Button
                       type="button"
@@ -2406,9 +2413,9 @@ export default function App() {
                       onClick={toggleProjectExpanded}
                     >
                       {projectExpanded ? (
-                        <PanelRightCloseIcon className="size-4" aria-hidden="true" />
+                        <ChromeIcon icon={CollapseIcon} className="size-[13px]" />
                       ) : (
-                        <SquareIcon className="size-4" aria-hidden="true" />
+                        <ChromeIcon icon={ExpandIcon} className="size-[13px]" />
                       )}
                     </Button>
                     <Button
@@ -2426,17 +2433,19 @@ export default function App() {
                 ) : null
               }
               onShowView={() => setSelectedProject(null)}
-              actionsHidden={selectedProject !== null && !paneLayout.split}
+              actionsHidden={selectedProject !== null && (!paneLayout.split || projectFullScreen)}
               projectTabs={
                 <WorkspaceProjectTabs
                   key={projectTabsWorkspaceId}
                   projects={expandedProjectTabs}
                   activeProjectId={
-                    projectExpanded && !paneLayout.split ? activeProjectTabId || "" : ""
+                    projectFullScreen ? activeProjectTabId || "" : ""
                   }
                   onSelect={(id) => {
                     const project = expandedProjectTabs.find((item) => item.tabId === id);
-                    if (project) handleProjectOpen(project, id);
+                    if (project) {
+                      handleProjectOpen(project, id, true);
+                    }
                   }}
                   onDuplicate={(id) => {
                     const project = expandedProjectTabs.find((item) => item.tabId === id);
@@ -2528,24 +2537,24 @@ export default function App() {
               type="button"
               variant="ghost"
               size="sm"
-              className="workspace-top-action"
+              className="shrink-0"
               onClick={openWorkspaceSurface}
             >
               {t("settings.back")}
             </Button>
           </div>
         ) : null}
-        {(paneLayout.split || paneLayout.maximized === "workspace") && (
+        {!projectFullScreen && (paneLayout.split || paneLayout.maximized === "workspace") && (
           <ChromeAction
             label={t(
               paneLayout.maximized === "workspace" ? "chrome.restoreSplit" : "chrome.maximize",
             )}
             onClick={() => sendPane({ type: "maximize", pane: "workspace" })}
           >
-            <ChromeIcon icon={ArrowExpandIcon} />
+            <ChromeIcon icon={paneLayout.maximized === "workspace" ? CollapseIcon : ExpandIcon} className="size-[13px]" />
           </ChromeAction>
         )}
-        {paneLayout.split && (
+        {!projectFullScreen && paneLayout.split && (
           <ChromeAction label={t("chrome.closePane")} onClick={() => closeLayoutPane("workspace")}>
             <ChromeIcon icon={Cancel01Icon} />
           </ChromeAction>
@@ -2556,19 +2565,8 @@ export default function App() {
         >
           <ChromeIcon icon={SidebarRightIcon} />
         </ChromeAction>
-        {selectedProject && !paneLayout.split && (
-          <ChromeAction
-            label={t("chrome.openInSplit")}
-            onClick={() => {
-              if (selectedProject)
-                openProjectInSplit(selectedProject, activeProjectTabId || undefined);
-            }}
-          >
-            <ChromeIcon icon={LayoutTwoColumnIcon} />
-          </ChromeAction>
-        )}
       </header>
-      {projectExpanded && !paneLayout.split ? (
+      {projectFullScreen ? (
         detailPanel
       ) : activeSurface === "settings" ? (
         <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
@@ -2673,6 +2671,7 @@ export default function App() {
     <TooltipProvider delayDuration={500}>
       <div
         className="workspace-shell relative flex h-screen min-h-0 bg-background text-foreground"
+        data-sidebar-collapsed={sidebarCollapsed}
         style={
           { "--workspace-sidebar-width": `${paneLayout.sidebarWidth}px` } as React.CSSProperties
         }
@@ -2681,7 +2680,7 @@ export default function App() {
           type="button"
           className={[
             "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
-            sidebarCollapsed ? "left-20" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
+            sidebarCollapsed ? "left-24" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
@@ -2690,13 +2689,11 @@ export default function App() {
           <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
         <div
-          aria-hidden={sidebarCollapsed}
-          inert={sidebarCollapsed || undefined}
           className={[
-            "h-full shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out",
+            "h-full shrink-0",
             sidebarCollapsed
-              ? "w-0 opacity-0 pointer-events-none"
-              : "w-[var(--workspace-sidebar-width)] opacity-100",
+              ? "w-0"
+              : "w-[var(--workspace-sidebar-width)]",
           ].join(" ")}
         >
           <WorkspaceLeftPanel
@@ -2731,10 +2728,10 @@ export default function App() {
         )}
         <div
           className="bb-center flex min-h-0 min-w-0 flex-1"
-          style={{ display: paneLayout.maximized === "right" ? "none" : undefined }}
+          style={{ display: !projectFullScreen && paneLayout.maximized === "right" ? "none" : undefined }}
           data-maximized={paneLayout.maximized || undefined}
         >
-          <WorkspaceSplitTree
+          {projectFullScreen ? primaryPane : <WorkspaceSplitTree
             layout={paneLayout}
             send={sendPane}
             primary={primaryPane}
@@ -2757,16 +2754,15 @@ export default function App() {
               )
             }
             onClosePane={closeLayoutPane}
-          />
+          />}
         </div>
-        {(!paneLayout.maximized || paneLayout.maximized === "right") && (
+        {!projectFullScreen && (!paneLayout.maximized || paneLayout.maximized === "right") && (
           <WorkspaceRightPanel
             layout={paneLayout}
             send={sendPane}
             navigation={navigationPanel}
             project={
               !projectExpanded &&
-              !paneLayout.split &&
               activeSurface !== "settings" &&
               selectedProject
                 ? detailPanel
@@ -2774,10 +2770,6 @@ export default function App() {
             }
             projectName={selectedProject?.name}
             onCloseProject={closeSelectedProject}
-            onSplitProject={() => {
-              if (selectedProject)
-                openProjectInSplit(selectedProject, activeProjectTabId || undefined);
-            }}
             onMaximizeProject={() => {
               if (selectedProject) createExpandedProject(selectedProject);
             }}

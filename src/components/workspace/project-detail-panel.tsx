@@ -840,8 +840,8 @@ export function WorkspaceProjectDetailPanel({
   const [projectDetailPanelWidth, setProjectDetailPanelWidth] = useState(
     readSavedProjectDetailPanelWidth,
   );
-  const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(null);
-  const [panelVisible, setPanelVisible] = useState(false);
+  const [panelProject, setPanelProject] = useState<WorkspaceMockProject | null>(inline ? project : null);
+  const [panelVisible, setPanelVisible] = useState(inline && open && project !== null);
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [propertyActionsId, setPropertyActionsId] = useState<string | null>(null);
@@ -968,7 +968,7 @@ export function WorkspaceProjectDetailPanel({
       return undefined;
     }
 
-    const shouldAnimateOpen = !panelMountedRef.current;
+    const shouldAnimateOpen = !inline && !expanded && !panelMountedRef.current;
     setPanelProject(project);
 
     if (!shouldAnimateOpen) {
@@ -991,7 +991,7 @@ export function WorkspaceProjectDetailPanel({
         window.cancelAnimationFrame(secondFrameId);
       }
     };
-  }, [isOpen, project]);
+  }, [isOpen, project, inline, expanded]);
 
   useEffect(() => {
     if (isOpen || panelVisible || panelProject === null) {
@@ -1573,7 +1573,7 @@ export function WorkspaceProjectDetailPanel({
     return null;
   }
 
-  const displayedProject = panelProject;
+  const displayedProject = inline && project ? project : panelProject;
 
   return (
     <div
@@ -1613,7 +1613,7 @@ export function WorkspaceProjectDetailPanel({
           panelVisible ? "pointer-events-auto" : "pointer-events-none",
           panelVisible ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
-        style={{ width: expanded || inline ? "100%" : projectDetailPanelWidth }}
+        style={{ width: expanded || inline ? "100%" : projectDetailPanelWidth, transition: inline || expanded ? "none" : undefined }}
       >
         {!expanded && !inline ? (
           <button

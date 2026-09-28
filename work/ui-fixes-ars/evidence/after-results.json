@@ -1,0 +1,26 @@
+{
+  "phase": "after",
+  "checks": [
+    {
+      "name": "native isolated security",
+      "passed": true
+    },
+    {
+      "name": "empty Notes has property and project name",
+      "passed": true
+    },
+    {
+      "name": "no Open in split command",
+      "passed": true
+    },
+    {
+      "name": "expanded hides right panel",
+      "passed": true
+    },
+    {
+      "name": "expanded content visible immediately without transform animation",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

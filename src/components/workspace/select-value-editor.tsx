@@ -50,6 +50,7 @@ type WorkspaceSelectValueEditorProps = {
   readonly dismissSignal?: number;
   readonly containerClassName?: string;
   readonly triggerClassName?: string;
+  readonly triggerLabel?: string;
   readonly onValueChange: (value: unknown) => void;
   readonly onCreateSelectValue: (
     propertyId: string,
@@ -175,6 +176,7 @@ export function WorkspaceSelectValueEditor({
   dismissSignal,
   containerClassName,
   triggerClassName,
+  triggerLabel,
   onValueChange,
   onCreateSelectValue,
   onRenameSelectValue,
@@ -582,7 +584,7 @@ export function WorkspaceSelectValueEditor({
             type="button"
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
-            aria-label={`${property.name}: ${t(isMultiSelect ? "value.multiSelect" : "value.select")}`}
+            aria-label={triggerLabel || `${property.name}: ${t(isMultiSelect ? "value.multiSelect" : "value.select")}`}
             data-workspace-select-value-trigger="true"
             data-empty-value={selectedValueItems.length > 0 ? undefined : "true"}
           >

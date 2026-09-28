@@ -116,6 +116,9 @@ Rules:
 
 Rules:
 
+- Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to Board/Table preserves its saved layout.
+- Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle/history reserve native traffic-light space when collapsed.
+- Settings responds to its host width rather than viewport breakpoints; folder labels and role controls remain readable beside Navigation.
 - Project Detail composes into the right panel, a project tab, or the centre split. Its labelled dialog and heading remain accessible in every host. Keep its property/file logic independent of pane chrome.
 - The panel header should show project identity first: `Name`. Do not repeat `Name` inside the Properties table.
 - Properties should appear before file structure.

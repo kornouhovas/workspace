@@ -152,14 +152,6 @@ function ProjectTab({
             <PanelRightCloseIcon className="size-4" aria-hidden="true" />
             {t("detail.restoreTab")}
           </ContextMenu.Item>
-          {onSplit && (
-            <ContextMenu.Item
-              className={workspaceMenuItemClassName}
-              onSelect={() => onSplit(project.tabId)}
-            >
-              {t("chrome.openInSplit")}
-            </ContextMenu.Item>
-          )}
           {onCloseOthers && (
             <ContextMenu.Item
               className={workspaceMenuItemClassName}
@@ -301,7 +293,7 @@ export function WorkspaceProjectTabs({
     >
       {splitDrag && (
         <div className="bb-split-drop-indicator" style={dropStyle} aria-hidden="true">
-          {t("chrome.openInSplit")}
+          {t("chrome.movePane")}
         </div>
       )}
       <Tabs

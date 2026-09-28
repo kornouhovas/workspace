@@ -20,7 +20,7 @@ export type PaneAction =
   | { type: "closePane"; paneId: string }
   | { type: "resizeTree"; path: number[]; index: number; fraction: number }
   | { type: "replacePane"; paneId: string; tabId: string | null }
-  | { type: "rightToggle" | "sidebarToggle" | "closeSplit" | "rightReopen" | "showWorkspace" }
+  | { type: "previewProject" | "rightToggle" | "sidebarToggle" | "closeSplit" | "rightReopen" | "showWorkspace" }
   | { type: "resizeRight" | "resizeSidebar"; width: number }
   | { type: "resizeSplit"; ratio: number }
   | { type: "focus" | "maximize"; pane: PaneId }

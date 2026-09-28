@@ -13,6 +13,7 @@ type WorkspaceDateValueEditorProps = {
   readonly dismissSignal?: number;
   readonly containerClassName?: string;
   readonly triggerClassName?: string;
+  readonly triggerLabel?: string;
   readonly onValueChange: (value: string | null) => void;
 };
 
@@ -78,6 +79,7 @@ export function WorkspaceDateValueEditor({
   dismissSignal,
   containerClassName,
   triggerClassName,
+  triggerLabel,
   onValueChange,
 }: WorkspaceDateValueEditorProps) {
   const { locale, t } = useI18n();
@@ -164,7 +166,7 @@ export function WorkspaceDateValueEditor({
             type="button"
             variant="ghost"
             className={triggerClassName || "h-8 w-full min-w-0 justify-start px-2 font-normal"}
-            aria-label={t("value.chooseDate")}
+            aria-label={triggerLabel || t("value.chooseDate")}
             data-empty-value={dateValue ? undefined : "true"}
           >
             {dateValue ? (

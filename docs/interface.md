@@ -46,7 +46,7 @@ Layout requirements:
 - The app title must not overlap the macOS traffic-light window controls.
 - The title area should be vertically offset enough for the hidden-inset titlebar.
 - The sidebar can be collapsed with a toggle icon.
-- Collapsed mode hides the sidebar; the visible toggle restores it. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
+- Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
 - Settings must look like navigation, not a passive label.
 - Clicking Settings opens the Settings screen in the main area.
 - Clicking a Workspace opens that Workspace working surface.
@@ -138,7 +138,7 @@ Tree navigation:
 - Expanding a folder reveals its direct child folders.
 - Collapsing a folder hides its descendants.
 - The tree must visually show parent/child relationships through indentation and disclosure icons.
-- Long folder names and paths must truncate without breaking layout.
+- Long folder names may wrap; paths truncate with their full value available on hover. Neither may push role controls outside the host.
 
 Default role rules:
 
@@ -157,7 +157,7 @@ MVP constraints:
 
 - Nested status groups are not supported as primary Board lanes in MVP.
 - Drag and drop projects between statuses is not supported in MVP.
-- Role controls may use segmented controls or compact select controls.
+- Role controls may use segmented controls or compact select controls. Settings columns respond to the available host width, including when Navigation is open. Folder roles wrap onto a separate row and remain reachable without horizontal clipping.
 - Role changes should save to local storage for the active Workspace.
 - Changing roles refreshes Board/Table project discovery.
 
@@ -263,6 +263,7 @@ Table requirements:
 
 - Rows remain compact for short values.
 - `Text` property values preserve stored manual line breaks, but Table shows them compactly in one line by default.
+- Empty and populated editable Table controls have accessible names containing the property and project; empty text/number cells remain identifiable without a displayed value.
 - In compact one-line `Text` mode, editing opens a popover editor anchored to the cell so the row height does not expand while typing longer text.
 - The Text column property menu includes `Wrap content`; when enabled for that view, the column preserves manual line breaks visually, wraps long text inside the stable column width, and lets row height expand.
 - Clicking a row opens the right Project Detail Panel.
@@ -284,14 +285,14 @@ The right Project Detail Panel opens only after the user selects a project from 
 
 Panel behavior:
 
-- Opens from the right as a Sheet.
+- Opens in the right preview host. Inline and expanded content is immediately visible without a slide-in transition.
 - Does not open on initial app load.
 - Can be closed without changing active view.
 - Closing the active expanded project tab, using either Close or its context menu, selects the immediately preceding project tab in the current tab order. If no project tab is to its left, return to the selected Board/Table view. Closing an inactive tab preserves the current screen.
 - Preserves the current Board/Table context.
-- A square button beside Close expands the project across the working area up to the sidebar. The same button restores the previous side-panel width.
+- Expand/Restore uses bb 0.44.0 Hugeicons `ExpandIcon` / `CollapseIcon`, 13px glyphs in 28px controls. Expand fills the working area up to the visible sidebar and suppresses the right Navigation/launcher host, including pointer and keyboard interaction. Restore returns to the side preview.
 - The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons are hidden and non-interactive while a card is open. Both tab groups remain above the panel background.
-- Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a view shows Board/Table without removing project tabs; selecting a project tab returns to its expanded panel.
+- Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a view shows Board/Table without removing project tabs; selecting a project tab immediately returns to its expanded screen, including a tab also present in a saved split. Board/Table remains reachable and the split tree is preserved underneath.
 - Duplicate tab inserts the new instance immediately to the right of the source tab and activates it.
 - Each project tab has its own identity, separate from the project ID. Clicking a project in Board/Table always opens an independent side panel, even if that project has expanded tabs. Expanding the side panel always creates a new tab. The tab context menu includes Duplicate tab, which creates and selects another expanded tab for the same project. Closing/restoring a tab removes only that instance; closing the independent side panel removes no tabs. Project property changes are shared across all instances. Duplicate tabs, their order and the active instance persist across restarts; older saved tabs migrate automatically.
 - Project tabs share the saved-view tab styling, support drag reorder within their Workspace, and expose Restore view / Close view through a right-click menu. These actions affect the clicked project, including an inactive tab, and match the panel's Restore and Close buttons.
@@ -393,10 +394,10 @@ The current app implementation must be reviewed against this list:
 
 ## Pane session and keyboard
 
-Renderer session chrome stores layout under `workspace.pane-layout.v1`, keyed by opaque Workspace ID. Project snapshots retain the existing `workspace.project-tabs.v1` format. UI preferences do not replace the active service transport, JSON adapters or Go sidecar store. See [ADR 005](adr/005-bb-pane-session-chrome.md).
+Renderer session chrome stores layout under `workspace.pane-layout.v1`, keyed by opaque Workspace ID. Project snapshots retain the existing `workspace.project-tabs.v1` format. The optional `screens[workspaceId].fullScreen` boolean distinguishes an explicitly selected expanded tab from a focused split leaf on restart; older snapshots default to false and retain their layout. UI preferences do not replace the active service transport, JSON adapters or Go sidecar store. See [ADR 005](adr/005-bb-pane-session-chrome.md).
 
 Project tabs expose a leading close control on hover/keyboard focus, middle-click close, close-other/close-right, reopen and drag reorder. Closing multiple tabs chooses a surviving neighbour before the active view fallback. Project tabs dropped over a pane use left/right/top/bottom edge zones to split and the centre to replace content. Drops outside panes or over titlebars do not create a split. Existing pane titles may be moved to an edge or swapped at the centre. Primary-status project drag remains restricted.
 
 `Cmd/Ctrl+J` toggles the right panel, `Cmd/Ctrl+T` opens its deduplicated empty launcher, `Cmd/Ctrl+W` closes the focused content tab, `Shift+Cmd/Ctrl+T` reopens a closed content tab and `Shift+Cmd/Ctrl+E` maximizes/restores the focused pane. Input, textarea, select, contenteditable and menu focus retain editing shortcuts. Empty launchers are excluded from reopen history. The fixed Workspace Navigation survives closing the last empty launcher.
 
-Opening a project in split preserves the active Board/Table and stores the project tab so the session can restore it. Close pane collapses its branch and focuses a surviving neighbour. Navigation restores/focuses the Workspace host while preserving other leaves; Settings remains reachable after its previous host was closed or replaced. Split and right-panel separators support pointer resize and keyboard arrows/Home/End.
+There is no Open in split button or menu command. Drag/drop splitting and saved split layouts remain supported. Opening a project from Board/Table while a split exists opens an independent right preview, preserving the existing panes and tab identities. Close pane collapses its branch and focuses a surviving neighbour. Navigation restores/focuses the Workspace host while preserving other leaves; Settings remains reachable after its previous host was closed or replaced. Split and right-panel separators support pointer resize and keyboard arrows/Home/End.

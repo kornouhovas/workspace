@@ -1,6 +1,7 @@
 import { type ReactNode, type PointerEvent } from "react";
 import { ChromeAction, ChromeIcon } from "./pane-chrome";
-import ArrowExpandIcon from "@hugeicons/core-free-icons/ArrowExpandIcon";
+import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
+import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
 import { useI18n } from "@/i18n";
 import {
@@ -140,6 +141,7 @@ export function WorkspaceSplitTree({
         className="bb-tree-pane"
         tabIndex={-1}
         data-pane-id={pane.paneId}
+        data-leading={maximized ? maximized.paneId === pane.paneId : panes[0].paneId === pane.paneId}
         key={pane.paneId}
         onFocusCapture={() => {
           send({ type: "focus", pane: pane.paneId });
@@ -174,7 +176,7 @@ export function WorkspaceSplitTree({
                 )}
                 onClick={() => send({ type: "maximize", pane: pane.paneId })}
               >
-                <ChromeIcon icon={ArrowExpandIcon} />
+                <ChromeIcon icon={layout.maximized === pane.paneId ? CollapseIcon : ExpandIcon} className="size-[13px]" />
               </ChromeAction>
               {panes.length > 1 && (
                 <ChromeAction

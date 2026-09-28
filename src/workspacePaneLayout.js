@@ -31,6 +31,8 @@ export function createPaneLayout() {
 }
 export function paneLayoutReducer(state, action) {
   switch (action.type) {
+    case "previewProject":
+      return { ...state, rightVisible: true, activeRightTab: "navigation", maximized: null, focused: "right" };
     case "rightToggle":
       return { ...state, rightVisible: !state.rightVisible };
     case "sidebarToggle":

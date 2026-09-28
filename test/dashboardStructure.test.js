@@ -216,8 +216,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
   assert.match(appSource, /sidebarCollapsed/);
   assert.match(appSource, /PanelLeftIcon/);
-  assert.match(appSource, /sidebarCollapsed \? "pl-32" : "pl-4"/);
-  assert.match(appSource, /transition-\[width,opacity\]/);
   assert.match(appSource, /w-0/);
   assert.doesNotMatch(leftPanelSource, /onToggleCollapsed/);
   assert.match(appSource, /data-testid="workspace-main"/);

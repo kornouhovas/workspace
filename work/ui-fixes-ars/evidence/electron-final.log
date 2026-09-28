@@ -1,0 +1,306 @@
+{
+  "phase": "final",
+  "checks": [
+    {
+      "name": "native isolated security",
+      "passed": true
+    },
+    {
+      "name": "empty Notes has property and project name",
+      "passed": true
+    },
+    {
+      "name": "no Open in split command",
+      "passed": true
+    },
+    {
+      "name": "bb expand glyph is13px in28px hit area",
+      "passed": true
+    },
+    {
+      "name": "expanded hides right panel",
+      "passed": true
+    },
+    {
+      "name": "bb restore glyph is13px in28px hit area",
+      "passed": true
+    },
+    {
+      "name": "expanded content visible immediately without transform animation",
+      "passed": true
+    },
+    {
+      "name": "switch expanded tabs retains identities and correct content",
+      "passed": true
+    },
+    {
+      "name": "close and keyboard reopen retains Beta",
+      "passed": true
+    },
+    {
+      "name": "Beta opens beside restored split without replacing Alpha",
+      "passed": true
+    },
+    {
+      "name": "select saved split tab expands with Board escape route",
+      "passed": true
+    },
+    {
+      "name": "return Board preserves split tree",
+      "passed": true
+    },
+    {
+      "name": "Table Beta opens with existing split",
+      "passed": true
+    },
+    {
+      "name": "viewport Light 1440",
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1440,
+            960
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Light 1440",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Light 1440",
+      "passed": true
+    },
+    {
+      "name": "restore preview keeps Alpha value Light 1440",
+      "passed": true
+    },
+    {
+      "name": "viewport Light 1024",
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1024,
+            720
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Light 1024",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Light 1024",
+      "passed": true
+    },
+    {
+      "name": "restore preview keeps Alpha value Light 1024",
+      "passed": true
+    },
+    {
+      "name": "viewport Dark 1440",
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1440,
+            960
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Dark 1440",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Dark 1440",
+      "passed": true
+    },
+    {
+      "name": "restore preview keeps Alpha value Dark 1440",
+      "passed": true
+    },
+    {
+      "name": "viewport Dark 1024",
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "window": {
+          "contentSize": [
+            1024,
+            720
+          ],
+          "zoomFactor": 1
+        }
+      }
+    },
+    {
+      "name": "Settings controls contained Dark 1024",
+      "passed": true
+    },
+    {
+      "name": "collapsed toolbar disjoint Dark 1024",
+      "passed": true
+    },
+    {
+      "name": "restore preview keeps Alpha value Dark 1024",
+      "passed": true
+    },
+    {
+      "name": "expanded hides explicit Navigation and fills available area",
+      "passed": true
+    },
+    {
+      "name": "reload keeps active expanded Alpha and Beta identity",
+      "passed": true
+    },
+    {
+      "name": "real Electron restart restores expanded screen and tab identities",
+      "passed": true
+    },
+    {
+      "name": "restore after restart retains Alpha note",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "transitionFrames": [
+    {
+      "transform": null
+    },
+    {
+      "transform": null
+    },
+    {
+      "transform": null
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    },
+    {
+      "name": "Project AlphaPropertiesStatusActiveNotesARS preserved noteAdd propertyChoose typ",
+      "transform": "none",
+      "animations": 0
+    }
+  ]
+}

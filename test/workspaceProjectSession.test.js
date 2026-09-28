@@ -35,3 +35,13 @@ test("damaged or inaccessible storage does not prevent startup", () => {
   assert.deepEqual(readProjectSession({ getItem: () => { throw Error(); } }), { tabs: {}, screens: {} });
   assert.equal(writeProjectSession({ setItem: () => { throw Error(); } }, {}, {}), false);
 });
+
+test("expanded presentation survives restart independently of a tab's saved split membership", () => {
+  let value;
+  const storage = { getItem: () => value, setItem: (_, next) => { value = next; } };
+  const project = { id: "alpha", tabId: "alpha-instance", name: "Alpha", currentRelativePath: "alpha", status: { id: "s", name: "Active" }, propertyValues: {} };
+  writeProjectSession(storage, { one: [project] }, { one: { viewId: "table", tabId: project.tabId, fullScreen: true } });
+  assert.equal(readProjectSession(storage).screens.one.fullScreen, true);
+  writeProjectSession(storage, { one: [project] }, { one: { viewId: "table", tabId: project.tabId, fullScreen: false } });
+  assert.equal(readProjectSession(storage).screens.one.fullScreen, false);
+});
