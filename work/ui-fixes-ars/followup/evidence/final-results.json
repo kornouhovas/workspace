@@ -1,0 +1,5356 @@
+{
+  "phase": "final",
+  "commit": "bc3ec997df7d3dc0a66d7c75fe8529e180320d7f",
+  "checks": [
+    {
+      "name": "main right panel toggle removed",
+      "passed": true
+    },
+    {
+      "name": "measured Light 1440",
+      "passed": true,
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "native": {
+          "bounds": {
+            "x": 30,
+            "y": 50,
+            "width": 1440,
+            "height": 960
+          },
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Board-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-Table-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "measured Light 1024",
+      "passed": true,
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "native": {
+          "bounds": {
+            "x": 30,
+            "y": 50,
+            "width": 1024,
+            "height": 720
+          },
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Board-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Light-1024-Table-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "measured Dark 1440",
+      "passed": true,
+      "metrics": {
+        "renderer": {
+          "width": 1440,
+          "height": 960,
+          "dpr": 1
+        },
+        "native": {
+          "bounds": {
+            "x": 30,
+            "y": 50,
+            "width": 1440,
+            "height": 960
+          },
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Board-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Dark-1440-Table-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "measured Dark 1024",
+      "passed": true,
+      "metrics": {
+        "renderer": {
+          "width": 1024,
+          "height": 720,
+          "dpr": 1
+        },
+        "native": {
+          "bounds": {
+            "x": 30,
+            "y": 50,
+            "width": 1024,
+            "height": 720
+          },
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Board-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-rightfalse cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle1 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle1 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle1 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle2 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle2 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle2 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle3 hide",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle3 show",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue cycle3 width/content",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue no duplicate main controls",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue no right plus",
+      "passed": true
+    },
+    {
+      "name": "Dark-1024-Table-righttrue main Add view preserved",
+      "passed": true
+    },
+    {
+      "name": "right card expand/restore keeps Alpha",
+      "passed": true
+    },
+    {
+      "name": "keyboard collapse",
+      "passed": true
+    },
+    {
+      "name": "keyboard expand",
+      "passed": true
+    },
+    {
+      "name": "collapse before restart",
+      "passed": true
+    },
+    {
+      "name": "restart retains collapsed",
+      "passed": true
+    },
+    {
+      "name": "native expand after restart",
+      "passed": true
+    },
+    {
+      "name": "restart restores sidebar width/content",
+      "passed": true
+    }
+  ],
+  "events": [
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1440,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    },
+    {
+      "name": "Hide sidebar",
+      "window": {
+        "content": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "bounds": {
+          "x": 30,
+          "y": 50,
+          "width": 1024,
+          "height": 720
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 280,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 308,
+          "bottom": 40,
+          "left": 280
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "true"
+    },
+    {
+      "name": "Show sidebar",
+      "window": {
+        "content": {
+          "x": 221,
+          "y": 87,
+          "width": 1358,
+          "height": 960
+        },
+        "bounds": {
+          "x": 221,
+          "y": 87,
+          "width": 1358,
+          "height": 960
+        },
+        "position": {
+          "x": 18,
+          "y": 18
+        },
+        "url": "file:///Users/aleksandersk/Documents/programming/Projects/project_folder/dist/renderer/index.html"
+      },
+      "hit": {
+        "rect": {
+          "x": 96,
+          "y": 12,
+          "width": 28,
+          "height": 28,
+          "top": 12,
+          "right": 124,
+          "bottom": 40,
+          "left": 96
+        },
+        "appRegion": "no-drag",
+        "target": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" color=\"currentColor\" class=\"size-4\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\""
+      },
+      "collapsed": "false"
+    }
+  ],
+  "nativeEvents": [
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 159.5,
+      "y": 936,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 766,
+      "y": 85,
+      "label": "Appearance"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 783,
+      "y": 85
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1280.719970703125,
+      "y": 23.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 362.7799987792969,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 463,
+      "y": 119.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 362.7799987792969,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1002,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 463,
+      "y": 119.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1002,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 159.5,
+      "y": 696,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 943,
+      "y": 85,
+      "label": "Appearance"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 942,
+      "y": 113
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 946.719970703125,
+      "y": 23.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 362.7799987792969,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 463,
+      "y": 119.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 362.7799987792969,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1002,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 463,
+      "y": 119.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1002,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 463,
+      "y": 119.5,
+      "label": null
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 970,
+      "y": 23.5,
+      "label": "Maximize pane (⇧ ⌘ E)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 970,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1002,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    }
+  ]
+}

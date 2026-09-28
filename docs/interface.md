@@ -19,7 +19,7 @@ The app opens as an Electron desktop app with:
 
 - a left sidebar;
 - a main content area;
-- an optional right panel with fixed Workspace Navigation and a project preview;
+- an optional right panel with fixed Workspace Navigation and a project preview; the main header has no separate right-panel toggle. Choosing a project still opens its preview.
 - an ordered centre split tree for the working view and multiple Project Detail areas. Pane chrome follows bb 0.44.0 ([reference matrix](../work/bb-interface-1wx/reference-matrix.md)).
 
 On initial app open:
@@ -45,7 +45,7 @@ Layout requirements:
 
 - The app title must not overlap the macOS traffic-light window controls.
 - The title area should be vertically offset enough for the hidden-inset titlebar.
-- The sidebar can be collapsed with a toggle icon.
+- The sidebar can be collapsed with a toggle icon. Native pointer clicks must both hide and show it: the toggle no-drag exclusion is rendered after all pane drag regions so macOS does not consume the restore click.
 - Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
 - Settings must look like navigation, not a passive label.
 - Clicking Settings opens the Settings screen in the main area.
@@ -291,7 +291,7 @@ Panel behavior:
 - Closing the active expanded project tab, using either Close or its context menu, selects the immediately preceding project tab in the current tab order. If no project tab is to its left, return to the selected Board/Table view. Closing an inactive tab preserves the current screen.
 - Preserves the current Board/Table context.
 - Expand/Restore uses bb 0.44.0 Hugeicons `ExpandIcon` / `CollapseIcon`, 13px glyphs in 28px controls. Expand fills the working area up to the visible sidebar and suppresses the right Navigation/launcher host, including pointer and keyboard interaction. Restore returns to the side preview.
-- The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons are hidden and non-interactive while a card is open. Both tab groups remain above the panel background.
+- The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons remain available while a right preview is open; only the full working-area project screen replaces them with Restore/Close. Both tab groups remain above the panel background.
 - Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a view shows Board/Table without removing project tabs; selecting a project tab immediately returns to its expanded screen, including a tab also present in a saved split. Board/Table remains reachable and the split tree is preserved underneath.
 - Duplicate tab inserts the new instance immediately to the right of the source tab and activates it.
 - Each project tab has its own identity, separate from the project ID. Clicking a project in Board/Table always opens an independent side panel, even if that project has expanded tabs. Expanding the side panel always creates a new tab. The tab context menu includes Duplicate tab, which creates and selects another expanded tab for the same project. Closing/restoring a tab removes only that instance; closing the independent side panel removes no tabs. Project property changes are shared across all instances. Duplicate tabs, their order and the active instance persist across restarts; older saved tabs migrate automatically.
@@ -401,3 +401,5 @@ Project tabs expose a leading close control on hover/keyboard focus, middle-clic
 `Cmd/Ctrl+J` toggles the right panel, `Cmd/Ctrl+T` opens its deduplicated empty launcher, `Cmd/Ctrl+W` closes the focused content tab, `Shift+Cmd/Ctrl+T` reopens a closed content tab and `Shift+Cmd/Ctrl+E` maximizes/restores the focused pane. Input, textarea, select, contenteditable and menu focus retain editing shortcuts. Empty launchers are excluded from reopen history. The fixed Workspace Navigation survives closing the last empty launcher.
 
 There is no Open in split button or menu command. Drag/drop splitting and saved split layouts remain supported. Opening a project from Board/Table while a split exists opens an independent right preview, preserving the existing panes and tab identities. Close pane collapses its branch and focuses a surviving neighbour. Navigation restores/focuses the Workspace host while preserving other leaves; Settings remains reachable after its previous host was closed or replaced. Split and right-panel separators support pointer resize and keyboard arrows/Home/End.
+
+The right-preview header owns its expand/close controls; the main header does not duplicate them to the left of the divider. The right header has no new-tab plus button. Existing right tabs and keyboard commands remain supported; the main Add Board/Table control is retained. Independent split pane controls are unchanged.

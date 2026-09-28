@@ -117,7 +117,8 @@ Rules:
 Rules:
 
 - Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to Board/Table preserves its saved layout.
-- Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle/history reserve native traffic-light space when collapsed.
+- Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle/history reserve native traffic-light space when collapsed. Native no-drag exclusions must follow overlapping pane drag regions; verify sidebar restoration with OS pointer events, since CDP input does not exercise macOS titlebar routing.
+- Right-preview card actions belong to its own header. Omit the duplicate main-header actions and the right-header new-tab plus; retain the main Add Board/Table button.
 - Settings responds to its host width rather than viewport breakpoints; folder labels and role controls remain readable beside Navigation.
 - Project Detail composes into the right panel, a project tab, or the centre split. Its labelled dialog and heading remain accessible in every host. Keep its property/file logic independent of pane chrome.
 - The panel header should show project identity first: `Name`. Do not repeat `Name` inside the Properties table.

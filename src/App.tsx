@@ -30,7 +30,6 @@ import {
   PaneResize,
   WorkspaceRightPanel,
 } from "@/components/workspace/pane-chrome";
-import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
 import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
 import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
@@ -2401,7 +2400,7 @@ export default function App() {
             <WorkspaceViewTabs
               projectActive={projectFullScreen}
               projectActions={
-                selectedProject && (!paneLayout.split || projectFullScreen) ? (
+                projectFullScreen ? (
                   <>
                     <Button
                       type="button"
@@ -2433,7 +2432,7 @@ export default function App() {
                 ) : null
               }
               onShowView={() => setSelectedProject(null)}
-              actionsHidden={selectedProject !== null && (!paneLayout.split || projectFullScreen)}
+              actionsHidden={projectFullScreen}
               projectTabs={
                 <WorkspaceProjectTabs
                   key={projectTabsWorkspaceId}
@@ -2559,12 +2558,6 @@ export default function App() {
             <ChromeIcon icon={Cancel01Icon} />
           </ChromeAction>
         )}
-        <ChromeAction
-          label={t("chrome.showRight")}
-          onClick={() => sendPane({ type: "rightToggle" })}
-        >
-          <ChromeIcon icon={SidebarRightIcon} />
-        </ChromeAction>
       </header>
       {projectFullScreen ? (
         detailPanel
@@ -2676,18 +2669,6 @@ export default function App() {
           { "--workspace-sidebar-width": `${paneLayout.sidebarWidth}px` } as React.CSSProperties
         }
       >
-        <button
-          type="button"
-          className={[
-            "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
-            sidebarCollapsed ? "left-24" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
-          ].join(" ")}
-          aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          onClick={() => sendPane({ type: "sidebarToggle" })}
-        >
-          <PanelLeftIcon className="size-4" aria-hidden="true" />
-        </button>
         <div
           className={[
             "h-full shrink-0",
@@ -2773,9 +2754,21 @@ export default function App() {
             onMaximizeProject={() => {
               if (selectedProject) createExpandedProject(selectedProject);
             }}
-            onNewTab={() => "launcher"}
           />
         )}
+        {/* Native no-drag exclusion must follow pane drag regions in DOM order. */}
+        <button
+          type="button"
+          className={[
+            "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
+            sidebarCollapsed ? "left-24" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
+          ].join(" ")}
+          aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+          title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+          onClick={() => sendPane({ type: "sidebarToggle" })}
+        >
+          <PanelLeftIcon className="size-4" aria-hidden="true" />
+        </button>
       </div>
       <Toaster richColors />
     </TooltipProvider>

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from "
 import { ContextMenu } from "radix-ui";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
-import PlusSignIcon from "@hugeicons/core-free-icons/PlusSignIcon";
 import ArrowLeft01Icon from "@hugeicons/core-free-icons/ArrowLeft01Icon";
 import ArrowRight01Icon from "@hugeicons/core-free-icons/ArrowRight01Icon";
 import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
@@ -195,7 +194,6 @@ export function WorkspaceRightPanel({
   projectName,
   onCloseProject,
   onMaximizeProject,
-  onNewTab,
 }: {
   layout: PaneLayout;
   send: (action: PaneAction) => void;
@@ -204,7 +202,6 @@ export function WorkspaceRightPanel({
   projectName?: string;
   onCloseProject: () => void;
   onMaximizeProject: () => void;
-  onNewTab: () => string;
 }) {
   const { t } = useI18n();
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
@@ -327,12 +324,6 @@ export function WorkspaceRightPanel({
             </ContextMenu.Root>
           ))}
         </div>
-        <ChromeAction
-          label={t("chrome.openNewTab")}
-          onClick={() => send({ type: "rightOpen", id: onNewTab() })}
-        >
-          <ChromeIcon icon={PlusSignIcon} />
-        </ChromeAction>
         {(scroll.left || scroll.right) && (
           <>
             <ChromeAction

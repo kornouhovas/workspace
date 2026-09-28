@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "name": "native collapse right preview",
+      "passed": true
+    },
+    {
+      "name": "native expand right preview",
+      "passed": true
+    },
+    {
+      "name": "main plus creates Board and Table",
+      "passed": true
+    },
+    {
+      "name": "keyboard launcher still supported and deduplicated",
+      "passed": true
+    },
+    {
+      "name": "right plus absent with existing tab",
+      "passed": true
+    },
+    {
+      "name": "existing right tab survives reload",
+      "passed": true
+    }
+  ]
+}
