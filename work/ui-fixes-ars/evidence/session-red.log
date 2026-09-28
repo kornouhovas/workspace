@@ -23,7 +23,7 @@ not ok 4 - expanded presentation survives restart independently of a tab's saved
   error: |-
     Expected values to be strictly equal:
     + actual - expected
-    
+
     + undefined
     - true
   code: 'ERR_ASSERTION'
