@@ -14,7 +14,7 @@ The shell and shared chrome follow the pinned bb 0.44.0 reference. Workspace sup
 - Primitive base: Radix UI primitives through shadcn components.
 - Icons: bb stroke-rounded Hugeicons through `src/lib/workspace-icons.tsx`; remaining product-specific glyphs use the existing lucide exports.
 - Font: Inter Variable from `@fontsource-variable/inter` (SIL Open Font License).
-- Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px. Shared neutral colours come from bb 0.44.0.
+- Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px; width is a shared device preference, while visibility and right-panel state remain per Workspace. Shared neutral colours come from bb 0.44.0.
 - Table rows start at 36px; expanded project property rows use 48px; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
 - Theme: Light, Dark and System in Settings use bb neutral ink/canvas, hover/active and seam tokens in `src/styles.css`. Status and Select colours still come from project data.
 - Notifications: `sonner`.
@@ -117,7 +117,7 @@ Rules:
 Rules:
 
 - Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to any saved view hides the right host while preserving tabs and the saved split tree.
-- Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle/history reserve native traffic-light space when collapsed. Native no-drag exclusions must follow overlapping pane drag regions; verify sidebar restoration with OS pointer events, since CDP input does not exercise macOS titlebar routing.
+- Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar history and toggle retain fixed positions, with toggle to the right of both arrows, reserving native traffic-light space in both states. The leading header inset animates with sidebar width. Native no-drag exclusions must follow overlapping pane drag regions; verify sidebar restoration with OS pointer events, since CDP input does not exercise macOS titlebar routing.
 - Right-preview card actions belong to its own header. Omit the duplicate main-header actions and the right-header new-tab plus; retain the main Add Board/Table button.
 - Settings responds to its host width rather than viewport breakpoints; folder labels and role controls remain readable beside Navigation.
 - Project Detail composes into the right panel, a project tab, or the centre split. Its dialog retains the project name as an accessible label in every host. Keep its property/file logic independent of pane chrome.

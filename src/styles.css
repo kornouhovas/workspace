@@ -550,6 +550,11 @@
 .workspace-settings > * { min-width: 0; }
 .workspace-folder-role-row > div:first-of-type { overflow-wrap: anywhere; }
 
+/* Header inset interpolates with sidebar width; history/toggle never reorder. */
+.bb-tree-pane[data-leading=true] > main > header,
+.bb-tree-pane[data-leading=true] > header,
+.bb-center > main > header,
+.bb-right-panel[data-leading=true] > header { transition:padding-left 220ms cubic-bezier(.2,.7,.2,1); }
 /* Reserve native traffic lights, sidebar toggle and history only in the leading header. */
 .workspace-shell[data-sidebar-collapsed=true] .bb-tree-pane[data-leading=true] > main > header,
 .workspace-shell[data-sidebar-collapsed=true] .bb-tree-pane[data-leading=true] > header,
@@ -569,5 +574,5 @@ html[data-pane-resizing=true] .workspace-sidebar-host,
 html[data-pane-resizing=true] .workspace-sidebar,
 html[data-pane-resizing=true] .bb-right-panel { transition:none; }
 @media(prefers-reduced-motion:reduce) {
-  .workspace-sidebar-host,.workspace-sidebar,.workspace-sidebar-body,.bb-right-panel { transition:none; }
+  .workspace-sidebar-host,.workspace-sidebar,.workspace-sidebar-body,.bb-right-panel, .bb-pane-header { transition:none !important; }
 }

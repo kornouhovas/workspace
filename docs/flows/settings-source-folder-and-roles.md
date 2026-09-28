@@ -2,7 +2,7 @@
 
 ## Goal
 
-Allow the user to choose the shared project source folder in Settings, inspect its folder tree, assign folder roles, and produce a project set that Board and Table views can render for the active Workspace.
+Allow the user to choose the selected Workspace’s project source folder in Settings, inspect its folder tree, assign folder roles, and produce a project set that Board and Table views can render for the active Workspace.
 
 This flow establishes the source of projects for the app. Without it, Workspaces cannot reliably show project cards, statuses, or project file structure.
 
@@ -21,7 +21,7 @@ This flow establishes the source of projects for the app. Without it, Workspaces
 
 ## Assumptions
 
-- The project source folder is app-level Settings data.
+- The project source folder binding and folder roles belong to the selected Workspace. Language and appearance remain application preferences.
 - Folder role configuration is Workspace-scoped.
 - If no Workspace exists yet, Settings lets the user choose the source folder but prompts them to create a Workspace before assigning roles.
 - MVP supports one level of status folders.
@@ -30,12 +30,12 @@ This flow establishes the source of projects for the app. Without it, Workspaces
 ## Steps
 
 1. User opens Settings from the Left Panel.
-2. Settings shows the current project source folder state.
+2. Settings identifies the selected Workspace and shows its project source folder state.
 3. If no source folder is selected, the user chooses `Select folder`.
 4. The app opens the native folder picker.
 5. User selects a local folder.
 6. Backend validates that the selected path exists and is a directory.
-7. App stores the project source folder document.
+7. App saves the source binding for that Workspace, preserving other Workspaces and prior source metadata.
 8. Settings scans the visible folder tree under the selected source folder.
 9. If no Workspace exists, Settings shows a create Workspace action before role editing.
 10. User selects or creates the active Workspace.
@@ -262,4 +262,4 @@ When reviewing implementation, verify against:
 - `docs/data-model.md`
 - `docs/ui-guidelines.md`
 
-The most important behavioral check is that source folder selection is app-level, while folder roles are active-Workspace configuration.
+The most important behavioral check is that source selection, role tree and discovery all use the same explicit Workspace. A delayed picker result belongs to the Workspace captured when the picker opened; cancellation changes nothing. Source loss keeps the path and navigation available for recovery without removing metadata.

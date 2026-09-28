@@ -1,0 +1,1698 @@
+{
+  "phase": "sessions-probe",
+  "checks": [
+    {
+      "name": "native size 1440",
+      "passed": true,
+      "data": {
+        "x": 30,
+        "y": 50,
+        "width": 1440,
+        "height": 960
+      }
+    },
+    {
+      "name": "saved value visible",
+      "passed": true
+    },
+    {
+      "name": "active workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+      "passed": true
+    },
+    {
+      "name": "active workspace:ba53fc47b59483b4",
+      "passed": true
+    },
+    {
+      "name": "active workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+      "passed": true
+    },
+    {
+      "name": "filtered preview preserved outside view",
+      "passed": true
+    },
+    {
+      "name": "native size 1440",
+      "passed": true,
+      "data": {
+        "x": 30,
+        "y": 50,
+        "width": 1440,
+        "height": 960
+      }
+    },
+    {
+      "name": "filtered preview restart contents",
+      "passed": true
+    },
+    {
+      "name": "native size 1440",
+      "passed": true,
+      "data": {
+        "x": 30,
+        "y": 50,
+        "width": 1440,
+        "height": 960
+      }
+    },
+    {
+      "name": "no foreign preview during delayed switching",
+      "passed": true,
+      "data": [
+        {
+          "t": 0,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 0.19999998807907104,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 8.099999964237213,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 15,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 27.399999976158142,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 33.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 40,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 50.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 56.59999996423721,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 67,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 73.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 83.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 90,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 100.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 106.80000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 117,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 123.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 134.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 141,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 150.19999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 158.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 165.0999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 173.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 181.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 190,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 198.19999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 206.5999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 215,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 223.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 231.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 240,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 248.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 256.5999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 266.89999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 273.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 283.5,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 291.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 297.80000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 305.19999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 314.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 323.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 331.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 340.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 348.39999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 355.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 363.89999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 373.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 381.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 390.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 398.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 406.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 415.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 423.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 431.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 440,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 448.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 456.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 465,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 475.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 481.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 491.89999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 498.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 506.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 517.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 523.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 531.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 541.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 548.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 556.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 565.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 574.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 581.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 590.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 598.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 608.3999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 615.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 623.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 633.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 641.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 648.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 658.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 665.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 673.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 683.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 688.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 697.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 705.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 714.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 722.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 733.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 740.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 748.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 756,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 764.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 773.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 781.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 791.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 798.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 808.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 815.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 824.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 831.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 840.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 848.3999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 857.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 864.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 873.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 884.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 889.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 898.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 915.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 924.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 931.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 939.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 948.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 956.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 965.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 973.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 983.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 989.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 998.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1006.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1017.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1024.199999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1031.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1041.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1048.300000011921,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1056.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1065.300000011921,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1073.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1081.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1090.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1098.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        }
+      ]
+    },
+    {
+      "name": "latest target wins",
+      "passed": true
+    },
+    {
+      "name": "active workspace:ba53fc47b59483b4",
+      "passed": true
+    },
+    {
+      "name": "expanded screen fills center",
+      "passed": true
+    },
+    {
+      "name": "active workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+      "passed": true
+    }
+  ],
+  "frames": [
+    {
+      "name": "delayed rapid A B A B",
+      "frames": [
+        {
+          "t": 0,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 0.19999998807907104,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 8.099999964237213,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 15,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 27.399999976158142,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 33.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 40,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 50.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 56.59999996423721,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 67,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 73.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 83.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 90,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 100.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 106.80000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 117,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 123.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 134.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 141,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 150.19999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 158.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 165.0999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 173.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 181.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 190,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 198.19999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 206.5999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 215,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 223.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 231.69999998807907,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 240,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 248.30000001192093,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 256.5999999642372,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 266.89999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 273.39999997615814,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 283.5,
+          "active": "workspace:ba53fc47b59483b4",
+          "dialog": "Project Alpha",
+          "names": []
+        },
+        {
+          "t": 291.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 297.80000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 305.19999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 314.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 323.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 331.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 340.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 348.39999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 355.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 363.89999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 373.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 381.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 390.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 398.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 406.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 415.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 423.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 431.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 440,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 448.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 456.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 465,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 475.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 481.69999998807907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 491.89999997615814,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 498.30000001192093,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 506.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 517.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 523.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 531.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 541.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 548.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 556.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 565.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 574.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 581.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 590.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 598.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 608.3999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 615.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 623.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 633.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 641.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 648.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 658.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 665.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 673.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 683.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 688.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 697.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 705.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 714.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 722.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 733.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 740.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 748.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 756,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 764.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 773.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 781.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 791.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 798.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 808.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 815.5999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 824.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 831.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 840.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 848.3999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 857.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 864.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 873.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 884.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 889.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 898.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 907,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 915.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 924.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 931.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 939.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 948.3000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 956.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 965.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 973.6999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 983.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 989.8000000119209,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 998.0999999642372,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1006.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1017.1999999880791,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1024.199999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1031.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1041.5,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1048.300000011921,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1056.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1065.300000011921,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1073.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1081.699999988079,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1090.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        },
+        {
+          "t": 1098.8999999761581,
+          "active": "workspace:ba53fc47b59483b4:0e27f696-9a8c-40e7-a298-619653fca4d0",
+          "dialog": "Project Delta",
+          "names": []
+        }
+      ]
+    }
+  ],
+  "events": [],
+  "error": "locator.waitFor: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Project Alpha', exact: true }) to be visible\u001b[22m\n\n    at switchTo (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-sessions-9s1/verify-sessions.mjs:41:130)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-sessions-9s1/verify-sessions.mjs:62:36"
+}

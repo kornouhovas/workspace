@@ -987,3 +987,16 @@ test("workspace projection search filter narrows board and table locally by proj
     "project:beta",
   ]);
 });
+
+test('accepted workspace snapshot replaces a different root and view atomically', async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer: reduce } = await importAppStateModule();
+  const initial = reduce(createInitialWorkspaceAppState(), { type: 'projectionLoaded', root, viewsResponse, projectionResponse, folderRoleTree });
+  const targetRoot = { ...root, workspaceId: 'workspace:research', path: '/other/source' };
+  const targetView = { id: 'view:research', name: 'Research', viewType: 'board' };
+  const next = reduce(initial, { type: 'projectionLoaded', replaceWorkspace: true, root: targetRoot, viewsResponse: { workspaceId: targetRoot.workspaceId, activeViewId: targetView.id, views: [targetView] }, projectionResponse: { ...projectionResponse, workspaceId: targetRoot.workspaceId, view: targetView }, folderRoleTree: [] });
+  assert.equal(next.root.path, '/other/source');
+  assert.equal(next.workspaceId, 'workspace:research');
+  assert.equal(next.activeViewId, 'view:research');
+  assert.equal(next.projection.workspaceId, next.workspaceId);
+  assert.equal(next.workspaceSwitchPending, false);
+});

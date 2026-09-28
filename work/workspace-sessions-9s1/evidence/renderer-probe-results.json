@@ -1,0 +1,7 @@
+{
+  "phase": "renderer-probe",
+  "checks": [],
+  "frames": [],
+  "events": [],
+  "error": "electronApplication.evaluate: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-fixes-ars-5g29tA/WorkspaceFixesArs.app/Contents/MacOS/Electron --inspect=0 --remote-debugging-port=0 electron/main.js\n<launched> pid=97327\n[pid=97327][err] sandbox_extension_issue_file_to_process failed for /var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-fixes-ars-5g29tA/WorkspaceFixesArs.app: 1 (Operation not permitted)\n[pid=97327][err] Debugger listening on ws://127.0.0.1:65397/b4289cc7-9986-47cf-bd50-2c974c4c283f\n[pid=97327][err] For help, see: https://nodejs.org/en/docs/inspector\n[pid=97327][err] Debugger attached.\n[pid=97327][err] \n[pid=97327][err] DevTools listening on ws://127.0.0.1:65399/devtools/browser/f8a21532-862b-415a-be85-9693c53b03bc\n[pid=97327] <gracefully close start>\n[pid=97327][err] Debugger ending on ws://127.0.0.1:65397/b4289cc7-9986-47cf-bd50-2c974c4c283f\n[pid=97327][err] For help, see: https://nodejs.org/en/docs/inspector\n    at fit (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-sessions-9s1/verify-renderer.mjs:24:121)\n    at async start (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-sessions-9s1/verify-renderer.mjs:25:101)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-sessions-9s1/verify-renderer.mjs:46:2"
+}

@@ -1,0 +1,178 @@
+TAP version 13
+# Subtest: workspace IPC handler returns null when source folder is not selected
+ok 1 - workspace IPC handler returns null when source folder is not selected
+  ---
+  duration_ms: 5.7425
+  ...
+# Subtest: workspace IPC handler surfaces corrupt settings JSON without overwriting it
+ok 2 - workspace IPC handler surfaces corrupt settings JSON without overwriting it
+  ---
+  duration_ms: 2.083958
+  ...
+# Subtest: workspace IPC handler surfaces corrupt views JSON without overwriting it
+ok 3 - workspace IPC handler surfaces corrupt views JSON without overwriting it
+  ---
+  duration_ms: 3.245958
+  ...
+# Subtest: workspace IPC handler serves default views and projection for selected source folder
+ok 4 - workspace IPC handler serves default views and projection for selected source folder
+  ---
+  duration_ms: 45.5615
+  ...
+# Subtest: workspace IPC handler preserves table views that hide Status
+ok 5 - workspace IPC handler preserves table views that hide Status
+  ---
+  duration_ms: 9.76075
+  ...
+# Subtest: workspace IPC handler tolerates concurrent default workspace initialization
+ok 6 - workspace IPC handler tolerates concurrent default workspace initialization
+  ---
+  duration_ms: 13.298916
+  ...
+# Subtest: workspace IPC handler tolerates concurrent root selection across process handlers
+ok 7 - workspace IPC handler tolerates concurrent root selection across process handlers
+  ---
+  duration_ms: 19.646125
+  ...
+# Subtest: workspace IPC handler repairs a stale active view when selecting a root
+ok 8 - workspace IPC handler repairs a stale active view when selecting a root
+  ---
+  duration_ms: 14.697875
+  ...
+# Subtest: workspace IPC handler persists folder role rules for scans and projections
+ok 9 - workspace IPC handler persists folder role rules for scans and projections
+  ---
+  duration_ms: 12.749833
+  ...
+# Subtest: workspace IPC handler keeps Cyrillic status values distinct
+ok 10 - workspace IPC handler keeps Cyrillic status values distinct
+  ---
+  duration_ms: 8.136042
+  ...
+# Subtest: workspace IPC handler creates renames reorders and deletes workspaces
+ok 11 - workspace IPC handler creates renames reorders and deletes workspaces
+  ---
+  duration_ms: 14.8585
+  ...
+# Subtest: workspace IPC handler uses plain Workspace as the default created workspace name
+ok 12 - workspace IPC handler uses plain Workspace as the default created workspace name
+  ---
+  duration_ms: 7.001791
+  ...
+# Subtest: workspace IPC handler does not recreate a deleted default source workspace
+ok 13 - workspace IPC handler does not recreate a deleted default source workspace
+  ---
+  duration_ms: 10.636125
+  ...
+# Subtest: workspace IPC handler persists view state outside the process handler instance
+ok 14 - workspace IPC handler persists view state outside the process handler instance
+  ---
+  duration_ms: 5.744791
+  ...
+# Subtest: workspace IPC handler persists custom properties and projects them into views
+ok 15 - workspace IPC handler persists custom properties and projects them into views
+  ---
+  duration_ms: 28.333208
+  ...
+# Subtest: workspace IPC handler renames system property labels without changing system semantics
+ok 16 - workspace IPC handler renames system property labels without changing system semantics
+  ---
+  duration_ms: 16.439583
+  ...
+# Subtest: workspace IPC handler creates duplicate property names as distinct id-backed properties
+ok 17 - workspace IPC handler creates duplicate property names as distinct id-backed properties
+  ---
+  duration_ms: 13.614333
+  ...
+# Subtest: workspace IPC handler persists derived status value colors
+ok 18 - workspace IPC handler persists derived status value colors
+  ---
+  duration_ms: 12.345166
+  ...
+# Subtest: workspace IPC handler shares object properties across workspaces for the same source folder
+ok 19 - workspace IPC handler shares object properties across workspaces for the same source folder
+  ---
+  duration_ms: 22.674375
+  ...
+# Subtest: workspace IPC handler deletes custom properties from values and source views
+ok 20 - workspace IPC handler deletes custom properties from values and source views
+  ---
+  duration_ms: 34.625833
+  ...
+# Subtest: workspace sources and roles isolate legacy siblings and survive restart, cancellation and unavailable roots
+not ok 21 - workspace sources and roles isolate legacy siblings and survive restart, cancellation and unavailable roots
+  ---
+  duration_ms: 14.325916
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceIpc.test.js:1112:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+
+    + 'workspace:74e9007eb69fe9ed'
+    - 'workspace:d1c8d21556422622'
+                 ^
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'workspace:d1c8d21556422622'
+  actual: 'workspace:74e9007eb69fe9ed'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceIpc.test.js:1127:12)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 22 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 2.519792
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 23 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.308625
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 24 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.157583
+  ...
+# Subtest: expanded presentation survives restart independently of a tab's saved split membership
+ok 25 - expanded presentation survives restart independently of a tab's saved split membership
+  ---
+  duration_ms: 0.77975
+  ...
+# Subtest: preview identity survives independently of expanded tabs and is scoped to workspace
+not ok 26 - preview identity survives independently of expanded tabs and is scoped to workspace
+  ---
+  duration_ms: 2.168459
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceProjectSession.test.js:49:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+
+    + undefined
+    - 'alpha'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'alpha'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceProjectSession.test.js:54:10)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 24
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 393.660125

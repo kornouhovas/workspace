@@ -9,7 +9,7 @@ The model follows the architecture decisions in `docs/architecture.md` and ADR-0
 - the filesystem remains the source of project files;
 - product metadata is local-first and document-oriented;
 - React UI never reads or writes storage directly;
-- Workspaces are saved configurations over one selected project source folder;
+- Workspaces are saved configurations with a selected project source folder per Workspace;
 - project ids are stable local ids, while relative paths are locators.
 
 ## Document Conventions
@@ -79,7 +79,7 @@ Fields:
 
 Business rules:
 
-- MVP has one active project source folder.
+- Each Workspace selects one active project source folder; multiple Workspaces can share the same source.
 - The source folder path is a runtime boundary, not a project identity.
 - Changing the source folder changes what projects can be discovered.
 - Workspaces reference this document through `sourceFolderId`.
@@ -122,7 +122,7 @@ Fields:
 
 Business rules:
 
-- A Workspace is not a separate root folder.
+- A Workspace can select its own root folder; changing the binding preserves the Workspace ID and its views.
 - All Workspaces in MVP use the selected project source folder.
 - Deleting a Workspace deletes only app metadata, never project files.
 - A Workspace must keep at least one active view after setup.
@@ -647,3 +647,9 @@ Sync-ready requirements:
 - no direct dependence on absolute project paths for project identity.
 
 Conflict resolution is not part of MVP and should be specified in a future ADR before `any sync` work starts.
+
+## Transitional Electron source bindings and renderer sessions
+
+The active Electron IPC runtime still uses JSON adapters (ADR-006), not the target Go store. Its settings retain legacy `rootPath`/`folderRules` and add `workspaceSources[workspaceId] = { rootPath, rulesByRoot }`. On first use, current legacy siblings inherit the former source and independent copies of its roles. Changing one binding preserves other bindings and previous root roles. Existing source-scoped project IDs, definitions, values and history are retained; no namespace rewrite or file move occurs. The view document’s `sourceFolderId` tracks its current source. Unknown historical source paths cannot be inferred from IDs and never fall back to an unrelated root.
+
+Only sidebar width is shared device-local chrome, stored at `workspace.sidebar-width.v1`. Without that key, the first validated legacy pane layout supplies the initial width, otherwise 320px. Existing layouts remain readable and retain their own collapsed/right/split states. Project session screens additionally store an optional `previewId`, independently from an expanded `tabId`; previews restore fresh data by ID outside view filtering. File trees are fetched through the backend rather than persisted in renderer sessions.

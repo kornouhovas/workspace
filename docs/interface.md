@@ -46,7 +46,7 @@ Layout requirements:
 - The app title must not overlap the macOS traffic-light window controls.
 - The title area should be vertically offset enough for the hidden-inset titlebar.
 - The sidebar opens and closes with a 220ms width transition (disabled for reduced motion and direct pointer resize). Hidden sidebar content is inert. The sidebar can be collapsed with a toggle icon. Native pointer clicks must both hide and show it: the toggle no-drag exclusion is rendered after all pane drag regions so macOS does not consume the restore click.
-- Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
+- Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The sidebar resizes between 240px and 460px (default 320px). Its width is shared by every Workspace and survives restart; visibility and right-panel state remain per Workspace.
 - Settings must look like navigation, not a passive label.
 - Clicking Settings opens the Settings screen in the main area.
 - Clicking a Workspace opens that Workspace working surface.
@@ -99,6 +99,7 @@ The Language section shows an `Interface language` control with `English` and `�
 
 The Source folder section shows:
 
+- selected Workspace name;
 - current selected folder name;
 - current selected folder path;
 - Select folder button.
@@ -107,7 +108,7 @@ Behavior:
 
 - Select folder opens the native Electron folder picker.
 - After selection, the backend validates that the path exists and is a directory.
-- On success, Settings refreshes the folder role tree.
+- On success, Settings refreshes that Workspace’s folder role tree. Other Workspaces retain their source, roles and data. Cancellation preserves the source. A delayed picker result remains bound to the Workspace that opened it.
 - On failure, show a non-blocking error and keep the previous selected folder visible.
 - Source folder selection appears only in Settings.
 - The main Board/Table screen must not show Select folder controls.
@@ -190,7 +191,7 @@ Required behavior:
 - Only one view is active at a time.
 - View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
 - View tabs show their view type with a compact icon, such as Board or Table.
-- The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. The sidebar toggle sits at the upper right of the expanded sidebar; when collapsed it remains visible before the tabs, clear of the macOS window controls. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips.
+- The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. History arrows and the sidebar toggle stay at fixed positions clear of the macOS controls, with the toggle always to the right of both arrows. The leading tab inset interpolates with the sidebar width. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips.
 - View duplicate/rename/delete actions are available from the tab context menu; there is no separate three-dot view menu. Duplicating preserves the view type and display settings, persists a separate view immediately to the right of the source, and activates the copy.
 - Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses remains unavailable.
 - Board cards show populated property values below the project name, without visible property labels. System Status participates in this list and follows the view's property order and visibility instead of being pinned beside the name. Empty values add no rows or spacing. Dates and colored value chips match the project detail display.
@@ -285,6 +286,9 @@ The right Project Detail Panel opens only after the user selects a project from 
 
 Panel behavior:
 
+- Clicking the same Board/Table project again closes its preview; the next click opens it. Clicking another project replaces preview content without removing expanded tabs.
+- Returning to a Workspace restores its own preview project and fresh contents (including projects excluded by current view filters); a previously closed host stays closed. This differs from selecting Board/Table after an expanded tab, which hides preview. Missing projects close the host with an unavailable message.
+- Workspace activation retains the coherent outgoing screen until the destination snapshot is ready, then replaces root, views, properties, preview and layout together. Superseded async loads cannot paint another Workspace’s contents.
 - Opens in the right preview host with a 220ms width transition; closing releases the same space smoothly while retaining the outgoing content. Closed hosts are immediately inert. Expanded tab selection remains immediate without slide-in. Panel transitions respect reduced motion and reverse cleanly when toggled quickly.
 - Dragging the left preview boundary follows the pointer without easing. Reaching the left edge of the available workspace expands the project during the drag, using the existing expanded-tab mode. Restore returns to the partial width captured when that drag began; an ordinary completed resize establishes the next partial width. This width survives restart, including an explicit 560px width; older sessions whose 560px value represented automatic half-width keep that automatic behavior. The sidebar, when visible, is excluded from the available width.
 - Does not open on initial app load.

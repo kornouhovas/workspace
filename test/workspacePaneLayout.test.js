@@ -169,3 +169,14 @@ test("a resized width of 560 is explicit, not the legacy automatic-half sentinel
   const legacy = readPaneLayouts({getItem: () => JSON.stringify({version:1,layouts:{workspace:{rightWidth:560}}})});
   assert.equal(legacy.workspace.rightWidthManual, false);
 });
+
+test('shared sidebar width migrates legacy width and changes without mixing pane state', async () => {
+  const { readSidebarWidth, writeSidebarWidth } = await import('../src/workspacePaneLayout.js');
+  const values = new Map();
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+  const layouts = { a: { ...createPaneLayout(), sidebarWidth: 390, rightVisible: true }, b: { ...createPaneLayout(), sidebarWidth: 270 } };
+  assert.equal(readSidebarWidth(storage, layouts), 390);
+  writeSidebarWidth(storage, 420);
+  assert.equal(readSidebarWidth(storage, layouts), 420);
+  assert.equal(layouts.b.rightVisible, false);
+});

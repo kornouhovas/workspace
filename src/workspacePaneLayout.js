@@ -263,3 +263,17 @@ export function writePaneLayouts(storage, layouts) {
     return false;
   }
 }
+
+// Only sidebar width is shared. Legacy per-workspace layouts remain untouched.
+const sidebarWidthKey = "workspace.sidebar-width.v1";
+export function readSidebarWidth(storage, layouts = {}) {
+  try {
+    const saved = JSON.parse(storage.getItem(sidebarWidthKey) || "null");
+    if (Number.isFinite(saved)) return clamp(saved, 240, 460, 320);
+  } catch { /* Fall back to a legacy width if storage is unavailable. */ }
+  return clamp(Object.values(layouts)[0]?.sidebarWidth, 240, 460, 320);
+}
+export function writeSidebarWidth(storage, width) {
+  try { storage.setItem(sidebarWidthKey, JSON.stringify(clamp(width, 240, 460, 320))); return true; }
+  catch { return false; }
+}

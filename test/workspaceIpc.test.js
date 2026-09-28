@@ -1108,3 +1108,113 @@ test("workspace IPC handler deletes custom properties from values and source vie
     await rm(tempDirectory, { recursive: true, force: true });
   }
 });
+
+test('workspace sources and roles isolate legacy siblings and survive restart, cancellation and unavailable roots', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'workspace-sources-'));
+  const aRoot = join(dir, 'a'), bRoot = join(dir, 'b');
+  const configPath = join(dir, 'settings.json');
+  let selected = aRoot;
+  const options = { configPath, propertyStorePath: join(dir, 'properties.json'), chooseRoot: async () => selected };
+  try {
+    await mkdir(join(aRoot, 'Active', 'Alpha'), { recursive: true });
+    await mkdir(join(bRoot, 'Active', 'Beta'), { recursive: true });
+    let handler = createWorkspaceIpcHandler(options);
+    const a = (await handler(null, 'workspace.setRoot')).root.workspaceId;
+    const b = (await handler(null, 'workspace.createWorkspace', { name: 'B' })).workspace.id;
+    // Simulate the existing pre-binding adapter with two saved Workspaces.
+    await writeFile(configPath, JSON.stringify({ rootPath: aRoot, activeWorkspaceId: b, folderRules: { Active: { role: 'group' } } }));
+    handler = createWorkspaceIpcHandler(options);
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: a });
+    selected = bRoot;
+    assert.equal((await handler(null, 'workspace.setRoot', { workspaceId: a })).root.workspaceId, a);
+    assert.equal((await handler(null, 'workspace.listWorkspaces')).workspaces.length, 2);
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: b });
+    assert.equal((await handler(null, 'workspace.getRoot')).root.rootPath, aRoot);
+    assert.equal((await handler(null, 'workspace.scan')).tree.find(n => n.name === 'Active').role, 'group');
+    handler = createWorkspaceIpcHandler(options);
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: a });
+    assert.equal((await handler(null, 'workspace.getRoot')).root.rootPath, bRoot);
+    const before = await readFile(configPath, 'utf8');
+    selected = '';
+    assert.equal(await handler(null, 'workspace.setRoot', { workspaceId: a }), null);
+    selected = join(dir, 'missing');
+    await assert.rejects(handler(null, 'workspace.setRoot', { workspaceId: a }), { code: 'SOURCE_FOLDER_UNAVAILABLE' });
+    assert.equal(await readFile(configPath, 'utf8'), before);
+    await rm(bRoot, { recursive: true });
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: b });
+    assert.equal((await handler(null, 'workspace.getRoot')).root.rootPath, aRoot);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('project lookup restores preview independently of view filtering and keeps source values', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'workspace-preview-'));
+  const root = join(dir, 'projects');
+  const changedRoot = join(dir, 'changed');
+  let chosenRoot = root;
+  try {
+    await mkdir(join(root, 'Active', 'Alpha'), { recursive: true });
+    const handler = createWorkspaceIpcHandler({ configPath: join(dir, 'settings.json'), propertyStorePath: join(dir, 'properties.json'), chooseRoot: async () => chosenRoot });
+    const a = (await handler(null, 'workspace.setRoot')).root.workspaceId;
+    const projection = await handler(null, 'workspace.getViewProjection', { workspaceId: a, viewId: 'view:default-board' });
+    const project = projection.projection.columns.flatMap(c => c.projects)[0];
+    const property = (await handler(null, 'workspace.createProperty', { workspaceId: a, name: 'Note', type: 'text' })).property;
+    await handler(null, 'workspace.updateProjectPropertyValue', { workspaceId: a, projectId: project.id, propertyId: property.id, value: 'Preserved' });
+    const b = (await handler(null, 'workspace.createWorkspace', { name: 'B' })).workspace.id;
+    const restored = (await handler(null, 'workspace.getProject', { workspaceId: b, projectId: project.id })).project;
+    assert.equal(restored.id, project.id);
+    assert.equal(restored.propertyValues[property.id], 'Preserved');
+    await mkdir(changedRoot);
+    chosenRoot = changedRoot;
+    await handler(null, 'workspace.setRoot', { workspaceId: a });
+    assert.equal((await handler(null, 'workspace.getProject', { workspaceId: b, projectId: project.id })).project.propertyValues[property.id], 'Preserved');
+    chosenRoot = root;
+    await handler(null, 'workspace.setRoot', { workspaceId: a });
+    assert.equal((await handler(null, 'workspace.getProject', { workspaceId: a, projectId: project.id })).project.propertyValues[property.id], 'Preserved');
+    assert.equal((await handler(null, 'workspace.getProject', { workspaceId: a, projectId: 'missing' })).project, null);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('late native picker keeps its captured workspace and does not block activation or overwrite another source', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'workspace-picker-'));
+  const first = join(dir, 'first'), second = join(dir, 'second');
+  let releasePicker, pickerOpened;
+  let choose = async () => first;
+  try {
+    await mkdir(first); await mkdir(second);
+    const options = { configPath: join(dir, 'settings.json'), propertyStorePath: join(dir, 'properties.json'), chooseRoot: () => choose() };
+    const handler = createWorkspaceIpcHandler(options);
+    const a = (await handler(null, 'workspace.setRoot')).root.workspaceId;
+    const b = (await handler(null, 'workspace.createWorkspace', { name: 'B' })).workspace.id;
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: a });
+    const opened = new Promise(resolve => { pickerOpened = resolve; });
+    choose = () => new Promise(resolve => { releasePicker = resolve; pickerOpened(); });
+    const pending = handler(null, 'workspace.setRoot');
+    await opened;
+    await handler(null, 'workspace.setActiveWorkspace', { workspaceId: b });
+    assert.equal((await handler(null, 'workspace.getRoot')).root.workspaceId, b);
+    releasePicker(second);
+    assert.equal((await pending).root.workspaceId, a);
+    assert.equal((await handler(null, 'workspace.getRoot')).root.rootPath, first);
+    assert.equal((await handler(null, 'workspace.getRoot', { workspaceId: a })).root.rootPath, second);
+    const restarted = createWorkspaceIpcHandler(options);
+    assert.equal((await restarted(null, 'workspace.getRoot')).root.workspaceId, b);
+    assert.equal((await restarted(null, 'workspace.getRoot', { workspaceId: a })).root.rootPath, second);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('unknown historical source is recoverable without falling back to a different workspace root', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'workspace-unknown-source-'));
+  try {
+    const root = join(dir, 'known'); await mkdir(root);
+    const configPath = join(dir, 'settings.json');
+    const viewStorePath = join(dir, 'views.json');
+    await writeFile(configPath, JSON.stringify({ rootPath: root, activeWorkspaceId: 'unknown' }));
+    await writeFile(viewStorePath, JSON.stringify({ workspaces: { unknown: { id: 'unknown', sourceFolderId: 'historical-unavailable-id', name: 'Archived context', order: 10 } }, views: {} }));
+    const handler = createWorkspaceIpcHandler({ configPath, viewStorePath });
+    const response = await handler(null, 'workspace.getRoot');
+    assert.equal(response.root.workspaceId, 'unknown');
+    assert.equal(response.root.rootPath, '');
+    assert.equal((await handler(null, 'workspace.listWorkspaces')).workspaces[0].id, 'unknown');
+    await assert.rejects(handler(null, 'workspace.scan', { workspaceId: 'unknown' }), { code: 'SOURCE_FOLDER_UNAVAILABLE' });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

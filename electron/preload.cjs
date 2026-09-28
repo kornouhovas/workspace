@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 const allowedMethods = new Set([
   "workspace.getRoot",
+  "workspace.getProject",
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",

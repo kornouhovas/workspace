@@ -30,6 +30,7 @@ type WorkspaceSourceFolder = {
 type WorkspaceSettingsViewProps = {
   readonly theme?: "light" | "dark" | "system";
   readonly onThemeChange?: (theme: "light" | "dark" | "system") => void;
+  readonly workspaceName?: string;
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
@@ -154,6 +155,7 @@ function FolderRoleNode({
 }
 
 export function WorkspaceSettingsView({
+  workspaceName,
   theme = "system",
   onThemeChange,
   sourceFolder,
@@ -219,7 +221,7 @@ export function WorkspaceSettingsView({
         )}
         <div className="rounded-md border border-border bg-card">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
-            <h3 className="text-sm font-semibold">{t("settings.source")}</h3>
+            <h3 className="text-sm font-semibold">{t("settings.source")}{workspaceName ? ` · ${workspaceName}` : ""}</h3>
             <Badge variant="secondary">{t("settings.localOnly")}</Badge>
           </div>
           <Separator />

@@ -132,6 +132,7 @@ export type WorkspaceAppAction =
   | { readonly type: "sourceFolderMissing" }
   | {
       readonly type: "projectionLoaded";
+      readonly replaceWorkspace?: boolean;
       readonly root: WorkspaceRootState;
       readonly viewsResponse: WorkspaceViewsResponse;
       readonly projectionResponse: WorkspaceProjectionResponse;
@@ -322,11 +323,11 @@ export function workspaceAppStateReducer(
       null;
     const workspaceId = action.viewsResponse.workspaceId || action.root.workspaceId;
 
-    if (state.workspaceId && state.workspaceId !== workspaceId) {
+    if (!action.replaceWorkspace && state.workspaceId && state.workspaceId !== workspaceId) {
       return state;
     }
 
-    if (state.activeViewId && state.activeViewId !== activeViewId && !state.workspaceSwitchPending) {
+    if (!action.replaceWorkspace && state.activeViewId && state.activeViewId !== activeViewId && !state.workspaceSwitchPending) {
       return state;
     }
 
@@ -345,6 +346,8 @@ export function workspaceAppStateReducer(
       projection: action.projectionResponse,
       projectionRefreshing: false,
       workspaceSwitchPending: false,
+      searchQuery: state.workspaceId === workspaceId ? state.searchQuery : "",
+      propertySaveVersions: state.workspaceId === workspaceId ? state.propertySaveVersions : {},
       propertyCatalog: state.propertyCatalog?.workspaceId === workspaceId
         ? state.propertyCatalog
         : null,

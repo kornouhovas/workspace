@@ -394,7 +394,7 @@ export function WorkspaceLeftPanel({
   return (
     <aside className={`workspace-sidebar flex h-full shrink-0 flex-col bg-sidebar ${collapsed ? "w-0" : "w-[var(--workspace-sidebar-width)] border-r border-border"}`}>
       <div
-        className={`flex min-h-[var(--workspace-header-height)] items-center gap-1 ${collapsed ? "absolute left-32 top-0 z-40" : "mr-10 pl-24 electron-window-drag"}`}
+        className="workspace-history absolute left-24 top-0 z-40 flex min-h-[var(--workspace-header-height)] items-center gap-1"
       >
         <ChromeAction
           label={t("chrome.back")}
@@ -411,6 +411,7 @@ export function WorkspaceLeftPanel({
           <ChevronRightIcon className="size-4" />
         </ChromeAction>
       </div>
+      <div className="h-[var(--workspace-header-height)] shrink-0" />
       <div inert={collapsed} aria-hidden={collapsed} className={`workspace-sidebar-body electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1 ${collapsed ? "opacity-0" : "opacity-100"}`}>
         <button
           type="button"

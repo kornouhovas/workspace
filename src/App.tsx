@@ -19,6 +19,8 @@ import {
   createPaneLayout,
   paneLayoutReducer,
   readPaneLayouts,
+  readSidebarWidth,
+  writeSidebarWidth,
   writePaneLayouts,
 } from "@/workspacePaneLayout.js";
 import { WorkspaceSplitTree } from "@/components/workspace/split-tree";
@@ -586,6 +588,10 @@ export default function App() {
   const restoreStartupScreen = useRef(true);
   const pendingWorkspaceScreen = useRef<string | null>(null);
   const [paneLayouts, setPaneLayouts] = useState(() => readPaneLayouts(window.localStorage));
+  const [sidebarWidth, setSidebarWidth] = useState(() => readSidebarWidth(window.localStorage, paneLayouts));
+  useEffect(() => { writeSidebarWidth(window.localStorage, sidebarWidth); }, [sidebarWidth]);
+  const workspaceSwitchVersion = useRef(0);
+  const workspaceSwitchQueue = useRef(Promise.resolve());
   const [closedProjectTabs, setClosedProjectTabs] = useState<
     Record<string, (typeof savedProjectSession.tabs)[string]>
   >({});
@@ -595,9 +601,13 @@ export default function App() {
   });
   const [reloadToken, setReloadToken] = useState(0);
   const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
-  const paneLayout = paneLayouts[projectTabsWorkspaceId] || createPaneLayout();
+  const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
   const sidebarCollapsed = paneLayout.sidebarCollapsed;
   function sendPane(action: PaneAction) {
+    if (action.type === "resizeSidebar") {
+      setSidebarWidth(Math.min(460, Math.max(240, action.width)));
+      return;
+    }
     setPaneLayouts((current) => ({
       ...current,
       [projectTabsWorkspaceId]: paneLayoutReducer(
@@ -622,7 +632,7 @@ export default function App() {
       (project) => project.tabId === activeProjectTabId && project.id === selectedProject.id,
     );
 
-  const projectFullScreen = projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
+  const projectFullScreen = activeSurface === "workspace" && projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
 
   useEffect(() => {
     if (
@@ -637,6 +647,7 @@ export default function App() {
         viewId: state.activeViewId,
         tabId: projectExpanded ? activeProjectTabId : null,
         fullScreen: projectFullScreen,
+        previewId: !projectExpanded ? selectedProject?.id || null : null,
       });
     }
     writeProjectSession(
@@ -915,7 +926,7 @@ export default function App() {
       dispatch({ type: "loadStarted" });
 
       try {
-        const root = normalizeRootResponse(await workspaceClient.getRoot());
+        const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }));
         if (!isCurrentLoad()) {
           return;
         }
@@ -926,11 +937,9 @@ export default function App() {
         }
 
         const previousWorkspaceId = workspaceIdRef.current;
-        dispatch({ type: "rootSelected", root });
-
         const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] =
           await Promise.all([
-            workspaceClient.scan({ includeCardChildren: activeSurface === "settings" }),
+            workspaceClient.scan({ workspaceId: root.workspaceId, includeCardChildren: activeSurface === "settings" }),
             workspaceClient.listViews({ workspaceId: root.workspaceId }),
             loadWorkspaceList(workspaceClient, root),
             workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
@@ -966,10 +975,18 @@ export default function App() {
           }),
         );
 
+        const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
+        const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId;
+        const previewResponse = restoreScreen && savedScreen?.previewId
+          ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedScreen.previewId })
+          : null;
+        const restoredPreview = isRecord(previewResponse) && isRecord(previewResponse.project) ? previewResponse.project : null;
         if (isCurrentLoad()) {
           setWorkspaceList(workspacesResponse);
+          workspaceIdRef.current = root.workspaceId;
           dispatch({
             type: "projectionLoaded",
+            replaceWorkspace: true,
             root,
             viewsResponse: { ...viewsResponse, activeViewId },
             projectionResponse,
@@ -986,16 +1003,21 @@ export default function App() {
             const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
               (item) => item.tabId === tabId,
             );
-            const projectId = cachedProject?.id;
+            const projectId = cachedProject?.id || workspaceScreenMemory.current.get(root.workspaceId)?.previewId;
             const projects =
               projectionResponse.projection.type === "board"
                 ? projectionResponse.projection.columns.flatMap((column) => column.projects)
                 : projectionResponse.projection.rows;
-            const freshProject = projects.find((item) => isRecord(item) && item.id === projectId);
-            const project =
-              cachedProject && isRecord(freshProject)
-                ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
-                : cachedProject;
+            const freshProject = restoredPreview || projects.find((item) => isRecord(item) && item.id === projectId);
+            const project = isRecord(freshProject)
+              ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
+              : cachedProject;
+            // A removed preview cannot leave a visible empty shell. Expanded
+            // tabs retain their existing cached behavior and identities.
+            if (!project && projectId) {
+              setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: "selectView" }) }));
+              toast.error(t("error.projectUnavailable"));
+            }
             setActiveProjectTabId(project ? tabId || null : null);
             setSelectedProject(project || null);
             setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
@@ -1011,7 +1033,19 @@ export default function App() {
         const errorState = createRendererErrorState(error);
         const message = resolveRendererErrorState(errorState, t);
         if (isCurrentLoad()) {
-          setWorkspaceList({ activeWorkspaceId: null, workspaces: [] });
+          // Keep navigation and the stored path available for source recovery.
+          const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }).catch(() => null));
+          const recoveredWorkspaces = root ? await loadWorkspaceList(workspaceClient, root).catch(() => workspaceList) : null;
+          if (!isCurrentLoad()) return;
+          if (root && recoveredWorkspaces) {
+            workspaceIdRef.current = root.workspaceId;
+            dispatch({ type: "sourceFolderMissing" });
+            dispatch({ type: "rootSelected", root });
+            setWorkspaceList(recoveredWorkspaces);
+            setSelectedProject(null);
+          }
+          pendingWorkspaceScreen.current = null;
+          restoreStartupScreen.current = false;
           dispatch({ type: "serviceError", error: errorState });
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -1092,26 +1126,21 @@ export default function App() {
   ]);
 
   async function handleSelectFolder() {
-    loadRequestIdRef.current += 1;
-    folderSelectionPendingRef.current = false;
+    const requestWorkspaceId = state.workspaceId;
+    const version = workspaceSwitchVersion.current;
     setSelectingFolder(true);
-
     try {
-      const root = normalizeRootResponse(await workspaceClient.setRoot({}));
-      if (root) {
-        dispatch({ type: "rootSelected", root });
-        setWorkspaceList(createWorkspaceListFallback(root));
-      } else {
-        throw new RendererLocalizedError("error.invalidSelectedFolderResponse");
-      }
+      const root = normalizeRootResponse(await workspaceClient.setRoot({ workspaceId: requestWorkspaceId }));
+      if (!root) return; // Native picker cancellation leaves the session intact.
+      if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== requestWorkspaceId) return;
+      pendingWorkspaceScreen.current = root.workspaceId;
       folderSelectionPendingRef.current = true;
-      setReloadToken((value) => value + 1);
+      loadRequestIdRef.current += 1;
+      setReloadToken(value => value + 1);
     } catch (error) {
-      folderSelectionPendingRef.current = false;
-      setSelectingFolder(false);
-      toast.error(t("toast.folderLoadFailed"), {
-        description: getServiceErrorMessage(error, t),
-      });
+      toast.error(t("toast.folderLoadFailed"), { description: getServiceErrorMessage(error, t) });
+    } finally {
+      if (!folderSelectionPendingRef.current) setSelectingFolder(false);
     }
   }
 
@@ -1163,40 +1192,34 @@ export default function App() {
 
   async function handleWorkspaceOpen(workspaceId: string) {
     const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
-
-    if (!state.root || workspaceId === activeWorkspaceId) {
+    if (!state.root || (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current)) {
       openWorkspaceSurface();
       return;
     }
-
-    workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
-      viewId: state.activeViewId,
-      tabId: projectExpanded ? activeProjectTabId : null,
+    if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
+      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+        viewId: state.activeViewId,
+        tabId: projectExpanded ? activeProjectTabId : null,
         fullScreen: projectFullScreen,
-    });
-
-    try {
-      await workspaceClient.setActiveWorkspace({ workspaceId });
-      pendingWorkspaceScreen.current = workspaceId;
-      setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
-      dispatch({ type: "workspaceActivated", workspaceId });
-      setSelectedProject(null);
-      setActiveSurface("workspace");
-      setReloadToken((value) => value + 1);
-    } catch (error) {
-      if (isUnsupportedWorkspaceMethodError(error, "workspace.setActiveWorkspace")) {
-        pendingWorkspaceScreen.current = workspaceId;
-        setWorkspaceList((current) => setActiveWorkspaceListFallback(current, workspaceId));
-        dispatch({ type: "workspaceActivated", workspaceId });
-        setSelectedProject(null);
-        setActiveSurface("workspace");
-        setReloadToken((value) => value + 1);
-        return;
-      }
-
-      toast.error(t("toast.workspaceOpenFailed"), {
-        description: getServiceErrorMessage(error, t),
+        previewId: !projectExpanded ? selectedProject?.id || null : null,
       });
+    }
+    const version = ++workspaceSwitchVersion.current;
+    loadRequestIdRef.current += 1;
+    pendingWorkspaceScreen.current = workspaceId;
+    // Keep the outgoing workspace coherent until the destination is ready.
+    // Serialize activation writes, then ignore superseded results.
+    const request = workspaceSwitchQueue.current.then(() => workspaceClient.setActiveWorkspace({ workspaceId }));
+    workspaceSwitchQueue.current = request.then(() => {}, () => {});
+    try {
+      await request;
+      if (version !== workspaceSwitchVersion.current) return;
+      setActiveSurface("workspace");
+      setReloadToken(value => value + 1);
+    } catch (error) {
+      if (version !== workspaceSwitchVersion.current) return;
+      pendingWorkspaceScreen.current = null;
+      toast.error(t("toast.workspaceOpenFailed"), { description: getServiceErrorMessage(error, t) });
     }
   }
 
@@ -1776,9 +1799,11 @@ export default function App() {
 
     try {
       await workspaceClient.updateFolderRole({
+        workspaceId: state.workspaceId,
         path: node.relativePath,
         role,
       });
+      if (workspaceIdRef.current !== state.workspaceId) return;
       toast.success(t("toast.folderRoleUpdated"));
       setSelectedProject(null);
       setReloadToken((value) => value + 1);
@@ -2148,7 +2173,7 @@ export default function App() {
   ) {
     try {
       const fileTree = normalizeProjectFileTreeResponse(
-        await workspaceClient.listProjectFileTree({ path: project.currentRelativePath }),
+        await workspaceClient.listProjectFileTree({ workspaceId: requestWorkspaceId, path: project.currentRelativePath }),
       );
       setSelectedProject((currentProject) =>
         workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id
@@ -2156,6 +2181,7 @@ export default function App() {
           : currentProject,
       );
     } catch (error) {
+      if (workspaceIdRef.current !== requestWorkspaceId) return;
       toast.error(t("toast.fileTreeLoadFailed"), {
         description: getServiceErrorMessage(error, t),
       });
@@ -2163,6 +2189,10 @@ export default function App() {
   }
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
+    if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
+      sendPane({ type: "rightToggle" });
+      return;
+    }
     setProjectTabSelected(fullScreen);
     setActiveProjectTabId(tabId);
     setSelectedProject(project);
@@ -2183,8 +2213,6 @@ export default function App() {
 
   function openSettingsSurface() {
     sendPane({ type: "showWorkspace" });
-    setActiveProjectTabId(null);
-    setSelectedProject(null);
     setActiveSurface("settings");
   }
 
@@ -2278,8 +2306,8 @@ export default function App() {
           ? "table"
           : "board";
   const visibleProperties =
-    serviceProjection?.visibleProperties ?? workspaceMockProjection.visibleProperties;
-  const statusValues = serviceProjection?.statusValues ?? workspaceMockProjection.statusValues;
+    serviceProjection?.visibleProperties ?? (state.root ? [] : workspaceMockProjection.visibleProperties);
+  const statusValues = serviceProjection?.statusValues ?? (state.root ? [] : workspaceMockProjection.statusValues);
   const boardProjection =
     serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
@@ -2338,7 +2366,7 @@ export default function App() {
       onDeleteProperty={handleDeleteProperty}
       onOpenLocalItem={(node) => {
         void workspaceClient
-          .reveal({ kind: node.kind === "folder" ? "directory" : "file", path: node.relativePath })
+          .reveal({ workspaceId: state.workspaceId, kind: node.kind === "folder" ? "directory" : "file", path: node.relativePath })
           .catch((error) =>
             toast.error(t("toast.previewUnavailable"), {
               description: getServiceErrorMessage(error, t),
@@ -2577,6 +2605,7 @@ export default function App() {
             <>
               <WorkspaceServiceError state={state} />
               <WorkspaceSettingsView
+                workspaceName={workspaceList.workspaces.find(item => item.id === state.workspaceId)?.name}
                 theme={theme}
                 onThemeChange={setTheme}
                 sourceFolder={sourceFolder}
@@ -2602,6 +2631,8 @@ export default function App() {
           <div className="min-h-0 flex-1 overflow-hidden">
             {shouldShowWorkspaceLoadingState ? (
               <WorkspaceLoadingState />
+            ) : state.status === "error" && !serviceProjection ? (
+              <><WorkspaceServiceError state={state} /><WorkspaceEmptyState onOpenSettings={openSettingsSurface} /></>
             ) : state.sourceFolderMissing ? (
               <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
             ) : (
@@ -2709,9 +2740,8 @@ export default function App() {
               value={paneLayout.sidebarWidth}
               min={240}
               max={460}
-              onResize={(width) =>
-                sendPane({ type: "resizeSidebar", width: 2 * paneLayout.sidebarWidth - width })
-              }
+              growDirection={1}
+              onResize={(width) => sendPane({ type: "resizeSidebar", width })}
             />
           </div>
         )}
@@ -2747,7 +2777,8 @@ export default function App() {
         </div>
         {(
           <WorkspaceRightPanel
-            suppressed={projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
+            key={projectTabsWorkspaceId}
+            suppressed={activeSurface === "settings" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
             navigation={navigationPanel}
@@ -2770,7 +2801,7 @@ export default function App() {
           type="button"
           className={[
             "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
-            sidebarCollapsed ? "left-24" : "left-[calc(var(--workspace-sidebar-width)-2.5rem)]",
+            "left-[168px]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}

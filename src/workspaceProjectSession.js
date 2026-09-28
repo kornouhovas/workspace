@@ -19,6 +19,7 @@ export function readProjectSession(storage) {
       return [workspaceId, valid];
     }));
     const screens = Object.fromEntries(Object.entries(record(raw.screens) ? raw.screens : {}).filter(([, screen]) => record(screen)).map(([id, screen]) => [id, {
+      previewId: typeof screen.previewId === "string" ? screen.previewId : null,
       fullScreen: screen.fullScreen === true,
       viewId: typeof screen.viewId === "string" ? screen.viewId : null,
       tabId: tabs[id]?.find(project => raw.version === 1 ? project.id === screen.projectId : project.tabId === screen.tabId)?.tabId || null,

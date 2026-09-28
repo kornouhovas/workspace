@@ -37,3 +37,5 @@ export function writePaneLayouts(
   storage: Pick<Storage, "setItem">,
   layouts: Record<string, PaneLayout>,
 ): boolean;
+export function readSidebarWidth(storage: Pick<Storage, "getItem">, layouts?: Record<string, PaneLayout>): number;
+export function writeSidebarWidth(storage: Pick<Storage, "setItem">, width: number): boolean;

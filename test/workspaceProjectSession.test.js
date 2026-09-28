@@ -45,3 +45,12 @@ test("expanded presentation survives restart independently of a tab's saved spli
   writeProjectSession(storage, { one: [project] }, { one: { viewId: "table", tabId: project.tabId, fullScreen: false } });
   assert.equal(readProjectSession(storage).screens.one.fullScreen, false);
 });
+
+test('preview identity survives independently of expanded tabs and is scoped to workspace', () => {
+  let value;
+  const storage = { getItem: () => value, setItem: (_, next) => { value = next; } };
+  writeProjectSession(storage, {}, { a: { viewId: 'board', tabId: null, previewId: 'alpha' }, b: { viewId: 'table', tabId: null, previewId: 'beta' } });
+  const restored = readProjectSession(storage);
+  assert.equal(restored.screens.a.previewId, 'alpha');
+  assert.equal(restored.screens.b.previewId, 'beta');
+});

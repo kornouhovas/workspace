@@ -5,7 +5,8 @@ declare module "@/workspaceServiceClient.js" {
 
   export class WorkspaceServiceClient {
     constructor(transport: WorkspaceTransport);
-    getRoot(): Promise<unknown>;
+    getRoot(payload?: Record<string, unknown>): Promise<unknown>;
+    getProject(payload: Record<string, unknown>): Promise<unknown>;
     setRoot(payload: Record<string, unknown>): Promise<unknown>;
     scan(payload: Record<string, unknown>): Promise<unknown>;
     listEntries(payload: Record<string, unknown>): Promise<unknown>;

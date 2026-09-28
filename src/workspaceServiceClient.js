@@ -7,8 +7,12 @@ export class WorkspaceServiceClient {
     this.transport = transport;
   }
 
-  getRoot() {
-    return this.transport.request("workspace.getRoot", {});
+  getRoot(payload = {}) {
+    return this.request("workspace.getRoot", payload);
+  }
+
+  getProject(payload) {
+    return this.request("workspace.getProject", payload);
   }
 
   setRoot(payload) {

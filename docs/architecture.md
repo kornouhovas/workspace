@@ -32,10 +32,10 @@ React UI
 
 ## Product Architecture Decisions
 
-- Settings stores one `project source folder`.
-- Workspaces in the Left Panel are saved working configurations over the selected `project source folder`.
-- A Workspace is not a separate root folder in MVP.
-- Different Workspaces can define different views, property visibility, value filters, ordering, and working configuration over the same project folders.
+- Settings edits the selected Workspace’s project source folder (ADR-006).
+- Workspaces in the Left Panel are saved working configurations with independent source bindings and folder roles.
+- Workspaces may share a source or select different roots.
+- Different Workspaces define their own views, property visibility, filters and ordering; existing source-scoped project identities and values remain shared when the source is shared.
 - Project `Status` is derived from a folder with role `status`.
 - Projects outside a status folder use `No status`.
 - MVP supports one level of status folders.

@@ -59,6 +59,7 @@ export function PaneResize({
   max,
   onResize,
   ratio = false,
+  growDirection = -1,
   onResizeStart,
   onReachMax,
 }: {
@@ -68,6 +69,7 @@ export function PaneResize({
   max: number;
   onResize: (value: number) => void;
   ratio?: boolean;
+  growDirection?: 1 | -1;
   onResizeStart?: () => void;
   onReachMax?: () => void;
 }) {
@@ -87,7 +89,7 @@ export function PaneResize({
     const width = target.parentElement?.getBoundingClientRect().width || 1;
     const move = (e: globalThis.PointerEvent) => {
       if (e.pointerId !== pointerId) return;
-      const next = Math.max(min, Math.min(max, initial + (e.clientX - start) * (ratio ? 1 / width : -1)));
+      const next = Math.max(min, Math.min(max, initial + (e.clientX - start) * (ratio ? 1 / width : growDirection)));
       if (next >= max && onReachMax) {
         end();
         onReachMax();

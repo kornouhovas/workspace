@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 import { createRevealResponse } from "../src/localOpen.js";
@@ -44,6 +44,7 @@ const statusValueColorTokens = new Set(["gray", "red", "orange", "yellow", "gree
 
 const supportedMethods = new Set([
   "workspace.getRoot",
+  "workspace.getProject",
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",
@@ -95,34 +96,46 @@ export function createWorkspaceIpcHandler(options = {}) {
   const now = options.now || (() => new Date().toISOString());
   const chooseRoot = options.chooseRoot || (async () => "");
 
-  async function getRootState() {
+  // Lazily preserve the legacy shared source for every existing workspace. Paths
+  // remain locators; workspace/project IDs and source-scoped values are unchanged.
+  async function sourceSettings() {
     const settings = await readWorkspaceSettings(configPath);
-    const rootPath = normalizeRootPath(settings);
-
-    if (!rootPath) {
-      return null;
+    const legacyRoot = normalizeRootPath(settings);
+    if (!legacyRoot) return settings;
+    if (!(await viewStore.listWorkspaces()).length)
+      await ensureDefaultWorkspace({ viewStore, workspaceId: createWorkspaceId(legacyRoot), rootPath: legacyRoot, now });
+    const workspaceSources = { ...settings.workspaceSources };
+    let changed = false;
+    for (const workspace of await viewStore.listWorkspaces()) {
+      if (!workspaceSources[workspace.id] && workspace.sourceFolderId === createWorkspaceId(legacyRoot)) {
+        workspaceSources[workspace.id] = { rootPath: legacyRoot, rulesByRoot: { [legacyRoot]: normalizeFolderRules(settings.folderRules) } };
+        changed = true;
+      }
     }
-
-    if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
-      throw createWorkspaceServiceError(
-        "SOURCE_FOLDER_UNAVAILABLE",
-        "Workspace source folder is unavailable.",
-        "rootPath",
-      );
-    }
-
-    const workspaceId = createWorkspaceId(rootPath);
-    await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
-    const activeWorkspaceId = await getActiveWorkspaceId({
-      configPath,
-      viewStore,
-      rootPath,
-      fallbackWorkspaceId: workspaceId,
-    });
-    return createRootResponse(rootPath, activeWorkspaceId);
+    const next = { ...settings, workspaceSources };
+    if (changed) await writeWorkspaceSettings(configPath, next);
+    return next;
   }
 
-  return async function handleWorkspaceRequest(_event, method, payload = {}) {
+  async function getRootState(requestWorkspaceId) {
+    const settings = await readWorkspaceSettings(configPath);
+    const workspaces = await viewStore.listWorkspaces();
+    const workspaceId = requestWorkspaceId ||
+      (workspaces.some(item => item.id === settings.activeWorkspaceId) ? settings.activeWorkspaceId : workspaces[0]?.id);
+    const workspace = workspaces.find(item => item.id === workspaceId);
+    if (requestWorkspaceId && !workspace)
+      throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+    const legacyRoot = normalizeRootPath(settings);
+    const rootPath = settings.workspaceSources?.[workspaceId]?.rootPath ||
+      (workspace?.sourceFolderId === createWorkspaceId(legacyRoot) ? legacyRoot : "");
+    return rootPath ? createRootResponse(rootPath, workspaceId)
+      : workspace ? { root: { id: workspace.id, workspaceId: workspace.id, rootPath: "", path: "", name: workspace.name } } : null;
+  }
+  const rulesFor = (settings, workspaceId, rootPath) => normalizeFolderRules(
+    settings.workspaceSources?.[workspaceId]?.rulesByRoot?.[rootPath] ?? settings.folderRules,
+  );
+
+  async function handleWorkspaceRequest(_event, method, payload = {}, selectedRoot) {
     if (!supportedMethods.has(method)) {
       throw createWorkspaceServiceError("VALIDATION_FAILED", `Unsupported workspace method: ${method}`, "method");
     }
@@ -130,41 +143,58 @@ export function createWorkspaceIpcHandler(options = {}) {
     const body = normalizePayload(payload);
 
     if (method === "workspace.setRoot") {
-      const rootPath = await chooseRoot();
-      if (!rootPath) {
-        throw createWorkspaceServiceError("VALIDATION_FAILED", "No folder selected.", "rootPath");
+      const settings = await sourceSettings();
+      const workspaceId = body.workspaceId || settings.activeWorkspaceId || (await viewStore.listWorkspaces())[0]?.id;
+      if (workspaceId && !(await viewStore.getWorkspace(workspaceId)))
+        throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+      const rootPath = selectedRoot;
+      if (!rootPath) return null;
+      try {
+        if (!statSync(rootPath).isDirectory()) throw new Error("Not a directory");
+        await readdir(rootPath);
+      } catch {
+        throw createWorkspaceServiceError("SOURCE_FOLDER_UNAVAILABLE", "Workspace source folder is unavailable.", "rootPath");
       }
-      if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
-        throw createWorkspaceServiceError(
-          "SOURCE_FOLDER_UNAVAILABLE",
-          "Workspace source folder is unavailable.",
-          "rootPath",
-        );
-      }
-
-      const workspaceId = createWorkspaceId(rootPath);
-      const sourceFolderId = workspaceId;
+      const id = workspaceId || createWorkspaceId(rootPath);
+      if (!workspaceId) await ensureDefaultWorkspace({ viewStore, workspaceId: id, rootPath, now });
+      const workspace = await viewStore.getWorkspace(id);
+      await viewStore.saveWorkspace({ ...workspace, sourceFolderId: createWorkspaceId(rootPath), updatedAt: now() });
+      const current = await sourceSettings();
+      const previous = current.workspaceSources?.[id];
       await writeWorkspaceSettings(configPath, {
-        rootPath,
-        activeWorkspaceId: workspaceId,
-        folderRules: {},
+        ...current,
+        rootPath: normalizeRootPath(current) || rootPath,
+        activeWorkspaceId: current.activeWorkspaceId || id,
+        workspaceSources: { ...current.workspaceSources, [id]: {
+          rootPath, rulesByRoot: { ...previous?.rulesByRoot, [rootPath]: previous?.rulesByRoot?.[rootPath] || {} },
+        } },
       });
-      await ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now });
-      const activeWorkspaceId = await getActiveWorkspaceId({
-        configPath,
-        viewStore,
-        rootPath,
-        fallbackWorkspaceId: sourceFolderId,
-      });
-      await writeWorkspaceSettings(configPath, {
-        rootPath,
-        activeWorkspaceId,
-        folderRules: {},
-      });
-      return createRootResponse(rootPath, activeWorkspaceId);
+      return createRootResponse(rootPath, id);
     }
 
-    const root = await getRootState();
+    if (method === "workspace.setActiveWorkspace") {
+      const settings = await sourceSettings();
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      const workspace = await viewStore.getWorkspace(workspaceId);
+      if (!workspace || workspace.deletedAt)
+        throw createWorkspaceServiceError("WORKSPACE_NOT_FOUND", "Workspace was not found.", "workspaceId");
+      await writeWorkspaceSettings(configPath, { ...settings, activeWorkspaceId: workspaceId });
+      return { activeWorkspaceId: workspaceId };
+    }
+    if (method === "workspace.listWorkspaces") {
+      const settings = await readWorkspaceSettings(configPath);
+      const workspaces = await viewStore.listWorkspaces();
+      const activeWorkspaceId = workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
+        ? settings.activeWorkspaceId
+        : workspaces[0]?.id || null;
+
+      return {
+        activeWorkspaceId,
+        workspaces: workspaces.map(toWorkspaceListItem),
+      };
+    }
+
+    const root = await getRootState(body.workspaceId);
     if (method === "workspace.getRoot") {
       return root;
     }
@@ -176,11 +206,23 @@ export function createWorkspaceIpcHandler(options = {}) {
     const rootPath = root.root.rootPath;
     const sourceFolderId = createWorkspaceId(rootPath);
 
+    if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
+      throw createWorkspaceServiceError("SOURCE_FOLDER_UNAVAILABLE", "Workspace source folder is unavailable.", "rootPath");
+    }
+
+    if (method === "workspace.getProject") {
+      const projectId = requirePayloadString(body, "projectId");
+      const settings = await readWorkspaceSettings(configPath);
+      const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId: root.root.workspaceId, propertyStore, rules: rulesFor(settings, root.root.workspaceId, rootPath) });
+      const values = await propertyStore.listProjectPropertyValues(sourceFolderId);
+      return { project: attachProjectPropertyValues(projects, values).find(project => project.id === projectId) || null };
+    }
+
     if (method === "workspace.scan") {
       const settings = await readWorkspaceSettings(configPath);
       return unwrapBackendResponse(await createScanResponse({
         root: rootPath,
-        rules: body.rules || normalizeFolderRules(settings.folderRules),
+        rules: body.rules || rulesFor(settings, root.root.workspaceId, rootPath),
         includeCardChildren: body.includeCardChildren === true,
       }));
     }
@@ -189,7 +231,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       const path = requirePayloadString(body, "path");
       const role = normalizeRequestedFolderRole(body.role);
       const settings = await readWorkspaceSettings(configPath);
-      const folderRules = normalizeFolderRules(settings.folderRules);
+      const folderRules = rulesFor(settings, root.root.workspaceId, rootPath);
       folderRules[path] = {
         ...(folderRules[path] || {}),
         role,
@@ -198,7 +240,10 @@ export function createWorkspaceIpcHandler(options = {}) {
       await writeWorkspaceSettings(configPath, {
         ...settings,
         rootPath,
-        folderRules,
+        workspaceSources: { ...settings.workspaceSources, [root.root.workspaceId]: {
+          ...settings.workspaceSources[root.root.workspaceId],
+          rulesByRoot: { ...settings.workspaceSources[root.root.workspaceId].rulesByRoot, [rootPath]: folderRules },
+        } },
       });
 
       return {
@@ -362,7 +407,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         rootPath,
         workspaceId,
         propertyStore,
-        rules: normalizeFolderRules(settings.folderRules),
+        rules: rulesFor(settings, root.root.workspaceId, rootPath),
       });
       return updateStatusValueColorResult({
         body,
@@ -420,27 +465,14 @@ export function createWorkspaceIpcHandler(options = {}) {
         propertyScopeId: sourceFolderId,
         propertyStore,
         rootPath,
-        rules: normalizeFolderRules(settings.folderRules),
+        rules: rulesFor(settings, root.root.workspaceId, rootPath),
         now,
       });
     }
 
-    if (method === "workspace.listWorkspaces") {
-      const settings = await readWorkspaceSettings(configPath);
-      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
-      const activeWorkspaceId = workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
-        ? settings.activeWorkspaceId
-        : workspaces[0]?.id || null;
-
-      return {
-        activeWorkspaceId,
-        workspaces: workspaces.map(toWorkspaceListItem),
-      };
-    }
-
     if (method === "workspace.createWorkspace") {
       const settings = await readWorkspaceSettings(configPath);
-      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const workspaces = await viewStore.listWorkspaces();
       const timestamp = now();
       const idSeed = idFactory();
       const workspaceId = `workspace:${sourceFolderId.replace(/^workspace:/, "")}:${createSlug(idSeed)}`;
@@ -461,6 +493,9 @@ export function createWorkspaceIpcHandler(options = {}) {
         ...settings,
         rootPath,
         activeWorkspaceId: workspace.id,
+        workspaceSources: { ...settings.workspaceSources, [workspace.id]: {
+          rootPath, rulesByRoot: { [rootPath]: rulesFor(settings, root.root.workspaceId, rootPath) },
+        } },
       });
 
       return {
@@ -494,7 +529,7 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     if (method === "workspace.reorderWorkspaces") {
-      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const workspaces = await viewStore.listWorkspaces();
       const orderedWorkspaceIds = validateWorkspaceOrder(body.orderedWorkspaceIds, workspaces);
       const workspacesById = new Map(workspaces.map((workspace) => [workspace.id, workspace]));
       const timestamp = now();
@@ -517,7 +552,7 @@ export function createWorkspaceIpcHandler(options = {}) {
     if (method === "workspace.deleteWorkspace") {
       const workspaceId = requirePayloadString(body, "workspaceId");
       const settings = await readWorkspaceSettings(configPath);
-      const workspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const workspaces = await viewStore.listWorkspaces();
       const workspace = workspaces.find((item) => item.id === workspaceId);
 
       if (!workspace) {
@@ -537,7 +572,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         updatedAt: now(),
       });
 
-      const remainingWorkspaces = await viewStore.listWorkspaces(sourceFolderId);
+      const remainingWorkspaces = await viewStore.listWorkspaces();
       const activeWorkspaceId = settings.activeWorkspaceId === workspace.id
         ? remainingWorkspaces[0]?.id || null
         : settings.activeWorkspaceId || remainingWorkspaces[0]?.id || null;
@@ -550,25 +585,6 @@ export function createWorkspaceIpcHandler(options = {}) {
       return {
         activeWorkspaceId,
         deletedWorkspaceId: workspace.id,
-      };
-    }
-
-    if (method === "workspace.setActiveWorkspace") {
-      const workspaceId = requirePayloadString(body, "workspaceId");
-      const settings = await readWorkspaceSettings(configPath);
-      await requireSourceWorkspace({
-        viewStore,
-        workspaceId,
-        rootPath,
-      });
-      await writeWorkspaceSettings(configPath, {
-        ...settings,
-        rootPath,
-        activeWorkspaceId: workspaceId,
-      });
-
-      return {
-        activeWorkspaceId: workspaceId,
       };
     }
 
@@ -596,7 +612,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         rootPath,
         workspaceId,
         propertyStore,
-        rules: normalizeFolderRules(settings.folderRules),
+        rules: rulesFor(settings, root.root.workspaceId, rootPath),
       });
       return unwrapBackendResponse(await createUpdateViewResponse({
         body,
@@ -618,7 +634,7 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (method === "workspace.getViewProjection") {
       const settings = await readWorkspaceSettings(configPath);
-      const rules = normalizeFolderRules(settings.folderRules);
+      const rules = rulesFor(settings, root.root.workspaceId, rootPath);
       let projectsAndStatusValues = null;
       const loadProjectsAndStatusValues = (workspaceId) => {
         projectsAndStatusValues ||= getProjectsAndStatusValues({
@@ -670,6 +686,32 @@ export function createWorkspaceIpcHandler(options = {}) {
     }
 
     throw createWorkspaceServiceError("VALIDATION_FAILED", `Unsupported workspace method: ${method}`, "method");
+  };
+  let mutations = Promise.resolve();
+  const mutate = operation => {
+    const result = mutations.then(operation);
+    mutations = result.catch(() => {});
+    return result;
+  };
+  return async (event, method, payload = {}) => {
+    if (method === "workspace.setRoot") {
+      // Capture the target before opening the native picker; another workspace
+      // can be activated while the picker is outstanding.
+      const settings = await mutate(sourceSettings);
+      const workspaceId = payload.workspaceId || settings.activeWorkspaceId || (await viewStore.listWorkspaces())[0]?.id;
+      const selectedRoot = await chooseRoot();
+      if (!selectedRoot) return null;
+      return mutate(() => handleWorkspaceRequest(event, method, { ...payload, workspaceId }, selectedRoot));
+    }
+    const readOnly = /^workspace\.(get|list|scan|preview|reveal)/.test(method);
+    if (readOnly) {
+      await mutate(sourceSettings);
+      return handleWorkspaceRequest(event, method, payload);
+    }
+    return mutate(async () => {
+      await sourceSettings();
+      return handleWorkspaceRequest(event, method, payload);
+    });
   };
 }
 
@@ -747,15 +789,6 @@ async function ensureDefaultWorkspace({ viewStore, workspaceId, rootPath, now })
     updatedAt: timestamp,
     deletedAt: null,
   });
-}
-
-async function getActiveWorkspaceId({ configPath, viewStore, rootPath, fallbackWorkspaceId }) {
-  const settings = await readWorkspaceSettings(configPath);
-  const sourceFolderId = createWorkspaceId(rootPath);
-  const workspaces = await viewStore.listWorkspaces(sourceFolderId);
-  return workspaces.some((workspace) => workspace.id === settings.activeWorkspaceId)
-    ? settings.activeWorkspaceId
-    : workspaces[0]?.id || fallbackWorkspaceId;
 }
 
 async function createWorkspaceDocument({
@@ -1731,7 +1764,7 @@ function createFileViewStore(filePath) {
       return runStoreOperation(async () => {
         const data = await readViewStoreData(filePath);
         return Object.values(data.workspaces)
-          .filter((workspace) => workspace.sourceFolderId === sourceFolderId && !workspace.deletedAt)
+          .filter((workspace) => (!sourceFolderId || workspace.sourceFolderId === sourceFolderId) && !workspace.deletedAt)
           .sort((left, right) => (
             left.order - right.order
             || String(left.createdAt).localeCompare(String(right.createdAt))
