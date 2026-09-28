@@ -10,7 +10,7 @@ Implemented in `/Users/aleksandersk/.codex/worktrees/bb-stack-design/project_fol
 - Desktop fixture scenarios: actual preload IPC property persistence, text editing in Project Detail, saved view/project tabs and renderer restart, scoped search, status filters, project file tree/preview, actual OS open of temporary README, traversal rejection and unchanged fixture file content. Actual Electron `userData` is fixture-local and security settings remain isolated/sandboxed.
 - Actual **`npm run dev`** smoke passed (`dev-loop/report.json`, `dev-loop/launcher.txt`, `dev-loop/desktop-hmr.png`): loopback Vite loaded by Electron, stylesheet HMR without reload retained page state, original stylesheet restored via HMR, Ctrl-C stopped Vite and Electron/CDP. `verify-dev-loop.mjs` reproduces this smoke on isolated fixtures.
 - Lockfile comparison: **no existing locked version changes**; 292 new package paths, including relocated/transitive packages (`lock-comparison.json`).
-- `git diff --check` passed (`diff-check.txt`, empty output).
+- `git diff --check` passed (`diff-check.txt`, empty output). The integrated branch diff against `b2f33ad` was also checked with `git diff b2f33ad..HEAD --check`; trailing blank lines in two build logs were removed, and the committed branch check passed.
 
 Historical harness mistakes (ambiguous panel/card locators, transition timing and incorrect IPC payload assumptions) were corrected against actual handlers; they did not require product behavior changes. The final successful report replaces incomplete attempts. Bulky historical failure dumps were removed; final screenshots and passing reports are retained.
 
