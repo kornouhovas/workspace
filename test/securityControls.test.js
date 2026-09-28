@@ -36,7 +36,11 @@ test("Electron window keeps the renderer isolated from Node privileges", async (
   assert.doesNotMatch(main, /allowRunningInsecureContent:\s*true/);
   assert.doesNotMatch(main, /webviewTag:\s*true/);
   assert.match(main, /loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
-  assert.doesNotMatch(main, /loadURL\(/);
+  assert.match(main, /if \(development\?\.rendererUrl\)/);
+  assert.match(main, /loadURL\(development.rendererUrl\)/);
+  const dev = await readFile(new URL("../electron/developmentRuntime.js", import.meta.url), "utf8");
+  assert.match(dev, /env.WORKSPACE_DEV !== "1"/);
+  assert.match(dev, /url.hostname !== "127.0.0.1"/);
 });
 
 test("preload exposes only the allowlisted workspace request facade", async () => {

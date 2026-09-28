@@ -162,7 +162,7 @@ export function WorkspaceSettingsView({
   }
 
   return (
-    <section className="grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
+    <section className="workspace-settings grid min-w-0 gap-2 px-3 py-3 lg:grid-cols-[18rem_minmax(0,1fr)]" aria-label={t("settings.title")}>
       <div className="grid content-start gap-2">
         <div className="rounded-md border border-border bg-card">
           <div className="flex items-center justify-between gap-2 px-3 py-2">

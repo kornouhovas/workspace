@@ -1,0 +1,13 @@
+
+> workspace@0.1.0 storybook
+> node scripts/component-catalog.mjs serve --host 127.0.0.1 --port 61100
+
+
+   ╭────────────────────────────────────────────────────╮
+   │                                                    │
+   │   🥄 Ladle.dev served at http://127.0.0.1:61100/   │
+   │                                                    │
+   ╰────────────────────────────────────────────────────╯
+
+8:23:36 PM [vite] (client) ✨ new dependencies optimized: @radix-ui/react-separator, @radix-ui/react-toggle-group, @radix-ui/react-select, @radix-ui/react-checkbox, @radix-ui/react-popover, @radix-ui/react-toggle
+8:23:36 PM [vite] (client) ✨ optimized dependencies changed. reloading

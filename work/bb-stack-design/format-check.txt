@@ -1,0 +1,9 @@
+
+> workspace@0.1.0 format:check
+> oxfmt electron/developmentRuntime.js scripts/dev-desktop.mjs scripts/component-catalog.mjs scripts/verify-desktop.mjs src/stories .ladle src/styles.css package.json --check
+
+Checking formatting...
+
+All matched files use the correct format.
+Finished in 9ms on 9 files using 8 threads.
+No config found, using defaults. Please add a config file or try `oxfmt --init` if needed.

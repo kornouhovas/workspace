@@ -55,3 +55,7 @@ npm run electron:build
 go test ./...
 npm run build:sidecar
 ```
+
+## Development and component catalog
+
+Run `npm run dev` for the Electron app with Vite HMR and isolated checkout-local `.workspace-dev` metadata and Electron preferences. Production `npm run electron` still loads the built renderer. `npm run storybook` opens the Ladle catalog; `npm run storybook:build`, `npm run lint`, and `npm run format:check` verify components and code. See [bb adaptation](docs/design/bb-stack-design.md) for commands and design decisions.

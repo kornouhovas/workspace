@@ -2,8 +2,15 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["react", "react-dom"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "types": [
+      "react",
+      "react-dom"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -15,7 +22,9 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -27,6 +36,8 @@
     "src/vite-env.d.ts",
     "src/components/workspace/**/*.ts",
     "src/components/workspace/**/*.tsx",
-    "src/types/**/*.d.ts"
+    "src/types/**/*.d.ts",
+    "src/stories/**/*.tsx",
+    ".ladle/**/*.tsx"
   ]
 }

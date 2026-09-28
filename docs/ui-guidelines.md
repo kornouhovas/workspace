@@ -16,7 +16,7 @@ The goal is to avoid pixel-level micromanagement while keeping the UI consistent
 - Font: Geist Variable from `@fontsource-variable/geist`.
 - The selected Compact №3 Board, sidebar, top row and expanded project use the larger visual scale shown in the two approved mockups: primary labels and tabs near 16px, board card names and section headings near 18px, expanded project title near 30px. Dense table cells, menus and editors keep their working scale near 13px. Preserve accessible icon button areas and visible focus.
 - Table rows start at 36px; expanded project property rows use 48px; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
-- Theme: Compact uses the light semantic palette in `src/styles.css`. Status and Select colors still come from project data.
+- Theme: Compact uses the light ink/canvas semantic ramp and shared surface/hover/active tokens in `src/styles.css` (see [bb adaptation](design/bb-stack-design.md)). Status and Select colors still come from project data.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.
 

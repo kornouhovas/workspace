@@ -1,0 +1,58 @@
+import { spawn } from 'node:child_process';
+import { chromium } from '@playwright/test';
+import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import assert from 'node:assert/strict';
+import { createWorkspaceIpcHandler } from '../../electron/workspaceIpc.js';
+const project = process.cwd();
+const evidence = resolve('work/bb-stack-design/dev-loop');
+await mkdir(evidence, { recursive: true });
+const fixture = await mkdtemp(join(tmpdir(), 'workspace-bb-dev-'));
+const metadata = join(fixture, 'metadata');
+const root = join(fixture, 'projects');
+await mkdir(join(root, 'Active', 'HMR project'), { recursive: true });
+const handler = createWorkspaceIpcHandler({ configPath: join(metadata,'settings.json'), viewStorePath: join(metadata,'views.json'), propertyStorePath: join(metadata,'properties.json'), chooseRoot: async () => root });
+await handler(null,'workspace.setRoot');
+const style = join(project, 'src/styles.css');
+const original = await readFile(style, 'utf8');
+let output = '';
+const child = spawn('npm', ['run','dev','--','--remote-debugging-port=9348'], { cwd: project, env:{...process.env, WORKSPACE_DEV_DATA:metadata}, detached:true, stdio:['ignore','pipe','pipe'] });
+child.stdout.on('data', chunk => output+=chunk);
+child.stderr.on('data', chunk => output+=chunk);
+const closed = new Promise(resolve=>child.once('exit',code=>resolve(code)));
+let browser;
+const result = {fixture,checks:[]};
+try {
+ for(let i=0;i<100;i++){try{await fetch('http://127.0.0.1:9348/json/version');break;}catch{await new Promise(r=>setTimeout(r,100));}}
+ browser=await chromium.connectOverCDP('http://127.0.0.1:9348');
+ const page=browser.contexts()[0].pages()[0];
+ await page.getByRole('button',{name:'HMR project',exact:true}).waitFor();
+ result.url=page.url();
+ assert.match(result.url,/^http:\/\/127\.0\.0\.1:\d+\/$/);
+ assert.ok(output.includes(`Isolated data: ${metadata}`));
+ result.checks.push('Actual npm run dev launches loopback Vite and real Electron with isolated fixture metadata');
+ const before=await page.evaluate(()=>{window.__hmrSession='retained'; return window.__hmrSession;});
+ await writeFile(style, original+'\n:root { --workspace-hmr-proof: verified; }\n');
+ await page.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--workspace-hmr-proof').trim()==='verified');
+ assert.equal(await page.evaluate(()=>window.__hmrSession),before);
+ result.checks.push('Stylesheet HMR applied without page reload; existing renderer state retained');
+ await page.screenshot({path:join(evidence,'desktop-hmr.png')});
+ await writeFile(style,original);
+ await page.waitForFunction(()=>getComputedStyle(document.documentElement).getPropertyValue('--workspace-hmr-proof').trim()==='');
+ result.checks.push('Original stylesheet restored and HMR applied again');
+} finally {
+ await writeFile(style,original);
+ if(browser)await browser.close();
+ process.kill(-child.pid,'SIGINT');
+ result.exitCode=await Promise.race([closed,new Promise(resolve=>setTimeout(()=>resolve('timeout'),5000))]);
+ if(result.exitCode==='timeout')process.kill(-child.pid,'SIGTERM');
+ await new Promise(r=>setTimeout(r,500));
+ const port=new URL(result.url).port;
+ await assert.rejects(fetch(`http://127.0.0.1:${port}/`));
+ await assert.rejects(fetch('http://127.0.0.1:9348/json/version'));
+ result.checks.push('Ctrl-C stops launcher, Electron debugging endpoint and Vite listener');
+ await writeFile(join(evidence,'launcher.txt'),output);
+ await writeFile(join(evidence,'report.json'),JSON.stringify(result,null,2));
+}
+console.log(JSON.stringify(result,null,2));

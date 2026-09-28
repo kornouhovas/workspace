@@ -1,0 +1,2 @@
+ok  	workspace/cmd/workspace-sidecar	0.807s
+ok  	workspace/internal/workspacestore	0.785s

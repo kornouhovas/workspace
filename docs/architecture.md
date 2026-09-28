@@ -3,7 +3,7 @@
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Radix UI primitives.
-- Desktop shell: Electron loading the built renderer from `dist/renderer`.
+- Desktop shell: Electron loading the built renderer from `dist/renderer`; explicit development mode loads validated loopback Vite with isolated checkout metadata/userData. See [development boundaries](design/bb-stack-design.md).
 - Local backend: Node.js workspace backend modules in `src/`.
 - Local storage: `any local` through the local `any-store` sidecar.
 - Sidecar: Go HTTP process backed by `any-store` on SQLite.

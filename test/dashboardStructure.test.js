@@ -1010,7 +1010,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(popoverSource, /@radix-ui\/react-popover/);
 
   assert.doesNotMatch(mainSource, /document\.documentElement\.classList\.add\("dark"\)/);
-  assert.match(cssSource, /--background: #fafbfd/);
+  assert.match(cssSource, /--background: var\(--canvas\)/);
   assert.match(lucideIconsSource, /FolderKanbanIcon/);
   assert.match(lucideIconsSource, /FolderIcon/);
   assert.match(lucideIconsSource, /FileIcon/);

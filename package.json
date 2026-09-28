@@ -15,7 +15,14 @@
     "build:sidecar": "mkdir -p build/sidecar/local && GOFLAGS=-buildvcs=false go build -o build/sidecar/local/workspace-sidecar ./cmd/workspace-sidecar",
     "build:sidecar:mac": "mkdir -p build/sidecar/darwin-arm64 && GOFLAGS=-buildvcs=false GOOS=darwin GOARCH=arm64 go build -o build/sidecar/darwin-arm64/workspace-sidecar ./cmd/workspace-sidecar",
     "build:sidecar:win": "mkdir -p build/sidecar/win32-x64 && GOFLAGS=-buildvcs=false GOOS=windows GOARCH=amd64 go build -o build/sidecar/win32-x64/workspace-sidecar.exe ./cmd/workspace-sidecar",
-    "build:sidecars": "npm run build:sidecar:mac && npm run build:sidecar:win"
+    "build:sidecars": "npm run build:sidecar:mac && npm run build:sidecar:win",
+    "dev": "node scripts/dev-desktop.mjs",
+    "storybook": "node scripts/component-catalog.mjs serve",
+    "storybook:build": "node scripts/component-catalog.mjs build",
+    "lint": "oxlint src electron scripts .ladle",
+    "format": "oxfmt electron/developmentRuntime.js scripts/dev-desktop.mjs scripts/component-catalog.mjs scripts/verify-desktop.mjs src/stories .ladle src/styles.css package.json",
+    "format:check": "oxfmt electron/developmentRuntime.js scripts/dev-desktop.mjs scripts/component-catalog.mjs scripts/verify-desktop.mjs src/stories .ladle src/styles.css package.json --check",
+    "test:desktop": "node scripts/verify-desktop.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -41,11 +48,15 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@ladle/react": "^5.1.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
     "electron": "^41.5.0",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "tailwindcss": "^4.2.4",
     "typescript": "5.9.3",
     "vite": "^6.4.2"

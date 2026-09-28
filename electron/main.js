@@ -1,12 +1,17 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getDevelopmentRuntime } from "./developmentRuntime.js";
 import { registerWorkspaceIpc } from "./workspaceIpc.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const development = getDevelopmentRuntime({ checkout: join(__dirname, "..") });
+if (development) app.setPath("userData", development.userData);
+
 app.setName("Workspace");
 registerWorkspaceIpc(ipcMain, {
+  ...development?.storage,
   async chooseRoot() {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory"],
@@ -91,7 +96,11 @@ async function createWindow() {
     mainWindow = null;
   });
 
-  await mainWindow.loadFile(join(__dirname, "../dist/renderer/index.html"));
+  if (development?.rendererUrl) {
+    await mainWindow.loadURL(development.rendererUrl);
+  } else {
+    await mainWindow.loadFile(join(__dirname, "../dist/renderer/index.html"));
+  }
   await lockRendererZoom(mainWindow);
   await waitForRendererContent(mainWindow);
   showMainWindow();

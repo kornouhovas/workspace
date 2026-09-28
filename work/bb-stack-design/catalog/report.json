@@ -1,0 +1,8 @@
+{
+  "url": "http://127.0.0.1:61100/?story=workspace--controls&theme=dark",
+  "errors": [],
+  "checks": [
+    "Actual npm run storybook serves real Workspace Controls story without page errors",
+    "Ladle theme control switches inherited ink/canvas tokens to real dark surfaces"
+  ]
+}

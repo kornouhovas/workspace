@@ -144,7 +144,7 @@ export function WorkspaceBoardView({
             return (
               <section
               key={column.statusValueId}
-              className="workspace-board-column flex min-w-0 self-start flex-col rounded-lg bg-[#f3f6fc]"
+              className="workspace-board-column flex min-w-0 self-start flex-col rounded-lg bg-muted/30"
               aria-label={t("board.projectsAria", {
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}

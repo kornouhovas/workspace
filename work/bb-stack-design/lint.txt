@@ -1,0 +1,25 @@
+
+> workspace@0.1.0 lint
+> oxlint src electron scripts .ladle
+
+src/workspaceProjectSession.js:32:23: warning eslint(no-unused-vars): Parameter 'fileTree' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/components/workspace/select-value-editor.tsx:127:10: warning eslint(no-unused-vars): Function 'getSelectValueName' is declared but never used. help: Consider removing this declaration.
+src/components/site-header.tsx:1:10: warning eslint(no-unused-vars): Identifier 'Button' is imported but never used. help: Consider removing this import.
+src/workspaceBackend.js:65:3: warning eslint(no-unused-vars): Parameter 'propertiesPath' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/workspaceBackend.js:670:10: warning eslint(no-unused-vars): Function 'getRootFolderProperties' is declared but never used. help: Consider removing this declaration.
+src/workspaceBackend.js:367:7: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+electron/workspaceIpc.js:804:55: warning eslint(no-unused-vars): Parameter 'workspaceId' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+electron/workspaceIpc.js:194:9: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+electron/workspaceIpc.js:1384:7: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/App.tsx:1467:18: warning eslint(no-unused-vars): Function 'handleCreateProperty' is declared but never used. help: Consider removing this declaration.
+src/App.tsx:1553:18: warning eslint(no-unused-vars): Function 'handleReorderProperties' is declared but never used. help: Consider removing this declaration.
+src/App.tsx:1660:18: warning eslint(no-unused-vars): Function 'handleHideSelectValue' is declared but never used. help: Consider removing this declaration.
+src/App.tsx:1711:18: warning eslint(no-unused-vars): Function 'handleReorderSelectValues' is declared but never used. help: Consider removing this declaration.
+src/App.tsx:1232:31: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/localOpen.js:64:47: warning eslint(no-unused-vars): Parameter 'kind' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.
+src/workspaceAppState.ts:923:27: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/workspaceAppState.ts:924:29: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/workspaceAppState.ts:925:28: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/workspaceAppState.ts:948:33: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/workspaceAppState.ts:949:31: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/components/workspace/view-tabs.tsx:124:10: warning eslint(no-unused-vars): Function 'isViewContextMenuTarget' is declared but never used. help: Consider removing this declaration.

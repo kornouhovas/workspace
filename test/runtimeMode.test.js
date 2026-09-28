@@ -11,7 +11,7 @@ test("workspace runs as an Electron-only app shell", async () => {
 
   assert.equal(packageJson.name, "workspace");
   assert.equal(packageJson.main, "electron/main.js");
-  assert.equal(packageJson.scripts.dev, undefined);
+  assert.equal(packageJson.scripts.dev, "node scripts/dev-desktop.mjs");
   assert.equal(packageJson.scripts.preview, undefined);
   assert.equal(packageJson.scripts.electron, "electron electron/main.js");
   assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && electron electron/main.js");
@@ -26,6 +26,8 @@ test("workspace runs as an Electron-only app shell", async () => {
     "src/components/workspace/**/*.ts",
     "src/components/workspace/**/*.tsx",
     "src/types/**/*.d.ts",
+    "src/stories/**/*.tsx",
+    ".ladle/**/*.tsx",
   ]);
   assert.equal(packageJson.scripts.verify, "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar");
   assert.equal(packageJson.scripts["test:go"], "GOFLAGS=-buildvcs=false go test ./...");
@@ -47,7 +49,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.dependencies?.shadcn.startsWith("^"), true);
   assert.equal(packageJson.build, undefined);
   assert.match(readme, /npm run electron/);
-  assert.doesNotMatch(readme, /npm run dev/);
+  assert.match(readme, /npm run dev/);
   assert.match(readme, /Workspace Project Board/);
   assert.match(readme, /npm run build:renderer/);
   assert.match(electronMain, /import\s+\{\s*app,\s*BrowserWindow,\s*dialog,\s*ipcMain\s*\}\s+from\s+"electron"/);
@@ -69,7 +71,7 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.match(electronMain, /setVisualZoomLevelLimits\(1,\s*1\)/);
   assert.doesNotMatch(electronMain, /ready-to-show/);
   assert.match(electronMain, /mainWindow\.loadFile\(join\(__dirname,\s*"\.\.\/dist\/renderer\/index\.html"\)\)/);
-  assert.doesNotMatch(electronMain, /loadURL/);
+  assert.match(electronMain, /development\?\.rendererUrl/);
   assert.match(preload, /contextBridge/);
   assert.match(preload, /ipcRenderer/);
   assert.match(preload, /require\("electron"\)/);

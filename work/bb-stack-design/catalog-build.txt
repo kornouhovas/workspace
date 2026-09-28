@@ -1,0 +1,24 @@
+
+> workspace@0.1.0 storybook:build
+> node scripts/component-catalog.mjs build
+
+vite v6.4.2 building for production...
+transforming...
+✓ 269 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../../../dist/catalog/assets/manifest-B-VxemCC.webmanifest                 0.14 kB
+../../../../../dist/catalog/assets/favicon-gjFwcFbF.svg                          0.53 kB │ gzip:   0.31 kB
+../../../../../dist/catalog/index.html                                           1.21 kB │ gzip:   0.64 kB
+../../../../../dist/catalog/assets/touch-icon-ByyUZD7t.png                       6.69 kB
+../../../../../dist/catalog/assets/geist-cyrillic-wght-normal-CHSlOQsW.woff2    14.69 kB
+../../../../../dist/catalog/assets/geist-latin-ext-wght-normal-DMtmJ5ZE.woff2   15.31 kB
+../../../../../dist/catalog/assets/geist-latin-wght-normal-Dm3htQBi.woff2       28.40 kB
+../../../../../dist/catalog/assets/index-CG_9Gwa2.css                          140.16 kB │ gzip:  22.37 kB
+../../../../../dist/catalog/assets/empty-module-BIHI7g3E.js                      0.03 kB │ gzip:   0.05 kB
+../../../../../dist/catalog/assets/workspace.stories-xBvM6b-P.js               200.58 kB │ gzip:  59.48 kB
+../../../../../dist/catalog/assets/index-D37hRfnb.js                           470.26 kB │ gzip: 146.21 kB
+✓ built in 1.45s
+✓  Meta.json successfully created.
+⏱️  Ladle finished the production build in 2s producing 0.84 MiB of assets.
+💡 Tip: Run "ladle preview" to check that the build works!

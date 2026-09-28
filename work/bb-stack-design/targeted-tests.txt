@@ -1,0 +1,21 @@
+✔ renderer composes the workspace product shell (33.455375ms)
+✔ production ignores development environment overrides (0.868041ms)
+✔ development is checkout-local and rejects network renderer origins (0.3935ms)
+✔ development JSON adapters write only to fixture metadata (30.995375ms)
+✔ development cannot point metadata into production or legacy directories (0.235459ms)
+✔ workspace runs as an Electron-only app shell (14.517583ms)
+✔ legacy browser dev server is not shipped (0.464709ms)
+✔ Electron window keeps the renderer isolated from Node privileges (6.949625ms)
+✔ preload exposes only the allowlisted workspace request facade (4.483209ms)
+✔ preload and main process enforce the same explicit IPC method allowlist (1.027459ms)
+✔ filesystem boundary canonicalizes existing targets and opens them without a shell (0.567208ms)
+✔ preview allowlist excludes native executable and package extensions (0.774167ms)
+✔ transitional JSON stores use same-directory atomic replacement and only remove temp files (1.717167ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 173.831958
