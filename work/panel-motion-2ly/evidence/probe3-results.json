@@ -1,0 +1,3879 @@
+{
+  "phase": "probe3",
+  "checks": [
+    {
+      "name": "Light-1440 dimensions",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "closed host width zero",
+      "passed": true
+    },
+    {
+      "name": "closed host inert",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 left close intermediate frames",
+      "passed": true,
+      "data": 20
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 left open intermediate frames",
+      "passed": true,
+      "data": 20
+    },
+    {
+      "name": "Light-1440 right open intermediate frames",
+      "passed": true,
+      "data": 21
+    },
+    {
+      "name": "Light-1440 no repeated content heading",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 no hover close",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 hover title stable",
+      "passed": true
+    },
+    {
+      "name": "closed host width zero",
+      "passed": true
+    },
+    {
+      "name": "closed host inert",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 right close intermediate frames",
+      "passed": true,
+      "data": 21
+    },
+    {
+      "name": "Light-1440 outgoing project held",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-sidebar follows pointer",
+      "passed": true,
+      "data": {
+        "x": 846,
+        "r": {
+          "x": 845,
+          "y": 0,
+          "width": 595,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-sidebar follows pointer",
+      "passed": true,
+      "data": {
+        "x": 791,
+        "r": {
+          "x": 790,
+          "y": 0,
+          "width": 650,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-sidebar follows pointer",
+      "passed": true,
+      "data": {
+        "x": 741,
+        "r": {
+          "x": 740,
+          "y": 0,
+          "width": 700,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-sidebar expands before release",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-sidebar right suppressed",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-sidebar one tab",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-sidebar capture cleaned",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-sidebar expanded fills workspace",
+      "passed": true,
+      "data": {
+        "x": 320,
+        "y": 48,
+        "width": 1120,
+        "height": 912
+      }
+    },
+    {
+      "name": "Light-1440-sidebar restore width",
+      "passed": true,
+      "data": {
+        "actual": 560,
+        "expected": 560
+      }
+    },
+    {
+      "name": "Light-1440-sidebar restore removes tab",
+      "passed": true
+    },
+    {
+      "name": "closed host width zero",
+      "passed": true
+    },
+    {
+      "name": "closed host inert",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-collapsed follows pointer",
+      "passed": true,
+      "data": {
+        "x": 686,
+        "r": {
+          "x": 685,
+          "y": 0,
+          "width": 755,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-collapsed follows pointer",
+      "passed": true,
+      "data": {
+        "x": 631,
+        "r": {
+          "x": 630,
+          "y": 0,
+          "width": 810,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-collapsed follows pointer",
+      "passed": true,
+      "data": {
+        "x": 581,
+        "r": {
+          "x": 580,
+          "y": 0,
+          "width": 860,
+          "height": 960
+        }
+      }
+    },
+    {
+      "name": "Light-1440-collapsed expands before release",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-collapsed right suppressed",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-collapsed one tab",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-collapsed capture cleaned",
+      "passed": true
+    },
+    {
+      "name": "Light-1440-collapsed expanded fills workspace",
+      "passed": true,
+      "data": {
+        "x": 0,
+        "y": 48,
+        "width": 1440,
+        "height": 912
+      }
+    },
+    {
+      "name": "Light-1440-collapsed restore width",
+      "passed": true,
+      "data": {
+        "actual": 720,
+        "expected": 720
+      }
+    },
+    {
+      "name": "Light-1440-collapsed restore removes tab",
+      "passed": true
+    },
+    {
+      "name": "closed host width zero",
+      "passed": true
+    },
+    {
+      "name": "closed host inert",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "Board host hidden",
+      "passed": true
+    },
+    {
+      "name": "Board tab retained",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 expanded identity stable",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 expanded no motion",
+      "passed": true
+    },
+    {
+      "name": "Table host hidden",
+      "passed": true
+    },
+    {
+      "name": "Table tab retained",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 expanded identity stable",
+      "passed": true
+    },
+    {
+      "name": "Light-1440 expanded no motion",
+      "passed": true
+    }
+  ],
+  "frames": [
+    {
+      "name": "Light-1440 left close",
+      "frames": [
+        {
+          "t": 0.19999998807907104,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 8.299999952316284,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 17.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 24.799999952316284,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 34.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 41.59999996423721,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 49.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 58.09999996423721,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 66.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 75.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 82.79999995231628,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 91.69999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 99.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 108.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 116.59999996423721,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 124.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 133.29999995231628,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 141.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 149.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 158.29999995231628,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 166.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 174.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 183.29999995231628,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 191.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 199.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 208.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 216,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 225.0999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 233.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 241.5999999642372,
+          "left": 276.6640625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 250.19999998807907,
+          "left": 232.6953125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 258.39999997615814,
+          "left": 190.265625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 266.7999999523163,
+          "left": 153.453125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 275.0999999642372,
+          "left": 123.2421875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 282.89999997615814,
+          "left": 100.3203125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 291.7999999523163,
+          "left": 80.2421875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 300.0999999642372,
+          "left": 65.3359375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 308.0999999642372,
+          "left": 53.6328125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 317,
+          "left": 43.5625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 324.89999997615814,
+          "left": 35.6171875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 333.39999997615814,
+          "left": 28.9765625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 341.69999998807907,
+          "left": 23.515625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 350,
+          "left": 18.9140625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 358.39999997615814,
+          "left": 15.109375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 366.19999998807907,
+          "left": 12.1328125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 375.19999998807907,
+          "left": 9.234375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 382.89999997615814,
+          "left": 7.1328125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 391.7999999523163,
+          "left": 5.21875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 400,
+          "left": 3.7421875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 408.2999999523163,
+          "left": 2.546875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 416.7999999523163,
+          "left": 1.625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 425,
+          "left": 0.9375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 433.2999999523163,
+          "left": 0.4453125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 441,
+          "left": 0.1640625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 449.19999998807907,
+          "left": 0.015625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 458.39999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 466.5999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 474.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 483.19999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 491.5999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 499.7999999523163,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 508.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 516.3999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 524.6999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 534.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 540.8999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 549.5,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 558.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 566.5999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 575,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 583.7999999523163,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 591.6999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 599.8999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 608.1999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 616.5,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 624.6999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 633.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 642.1999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 650.3999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 659.5999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 666.8999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 675.1999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 684.3999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 692.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 700.3999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 708.8999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 717.0999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 725.1999999880791,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 733.5999999642372,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 741.8999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 750.3999999761581,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        }
+      ]
+    },
+    {
+      "name": "Light-1440 left open",
+      "frames": [
+        {
+          "t": 0.30000001192092896,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 0.8999999761581421,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 10.300000011920929,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 17.69999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 25.899999976158142,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 34.30000001192093,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 42.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 50.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 59.19999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 68.5,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 76,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 85.5,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 92.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 101.10000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 109.19999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 117.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 126.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 134.30000001192093,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 143.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 150.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 159.19999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 167.5,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 175.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 184.30000001192093,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 192.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 200.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 209.19999998807907,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 217.60000002384186,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 225.89999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 234.39999997615814,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 243,
+          "left": 0,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 250.5,
+          "left": 40.0390625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 259.10000002384186,
+          "left": 85.609375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 267.80000001192093,
+          "left": 129.625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 276.10000002384186,
+          "left": 166.046875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 284.5,
+          "left": 197,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 292.89999997615814,
+          "left": 220.8984375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 301.10000002384186,
+          "left": 239.90625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 309.5,
+          "left": 254.78125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 317.80000001192093,
+          "left": 266.71875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 325.89999997615814,
+          "left": 276.09375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 334.39999997615814,
+          "left": 284.4453125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 342.89999997615814,
+          "left": 291,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 351.19999998807907,
+          "left": 296.5234375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 359.5,
+          "left": 301.0703125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 367.69999998807907,
+          "left": 304.8359375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 375.80000001192093,
+          "left": 307.921875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 384.5,
+          "left": 310.75,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 392.80000001192093,
+          "left": 312.953125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 401.10000002384186,
+          "left": 314.765625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 408.89999997615814,
+          "left": 316.1640625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 417.80000001192093,
+          "left": 317.453125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 426.19999998807907,
+          "left": 318.375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 434.5,
+          "left": 319.0625,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 442.80000001192093,
+          "left": 319.546875,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 450.60000002384186,
+          "left": 319.828125,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 459.39999997615814,
+          "left": 319.984375,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 467.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 476,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 485.30000001192093,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 492.69999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 501.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 509.10000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 517.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 525.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 534.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 542.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 551,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 559.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 567.6999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 576,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 584.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 593.1999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 601,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 609.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 617.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 625.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 634.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 643.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 651,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 660.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 667.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 676,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 684.3000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 692.6000000238419,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 700.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 710.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 717.8000000119209,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 726.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 735.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 742.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 751,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        }
+      ]
+    },
+    {
+      "name": "Light-1440 right open",
+      "frames": [
+        {
+          "t": 0.30000001192092896,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 3.699999988079071,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 11.699999988079071,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 19.899999976158142,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 28.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 36.60000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 45.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 53.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 61.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 69.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 78.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 86.80000001192093,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 94.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 103.30000001192093,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 111.60000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 120,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 128.39999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 136.69999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 144.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 153.39999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 161.69999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 170.10000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 178.30000001192093,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 186.60000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 195.10000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 203.39999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 211.60000002384186,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 219.89999997615814,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 228.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 238.10000002384186,
+          "left": 320,
+          "right": 1,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 244.89999997615814,
+          "left": 320,
+          "right": 74.6953125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 253.39999997615814,
+          "left": 320,
+          "right": 154.3984375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 261.89999997615814,
+          "left": 320,
+          "right": 227.6796875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 270.10000002384186,
+          "left": 320,
+          "right": 292,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 278.39999997615814,
+          "left": 320,
+          "right": 345.3203125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 286.69999998807907,
+          "left": 320,
+          "right": 387.015625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 295.19999998807907,
+          "left": 320,
+          "right": 419.84375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 303.5,
+          "left": 320,
+          "right": 446.15625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 311.80000001192093,
+          "left": 320,
+          "right": 466.984375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 320.19999998807907,
+          "left": 320,
+          "right": 483.90625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 328.39999997615814,
+          "left": 320,
+          "right": 497.9296875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 336.80000001192093,
+          "left": 320,
+          "right": 509.3828125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 345.10000002384186,
+          "left": 320,
+          "right": 519.015625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 352.39999997615814,
+          "left": 320,
+          "right": 526.1640625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 361.5,
+          "left": 320,
+          "right": 533.3125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 370.10000002384186,
+          "left": 320,
+          "right": 539.2265625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 378.39999997615814,
+          "left": 320,
+          "right": 543.8125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 386.89999997615814,
+          "left": 320,
+          "right": 547.7109375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 395.10000002384186,
+          "left": 320,
+          "right": 550.9140625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 403.39999997615814,
+          "left": 320,
+          "right": 553.4609375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 411.80000001192093,
+          "left": 320,
+          "right": 555.5546875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 420,
+          "left": 320,
+          "right": 557.171875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 428.5,
+          "left": 320,
+          "right": 558.375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 436.69999998807907,
+          "left": 320,
+          "right": 559.21875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 445.19999998807907,
+          "left": 320,
+          "right": 559.7421875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 453.30000001192093,
+          "left": 320,
+          "right": 559.9765625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 461.80000001192093,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 470.10000002384186,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 478.30000001192093,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 486.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 495.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 503.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 512.6000000238419,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 519.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 528.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 536.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 545.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 553.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 562.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 569.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 578.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 587.1000000238419,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 594.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 603.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 611.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 619.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 628.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 636.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 644.8000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 653.1999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 661.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 670,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 678.6999999880791,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 686.8000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 695.3000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 703.8000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 711.8999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 720.3000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 729.3999999761581,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 737.1000000238419,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 745.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 753.8000000119209,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        }
+      ]
+    },
+    {
+      "name": "Light-1440 right close",
+      "frames": [
+        {
+          "t": 3.099999964237213,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 10.399999976158142,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 19.599999964237213,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 27.899999976158142,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 36.299999952316284,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 44.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 52.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 61.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 69.59999996423721,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 77.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 86.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 94.69999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 102.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 111.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 119.59999996423721,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 127.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 136.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 144.5999999642372,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 152.79999995231628,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 161.29999995231628,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 169.5,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 177.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 186.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 193.89999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 202.79999995231628,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 211.39999997615814,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 219.5999999642372,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 227.29999995231628,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 236.0999999642372,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": false
+        },
+        {
+          "t": 245.19999998807907,
+          "left": 320,
+          "right": 560,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 253.19999998807907,
+          "left": 320,
+          "right": 477.875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 261.2999999523163,
+          "left": 320,
+          "right": 401.9296875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 269.5999999642372,
+          "left": 320,
+          "right": 328.140625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 278.0999999642372,
+          "left": 320,
+          "right": 263.7890625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 286.2999999523163,
+          "left": 320,
+          "right": 211.8671875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 294.7999999523163,
+          "left": 320,
+          "right": 170.7734375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 302.89999997615814,
+          "left": 320,
+          "right": 138.40625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 311.39999997615814,
+          "left": 320,
+          "right": 112.453125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 319.5,
+          "left": 320,
+          "right": 91.8828125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 328.0999999642372,
+          "left": 320,
+          "right": 75.171875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 336.2999999523163,
+          "left": 320,
+          "right": 61.3046875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 344.69999998807907,
+          "left": 320,
+          "right": 49.984375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 353,
+          "left": 320,
+          "right": 40.5546875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 361.2999999523163,
+          "left": 320,
+          "right": 32.6875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 369.69999998807907,
+          "left": 320,
+          "right": 26.0234375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 378,
+          "left": 320,
+          "right": 20.4609375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 386.5,
+          "left": 320,
+          "right": 15.9296875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 394.69999998807907,
+          "left": 320,
+          "right": 12.0703125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 403.19999998807907,
+          "left": 320,
+          "right": 8.90625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 411.39999997615814,
+          "left": 320,
+          "right": 6.3671875,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 419.5999999642372,
+          "left": 320,
+          "right": 4.328125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 427.0999999642372,
+          "left": 320,
+          "right": 2.8984375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 435.7999999523163,
+          "left": 320,
+          "right": 1.6328125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 444.2999999523163,
+          "left": 320,
+          "right": 0.7734375,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 453.0999999642372,
+          "left": 320,
+          "right": 0.2265625,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 461.2999999523163,
+          "left": 320,
+          "right": 0.0078125,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 469.7999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 478,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 486.19999998807907,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 494.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 502.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 511.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 519.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 527.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 536.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 544.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 552.8999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 561.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 569.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 577.7999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 586.1999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 595.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 603.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 611.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 620.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 627.6999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 636.0999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 645.5999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 653.1999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 661.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 670.0999999642372,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 678.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 686.1999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 694.5,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 703.7999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 711.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 720.3999999761581,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 728.1999999880791,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 737.2999999523163,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 745,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        },
+        {
+          "t": 753,
+          "left": 320,
+          "right": 0,
+          "name": "Project Alpha",
+          "dialog": true,
+          "inert": true
+        }
+      ]
+    }
+  ],
+  "drags": [
+    {
+      "tag": "Light-1440-sidebar",
+      "startWidth": 560,
+      "samples": [
+        {
+          "pointer": 846,
+          "left": 845,
+          "width": 595
+        },
+        {
+          "pointer": 791,
+          "left": 790,
+          "width": 650
+        },
+        {
+          "pointer": 741,
+          "left": 740,
+          "width": 700
+        }
+      ],
+      "id": "project-tab:8c542014-d69f-4472-90c2-5ab5aa802fb0"
+    },
+    {
+      "tag": "Light-1440-collapsed",
+      "startWidth": 720,
+      "samples": [
+        {
+          "pointer": 686,
+          "left": 685,
+          "width": 755
+        },
+        {
+          "pointer": 631,
+          "left": 630,
+          "width": 810
+        },
+        {
+          "pointer": 581,
+          "left": 580,
+          "width": 860
+        }
+      ],
+      "id": "project-tab:119b683b-fb6a-4c12-9050-abe4037e338b"
+    }
+  ],
+  "events": [
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 160,
+      "y": 936
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 160,
+      "y": 936
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 766,
+      "y": 85,
+      "label": "Appearance"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 766,
+      "y": 85
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 783,
+      "y": 85
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 783,
+      "y": 85
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1280.719970703125,
+      "y": 23.5
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1280.719970703125,
+      "y": 23.5
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 881,
+      "y": 160,
+      "label": "Resize right panel"
+    },
+    {
+      "type": "lostpointercapture",
+      "trusted": true,
+      "x": 319,
+      "y": 160,
+      "label": "Resize right panel"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 319,
+      "y": 160,
+      "label": "Resize sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 208,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 208,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 721,
+      "y": 160,
+      "label": "Resize right panel"
+    },
+    {
+      "type": "lostpointercapture",
+      "trusted": true,
+      "x": 0,
+      "y": 160,
+      "label": "Resize right panel"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 0,
+      "y": 160,
+      "label": "Project Alpha"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1418,
+      "y": 23.5,
+      "label": "Hide right panel (⌘ J)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 110,
+      "y": 26,
+      "label": "Show sidebar"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Maximize pane (⇧ ⌘ E)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Maximize pane (⇧ ⌘ E)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 362.78515625,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 362.78515625,
+      "y": 23.5,
+      "label": "Board"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 541.234375,
+      "y": 23.5,
+      "label": "Project Alpha"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 541.234375,
+      "y": 23.5,
+      "label": "Project Alpha"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 435,
+      "y": 23.5,
+      "label": "Table"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 541.234375,
+      "y": 23.5,
+      "label": "Project Alpha"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 541.234375,
+      "y": 23.5,
+      "label": "Project Alpha"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Restore side panel"
+    }
+  ],
+  "error": "locator.boundingBox: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('workspace-right-panel').getByRole('button', { name: /Hide right panel/ })\u001b[22m\n\n    at click (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:16:62)\n    at close (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:19:30)\n    at /Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:48:85"
+}

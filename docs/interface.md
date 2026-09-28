@@ -45,7 +45,7 @@ Layout requirements:
 
 - The app title must not overlap the macOS traffic-light window controls.
 - The title area should be vertically offset enough for the hidden-inset titlebar.
-- The sidebar can be collapsed with a toggle icon. Native pointer clicks must both hide and show it: the toggle no-drag exclusion is rendered after all pane drag regions so macOS does not consume the restore click.
+- The sidebar opens and closes with a 220ms width transition (disabled for reduced motion and direct pointer resize). Hidden sidebar content is inert. The sidebar can be collapsed with a toggle icon. Native pointer clicks must both hide and show it: the toggle no-drag exclusion is rendered after all pane drag regions so macOS does not consume the restore click.
 - Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The 320px sidebar resizes between 240px and 460px.
 - Settings must look like navigation, not a passive label.
 - Clicking Settings opens the Settings screen in the main area.
@@ -285,31 +285,33 @@ The right Project Detail Panel opens only after the user selects a project from 
 
 Panel behavior:
 
-- Opens in the right preview host. Inline and expanded content is immediately visible without a slide-in transition.
+- Opens in the right preview host with a 220ms width transition; closing releases the same space smoothly while retaining the outgoing content. Closed hosts are immediately inert. Expanded tab selection remains immediate without slide-in. Panel transitions respect reduced motion and reverse cleanly when toggled quickly.
+- Dragging the left preview boundary follows the pointer without easing. Reaching the left edge of the available workspace expands the project during the drag, using the existing expanded-tab mode. Restore returns to the partial width captured when that drag began; an ordinary completed resize establishes the next partial width. This width survives restart, including an explicit 560px width; older sessions whose 560px value represented automatic half-width keep that automatic behavior. The sidebar, when visible, is excluded from the available width.
 - Does not open on initial app load.
 - Can be closed without changing active view.
 - Closing the active expanded project tab, using either Close or its context menu, selects the immediately preceding project tab in the current tab order. If no project tab is to its left, return to the selected Board/Table view. Closing an inactive tab preserves the current screen.
 - Preserves the current Board/Table context.
 - Expand/Restore uses bb 0.44.0 Hugeicons `ExpandIcon` / `CollapseIcon`, 13px glyphs in 28px controls. Expand fills the working area up to the visible sidebar and suppresses the right Navigation/launcher host, including pointer and keyboard interaction. Restore returns to the side preview.
 - The panel background reaches the top of the window; its content starts below the workspace header, while Close and Expand/Restore stay aligned with the top controls. View settings/add buttons remain available while a right preview is open; only the full working-area project screen replaces them with Restore/Close. Both tab groups remain above the panel background.
-- Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a view shows Board/Table without removing project tabs; selecting a project tab immediately returns to its expanded screen, including a tab also present in a saved split. Board/Table remains reachable and the split tree is preserved underneath.
+- Expanded projects have a separate, horizontally scrollable tab group immediately after the saved-view tabs. Selecting a saved view hides the right host and releases its width without removing project tabs or its saved split tree; selecting a project tab immediately returns to its expanded screen, including a tab also present in a saved split. Board/Table remains reachable and the split tree is preserved underneath.
 - Duplicate tab inserts the new instance immediately to the right of the source tab and activates it.
-- Each project tab has its own identity, separate from the project ID. Clicking a project in Board/Table always opens an independent side panel, even if that project has expanded tabs. Expanding the side panel always creates a new tab. The tab context menu includes Duplicate tab, which creates and selects another expanded tab for the same project. Closing/restoring a tab removes only that instance; closing the independent side panel removes no tabs. Project property changes are shared across all instances. Duplicate tabs, their order and the active instance persist across restarts; older saved tabs migrate automatically.
+- Each project tab has its own identity, separate from the project ID. Clicking a project in Board/Table always opens an independent side panel, even if that project has expanded tabs. Expanding the side panel reuses an existing tab for that project when available, otherwise it creates a tab; reaching the edge during resize uses the same operation. The tab context menu includes Duplicate tab, which creates and selects another expanded tab for the same project. Closing/restoring a tab removes only that instance; closing the independent side panel removes no tabs. Project property changes are shared across all instances. Duplicate tabs, their order and the active instance persist across restarts; older saved tabs migrate automatically.
 - Project tabs share the saved-view tab styling, support drag reorder within their Workspace, and expose Restore view / Close view through a right-click menu. These actions affect the clicked project, including an inactive tab, and match the panel's Restore and Close buttons.
 - Dragging project tabs translates them without scaling their width or height. On returning to a Workspace, restore its last selected saved view and, if it was showing an expanded project, reopen that project after the Workspace data is ready. Returning to a Workspace left on Board/Table must not reopen an inactive project tab.
 - Multiple expanded project tabs, their order, and the last active screen are saved locally per Workspace and restored after restarting the application. Close removes the active project tab; Restore removes its tab and keeps its side panel open. Changing Workspace or visiting Settings does not discard the tabs. Startup restores the active expanded project after loading its Workspace; file trees are loaded again instead of persisted. Invalid stored data is ignored safely.
 
 Panel content order:
 
-1. Project identity: project `Name`.
-2. Project properties and values.
-3. File/folder structure for the project folder.
+Project identity remains in the host tab and in the dialog accessible name. There is no duplicate name or reserved heading space above Properties. The partial preview tab does not add a close icon on hover; its header Hide control and keyboard close paths remain available.
+
+1. Project properties and values.
+2. File/folder structure for the project folder.
 
 Properties section behavior:
 
 - Properties and Hidden properties collapse independently through their heading rows. Their chevrons appear on hover or keyboard focus without shifting the heading text. The two expanded/collapsed preferences are shared across project cards on this device and persist across closing cards and restarting the app.
 - When both property sections are collapsed, their heading rows have no extra gap. Project tabs share the available width, shrinking from 176px down to 40px as the window narrows or more tabs open; narrow tabs show only their icon, with the full name retained in the tooltip and accessible label. Horizontal scrolling is used only after the minimum widths no longer fit.
-- Always show system `Name` and `Status`.
+- Keep `Name` in the host tab and accessible dialog label. Show `Status` by default.
 - Show every active custom property that belongs to the active Workspace.
 - Render properties as a compact two-column table: drag handle and property name on the left, editable value on the right, row separators, and a vertical divider between name and value.
 - Supported custom property types are `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.

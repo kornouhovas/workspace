@@ -59,6 +59,8 @@ export function PaneResize({
   max,
   onResize,
   ratio = false,
+  onResizeStart,
+  onReachMax,
 }: {
   label: string;
   value: number;
@@ -66,26 +68,45 @@ export function PaneResize({
   max: number;
   onResize: (value: number) => void;
   ratio?: boolean;
+  onResizeStart?: () => void;
+  onReachMax?: () => void;
 }) {
+  const cleanup = useRef<(() => void) | null>(null);
+  useEffect(() => () => cleanup.current?.(), []);
   function begin(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
+    cleanup.current?.();
+    const target = event.currentTarget;
+    const pointerId = event.pointerId;
+    target.setPointerCapture(pointerId);
+    document.documentElement.dataset.paneResizing = "true";
+    onResizeStart?.();
     const start = event.clientX;
     const initial = value;
-    const width = event.currentTarget.parentElement?.getBoundingClientRect().width || 1;
-    const move = (e: globalThis.PointerEvent) =>
-      onResize(
-        Math.max(min, Math.min(max, initial + (e.clientX - start) * (ratio ? 1 / width : -1))),
-      );
+    const width = target.parentElement?.getBoundingClientRect().width || 1;
+    const move = (e: globalThis.PointerEvent) => {
+      if (e.pointerId !== pointerId) return;
+      const next = Math.max(min, Math.min(max, initial + (e.clientX - start) * (ratio ? 1 / width : -1)));
+      if (next >= max && onReachMax) {
+        end();
+        onReachMax();
+      } else onResize(next);
+    };
     const end = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
+      target.removeEventListener("lostpointercapture", end);
+      if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
+      delete document.documentElement.dataset.paneResizing;
+      cleanup.current = null;
     };
+    cleanup.current = end;
     window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", end, { once: true });
-    window.addEventListener("pointercancel", end, { once: true });
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    target.addEventListener("lostpointercapture", end);
   }
   return (
     <div
@@ -188,6 +209,7 @@ export function ChromeTab({
 }
 export function WorkspaceRightPanel({
   layout,
+  suppressed = false,
   send,
   navigation,
   project,
@@ -196,6 +218,7 @@ export function WorkspaceRightPanel({
   onMaximizeProject,
 }: {
   layout: PaneLayout;
+  suppressed?: boolean;
   send: (action: PaneAction) => void;
   navigation: ReactNode;
   project?: ReactNode;
@@ -212,9 +235,10 @@ export function WorkspaceRightPanel({
   }, []);
   const availableWidth = viewportWidth - (layout.sidebarCollapsed ? 0 : layout.sidebarWidth);
   const rightWidth =
-    layout.rightWidth === 560
+    !layout.rightWidthManual
       ? availableWidth / 2
-      : Math.min(layout.rightWidth, Math.max(280, availableWidth - 280));
+      : Math.min(layout.rightWidth, availableWidth);
+  const resizeStartWidth = useRef(rightWidth);
   const list = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ left: false, right: false });
   const showProject = !!project && layout.activeRightTab === "navigation";
@@ -241,14 +265,31 @@ export function WorkspaceRightPanel({
       ?.querySelector<HTMLElement>('[aria-selected="true"]')
       ?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [layout.activeRightTab]);
-  if (!layout.rightVisible && !project) return null;
+  const visible = layout.rightVisible && !suppressed;
+  const previousProject = useRef(showProject ? project : undefined);
+  const previousName = useRef(projectName);
+  if (visible) { previousProject.current = showProject ? project : undefined; previousName.current = projectName; }
+  const [exitComplete, setExitComplete] = useState(!visible);
+  useEffect(() => {
+    if (visible) { setExitComplete(false); return; }
+    const timer = window.setTimeout(() => {
+      previousProject.current = undefined;
+      setExitComplete(true);
+    }, 240);
+    return () => window.clearTimeout(timer);
+  }, [visible]);
+  const contentProject = suppressed ? undefined : visible ? (showProject ? project : undefined) : exitComplete ? undefined : previousProject.current;
   return (
     <aside
       className="bb-right-panel"
+      inert={!visible}
+      aria-hidden={!visible}
+      data-open={visible}
+      data-suppressed={suppressed}
       data-testid="workspace-right-panel"
       data-leading={layout.maximized === "right"}
       style={{
-        width: layout.maximized === "right" ? availableWidth : rightWidth,
+        width: visible ? (layout.maximized === "right" ? availableWidth : rightWidth) : 0,
         maxWidth: undefined,
       }}
       onFocusCapture={() => send({ type: "focus", pane: "right" })}
@@ -257,10 +298,15 @@ export function WorkspaceRightPanel({
         label={t("chrome.resizeRight")}
         value={rightWidth}
         min={280}
-        max={640}
+        max={availableWidth}
+        onResizeStart={() => { resizeStartWidth.current = rightWidth; }}
+        onReachMax={showProject ? () => {
+          send({ type: "resizeRight", width: resizeStartWidth.current });
+          onMaximizeProject();
+        } : undefined}
         onResize={(width) => send({ type: "resizeRight", width })}
       />
-      <header className="bb-pane-header electron-window-drag">
+      <header className={cn("bb-pane-header", visible && "electron-window-drag")}>
         <div
           className="bb-tab-overflow"
           ref={list}
@@ -268,11 +314,10 @@ export function WorkspaceRightPanel({
           aria-label={t("chrome.rightViews")}
         >
           <ChromeTab
-            label={showProject ? projectName || "Project" : t("chrome.navigation")}
+            label={contentProject ? (visible ? projectName : previousName.current) || "Project" : t("chrome.navigation")}
             active={!hasNew}
-            icon={showProject ? File01Icon : Navigation03Icon}
+            icon={contentProject ? File01Icon : Navigation03Icon}
             onSelect={() => send({ type: "rightSelect", id: "navigation" })}
-            onClose={showProject ? onCloseProject : undefined}
           />
           {layout.rightTabs.map((id, index) => (
             <ContextMenu.Root key={id} modal={false}>
@@ -366,8 +411,8 @@ export function WorkspaceRightPanel({
             <p>{t("chrome.actions")}</p>
             {navigation}
           </div>
-        ) : showProject ? (
-          project
+        ) : contentProject ? (
+          contentProject
         ) : (
           navigation
         )}

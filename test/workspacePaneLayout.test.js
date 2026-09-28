@@ -78,7 +78,7 @@ test("session round trip validates surviving maximize/focus and validates malfor
   const a = readPaneLayouts(store).a;
   assert.deepEqual(a.rightTabs, ["a"]);
   assert.equal(a.activeRightTab, "navigation");
-  assert.equal(a.rightWidth, 640);
+  assert.equal(a.rightWidth, 16384);
   assert.equal(a.sidebarWidth, 240);
   assert.equal(a.splitRatio, 0.2);
   assert.equal(
@@ -134,4 +134,38 @@ test("opening an independent project preview preserves a restored split and its 
   assert.equal(preview.focused, "right");
   assert.equal(preview.maximized, null);
   assert.deepEqual(preview.rightTabs, ["launcher"]);
+});
+
+test("selecting a saved view hides the right host without discarding split or right tabs", () => {
+  let state = reduce(createPaneLayout(), { type: "split", tabId: "alpha", paneId: "alpha-pane", target: "workspace", side: "right" });
+  state = reduce(state, { type: "rightOpen", id: "launcher" });
+  const next = reduce(state, { type: "selectView" });
+  assert.equal(next.rightVisible, false);
+  assert.deepEqual(next.tree, state.tree);
+  assert.deepEqual(next.rightTabs, state.rightTabs);
+  let raw;
+  const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
+  writePaneLayouts(storage, { workspace: next });
+  assert.equal(readPaneLayouts(storage).workspace.rightVisible, false);
+  assert.equal(reduce(next, { type: "previewProject" }).rightVisible, true);
+});
+
+test("right preview width can follow the pointer beyond 640 and survives restart", () => {
+  const next = reduce(createPaneLayout(), { type: "resizeRight", width: 1000 });
+  assert.equal(next.rightWidth, 1000);
+  let raw;
+  const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
+  writePaneLayouts(storage, { workspace: next });
+  assert.equal(readPaneLayouts(storage).workspace.rightWidth, 1000);
+});
+
+test("a resized width of 560 is explicit, not the legacy automatic-half sentinel", () => {
+  const next = reduce(createPaneLayout(), { type: "resizeRight", width: 560 });
+  assert.equal(next.rightWidthManual, true);
+  let raw;
+  const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
+  writePaneLayouts(storage, { workspace: next });
+  assert.equal(readPaneLayouts(storage).workspace.rightWidthManual, true);
+  const legacy = readPaneLayouts({getItem: () => JSON.stringify({version:1,layouts:{workspace:{rightWidth:560}}})});
+  assert.equal(legacy.workspace.rightWidthManual, false);
 });

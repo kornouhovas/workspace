@@ -1,0 +1,151 @@
+{
+  "phase": "resume-complete",
+  "checks": [
+    {
+      "name": "Board 4 host hidden",
+      "passed": true
+    },
+    {
+      "name": "Board 4 search retained",
+      "passed": true
+    },
+    {
+      "name": "Board 4 tab retained",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "restart view keeps right hidden",
+      "passed": true
+    },
+    {
+      "name": "restart same tab identity",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar true",
+      "passed": true
+    },
+    {
+      "name": "OS sidebar false",
+      "passed": true
+    },
+    {
+      "name": "restart retained expanded opens",
+      "passed": true
+    },
+    {
+      "name": "restart expanded mode identity",
+      "passed": true
+    }
+  ],
+  "frames": [],
+  "drags": [],
+  "events": [
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Add Board or Table view"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Add Board or Table view"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1288,
+      "y": 85
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1288,
+      "y": 85
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 528,
+      "y": 123,
+      "label": "Active projects"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Maximize pane (⇧ ⌘ E)"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 1386,
+      "y": 23.5,
+      "label": "Maximize pane (⇧ ⌘ E)"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 762.95703125,
+      "y": 23.5,
+      "label": "Board 4"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 762.95703125,
+      "y": 23.5,
+      "label": "Board 4"
+    },
+    {
+      "type": "pointerdown",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    },
+    {
+      "type": "pointerup",
+      "trusted": true,
+      "x": 294,
+      "y": 26,
+      "label": "Hide sidebar"
+    }
+  ]
+}

@@ -868,6 +868,7 @@ export function WorkspaceProjectDetailPanel({
     readSavedCardHiddenPropertyIds,
   );
   const [cardPropertyDrag, setCardPropertyDrag] = useState<CardPropertyDragState | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
   const renamingPropertyInputRef = useRef<HTMLInputElement | null>(null);
   const panelWidthRef = useRef(projectDetailPanelWidth);
   const panelMountedRef = useRef(false);
@@ -1036,6 +1037,7 @@ export function WorkspaceProjectDetailPanel({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (dialogRef.current?.closest("[inert]")) return;
       if (
         shouldClosePaneOnEscape({
           key: event.key,
@@ -1595,7 +1597,8 @@ export function WorkspaceProjectDetailPanel({
         />
       ) : null}
       <aside
-        aria-labelledby="project-detail-title"
+        ref={dialogRef}
+        aria-label={displayedProject.name}
         aria-modal="false"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
@@ -1626,18 +1629,6 @@ export function WorkspaceProjectDetailPanel({
           </button>
         ) : null}
         <>
-          <header
-            className={
-              expanded ? "workspace-project-detail-content-inset pb-2 pt-3" : "px-5 pb-2 pt-3"
-            }
-          >
-            <h2
-              id="project-detail-title"
-              className="workspace-project-detail-heading break-words text-sm font-medium text-foreground"
-            >
-              {displayedProject.name}
-            </h2>
-          </header>
           <div
             className={
               expanded

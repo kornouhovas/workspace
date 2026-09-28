@@ -743,6 +743,7 @@ export default function App() {
         tabId: activeProjectTabId,
       });
       setActiveProjectTabId(null);
+      sendPane({ type: "previewProject" });
     } else {
       createExpandedProject(selectedProject);
     }
@@ -2366,6 +2367,7 @@ export default function App() {
             setActiveProjectTabId(null);
             setActiveSurface("workspace");
             sendPane({ type: "showWorkspace" });
+            sendPane({ type: "selectView" });
             dispatch({ type: "activeViewChanged", activeViewId: view.id });
           }}
         >
@@ -2431,7 +2433,11 @@ export default function App() {
                   </>
                 ) : null
               }
-              onShowView={() => setSelectedProject(null)}
+              onShowView={() => {
+                setSelectedProject(null);
+                setActiveProjectTabId(null);
+                sendPane({ type: "selectView" });
+              }}
               actionsHidden={projectFullScreen}
               projectTabs={
                 <WorkspaceProjectTabs
@@ -2495,6 +2501,8 @@ export default function App() {
               views={viewState.views}
               onActiveViewChange={(activeViewId) => {
                 setSelectedProject(null);
+                setActiveProjectTabId(null);
+                sendPane({ type: "selectView" });
                 dispatch({ type: "activeViewChanged", activeViewId });
                 if (state.workspaceId) {
                   void workspaceClient
@@ -2671,7 +2679,7 @@ export default function App() {
       >
         <div
           className={[
-            "h-full shrink-0",
+            "workspace-sidebar-host h-full shrink-0",
             sidebarCollapsed
               ? "w-0"
               : "w-[var(--workspace-sidebar-width)]",
@@ -2737,8 +2745,9 @@ export default function App() {
             onClosePane={closeLayoutPane}
           />}
         </div>
-        {!projectFullScreen && (!paneLayout.maximized || paneLayout.maximized === "right") && (
+        {(
           <WorkspaceRightPanel
+            suppressed={projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
             navigation={navigationPanel}

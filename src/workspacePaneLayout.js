@@ -18,6 +18,7 @@ export function createPaneLayout() {
     tree: workspacePane(),
     rightVisible: false,
     rightWidth: 560,
+    rightWidthManual: false,
     sidebarWidth: 320,
     sidebarCollapsed: false,
     split: false,
@@ -33,12 +34,14 @@ export function paneLayoutReducer(state, action) {
   switch (action.type) {
     case "previewProject":
       return { ...state, rightVisible: true, activeRightTab: "navigation", maximized: null, focused: "right" };
+    case "selectView":
+      return { ...state, rightVisible: false, maximized: null, focused: "workspace" };
     case "rightToggle":
       return { ...state, rightVisible: !state.rightVisible };
     case "sidebarToggle":
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case "resizeRight":
-      return { ...state, rightWidth: clamp(action.width, 280, 640, state.rightWidth) };
+      return { ...state, rightWidth: clamp(action.width, 280, 16384, state.rightWidth), rightWidthManual: true };
     case "resizeSidebar":
       return { ...state, sidebarWidth: clamp(action.width, 240, 460, state.sidebarWidth) };
     case "resizeSplit":
@@ -237,7 +240,8 @@ export function readPaneLayouts(storage) {
               sidebarCollapsed: value.sidebarCollapsed === true,
               split: panes.length > 1,
               splitRatio: clamp(value.splitRatio, 0.2, 0.8, 0.5),
-              rightWidth: clamp(value.rightWidth, 280, 640, 560),
+              rightWidth: clamp(value.rightWidth, 280, 16384, 560),
+              rightWidthManual: value.rightWidthManual === true || (Number.isFinite(value.rightWidth) && value.rightWidth !== 560),
               sidebarWidth: clamp(value.sidebarWidth, 240, 460, 320),
               rightTabs: ids,
               activeRightTab: ids.includes(value.activeRightTab)

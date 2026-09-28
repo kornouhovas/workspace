@@ -411,7 +411,7 @@ export function WorkspaceLeftPanel({
           <ChevronRightIcon className="size-4" />
         </ChromeAction>
       </div>
-      <div className={`electron-window-no-drag min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1 ${collapsed ? "hidden" : "flex"}`}>
+      <div inert={collapsed} aria-hidden={collapsed} className={`workspace-sidebar-body electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1 ${collapsed ? "opacity-0" : "opacity-100"}`}>
         <button
           type="button"
           className="inline-flex h-8 w-full items-center justify-start gap-2 rounded-md border border-border bg-card px-2.5 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"

@@ -1,0 +1,11 @@
+{
+  "checks": 279,
+  "failed": [
+    {
+      "name": "Board 2 search retained",
+      "passed": false
+    }
+  ],
+  "error": "Error: Board 2 search retained\n    at check (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:9:84)\n    at selectView (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:23:133)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:57:392",
+  "events": 350
+}

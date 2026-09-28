@@ -4,6 +4,7 @@ export type PaneLayout = {
   tree: WorkspaceLayoutNode;
   rightVisible: boolean;
   rightWidth: number;
+  rightWidthManual: boolean;
   sidebarWidth: number;
   sidebarCollapsed: boolean;
   split: boolean;
@@ -20,7 +21,7 @@ export type PaneAction =
   | { type: "closePane"; paneId: string }
   | { type: "resizeTree"; path: number[]; index: number; fraction: number }
   | { type: "replacePane"; paneId: string; tabId: string | null }
-  | { type: "previewProject" | "rightToggle" | "sidebarToggle" | "closeSplit" | "rightReopen" | "showWorkspace" }
+  | { type: "selectView" | "previewProject" | "rightToggle" | "sidebarToggle" | "closeSplit" | "rightReopen" | "showWorkspace" }
   | { type: "resizeRight" | "resizeSidebar"; width: number }
   | { type: "resizeSplit"; ratio: number }
   | { type: "focus" | "maximize"; pane: PaneId }

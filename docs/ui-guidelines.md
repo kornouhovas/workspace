@@ -116,12 +116,13 @@ Rules:
 
 Rules:
 
-- Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to Board/Table preserves its saved layout.
+- Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to any saved view hides the right host while preserving tabs and the saved split tree.
 - Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle/history reserve native traffic-light space when collapsed. Native no-drag exclusions must follow overlapping pane drag regions; verify sidebar restoration with OS pointer events, since CDP input does not exercise macOS titlebar routing.
 - Right-preview card actions belong to its own header. Omit the duplicate main-header actions and the right-header new-tab plus; retain the main Add Board/Table button.
 - Settings responds to its host width rather than viewport breakpoints; folder labels and role controls remain readable beside Navigation.
-- Project Detail composes into the right panel, a project tab, or the centre split. Its labelled dialog and heading remain accessible in every host. Keep its property/file logic independent of pane chrome.
-- The panel header should show project identity first: `Name`. Do not repeat `Name` inside the Properties table.
+- Project Detail composes into the right panel, a project tab, or the centre split. Its dialog retains the project name as an accessible label in every host. Keep its property/file logic independent of pane chrome.
+- Identify the project in the host tab; omit the duplicate content heading and its spacing above Properties. Partial preview tabs have no hover close icon or title shift. Keep header Hide/Expand and keyboard controls. Do not repeat `Name` inside the Properties table.
+- Side panel open/close transitions change occupied width smoothly, retaining outgoing content and making hidden controls inert immediately. Respect reduced motion and rapid reversal. Pointer resize has no easing; reaching the full available workspace width expands the project during drag and Restore uses the partial width at drag start.
 - Properties should appear before file structure.
 - `Status` should appear in the Properties table by default and may be hidden or shown from the Project Detail property menu as a panel-local visibility preference, not as a system property definition mutation.
 - Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.

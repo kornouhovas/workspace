@@ -1,0 +1,74 @@
+{
+  "phase": "coordinates",
+  "checks": [],
+  "frames": [],
+  "drags": [],
+  "events": [],
+  "nativeBefore": {
+    "mouse": [
+      1257.4375,
+      1000.00390625
+    ],
+    "pid": 93012,
+    "windows": [
+      {
+        "kCGWindowAlpha": 1,
+        "kCGWindowBounds": {
+          "Height": 960,
+          "Width": 1358,
+          "X": 221,
+          "Y": 87
+        },
+        "kCGWindowIsOnscreen": true,
+        "kCGWindowLayer": 0,
+        "kCGWindowMemoryUsage": 2432,
+        "kCGWindowName": "Workspace",
+        "kCGWindowNumber": 20589,
+        "kCGWindowOwnerName": "WorkspaceFixesArs",
+        "kCGWindowOwnerPID": 93012,
+        "kCGWindowSharingState": 1,
+        "kCGWindowStoreType": 1
+      }
+    ]
+  },
+  "electron": {
+    "x": 221,
+    "y": 87,
+    "width": 1358,
+    "height": 960
+  },
+  "rect": {
+    "x": 1372,
+    "y": 9.5,
+    "width": 28,
+    "height": 28
+  },
+  "nativeAfter": {
+    "mouse": [
+      1620.98828125,
+      200.1875
+    ],
+    "pid": 746,
+    "windows": [
+      {
+        "kCGWindowAlpha": 1,
+        "kCGWindowBounds": {
+          "Height": 181,
+          "Width": 145,
+          "X": 33,
+          "Y": 174
+        },
+        "kCGWindowIsOnscreen": true,
+        "kCGWindowLayer": 0,
+        "kCGWindowMemoryUsage": 2432,
+        "kCGWindowName": "Workspace",
+        "kCGWindowNumber": 20589,
+        "kCGWindowOwnerName": "WorkspaceFixesArs",
+        "kCGWindowOwnerPID": 93012,
+        "kCGWindowSharingState": 1,
+        "kCGWindowStoreType": 1
+      }
+    ]
+  },
+  "menu": 0
+}

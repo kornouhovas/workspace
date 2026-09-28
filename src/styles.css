@@ -555,3 +555,19 @@
 .workspace-shell[data-sidebar-collapsed=true] .bb-tree-pane[data-leading=true] > header,
 .workspace-shell[data-sidebar-collapsed=true] .bb-center > main > header,
 .workspace-shell[data-sidebar-collapsed=true] .bb-right-panel[data-leading=true] > header { padding-left:208px; }
+
+/* Panel motion changes occupied space; pointer resizing always stays direct. */
+.workspace-sidebar-host,.workspace-sidebar,.bb-right-panel { transition:width 220ms cubic-bezier(.2,.7,.2,1); }
+.workspace-sidebar-body { width:var(--workspace-sidebar-width); transition:opacity 180ms ease; }
+.workspace-sidebar { overflow:clip; }
+.workspace-sidebar-body[aria-hidden=true] { pointer-events:none; }
+.bb-right-panel { min-width:0; overflow:clip; }
+.bb-right-panel[data-open=false] { border-left-width:0; pointer-events:none; }
+.bb-right-panel[data-suppressed=true] { display:none; transition:none; }
+.bb-right-panel > .bb-pane-header,.bb-right-panel > .bb-pane-content { min-width:280px; }
+html[data-pane-resizing=true] .workspace-sidebar-host,
+html[data-pane-resizing=true] .workspace-sidebar,
+html[data-pane-resizing=true] .bb-right-panel { transition:none; }
+@media(prefers-reduced-motion:reduce) {
+  .workspace-sidebar-host,.workspace-sidebar,.workspace-sidebar-body,.bb-right-panel { transition:none; }
+}
