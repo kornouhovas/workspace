@@ -1,0 +1,968 @@
+{
+  "phase": "before",
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-rmy-4oflx3",
+  "provenance": "Real Electron41, isolated metadata, Playwright CDP renderer input/screenshots; dialog outcomes injected for temporary folder selection.",
+  "checks": [
+    {
+      "name": "no horizontal overflow Light-1440",
+      "passed": true
+    },
+    {
+      "name": "no horizontal overflow Light-1024",
+      "passed": true
+    },
+    {
+      "name": "no horizontal overflow Dark-1440",
+      "passed": true
+    },
+    {
+      "name": "no horizontal overflow Dark-1024",
+      "passed": true
+    }
+  ],
+  "bounds": [
+    {
+      "name": "Light-1440-board-open",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1440,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1580,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Light-1440-board-collapsed",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1440,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1580,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Light-1440-expanded-open",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Light-1440-expanded-collapsed",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Light-1440-settings",
+      "layout": [
+        {
+          "x": 332,
+          "y": 60,
+          "w": 544,
+          "bottom": 315
+        },
+        {
+          "x": 884,
+          "y": 60,
+          "w": 544,
+          "bottom": 435
+        },
+        {
+          "x": 332,
+          "y": 443,
+          "w": 1096,
+          "bottom": 778
+        }
+      ]
+    },
+    {
+      "name": "Light-1024-board-open",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1024,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1164,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Light-1024-board-collapsed",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1024,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1164,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Light-1024-expanded-open",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Light-1024-expanded-collapsed",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Light-1024-settings",
+      "layout": [
+        {
+          "x": 332,
+          "y": 60,
+          "w": 680,
+          "bottom": 295
+        },
+        {
+          "x": 332,
+          "y": 303,
+          "w": 680,
+          "bottom": 678
+        },
+        {
+          "x": 332,
+          "y": 686,
+          "w": 680,
+          "bottom": 1021
+        }
+      ]
+    },
+    {
+      "name": "Dark-1440-board-open",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1440,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1580,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Dark-1440-board-collapsed",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1440,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1580,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Dark-1440-expanded-open",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Dark-1440-expanded-collapsed",
+      "viewport": [
+        1440,
+        960
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Dark-1440-settings",
+      "layout": [
+        {
+          "x": 332,
+          "y": 60,
+          "w": 544,
+          "bottom": 315
+        },
+        {
+          "x": 884,
+          "y": 60,
+          "w": 544,
+          "bottom": 435
+        },
+        {
+          "x": 332,
+          "y": 443,
+          "w": 1096,
+          "bottom": 778
+        }
+      ]
+    },
+    {
+      "name": "Dark-1024-board-open",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1024,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1164,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Dark-1024-board-collapsed",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 1024,
+          "y": 0,
+          "width": 280,
+          "height": 48,
+          "cx": 1164,
+          "cy": 24
+        }
+      ]
+    },
+    {
+      "name": "Dark-1024-expanded-open",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Dark-1024-expanded-collapsed",
+      "viewport": [
+        1024,
+        720
+      ],
+      "toggle": {
+        "x": 168,
+        "y": 12,
+        "width": 28,
+        "height": 28,
+        "cx": 182,
+        "cy": 26
+      },
+      "toggleSvg": {
+        "x": 174,
+        "y": 18,
+        "width": 16,
+        "height": 16,
+        "cx": 182,
+        "cy": 26
+      },
+      "history": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 110,
+          "cy": 24
+        },
+        {
+          "x": 134,
+          "y": 16,
+          "width": 16,
+          "height": 16,
+          "cx": 142,
+          "cy": 24
+        }
+      ],
+      "headers": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "cx": 0,
+          "cy": 0
+        }
+      ]
+    },
+    {
+      "name": "Dark-1024-settings",
+      "layout": [
+        {
+          "x": 332,
+          "y": 60,
+          "w": 680,
+          "bottom": 295
+        },
+        {
+          "x": 332,
+          "y": 303,
+          "w": 680,
+          "bottom": 678
+        },
+        {
+          "x": 332,
+          "y": 686,
+          "w": 680,
+          "bottom": 1021
+        }
+      ]
+    }
+  ],
+  "shots": [
+    "before-Light-1440-board-open.png",
+    "before-Light-1440-board-collapsed.png",
+    "before-Light-1440-expanded-open.png",
+    "before-Light-1440-expanded-collapsed.png",
+    "before-Light-1440-settings-top.png",
+    "before-Light-1440-settings-properties.png",
+    "before-Light-1440-menu-inactive.png",
+    "before-Light-1024-board-open.png",
+    "before-Light-1024-board-collapsed.png",
+    "before-Light-1024-expanded-open.png",
+    "before-Light-1024-expanded-collapsed.png",
+    "before-Light-1024-settings-top.png",
+    "before-Light-1024-settings-properties.png",
+    "before-Light-1024-menu-inactive.png",
+    "before-Dark-1440-board-open.png",
+    "before-Dark-1440-board-collapsed.png",
+    "before-Dark-1440-expanded-open.png",
+    "before-Dark-1440-expanded-collapsed.png",
+    "before-Dark-1440-settings-top.png",
+    "before-Dark-1440-settings-properties.png",
+    "before-Dark-1440-menu-inactive.png",
+    "before-Dark-1024-board-open.png",
+    "before-Dark-1024-board-collapsed.png",
+    "before-Dark-1024-expanded-open.png",
+    "before-Dark-1024-expanded-collapsed.png",
+    "before-Dark-1024-settings-top.png",
+    "before-Dark-1024-settings-properties.png",
+    "before-Dark-1024-menu-inactive.png"
+  ],
+  "pid": 33183,
+  "ids": {
+    "a": "workspace::d4ec4ff5-d238-4118-bbb9-4d82312e9b67",
+    "b": "workspace:60ab7f624a211bb2:a67d951d-6aef-4cfb-9a2c-f78476f1eccf"
+  }
+}

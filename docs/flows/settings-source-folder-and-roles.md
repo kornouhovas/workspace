@@ -205,8 +205,7 @@ After changing folder roles:
 ## Responsive Behavior
 
 - Primary target is desktop width from 1024px upward.
-- Settings content uses a two-area layout when space allows: source folder summary and folder role tree.
-- At narrower widths, stack the source folder section above the folder tree.
+- Workspace settings uses one full-width column at every desktop width: Source, Folder role tree, then Properties.
 - Folder tree should scroll inside its region instead of forcing the whole app to overflow horizontally.
 - Long folder paths truncate from the middle or end without breaking layout.
 

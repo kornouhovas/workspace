@@ -545,8 +545,8 @@
 
 .bb-split-tree[data-split=true] .bb-tree-pane > main > header { -webkit-app-region:no-drag; }
 
-/* Settings adapts to its actual host beside Navigation, not the window breakpoint. */
-.workspace-settings { grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); align-items: start; }
+/* Workspace settings uses full-width sections in source/tree/properties order. */
+.workspace-settings { grid-template-columns: minmax(0, 1fr); align-items: start; }
 .workspace-settings > * { min-width: 0; }
 .workspace-folder-role-row > div:first-of-type { overflow-wrap: anywhere; }
 

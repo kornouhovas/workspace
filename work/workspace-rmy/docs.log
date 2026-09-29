@@ -1,0 +1,20 @@
+TAP version 13
+# Subtest: third party notices document any-store MIT license
+ok 1 - third party notices document any-store MIT license
+  ---
+  duration_ms: 3.829833
+  ...
+# Subtest: agent instructions define the spec-first Codex workflow
+ok 2 - agent instructions define the spec-first Codex workflow
+  ---
+  duration_ms: 2.028458
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 58.715292

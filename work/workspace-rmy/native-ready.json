@@ -1,0 +1,11 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-rmy-EZ2Qvq",
+  "metadata": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-rmy-EZ2Qvq/metadata",
+  "pid": 34301,
+  "ids": {
+    "a": "workspace::59a3ea1c-8189-4acb-bd60-bc91730e50ab",
+    "b": "workspace:45f51b6ae381d7d4:f546735b-e039-4fc6-aff9-7d9e3fe13706"
+  },
+  "cdp": "http://127.0.0.1:9338",
+  "provenance": "Real Electron isolated temp fixture; unmodified native titlebar"
+}

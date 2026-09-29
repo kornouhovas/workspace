@@ -2812,7 +2812,7 @@ export default function App() {
         <button
           type="button"
           className={[
-            "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
+            "electron-window-no-drag workspace-top-action bb-chrome-action absolute top-[10px] z-40",
             "left-[168px]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}

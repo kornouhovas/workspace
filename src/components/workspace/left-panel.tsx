@@ -525,16 +525,16 @@ export function WorkspaceLeftPanel({
                         className={cn(workspaceMenuContentClassName, "min-w-52")}
                       >
                         <DropdownMenuGroup>
-                          <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onOpenWorkspaceSettings(workspace.id)}>
-                            <SettingsIcon className={workspaceMenuIconClassName} aria-hidden="true" />
-                            {t("settings.workspaceTitle")}
-                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className={workspaceMenuItemClassName}
                             onSelect={() => startRenameWorkspace(workspace)}
                           >
                             <PencilIcon className={workspaceMenuIconClassName} aria-hidden="true" />
                             {t("sidebar.renameWorkspace")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onOpenWorkspaceSettings(workspace.id)}>
+                            <SettingsIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                            {t("settings.workspaceTitle")}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator className={workspaceMenuSeparatorClassName} />

@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 33.290625
+  ...
+# Subtest: duplicate view names interpolate the source title in both locales
+ok 2 - duplicate view names interpolate the source title in both locales
+  ---
+  duration_ms: 1.375709
+  ...
+# Subtest: normalizes unsupported locales to English
+ok 3 - normalizes unsupported locales to English
+  ---
+  duration_ms: 0.082625
+  ...
+# Subtest: English and Russian catalogs have the same keys
+ok 4 - English and Russian catalogs have the same keys
+  ---
+  duration_ms: 0.801583
+  ...
+# Subtest: all statically referenced renderer translation keys exist
+ok 5 - all statically referenced renderer translation keys exist
+  ---
+  duration_ms: 33.138042
+  ...
+# Subtest: dynamic renderer translation keys exist in both catalogs
+ok 6 - dynamic renderer translation keys exist in both catalogs
+  ---
+  duration_ms: 0.168291
+  ...
+# Subtest: localized renderer surfaces do not contain app-owned English UI literals
+ok 7 - localized renderer surfaces do not contain app-owned English UI literals
+  ---
+  duration_ms: 6.302792
+  ...
+# Subtest: translates interpolation and Russian plural forms
+ok 8 - translates interpolation and Russian plural forms
+  ---
+  duration_ms: 1.837125
+  ...
+# Subtest: falls back to the English catalog and then to the key
+ok 9 - falls back to the English catalog and then to the key
+  ---
+  duration_ms: 0.188333
+  ...
+# Subtest: reads and writes locale preferences without failing when storage is unavailable
+ok 10 - reads and writes locale preferences without failing when storage is unavailable
+  ---
+  duration_ms: 0.284708
+  ...
+# Subtest: localizes only the stable app-owned no-status value
+ok 11 - localizes only the stable app-owned no-status value
+  ---
+  duration_ms: 0.153458
+  ...
+# Subtest: re-resolves app-owned errors after a locale switch and preserves backend messages
+ok 12 - re-resolves app-owned errors after a locale switch and preserves backend messages
+  ---
+  duration_ms: 0.128167
+  ...
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+ok 13 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 4.981583
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+ok 14 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 2.905875
+  ...
+# Subtest: Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+ok 15 - Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+  ---
+  duration_ms: 1.718708
+  ...
+# Subtest: CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+ok 16 - CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+  ---
+  duration_ms: 0.228291
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 17 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 1.190958
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 18 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.188333
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 19 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.14375
+  ...
+# Subtest: expanded presentation survives restart independently of a tab's saved split membership
+ok 20 - expanded presentation survives restart independently of a tab's saved split membership
+  ---
+  duration_ms: 2.043625
+  ...
+# Subtest: preview identity survives independently of expanded tabs and is scoped to workspace
+ok 21 - preview identity survives independently of expanded tabs and is scoped to workspace
+  ---
+  duration_ms: 0.195833
+  ...
+# Subtest: duplicate is inserted immediately after its source, preserving surrounding tabs
+ok 22 - duplicate is inserted immediately after its source, preserving surrounding tabs
+  ---
+  duration_ms: 1.076292
+  ...
+# Subtest: duplicates have independent identities while sharing project updates
+ok 23 - duplicates have independent identities while sharing project updates
+  ---
+  duration_ms: 0.560209
+  ...
+# Subtest: reordering keeps every project once and leaves other workspaces unchanged
+ok 24 - reordering keeps every project once and leaves other workspaces unchanged
+  ---
+  duration_ms: 0.107709
+  ...
+# Subtest: expanded projects accumulate without duplicates and remain isolated by workspace
+ok 25 - expanded projects accumulate without duplicates and remain isolated by workspace
+  ---
+  duration_ms: 1.405834
+  ...
+# Subtest: refreshing an open tab preserves edits but never recreates a closed or restored tab
+ok 26 - refreshing an open tab preserves edits but never recreates a closed or restored tab
+  ---
+  duration_ms: 0.124375
+  ...
+# Subtest: a save completing after switching projects refreshes the original tab only
+ok 27 - a save completing after switching projects refreshes the original tab only
+  ---
+  duration_ms: 0.101791
+  ...
+# Subtest: bulk close never selects a tab also being closed and preserves inactive selection
+ok 28 - bulk close never selects a tab also being closed and preserves inactive selection
+  ---
+  duration_ms: 0.223625
+  ...
+# Subtest: renderer workspace transport delegates to window.workspace.request
+ok 29 - renderer workspace transport delegates to window.workspace.request
+  ---
+  duration_ms: 27.198083
+  ...
+# Subtest: renderer workspace transport rejects missing preload bridge
+ok 30 - renderer workspace transport rejects missing preload bridge
+  ---
+  duration_ms: 4.081209
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 327.56925

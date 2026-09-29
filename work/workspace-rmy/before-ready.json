@@ -1,0 +1,10 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-rmy-4oflx3",
+  "metadata": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-rmy-4oflx3/metadata",
+  "pid": 33183,
+  "ids": {
+    "a": "workspace::d4ec4ff5-d238-4118-bbb9-4d82312e9b67",
+    "b": "workspace:60ab7f624a211bb2:a67d951d-6aef-4cfb-9a2c-f78476f1eccf"
+  },
+  "cdp": "http://127.0.0.1:9337"
+}
