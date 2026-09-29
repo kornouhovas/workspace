@@ -71,6 +71,7 @@ export const Sidebar = () => {
         onRenameWorkspace={() => {}}
         onDeleteWorkspace={() => {}}
         onReorderWorkspaces={() => {}}
+        onOpenWorkspaceSettings={() => {}}
         onOpenSettings={() => {}}
       />
     </div>

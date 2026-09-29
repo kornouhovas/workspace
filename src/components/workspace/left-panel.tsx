@@ -44,7 +44,7 @@ type WorkspaceNavigationItem = {
 
 type WorkspaceLeftPanelProps = {
   readonly collapsed?: boolean;
-  readonly activeSurface: "workspace" | "settings";
+  readonly activeSurface: "workspace" | "settings" | "workspace-settings";
   readonly activeWorkspaceId: string | null;
   readonly workspaces: readonly WorkspaceNavigationItem[];
   readonly searchQuery: string;
@@ -55,6 +55,7 @@ type WorkspaceLeftPanelProps = {
   readonly onWorkspaceOpen: (workspaceId: string) => void;
   readonly onSearchQueryChange: (searchQuery: string) => void;
   readonly onOpenSettings: () => void;
+  readonly onOpenWorkspaceSettings: (workspaceId: string) => void;
 };
 
 type WorkspaceDragPreviewRow = {
@@ -98,6 +99,7 @@ export function WorkspaceLeftPanel({
   onDeleteWorkspace,
   onReorderWorkspaces,
   onWorkspaceOpen,
+  onOpenWorkspaceSettings,
   onSearchQueryChange,
   onOpenSettings,
 }: WorkspaceLeftPanelProps) {
@@ -436,12 +438,12 @@ export function WorkspaceLeftPanel({
           </span>
         </label>
         <div className="h-px bg-border" />
-        <div className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto">
+        <div className="grid min-h-0 min-w-0 flex-1 content-start gap-1 overflow-y-auto overflow-x-hidden">
           <p className="px-1 text-xs font-medium text-muted-foreground">
             {t("sidebar.workspaces")}
           </p>
           {workspaces.map((workspace) => {
-            const active = activeSurface === "workspace" && activeWorkspaceId === workspace.id;
+            const active = activeSurface !== "settings" && activeWorkspaceId === workspace.id;
             const editing = editingWorkspaceId === workspace.id;
 
             return (
@@ -453,7 +455,7 @@ export function WorkspaceLeftPanel({
                   setContextMenuWorkspaceId(workspace.id);
                 }}
                 className={cn(
-                  "group/workspace relative flex items-center gap-1 rounded-lg transition-colors duration-100",
+                  "group/workspace relative flex min-w-0 items-center gap-1 rounded-lg transition-colors duration-100",
                   active && "bg-sidebar-accent",
                   workspaceDragState && "transition-transform ease-out",
                 )}
@@ -509,7 +511,7 @@ export function WorkspaceLeftPanel({
                         <button
                           type="button"
                           className={cn(
-                            "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 data-open:opacity-100",
+                            "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/workspace:opacity-100 focus-visible:opacity-100 data-open:opacity-100",
                             active && "opacity-100",
                           )}
                           aria-label={t("sidebar.workspaceActions", { name: workspace.name })}
@@ -523,6 +525,10 @@ export function WorkspaceLeftPanel({
                         className={cn(workspaceMenuContentClassName, "min-w-52")}
                       >
                         <DropdownMenuGroup>
+                          <DropdownMenuItem className={workspaceMenuItemClassName} onSelect={() => onOpenWorkspaceSettings(workspace.id)}>
+                            <SettingsIcon className={workspaceMenuIconClassName} aria-hidden="true" />
+                            {t("settings.workspaceTitle")}
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className={workspaceMenuItemClassName}
                             onSelect={() => startRenameWorkspace(workspace)}

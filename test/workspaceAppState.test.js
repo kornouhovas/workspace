@@ -1000,3 +1000,19 @@ test('accepted workspace snapshot replaces a different root and view atomically'
   assert.equal(next.projection.workspaceId, next.workspaceId);
   assert.equal(next.workspaceSwitchPending, false);
 });
+
+test("rootless recovery retains target identity and clears the outgoing workspace snapshot", async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer } = await importAppStateModule();
+  const outgoing = workspaceAppStateReducer(createInitialWorkspaceAppState(), {
+    type: "projectionLoaded", root, viewsResponse, projectionResponse, folderRoleTree,
+  });
+  const target = { workspaceId: "workspace:rootless", name: "New workspace", path: "" };
+  const recovered = workspaceAppStateReducer(outgoing, { type: "sourceFolderMissing", root: target });
+  assert.equal(recovered.workspaceId, target.workspaceId);
+  assert.deepEqual(recovered.root, target);
+  assert.equal(recovered.status, "ready");
+  assert.equal(recovered.sourceFolderMissing, true);
+  assert.equal(recovered.projection, null);
+  assert.equal(recovered.propertyCatalog, null);
+  assert.deepEqual(recovered.folderRoleTree, []);
+});

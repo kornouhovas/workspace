@@ -1,0 +1,75 @@
+{
+  "pid": 31575,
+  "readOnly": true,
+  "provenance": "macOS native picker chosen by root CUA; observer uses read-only persisted JSON and CDP renderer snapshot/screenshot, no simulated picker result or input.",
+  "checks": [
+    {
+      "name": "native directory choice persisted to targeted B",
+      "passed": true
+    },
+    {
+      "name": "A source unchanged after native B picker",
+      "passed": true
+    },
+    {
+      "name": "B settings renders native selected source/tree",
+      "passed": true
+    }
+  ],
+  "settings": {
+    "activeWorkspaceId": "workspace:837d186a0a7da436:98c3cf6f-ec82-48c9-9a8b-c7312d6dbb8e",
+    "workspaceSources": {
+      "workspace::0d66b3c8-7b40-4b2c-be6a-32a842ff7f75": {
+        "rootPath": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Root A with a very long descriptive folder name to verify wrapping and path layout",
+        "rulesByRoot": {
+          "": {},
+          "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Root A with a very long descriptive folder name to verify wrapping and path layout": {
+            "Active": {
+              "role": "status"
+            }
+          },
+          "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/A replacement": {}
+        }
+      },
+      "workspace:837d186a0a7da436:98c3cf6f-ec82-48c9-9a8b-c7312d6dbb8e": {
+        "rootPath": "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection",
+        "rulesByRoot": {
+          "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Root A with a very long descriptive folder name to verify wrapping and path layout": {},
+          "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Root B": {},
+          "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection": {}
+        }
+      }
+    },
+    "rootPath": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Root A with a very long descriptive folder name to verify wrapping and path layout"
+  },
+  "snapshot": {
+    "heading": [
+      "Workspace settings · Workspace B",
+      "Source · Workspace B",
+      "Folder role tree",
+      "Properties"
+    ],
+    "sourceParagraphs": [
+      "Source folder",
+      "Native B selection",
+      "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection",
+      "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection",
+      "Native status",
+      "Colors for folder-derived project statuses",
+      "Colors for folder-derived project statuses"
+    ],
+    "roles": [
+      "Native statusReadyNative statusGroupStatusProject"
+    ],
+    "selectButton": false,
+    "root": {
+      "root": {
+        "id": "workspace:837d186a0a7da436:98c3cf6f-ec82-48c9-9a8b-c7312d6dbb8e",
+        "workspaceId": "workspace:837d186a0a7da436:98c3cf6f-ec82-48c9-9a8b-c7312d6dbb8e",
+        "rootPath": "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection",
+        "path": "/private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native B selection",
+        "name": "Native B selection"
+      }
+    }
+  }
+}

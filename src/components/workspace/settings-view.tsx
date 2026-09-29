@@ -28,8 +28,6 @@ type WorkspaceSourceFolder = {
 };
 
 type WorkspaceSettingsViewProps = {
-  readonly theme?: "light" | "dark" | "system";
-  readonly onThemeChange?: (theme: "light" | "dark" | "system") => void;
   readonly workspaceName?: string;
   readonly sourceFolder: WorkspaceSourceFolder;
   readonly folderRoleTree: readonly WorkspaceFolderRoleNode[];
@@ -156,8 +154,6 @@ function FolderRoleNode({
 
 export function WorkspaceSettingsView({
   workspaceName,
-  theme = "system",
-  onThemeChange,
   sourceFolder,
   folderRoleTree,
   statusValues,
@@ -167,7 +163,7 @@ export function WorkspaceSettingsView({
   onColorStatusValue,
   selectingFolder = false,
 }: WorkspaceSettingsViewProps) {
-  const { locale, setLocale, t } = useI18n();
+  const { t } = useI18n();
   const [expandedFolderIds, setExpandedFolderIds] = useState<ReadonlySet<string>>(() => new Set());
 
   function toggleFolderExpanded(nodeId: string) {
@@ -186,43 +182,13 @@ export function WorkspaceSettingsView({
   return (
     <section
       className="workspace-settings grid min-w-0 gap-2 px-3 py-3"
-      aria-label={t("settings.title")}
+      aria-label={t("settings.workspaceTitle")}
     >
-      <div className="grid content-start gap-2">
-        {onThemeChange && (
-          <section
-            className="rounded-md border border-border bg-card"
-            aria-labelledby="workspace-appearance-heading"
-          >
-            <div className="flex items-center justify-between gap-2 px-3 py-2">
-              <h3 id="workspace-appearance-heading" className="text-sm font-semibold">
-                {t("chrome.appearance")}
-              </h3>
-              <Select
-                value={theme}
-                onValueChange={(value) => {
-                  if (value === "light" || value === "dark" || value === "system")
-                    onThemeChange(value);
-                }}
-              >
-                <SelectTrigger className="w-28" aria-label={t("chrome.appearance")}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="light">{t("chrome.light")}</SelectItem>
-                    <SelectItem value="dark">{t("chrome.dark")}</SelectItem>
-                    <SelectItem value="system">{t("chrome.systemTheme")}</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </section>
-        )}
+      <div className="grid min-w-0 content-start gap-2">
         <div className="rounded-md border border-border bg-card">
           <div className="flex items-center justify-between gap-2 px-3 py-2">
-            <h3 className="text-sm font-semibold">{t("settings.source")}{workspaceName ? ` · ${workspaceName}` : ""}</h3>
-            <Badge variant="secondary">{t("settings.localOnly")}</Badge>
+            <h3 className="min-w-0 break-all text-sm font-semibold">{t("settings.source")}{workspaceName ? ` · ${workspaceName}` : ""}</h3>
+            <Badge className="shrink-0" variant="secondary">{t("settings.localOnly")}</Badge>
           </div>
           <Separator />
           <div className="grid gap-2 p-3">
@@ -246,37 +212,6 @@ export function WorkspaceSettingsView({
             </Button>
           </div>
         </div>
-        <section
-          className="rounded-md border border-border bg-card"
-          aria-labelledby="workspace-language-heading"
-        >
-          <div className="flex items-center justify-between gap-2 px-3 py-2">
-            <div className="min-w-0">
-              <h3 id="workspace-language-heading" className="text-sm font-semibold">
-                {t("language.title")}
-              </h3>
-              <p className="truncate text-xs text-muted-foreground">{t("language.description")}</p>
-            </div>
-            <Select
-              value={locale}
-              onValueChange={(nextLocale) => {
-                if (nextLocale === "en" || nextLocale === "ru") {
-                  setLocale(nextLocale);
-                }
-              }}
-            >
-              <SelectTrigger size="sm" className="shrink-0" aria-label={t("language.interface")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="en">{t("language.english")}</SelectItem>
-                  <SelectItem value="ru">{t("language.russian")}</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </section>
       </div>
       <div className="min-w-0 rounded-md border border-border bg-card">
         <div className="flex items-center justify-between gap-2 px-3 py-2">
@@ -308,6 +243,78 @@ export function WorkspaceSettingsView({
           onColorStatusValue={onColorStatusValue}
         />
       </div>
+    </section>
+  );
+}
+
+type GlobalSettingsViewProps = {
+  readonly theme: "light" | "dark" | "system";
+  readonly onThemeChange: (theme: "light" | "dark" | "system") => void;
+};
+
+export function GlobalSettingsView({ theme, onThemeChange }: GlobalSettingsViewProps) {
+  const { locale, setLocale, t } = useI18n();
+  return (
+    <section className="grid gap-2 p-3" aria-label={t("settings.title")}>
+      <section
+        className="rounded-md border border-border bg-card"
+        aria-labelledby="workspace-appearance-heading"
+      >
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          <h3 id="workspace-appearance-heading" className="text-sm font-semibold">
+            {t("chrome.appearance")}
+          </h3>
+          <Select
+            value={theme}
+            onValueChange={(value) => {
+              if (value === "light" || value === "dark" || value === "system")
+                onThemeChange(value);
+            }}
+          >
+            <SelectTrigger className="w-28" aria-label={t("chrome.appearance")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="light">{t("chrome.light")}</SelectItem>
+                <SelectItem value="dark">{t("chrome.dark")}</SelectItem>
+                <SelectItem value="system">{t("chrome.systemTheme")}</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </section>
+      <section
+        className="rounded-md border border-border bg-card"
+        aria-labelledby="workspace-language-heading"
+      >
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          <div className="min-w-0">
+            <h3 id="workspace-language-heading" className="text-sm font-semibold">
+              {t("language.title")}
+            </h3>
+            <p className="truncate text-xs text-muted-foreground">{t("language.description")}</p>
+          </div>
+          <Select
+            value={locale}
+            onValueChange={(nextLocale) => {
+              if (nextLocale === "en" || nextLocale === "ru") {
+                setLocale(nextLocale);
+              }
+            }}
+          >
+            <SelectTrigger size="sm" className="shrink-0" aria-label={t("language.interface")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="en">{t("language.english")}</SelectItem>
+                <SelectItem value="ru">{t("language.russian")}</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </section>
     </section>
   );
 }

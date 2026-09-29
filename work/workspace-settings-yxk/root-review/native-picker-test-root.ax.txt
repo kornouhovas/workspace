@@ -1,0 +1,70 @@
+The following is a diff from the previous accessibility tree for Window: "Choose workspace source folder" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 72-97
+~70 standard window Choose workspace source folder, ID: open-panel, Secondary Actions: Raise
+~	71 split group
++		72 scroll area Secondary Actions: Scroll Up, Scroll Down
++			73 outline sidebar
++				74 row (selectable) Description: clock, Value: Recents
++				75 row (selectable, expanded) Value: Favorites, Secondary Actions: Collapse
++				76 row (selectable) Description: move, Value: Yandex.Disk
++				77 row (selectable) Description: App Store letter A icon, Value: Applications
++				78 row (selectable) Description: Arrow Down Circle, Value: Downloads
++				79 row (selectable) Description: photo, Value: Pictures
++				80 row (selectable) Description: Menu bar with dock on a rectangle, Value: Desktop
++				81 row (selectable) Description: Document page, Value: Documents
++				82 row (selectable, expanded) Value: Locations, Secondary Actions: Collapse
++				83 row (selectable) Description: iCloud, Value: iCloud Drive
+0.9999805688858032
++				84 row (selectable) Google Drive
++				85 row (selectable) Description: home, Value: aleksandersk
++				86 row (selectable, expanded) Value: Tags, Secondary Actions: Collapse
++				87 row (selectable) Description: Small circle badge, Value: Личное
++				88 row (selectable) Description: Small circle badge, filled, Value: Серый
++				89 row (selectable) Description: Small circle badge, filled, Value: Работа
++				90 row (selectable) Description: Small circle badge, Value: Важное
++				91 row (selectable) Description: Small circle badge, filled, Value: Цветочный
++				92 row (selectable) Description: Small circle badge, filled, Value: Учеба
++				93 row (selectable) Description: Small circle badge, filled, Value: Синий
++				94 row (selectable) Description: Two small circle badges, Value: All Tags…
++			95 scroll bar (settable, float) 0
++				96 value indicator (settable, float) 0
++				97 increment arrow button
++				98 decrement arrow button
++				99 increment page button
++				100 decrement page button
++		101 splitter (disabled, settable, float) 197
++		102 scroll area Secondary Actions: Scroll Left, Scroll Right
++			103 outline Description: list view, ID: ListView
++				104 row (selectable, collapsed) Secondary Actions: Expand
++					105 cell Secondary Actions: Open Finder item
++						106 image
++						107 text field (settable) Value: Native status, Secondary Actions: Open Finder item, URL: file:///private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native%20B%20selection/Native%20status/
++						108 disclosure triangle 0
++					109 cell
++						110 text --
++					111 cell
++						112 text Folder
++					113 cell
++						114 text Today at 22:16
++				115 container ListViewHeader
++					116 button Description: Name, Value: AXAscendingSortDirection, ID: name
++					117 button Description: Size, ID: size
++					118 button Description: Kind, ID: kind
++					119 button Description: Date Added, ID: dateAdded
++			120 scroll bar (settable, float) 0
++				121 value indicator (settable, float) 0
++				122 increment arrow button
++				123 decrement arrow button
++				124 increment page button
++				125 decrement page button
++		126 container
++			127 button back
++			128 button (disabled) forward
++		129 menu button Description: List, Help: Show as Icons, List, or Columns, and hide/show the sidebar, ID: View Options
++		130 menu button Description: Three-by-one square grid below a one-by-two line grid, Help: Change the item grouping (hold down Option to change the sort), ID: Group or Sort By
++		131 pop up button Where:, Value: Native B selection, ID: where popup
++		132 search text field Search
++			133 button search
++		134 button Cancel, ID: CancelButton
++		135 button Open, ID: OKButton
+The focused UI element is 103 outline Description: list view, ID: ListView

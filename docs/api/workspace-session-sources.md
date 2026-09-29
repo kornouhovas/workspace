@@ -9,3 +9,5 @@ These operations use the existing `workspace:request` preload channel and Worksp
 - `workspace.listWorkspaces` lists saved nondeleted Workspaces across source bindings. Activation preserves the source mapping and succeeds even if the selected directory is currently unavailable, allowing Settings recovery.
 
 Paths are backend-validated against the resolved source. IDs remain opaque references. Settings mutations are serialized; picker waits and filesystem scans do not hold that queue. Renderer code ignores superseded loads and applies ready source/view/property/preview snapshots together.
+
+- `workspace.createWorkspace({ name? })` works without a configured or available source. It persists a Workspace and its default Board/Table views. With no source, the binding has an empty locator; `getRoot` returns its Workspace envelope with empty path, allowing a targeted picker. Creating alongside a configured Workspace retains the existing shared-root default. Selecting a source later preserves Workspace and view IDs.

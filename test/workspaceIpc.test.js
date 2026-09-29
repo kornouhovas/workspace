@@ -1218,3 +1218,30 @@ test('unknown historical source is recoverable without falling back to a differe
     await assert.rejects(handler(null, 'workspace.scan', { workspaceId: 'unknown' }), { code: 'SOURCE_FOLDER_UNAVAILABLE' });
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("rootless workspaces survive restart and selecting their source preserves siblings and views", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-rootless-"));
+  const options = { configPath: join(directory, "settings.json"), viewStorePath: join(directory, "views.json"), propertyStorePath: join(directory, "properties.json") };
+  try {
+    const handler = createWorkspaceIpcHandler(options);
+    const a = (await handler(null, "workspace.createWorkspace", { name: "A" })).workspace.id;
+    const b = (await handler(null, "workspace.createWorkspace", { name: "B" })).workspace.id;
+    assert.notEqual(a, b);
+    const restarted = createWorkspaceIpcHandler(options);
+    assert.equal((await restarted(null, "workspace.listWorkspaces")).workspaces.length, 2);
+    assert.equal((await restarted(null, "workspace.getRoot", { workspaceId: a })).root.rootPath, "");
+    const before = JSON.parse(await readFile(options.viewStorePath, "utf8"));
+    const rootA = join(directory, "a");
+    await mkdir(join(rootA, "Active", "Project"), { recursive: true });
+    const picker = createWorkspaceIpcHandler({ ...options, chooseRoot: async () => rootA });
+    await picker(null, "workspace.setRoot", { workspaceId: a });
+    assert.equal((await restarted(null, "workspace.getRoot", { workspaceId: a })).root.rootPath, rootA);
+    assert.equal((await restarted(null, "workspace.getRoot", { workspaceId: b })).root.rootPath, "");
+    assert.deepEqual(JSON.parse(await readFile(options.viewStorePath, "utf8")).views, before.views);
+    await restarted(null, "workspace.setActiveWorkspace", { workspaceId: b });
+    assert.equal((await restarted(null, "workspace.getRoot")).root.workspaceId, b);
+    const cancel = createWorkspaceIpcHandler({ ...options, chooseRoot: async () => "" });
+    assert.equal(await cancel(null, "workspace.setRoot", { workspaceId: b }), null);
+    assert.equal((await restarted(null, "workspace.getRoot", { workspaceId: b })).root.rootPath, "");
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

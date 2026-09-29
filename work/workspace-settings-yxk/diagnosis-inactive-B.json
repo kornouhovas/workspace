@@ -1,0 +1,43 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-DQ20tL",
+  "provenance": "Real Electron 41 process; Playwright CDP renderer screenshots and input. Picker results injected into Electron dialog.showOpenDialog unless explicitly marked native.",
+  "checks": [
+    {
+      "name": "content dimensions 1440x960",
+      "passed": true
+    },
+    {
+      "name": "first workspace created without source",
+      "passed": true
+    },
+    {
+      "name": "rootless settings has no mock role or status",
+      "passed": true
+    },
+    {
+      "name": "restart existing rootless workspace recovery",
+      "passed": true
+    },
+    {
+      "name": "root selection preserves workspace identity",
+      "passed": true
+    },
+    {
+      "name": "root selection preserves view IDs",
+      "passed": true
+    },
+    {
+      "name": "inactive B context targets title",
+      "passed": true
+    },
+    {
+      "name": "inactive B path and tree",
+      "passed": false
+    }
+  ],
+  "screenshots": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/first-rootless.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/failure.png"
+  ],
+  "error": "Error: inactive B path and tree\n    at check (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/verify.mjs:13:84)\n    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/verify.mjs:29:272"
+}

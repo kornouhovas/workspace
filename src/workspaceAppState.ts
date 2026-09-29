@@ -129,7 +129,7 @@ export type WorkspaceAppState = {
 export type WorkspaceAppAction =
   | { readonly type: "loadStarted" }
   | { readonly type: "rootSelected"; readonly root: WorkspaceRootState }
-  | { readonly type: "sourceFolderMissing" }
+  | { readonly type: "sourceFolderMissing"; readonly root?: WorkspaceAppState["root"] }
   | {
       readonly type: "projectionLoaded";
       readonly replaceWorkspace?: boolean;
@@ -245,8 +245,8 @@ export function workspaceAppStateReducer(
     return {
       ...state,
       status: "ready",
-      root: null,
-      workspaceId: null,
+      root: action.root ?? null,
+      workspaceId: action.root?.workspaceId ?? null,
       projection: null,
       projectionRefreshing: false,
       workspaceSwitchPending: false,

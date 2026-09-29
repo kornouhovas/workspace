@@ -194,6 +194,42 @@ export function createWorkspaceIpcHandler(options = {}) {
       };
     }
 
+    if (method === "workspace.createWorkspace") {
+      const settings = await readWorkspaceSettings(configPath);
+      const workspaces = await viewStore.listWorkspaces();
+      const root = await getRootState(body.workspaceId);
+      const rootPath = root?.root.rootPath || "";
+      const sourceFolderId = rootPath ? createWorkspaceId(rootPath) : "";
+      const timestamp = now();
+      const idSeed = idFactory();
+      const workspaceId = `workspace:${sourceFolderId.replace(/^workspace:/, "")}:${createSlug(idSeed)}`;
+      const maxOrder = workspaces.reduce((max, workspace) => Math.max(max, Number(workspace.order) || 0), 0);
+      const workspace = await createWorkspaceDocument({
+        viewStore,
+        workspaceId,
+        sourceFolderId,
+        name: typeof body.name === "string" && body.name.trim()
+          ? body.name.trim()
+          : "Workspace",
+        order: workspaces.length === 0 ? 10 : maxOrder + 10,
+        viewIdSeed: idSeed,
+        now: timestamp,
+      });
+
+      await writeWorkspaceSettings(configPath, {
+        ...settings,
+        activeWorkspaceId: workspace.id,
+        workspaceSources: { ...settings.workspaceSources, [workspace.id]: {
+          rootPath, rulesByRoot: { [rootPath]: rulesFor(settings, root?.root.workspaceId, rootPath) },
+        } },
+      });
+
+      return {
+        activeWorkspaceId: workspace.id,
+        workspace: toWorkspaceListItem(workspace),
+      };
+    }
+
     const root = await getRootState(body.workspaceId);
     if (method === "workspace.getRoot") {
       return root;
@@ -468,40 +504,6 @@ export function createWorkspaceIpcHandler(options = {}) {
         rules: rulesFor(settings, root.root.workspaceId, rootPath),
         now,
       });
-    }
-
-    if (method === "workspace.createWorkspace") {
-      const settings = await readWorkspaceSettings(configPath);
-      const workspaces = await viewStore.listWorkspaces();
-      const timestamp = now();
-      const idSeed = idFactory();
-      const workspaceId = `workspace:${sourceFolderId.replace(/^workspace:/, "")}:${createSlug(idSeed)}`;
-      const maxOrder = workspaces.reduce((max, workspace) => Math.max(max, Number(workspace.order) || 0), 0);
-      const workspace = await createWorkspaceDocument({
-        viewStore,
-        workspaceId,
-        sourceFolderId,
-        name: typeof body.name === "string" && body.name.trim()
-          ? body.name.trim()
-          : "Workspace",
-        order: workspaces.length === 0 ? 10 : maxOrder + 10,
-        viewIdSeed: idSeed,
-        now: timestamp,
-      });
-
-      await writeWorkspaceSettings(configPath, {
-        ...settings,
-        rootPath,
-        activeWorkspaceId: workspace.id,
-        workspaceSources: { ...settings.workspaceSources, [workspace.id]: {
-          rootPath, rulesByRoot: { [rootPath]: rulesFor(settings, root.root.workspaceId, rootPath) },
-        } },
-      });
-
-      return {
-        activeWorkspaceId: workspace.id,
-        workspace: toWorkspaceListItem(workspace),
-      };
     }
 
     if (method === "workspace.updateWorkspace") {

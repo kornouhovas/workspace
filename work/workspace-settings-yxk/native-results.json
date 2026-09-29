@@ -1,0 +1,11 @@
+{
+  "provenance": "Real Electron native dialog; macOS System Events keyboard input; screencapture window image when available",
+  "checks": [
+    {
+      "name": "native dialog cancellation preserves source",
+      "passed": true
+    }
+  ],
+  "nativeScreenshot": "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/native-picker.png",
+  "error": "Error: Command failed: /usr/bin/osascript -e tell application \"System Events\" to get {name, name of windows} of first application process whose frontmost is true\n40:116: execution error: Can’t get {\"loginwindow\", {}} whose frontmost = true. (-1728)\n\n    at genericNodeError (node:internal/errors:984:15)\n    at wrappedFn (node:internal/errors:538:14)\n    at checkExecSyncError (node:child_process:891:11)\n    at execFileSync (node:child_process:927:15)\n    at file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-settings-yxk/verify-native.mjs:9:119"
+}

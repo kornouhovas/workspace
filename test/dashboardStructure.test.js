@@ -170,7 +170,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /handleFolderRoleChange/);
   assert.match(appSource, /workspaceClient\.setRoot/);
   assert.match(appSource, /workspaceClient\.scan/);
-  assert.match(appSource, /includeCardChildren:\s*activeSurface === "settings"/);
+  assert.match(appSource, /includeCardChildren:\s*activeSurface === "workspace-settings"/);
   assert.match(appSource, /workspaceClient\.createView/);
   assert.match(appSource, /viewCreated/);
   assert.match(appSource, /projectionUpdated/);

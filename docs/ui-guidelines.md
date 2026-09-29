@@ -59,7 +59,7 @@ Rules:
 - Workspace rows should support rename, delete, and reorder affordances without visual noise.
 - Use icon buttons for repeated tools such as rename, delete, settings, and reorder.
 - Search should be visually tied to the active Workspace scope.
-- Do not show project source folder selection in each Workspace row; it belongs in Settings.
+- Do not show project source folder selection in each Workspace row; it belongs in the row’s Workspace settings screen.
 
 ### Main Area
 
@@ -142,9 +142,8 @@ Rules:
 
 ### Settings
 
-Settings owns:
+Global Settings owns device interface language and Light/Dark/System appearance selection. Workspace settings, opened from the target row menu or its keyboard trigger, owns:
 
-- interface language and Light/Dark/System appearance selection;
 - project source folder selection;
 - folder tree role configuration;
 - Workspace-level configuration when relevant;
@@ -154,7 +153,7 @@ Rules:
 
 - Interface language uses a compact `Select` with `English` and `Русский`; option labels remain self-identifying in both locales.
 - Locale changes update visible UI without blanking, reloading, or rescanning the active Workspace.
-- Source folder selection appears once in Settings.
+- Source folder selection appears in Workspace settings, with the target Workspace name in the heading. Global Settings contains only device preferences.
 - Folder role controls should use clear segmented or select controls for `group`, `status`, and `project`.
 - Settings tree must make parent/child relationships clear.
 - Role changes should show loading and error states because they affect project discovery.

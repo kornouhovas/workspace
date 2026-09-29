@@ -1,0 +1,76 @@
+Window: "Choose workspace source folder", App: Electron.
+0 standard window Choose workspace source folder, ID: open-panel, Secondary Actions: Raise
+	1 split group
+		2 scroll area Secondary Actions: Scroll Up, Scroll Down
+			3 outline sidebar
+				4 row (selectable) Description: clock, Value: Recents
+				5 row (selectable, expanded) Value: Favorites, Secondary Actions: Collapse
+				6 row (selectable) Description: move, Value: Yandex.Disk
+				7 row (selectable) Description: App Store letter A icon, Value: Applications
+				8 row (selectable) Description: Arrow Down Circle, Value: Downloads
+				9 row (selectable) Description: photo, Value: Pictures
+				10 row (selectable) Description: Menu bar with dock on a rectangle, Value: Desktop
+				11 row (selectable) Description: Document page, Value: Documents
+				12 row (selectable, expanded) Value: Locations, Secondary Actions: Collapse
+				13 row (selectable) Description: iCloud, Value: iCloud Drive
+0.9999805688858032
+				14 row (selectable) Google Drive
+				15 row (selectable) Description: home, Value: aleksandersk
+				16 row (selectable, expanded) Value: Tags, Secondary Actions: Collapse
+				17 row (selectable) Description: Small circle badge, Value: Личное
+				18 row (selectable) Description: Small circle badge, filled, Value: Серый
+				19 row (selectable) Description: Small circle badge, filled, Value: Работа
+				20 row (selectable) Description: Small circle badge, Value: Важное
+				21 row (selectable) Description: Small circle badge, filled, Value: Цветочный
+				22 row (selectable) Description: Small circle badge, filled, Value: Учеба
+				23 row (selectable) Description: Small circle badge, filled, Value: Синий
+				24 row (selectable) Description: Two small circle badges, Value: All Tags…
+			25 scroll bar (settable, float) 0
+				26 value indicator (settable, float) 0
+				27 increment arrow button
+				28 decrement arrow button
+				29 increment page button
+				30 decrement page button
+		31 splitter (disabled, settable, float) 197
+		32 scroll area Secondary Actions: Scroll Left, Scroll Right
+			33 outline Description: list view, ID: ListView
+				34 row (selectable, collapsed) Secondary Actions: Expand
+					35 cell Secondary Actions: Open Finder item
+						36 image
+						37 text field (settable) Value: Native status, Secondary Actions: Open Finder item, URL: file:///private/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-settings-yxk-95yLXF/Native%20B%20selection/Native%20status/
+						38 disclosure triangle 0
+					39 cell
+						40 text --
+					41 cell
+						42 text Folder
+					43 cell
+						44 text Today at 22:16
+				45 container ListViewHeader
+					46 button Description: Name, Value: AXAscendingSortDirection, ID: name
+					47 button Description: Size, ID: size
+					48 button Description: Kind, ID: kind
+					49 button Description: Date Added, ID: dateAdded
+			50 scroll bar (settable, float) 0
+				51 value indicator (settable, float) 0
+				52 increment arrow button
+				53 decrement arrow button
+				54 increment page button
+				55 decrement page button
+		56 container
+			57 button back
+			58 button (disabled) forward
+		59 menu button Description: List, Help: Show as Icons, List, or Columns, and hide/show the sidebar, ID: View Options
+		60 menu button Description: Three-by-one square grid below a one-by-two line grid, Help: Change the item grouping (hold down Option to change the sort), ID: Group or Sort By
+		61 pop up button Where:, Value: Native B selection, ID: where popup
+		62 search text field Search
+			63 button search
+		64 button Cancel, ID: CancelButton
+		65 button Open, ID: OKButton
+66 menu bar
+	67 Electron
+	68 File
+	69 Edit
+	70 View
+	71 Window
+
+The focused UI element is 33 outline Description: list view, ID: ListView

@@ -48,7 +48,8 @@ Layout requirements:
 - The sidebar opens and closes with a 220ms width transition (disabled for reduced motion and direct pointer resize). Hidden sidebar content is inert. The sidebar can be collapsed with a toggle icon. Native pointer clicks must both hide and show it: the toggle no-drag exclusion is rendered after all pane drag regions so macOS does not consume the restore click.
 - Collapsed mode hides the sidebar body; the visible toggle and back/forward history remain accessible in reserved header space clear of native traffic lights. The toggle restores the sidebar. `Cmd/Ctrl+\` toggles the sidebar. The sidebar resizes between 240px and 460px (default 320px). Its width is shared by every Workspace and survives restart; visibility and right-panel state remain per Workspace.
 - Settings must look like navigation, not a passive label.
-- Clicking Settings opens the Settings screen in the main area.
+- Clicking Settings opens device preferences (language and appearance) in the main area.
+- Each Workspace row menu includes `Workspace settings`, reachable through its keyboard menu trigger. Opening settings for an inactive row activates that Workspace.
 - Clicking a Workspace opens that Workspace working surface.
 
 Workspace row requirements:
@@ -69,22 +70,16 @@ Settings is a separate main screen. It is not embedded above Board or Table.
 
 Entry points:
 
-- Settings item in the left sidebar;
-- empty state action when no source folder is selected.
+- Global Settings: bottom sidebar item.
+- Workspace settings: the target row context menu or keyboard actions trigger; empty/missing-source recovery opens the current Workspace settings.
+- Add Workspace works before choosing a source and opens the new Workspace settings.
 
 Exit:
 
 - Settings has a clear `Back to workspace` action.
 - Clicking a Workspace in the sidebar also leaves Settings and opens that Workspace.
 
-Settings contains:
-
-- Light, Dark and System appearance, persisted in the renderer session;
-
-- Language section;
-- Source folder section;
-- Folder role tree section;
-- Status values section for the system `Status` property.
+Global Settings contains Language and Light, Dark, System appearance, persisted as device preferences. Workspace settings has a heading with the target Workspace name and contains its Source folder, Folder role tree and existing Properties section for system `Status` colors. Returning to Board/Table preserves views and project tabs.
 
 ### Language Section
 

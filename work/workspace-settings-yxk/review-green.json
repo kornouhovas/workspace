@@ -1,0 +1,47 @@
+{
+  "checks": [
+    {
+      "name": "late B activation preserves latest global Settings choice",
+      "passed": true
+    },
+    {
+      "name": "unbroken long workspace name keeps source badge inside host",
+      "passed": true,
+      "data": {
+        "heading": {
+          "x": 345,
+          "y": 69,
+          "width": 569.4140625,
+          "height": 60,
+          "top": 69,
+          "right": 914.4140625,
+          "bottom": 129,
+          "left": 345
+        },
+        "container": {
+          "x": 333,
+          "y": 61,
+          "width": 678,
+          "height": 76,
+          "top": 61,
+          "right": 1011,
+          "bottom": 137,
+          "left": 333
+        },
+        "badge": {
+          "x": 922.4140625,
+          "y": 89,
+          "width": 76.5859375,
+          "height": 20,
+          "top": 89,
+          "right": 999,
+          "bottom": 109,
+          "left": 922.4140625
+        },
+        "scrollWidth": 704,
+        "clientWidth": 704
+      }
+    }
+  ],
+  "provenance": "Real Electron renderer/CDP; activation latency injected before actual workspace:request handler."
+}

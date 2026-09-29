@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { WorkspaceBoardView } from "@/components/workspace/board-view";
 import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
 import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
-import { WorkspaceSettingsView } from "@/components/workspace/settings-view";
+import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
@@ -50,7 +50,6 @@ import {
 } from "@/lib/workspace-icons";
 import {
   workspaceMockProjection,
-  workspaceMockSettings,
   type WorkspaceMockFileTreeNode,
   type WorkspaceMockProject,
 } from "@/workspaceMockData";
@@ -535,7 +534,7 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
   );
 }
 
-type WorkspaceSurface = "workspace" | "settings";
+type WorkspaceSurface = "workspace" | "settings" | "workspace-settings";
 
 function createClientDocumentId(prefix: string) {
   const randomId =
@@ -551,6 +550,7 @@ export default function App() {
     createInitialWorkspaceAppState,
   );
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
+  const navigationSurfaceVersion = useRef(0);
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     try {
       const saved = window.localStorage.getItem("workspace.theme");
@@ -873,6 +873,7 @@ export default function App() {
   ]);
 
   const [selectingFolder, setSelectingFolder] = useState(false);
+  const folderPickerWorkspaceRef = useRef<string | null>(null);
   const loadRequestIdRef = useRef(0);
   const activeViewIdRef = useRef<string | null>(null);
   const workspaceIdRef = useRef<string | null>(null);
@@ -931,15 +932,20 @@ export default function App() {
           return;
         }
 
-        if (!root) {
-          dispatch({ type: "sourceFolderMissing" });
+        if (!root || !root.path) {
+          const workspaces = await workspaceClient.listWorkspaces() as WorkspaceListState;
+          if (!isCurrentLoad()) return;
+          setWorkspaceList(workspaces);
+          dispatch({ type: "sourceFolderMissing", root });
+          workspaceIdRef.current = root?.workspaceId || null;
+          pendingWorkspaceScreen.current = null;
           return;
         }
 
         const previousWorkspaceId = workspaceIdRef.current;
         const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] =
           await Promise.all([
-            workspaceClient.scan({ workspaceId: root.workspaceId, includeCardChildren: activeSurface === "settings" }),
+            workspaceClient.scan({ workspaceId: root.workspaceId, includeCardChildren: activeSurface === "workspace-settings" }),
             workspaceClient.listViews({ workspaceId: root.workspaceId }),
             loadWorkspaceList(workspaceClient, root),
             workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
@@ -1126,13 +1132,14 @@ export default function App() {
   ]);
 
   async function handleSelectFolder() {
-    const requestWorkspaceId = state.workspaceId;
+    const requestWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || undefined;
     const version = workspaceSwitchVersion.current;
+    folderPickerWorkspaceRef.current = requestWorkspaceId || null;
     setSelectingFolder(true);
     try {
       const root = normalizeRootResponse(await workspaceClient.setRoot({ workspaceId: requestWorkspaceId }));
       if (!root) return; // Native picker cancellation leaves the session intact.
-      if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== requestWorkspaceId) return;
+      if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== (requestWorkspaceId || null)) return;
       pendingWorkspaceScreen.current = root.workspaceId;
       folderSelectionPendingRef.current = true;
       loadRequestIdRef.current += 1;
@@ -1145,11 +1152,7 @@ export default function App() {
   }
 
   async function handleAddWorkspace() {
-    if (!state.root) {
-      toast.error(t("toast.sourceRequiredWorkspaces"));
-      return;
-    }
-
+    const surfaceVersion = ++navigationSurfaceVersion.current;
     const workspaceName = "Workspace";
 
     try {
@@ -1172,14 +1175,14 @@ export default function App() {
         dispatch({ type: "workspaceActivated", workspaceId: activeWorkspaceId });
       }
       setSelectedProject(null);
-      setActiveSurface("workspace");
+      if (surfaceVersion === navigationSurfaceVersion.current) setActiveSurface("workspace-settings");
       toast.success(t("toast.workspaceAdded"));
       setReloadToken((value) => value + 1);
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.createWorkspace")) {
         setWorkspaceList((current) => addWorkspaceListFallback(current, workspaceName));
         setSelectedProject(null);
-        setActiveSurface("workspace");
+        if (surfaceVersion === navigationSurfaceVersion.current) setActiveSurface("workspace");
         toast.success(t("toast.workspaceAdded"));
         return;
       }
@@ -1190,10 +1193,12 @@ export default function App() {
     }
   }
 
-  async function handleWorkspaceOpen(workspaceId: string) {
+  async function handleWorkspaceOpen(workspaceId: string, surface: WorkspaceSurface = "workspace") {
+    const surfaceVersion = ++navigationSurfaceVersion.current;
     const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
-    if (!state.root || (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current)) {
-      openWorkspaceSurface();
+    if (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current) {
+      sendPane({ type: "showWorkspace" });
+      setActiveSurface(surface);
       return;
     }
     if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
@@ -1214,7 +1219,8 @@ export default function App() {
     try {
       await request;
       if (version !== workspaceSwitchVersion.current) return;
-      setActiveSurface("workspace");
+      // A later global-settings or back action owns the visible surface.
+      if (surfaceVersion === navigationSurfaceVersion.current) setActiveSurface(surface);
       setReloadToken(value => value + 1);
     } catch (error) {
       if (version !== workspaceSwitchVersion.current) return;
@@ -2014,7 +2020,7 @@ export default function App() {
         statusValueId,
         color,
       });
-      await refreshPropertyCatalog();
+      if (workspaceIdRef.current !== state.workspaceId) return;
       setReloadToken((value) => value + 1);
     } catch (error) {
       toast.error(t("toast.statusColorFailed"), {
@@ -2207,11 +2213,19 @@ export default function App() {
   }
 
   function openWorkspaceSurface() {
+    navigationSurfaceVersion.current += 1;
     sendPane({ type: "showWorkspace" });
     setActiveSurface("workspace");
   }
 
+  function openCurrentWorkspaceSettings() {
+    navigationSurfaceVersion.current += 1;
+    sendPane({ type: "showWorkspace" });
+    setActiveSurface("workspace-settings");
+  }
+
   function openSettingsSurface() {
+    navigationSurfaceVersion.current += 1;
     sendPane({ type: "showWorkspace" });
     setActiveSurface("settings");
   }
@@ -2238,19 +2252,19 @@ export default function App() {
               order: 10,
             },
           ]
-        : [{ id: viewState.activeViewId, name: "Operations", order: 10 }];
+        : [];
   const currentWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
   const currentWorkspaceName =
     navigationWorkspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name ||
     navigationWorkspaces[0]?.name ||
     "Workspace";
-  const sourceFolder = state.root
+  const sourceFolder = state.root?.path
     ? {
         name: state.root.name,
         path: state.root.path || t("common.pathUnavailable"),
         state: "connected",
       }
-    : workspaceMockSettings.sourceFolder;
+    : { name: t("state.noSourceTitle"), path: "", state: "missing" };
   const serviceProjection = useMemo(() => {
     if (!state.projection) {
       return null;
@@ -2306,8 +2320,8 @@ export default function App() {
           ? "table"
           : "board";
   const visibleProperties =
-    serviceProjection?.visibleProperties ?? (state.root ? [] : workspaceMockProjection.visibleProperties);
-  const statusValues = serviceProjection?.statusValues ?? (state.root ? [] : workspaceMockProjection.statusValues);
+    serviceProjection?.visibleProperties ?? [];
+  const statusValues = serviceProjection?.statusValues ?? [];
   const boardProjection =
     serviceProjection?.projection.type === "board"
       ? serviceProjection.projection
@@ -2316,7 +2330,7 @@ export default function App() {
     serviceProjection?.projection.type === "table"
       ? serviceProjection.projection
       : mockTableProjectionResponse.projection;
-  const folderRoleTree = state.root ? state.folderRoleTree : workspaceMockSettings.folderRoleTree;
+  const folderRoleTree = state.root ? state.folderRoleTree : [];
   const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
   const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
   const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
@@ -2393,8 +2407,7 @@ export default function App() {
           onClick={() => {
             setSelectedProject(null);
             setActiveProjectTabId(null);
-            setActiveSurface("workspace");
-            sendPane({ type: "showWorkspace" });
+            openWorkspaceSurface();
             sendPane({ type: "selectView" });
             dispatch({ type: "activeViewChanged", activeViewId: view.id });
           }}
@@ -2421,7 +2434,7 @@ export default function App() {
           "pl-4",
         ].join(" ")}
       >
-        {activeSurface !== "settings" ? (
+        {activeSurface === "workspace" ? (
           <div
             aria-busy={isWorkspaceSwitchPendingSurface || undefined}
             inert={isWorkspaceSwitchPendingSurface || undefined}
@@ -2565,9 +2578,9 @@ export default function App() {
             />
           </div>
         ) : null}
-        {activeSurface === "settings" ? (
+        {activeSurface !== "workspace" ? (
           <div className="electron-window-no-drag flex min-w-0 flex-1 items-center justify-between gap-3">
-            <h1 className="truncate text-sm font-medium">{t("settings.title")}</h1>
+            <h1 className="truncate text-sm font-medium">{activeSurface === "workspace-settings" ? `${t("settings.workspaceTitle")} · ${currentWorkspaceName}` : t("settings.title")}</h1>
             <Button
               type="button"
               variant="ghost"
@@ -2597,17 +2610,15 @@ export default function App() {
       </header>
       {projectFullScreen ? (
         detailPanel
-      ) : activeSurface === "settings" ? (
+      ) : activeSurface !== "workspace" ? (
         <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
-          {state.status === "loading" || state.status === "idle" ? (
+          {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || pendingWorkspaceScreen.current ? (
             <WorkspaceLoadingState />
           ) : (
             <>
               <WorkspaceServiceError state={state} />
               <WorkspaceSettingsView
                 workspaceName={workspaceList.workspaces.find(item => item.id === state.workspaceId)?.name}
-                theme={theme}
-                onThemeChange={setTheme}
                 sourceFolder={sourceFolder}
                 folderRoleTree={folderRoleTree}
                 statusValues={statusValues}
@@ -2615,7 +2626,7 @@ export default function App() {
                 onSelectFolder={handleSelectFolder}
                 onFolderRoleChange={handleFolderRoleChange}
                 onColorStatusValue={handleColorStatusValue}
-                selectingFolder={selectingFolder}
+                selectingFolder={selectingFolder && folderPickerWorkspaceRef.current === state.workspaceId}
               />
             </>
           )}
@@ -2632,9 +2643,9 @@ export default function App() {
             {shouldShowWorkspaceLoadingState ? (
               <WorkspaceLoadingState />
             ) : state.status === "error" && !serviceProjection ? (
-              <><WorkspaceServiceError state={state} /><WorkspaceEmptyState onOpenSettings={openSettingsSurface} /></>
+              <><WorkspaceServiceError state={state} /><WorkspaceEmptyState onOpenSettings={openCurrentWorkspaceSettings} /></>
             ) : state.sourceFolderMissing ? (
-              <WorkspaceEmptyState onOpenSettings={openSettingsSurface} />
+              <WorkspaceEmptyState onOpenSettings={openCurrentWorkspaceSettings} />
             ) : (
               <>
                 <WorkspaceServiceError state={state} />
@@ -2730,6 +2741,7 @@ export default function App() {
             onSearchQueryChange={(searchQuery) => {
               dispatch({ type: "searchQueryChanged", searchQuery });
             }}
+            onOpenWorkspaceSettings={(id) => { void handleWorkspaceOpen(id, "workspace-settings"); }}
             onOpenSettings={openSettingsSurface}
           />
         </div>
@@ -2778,13 +2790,13 @@ export default function App() {
         {(
           <WorkspaceRightPanel
             key={projectTabsWorkspaceId}
-            suppressed={activeSurface === "settings" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
+            suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
             navigation={navigationPanel}
             project={
               !projectExpanded &&
-              activeSurface !== "settings" &&
+              activeSurface === "workspace" &&
               selectedProject
                 ? detailPanel
                 : undefined

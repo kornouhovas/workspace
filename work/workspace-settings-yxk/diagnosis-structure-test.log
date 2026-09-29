@@ -1,0 +1,4468 @@
+
+> workspace@0.1.0 test
+> node --test
+
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+not ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 16.365625
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/dashboardStructure.test.js:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /includeCardChildren:\s*activeSurface === "settings"/. Input:
+
+    'import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";\n' +
+      'import { useEffect, useMemo, useReducer, useRef, useState } from "react";\n' +
+      'import { toast } from "sonner";\n' +
+      '\n' +
+      'import { WorkspaceBoardView } from "@/components/workspace/board-view";\n' +
+      'import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";\n' +
+      'import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";\n' +
+      'import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";\n' +
+      'import { WorkspaceEmptyState } from "@/components/workspace/states";\n' +
+      'import { WorkspaceTableView } from "@/components/workspace/table-view";\n' +
+      'import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";\n' +
+      'import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";\n' +
+      'import { Button } from "@/components/ui/button";\n' +
+      'import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";\n' +
+      'import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";\n' +
+      'import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";\n' +
+      'import { Skeleton } from "@/components/ui/skeleton";\n' +
+      'import {\n' +
+      '  createPaneLayout,\n' +
+      '  paneLayoutReducer,\n' +
+      '  readPaneLayouts,\n' +
+      '  readSidebarWidth,\n' +
+      '  writeSidebarWidth,\n' +
+      '  writePaneLayouts,\n' +
+      '} from "@/workspacePaneLayout.js";\n' +
+      'import { WorkspaceSplitTree } from "@/components/workspace/split-tree";\n' +
+      'import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";\n' +
+      'import type { PaneAction } from "@/workspacePaneLayout";\n' +
+      'import {\n' +
+      '  ChromeAction,\n' +
+      '  ChromeIcon,\n' +
+      '  PaneResize,\n' +
+      '  WorkspaceRightPanel,\n' +
+      '} from "@/components/workspace/pane-chrome";\n' +
+      'import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";\n' +
+      'import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";\n' +
+      'import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";\n' +
+      'import { TooltipProvider } from "@/components/ui/tooltip";\n' +
+      'import { Toaster } from "@/components/ui/sonner";\n' +
+      'import { useI18n } from "@/i18n";\n' +
+      'import {\n' +
+      '  RendererLocalizedError,\n' +
+      '  createRendererErrorState,\n' +
+      '  resolveRendererErrorState,\n' +
+      '} from "@/i18n/errors.js";\n' +
+      'import {\n' +
+      '  FolderIcon,\n' +
+      '  PanelLeftIcon,\n' +
+      '  XIcon,\n' +
+      '} from "@/lib/workspace-icons";\n' +
+      'import {\n' +
+      '  workspaceMockProjection,\n' +
+      '  type WorkspaceMockFileTreeNode,\n' +
+      '  type WorkspaceMockProject,\n' +
+      '} from "@/workspaceMockData";\n' +
+      'import {\n' +
+      '  createInitialWorkspaceAppState,\n' +
+      '  filterWorkspaceProjectionBySearch,\n' +
+      '  workspaceAppStateReducer,\n' +
+      '  type WorkspaceAppState,\n' +
+      '  type WorkspacePropertyCatalogState,\n' +
+      '  type WorkspacePropertyDefinitionState,\n' +
+      '  type WorkspaceSelectValueState,\n' +
+      '  type WorkspaceFolderRole,\n' +
+      '  type WorkspaceFolderRoleNode,\n' +
+      '  type WorkspaceProjectionResponse,\n' +
+      '  type WorkspaceRootState,\n' +
+      '  type WorkspaceViewState,\n' +
+      '  type WorkspaceViewsResponse,\n' +
+      '} from "@/workspaceAppState";\n' +
+      'import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";\n' +
+      'import { WorkspaceServiceClient } from "@/workspaceServiceClient.js";\n' +
+      'import {\n' +
+      '  BOARD_COLUMN_WIDTH_DEFAULT,\n' +
+      '  getBoardColumnWidthMax,\n' +
+      '  normalizeBoardColumnWidth,\n' +
+      '} from "@/workspaceBoardLayout.js";\n' +
+      'import {\n' +
+      '  addWorkspaceListFallback,\n' +
+      '  createWorkspaceListFallback,\n' +
+      '  deleteWorkspaceListFallback,\n' +
+      '  isUnsupportedWorkspaceMethodError,\n' +
+      '  loadWorkspaceList,\n' +
+      '  renameWorkspaceListFallback,\n' +
+      '  reorderWorkspaceListFallback,\n' +
+      '  setActiveWorkspaceListFallback,\n' +
+      '  type WorkspaceListItem,\n' +
+      '  type WorkspaceListState,\n' +
+      '} from "@/workspaceCompatibility";\n' +
+      'import { createNextVisiblePropertyIds, createPropertyOrder } from "@/workspaceViewVisibility.js";\n' +
+      'import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";\n' +
+      '\n' +
+      'function isRecord(value: unknown): value is Record<string, unknown> {\n' +
+      '  return typeof value === "object" && value !== null && !Array.isArray(value);\n' +
+      '}\n' +
+      '\n' +
+      'function getString(value: unknown) {\n' +
+      '  return typeof value === "string" ? value : "";\n' +
+      '}\n' +
+      '\n' +
+      'function getNameFromPath(path: string) {\n' +
+      '  return path.split(/[\\\\/]/).filter(Boolean).at(-1) || "Workspace";\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeViewPropertyLayout(\n' +
+      '  value: unknown,\n' +
+      '): NonNullable<WorkspaceViewState["propertyLayout"]> | undefined {\n' +
+      '  if (!isRecord(value)) {\n' +
+      '    return undefined;\n' +
+      '  }\n' +
+      '\n' +
+      '  const propertyLayout = Object.fromEntries(\n' +
+      '    Object.entries(value).flatMap(([propertyId, setting]) => {\n' +
+      '      if (!isRecord(setting) || setting.wrapContent !== true) {\n' +
+      '        return [];\n' +
+      '      }\n' +
+      '\n' +
+      '      return [[propertyId, { wrapContent: true }]];\n' +
+      '    }),\n' +
+      '  );\n' +
+      '\n' +
+      '  return Object.keys(propertyLayout).length > 0 ? propertyLayout : {};\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeViewBoardLayout(value: unknown): NonNullable<WorkspaceViewState["boardLayout"]> {\n' +
+      '  return {\n' +
+      '    columnWidth: normalizeBoardColumnWidth(isRecord(value) ? value.columnWidth : undefined),\n' +
+      '  };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeRootResponse(response: unknown): WorkspaceRootState | null {\n' +
+      '  const root = isRecord(response) && isRecord(response.root) ? response.root : response;\n' +
+      '  if (!isRecord(root)) {\n' +
+      '    return null;\n' +
+      '  }\n' +
+      '\n' +
+      '  const path = getString(root.rootPath) || getString(root.path);\n' +
+      '  const name = getString(root.name) || getNameFromPath(path);\n' +
+      '  const workspaceId = getString(root.id) || getString(root.workspaceId) || "workspace:root";\n' +
+      '\n' +
+      '  if (!path && !getString(root.id) && !getString(root.workspaceId) && !getString(root.name)) {\n' +
+      '    return null;\n' +
+      '  }\n' +
+      '\n' +
+      '  return { workspaceId, name, path };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeViewsResponse(response: unknown, workspaceId: string): WorkspaceViewsResponse {\n' +
+      '  if (!isRecord(response)) {\n' +
+      '    return { workspaceId, activeViewId: null, views: [] };\n' +
+      '  }\n' +
+      '\n' +
+      '  const views = Array.isArray(response.views)\n' +
+      '    ? response.views\n' +
+      '        .filter(isRecord)\n' +
+      '        .map((view) => ({\n' +
+      '          id: getString(view.id),\n' +
+      '          name: getString(view.name) || "Untitled view",\n' +
+      '          viewType: getString(view.viewType) || "board",\n' +
+      '          visiblePropertyIds: Array.isArray(view.visiblePropertyIds)\n' +
+      '            ? view.visiblePropertyIds.filter((id): id is string => typeof id === "string")\n' +
+      '            : undefined,\n' +
+      '          propertyOrder: isRecord(view.propertyOrder)\n' +
+      '            ? Object.fromEntries(\n' +
+      '                Object.entries(view.propertyOrder)\n' +
+      '                  .filter(([, order]) => Number.isFinite(Number(order)))\n' +
+      '                  .map(([propertyId, order]) => [propertyId, Number(order)]),\n' +
+      '              )\n' +
+      '            : undefined,\n' +
+      '          valueVisibility: isRecord(view.valueVisibility)\n' +
+      '            ? Object.fromEntries(\n' +
+      '                Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {\n' +
+      '                  if (!isRecord(setting)) {\n' +
+      '                    return [];\n' +
+      '                  }\n' +
+      '\n' +
+      '                  return [\n' +
+      '                    [\n' +
+      '                      propertyId,\n' +
+      '                      {\n' +
+      '                        valueIds: Array.isArray(setting.valueIds)\n' +
+      '                          ? setting.valueIds.filter(\n' +
+      '                              (valueId): valueId is string => typeof valueId === "string",\n' +
+      '                            )\n' +
+      '                          : [],\n' +
+      '                        includeEmpty: setting.includeEmpty === true,\n' +
+      '                      },\n' +
+      '                    ],\n' +
+      '                  ];\n' +
+      '                }),\n' +
+      '              )\n' +
+      '            : undefined,\n' +
+      '          propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),\n' +
+      '          boardLayout: normalizeViewBoardLayout(view.boardLayout),\n' +
+      '        }))\n' +
+      '        .filter((view) => view.id)\n' +
+      '    : [];\n' +
+      '\n' +
+      '  return {\n' +
+      '    workspaceId: getString(response.workspaceId) || workspaceId,\n' +
+      '    activeViewId: getString(response.activeViewId) || null,\n' +
+      '    views,\n' +
+      '  };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResponse {\n' +
+      '  if (!isRecord(response) || !isRecord(response.view) || !isRecord(response.projection)) {\n' +
+      '    throw new RendererLocalizedError("error.invalidProjectionResponse");\n' +
+      '  }\n' +
+      '\n' +
+      '  return response as WorkspaceProjectionResponse;\n' +
+      '}\n' +
+      '\n' +
+      'function normalizePropertiesResponse(\n' +
+      '  response: unknown,\n' +
+      '  workspaceId: string,\n' +
+      '): WorkspacePropertyCatalogState {\n' +
+      '  const body = isRecord(response) ? response : {};\n' +
+      '  const properties = Array.isArray(body.properties)\n' +
+      '    ? body.properties\n' +
+      '        .filter(isRecord)\n' +
+      '        .map(normalizePropertyDefinition)\n' +
+      '        .filter((property) => property.id)\n' +
+      '    : [];\n' +
+      '  const selectValues = Array.isArray(body.selectValues)\n' +
+      '    ? body.selectValues\n' +
+      '        .filter(isRecord)\n' +
+      '        .map(normalizeSelectValue)\n' +
+      '        .filter((value) => value.id && value.propertyId)\n' +
+      '    : [];\n' +
+      '\n' +
+      '  return {\n' +
+      '    workspaceId: getString(body.workspaceId) || workspaceId,\n' +
+      '    properties,\n' +
+      '    selectValues,\n' +
+      '    usage: isRecord(body.usage)\n' +
+      '      ? (body.usage as WorkspacePropertyCatalogState["usage"])\n' +
+      '      : undefined,\n' +
+      '  };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizePropertyDefinition(\n' +
+      '  property: Record<string, unknown>,\n' +
+      '): WorkspacePropertyDefinitionState {\n' +
+      '  const propertyType = getString(property.propertyType) || getString(property.type) || "text";\n' +
+      '\n' +
+      '  return {\n' +
+      '    id: getString(property.id),\n' +
+      '    name: getString(property.name) || "Untitled property",\n' +
+      '    type: getString(property.type) || propertyType,\n' +
+      '    propertyType,\n' +
+      '    system: property.system === true,\n' +
+      '    hidden: property.hidden === true,\n' +
+      '    order: Number.isFinite(Number(property.order)) ? Number(property.order) : undefined,\n' +
+      '  };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeSelectValue(value: Record<string, unknown>): WorkspaceSelectValueState {\n' +
+      '  return {\n' +
+      '    id: getString(value.id),\n' +
+      '    workspaceId: getString(value.workspaceId) || undefined,\n' +
+      '    propertyId: getString(value.propertyId),\n' +
+      '    name: getString(value.name) || "Untitled value",\n' +
+      '    color: getString(value.color) || undefined,\n' +
+      '    hidden: value.hidden === true,\n' +
+      '    order: Number.isFinite(Number(value.order)) ? Number(value.order) : undefined,\n' +
+      '  };\n' +
+      '}\n' +
+      '\n' +
+      'function normalizeProjectFileTreeNode(\n' +
+      '  node: Record<string, unknown>,\n' +
+      '): WorkspaceMockFileTreeNode | null {\n' +
+      '  const name = getString(node.name);\n' +
+      '  const relativePath = getString(node.relativePath) || getString(node.path);\n' +
+      '  if (!name || !relativePath) {\n' +
+      '    return null;\n' +
+      '  }\n' +
+      '\n' +
+      '  const kind = node.kind === "file" ? "file" : "folder";\n' +
+      '  const children =\n' +
+      '    kind === "folder" && Array.isArray(node.children)\n' +
+      '      ? node.childre'... 89934 more characters
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";
+    import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+    import { toast } from "sonner";
+
+    import { WorkspaceBoardView } from "@/components/workspace/board-view";
+    import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
+    import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
+    import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
+    import { WorkspaceEmptyState } from "@/components/workspace/states";
+    import { WorkspaceTableView } from "@/components/workspace/table-view";
+    import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
+    import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
+    import { Button } from "@/components/ui/button";
+    import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";
+    import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
+    import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
+    import { Skeleton } from "@/components/ui/skeleton";
+    import {
+      createPaneLayout,
+      paneLayoutReducer,
+      readPaneLayouts,
+      readSidebarWidth,
+      writeSidebarWidth,
+      writePaneLayouts,
+    } from "@/workspacePaneLayout.js";
+    import { WorkspaceSplitTree } from "@/components/workspace/split-tree";
+    import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";
+    import type { PaneAction } from "@/workspacePaneLayout";
+    import {
+      ChromeAction,
+      ChromeIcon,
+      PaneResize,
+      WorkspaceRightPanel,
+    } from "@/components/workspace/pane-chrome";
+    import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
+    import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
+    import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
+    import { TooltipProvider } from "@/components/ui/tooltip";
+    import { Toaster } from "@/components/ui/sonner";
+    import { useI18n } from "@/i18n";
+    import {
+      RendererLocalizedError,
+      createRendererErrorState,
+      resolveRendererErrorState,
+    } from "@/i18n/errors.js";
+    import {
+      FolderIcon,
+      PanelLeftIcon,
+      XIcon,
+    } from "@/lib/workspace-icons";
+    import {
+      workspaceMockProjection,
+      type WorkspaceMockFileTreeNode,
+      type WorkspaceMockProject,
+    } from "@/workspaceMockData";
+    import {
+      createInitialWorkspaceAppState,
+      filterWorkspaceProjectionBySearch,
+      workspaceAppStateReducer,
+      type WorkspaceAppState,
+      type WorkspacePropertyCatalogState,
+      type WorkspacePropertyDefinitionState,
+      type WorkspaceSelectValueState,
+      type WorkspaceFolderRole,
+      type WorkspaceFolderRoleNode,
+      type WorkspaceProjectionResponse,
+      type WorkspaceRootState,
+      type WorkspaceViewState,
+      type WorkspaceViewsResponse,
+    } from "@/workspaceAppState";
+    import { createWorkspaceRendererTransport } from "@/workspaceRendererTransport";
+    import { WorkspaceServiceClient } from "@/workspaceServiceClient.js";
+    import {
+      BOARD_COLUMN_WIDTH_DEFAULT,
+      getBoardColumnWidthMax,
+      normalizeBoardColumnWidth,
+    } from "@/workspaceBoardLayout.js";
+    import {
+      addWorkspaceListFallback,
+      createWorkspaceListFallback,
+      deleteWorkspaceListFallback,
+      isUnsupportedWorkspaceMethodError,
+      loadWorkspaceList,
+      renameWorkspaceListFallback,
+      reorderWorkspaceListFallback,
+      setActiveWorkspaceListFallback,
+      type WorkspaceListItem,
+      type WorkspaceListState,
+    } from "@/workspaceCompatibility";
+    import { createNextVisiblePropertyIds, createPropertyOrder } from "@/workspaceViewVisibility.js";
+    import type { WorkspaceCustomPropertyType } from "@/components/workspace/property-controls";
+
+    function isRecord(value: unknown): value is Record<string, unknown> {
+      return typeof value === "object" && value !== null && !Array.isArray(value);
+    }
+
+    function getString(value: unknown) {
+      return typeof value === "string" ? value : "";
+    }
+
+    function getNameFromPath(path: string) {
+      return path.split(/[\\/]/).filter(Boolean).at(-1) || "Workspace";
+    }
+
+    function normalizeViewPropertyLayout(
+      value: unknown,
+    ): NonNullable<WorkspaceViewState["propertyLayout"]> | undefined {
+      if (!isRecord(value)) {
+        return undefined;
+      }
+
+      const propertyLayout = Object.fromEntries(
+        Object.entries(value).flatMap(([propertyId, setting]) => {
+          if (!isRecord(setting) || setting.wrapContent !== true) {
+            return [];
+          }
+
+          return [[propertyId, { wrapContent: true }]];
+        }),
+      );
+
+      return Object.keys(propertyLayout).length > 0 ? propertyLayout : {};
+    }
+
+    function normalizeViewBoardLayout(value: unknown): NonNullable<WorkspaceViewState["boardLayout"]> {
+      return {
+        columnWidth: normalizeBoardColumnWidth(isRecord(value) ? value.columnWidth : undefined),
+      };
+    }
+
+    function normalizeRootResponse(response: unknown): WorkspaceRootState | null {
+      const root = isRecord(response) && isRecord(response.root) ? response.root : response;
+      if (!isRecord(root)) {
+        return null;
+      }
+
+      const path = getString(root.rootPath) || getString(root.path);
+      const name = getString(root.name) || getNameFromPath(path);
+      const workspaceId = getString(root.id) || getString(root.workspaceId) || "workspace:root";
+
+      if (!path && !getString(root.id) && !getString(root.workspaceId) && !getString(root.name)) {
+        return null;
+      }
+
+      return { workspaceId, name, path };
+    }
+
+    function normalizeViewsResponse(response: unknown, workspaceId: string): WorkspaceViewsResponse {
+      if (!isRecord(response)) {
+        return { workspaceId, activeViewId: null, views: [] };
+      }
+
+      const views = Array.isArray(response.views)
+        ? response.views
+            .filter(isRecord)
+            .map((view) => ({
+              id: getString(view.id),
+              name: getString(view.name) || "Untitled view",
+              viewType: getString(view.viewType) || "board",
+              visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
+                ? view.visiblePropertyIds.filter((id): id is string => typeof id === "string")
+                : undefined,
+              propertyOrder: isRecord(view.propertyOrder)
+                ? Object.fromEntries(
+                    Object.entries(view.propertyOrder)
+                      .filter(([, order]) => Number.isFinite(Number(order)))
+                      .map(([propertyId, order]) => [propertyId, Number(order)]),
+                  )
+                : undefined,
+              valueVisibility: isRecord(view.valueVisibility)
+                ? Object.fromEntries(
+                    Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
+                      if (!isRecord(setting)) {
+                        return [];
+                      }
+
+                      return [
+                        [
+                          propertyId,
+                          {
+                            valueIds: Array.isArray(setting.valueIds)
+                              ? setting.valueIds.filter(
+                                  (valueId): valueId is string => typeof valueId === "string",
+                                )
+                              : [],
+                            includeEmpty: setting.includeEmpty === true,
+                          },
+                        ],
+                      ];
+                    }),
+                  )
+                : undefined,
+              propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
+              boardLayout: normalizeViewBoardLayout(view.boardLayout),
+            }))
+            .filter((view) => view.id)
+        : [];
+
+      return {
+        workspaceId: getString(response.workspaceId) || workspaceId,
+        activeViewId: getString(response.activeViewId) || null,
+        views,
+      };
+    }
+
+    function normalizeProjectionResponse(response: unknown): WorkspaceProjectionResponse {
+      if (!isRecord(response) || !isRecord(response.view) || !isRecord(response.projection)) {
+        throw new RendererLocalizedError("error.invalidProjectionResponse");
+      }
+
+      return response as WorkspaceProjectionResponse;
+    }
+
+    function normalizePropertiesResponse(
+      response: unknown,
+      workspaceId: string,
+    ): WorkspacePropertyCatalogState {
+      const body = isRecord(response) ? response : {};
+      const properties = Array.isArray(body.properties)
+        ? body.properties
+            .filter(isRecord)
+            .map(normalizePropertyDefinition)
+            .filter((property) => property.id)
+        : [];
+      const selectValues = Array.isArray(body.selectValues)
+        ? body.selectValues
+            .filter(isRecord)
+            .map(normalizeSelectValue)
+            .filter((value) => value.id && value.propertyId)
+        : [];
+
+      return {
+        workspaceId: getString(body.workspaceId) || workspaceId,
+        properties,
+        selectValues,
+        usage: isRecord(body.usage)
+          ? (body.usage as WorkspacePropertyCatalogState["usage"])
+          : undefined,
+      };
+    }
+
+    function normalizePropertyDefinition(
+      property: Record<string, unknown>,
+    ): WorkspacePropertyDefinitionState {
+      const propertyType = getString(property.propertyType) || getString(property.type) || "text";
+
+      return {
+        id: getString(property.id),
+        name: getString(property.name) || "Untitled property",
+        type: getString(property.type) || propertyType,
+        propertyType,
+        system: property.system === true,
+        hidden: property.hidden === true,
+        order: Number.isFinite(Number(property.order)) ? Number(property.order) : undefined,
+      };
+    }
+
+    function normalizeSelectValue(value: Record<string, unknown>): WorkspaceSelectValueState {
+      return {
+        id: getString(value.id),
+        workspaceId: getString(value.workspaceId) || undefined,
+        propertyId: getString(value.propertyId),
+        name: getString(value.name) || "Untitled value",
+        color: getString(value.color) || undefined,
+        hidden: value.hidden === true,
+        order: Number.isFinite(Number(value.order)) ? Number(value.order) : undefined,
+      };
+    }
+
+    function normalizeProjectFileTreeNode(
+      node: Record<string, unknown>,
+    ): WorkspaceMockFileTreeNode | null {
+      const name = getString(node.name);
+      const relativePath = getString(node.relativePath) || getString(node.path);
+      if (!name || !relativePath) {
+        return null;
+      }
+
+      const kind = node.kind === "file" ? "file" : "folder";
+      const children =
+        kind === "folder" && Array.isArray(node.children)
+          ? node.children
+              .filter(isRecord)
+              .map(normalizeProjectFileTreeNode)
+              .filter((child): child is WorkspaceMockFileTreeNode => child !== null)
+          : undefined;
+
+      return {
+        id: getString(node.id) || `${kind}:${relativePath}`,
+        name,
+        kind,
+        relativePath,
+        available: node.available !== false,
+        ...(children ? { children } : {}),
+      };
+    }
+
+    function normalizeProjectFileTreeResponse(response: unknown): readonly WorkspaceMockFileTreeNode[] {
+      const fileTree = isRecord(response) && Array.isArray(response.fileTree) ? response.fileTree : [];
+      return fileTree
+        .filter(isRecord)
+        .map(normalizeProjectFileTreeNode)
+        .filter((node): node is WorkspaceMockFileTreeNode => node !== null);
+    }
+
+    function removeProjectPropertyValue(
+      project: WorkspaceMockProject,
+      propertyId: string,
+    ): WorkspaceMockProject {
+      if (!Object.hasOwn(project.propertyValues, propertyId)) {
+        return project;
+      }
+
+      const propertyValues = { ...project.propertyValues };
+      delete propertyValues[propertyId];
+
+      return {
+        ...project,
+        propertyValues,
+      };
+    }
+
+    function removeProjectSelectValue(
+      project: WorkspaceMockProject,
+      propertyId: string,
+      selectValueId: string,
+    ): WorkspaceMockProject {
+      const currentValue = project.propertyValues[propertyId as keyof typeof project.propertyValues];
+
+      if (currentValue === selectValueId) {
+        const propertyValues = { ...project.propertyValues };
+        delete propertyValues[propertyId as keyof typeof project.propertyValues];
+        return { ...project, propertyValues };
+      }
+
+      if (!Array.isArray(currentValue) || !currentValue.includes(selectValueId)) {
+        return project;
+      }
+
+      return {
+        ...project,
+        propertyValues: {
+          ...project.propertyValues,
+          [propertyId]: currentValue.filter((valueId) => valueId !== selectValueId),
+        },
+      };
+    }
+
+    function normalizeCreatedWorkspaceResponse(
+      response: unknown,
+      fallbackName: string,
+    ): { activeWorkspaceId: string | null; workspace: WorkspaceListItem | null } {
+      if (!isRecord(response)) {
+        return { activeWorkspaceId: null, workspace: null };
+      }
+
+      const workspace = isRecord(response.workspace) ? response.workspace : null;
+      const id = getString(workspace?.id);
+      if (!id) {
+        return {
+          activeWorkspaceId: getString(response.activeWorkspaceId) || null,
+          workspace: null,
+        };
+      }
+
+      return {
+        activeWorkspaceId: getString(response.activeWorkspaceId) || id,
+        workspace: {
+          id,
+          name: getString(workspace?.name) || fallbackName,
+          order: Number.isFinite(Number(workspace?.order)) ? Number(workspace?.order) : 10,
+        },
+      };
+    }
+
+    function normalizeCreatedViewResponse(
+      response: unknown,
+      workspaceId: string,
+      fallbackView: WorkspaceViewState,
+    ): { workspaceId: string; activeViewId: string; view: WorkspaceViewState } {
+      const body = isRecord(response) ? response : {};
+      const view = isRecord(body.view) ? body.view : {};
+      const id = getString(view.id) || fallbackView.id;
+      const viewType = getString(view.viewType) || fallbackView.viewType;
+
+      return {
+        workspaceId: getString(body.workspaceId) || workspaceId,
+        activeViewId: getString(body.activeViewId) || id,
+        view: {
+          id,
+          name: getString(view.name) || fallbackView.name,
+          viewType,
+          visiblePropertyIds: Array.isArray(view.visiblePropertyIds)
+            ? view.visiblePropertyIds.filter(
+                (propertyId): propertyId is string => typeof propertyId === "string",
+              )
+            : fallbackView.visiblePropertyIds,
+          propertyOrder: isRecord(view.propertyOrder)
+            ? Object.fromEntries(
+                Object.entries(view.propertyOrder)
+                  .filter(([, order]) => Number.isFinite(Number(order)))
+                  .map(([propertyId, order]) => [propertyId, Number(order)]),
+              )
+            : fallbackView.propertyOrder,
+          valueVisibility: isRecord(view.valueVisibility)
+            ? Object.fromEntries(
+                Object.entries(view.valueVisibility).flatMap(([propertyId, setting]) => {
+                  if (!isRecord(setting)) {
+                    return [];
+                  }
+
+                  return [
+                    [
+                      propertyId,
+                      {
+                        valueIds: Array.isArray(setting.valueIds)
+                          ? setting.valueIds.filter(
+                              (valueId): valueId is string => typeof valueId === "string",
+                            )
+                          : [],
+                        includeEmpty: setting.includeEmpty === true,
+                      },
+                    ],
+                  ];
+                }),
+              )
+            : fallbackView.valueVisibility,
+          propertyLayout:
+            normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
+          boardLayout: normalizeViewBoardLayout(view.boardLayout || fallbackView.boardLayout),
+        },
+      };
+    }
+
+    function normalizeDeletedViewResponse(response: unknown) {
+      if (!isRecord(response)) {
+        return { activeViewId: null };
+      }
+
+      return { activeViewId: getString(response.activeViewId) || null };
+    }
+
+    function normalizeFolderRole(role: unknown, depth = 0): WorkspaceFolderRole {
+      if (role === "group" || role === "status") {
+        return role;
+      }
+
+      if (role === "project" || role === "card") {
+        return "project";
+      }
+
+      return depth === 0 ? "status" : "project";
+    }
+
+    function getFolderRoleStatus(role: WorkspaceFolderRole, childCount: number) {
+      if (role === "status") {
+        return "Ready";
+      }
+      if (role === "group") {
+        return "Group";
+      }
+
+      return childCount > 0 ? "Contains folders" : "Discovered";
+    }
+
+    function normalizeFolderRoleNode(
+      node: Record<string, unknown>,
+      depth = 0,
+    ): WorkspaceFolderRoleNode | null {
+      const relativePath = getString(node.path) || getString(node.relativePath);
+      const name = getString(node.name) || getNameFromPath(relativePath);
+      if (!relativePath && !name) {
+        return null;
+      }
+
+      const children = Array.isArray(node.children)
+        ? node.children
+            .filter(isRecord)
+            .map((child) => normalizeFolderRoleNode(child, depth + 1))
+            .filter((child): child is WorkspaceFolderRoleNode => child !== null)
+        : [];
+      const role = normalizeFolderRole(node.role, depth);
+
+      return {
+        id: getString(node.id) || `folder:${relativePath || name}`,
+        name,
+        relativePath,
+        role,
+        status: getString(node.status) || getFolderRoleStatus(role, children.length),
+        children,
+      };
+    }
+
+    function normalizeFolderRoleTree(response: unknown): WorkspaceFolderRoleNode[] {
+      const tree = isRecord(response) && Array.isArray(response.tree) ? response.tree : [];
+
+      return tree
+        .filter(isRecord)
+        .map(normalizeFolderRoleNode)
+        .filter((node): node is WorkspaceFolderRoleNode => node !== null);
+    }
+
+    function getServiceErrorMessage(error: unknown, t: (key: string) => string) {
+      return resolveRendererErrorState(createRendererErrorState(error), t);
+    }
+
+    function WorkspaceLoadingState() {
+      const { t } = useI18n();
+
+      return (
+        <div className="grid gap-4 px-4 py-4" aria-label={t("common.loading")}>
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <div className="grid gap-3 lg:grid-cols-3">
+            <Skeleton className="h-72 rounded-lg" />
+            <Skeleton className="h-72 rounded-lg" />
+            <Skeleton className="h-72 rounded-lg" />
+          </div>
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </div>
+      );
+    }
+
+    function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState }) {
+      const { t } = useI18n();
+
+      if (state.status !== "error" || !state.error) {
+        return null;
+      }
+
+      return (
+        <div className="mx-4 mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t("state.serviceUnavailable", { error: resolveRendererErrorState(state.error, t) })}
+        </div>
+      );
+    }
+
+    type WorkspaceSurface = "workspace" | "settings" | "workspace-settings";
+
+    function createClientDocumentId(prefix: string) {
+      const randomId =
+        globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      return `${prefix}:${randomId}`;
+    }
+
+    export default function App() {
+      const { t } = useI18n();
+      const [state, dispatch] = useReducer(
+        workspaceAppStateReducer,
+        undefined,
+        createInitialWorkspaceAppState,
+      );
+      const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
+      const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+        try {
+          const saved = window.localStorage.getItem("workspace.theme");
+          return saved === "dark" || saved === "light" ? saved : "system";
+        } catch {
+          return "system";
+        }
+      });
+      useEffect(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const apply = () =>
+          document.documentElement.classList.toggle(
+            "dark",
+            theme === "dark" || (theme === "system" && media.matches),
+          );
+        apply();
+        media.addEventListener("change", apply);
+        try {
+          window.localStorage.setItem("workspace.theme", theme);
+        } catch {
+          /* An unavailable session store must not block the UI. */
+        }
+        return () => media.removeEventListener("change", apply);
+      }, [theme]);
+
+      const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
+      const [activeProjectTabId, setActiveProjectTabId] = useState<string | null>(null);
+      const [projectTabSelected, setProjectTabSelected] = useState(false);
+      const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
+      const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(
+        projectTabsReducer,
+        savedProjectSession.tabs,
+      );
+      const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
+      const restoreStartupScreen = useRef(true);
+      const pendingWorkspaceScreen = useRef<string | null>(null);
+      const [paneLayouts, setPaneLayouts] = useState(() => readPaneLayouts(window.localStorage));
+      const [sidebarWidth, setSidebarWidth] = useState(() => readSidebarWidth(window.localStorage, paneLayouts));
+      useEffect(() => { writeSidebarWidth(window.localStorage, sidebarWidth); }, [sidebarWidth]);
+      const workspaceSwitchVersion = useRef(0);
+      const workspaceSwitchQueue = useRef(Promise.resolve());
+      const [closedProjectTabs, setClosedProjectTabs] = useState<
+        Record<string, (typeof savedProjectSession.tabs)[string]>
+      >({});
+      const [workspaceList, setWorkspaceList] = useState<WorkspaceListState>({
+        activeWorkspaceId: null,
+        workspaces: [],
+      });
+      const [reloadToken, setReloadToken] = useState(0);
+      const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
+      const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
+      const sidebarCollapsed = paneLayout.sidebarCollapsed;
+      function sendPane(action: PaneAction) {
+        if (action.type === "resizeSidebar") {
+          setSidebarWidth(Math.min(460, Math.max(240, action.width)));
+          return;
+        }
+        setPaneLayouts((current) => ({
+          ...current,
+          [projectTabsWorkspaceId]: paneLayoutReducer(
+            current[projectTabsWorkspaceId] || createPaneLayout(),
+            action,
+          ),
+        }));
+      }
+      useEffect(() => {
+        writePaneLayouts(window.localStorage, paneLayouts);
+      }, [paneLayouts]);
+      const expandedProjectTabs = projectTabsByWorkspace[projectTabsWorkspaceId] || [];
+      useEffect(() => {
+        const valid = new Set(expandedProjectTabs.map((tab) => tab.tabId));
+        for (const pane of listWorkspacePanes(paneLayout.tree))
+          if (pane.tabId && !valid.has(pane.tabId))
+            sendPane({ type: "closePane", paneId: pane.paneId });
+      }, [projectTabsByWorkspace, projectTabsWorkspaceId]);
+      const projectExpanded =
+        selectedProject !== null &&
+        expandedProjectTabs.some(
+          (project) => project.tabId === activeProjectTabId && project.id === selectedProject.id,
+        );
+
+      const projectFullScreen = activeSurface === "workspace" && projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
+
+      useEffect(() => {
+        if (
+          state.status !== "ready" ||
+          state.workspaceSwitchPending ||
+          pendingWorkspaceScreen.current ||
+          restoreStartupScreen.current
+        )
+          return;
+        if (activeSurface === "workspace") {
+          workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+            viewId: state.activeViewId,
+            tabId: projectExpanded ? activeProjectTabId : null,
+            fullScreen: projectFullScreen,
+            previewId: !projectExpanded ? selectedProject?.id || null : null,
+          });
+        }
+        writeProjectSession(
+          window.localStorage,
+          projectTabsByWorkspace,
+          Object.fromEntries(workspaceScreenMemory.current),
+        );
+      }, [
+        projectTabsByWorkspace,
+        projectTabsWorkspaceId,
+        projectExpanded,
+        projectFullScreen,
+        activeProjectTabId,
+        selectedProject,
+        state.status,
+        state.workspaceSwitchPending,
+        state.activeViewId,
+        activeSurface,
+      ]);
+
+      useEffect(() => {
+        if (selectedProject) {
+          dispatchProjectTabs({
+            type: "update",
+            workspaceId: projectTabsWorkspaceId,
+            project: selectedProject,
+          });
+        }
+      }, [selectedProject, projectTabsWorkspaceId]);
+
+      function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
+        const existing = !afterTabId && expandedProjectTabs.find((tab) => tab.id === project.id);
+        if (existing) {
+          handleProjectOpen(project, existing.tabId, true);
+          return existing.tabId;
+        }
+        const tabId = createClientDocumentId("project-tab");
+        dispatchProjectTabs({
+          type: "expand",
+          workspaceId: projectTabsWorkspaceId,
+          project,
+          tabId,
+          afterTabId,
+        });
+        handleProjectOpen(project, tabId, true);
+        return tabId;
+      }
+
+      function openProjectInSplit(
+        project: WorkspaceMockProject,
+        tabId?: string,
+        target?: string,
+        side: SplitSide | "center" = "right",
+      ) {
+        const identity = tabId || createExpandedProject(project);
+        if (tabId) handleProjectOpen(project, tabId);
+        if (side === "center" && target) {
+          const existing = listWorkspacePanes(paneLayout.tree).find((p) => p.tabId === identity);
+          if (existing) sendPane({ type: "focus", pane: existing.paneId });
+          else sendPane({ type: "replacePane", paneId: target, tabId: identity });
+        } else
+          sendPane({
+            type: "split",
+            tabId: identity,
+            target,
+            paneId: createClientDocumentId("pane"),
+            side: side === "center" ? "right" : side,
+          });
+      }
+      function closeLayoutPane(paneId: string) {
+        const panes = listWorkspacePanes(paneLayout.tree);
+        const closed = panes.find((p) => p.paneId === paneId);
+        if (panes.length < 2) return;
+        sendPane({ type: "closePane", paneId });
+        if (paneLayout.focused === paneId || (closed?.tabId && activeProjectTabId === closed.tabId)) {
+          const remaining = panes.filter((p) => p.paneId !== paneId);
+          const next =
+            remaining[
+              Math.min(
+                panes.findIndex((p) => p.paneId === paneId),
+                remaining.length - 1,
+              )
+            ];
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>(`[data-pane-id="${CSS.escape(next.paneId)}"]`)
+              ?.focus({ preventScroll: true }),
+          );
+          const project = expandedProjectTabs.find((p) => p.tabId === next.tabId);
+          if (project) handleProjectOpen(project, project.tabId);
+          else {
+            setSelectedProject(null);
+            setActiveProjectTabId(null);
+          }
+        }
+      }
+
+      function toggleProjectExpanded() {
+        if (!selectedProject) return;
+        if (projectExpanded && activeProjectTabId) {
+          dispatchProjectTabs({
+            type: "remove",
+            workspaceId: projectTabsWorkspaceId,
+            tabId: activeProjectTabId,
+          });
+          setActiveProjectTabId(null);
+          sendPane({ type: "previewProject" });
+        } else {
+          createExpandedProject(selectedProject);
+        }
+      }
+
+      function closeProjectTabs(tabIds: readonly string[]) {
+        const closed = expandedProjectTabs.filter((tab) => tabIds.includes(tab.tabId));
+        if (!closed.length) return;
+        const fallback = projectTabCloseSelection(expandedProjectTabs, activeProjectTabId, tabIds);
+        setClosedProjectTabs((current) => ({
+          ...current,
+          [projectTabsWorkspaceId]: [...(current[projectTabsWorkspaceId] || []), ...closed].slice(-20),
+        }));
+        for (const pane of listWorkspacePanes(paneLayout.tree))
+          if (pane.tabId && tabIds.includes(pane.tabId))
+            sendPane({ type: "closePane", paneId: pane.paneId });
+        for (const tab of closed)
+          dispatchProjectTabs({
+            type: "remove",
+            workspaceId: projectTabsWorkspaceId,
+            tabId: tab.tabId,
+          });
+        if (!activeProjectTabId || !tabIds.includes(activeProjectTabId)) return;
+        if (fallback) handleProjectOpen(fallback, fallback.tabId);
+        else {
+          setActiveProjectTabId(null);
+          setSelectedProject(null);
+          sendPane({ type: "closeSplit" });
+        }
+        requestAnimationFrame(() => {
+          const target = fallback
+            ? document.querySelector<HTMLButtonElement>(
+                `[data-project-tab-id="${CSS.escape(fallback.tabId)}"]`,
+              )
+            : document.querySelector<HTMLButtonElement>('[data-view-tab-id][aria-selected="true"]');
+          target?.focus({ preventScroll: true });
+        });
+      }
+      function closeProjectTab(tabId: string) {
+        closeProjectTabs([tabId]);
+      }
+
+      function reopenProjectTab() {
+        const closed = closedProjectTabs[projectTabsWorkspaceId] || [];
+        const project = closed.at(-1);
+        if (!project) return;
+        setClosedProjectTabs((current) => ({
+          ...current,
+          [projectTabsWorkspaceId]: closed.slice(0, -1),
+        }));
+        dispatchProjectTabs({
+          type: "expand",
+          workspaceId: projectTabsWorkspaceId,
+          project,
+          tabId: project.tabId,
+        });
+        handleProjectOpen(project, project.tabId);
+      }
+      function closeSelectedProject() {
+        if (projectExpanded && activeProjectTabId) {
+          closeProjectTab(activeProjectTabId);
+          return;
+        }
+        setActiveProjectTabId(null);
+        setSelectedProject(null);
+        sendPane({ type: "closeSplit" });
+      }
+      const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
+      const [boardViewportWidth, setBoardViewportWidth] = useState(0);
+      useEffect(() => {
+        function keydown(event: KeyboardEvent) {
+          if (event.defaultPrevented || !(event.metaKey || event.ctrlKey) || event.altKey) return;
+          const editing =
+            event.target instanceof Element &&
+            event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
+          if (editing) return;
+          const key = event.key.toLowerCase();
+          if (key === "j") {
+            event.preventDefault();
+            sendPane({ type: "rightToggle" });
+          }
+          if (key === "\\") {
+            event.preventDefault();
+            sendPane({ type: "sidebarToggle" });
+          }
+          if (key === "t" && !event.shiftKey) {
+            event.preventDefault();
+            sendPane({ type: "rightOpen", id: "launcher" });
+          }
+          if (key === "t" && event.shiftKey) {
+            event.preventDefault();
+            if (paneLayout.focused === "right") sendPane({ type: "rightReopen" });
+            else reopenProjectTab();
+          }
+          if (key === "w") {
+            event.preventDefault();
+            const command = focusedPaneCloseCommand(paneLayout, activeProjectTabId, projectExpanded);
+            if (command?.kind === "rightTab") sendPane({ type: "rightClose", id: command.id });
+            else if (command?.kind === "pane") closeLayoutPane(command.id);
+            else if (command?.kind === "projectTab") closeProjectTab(command.id);
+          }
+          if (key === "e" && event.shiftKey) {
+            event.preventDefault();
+            sendPane({ type: "maximize", pane: paneLayout.focused });
+          }
+        }
+        window.addEventListener("keydown", keydown);
+        return () => window.removeEventListener("keydown", keydown);
+      }, [
+        paneLayout,
+        projectTabsWorkspaceId,
+        selectedProject,
+        activeProjectTabId,
+        expandedProjectTabs,
+        closedProjectTabs,
+      ]);
+
+      const [selectingFolder, setSelectingFolder] = useState(false);
+      const loadRequestIdRef = useRef(0);
+      const activeViewIdRef = useRef<string | null>(null);
+      const workspaceIdRef = useRef<string | null>(null);
+      const propertySaveRequestVersionsRef = useRef(new Map<string, number>());
+      const folderSelectionPendingRef = useRef(false);
+      const workspaceClient = useMemo(
+        () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
+        [],
+      );
+
+      useEffect(() => {
+        activeViewIdRef.current = state.activeViewId;
+      }, [state.activeViewId]);
+
+      useEffect(() => {
+        workspaceIdRef.current = state.workspaceId;
+      }, [state.workspaceId]);
+
+      function createPropertySaveKey(projectId: string, propertyId: string) {
+        return `${projectId}\0${propertyId}`;
+      }
+
+      function createPropertySaveRequestVersion(projectId: string, propertyId: string) {
+        const key = createPropertySaveKey(projectId, propertyId);
+        const requestVersion = (propertySaveRequestVersionsRef.current.get(key) || 0) + 1;
+        propertySaveRequestVersionsRef.current.set(key, requestVersion);
+        return requestVersion;
+      }
+
+      function isCurrentPropertySaveRequest(
+        projectId: string,
+        propertyId: string,
+        requestVersion: number,
+      ) {
+        return (
+          propertySaveRequestVersionsRef.current.get(createPropertySaveKey(projectId, propertyId)) ===
+          requestVersion
+        );
+      }
+
+      useEffect(() => {
+        let cancelled = false;
+        const loadRequestId = loadRequestIdRef.current + 1;
+        loadRequestIdRef.current = loadRequestId;
+
+        function isCurrentLoad() {
+          return !cancelled && loadRequestIdRef.current === loadRequestId;
+        }
+
+        async function loadWorkspaceState() {
+          dispatch({ type: "loadStarted" });
+
+          try {
+            const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }));
+            if (!isCurrentLoad()) {
+              return;
+            }
+
+            if (!root || !root.path) {
+              const workspaces = await workspaceClient.listWorkspaces() as WorkspaceListState;
+              if (!isCurrentLoad()) return;
+              setWorkspaceList(workspaces);
+              dispatch({ type: "sourceFolderMissing", root });
+              workspaceIdRef.current = root?.workspaceId || null;
+              pendingWorkspaceScreen.current = null;
+              return;
+            }
+
+            const previousWorkspaceId = workspaceIdRef.current;
+            const [scanResponse, viewsRawResponse, workspacesResponse, propertiesRawResponse] =
+              await Promise.all([
+                workspaceClient.scan({ workspaceId: root.workspaceId, includeCardChildren: activeSurface === "workspace-settings" }),
+                workspaceClient.listViews({ workspaceId: root.workspaceId }),
+                loadWorkspaceList(workspaceClient, root),
+                workspaceClient.listProperties({ workspaceId: root.workspaceId, includeUsage: true }),
+              ]);
+            const folderRoleTree = normalizeFolderRoleTree(scanResponse);
+            const viewsResponse = normalizeViewsResponse(viewsRawResponse, root.workspaceId);
+            const propertiesResponse = normalizePropertiesResponse(
+              propertiesRawResponse,
+              root.workspaceId,
+            );
+            const requestedActiveViewId =
+              restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
+                ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId ||
+                  viewsResponse.activeViewId
+                : workspaceIdRef.current === root.workspaceId ||
+                    previousWorkspaceId === root.workspaceId
+                  ? activeViewIdRef.current
+                  : null;
+            const requestedViewExists = viewsResponse.views.some(
+              (view) => view.id === requestedActiveViewId,
+            );
+            const activeViewId = requestedViewExists
+              ? requestedActiveViewId
+              : viewsResponse.activeViewId || viewsResponse.views[0]?.id;
+            if (!activeViewId) {
+              throw new RendererLocalizedError("error.activeViewUnavailable");
+            }
+
+            const projectionResponse = normalizeProjectionResponse(
+              await workspaceClient.getViewProjection({
+                workspaceId: root.workspaceId,
+                viewId: activeViewId,
+              }),
+            );
+
+            const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
+            const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId;
+            const previewResponse = restoreScreen && savedScreen?.previewId
+              ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedScreen.previewId })
+              : null;
+            const restoredPreview = isRecord(previewResponse) && isRecord(previewResponse.project) ? previewResponse.project : null;
+            if (isCurrentLoad()) {
+              setWorkspaceList(workspacesResponse);
+              workspaceIdRef.current = root.workspaceId;
+              dispatch({
+                type: "projectionLoaded",
+                replaceWorkspace: true,
+                root,
+                viewsResponse: { ...viewsResponse, activeViewId },
+                projectionResponse,
+                folderRoleTree,
+              });
+              dispatch({
+                type: "propertiesLoaded",
+                propertiesResponse,
+              });
+              if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId) {
+                restoreStartupScreen.current = false;
+                pendingWorkspaceScreen.current = null;
+                const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
+                const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
+                  (item) => item.tabId === tabId,
+                );
+                const projectId = cachedProject?.id || workspaceScreenMemory.current.get(root.workspaceId)?.previewId;
+                const projects =
+                  projectionResponse.projection.type === "board"
+                    ? projectionResponse.projection.columns.flatMap((column) => column.projects)
+                    : projectionResponse.projection.rows;
+                const freshProject = restoredPreview || projects.find((item) => isRecord(item) && item.id === projectId);
+                const project = isRecord(freshProject)
+                  ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
+                  : cachedProject;
+                // A removed preview cannot leave a visible empty shell. Expanded
+                // tabs retain their existing cached behavior and identities.
+                if (!project && projectId) {
+                  setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: "selectView" }) }));
+                  toast.error(t("error.projectUnavailable"));
+                }
+                setActiveProjectTabId(project ? tabId || null : null);
+                setSelectedProject(project || null);
+                setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
+                if (project) void loadProjectFileTree(project, root.workspaceId);
+              }
+              if (folderSelectionPendingRef.current) {
+                folderSelectionPendingRef.current = false;
+                setSelectingFolder(false);
+                toast.success(t("toast.folderSelected"));
+              }
+            }
+          } catch (error) {
+            const errorState = createRendererErrorState(error);
+            const message = resolveRendererErrorState(errorState, t);
+            if (isCurrentLoad()) {
+              // Keep navigation and the stored path available for source recovery.
+              const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }).catch(() => null));
+              const recoveredWorkspaces = root ? await loadWorkspaceList(workspaceClient, root).catch(() => workspaceList) : null;
+              if (!isCurrentLoad()) return;
+              if (root && recoveredWorkspaces) {
+                workspaceIdRef.current = root.workspaceId;
+                dispatch({ type: "sourceFolderMissing" });
+                dispatch({ type: "rootSelected", root });
+                setWorkspaceList(recoveredWorkspaces);
+                setSelectedProject(null);
+              }
+              pendingWorkspaceScreen.current = null;
+              restoreStartupScreen.current = false;
+              dispatch({ type: "serviceError", error: errorState });
+              if (folderSelectionPendingRef.current) {
+                folderSelectionPendingRef.current = false;
+                setSelectingFolder(false);
+                toast.error(t("toast.folderLoadFailed"), {
+                  description: message,
+                });
+              } else {
+                toast.error(t("toast.serviceUnavailable"), {
+                  description: t("toast.serviceUnavailableDescription"),
+                });
+              }
+            }
+          }
+        }
+
+        void loadWorkspaceState();
+
+        return () => {
+          cancelled = true;
+        };
+      }, [activeSurface, reloadToken, workspaceClient]);
+
+      useEffect(() => {
+        if (
+          state.status !== "ready" ||
+          state.sourceFolderMissing ||
+          state.workspaceSwitchPending ||
+          !state.workspaceId ||
+          !state.activeViewId ||
+          !state.root ||
+          (state.projection?.workspaceId === state.workspaceId &&
+            state.projection.view.id === state.activeViewId &&
+            !state.projectionRefreshing)
+        ) {
+          return;
+        }
+
+        let cancelled = false;
+
+        async function loadActiveViewProjection() {
+          try {
+            const projectionResponse = normalizeProjectionResponse(
+              await workspaceClient.getViewProjection({
+                workspaceId: state.workspaceId,
+                viewId: state.activeViewId,
+              }),
+            );
+
+            if (!cancelled) {
+              dispatch({ type: "projectionUpdated", projectionResponse });
+            }
+          } catch (error) {
+            if (!cancelled) {
+              toast.error(t("toast.viewLoadFailed"), {
+                description: getServiceErrorMessage(error, t),
+              });
+            }
+          }
+        }
+
+        void loadActiveViewProjection();
+
+        return () => {
+          cancelled = true;
+        };
+      }, [
+        workspaceClient,
+        state.status,
+        state.sourceFolderMissing,
+        state.workspaceSwitchPending,
+        state.root,
+        state.workspaceId,
+        state.activeViewId,
+        state.projectionRefreshing,
+        state.projection?.workspaceId,
+        state.projection?.view.id,
+      ]);
+
+      async function handleSelectFolder() {
+        const requestWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || undefined;
+        const version = workspaceSwitchVersion.current;
+        setSelectingFolder(true);
+        try {
+          const root = normalizeRootResponse(await workspaceClient.setRoot({ workspaceId: requestWorkspaceId }));
+          if (!root) return; // Native picker cancellation leaves the session intact.
+          if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== (requestWorkspaceId || null)) return;
+          pendingWorkspaceScreen.current = root.workspaceId;
+          folderSelectionPendingRef.current = true;
+          loadRequestIdRef.current += 1;
+          setReloadToken(value => value + 1);
+        } catch (error) {
+          toast.error(t("toast.folderLoadFailed"), { description: getServiceErrorMessage(error, t) });
+        } finally {
+          if (!folderSelectionPendingRef.current) setSelectingFolder(false);
+        }
+      }
+
+      async function handleAddWorkspace() {
+        const workspaceName = "Workspace";
+
+        try {
+          const response = await workspaceClient.createWorkspace({
+            name: workspaceName,
+          });
+          const createdWorkspace = normalizeCreatedWorkspaceResponse(response, workspaceName);
+          if (createdWorkspace.workspace) {
+            const workspace = createdWorkspace.workspace;
+            const activeWorkspaceId = createdWorkspace.activeWorkspaceId || workspace.id;
+            setWorkspaceList((current) => {
+              const existing = current.workspaces.some((item) => item.id === workspace.id);
+              return {
+                activeWorkspaceId,
+                workspaces: existing
+                  ? current.workspaces.map((item) => (item.id === workspace.id ? workspace : item))
+                  : [...current.workspaces, workspace],
+              };
+            });
+            dispatch({ type: "workspaceActivated", workspaceId: activeWorkspaceId });
+          }
+          setSelectedProject(null);
+          setActiveSurface("workspace-settings");
+          toast.success(t("toast.workspaceAdded"));
+          setReloadToken((value) => value + 1);
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.createWorkspace")) {
+            setWorkspaceList((current) => addWorkspaceListFallback(current, workspaceName));
+            setSelectedProject(null);
+            setActiveSurface("workspace");
+            toast.success(t("toast.workspaceAdded"));
+            return;
+          }
+
+          toast.error(t("toast.workspaceAddFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleWorkspaceOpen(workspaceId: string, surface: WorkspaceSurface = "workspace") {
+        const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+        if (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current) {
+          sendPane({ type: "showWorkspace" });
+          setActiveSurface(surface);
+          return;
+        }
+        if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
+          workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+            viewId: state.activeViewId,
+            tabId: projectExpanded ? activeProjectTabId : null,
+            fullScreen: projectFullScreen,
+            previewId: !projectExpanded ? selectedProject?.id || null : null,
+          });
+        }
+        const version = ++workspaceSwitchVersion.current;
+        loadRequestIdRef.current += 1;
+        pendingWorkspaceScreen.current = workspaceId;
+        // Keep the outgoing workspace coherent until the destination is ready.
+        // Serialize activation writes, then ignore superseded results.
+        const request = workspaceSwitchQueue.current.then(() => workspaceClient.setActiveWorkspace({ workspaceId }));
+        workspaceSwitchQueue.current = request.then(() => {}, () => {});
+        try {
+          await request;
+          if (version !== workspaceSwitchVersion.current) return;
+          setActiveSurface(surface);
+          setReloadToken(value => value + 1);
+        } catch (error) {
+          if (version !== workspaceSwitchVersion.current) return;
+          pendingWorkspaceScreen.current = null;
+          toast.error(t("toast.workspaceOpenFailed"), { description: getServiceErrorMessage(error, t) });
+        }
+      }
+
+      async function handleRenameWorkspace(workspaceId: string, name: string) {
+        try {
+          await workspaceClient.updateWorkspace({
+            workspaceId,
+            patch: { name },
+          });
+          setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
+          toast.success(t("toast.workspaceRenamed"));
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.updateWorkspace")) {
+            setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
+            toast.success(t("toast.workspaceRenamed"));
+            return;
+          }
+
+          toast.error(t("toast.workspaceRenameFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleDeleteWorkspace(workspaceId: string) {
+        try {
+          const response = await workspaceClient.deleteWorkspace({ workspaceId });
+          const responseActiveWorkspaceId = isRecord(response)
+            ? getString(response.activeWorkspaceId)
+            : "";
+          const currentActiveWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+          const wasActiveWorkspace = workspaceId === currentActiveWorkspaceId;
+          const fallbackActiveWorkspaceId =
+            workspaceList.workspaces.find((workspace) => workspace.id !== workspaceId)?.id || null;
+          const nextActiveWorkspaceId = responseActiveWorkspaceId || fallbackActiveWorkspaceId;
+
+          setWorkspaceList((current) => {
+            const nextWorkspaceList = deleteWorkspaceListFallback(current, workspaceId);
+            return responseActiveWorkspaceId
+              ? { ...nextWorkspaceList, activeWorkspaceId: responseActiveWorkspaceId }
+              : nextWorkspaceList;
+          });
+          setSelectedProject(null);
+          if (wasActiveWorkspace && nextActiveWorkspaceId) {
+            dispatch({ type: "workspaceActivated", workspaceId: nextActiveWorkspaceId });
+          }
+          toast.success(t("toast.workspaceDeleted"));
+          setReloadToken((value) => value + 1);
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.deleteWorkspace")) {
+            setWorkspaceList((current) => deleteWorkspaceListFallback(current, workspaceId));
+            setSelectedProject(null);
+            toast.success(t("toast.workspaceDeleted"));
+            return;
+          }
+
+          toast.error(t("toast.workspaceDeleteFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleReorderWorkspaces(orderedWorkspaceIds: readonly string[]) {
+        const currentWorkspaceIds = workspaceList.workspaces.map((workspace) => workspace.id);
+        const currentWorkspaceIdSet = new Set(currentWorkspaceIds);
+        const nextOrderedWorkspaceIds = orderedWorkspaceIds.filter((workspaceId) =>
+          currentWorkspaceIdSet.has(workspaceId),
+        );
+
+        for (const workspaceId of currentWorkspaceIds) {
+          if (!nextOrderedWorkspaceIds.includes(workspaceId)) {
+            nextOrderedWorkspaceIds.push(workspaceId);
+          }
+        }
+
+        if (
+          nextOrderedWorkspaceIds.length !== currentWorkspaceIds.length ||
+          nextOrderedWorkspaceIds.join("\0") === currentWorkspaceIds.join("\0")
+        ) {
+          return;
+        }
+
+        try {
+          setWorkspaceList((current) => reorderWorkspaceListFallback(current, nextOrderedWorkspaceIds));
+          await workspaceClient.reorderWorkspaces({ orderedWorkspaceIds: nextOrderedWorkspaceIds });
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.reorderWorkspaces")) {
+            return;
+          }
+
+          toast.error(t("toast.workspaceReorderFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+          setReloadToken((value) => value + 1);
+        }
+      }
+
+      async function handleCreateView(viewType: "board" | "table") {
+        if (!state.workspaceId) {
+          toast.error(t("toast.sourceRequiredViews"));
+          return;
+        }
+
+        const label = viewType === "board" ? t("view.boardDefault") : t("view.tableDefault");
+        const currentViews = state.views.length > 0 ? state.views : workspaceMockProjection.views;
+        const nextIndex = currentViews.filter((view) => view.viewType === viewType).length + 1;
+
+        try {
+          const fallbackView = {
+            id: `view:pending-${viewType}-${Date.now()}`,
+            name: `${label} ${nextIndex}`,
+            viewType,
+          };
+          const response = await workspaceClient.createView({
+            workspaceId: state.workspaceId,
+            viewType,
+            name: fallbackView.name,
+          });
+          const createdView = normalizeCreatedViewResponse(response, state.workspaceId, fallbackView);
+          dispatch({
+            type: "viewCreated",
+            workspaceId: createdView.workspaceId,
+            activeViewId: createdView.activeViewId,
+            view: createdView.view,
+          });
+          toast.success(t("toast.viewCreated"));
+          setSelectedProject(null);
+        } catch (error) {
+          toast.error(t("toast.viewCreateFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      const duplicatingViewRef = useRef(false);
+      async function handleDuplicateView(sourceId: string) {
+        if (!state.workspaceId || duplicatingViewRef.current) return;
+        const source = state.views.find((view) => view.id === sourceId);
+        if (!source) return;
+        const workspaceId = state.workspaceId;
+        duplicatingViewRef.current = true;
+        try {
+          const viewId = await duplicateWorkspaceView(
+            workspaceClient,
+            workspaceId,
+            sourceId,
+            t("view.copyName", { name: source.name }),
+          );
+          if (workspaceIdRef.current !== workspaceId) return;
+          setSelectedProject(null);
+          setActiveProjectTabId(null);
+          dispatch({ type: "activeViewChanged", activeViewId: viewId });
+          await refreshActiveViewAfterPatch(viewId);
+        } catch (error) {
+          toast.error(t("view.duplicateFailed"), { description: getServiceErrorMessage(error, t) });
+          if (workspaceIdRef.current === workspaceId) setReloadToken((value) => value + 1);
+        } finally {
+          duplicatingViewRef.current = false;
+        }
+      }
+
+      async function handleRenameView(viewId: string, name: string) {
+        if (!state.workspaceId) {
+          toast.error(t("toast.sourceRequiredViews"));
+          return;
+        }
+
+        try {
+          await workspaceClient.updateView({
+            workspaceId: state.workspaceId,
+            viewId,
+            patch: { name },
+          });
+          dispatch({ type: "viewRenamed", viewId, name });
+          toast.success(t("toast.viewRenamed"));
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
+            dispatch({ type: "viewRenamed", viewId, name });
+            toast.success(t("toast.viewRenamed"));
+            return;
+          }
+
+          toast.error(t("toast.viewRenameFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleDeleteView(viewId: string) {
+        if (!state.workspaceId) {
+          toast.error(t("toast.sourceRequiredViews"));
+          return;
+        }
+
+        try {
+          const response = await workspaceClient.deleteView({
+            workspaceId: state.workspaceId,
+            viewId,
+          });
+          const deletedView = normalizeDeletedViewResponse(response);
+          dispatch({
+            type: "viewDeleted",
+            viewId,
+            activeViewId: deletedView.activeViewId,
+          });
+          toast.success(t("toast.viewDeleted"));
+          setSelectedProject(null);
+        } catch (error) {
+          toast.error(t("toast.viewDeleteFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleReorderViews(orderedViewIds: readonly string[]) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        const currentViewIds = state.views.map((view) => view.id);
+        const currentViewIdSet = new Set(currentViewIds);
+        const nextOrderedViewIds = orderedViewIds.filter((viewId) => currentViewIdSet.has(viewId));
+
+        for (const viewId of currentViewIds) {
+          if (!nextOrderedViewIds.includes(viewId)) {
+            nextOrderedViewIds.push(viewId);
+          }
+        }
+
+        if (
+          nextOrderedViewIds.length !== currentViewIds.length ||
+          nextOrderedViewIds.join("\0") === currentViewIds.join("\0")
+        ) {
+          return;
+        }
+
+        dispatch({ type: "viewsReordered", orderedViewIds: nextOrderedViewIds });
+
+        try {
+          await workspaceClient.reorderViews({
+            workspaceId: state.workspaceId,
+            orderedViewIds: nextOrderedViewIds,
+          });
+        } catch (error) {
+          if (isUnsupportedWorkspaceMethodError(error, "workspace.reorderViews")) {
+            return;
+          }
+
+          dispatch({ type: "viewsReordered", orderedViewIds: currentViewIds });
+          toast.error(t("toast.viewReorderFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function refreshActiveViewAfterPatch(viewId: string) {
+        if (!state.workspaceId || !state.root) {
+          return;
+        }
+
+        const [viewsRawResponse, projectionRawResponse] = await Promise.all([
+          workspaceClient.listViews({ workspaceId: state.workspaceId }),
+          workspaceClient.getViewProjection({ workspaceId: state.workspaceId, viewId }),
+        ]);
+        const viewsResponse = normalizeViewsResponse(viewsRawResponse, state.workspaceId);
+        const projectionResponse = normalizeProjectionResponse(projectionRawResponse);
+
+        dispatch({
+          type: "projectionLoaded",
+          root: state.root,
+          viewsResponse: { ...viewsResponse, activeViewId: viewId },
+          projectionResponse,
+          folderRoleTree: state.folderRoleTree,
+        });
+      }
+
+      async function updateActiveViewPatch(
+        patch: Record<string, unknown>,
+        options: { readonly refreshProjection?: boolean } = { refreshProjection: true },
+      ) {
+        if (!state.workspaceId || !state.activeViewId) {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        await workspaceClient.updateView({
+          workspaceId: state.workspaceId,
+          viewId: activeViewId,
+          patch,
+        });
+        if (options.refreshProjection !== false) {
+          await refreshActiveViewAfterPatch(activeViewId);
+        }
+      }
+
+      function getActiveViewState() {
+        return state.views.find((view) => view.id === state.activeViewId) || null;
+      }
+
+      async function handleTogglePropertyVisibility(propertyId: string, visible: boolean) {
+        if (!state.workspaceId || !state.activeViewId) {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        const activeView = getActiveViewState();
+        const currentVisiblePropertyIds = activeView?.visiblePropertyIds ||
+          state.projection?.visibleProperties.map((property) => property.id) || [
+            "property:name",
+            "property:status",
+          ];
+        const nextVisiblePropertyIds = createNextVisiblePropertyIds({
+          currentVisiblePropertyIds,
+          fallbackVisiblePropertyIds:
+            state.projection?.visibleProperties.map((property) => property.id) || [],
+          availablePropertyIds: settingsProperties.map((property) => property.id),
+          propertyId,
+          visible,
+        });
+        const previousPropertyOrder =
+          activeView?.propertyOrder || createPropertyOrder(currentVisiblePropertyIds);
+        const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
+
+        try {
+          dispatch({
+            type: "viewPropertiesUpdated",
+            viewId: activeViewId,
+            visiblePropertyIds: nextVisiblePropertyIds,
+            propertyOrder,
+          });
+          await updateActiveViewPatch(
+            {
+              visiblePropertyIds: nextVisiblePropertyIds,
+              propertyOrder,
+            },
+            {
+              refreshProjection: false,
+            },
+          );
+        } catch (error) {
+          dispatch({
+            type: "viewPropertiesUpdated",
+            viewId: activeViewId,
+            visiblePropertyIds: currentVisiblePropertyIds,
+            propertyOrder: previousPropertyOrder,
+          });
+          toast.error(t("toast.propertyVisibilityFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleToggleValueFilter(propertyId: string, valueId: string, included: boolean) {
+        if (!state.activeViewId) {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        const activeView = getActiveViewState();
+        const previousValueVisibility = activeView?.valueVisibility || {};
+        const valueVisibility = { ...(activeView?.valueVisibility || {}) };
+        const existingValueIds = valueVisibility[propertyId]?.valueIds || [];
+        const nextValueIds = included
+          ? [...new Set([...existingValueIds, valueId])]
+          : existingValueIds.filter((id) => id !== valueId);
+
+        if (nextValueIds.length === 0) {
+          delete valueVisibility[propertyId];
+        } else {
+          valueVisibility[propertyId] = {
+            valueIds: nextValueIds,
+          };
+        }
+
+        dispatch({
+          type: "viewValueVisibilityUpdated",
+          viewId: activeViewId,
+          valueVisibility,
+        });
+
+        try {
+          await updateActiveViewPatch({ valueVisibility });
+        } catch (error) {
+          dispatch({
+            type: "viewValueVisibilityUpdated",
+            viewId: activeViewId,
+            valueVisibility: previousValueVisibility,
+          });
+          toast.error(t("toast.valueFilterFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleTogglePropertyWrapContent(propertyId: string, wrapContent: boolean) {
+        if (!state.activeViewId) {
+          return;
+        }
+
+        const property = settingsProperties.find((item) => item.id === propertyId);
+        if (!property || property.system || property.propertyType !== "text") {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        const activeView = getActiveViewState();
+        const previousPropertyLayout = activeView?.propertyLayout || {};
+        const propertyLayout = { ...previousPropertyLayout };
+
+        if (wrapContent) {
+          propertyLayout[propertyId] = { wrapContent: true };
+        } else {
+          delete propertyLayout[propertyId];
+        }
+
+        dispatch({
+          type: "viewPropertyLayoutUpdated",
+          viewId: activeViewId,
+          propertyLayout,
+        });
+
+        try {
+          await updateActiveViewPatch({ propertyLayout }, { refreshProjection: false });
+        } catch (error) {
+          dispatch({
+            type: "viewPropertyLayoutUpdated",
+            viewId: activeViewId,
+            propertyLayout: previousPropertyLayout,
+          });
+          toast.error(t("toast.textWrapFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      function handleBoardColumnWidthPreview(columnWidth: number) {
+        if (!state.activeViewId) {
+          return;
+        }
+
+        dispatch({
+          type: "viewBoardLayoutUpdated",
+          viewId: state.activeViewId,
+          boardLayout: { columnWidth: normalizeBoardColumnWidth(columnWidth) },
+        });
+      }
+
+      async function handleBoardColumnWidthCommit(columnWidth: number, previousColumnWidth: number) {
+        if (!state.activeViewId) {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        const boardLayout = { columnWidth: normalizeBoardColumnWidth(columnWidth) };
+
+        dispatch({ type: "viewBoardLayoutUpdated", viewId: activeViewId, boardLayout });
+
+        try {
+          await updateActiveViewPatch({ boardLayout }, { refreshProjection: false });
+        } catch (error) {
+          dispatch({
+            type: "viewBoardLayoutUpdated",
+            viewId: activeViewId,
+            boardLayout: {
+              columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT),
+            },
+          });
+          toast.error(t("toast.boardWidthFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
+        if (!state.workspaceId || !state.activeViewId) {
+          return;
+        }
+
+        const activeViewId = state.activeViewId;
+        const nextVisiblePropertyIds = [...new Set(orderedPropertyIds)];
+        const activeView = getActiveViewState();
+        const previousVisiblePropertyIds = activeView?.visiblePropertyIds ||
+          state.projection?.visibleProperties.map((property) => property.id) || [
+            "property:name",
+            "property:status",
+          ];
+        const previousPropertyOrder =
+          activeView?.propertyOrder || createPropertyOrder(previousVisiblePropertyIds);
+        const propertyOrder = createPropertyOrder(nextVisiblePropertyIds);
+
+        try {
+          dispatch({
+            type: "viewPropertiesUpdated",
+            viewId: activeViewId,
+            visiblePropertyIds: nextVisiblePropertyIds,
+            propertyOrder,
+          });
+          await updateActiveViewPatch(
+            {
+              visiblePropertyIds: nextVisiblePropertyIds,
+              propertyOrder,
+            },
+            {
+              refreshProjection: false,
+            },
+          );
+        } catch (error) {
+          dispatch({
+            type: "viewPropertiesUpdated",
+            viewId: activeViewId,
+            visiblePropertyIds: previousVisiblePropertyIds,
+            propertyOrder: previousPropertyOrder,
+          });
+          toast.error(t("toast.propertyOrderFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleCreateVisibleProperty(input: {
+        name: string;
+        type: WorkspaceCustomPropertyType;
+      }) {
+        if (!state.workspaceId) {
+          toast.error(t("toast.sourceRequiredProperties"));
+          return;
+        }
+
+        try {
+          const response = await workspaceClient.createProperty({
+            id: createClientDocumentId("property"),
+            workspaceId: state.workspaceId,
+            name: input.name,
+            type: input.type,
+          });
+          const property =
+            isRecord(response) && isRecord(response.property)
+              ? normalizePropertyDefinition(response.property)
+              : null;
+
+          await refreshPropertyCatalog();
+
+          if (property?.id) {
+            const activeView = getActiveViewState();
+            const currentVisiblePropertyIds = [
+              ...new Set([
+                "property:name",
+                "property:status",
+                ...(activeView?.visiblePropertyIds ||
+                  state.projection?.visibleProperties.map((item) => item.id) ||
+                  []),
+              ]),
+            ];
+            const nextVisiblePropertyIds = [...new Set([...currentVisiblePropertyIds, property.id])];
+            await updateActiveViewPatch({
+              visiblePropertyIds: nextVisiblePropertyIds,
+              propertyOrder: createPropertyOrder(nextVisiblePropertyIds),
+            });
+          }
+
+          toast.success(t("toast.propertyCreated"));
+        } catch (error) {
+          toast.error(t("toast.propertyCreateFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleFolderRoleChange(
+        node: WorkspaceFolderRoleNode,
+        role: WorkspaceFolderRoleNode["role"],
+      ) {
+        if (!state.root) {
+          toast.error(t("toast.sourceRequiredFolderRoles"));
+          return;
+        }
+
+        try {
+          await workspaceClient.updateFolderRole({
+            workspaceId: state.workspaceId,
+            path: node.relativePath,
+            role,
+          });
+          if (workspaceIdRef.current !== state.workspaceId) return;
+          toast.success(t("toast.folderRoleUpdated"));
+          setSelectedProject(null);
+          setReloadToken((value) => value + 1);
+        } catch (error) {
+          toast.error(t("toast.folderRoleUpdateFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function refreshPropertyCatalog() {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        const propertiesResponse = normalizePropertiesResponse(
+          await workspaceClient.listProperties({ workspaceId: state.workspaceId, includeUsage: true }),
+          state.workspaceId,
+        );
+        dispatch({
+          type: "propertiesLoaded",
+          propertiesResponse,
+        });
+      }
+
+      async function handleCreateProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
+        if (!state.workspaceId) {
+          toast.error(t("toast.sourceRequiredProperties"));
+          return;
+        }
+
+        try {
+          await workspaceClient.createProperty({
+            id: createClientDocumentId("property"),
+            workspaceId: state.workspaceId,
+            name: input.name,
+            type: input.type,
+          });
+          await refreshPropertyCatalog();
+          toast.success(t("toast.propertyCreated"));
+        } catch (error) {
+          toast.error(t("toast.propertyCreateFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleRenameProperty(propertyId: string, name: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateProperty({
+            workspaceId: state.workspaceId,
+            propertyId,
+            patch: { name },
+          });
+          await refreshPropertyCatalog();
+          toast.success(t("toast.propertyRenamed"));
+        } catch (error) {
+          toast.error(t("toast.propertyRenameFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleHideProperty(propertyId: string, hidden: boolean) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateProperty({
+            workspaceId: state.workspaceId,
+            propertyId,
+            patch: { hidden },
+          });
+          await refreshPropertyCatalog();
+          toast.success(t(hidden ? "toast.propertyHidden" : "toast.propertyShown"));
+        } catch (error) {
+          toast.error(t("toast.propertyVisibilityFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleDeleteProperty(propertyId: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.deleteProperty({
+            workspaceId: state.workspaceId,
+            propertyId,
+            confirmDeleteValues: true,
+          });
+          dispatch({ type: "propertyDeleted", propertyId });
+          setSelectedProject((currentProject) =>
+            currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject,
+          );
+          await refreshPropertyCatalog();
+          toast.success(t("toast.propertyDeleted"));
+        } catch (error) {
+          toast.error(t("toast.propertyDeleteFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleReorderProperties(orderedPropertyIds: readonly string[]) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.reorderProperties({
+            workspaceId: state.workspaceId,
+            orderedPropertyIds,
+          });
+          await refreshPropertyCatalog();
+          setReloadToken((value) => value + 1);
+        } catch (error) {
+          toast.error(t("toast.propertyOrderFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleCreateSelectValue(
+        propertyId: string,
+        input: { name: string; color: string },
+      ): Promise<WorkspaceSelectValueState | null> {
+        if (!state.workspaceId) {
+          return null;
+        }
+
+        try {
+          const response = await workspaceClient.createSelectValue({
+            workspaceId: state.workspaceId,
+            propertyId,
+            name: input.name,
+            color: input.color,
+          });
+          const selectValue =
+            isRecord(response) && isRecord(response.selectValue)
+              ? normalizeSelectValue(response.selectValue)
+              : null;
+          await refreshPropertyCatalog();
+          toast.success(t("toast.valueCreated"));
+          return selectValue;
+        } catch (error) {
+          toast.error(t("toast.valueCreateFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+          return null;
+        }
+      }
+
+      async function handleRenameSelectValue(selectValueId: string, name: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateSelectValue({
+            workspaceId: state.workspaceId,
+            selectValueId,
+            patch: { name },
+          });
+          await refreshPropertyCatalog();
+          toast.success(t("toast.valueRenamed"));
+        } catch (error) {
+          toast.error(t("toast.valueRenameFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleColorSelectValue(selectValueId: string, color: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateSelectValue({
+            workspaceId: state.workspaceId,
+            selectValueId,
+            patch: { color },
+          });
+          await refreshPropertyCatalog();
+        } catch (error) {
+          toast.error(t("toast.valueColorFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleColorStatusValue(statusValueId: string, color: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateStatusValueColor({
+            workspaceId: state.workspaceId,
+            statusValueId,
+            color,
+          });
+          if (workspaceIdRef.current !== state.workspaceId) return;
+          setReloadToken((value) => value + 1);
+        } catch (error) {
+          toast.error(t("toast.statusColorFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleHideSelectValue(selectValueId: string, hidden: boolean) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.updateSelectValue({
+            workspaceId: state.workspaceId,
+            selectValueId,
+            patch: { hidden },
+          });
+          await refreshPropertyCatalog();
+          setReloadToken((value) => value + 1);
+          toast.success(t(hidden ? "toast.valueHidden" : "toast.valueShown"));
+        } catch (error) {
+          toast.error(t("toast.valueVisibilityFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleDeleteSelectValue(selectValueId: string) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        const selectValue =
+          state.propertyCatalog?.selectValues.find((value) => value.id === selectValueId) || null;
+
+        try {
+          await workspaceClient.deleteSelectValue({
+            workspaceId: state.workspaceId,
+            selectValueId,
+            confirmDeleteUsages: true,
+          });
+          if (selectValue) {
+            setSelectedProject((currentProject) =>
+              currentProject
+                ? removeProjectSelectValue(currentProject, selectValue.propertyId, selectValue.id)
+                : currentProject,
+            );
+          }
+          await refreshPropertyCatalog();
+          setReloadToken((value) => value + 1);
+          toast.success(t("toast.valueDeleted"));
+        } catch (error) {
+          toast.error(t("toast.valueDeleteFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleReorderSelectValues(
+        propertyId: string,
+        orderedSelectValueIds: readonly string[],
+      ) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        try {
+          await workspaceClient.reorderSelectValues({
+            workspaceId: state.workspaceId,
+            propertyId,
+            orderedSelectValueIds,
+          });
+          await refreshPropertyCatalog();
+        } catch (error) {
+          toast.error(t("toast.valueOrderFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      async function handleProjectPropertyValueChange(
+        projectId: string,
+        propertyId: string,
+        value: unknown,
+      ) {
+        if (!state.workspaceId) {
+          return;
+        }
+
+        const requestVersion = createPropertySaveRequestVersion(projectId, propertyId);
+        dispatch({
+          type: "projectPropertyValueSaveStarted",
+          projectId,
+          propertyId,
+          requestVersion,
+        });
+
+        try {
+          const response = await workspaceClient.updateProjectPropertyValue({
+            workspaceId: state.workspaceId,
+            projectId,
+            propertyId,
+            value,
+          });
+          const savedValue =
+            isRecord(response) && Object.hasOwn(response, "value") ? response.value : value;
+          dispatch({
+            type: "projectPropertyValueUpdated",
+            projectId,
+            propertyId,
+            value: savedValue,
+            requestVersion,
+          });
+          if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+            dispatchProjectTabs({
+              type: "valueSaved",
+              workspaceId: projectTabsWorkspaceId,
+              projectId,
+              propertyId,
+              value: savedValue,
+            });
+            setSelectedProject((currentProject) =>
+              currentProject?.id === projectId
+                ? {
+                    ...currentProject,
+                    propertyValues: {
+                      ...currentProject.propertyValues,
+                      [propertyId]: savedValue,
+                    },
+                  }
+                : currentProject,
+            );
+          }
+        } catch (error) {
+          const message = getServiceErrorMessage(error, t);
+          dispatch({
+            type: "propertySaveFailed",
+            error: message,
+            projectId,
+            propertyId,
+            requestVersion,
+          });
+          if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+            toast.error(t("toast.propertySaveFailed"), {
+              description: message,
+            });
+          }
+        }
+      }
+
+      async function loadProjectFileTree(
+        project: WorkspaceMockProject,
+        requestWorkspaceId = state.workspaceId,
+      ) {
+        try {
+          const fileTree = normalizeProjectFileTreeResponse(
+            await workspaceClient.listProjectFileTree({ workspaceId: requestWorkspaceId, path: project.currentRelativePath }),
+          );
+          setSelectedProject((currentProject) =>
+            workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id
+              ? { ...currentProject, fileTree }
+              : currentProject,
+          );
+        } catch (error) {
+          if (workspaceIdRef.current !== requestWorkspaceId) return;
+          toast.error(t("toast.fileTreeLoadFailed"), {
+            description: getServiceErrorMessage(error, t),
+          });
+        }
+      }
+
+      function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
+        if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
+          sendPane({ type: "rightToggle" });
+          return;
+        }
+        setProjectTabSelected(fullScreen);
+        setActiveProjectTabId(tabId);
+        setSelectedProject(project);
+        if (!tabId) sendPane({ type: "previewProject" });
+        if (state.status === "ready" && state.root) {
+          void loadProjectFileTree(project);
+        }
+      }
+
+      function dismissWorkspaceFloatingMenus() {
+        setWorkspaceFloatingDismissToken((currentToken) => currentToken + 1);
+      }
+
+      function openWorkspaceSurface() {
+        sendPane({ type: "showWorkspace" });
+        setActiveSurface("workspace");
+      }
+
+      function openCurrentWorkspaceSettings() {
+        sendPane({ type: "showWorkspace" });
+        setActiveSurface("workspace-settings");
+      }
+
+      function openSettingsSurface() {
+        sendPane({ type: "showWorkspace" });
+        setActiveSurface("settings");
+      }
+
+      const shouldUseMockViews = !state.root && !state.workspaceId;
+      const viewState = {
+        activeViewId:
+          state.activeViewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
+        views:
+          state.views.length > 0
+            ? state.views
+            : shouldUseMockViews
+              ? workspaceMockProjection.views
+              : [],
+      };
+      const navigationWorkspaces =
+        workspaceList.workspaces.length > 0
+          ? workspaceList.workspaces
+          : state.root
+            ? [
+                {
+                  id: state.workspaceId || state.root.workspaceId,
+                  name: state.root.name || "Workspace",
+                  order: 10,
+                },
+              ]
+            : [];
+      const currentWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
+      const currentWorkspaceName =
+        navigationWorkspaces.find((workspace) => workspace.id === currentWorkspaceId)?.name ||
+        navigationWorkspaces[0]?.name ||
+        "Workspace";
+      const sourceFolder = state.root?.path
+        ? {
+            name: state.root.name,
+            path: state.root.path || t("common.pathUnavailable"),
+            state: "connected",
+          }
+        : { name: t("state.noSourceTitle"), path: "", state: "missing" };
+      const serviceProjection = useMemo(() => {
+        if (!state.projection) {
+          return null;
+        }
+
+        const projectionMatchesActiveWorkspace =
+          state.projection.workspaceId === state.workspaceId &&
+          state.projection.view.id === state.activeViewId;
+        const projectionIsStaleWorkspaceSurface =
+          state.workspaceSwitchPending && state.projection.workspaceId !== state.workspaceId;
+
+        if (!projectionMatchesActiveWorkspace && !projectionIsStaleWorkspaceSurface) {
+          return null;
+        }
+
+        return filterWorkspaceProjectionBySearch(state.projection, state.searchQuery);
+      }, [
+        state.activeViewId,
+        state.projection,
+        state.searchQuery,
+        state.workspaceId,
+        state.workspaceSwitchPending,
+      ]);
+      const mockBoardProjectionResponse = useMemo(
+        () =>
+          filterWorkspaceProjectionBySearch(
+            workspaceMockProjection as unknown as WorkspaceProjectionResponse,
+            state.searchQuery,
+          ),
+        [state.searchQuery],
+      );
+      const mockTableProjectionResponse = useMemo(
+        () =>
+          filterWorkspaceProjectionBySearch(
+            {
+              ...workspaceMockProjection,
+              view: workspaceMockProjection.tableView,
+              projection: workspaceMockProjection.tableProjection,
+            } as unknown as WorkspaceProjectionResponse,
+            state.searchQuery,
+          ),
+        [state.searchQuery],
+      );
+      const activeView = viewState.views.find((view) => view.id === viewState.activeViewId) as
+        | WorkspaceViewState
+        | undefined;
+      const activeViewType =
+        serviceProjection?.projection.type === "table"
+          ? "table"
+          : serviceProjection?.projection.type === "board"
+            ? "board"
+            : activeView?.viewType === "table"
+              ? "table"
+              : "board";
+      const visibleProperties =
+        serviceProjection?.visibleProperties ?? [];
+      const statusValues = serviceProjection?.statusValues ?? [];
+      const boardProjection =
+        serviceProjection?.projection.type === "board"
+          ? serviceProjection.projection
+          : mockBoardProjectionResponse.projection;
+      const tableProjection =
+        serviceProjection?.projection.type === "table"
+          ? serviceProjection.projection
+          : mockTableProjectionResponse.projection;
+      const folderRoleTree = state.root ? state.folderRoleTree : [];
+      const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
+      const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
+      const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
+      const isWorkspaceSwitchPendingSurface =
+        activeSurface === "workspace" &&
+        state.workspaceSwitchPending &&
+        serviceProjection !== null &&
+        serviceProjection.workspaceId !== state.workspaceId;
+      const shouldShowWorkspaceLoadingState =
+        state.status === "loading" ||
+        state.status === "idle" ||
+        (state.status === "ready" && !!state.root && !state.sourceFolderMissing && !serviceProjection);
+      const searchHasNoResults =
+        state.searchQuery.trim().length > 0 &&
+        (activeViewType === "board"
+          ? boardProjection.type === "board" &&
+            boardProjection.columns.every((column) => column.projects.length === 0)
+          : tableProjection.type === "table" && tableProjection.rows.length === 0);
+
+      const renderDetailPanel = (
+        project = selectedProject,
+        onClose = closeSelectedProject,
+        keyboardActive = paneLayout.focused === "workspace" || paneLayout.focused === "right",
+      ) => (
+        <WorkspaceProjectDetailPanel
+          inline
+          keyboardActive={keyboardActive}
+          expanded={projectExpanded}
+          sidebarCollapsed={sidebarCollapsed}
+          open={project !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              onClose();
+            }
+          }}
+          project={project}
+          visibleProperties={detailProperties}
+          selectValues={settingsSelectValues}
+          onProjectPropertyValueChange={handleProjectPropertyValueChange}
+          onCreateSelectValue={handleCreateSelectValue}
+          onRenameSelectValue={handleRenameSelectValue}
+          onColorSelectValue={handleColorSelectValue}
+          onDeleteSelectValue={handleDeleteSelectValue}
+          onCreateProperty={handleCreateVisibleProperty}
+          onRenameProperty={handleRenameProperty}
+          onHideProperty={handleHideProperty}
+          onDeleteProperty={handleDeleteProperty}
+          onOpenLocalItem={(node) => {
+            void workspaceClient
+              .reveal({ workspaceId: state.workspaceId, kind: node.kind === "folder" ? "directory" : "file", path: node.relativePath })
+              .catch((error) =>
+                toast.error(t("toast.previewUnavailable"), {
+                  description: getServiceErrorMessage(error, t),
+                }),
+              );
+          }}
+        />
+      );
+      const detailPanel = renderDetailPanel();
+      const navigationPanel = (
+        <nav className="bb-navigation" aria-label={t("chrome.navigation")}>
+          <p className="bb-navigation-heading">
+            {listWorkspacePanes(paneLayout.tree).some(
+              (p) => p.paneId === paneLayout.focused && p.tabId,
+            ) && selectedProject
+              ? selectedProject.name
+              : currentWorkspaceName}
+          </p>
+          {viewState.views.map((view) => (
+            <button
+              type="button"
+              key={view.id}
+              className="bb-navigation-row"
+              onClick={() => {
+                setSelectedProject(null);
+                setActiveProjectTabId(null);
+                setActiveSurface("workspace");
+                sendPane({ type: "showWorkspace" });
+                sendPane({ type: "selectView" });
+                dispatch({ type: "activeViewChanged", activeViewId: view.id });
+              }}
+            >
+              <FolderIcon className="size-4" aria-hidden="true" />
+              {view.name}
+            </button>
+          ))}
+          <button type="button" className="bb-navigation-row" onClick={openSettingsSurface}>
+            {t("sidebar.settings")}
+          </button>
+        </nav>
+      );
+
+      const primaryPane = (
+        <main
+          onFocusCapture={() => sendPane({ type: "focus", pane: "workspace" })}
+          data-testid="workspace-main"
+          className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+        >
+          <header
+            className={[
+              "electron-window-drag flex h-[var(--workspace-header-height)] shrink-0 items-center gap-2 border-b border-border pr-4",
+              "pl-4",
+            ].join(" ")}
+          >
+            {activeSurface === "workspace" ? (
+              <div
+                aria-busy={isWorkspaceSwitchPendingSurface || undefined}
+                inert={isWorkspaceSwitchPendingSurface || undefined}
+                className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
+              >
+                <WorkspaceViewTabs
+                  projectActive={projectFullScreen}
+                  projectActions={
+                    projectFullScreen ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="workspace-top-action"
+                          aria-label={t(projectExpanded ? "detail.restore" : "detail.expand")}
+                          title={t(projectExpanded ? "detail.restore" : "detail.expand")}
+                          onClick={toggleProjectExpanded}
+                        >
+                          {projectExpanded ? (
+                            <ChromeIcon icon={CollapseIcon} className="size-[13px]" />
+                          ) : (
+                            <ChromeIcon icon={ExpandIcon} className="size-[13px]" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="workspace-top-action"
+                          aria-label={t("detail.close")}
+                          title={t("detail.close")}
+                          onClick={closeSelectedProject}
+                        >
+                          <XIcon className="size-4" aria-hidden="true" />
+                        </Button>
+                      </>
+                    ) : null
+                  }
+                  onShowView={() => {
+                    setSelectedProject(null);
+                    setActiveProjectTabId(null);
+                    sendPane({ type: "selectView" });
+                  }}
+                  actionsHidden={projectFullScreen}
+                  projectTabs={
+                    <WorkspaceProjectTabs
+                      key={projectTabsWorkspaceId}
+                      projects={expandedProjectTabs}
+                      activeProjectId={
+                        projectFullScreen ? activeProjectTabId || "" : ""
+                      }
+                      onSelect={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        if (project) {
+                          handleProjectOpen(project, id, true);
+                        }
+                      }}
+                      onDuplicate={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        if (project) createExpandedProject(project, id);
+                      }}
+                      onRestore={(id) => {
+                        const project = expandedProjectTabs.find((item) => item.tabId === id);
+                        dispatchProjectTabs({
+                          type: "remove",
+                          workspaceId: projectTabsWorkspaceId,
+                          tabId: id,
+                        });
+                        if (project) handleProjectOpen(project);
+                      }}
+                      onClose={closeProjectTab}
+                      onSplit={(id, target, side) => {
+                        const project = expandedProjectTabs.find((p) => p.tabId === id);
+                        if (project) {
+                          openProjectInSplit(project, id, target, side);
+                        }
+                      }}
+                      onCloseOthers={(id) => {
+                        closeProjectTabs(
+                          expandedProjectTabs.filter((p) => p.tabId !== id).map((p) => p.tabId),
+                        );
+                        const project = expandedProjectTabs.find((p) => p.tabId === id);
+                        if (project) handleProjectOpen(project, id);
+                      }}
+                      onCloseAfter={(id) =>
+                        closeProjectTabs(
+                          expandedProjectTabs
+                            .slice(expandedProjectTabs.findIndex((p) => p.tabId === id) + 1)
+                            .map((p) => p.tabId),
+                        )
+                      }
+                      onReopen={reopenProjectTab}
+                      canReopen={!!closedProjectTabs[projectTabsWorkspaceId]?.length}
+                      onReorder={(tabIds) =>
+                        dispatchProjectTabs({
+                          type: "reorder",
+                          workspaceId: projectTabsWorkspaceId,
+                          tabIds,
+                        })
+                      }
+                    />
+                  }
+                  activeViewId={viewState.activeViewId}
+                  views={viewState.views}
+                  onActiveViewChange={(activeViewId) => {
+                    setSelectedProject(null);
+                    setActiveProjectTabId(null);
+                    sendPane({ type: "selectView" });
+                    dispatch({ type: "activeViewChanged", activeViewId });
+                    if (state.workspaceId) {
+                      void workspaceClient
+                        .setActiveView({
+                          workspaceId: state.workspaceId,
+                          viewId: activeViewId,
+                        })
+                        .catch((error: unknown) => {
+                          toast.error(t("toast.activeViewSaveFailed"), {
+                            description: getServiceErrorMessage(error, t),
+                          });
+                        });
+                    }
+                  }}
+                  onCreateView={handleCreateView}
+                  onDuplicateView={handleDuplicateView}
+                  onRenameView={handleRenameView}
+                  onDeleteView={handleDeleteView}
+                  onReorderViews={handleReorderViews}
+                  dismissSignal={workspaceFloatingDismissToken}
+                  properties={settingsProperties}
+                  selectValues={settingsSelectValues}
+                  statusValues={statusValues}
+                  onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                  onToggleValueFilter={handleToggleValueFilter}
+                  boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
+                  onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
+                  onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
+                  onReorderViewProperties={handleReorderViewProperties}
+                  onRenameProperty={handleRenameProperty}
+                  onDeleteProperty={handleDeleteProperty}
+                />
+              </div>
+            ) : null}
+            {activeSurface !== "workspace" ? (
+              <div className="electron-window-no-drag flex min-w-0 flex-1 items-center justify-between gap-3">
+                <h1 className="truncate text-sm font-medium">{activeSurface === "workspace-settings" ? `${t("settings.workspaceTitle")} · ${currentWorkspaceName}` : t("settings.title")}</h1>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={openWorkspaceSurface}
+                >
+                  {t("settings.back")}
+                </Button>
+              </div>
+            ) : null}
+            {!projectFullScreen && (paneLayout.split || paneLayout.maximized === "workspace") && (
+              <ChromeAction
+                label={t(
+                  paneLayout.maximized === "workspace" ? "chrome.restoreSplit" : "chrome.maximize",
+                )}
+                onClick={() => sendPane({ type: "maximize", pane: "workspace" })}
+              >
+                <ChromeIcon icon={paneLayout.maximized === "workspace" ? CollapseIcon : ExpandIcon} className="size-[13px]" />
+              </ChromeAction>
+            )}
+            {!projectFullScreen && paneLayout.split && (
+              <ChromeAction label={t("chrome.closePane")} onClick={() => closeLayoutPane("workspace")}>
+                <ChromeIcon icon={Cancel01Icon} />
+              </ChromeAction>
+            )}
+          </header>
+          {projectFullScreen ? (
+            detailPanel
+          ) : activeSurface !== "workspace" ? (
+            <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
+              {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || pendingWorkspaceScreen.current ? (
+                <WorkspaceLoadingState />
+              ) : (
+                <>
+                  <WorkspaceServiceError state={state} />
+                  <WorkspaceSettingsView
+                    workspaceName={workspaceList.workspaces.find(item => item.id === state.workspaceId)?.name}
+                    sourceFolder={sourceFolder}
+                    folderRoleTree={folderRoleTree}
+                    statusValues={statusValues}
+                    selectValues={settingsSelectValues}
+                    onSelectFolder={handleSelectFolder}
+                    onFolderRoleChange={handleFolderRoleChange}
+                    onColorStatusValue={handleColorStatusValue}
+                    selectingFolder={selectingFolder}
+                  />
+                </>
+              )}
+            </div>
+          ) : (
+            <div
+              aria-busy={isWorkspaceSwitchPendingSurface || undefined}
+              className={[
+                "electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden",
+                isWorkspaceSwitchPendingSurface ? "pointer-events-none select-none" : "",
+              ].join(" ")}
+            >
+              <div className="min-h-0 flex-1 overflow-hidden">
+                {shouldShowWorkspaceLoadingState ? (
+                  <WorkspaceLoadingState />
+                ) : state.status === "error" && !serviceProjection ? (
+                  <><WorkspaceServiceError state={state} /><WorkspaceEmptyState onOpenSettings={openCurrentWorkspaceSettings} /></>
+                ) : state.sourceFolderMissing ? (
+                  <WorkspaceEmptyState onOpenSettings={openCurrentWorkspaceSettings} />
+                ) : (
+                  <>
+                    <WorkspaceServiceError state={state} />
+                    {searchHasNoResults ? (
+                      <div
+                        className="flex h-full min-h-0 items-center justify-center px-6 text-center"
+                        role="status"
+                      >
+                        <p className="max-w-md break-words text-sm text-muted-foreground">
+                          {t("state.noSearchResults")}
+                        </p>
+                      </div>
+                    ) : activeViewType === "board" ? (
+                      <WorkspaceBoardView
+                        projection={boardProjection as typeof workspaceMockProjection.projection}
+                        statusValues={statusValues}
+                        columnWidth={activeView?.boardLayout?.columnWidth}
+                        onViewportWidthChange={setBoardViewportWidth}
+                        visibleProperties={
+                          visibleProperties as typeof workspaceMockProjection.visibleProperties
+                        }
+                        selectValues={settingsSelectValues}
+                        onProjectOpen={handleProjectOpen}
+                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                        onCreateSelectValue={handleCreateSelectValue}
+                        onRenameSelectValue={handleRenameSelectValue}
+                        onColorSelectValue={handleColorSelectValue}
+                        onDeleteSelectValue={handleDeleteSelectValue}
+                      />
+                    ) : null}
+                    {!searchHasNoResults && activeViewType === "table" ? (
+                      <WorkspaceTableView
+                        projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                        view={activeView ?? null}
+                        visibleProperties={
+                          visibleProperties as typeof workspaceMockProjection.visibleProperties
+                        }
+                        properties={settingsProperties}
+                        selectValues={settingsSelectValues}
+                        statusValues={statusValues}
+                        onProjectOpen={handleProjectOpen}
+                        onCreateProperty={handleCreateVisibleProperty}
+                        onRenameProperty={handleRenameProperty}
+                        onDeleteProperty={handleDeleteProperty}
+                        onReorderViewProperties={handleReorderViewProperties}
+                        onTogglePropertyVisibility={handleTogglePropertyVisibility}
+                        onToggleValueFilter={handleToggleValueFilter}
+                        onTogglePropertyWrapContent={handleTogglePropertyWrapContent}
+                        onProjectPropertyValueChange={handleProjectPropertyValueChange}
+                        onCreateSelectValue={handleCreateSelectValue}
+                        onRenameSelectValue={handleRenameSelectValue}
+                        onColorSelectValue={handleColorSelectValue}
+                        onDeleteSelectValue={handleDeleteSelectValue}
+                        onDismissFloatingMenus={dismissWorkspaceFloatingMenus}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      );
+
+      return (
+        <TooltipProvider delayDuration={500}>
+          <div
+            className="workspace-shell relative flex h-screen min-h-0 bg-background text-foreground"
+            data-sidebar-collapsed={sidebarCollapsed}
+            style={
+              { "--workspace-sidebar-width": `${paneLayout.sidebarWidth}px` } as React.CSSProperties
+            }
+          >
+            <div
+              className={[
+                "workspace-sidebar-host h-full shrink-0",
+                sidebarCollapsed
+                  ? "w-0"
+                  : "w-[var(--workspace-sidebar-width)]",
+              ].join(" ")}
+            >
+              <WorkspaceLeftPanel
+                collapsed={sidebarCollapsed}
+                activeSurface={activeSurface}
+                activeWorkspaceId={workspaceList.activeWorkspaceId || state.workspaceId}
+                workspaces={navigationWorkspaces}
+                searchQuery={state.searchQuery}
+                onAddWorkspace={handleAddWorkspace}
+                onRenameWorkspace={handleRenameWorkspace}
+                onDeleteWorkspace={handleDeleteWorkspace}
+                onReorderWorkspaces={handleReorderWorkspaces}
+                onWorkspaceOpen={handleWorkspaceOpen}
+                onSearchQueryChange={(searchQuery) => {
+                  dispatch({ type: "searchQueryChanged", searchQuery });
+                }}
+                onOpenWorkspaceSettings={(id) => { void handleWorkspaceOpen(id, "workspace-settings"); }}
+                onOpenSettings={openSettingsSurface}
+              />
+            </div>
+            {!sidebarCollapsed && (
+              <div className="bb-sidebar-resize">
+                <PaneResize
+                  label={t("chrome.resizeSidebar")}
+                  value={paneLayout.sidebarWidth}
+                  min={240}
+                  max={460}
+                  growDirection={1}
+                  onResize={(width) => sendPane({ type: "resizeSidebar", width })}
+                />
+              </div>
+            )}
+            <div
+              className="bb-center flex min-h-0 min-w-0 flex-1"
+              style={{ display: !projectFullScreen && paneLayout.maximized === "right" ? "none" : undefined }}
+              data-maximized={paneLayout.maximized || undefined}
+            >
+              {projectFullScreen ? primaryPane : <WorkspaceSplitTree
+                layout={paneLayout}
+                send={sendPane}
+                primary={primaryPane}
+                onPaneFocus={(pane) => {
+                  if (pane.tabId) {
+                    const project = expandedProjectTabs.find((tab) => tab.tabId === pane.tabId);
+                    if (project && activeProjectTabId !== pane.tabId)
+                      handleProjectOpen(project, pane.tabId);
+                  }
+                }}
+                titleForPane={(pane) =>
+                  expandedProjectTabs.find((tab) => tab.tabId === pane.tabId)?.name ||
+                  t("chrome.newTab")
+                }
+                renderProject={(pane) =>
+                  renderDetailPanel(
+                    expandedProjectTabs.find((tab) => tab.tabId === pane.tabId) || null,
+                    () => closeLayoutPane(pane.paneId),
+                    paneLayout.focused === pane.paneId,
+                  )
+                }
+                onClosePane={closeLayoutPane}
+              />}
+            </div>
+            {(
+              <WorkspaceRightPanel
+                key={projectTabsWorkspaceId}
+                suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
+                layout={paneLayout}
+                send={sendPane}
+                navigation={navigationPanel}
+                project={
+                  !projectExpanded &&
+                  activeSurface === "workspace" &&
+                  selectedProject
+                    ? detailPanel
+                    : undefined
+                }
+                projectName={selectedProject?.name}
+                onCloseProject={closeSelectedProject}
+                onMaximizeProject={() => {
+                  if (selectedProject) createExpandedProject(selectedProject);
+                }}
+              />
+            )}
+            {/* Native no-drag exclusion must follow pane drag regions in DOM order. */}
+            <button
+              type="button"
+              className={[
+                "electron-window-no-drag workspace-top-action absolute top-3 z-40 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground",
+                "left-[168px]",
+              ].join(" ")}
+              aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+              title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+              onClick={() => sendPane({ type: "sidebarToggle" })}
+            >
+              <PanelLeftIcon className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+          <Toaster richColors />
+        </TooltipProvider>
+      );
+    }
+
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/dashboardStructure.test.js:173:10)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: production ignores development environment overrides
+ok 2 - production ignores development environment overrides
+  ---
+  duration_ms: 1.805542
+  ...
+# Subtest: development is checkout-local and rejects network renderer origins
+ok 3 - development is checkout-local and rejects network renderer origins
+  ---
+  duration_ms: 0.465041
+  ...
+# Subtest: development JSON adapters write only to fixture metadata
+ok 4 - development JSON adapters write only to fixture metadata
+  ---
+  duration_ms: 55.512208
+  ...
+# Subtest: development cannot point metadata into production or legacy directories
+ok 5 - development cannot point metadata into production or legacy directories
+  ---
+  duration_ms: 0.205542
+  ...
+# Subtest: third party notices document any-store MIT license
+ok 6 - third party notices document any-store MIT license
+  ---
+  duration_ms: 8.280834
+  ...
+# Subtest: agent instructions define the spec-first Codex workflow
+ok 7 - agent instructions define the spec-first Codex workflow
+  ---
+  duration_ms: 12.106542
+  ...
+# Subtest: duplicates board settings, inserts beside source and activates copy
+ok 8 - duplicates board settings, inserts beside source and activates copy
+  ---
+  duration_ms: 2.034791
+  ...
+# Subtest: duplicates table settings, inserts beside source and activates copy
+ok 9 - duplicates table settings, inserts beside source and activates copy
+  ---
+  duration_ms: 0.257125
+  ...
+# Subtest: failure removes the partial copy and restores the previous active view
+ok 10 - failure removes the partial copy and restores the previous active view
+  ---
+  duration_ms: 0.421542
+  ...
+# Subtest: listDirectFolders returns only direct directory entries sorted by name
+ok 11 - listDirectFolders returns only direct directory entries sorted by name
+  ---
+  duration_ms: 12.507125
+  ...
+# Subtest: filterFolders matches folder names case-insensitively
+ok 12 - filterFolders matches folder names case-insensitively
+  ---
+  duration_ms: 0.675958
+  ...
+# Subtest: listFolderEntries returns visible folders first then visible files for a nested folder path
+ok 13 - listFolderEntries returns visible folders first then visible files for a nested folder path
+  ---
+  duration_ms: 0.435375
+  ...
+# Subtest: listStatusCards uses root child folders as statuses and their child folders as cards
+ok 14 - listStatusCards uses root child folders as statuses and their child folders as cards
+  ---
+  duration_ms: 0.357709
+  ...
+# Subtest: listFolderAccessTree recursively builds access rules for nested folders
+ok 15 - listFolderAccessTree recursively builds access rules for nested folders
+  ---
+  duration_ms: 0.420667
+  ...
+# Subtest: listFolderAccessTree treats explicitly configured card folders as scan leaves
+ok 16 - listFolderAccessTree treats explicitly configured card folders as scan leaves
+  ---
+  duration_ms: 0.105666
+  ...
+# Subtest: listFolderAccessTree creates distinct ids for Cyrillic folder paths
+ok 17 - listFolderAccessTree creates distinct ids for Cyrillic folder paths
+  ---
+  duration_ms: 0.49575
+  ...
+# Subtest: flattenAccessTreeCards uses status folders as statuses and skips status containers
+ok 18 - flattenAccessTreeCards uses status folders as statuses and skips status containers
+  ---
+  duration_ms: 0.199167
+  ...
+# Subtest: flattenAccessTreeCards treats group folders as transparent storage containers
+ok 19 - flattenAccessTreeCards treats group folders as transparent storage containers
+  ---
+  duration_ms: 0.203084
+  ...
+# Subtest: flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+ok 20 - flattenAccessTreeCards treats a card folder as a leaf even when it has child folders
+  ---
+  duration_ms: 0.18175
+  ...
+# Subtest: card dates use the detail editor locale format without UTC conversion
+ok 21 - card dates use the detail editor locale format without UTC conversion
+  ---
+  duration_ms: 22.40275
+  ...
+# Subtest: duplicate view names interpolate the source title in both locales
+ok 22 - duplicate view names interpolate the source title in both locales
+  ---
+  duration_ms: 0.801959
+  ...
+# Subtest: normalizes unsupported locales to English
+ok 23 - normalizes unsupported locales to English
+  ---
+  duration_ms: 0.063916
+  ...
+# Subtest: English and Russian catalogs have the same keys
+ok 24 - English and Russian catalogs have the same keys
+  ---
+  duration_ms: 0.496333
+  ...
+# Subtest: all statically referenced renderer translation keys exist
+ok 25 - all statically referenced renderer translation keys exist
+  ---
+  duration_ms: 91.937
+  ...
+# Subtest: dynamic renderer translation keys exist in both catalogs
+ok 26 - dynamic renderer translation keys exist in both catalogs
+  ---
+  duration_ms: 0.19575
+  ...
+# Subtest: localized renderer surfaces do not contain app-owned English UI literals
+ok 27 - localized renderer surfaces do not contain app-owned English UI literals
+  ---
+  duration_ms: 17.964625
+  ...
+# Subtest: translates interpolation and Russian plural forms
+ok 28 - translates interpolation and Russian plural forms
+  ---
+  duration_ms: 1.608916
+  ...
+# Subtest: falls back to the English catalog and then to the key
+ok 29 - falls back to the English catalog and then to the key
+  ---
+  duration_ms: 0.154417
+  ...
+# Subtest: reads and writes locale preferences without failing when storage is unavailable
+ok 30 - reads and writes locale preferences without failing when storage is unavailable
+  ---
+  duration_ms: 0.26375
+  ...
+# Subtest: localizes only the stable app-owned no-status value
+ok 31 - localizes only the stable app-owned no-status value
+  ---
+  duration_ms: 0.16
+  ...
+# Subtest: re-resolves app-owned errors after a locale switch and preserves backend messages
+ok 32 - re-resolves app-owned errors after a locale switch and preserves backend messages
+  ---
+  duration_ms: 0.129167
+  ...
+# Subtest: resolveWorkspacePath only allows relative paths inside the workspace root
+ok 33 - resolveWorkspacePath only allows relative paths inside the workspace root
+  ---
+  duration_ms: 1.056416
+  ...
+# Subtest: getMacOpenCommand opens folders and files in macOS
+ok 34 - getMacOpenCommand opens folders and files in macOS
+  ---
+  duration_ms: 0.477833
+  ...
+# Subtest: isPreviewablePath recognizes browser preview file types
+ok 35 - isPreviewablePath recognizes browser preview file types
+  ---
+  duration_ms: 0.177125
+  ...
+# Subtest: createRevealResponse validates path, kind, and existing item before spawning
+ok 36 - createRevealResponse validates path, kind, and existing item before spawning
+  ---
+  duration_ms: 36.840459
+  ...
+# Subtest: resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+ok 37 - resolveExistingWorkspacePath rejects symlinks that escape the workspace root
+  ---
+  duration_ms: 15.816375
+  ...
+# Subtest: createRevealResponse does not spawn escaped or broken symlink targets
+ok 38 - createRevealResponse does not spawn escaped or broken symlink targets
+  ---
+  duration_ms: 12.446666
+  ...
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+ok 39 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 5.065834
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+ok 40 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 2.192083
+  ...
+# Subtest: renderer boundary rejects every supported Node and Electron import form
+ok 41 - renderer boundary rejects every supported Node and Electron import form
+  ---
+  duration_ms: 20.818792
+  ...
+# Subtest: renderer graph follows mjs and cjs intermediaries
+ok 42 - renderer graph follows mjs and cjs intermediaries
+  ---
+  duration_ms: 36.391833
+  ...
+# Subtest: renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+ok 43 - renderer entry graph does not import backend storage, sidecar, or Node runtime modules
+  ---
+  duration_ms: 773.534042
+  ...
+# Subtest: workspace runs as an Electron-only app shell
+ok 44 - workspace runs as an Electron-only app shell
+  ---
+  duration_ms: 17.30325
+  ...
+# Subtest: legacy browser dev server is not shipped
+ok 45 - legacy browser dev server is not shipped
+  ---
+  duration_ms: 1.478625
+  ...
+# Subtest: security audit report contains the required baseline sections
+ok 46 - security audit report contains the required baseline sections
+  ---
+  duration_ms: 20.925333
+  ...
+# Subtest: security audit findings have unique IDs and allowed classifications
+ok 47 - security audit findings have unique IDs and allowed classifications
+  ---
+  duration_ms: 3.735916
+  ...
+# Subtest: every finding has actionable evidence and valid repository file references
+ok 48 - every finding has actionable evidence and valid repository file references
+  ---
+  duration_ms: 76.7935
+  ...
+# Subtest: risk register validation rejects duplicate assignments
+ok 49 - risk register validation rejects duplicate assignments
+  ---
+  duration_ms: 1.063917
+  ...
+# Subtest: risk register validation rejects stale severity
+ok 50 - risk register validation rejects stale severity
+  ---
+  duration_ms: 1.868542
+  ...
+# Subtest: risk register validation rejects stale status
+ok 51 - risk register validation rejects stale status
+  ---
+  duration_ms: 0.972833
+  ...
+# Subtest: exact finding coverage rejects duplicate follow-up assignments
+ok 52 - exact finding coverage rejects duplicate follow-up assignments
+  ---
+  duration_ms: 0.158916
+  ...
+# Subtest: consolidated audit includes every finding in the risk register and remediation order
+ok 53 - consolidated audit includes every finding in the risk register and remediation order
+  ---
+  duration_ms: 8.455291
+  ...
+# Subtest: second review findings retain concrete active-runtime evidence
+ok 54 - second review findings retain concrete active-runtime evidence
+  ---
+  duration_ms: 3.089708
+  ...
+# Subtest: third review findings retain concrete availability, scope, and atomicity evidence
+ok 55 - third review findings retain concrete availability, scope, and atomicity evidence
+  ---
+  duration_ms: 3.495583
+  ...
+# Subtest: fifth review findings retain filesystem and IPC resource-exhaustion coverage
+ok 56 - fifth review findings retain filesystem and IPC resource-exhaustion coverage
+  ---
+  duration_ms: 3.708625
+  ...
+# Subtest: fourth review findings retain concrete workspace and reorder atomicity evidence
+ok 57 - fourth review findings retain concrete workspace and reorder atomicity evidence
+  ---
+  duration_ms: 2.004583
+  ...
+# Subtest: final audit handoff contains a scoped remediation backlog for every finding
+ok 58 - final audit handoff contains a scoped remediation backlog for every finding
+  ---
+  duration_ms: 2.240333
+  ...
+# Subtest: final audit report is redacted and records the non-production handoff
+ok 59 - final audit report is redacted and records the non-production handoff
+  ---
+  duration_ms: 2.823791
+  ...
+# Subtest: security audit defines a complete reusable finding template
+ok 60 - security audit defines a complete reusable finding template
+  ---
+  duration_ms: 3.017667
+  ...
+# Subtest: security audit includes Electron and IPC evidence for Task 2
+ok 61 - security audit includes Electron and IPC evidence for Task 2
+  ---
+  duration_ms: 5.523875
+  ...
+# Subtest: security audit includes filesystem and local metadata evidence for Task 3
+ok 62 - security audit includes filesystem and local metadata evidence for Task 3
+  ---
+  duration_ms: 1.84525
+  ...
+# Subtest: security audit includes sidecar and store evidence for Task 4
+ok 63 - security audit includes sidecar and store evidence for Task 4
+  ---
+  duration_ms: 2.582375
+  ...
+# Subtest: security audit includes dependency, secret, and build-chain evidence for Task 5
+ok 64 - security audit includes dependency, secret, and build-chain evidence for Task 5
+  ---
+  duration_ms: 2.5865
+  ...
+# Subtest: Electron window keeps the renderer isolated from Node privileges
+ok 65 - Electron window keeps the renderer isolated from Node privileges
+  ---
+  duration_ms: 6.372167
+  ...
+# Subtest: preload exposes only the allowlisted workspace request facade
+ok 66 - preload exposes only the allowlisted workspace request facade
+  ---
+  duration_ms: 2.352333
+  ...
+# Subtest: preload and main process enforce the same explicit IPC method allowlist
+ok 67 - preload and main process enforce the same explicit IPC method allowlist
+  ---
+  duration_ms: 5.142834
+  ...
+# Subtest: filesystem boundary canonicalizes existing targets and opens them without a shell
+ok 68 - filesystem boundary canonicalizes existing targets and opens them without a shell
+  ---
+  duration_ms: 1.318583
+  ...
+# Subtest: preview allowlist excludes native executable and package extensions
+ok 69 - preview allowlist excludes native executable and package extensions
+  ---
+  duration_ms: 3.515709
+  ...
+# Subtest: transitional JSON stores use same-directory atomic replacement and only remove temp files
+ok 70 - transitional JSON stores use same-directory atomic replacement and only remove temp files
+  ---
+  duration_ms: 2.265875
+  ...
+# Subtest: createSidecarHttpTransport maps service methods to sidecar routes
+ok 71 - createSidecarHttpTransport maps service methods to sidecar routes
+  ---
+  duration_ms: 3.149833
+  ...
+# Subtest: createSidecarHttpTransport returns parsed response JSON
+ok 72 - createSidecarHttpTransport returns parsed response JSON
+  ---
+  duration_ms: 0.138667
+  ...
+# Subtest: createSidecarHttpTransport throws sidecar error messages
+ok 73 - createSidecarHttpTransport throws sidecar error messages
+  ---
+  duration_ms: 0.410959
+  ...
+# Subtest: createSidecarHttpTransport rejects unsupported service methods
+ok 74 - createSidecarHttpTransport rejects unsupported service methods
+  ---
+  duration_ms: 0.2095
+  ...
+# Subtest: createSidecarHttpTransport encodes workspace ids in query parameters
+ok 75 - createSidecarHttpTransport encodes workspace ids in query parameters
+  ---
+  duration_ms: 0.123709
+  ...
+# Subtest: createSidecarHttpTransport does not reflect a non-JSON error body
+ok 76 - createSidecarHttpTransport does not reflect a non-JSON error body
+  ---
+  duration_ms: 0.14825
+  ...
+# Subtest: workspace app state represents a missing source folder
+ok 77 - workspace app state represents a missing source folder
+  ---
+  duration_ms: 167.894042
+  ...
+# Subtest: workspace app state stores loaded service projection responses
+ok 78 - workspace app state stores loaded service projection responses
+  ---
+  duration_ms: 69.35
+  ...
+# Subtest: workspace app state stores custom property catalog responses
+ok 79 - workspace app state stores custom property catalog responses
+  ---
+  duration_ms: 100.816084
+  ...
+# Subtest: workspace app state refreshes visible property labels from catalog without clearing projection
+ok 80 - workspace app state refreshes visible property labels from catalog without clearing projection
+  ---
+  duration_ms: 123.369125
+  ...
+# Subtest: workspace app state updates visible view properties without clearing projection rows
+ok 81 - workspace app state updates visible view properties without clearing projection rows
+  ---
+  duration_ms: 70.101333
+  ...
+# Subtest: workspace app state updates view value visibility without clearing projection rows
+ok 82 - workspace app state updates view value visibility without clearing projection rows
+  ---
+  duration_ms: 73.991584
+  ...
+# Subtest: workspace app state updates view property layout without clearing projection rows
+ok 83 - workspace app state updates view property layout without clearing projection rows
+  ---
+  duration_ms: 38.527167
+  ...
+# Subtest: workspace app state previews Board column width without clearing projection columns
+ok 84 - workspace app state previews Board column width without clearing projection columns
+  ---
+  duration_ms: 43.406125
+  ...
+# Subtest: workspace app state removes a deleted property from catalog and projections
+ok 85 - workspace app state removes a deleted property from catalog and projections
+  ---
+  duration_ms: 28.636917
+  ...
+# Subtest: workspace app state applies project property value updates without closing details
+ok 86 - workspace app state applies project property value updates without closing details
+  ---
+  duration_ms: 15.731833
+  ...
+# Subtest: workspace app state stores property save errors without clearing projection data
+ok 87 - workspace app state stores property save errors without clearing projection data
+  ---
+  duration_ms: 16.639959
+  ...
+# Subtest: workspace app state stores selected root before projection loading completes
+ok 88 - workspace app state stores selected root before projection loading completes
+  ---
+  duration_ms: 9.943375
+  ...
+# Subtest: workspace app state keeps current workspace content visible while another workspace loads
+ok 89 - workspace app state keeps current workspace content visible while another workspace loads
+  ---
+  duration_ms: 13.245542
+  ...
+# Subtest: workspace app state keeps current view state as a stale visual surface when another workspace is activated
+ok 90 - workspace app state keeps current view state as a stale visual surface when another workspace is activated
+  ---
+  duration_ms: 10.941042
+  ...
+# Subtest: workspace app state stores service errors
+ok 91 - workspace app state stores service errors
+  ---
+  duration_ms: 15.628333
+  ...
+# Subtest: workspace app state updates search query without changing service responses
+ok 92 - workspace app state updates search query without changing service responses
+  ---
+  duration_ms: 11.844584
+  ...
+# Subtest: workspace app state updates projection without returning to loading
+ok 93 - workspace app state updates projection without returning to loading
+  ---
+  duration_ms: 12.831625
+  ...
+# Subtest: workspace app state ignores projection updates for stale workspace or view
+ok 94 - workspace app state ignores projection updates for stale workspace or view
+  ---
+  duration_ms: 13.309834
+  ...
+# Subtest: workspace app state ignores full projection loads after workspace or view changes
+ok 95 - workspace app state ignores full projection loads after workspace or view changes
+  ---
+  duration_ms: 9.986042
+  ...
+# Subtest: workspace app state switches the active view
+ok 96 - workspace app state switches the active view
+  ---
+  duration_ms: 16.046167
+  ...
+# Subtest: workspace app state ignores older property save completions for the same cell
+ok 97 - workspace app state ignores older property save completions for the same cell
+  ---
+  duration_ms: 11.849417
+  ...
+# Subtest: workspace app state adds a created view to only the active workspace state
+ok 98 - workspace app state adds a created view to only the active workspace state
+  ---
+  duration_ms: 11.711083
+  ...
+# Subtest: workspace app state ignores a created view for another workspace
+ok 99 - workspace app state ignores a created view for another workspace
+  ---
+  duration_ms: 11.621084
+  ...
+# Subtest: workspace app state renames a loaded view locally
+ok 100 - workspace app state renames a loaded view locally
+  ---
+  duration_ms: 11.968084
+  ...
+# Subtest: workspace app state reorders loaded views locally
+ok 101 - workspace app state reorders loaded views locally
+  ---
+  duration_ms: 11.870708
+  ...
+# Subtest: workspace projection search filter narrows board and table locally by project name
+ok 102 - workspace projection search filter narrows board and table locally by project name
+  ---
+  duration_ms: 8.589042
+  ...
+# Subtest: accepted workspace snapshot replaces a different root and view atomically
+ok 103 - accepted workspace snapshot replaces a different root and view atomically
+  ---
+  duration_ms: 9.227709
+  ...
+# Subtest: workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+ok 104 - workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+  ---
+  duration_ms: 1.017417
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+ok 105 - readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+  ---
+  duration_ms: 12.550875
+  ...
+# Subtest: workspace backend uses existing .workspace settings over legacy settings without overwriting it
+ok 106 - workspace backend uses existing .workspace settings over legacy settings without overwriting it
+  ---
+  duration_ms: 6.577709
+  ...
+# Subtest: readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+ok 107 - readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+  ---
+  duration_ms: 6.618042
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+ok 108 - readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+  ---
+  duration_ms: 14.604958
+  ...
+# Subtest: readWorkspaceSettings custom path without .workspace does not read default legacy settings
+ok 109 - readWorkspaceSettings custom path without .workspace does not read default legacy settings
+  ---
+  duration_ms: 8.672958
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+ok 110 - readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+  ---
+  duration_ms: 9.409125
+  ...
+# Subtest: readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+ok 111 - readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+  ---
+  duration_ms: 8.036083
+  ...
+# Subtest: writeWorkspaceSettings preserves corrupt existing settings before replacing them
+ok 112 - writeWorkspaceSettings preserves corrupt existing settings before replacing them
+  ---
+  duration_ms: 11.223667
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+ok 113 - readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+  ---
+  duration_ms: 5.843916
+  ...
+# Subtest: readWorkspaceProperties custom path without .workspace does not read default legacy properties
+ok 114 - readWorkspaceProperties custom path without .workspace does not read default legacy properties
+  ---
+  duration_ms: 8.239
+  ...
+# Subtest: createSelectRootResponse saves the selected backend root
+ok 115 - createSelectRootResponse saves the selected backend root
+  ---
+  duration_ms: 7.195042
+  ...
+# Subtest: createScanResponse builds access tree and cards from saved root
+ok 116 - createScanResponse builds access tree and cards from saved root
+  ---
+  duration_ms: 16.73925
+  ...
+# Subtest: createScanResponse can include card descendants for settings folder role configuration
+ok 117 - createScanResponse can include card descendants for settings folder role configuration
+  ---
+  duration_ms: 6.795834
+  ...
+# Subtest: createScanResponse does not expose legacy text as a default card property
+ok 118 - createScanResponse does not expose legacy text as a default card property
+  ---
+  duration_ms: 8.47575
+  ...
+# Subtest: createProjectFileTreeResponse returns a selected project folder tree on demand
+ok 119 - createProjectFileTreeResponse returns a selected project folder tree on demand
+  ---
+  duration_ms: 10.943375
+  ...
+# Subtest: createPropertiesResponse requires an explicit user property id
+ok 120 - createPropertiesResponse requires an explicit user property id
+  ---
+  duration_ms: 7.207542
+  ...
+# Subtest: createPropertiesResponse validates custom properties without overwriting text json
+ok 121 - createPropertiesResponse validates custom properties without overwriting text json
+  ---
+  duration_ms: 7.892041
+  ...
+# Subtest: createPropertiesResponse rejects properties outside workspace root
+ok 122 - createPropertiesResponse rejects properties outside workspace root
+  ---
+  duration_ms: 3.753083
+  ...
+# Subtest: createListEntriesResponse returns visible folders first then files
+ok 123 - createListEntriesResponse returns visible folders first then files
+  ---
+  duration_ms: 4.695625
+  ...
+# Subtest: createListEntriesResponse can list the selected root folder
+ok 124 - createListEntriesResponse can list the selected root folder
+  ---
+  duration_ms: 5.881875
+  ...
+# Subtest: createFileResponse streams previewable files inside root
+ok 125 - createFileResponse streams previewable files inside root
+  ---
+  duration_ms: 3.304625
+  ...
+# Subtest: createFileResponse rejects symlink previews outside root
+ok 126 - createFileResponse rejects symlink previews outside root
+  ---
+  duration_ms: 7.776916
+  ...
+# Subtest: createFileResponse rejects unsupported types and broken symlink previews
+ok 127 - createFileResponse rejects unsupported types and broken symlink previews
+  ---
+  duration_ms: 10.121041
+  ...
+# Subtest: workspace backend rejects paths outside root
+ok 128 - workspace backend rejects paths outside root
+  ---
+  duration_ms: 3.147625
+  ...
+# Subtest: workspace backend rejects an explicit directory symlink outside root
+ok 129 - workspace backend rejects an explicit directory symlink outside root
+  ---
+  duration_ms: 23.426959
+  ...
+# Subtest: createCreateViewResponse creates a default active Board view
+ok 130 - createCreateViewResponse creates a default active Board view
+  ---
+  duration_ms: 2.607375
+  ...
+# Subtest: createListViewsResponse preserves explicit view property visibility while normalizing defaults
+ok 131 - createListViewsResponse preserves explicit view property visibility while normalizing defaults
+  ---
+  duration_ms: 0.368708
+  ...
+# Subtest: createReorderViewsResponse updates orders and preserves active view
+ok 132 - createReorderViewsResponse updates orders and preserves active view
+  ---
+  duration_ms: 0.898458
+  ...
+# Subtest: createReorderViewsResponse rejects invalid view orders without mutation
+    # Subtest: duplicate active id
+    ok 1 - duplicate active id
+      ---
+      duration_ms: 0.200458
+      ...
+    # Subtest: missing active id
+    ok 2 - missing active id
+      ---
+      duration_ms: 0.083375
+      ...
+    # Subtest: extra foreign id
+    ok 3 - extra foreign id
+      ---
+      duration_ms: 0.184167
+      ...
+    # Subtest: deleted id
+    ok 4 - deleted id
+      ---
+      duration_ms: 0.072666
+      ...
+    # Subtest: missing payload
+    ok 5 - missing payload
+      ---
+      duration_ms: 0.061291
+      ...
+    # Subtest: non-array payload
+    ok 6 - non-array payload
+      ---
+      duration_ms: 0.063583
+      ...
+    1..6
+ok 133 - createReorderViewsResponse rejects invalid view orders without mutation
+  ---
+  duration_ms: 1.142166
+  ...
+# Subtest: createSetActiveViewResponse rejects missing foreign and deleted views
+ok 134 - createSetActiveViewResponse rejects missing foreign and deleted views
+  ---
+  duration_ms: 0.191125
+  ...
+# Subtest: createSetActiveViewResponse saves a valid active view
+ok 135 - createSetActiveViewResponse saves a valid active view
+  ---
+  duration_ms: 0.098458
+  ...
+# Subtest: createUpdateViewResponse validates patch references and saves normalized updated view
+ok 136 - createUpdateViewResponse validates patch references and saves normalized updated view
+  ---
+  duration_ms: 1.808167
+  ...
+# Subtest: createUpdateViewResponse forbids invalid view patches
+ok 137 - createUpdateViewResponse forbids invalid view patches
+  ---
+  duration_ms: 0.1405
+  ...
+# Subtest: createUpdateViewResponse rejects property order for hidden properties
+ok 138 - createUpdateViewResponse rejects property order for hidden properties
+  ---
+  duration_ms: 0.184375
+  ...
+# Subtest: createDeleteViewResponse blocks deleting the last non-deleted view
+ok 139 - createDeleteViewResponse blocks deleting the last non-deleted view
+  ---
+  duration_ms: 0.135625
+  ...
+# Subtest: createDeleteViewResponse soft-deletes a non-last active view and switches active view
+ok 140 - createDeleteViewResponse soft-deletes a non-last active view and switches active view
+  ---
+  duration_ms: 0.143584
+  ...
+# Subtest: createViewProjectionResponse projects board and table views with async providers
+ok 141 - createViewProjectionResponse projects board and table views with async providers
+  ---
+  duration_ms: 0.485541
+  ...
+# Subtest: createViewProjectionResponse rejects missing active view when view id is omitted
+ok 142 - createViewProjectionResponse rejects missing active view when view id is omitted
+  ---
+  duration_ms: 0.061083
+  ...
+# Subtest: normalizeBoardColumnWidth applies default and persisted bounds
+ok 143 - normalizeBoardColumnWidth applies default and persisted bounds
+  ---
+  duration_ms: 0.7295
+  ...
+# Subtest: getBoardColumnWidthMax limits the slider to one third of the Workspace area
+ok 144 - getBoardColumnWidthMax limits the slider to one third of the Workspace area
+  ---
+  duration_ms: 0.145792
+  ...
+# Subtest: loadWorkspaceList falls back when workspace list API is unsupported
+ok 145 - loadWorkspaceList falls back when workspace list API is unsupported
+  ---
+  duration_ms: 97.462209
+  ...
+# Subtest: loadWorkspaceList rethrows non-compatibility workspace list errors
+ok 146 - loadWorkspaceList rethrows non-compatibility workspace list errors
+  ---
+  duration_ms: 26.156416
+  ...
+# Subtest: addWorkspaceListFallback appends and activates a local workspace
+ok 147 - addWorkspaceListFallback appends and activates a local workspace
+  ---
+  duration_ms: 35.27275
+  ...
+# Subtest: addWorkspaceListFallback uses plain Workspace as the default local name
+ok 148 - addWorkspaceListFallback uses plain Workspace as the default local name
+  ---
+  duration_ms: 18.668166
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+ok 149 - reorderWorkspaceIdsForDrag previews moving a dragged workspace before the hovered workspace
+  ---
+  duration_ms: 68.412292
+  ...
+# Subtest: reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+ok 150 - reorderWorkspaceIdsForDrag previews moving a dragged workspace after the hovered workspace
+  ---
+  duration_ms: 16.792292
+  ...
+# Subtest: reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+ok 151 - reorderWorkspaceIdsForDrag keeps the current order for invalid drag targets
+  ---
+  duration_ms: 28.516583
+  ...
+# Subtest: mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+ok 152 - mergeFixedIdsWithReorderedIds keeps pinned ids aligned during partial-list drag previews
+  ---
+  duration_ms: 5.50575
+  ...
+# Subtest: workspace IPC handler returns null when source folder is not selected
+ok 153 - workspace IPC handler returns null when source folder is not selected
+  ---
+  duration_ms: 11.248708
+  ...
+# Subtest: workspace IPC handler surfaces corrupt settings JSON without overwriting it
+ok 154 - workspace IPC handler surfaces corrupt settings JSON without overwriting it
+  ---
+  duration_ms: 5.151458
+  ...
+# Subtest: workspace IPC handler surfaces corrupt views JSON without overwriting it
+ok 155 - workspace IPC handler surfaces corrupt views JSON without overwriting it
+  ---
+  duration_ms: 5.730042
+  ...
+# Subtest: workspace IPC handler serves default views and projection for selected source folder
+ok 156 - workspace IPC handler serves default views and projection for selected source folder
+  ---
+  duration_ms: 62.825917
+  ...
+# Subtest: workspace IPC handler preserves table views that hide Status
+ok 157 - workspace IPC handler preserves table views that hide Status
+  ---
+  duration_ms: 23.458791
+  ...
+# Subtest: workspace IPC handler tolerates concurrent default workspace initialization
+ok 158 - workspace IPC handler tolerates concurrent default workspace initialization
+  ---
+  duration_ms: 53.008917
+  ...
+# Subtest: workspace IPC handler tolerates concurrent root selection across process handlers
+ok 159 - workspace IPC handler tolerates concurrent root selection across process handlers
+  ---
+  duration_ms: 62.565875
+  ...
+# Subtest: workspace IPC handler repairs a stale active view when selecting a root
+ok 160 - workspace IPC handler repairs a stale active view when selecting a root
+  ---
+  duration_ms: 149.222041
+  ...
+# Subtest: workspace IPC handler persists folder role rules for scans and projections
+ok 161 - workspace IPC handler persists folder role rules for scans and projections
+  ---
+  duration_ms: 110.146542
+  ...
+# Subtest: workspace IPC handler keeps Cyrillic status values distinct
+ok 162 - workspace IPC handler keeps Cyrillic status values distinct
+  ---
+  duration_ms: 54.367542
+  ...
+# Subtest: workspace IPC handler creates renames reorders and deletes workspaces
+ok 163 - workspace IPC handler creates renames reorders and deletes workspaces
+  ---
+  duration_ms: 165.950375
+  ...
+# Subtest: workspace IPC handler uses plain Workspace as the default created workspace name
+ok 164 - workspace IPC handler uses plain Workspace as the default created workspace name
+  ---
+  duration_ms: 32.139959
+  ...
+# Subtest: workspace IPC handler does not recreate a deleted default source workspace
+ok 165 - workspace IPC handler does not recreate a deleted default source workspace
+  ---
+  duration_ms: 77.662541
+  ...
+# Subtest: workspace IPC handler persists view state outside the process handler instance
+ok 166 - workspace IPC handler persists view state outside the process handler instance
+  ---
+  duration_ms: 89.050167
+  ...
+# Subtest: workspace IPC handler persists custom properties and projects them into views
+ok 167 - workspace IPC handler persists custom properties and projects them into views
+  ---
+  duration_ms: 91.230042
+  ...
+# Subtest: workspace IPC handler renames system property labels without changing system semantics
+ok 168 - workspace IPC handler renames system property labels without changing system semantics
+  ---
+  duration_ms: 23.829875
+  ...
+# Subtest: workspace IPC handler creates duplicate property names as distinct id-backed properties
+ok 169 - workspace IPC handler creates duplicate property names as distinct id-backed properties
+  ---
+  duration_ms: 23.88425
+  ...
+# Subtest: workspace IPC handler persists derived status value colors
+ok 170 - workspace IPC handler persists derived status value colors
+  ---
+  duration_ms: 23.402958
+  ...
+# Subtest: workspace IPC handler shares object properties across workspaces for the same source folder
+ok 171 - workspace IPC handler shares object properties across workspaces for the same source folder
+  ---
+  duration_ms: 35.258
+  ...
+# Subtest: workspace IPC handler deletes custom properties from values and source views
+ok 172 - workspace IPC handler deletes custom properties from values and source views
+  ---
+  duration_ms: 49.649708
+  ...
+# Subtest: workspace sources and roles isolate legacy siblings and survive restart, cancellation and unavailable roots
+ok 173 - workspace sources and roles isolate legacy siblings and survive restart, cancellation and unavailable roots
+  ---
+  duration_ms: 21.777458
+  ...
+# Subtest: project lookup restores preview independently of view filtering and keeps source values
+ok 174 - project lookup restores preview independently of view filtering and keeps source values
+  ---
+  duration_ms: 21.716416
+  ...
+# Subtest: late native picker keeps its captured workspace and does not block activation or overwrite another source
+ok 175 - late native picker keeps its captured workspace and does not block activation or overwrite another source
+  ---
+  duration_ms: 16.5865
+  ...
+# Subtest: unknown historical source is recoverable without falling back to a different workspace root
+ok 176 - unknown historical source is recoverable without falling back to a different workspace root
+  ---
+  duration_ms: 2.640375
+  ...
+# Subtest: rootless workspaces survive restart and selecting their source preserves siblings and views
+ok 177 - rootless workspaces survive restart and selecting their source preserves siblings and views
+  ---
+  duration_ms: 12.87375
+  ...
+# Subtest: createFolderObjectId creates stable workspace-scoped slugs from folder paths
+ok 178 - createFolderObjectId creates stable workspace-scoped slugs from folder paths
+  ---
+  duration_ms: 1.211334
+  ...
+# Subtest: createFolderObjectId keeps distinct paths with the same readable slug unique
+ok 179 - createFolderObjectId keeps distinct paths with the same readable slug unique
+  ---
+  duration_ms: 0.14825
+  ...
+# Subtest: createPropertyValueId combines object and property identifiers
+ok 180 - createPropertyValueId combines object and property identifiers
+  ---
+  duration_ms: 0.067583
+  ...
+# Subtest: projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+ok 181 - projectFoldersToWorkspaceObjects maps folders to workspace objects and user property values
+  ---
+  duration_ms: 0.518625
+  ...
+# Subtest: readSystemPropertyValue returns derived system values
+ok 182 - readSystemPropertyValue returns derived system values
+  ---
+  duration_ms: 1.647459
+  ...
+# Subtest: Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+ok 183 - Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption
+  ---
+  duration_ms: 1.034833
+  ...
+# Subtest: CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+ok 184 - CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project
+  ---
+  duration_ms: 0.2255
+  ...
+# Subtest: right tabs deduplicate, close active/inactive/last with neighbour fallback, reopen
+ok 185 - right tabs deduplicate, close active/inactive/last with neighbour fallback, reopen
+  ---
+  duration_ms: 2.337833
+  ...
+# Subtest: context close variants and reorder preserve identities
+ok 186 - context close variants and reorder preserve identities
+  ---
+  duration_ms: 0.17025
+  ...
+# Subtest: split maximize restore close retains ratio and follows focus
+ok 187 - split maximize restore close retains ratio and follows focus
+  ---
+  duration_ms: 0.10125
+  ...
+# Subtest: session round trip validates surviving maximize/focus and validates malformed storage
+ok 188 - session round trip validates surviving maximize/focus and validates malformed storage
+  ---
+  duration_ms: 0.496708
+  ...
+# Subtest: empty launcher is deduplicated and excluded from reopen history
+ok 189 - empty launcher is deduplicated and excluded from reopen history
+  ---
+  duration_ms: 0.096542
+  ...
+# Subtest: persisted invalid focus/maximize recover to surviving leaf without changing content
+ok 190 - persisted invalid focus/maximize recover to surviving leaf without changing content
+  ---
+  duration_ms: 0.140083
+  ...
+# Subtest: opening an independent project preview preserves a restored split and its tab identities
+ok 191 - opening an independent project preview preserves a restored split and its tab identities
+  ---
+  duration_ms: 0.143542
+  ...
+# Subtest: selecting a saved view hides the right host without discarding split or right tabs
+ok 192 - selecting a saved view hides the right host without discarding split or right tabs
+  ---
+  duration_ms: 0.17875
+  ...
+# Subtest: right preview width can follow the pointer beyond 640 and survives restart
+ok 193 - right preview width can follow the pointer beyond 640 and survives restart
+  ---
+  duration_ms: 0.204333
+  ...
+# Subtest: a resized width of 560 is explicit, not the legacy automatic-half sentinel
+ok 194 - a resized width of 560 is explicit, not the legacy automatic-half sentinel
+  ---
+  duration_ms: 0.616041
+  ...
+# Subtest: shared sidebar width migrates legacy width and changes without mixing pane state
+ok 195 - shared sidebar width migrates legacy width and changes without mixing pane state
+  ---
+  duration_ms: 0.315042
+  ...
+# Subtest: legacy saved tabs migrate and duplicate project tabs survive restart
+ok 196 - legacy saved tabs migrate and duplicate project tabs survive restart
+  ---
+  duration_ms: 1.249666
+  ...
+# Subtest: project tabs, order and workspace screens survive a storage round trip
+ok 197 - project tabs, order and workspace screens survive a storage round trip
+  ---
+  duration_ms: 0.18375
+  ...
+# Subtest: damaged or inaccessible storage does not prevent startup
+ok 198 - damaged or inaccessible storage does not prevent startup
+  ---
+  duration_ms: 0.143042
+  ...
+# Subtest: expanded presentation survives restart independently of a tab's saved split membership
+ok 199 - expanded presentation survives restart independently of a tab's saved split membership
+  ---
+  duration_ms: 0.825167
+  ...
+# Subtest: preview identity survives independently of expanded tabs and is scoped to workspace
+ok 200 - preview identity survives independently of expanded tabs and is scoped to workspace
+  ---
+  duration_ms: 0.114833
+  ...
+# Subtest: duplicate is inserted immediately after its source, preserving surrounding tabs
+ok 201 - duplicate is inserted immediately after its source, preserving surrounding tabs
+  ---
+  duration_ms: 1.181125
+  ...
+# Subtest: duplicates have independent identities while sharing project updates
+ok 202 - duplicates have independent identities while sharing project updates
+  ---
+  duration_ms: 0.287792
+  ...
+# Subtest: reordering keeps every project once and leaves other workspaces unchanged
+ok 203 - reordering keeps every project once and leaves other workspaces unchanged
+  ---
+  duration_ms: 0.093791
+  ...
+# Subtest: expanded projects accumulate without duplicates and remain isolated by workspace
+ok 204 - expanded projects accumulate without duplicates and remain isolated by workspace
+  ---
+  duration_ms: 0.649958
+  ...
+# Subtest: refreshing an open tab preserves edits but never recreates a closed or restored tab
+ok 205 - refreshing an open tab preserves edits but never recreates a closed or restored tab
+  ---
+  duration_ms: 0.1095
+  ...
+# Subtest: a save completing after switching projects refreshes the original tab only
+ok 206 - a save completing after switching projects refreshes the original tab only
+  ---
+  duration_ms: 0.09325
+  ...
+# Subtest: bulk close never selects a tab also being closed and preserves inactive selection
+ok 207 - bulk close never selects a tab also being closed and preserves inactive selection
+  ---
+  duration_ms: 0.225709
+  ...
+# Subtest: propertyTypeIds lists supported property types in storage order
+ok 208 - propertyTypeIds lists supported property types in storage order
+  ---
+  duration_ms: 1.569417
+  ...
+# Subtest: isSystemPropertyId recognizes immutable system property ids
+ok 209 - isSystemPropertyId recognizes immutable system property ids
+  ---
+  duration_ms: 0.086417
+  ...
+# Subtest: createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+ok 210 - createDefaultPropertySchemas returns only system Name and Status schemas for a workspace
+  ---
+  duration_ms: 6.651042
+  ...
+# Subtest: normalizePropertyValue normalizes text values
+ok 211 - normalizePropertyValue normalizes text values
+  ---
+  duration_ms: 0.112916
+  ...
+# Subtest: normalizePropertyValue normalizes number values
+ok 212 - normalizePropertyValue normalizes number values
+  ---
+  duration_ms: 0.101667
+  ...
+# Subtest: normalizePropertyValue preserves number expressions with computed values
+ok 213 - normalizePropertyValue preserves number expressions with computed values
+  ---
+  duration_ms: 0.520375
+  ...
+# Subtest: normalizePropertyValue normalizes date values
+ok 214 - normalizePropertyValue normalizes date values
+  ---
+  duration_ms: 0.25
+  ...
+# Subtest: normalizePropertyValue normalizes select values
+ok 215 - normalizePropertyValue normalizes select values
+  ---
+  duration_ms: 0.217958
+  ...
+# Subtest: normalizePropertyValue normalizes multi-select values
+ok 216 - normalizePropertyValue normalizes multi-select values
+  ---
+  duration_ms: 0.192459
+  ...
+# Subtest: normalizePropertySchema preserves select config and normalizes options
+ok 217 - normalizePropertySchema preserves select config and normalizes options
+  ---
+  duration_ms: 0.255292
+  ...
+# Subtest: normalizePropertySchema filters invalid select options
+ok 218 - normalizePropertySchema filters invalid select options
+  ---
+  duration_ms: 0.302583
+  ...
+# Subtest: normalizePropertySchema clones nested non-select config objects
+ok 219 - normalizePropertySchema clones nested non-select config objects
+  ---
+  duration_ms: 0.155625
+  ...
+# Subtest: normalizePropertySchema falls back unknown types to text
+ok 220 - normalizePropertySchema falls back unknown types to text
+  ---
+  duration_ms: 0.904541
+  ...
+# Subtest: normalizePropertyDefinition rejects unsupported custom property types
+ok 221 - normalizePropertyDefinition rejects unsupported custom property types
+  ---
+  duration_ms: 1.555583
+  ...
+# Subtest: normalizePropertyDefinition marks system properties immutable but preserves display names
+ok 222 - normalizePropertyDefinition marks system properties immutable but preserves display names
+  ---
+  duration_ms: 0.11675
+  ...
+# Subtest: normalizePropertyDefinition normalizes custom properties
+ok 223 - normalizePropertyDefinition normalizes custom properties
+  ---
+  duration_ms: 0.180125
+  ...
+# Subtest: normalizeSelectValue normalizes select value documents
+ok 224 - normalizeSelectValue normalizes select value documents
+  ---
+  duration_ms: 0.119459
+  ...
+# Subtest: normalizeProjectPropertyValue validates type-specific project values
+ok 225 - normalizeProjectPropertyValue validates type-specific project values
+  ---
+  duration_ms: 0.27375
+  ...
+# Subtest: normalizeProjectPropertyValue rejects invalid select references and system properties
+ok 226 - normalizeProjectPropertyValue rejects invalid select references and system properties
+  ---
+  duration_ms: 0.936709
+  ...
+# Subtest: file property store surfaces corrupt JSON and preserves the file on write attempts
+ok 227 - file property store surfaces corrupt JSON and preserves the file on write attempts
+  ---
+  duration_ms: 10.030125
+  ...
+# Subtest: renderer workspace transport delegates to window.workspace.request
+ok 228 - renderer workspace transport delegates to window.workspace.request
+  ---
+  duration_ms: 36.951875
+  ...
+# Subtest: renderer workspace transport rejects missing preload bridge
+ok 229 - renderer workspace transport rejects missing preload bridge
+  ---
+  duration_ms: 5.96975
+  ...
+# Subtest: WorkspaceServiceClient sends named service methods through transport
+ok 230 - WorkspaceServiceClient sends named service methods through transport
+  ---
+  duration_ms: 3.501916
+  ...
+# Subtest: WorkspaceServiceClient constructor rejects missing transport.request
+ok 231 - WorkspaceServiceClient constructor rejects missing transport.request
+  ---
+  duration_ms: 0.3285
+  ...
+# Subtest: nested vertical split preserves ordered content; middle close collapses with right neighbour focus
+ok 232 - nested vertical split preserves ordered content; middle close collapses with right neighbour focus
+  ---
+  duration_ms: 1.349708
+  ...
+# Subtest: nested resize changes the addressed pair only; malformed tree rejects duplicate identities
+ok 233 - nested resize changes the addressed pair only; malformed tree rejects duplicate identities
+  ---
+  duration_ms: 1.659791
+  ...
+# Subtest: moving nested existing pane to an edge removes original and center swaps identities
+ok 234 - moving nested existing pane to an edge removes original and center swaps identities
+  ---
+  duration_ms: 0.339709
+  ...
+# Subtest: closing sole project restores Workspace and removes dangling content
+ok 235 - closing sole project restores Workspace and removes dangling content
+  ---
+  duration_ms: 0.09125
+  ...
+# Subtest: pane drop rejects outside/titlebar, distinguishes edge directions and center
+ok 236 - pane drop rejects outside/titlebar, distinguishes edge directions and center
+  ---
+  duration_ms: 0.186208
+  ...
+# Subtest: eight-pane source limit replaces focused content without increasing leaves
+ok 237 - eight-pane source limit replaces focused content without increasing leaves
+  ---
+  duration_ms: 0.180667
+  ...
+# Subtest: Workspace and Settings remain reachable after primary close or content replacement without discarding other leaves
+ok 238 - Workspace and Settings remain reachable after primary close or content replacement without discarding other leaves
+  ---
+  duration_ms: 1.618541
+  ...
+# Subtest: createNextVisiblePropertyIds removes stale property ids when showing a property
+ok 239 - createNextVisiblePropertyIds removes stale property ids when showing a property
+  ---
+  duration_ms: 0.995542
+  ...
+# Subtest: createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+ok 240 - createNextVisiblePropertyIds keeps Name required while allowing Status to hide
+  ---
+  duration_ms: 0.086667
+  ...
+# Subtest: createPropertyOrder stores stable ten-step ordering
+ok 241 - createPropertyOrder stores stable ten-step ordering
+  ---
+  duration_ms: 0.147792
+  ...
+# Subtest: createDefaultView creates Board and Table views with default system properties
+ok 242 - createDefaultView creates Board and Table views with default system properties
+  ---
+  duration_ms: 1.241083
+  ...
+# Subtest: createDefaultView rejects invalid view types
+ok 243 - createDefaultView rejects invalid view types
+  ---
+  duration_ms: 0.262375
+  ...
+# Subtest: normalizeViewDocument preserves known fields and visible property order after Name
+ok 244 - normalizeViewDocument preserves known fields and visible property order after Name
+  ---
+  duration_ms: 0.21475
+  ...
+# Subtest: normalizeViewDocument stores text wrap layout as a view setting
+ok 245 - normalizeViewDocument stores text wrap layout as a view setting
+  ---
+  duration_ms: 0.121458
+  ...
+# Subtest: normalizeViewDocument stores a bounded Board column width
+ok 246 - normalizeViewDocument stores a bounded Board column width
+  ---
+  duration_ms: 0.105417
+  ...
+# Subtest: validateViewPatch rejects Board column widths outside the persisted range
+ok 247 - validateViewPatch rejects Board column widths outside the persisted range
+  ---
+  duration_ms: 0.275834
+  ...
+# Subtest: validateViewPatch accepts text wrap layout for active text properties
+ok 248 - validateViewPatch accepts text wrap layout for active text properties
+  ---
+  duration_ms: 0.11825
+  ...
+# Subtest: validateViewPatch rejects text wrap layout for non-text properties
+ok 249 - validateViewPatch rejects text wrap layout for non-text properties
+  ---
+  duration_ms: 0.128083
+  ...
+# Subtest: validateViewPatch rejects removing the required Name property
+ok 250 - validateViewPatch rejects removing the required Name property
+  ---
+  duration_ms: 0.162625
+  ...
+# Subtest: validateViewPatch allows hiding the system Status property
+ok 251 - validateViewPatch allows hiding the system Status property
+  ---
+  duration_ms: 0.149417
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside visible properties
+ok 252 - validateViewPatch rejects propertyOrder keys outside visible properties
+  ---
+  duration_ms: 0.090834
+  ...
+# Subtest: validateViewPatch allows propertyOrder-only patches for active custom properties
+ok 253 - validateViewPatch allows propertyOrder-only patches for active custom properties
+  ---
+  duration_ms: 0.065125
+  ...
+# Subtest: validateViewPatch rejects propertyOrder keys outside active properties
+ok 254 - validateViewPatch rejects propertyOrder keys outside active properties
+  ---
+  duration_ms: 0.06775
+  ...
+# Subtest: validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+ok 255 - validateViewPatch rejects valueVisibility for non-filterable properties even when empty
+  ---
+  duration_ms: 0.148875
+  ...
+# Subtest: filterProjectsForView applies search by Name only and select value filters
+ok 256 - filterProjectsForView applies search by Name only and select value filters
+  ---
+  duration_ms: 0.268959
+  ...
+# Subtest: filterProjectsForView supports system Status filters and No status
+ok 257 - filterProjectsForView supports system Status filters and No status
+  ---
+  duration_ms: 0.248666
+  ...
+# Subtest: filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+ok 258 - filterProjectsForView treats empty Status filters as no-op even with includeEmpty
+  ---
+  duration_ms: 0.101625
+  ...
+# Subtest: createViewProjection returns board columns and table rows from the same filtered project set
+ok 259 - createViewProjection returns board columns and table rows from the same filtered project set
+  ---
+  duration_ms: 0.35275
+  ...
+# Subtest: createViewProjection retains compact empty board columns while value filters are active
+ok 260 - createViewProjection retains compact empty board columns while value filters are active
+  ---
+  duration_ms: 0.194375
+  ...
+# Subtest: createViewProjection adds No status column when matching projects have no status
+ok 261 - createViewProjection adds No status column when matching projects have no status
+  ---
+  duration_ms: 0.146125
+  ...
+1..261
+# tests 267
+# suites 0
+# pass 266
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1629.128458

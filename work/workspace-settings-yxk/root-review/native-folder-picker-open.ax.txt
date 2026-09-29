@@ -1,0 +1,5 @@
+Relevant native picker controls (unrelated remembered location listing omitted):
+The following is a diff from the previous accessibility tree for Window: "Choose workspace source folder" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++70 standard window Choose workspace source folder, ID: open-panel, Secondary Actions: Raise
++		182 button Cancel, ID: CancelButton
++		183 button Open, ID: OKButton
