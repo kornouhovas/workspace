@@ -1,3 +1,4 @@
+import { normalizeGrouping, validateGrouping, createTableGrouping } from "./workspaceGrouping.js";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -78,6 +79,8 @@ export function normalizeViewDocument(view = {}) {
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
     boardLayout: normalizeBoardLayout(view.boardLayout),
+    grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
+    groupingNotice: view.groupingNotice === "property-removed" ? "property-removed" : null,
     createdAt: normalizeString(view.createdAt),
     updatedAt: normalizeString(view.updatedAt),
     deletedAt: view.deletedAt == null ? null : normalizeString(view.deletedAt),
@@ -144,6 +147,7 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     propertyDefinitions,
   });
   validateBoardLayout(patch.boardLayout);
+  validateGrouping(patch.grouping, propertyDefinitions, (code, message) => { throw new WorkspaceViewError(code, message, "grouping"); });
 }
 
 export function filterProjectsForView({ projects = [], view, searchQuery = "" } = {}) {
@@ -165,6 +169,9 @@ export function createViewProjection({
   visibleProperties = [],
   statusValues = [],
   searchQuery = "",
+  propertyDefinitions = visibleProperties,
+  selectValues = [],
+  locale = "en",
 } = {}) {
   const normalizedView = normalizeViewDocument(view);
   const filteredProjects = filterProjectsForView({ projects, view: normalizedView, searchQuery });
@@ -179,6 +186,8 @@ export function createViewProjection({
       valueVisibility: normalizedView.valueVisibility,
       propertyLayout: normalizedView.propertyLayout,
       boardLayout: normalizedView.boardLayout,
+      grouping: normalizedView.grouping,
+      groupingNotice: normalizedView.groupingNotice,
     },
     visibleProperties,
     statusValues,
@@ -190,6 +199,8 @@ export function createViewProjection({
       projection: {
         type: "table",
         rows: filteredProjects,
+        ...(normalizedView.groupingNotice ? { groupingNotice: normalizedView.groupingNotice } : {}),
+        ...createTableGrouping({grouping: normalizedView.grouping, projects, filteredProjects, propertyDefinitions, selectValues, statusValues, locale}),
       },
     };
   }

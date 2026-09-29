@@ -1,0 +1,17 @@
+{
+  "provenance": "Real Electron CDP with isolated cjq source/profile; standard confirmation accepted for fixture property deletion.",
+  "checks": [
+    {
+      "name": "group sections visible before deletion",
+      "passed": true
+    },
+    {
+      "name": "UI deletion removes grouping without manual reload",
+      "passed": true
+    },
+    {
+      "name": "UI deletion displays recovery notice",
+      "passed": true
+    }
+  ]
+}

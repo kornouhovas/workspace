@@ -1129,6 +1129,11 @@ func cascadeDeleteSelectValue(ctx context.Context, store *workspacestore.Store, 
 func removePropertyFromView(view workspacestore.ViewDocument, propertyID string, timestamp string) (workspacestore.ViewDocument, bool) {
 	nextView := view
 	changed := false
+	if view.Grouping != nil && view.Grouping.PropertyID == propertyID {
+		nextView.Grouping = nil
+		nextView.GroupingNotice = "property-removed"
+		changed = true
+	}
 
 	visiblePropertyIDs := removeString(nextView.VisiblePropertyIDs, propertyID)
 	if len(visiblePropertyIDs) != len(nextView.VisiblePropertyIDs) {
@@ -1188,18 +1193,31 @@ func removePropertyFromView(view workspacestore.ViewDocument, propertyID string,
 }
 
 func removeSelectValueFromView(view workspacestore.ViewDocument, propertyID string, selectValueID string, timestamp string) (workspacestore.ViewDocument, bool) {
+	groupingChanged := false
+	if view.Grouping != nil && view.Grouping.PropertyID == propertyID {
+		grouping := *view.Grouping
+		key := "value:" + selectValueID
+		grouping.ManualOrder = removeString(grouping.ManualOrder, key)
+		grouping.HiddenGroupIDs = removeString(grouping.HiddenGroupIDs, key)
+		grouping.CollapsedGroupIDs = removeString(grouping.CollapsedGroupIDs, key)
+		groupingChanged = len(grouping.ManualOrder) != len(view.Grouping.ManualOrder) || len(grouping.HiddenGroupIDs) != len(view.Grouping.HiddenGroupIDs) || len(grouping.CollapsedGroupIDs) != len(view.Grouping.CollapsedGroupIDs)
+		if groupingChanged {
+			view.Grouping = &grouping
+			view.UpdatedAt = timestamp
+		}
+	}
 	if view.ValueVisibility == nil {
-		return view, false
+		return view, groupingChanged
 	}
 
 	setting, ok := view.ValueVisibility[propertyID]
 	if !ok {
-		return view, false
+		return view, groupingChanged
 	}
 
 	nextValueIDs := removeString(setting.ValueIDs, selectValueID)
 	if len(nextValueIDs) == len(setting.ValueIDs) {
-		return view, false
+		return view, groupingChanged
 	}
 
 	nextView := view

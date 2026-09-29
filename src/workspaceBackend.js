@@ -228,7 +228,7 @@ export async function createViewProjectionResponse({
 
     const view = await requireActiveWorkspaceView(viewStore, workspaceId, viewId);
     const projects = await projectProvider({ workspaceId });
-    const { visibleProperties, statusValues } = await propertyProvider({ workspaceId, view });
+    const { visibleProperties, statusValues, propertyDefinitions, selectValues } = await propertyProvider({ workspaceId, view });
 
     return createJsonResponse(200, createViewProjection({
       view,
@@ -236,6 +236,9 @@ export async function createViewProjectionResponse({
       visibleProperties,
       statusValues,
       searchQuery: body?.searchQuery,
+      locale: body?.locale === "ru" ? "ru" : "en",
+      propertyDefinitions,
+      selectValues,
     }));
   } catch (error) {
     return createWorkspaceViewErrorResponse(error);
@@ -365,6 +368,7 @@ export async function createUpdateViewResponse({
     const savedView = await viewStore.saveView(normalizeViewDocument({
       ...view,
       ...(body?.patch || {}),
+      ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null } : {}),
       updatedAt: now(),
     }));
 

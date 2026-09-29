@@ -321,7 +321,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /setOpen\(false\)/);
   assert.match(viewFilterMenuSource, /setActionsPropertyId\(null\)/);
   assert.match(viewFilterMenuSource, /open=\{open\}/);
-  assert.match(viewFilterMenuSource, /onOpenChange=\{setOpen\}/);
+  assert.match(viewFilterMenuSource, /onOpenChange=\{value => \{[\s\S]*?setOpen\(value\)/);
   assert.match(viewFilterMenuSource, /t\("view\.visibleProperties"\)/);
   assert.match(viewFilterMenuSource, /Columns3Icon className="size-4 text-muted-foreground"/);
   assert.match(viewFilterMenuSource, /h-6 min-w-6 justify-center rounded-full px-2/);

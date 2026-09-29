@@ -598,3 +598,37 @@ func containsString(values []string, expected string) bool {
 	}
 	return false
 }
+
+func TestGroupingOnlyDeletedPropertyDisablesWithNotice(t *testing.T) {
+	view := workspacestore.ViewDocument{
+		ID: "view:table", ViewType: "table", VisiblePropertyIDs: []string{"property:name"},
+		Grouping: &workspacestore.GroupingDocument{PropertyID: "property:hidden", Sort: "manual", ManualOrder: []string{"text:\"alpha\""}},
+	}
+	after, changed := removePropertyFromView(view, "property:hidden", "now")
+	if !changed || after.Grouping != nil || after.GroupingNotice != "property-removed" || after.UpdatedAt != "now" {
+		t.Fatalf("grouping-only property did not recover: %#v", after)
+	}
+	if view.Grouping == nil || view.Grouping.PropertyID != "property:hidden" {
+		t.Fatal("source view was mutated")
+	}
+}
+
+func TestDeletedGroupingCategoryPrunesAllSettingsWithoutFilter(t *testing.T) {
+	grouping := &workspacestore.GroupingDocument{
+		PropertyID: "property:tags", Sort: "manual", HideEmpty: true,
+		ManualOrder:    []string{"value:gone", "value:kept"},
+		HiddenGroupIDs: []string{"value:gone"}, CollapsedGroupIDs: []string{"value:gone"},
+	}
+	original := workspacestore.ViewDocument{ID: "view:table", ViewType: "table", Grouping: grouping}
+	after, changed := removeSelectValueFromView(original, "property:tags", "gone", "now")
+	if !changed || len(after.Grouping.ManualOrder) != 1 || after.Grouping.ManualOrder[0] != "value:kept" || len(after.Grouping.HiddenGroupIDs) != 0 || len(after.Grouping.CollapsedGroupIDs) != 0 || !after.Grouping.HideEmpty || after.UpdatedAt != "now" {
+		t.Fatalf("deleted group references retained or unrelated settings lost: %#v", after.Grouping)
+	}
+	if len(original.Grouping.ManualOrder) != 2 {
+		t.Fatal("source grouping mutated")
+	}
+	unrelated, changed := removeSelectValueFromView(original, "property:other", "gone", "later")
+	if changed || unrelated.Grouping != original.Grouping {
+		t.Fatal("unrelated grouping changed")
+	}
+}

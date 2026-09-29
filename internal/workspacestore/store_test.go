@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -529,4 +530,30 @@ func TestStorePersistsCustomPropertyDocuments(t *testing.T) {
 
 func stringPtr(value string) *string {
 	return &value
+}
+
+func TestTableGroupingPersistsAcrossReopen(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "grouping.db")
+	store, err := Open(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	grouping := &GroupingDocument{PropertyID: "property:tags", Sort: "manual", ManualOrder: []string{"value:one"}, HiddenGroupIDs: []string{"empty"}, CollapsedGroupIDs: []string{"value:one"}, HideEmpty: true}
+	if err := store.UpsertView(ctx, ViewDocument{ID: "view:table", WorkspaceID: "workspace:a", ViewType: "table", Grouping: grouping}); err != nil {
+		t.Fatal(err)
+	}
+	store.Close()
+	store, err = Open(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	got, err := store.GetView(ctx, "view:table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got.Grouping, grouping) {
+		t.Fatalf("grouping lost after reopen: %#v", got.Grouping)
+	}
 }

@@ -1,3 +1,5 @@
+import { createGroupingMutationQueue, type GroupingMutation } from "@/workspaceGroupingMutations.js";
+import { normalizeGrouping } from "@/workspaceGrouping.js";
 import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -192,6 +194,8 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
             : undefined,
           propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
           boardLayout: normalizeViewBoardLayout(view.boardLayout),
+          grouping: normalizeGrouping(view.grouping),
+          groupingNotice: getString(view.groupingNotice) || null,
         }))
         .filter((view) => view.id)
     : [];
@@ -428,6 +432,8 @@ function normalizeCreatedViewResponse(
       propertyLayout:
         normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
       boardLayout: normalizeViewBoardLayout(view.boardLayout || fallbackView.boardLayout),
+      grouping: normalizeGrouping(view.grouping),
+      groupingNotice: getString(view.groupingNotice) || null,
     },
   };
 }
@@ -543,7 +549,7 @@ function createClientDocumentId(prefix: string) {
 }
 
 export default function App() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
     undefined,
@@ -978,6 +984,7 @@ export default function App() {
           await workspaceClient.getViewProjection({
             workspaceId: root.workspaceId,
             viewId: activeViewId,
+            locale,
           }),
         );
 
@@ -1073,7 +1080,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [activeSurface, reloadToken, workspaceClient]);
+  }, [activeSurface, reloadToken, workspaceClient, locale]);
 
   useEffect(() => {
     if (
@@ -1098,6 +1105,7 @@ export default function App() {
           await workspaceClient.getViewProjection({
             workspaceId: state.workspaceId,
             viewId: state.activeViewId,
+            locale,
           }),
         );
 
@@ -1488,7 +1496,7 @@ export default function App() {
 
     const [viewsRawResponse, projectionRawResponse] = await Promise.all([
       workspaceClient.listViews({ workspaceId: state.workspaceId }),
-      workspaceClient.getViewProjection({ workspaceId: state.workspaceId, viewId }),
+      workspaceClient.getViewProjection({ workspaceId: state.workspaceId, viewId, locale }),
     ]);
     const viewsResponse = normalizeViewsResponse(viewsRawResponse, state.workspaceId);
     const projectionResponse = normalizeProjectionResponse(projectionRawResponse);
@@ -1519,6 +1527,24 @@ export default function App() {
     if (options.refreshProjection !== false) {
       await refreshActiveViewAfterPatch(activeViewId);
     }
+  }
+
+  const groupingSaveQueue = useRef(createGroupingMutationQueue(async (target, grouping) => {
+    await workspaceClient.updateView({ ...target, patch: { grouping } });
+  }));
+
+  function handleGroupingChange(mutation: GroupingMutation) {
+    const workspaceId = state.workspaceId;
+    const viewId = state.activeViewId;
+    if (!workspaceId || !viewId) return;
+    const initial = state.views.find(view => view.id === viewId)?.grouping;
+    void groupingSaveQueue.current.enqueue({ workspaceId, viewId }, initial, mutation)
+      .then(() => {
+        if (workspaceIdRef.current === workspaceId) setReloadToken(value => value + 1);
+      })
+      .catch(error => {
+        toast.error(t("group.saveFailed"), { description: getServiceErrorMessage(error, t) });
+      });
   }
 
   function getActiveViewState() {
@@ -1913,6 +1939,14 @@ export default function App() {
         currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject,
       );
       await refreshPropertyCatalog();
+      if (state.activeViewId) {
+        const projectionResponse = normalizeProjectionResponse(await workspaceClient.getViewProjection({
+          workspaceId: state.workspaceId,
+          viewId: state.activeViewId,
+          locale,
+        }));
+        dispatch({ type: "projectionUpdated", projectionResponse });
+      }
       toast.success(t("toast.propertyDeleted"));
     } catch (error) {
       toast.error(t("toast.propertyDeleteFailed"), {
@@ -2137,6 +2171,17 @@ export default function App() {
         requestVersion,
       });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+        if (state.projection?.view.grouping && state.activeViewId) {
+          const projectionResponse = normalizeProjectionResponse(await workspaceClient.getViewProjection({
+            workspaceId: state.workspaceId,
+            viewId: state.activeViewId,
+            locale,
+          }));
+          if (workspaceIdRef.current === state.workspaceId && isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
+            // The reducer also rejects a response for a view that is no longer active.
+            dispatch({ type: "projectionUpdated", projectionResponse });
+          }
+        }
         dispatchProjectTabs({
           type: "valueSaved",
           workspaceId: projectTabsWorkspaceId,
@@ -2348,7 +2393,7 @@ export default function App() {
     (activeViewType === "board"
       ? boardProjection.type === "board" &&
         boardProjection.columns.every((column) => column.projects.length === 0)
-      : tableProjection.type === "table" && tableProjection.rows.length === 0);
+      : tableProjection.type === "table" && tableProjection.rows.length === 0 && !tableProjection.groupOptions && !tableProjection.groupingNotice);
 
   const renderDetailPanel = (
     project = selectedProject,
@@ -2479,6 +2524,8 @@ export default function App() {
                 setActiveProjectTabId(null);
                 sendPane({ type: "selectView" });
               }}
+              groupOptions={tableProjection.type === "table" ? tableProjection.groupOptions : undefined}
+              onGroupingChange={handleGroupingChange}
               actionsHidden={projectFullScreen}
               projectTabs={
                 <WorkspaceProjectTabs
@@ -2679,6 +2726,7 @@ export default function App() {
                 {!searchHasNoResults && activeViewType === "table" ? (
                   <WorkspaceTableView
                     projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                    onGroupingChange={handleGroupingChange}
                     view={activeView ?? null}
                     visibleProperties={
                       visibleProperties as typeof workspaceMockProjection.visibleProperties

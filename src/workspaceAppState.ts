@@ -11,7 +11,27 @@ export type WorkspaceRootState = {
   readonly path: string;
 };
 
+export type WorkspaceGroupingState = {
+  readonly propertyId: string;
+  readonly sort: "default" | "ascending" | "descending" | "manual";
+  readonly manualOrder: readonly string[];
+  readonly hiddenGroupIds: readonly string[];
+  readonly collapsedGroupIds: readonly string[];
+  readonly hideEmpty: boolean;
+};
+export type WorkspaceTableGroup = {
+  readonly id: string;
+  readonly name: string;
+  readonly color?: string;
+  readonly empty: boolean;
+  readonly rows: readonly unknown[];
+  readonly count: number;
+  readonly hidden: boolean;
+  readonly collapsed: boolean;
+};
 export type WorkspaceViewState = {
+  readonly grouping?: WorkspaceGroupingState | null;
+  readonly groupingNotice?: string | null;
   readonly id: string;
   readonly name: string;
   readonly viewType: string;
@@ -97,6 +117,10 @@ export type WorkspaceProjectionResponse = {
     | {
         readonly type: "table";
         readonly rows: readonly unknown[];
+        readonly groups?: readonly WorkspaceTableGroup[];
+        readonly groupOptions?: readonly WorkspaceTableGroup[];
+        readonly totalProjectCount?: number;
+        readonly groupingNotice?: string;
       };
 };
 
@@ -876,11 +900,19 @@ export function filterWorkspaceProjectionBySearch(
   }
 
   if (projectionResponse.projection.type === "table") {
+    const rows = projectionResponse.projection.rows.filter(project => projectMatchesSearch(project, query));
+    const filterGroups = (groups: readonly WorkspaceTableGroup[] | undefined) => groups?.map(group => {
+      const groupRows = group.rows.filter(project => projectMatchesSearch(project, query));
+      return { ...group, rows: groupRows, count: groupRows.length };
+    });
     return {
       ...projectionResponse,
       projection: {
         ...projectionResponse.projection,
-        rows: projectionResponse.projection.rows.filter((project) => projectMatchesSearch(project, query)),
+        rows,
+        totalProjectCount: new Set(rows.map(project => isRecord(project) ? project.id : project)).size,
+        groups: filterGroups(projectionResponse.projection.groups)?.filter(group => !projectionResponse.view.grouping?.hideEmpty || group.count > 0),
+        groupOptions: filterGroups(projectionResponse.projection.groupOptions),
       },
     };
   }
@@ -936,6 +968,7 @@ function removeViewPropertyReference(
     propertyOrder,
     valueVisibility,
     propertyLayout,
+    ...(view.grouping?.propertyId === propertyId ? { grouping: null, groupingNotice: "property-removed" } : {}),
   };
 }
 
@@ -980,6 +1013,9 @@ function removeProjectionProperty({
       ...nextProjectionResponse,
       projection: {
         ...projectionResponse.projection,
+        ...(projectionResponse.view.grouping?.propertyId === propertyId ? {
+          groups: undefined, groupOptions: undefined, groupingNotice: "property-removed",
+        } : {}),
         rows: projectionResponse.projection.rows.map((project) =>
           removeProjectPropertyValue(project, propertyId),
         ),

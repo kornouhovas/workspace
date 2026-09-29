@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: legacy views remain flat and grouping settings normalize without aliases
+not ok 1 - legacy views remain flat and grouping settings normalize without aliases
+  ---
+  duration_ms: 2.974209
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+
+    + undefined
+    - null
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ~
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:9:93)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    node:internal/test_runner/harness:255:12
+    node:internal/process/task_queues:140:7
+    AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    AsyncResource.runMicrotask (node:internal/process/task_queues:137:8)
+  ...
+# Subtest: grouping accepts hidden existing properties and rejects invalid references and sorts
+not ok 2 - grouping accepts hidden existing properties and rejects invalid references and sorts
+  ---
+  duration_ms: 0.3685
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:10:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    code: 'INVALID_PROPERTY_REFERENCE'
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:10:213)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: all types use exact typed values, numeric/date ordering and empty last
+not ok 3 - all types use exact typed values, numeric/date ordering and empty last
+  ---
+  duration_ms: 0.233291
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:11:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'map')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:11:125)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: catalog order and multi-select membership use unique project IDs without copies
+not ok 4 - catalog order and multi-select membership use unique project IDs without copies
+  ---
+  duration_ms: 0.11225
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:12:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'map')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:12:151)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: filters/search precede counts but preserve unfiltered group universe
+not ok 5 - filters/search precede counts but preserve unfiltered group universe
+  ---
+  duration_ms: 0.285208
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:13:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'map')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:13:160)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: manual order, visibility, collapse and hide-empty never mutate catalog or projects
+not ok 6 - manual order, visibility, collapse and hide-empty never mutate catalog or projects
+  ---
+  duration_ms: 0.354208
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:14:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'map')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:14:337)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: deleted grouping property safely disables and reports recovery; deleted values normalize to empty
+not ok 7 - deleted grouping property safely disables and reports recovery; deleted values normalize to empty
+  ---
+  duration_ms: 0.224959
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:15:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+
+    + undefined
+    - 'property-removed'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'property-removed'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGrouping.test.js:15:178)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 0
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 79.434333

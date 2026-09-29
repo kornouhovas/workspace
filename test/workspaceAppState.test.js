@@ -1016,3 +1016,31 @@ test("rootless recovery retains target identity and clears the outgoing workspac
   assert.equal(recovered.propertyCatalog, null);
   assert.deepEqual(recovered.folderRoleTree, []);
 });
+
+test('Table search preserves empty group catalog and counts unique displayed memberships', async () => {
+  const {filterWorkspaceProjectionBySearch}=await importAppStateModule();
+  const alpha={id:'a',name:'Alpha'},beta={id:'b',name:'Beta'};
+  const group=(id,rows)=>({id,name:id,rows,count:rows.length,hidden:false,collapsed:false,empty:false});
+  const groups=[group('one',[alpha,beta]),group('two',[alpha]),group('unused',[])];
+  const response={workspaceId:'a',view:{id:'table',grouping:{propertyId:'tags',hideEmpty:false}},projection:{type:'table',rows:[alpha,beta],groups,groupOptions:groups}};
+  const filtered=filterWorkspaceProjectionBySearch(response,'Alpha').projection;
+  assert.equal(filtered.totalProjectCount,1);assert.deepEqual(filtered.groups.map(g=>g.count),[1,1,0]);
+  const empty=filterWorkspaceProjectionBySearch(response,'missing').projection;assert.equal(empty.groups.length,3);assert.equal(empty.totalProjectCount,0);
+  const hiddenEmpty=filterWorkspaceProjectionBySearch({...response,view:{...response.view,grouping:{propertyId:'tags',hideEmpty:true}}},'missing').projection;
+  assert.equal(hiddenEmpty.groups.length,0);assert.equal(hiddenEmpty.groupOptions.length,3);
+});
+
+test('a delayed grouped projection cannot replace a different active view after property save', async () => {
+  const {workspaceAppStateReducer,createInitialWorkspaceAppState}=await importAppStateModule();
+  const state={...createInitialWorkspaceAppState(),status:'ready',workspaceId:'workspace:a',activeViewId:'view:b',projection:{workspaceId:'workspace:a',view:{id:'view:b',grouping:{propertyId:'date'}},projection:{type:'table',rows:[],groups:[]}}};
+  const late={workspaceId:'workspace:a',view:{id:'view:a',grouping:{propertyId:'tags'}},projection:{type:'table',rows:[{id:'alpha'}],groups:[]}};
+  assert.equal(workspaceAppStateReducer(state,{type:'projectionUpdated',projectionResponse:late}),state);
+});
+
+test('deleting the grouping property immediately clears section rendering and shows recovery notice', async () => {
+  const {workspaceAppStateReducer,createInitialWorkspaceAppState}=await importAppStateModule();
+  const view={id:'table',viewType:'table',grouping:{propertyId:'tags'}};
+  const state={...createInitialWorkspaceAppState(),status:'ready',views:[view],projection:{workspaceId:'a',view,visibleProperties:[{id:'tags'}],projection:{type:'table',rows:[{id:'alpha',propertyValues:{tags:['one']}}],groups:[{id:'value:one',rows:[{id:'alpha'}]}],groupOptions:[]}}};
+  const after=workspaceAppStateReducer(state,{type:'propertyDeleted',propertyId:'tags'});
+  assert.equal(after.views[0].grouping,null);assert.equal(after.projection.projection.groups,undefined);assert.equal(after.projection.projection.groupingNotice,'property-removed');assert.equal(after.projection.projection.rows.length,1);
+});

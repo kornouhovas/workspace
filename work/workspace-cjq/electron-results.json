@@ -1,0 +1,476 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-cjq-mCDJp3",
+  "metadata": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-cjq-mCDJp3/metadata",
+  "provenance": "Real Electron 41; isolated metadata/source; renderer screenshots and inputs via Playwright CDP; picker outcome for temporary B source injected; no native titlebar claim.",
+  "checks": [
+    {
+      "name": "legacy Table flat",
+      "passed": true
+    },
+    {
+      "name": "Group by UI persisted",
+      "passed": true
+    },
+    {
+      "name": "group sections rendered",
+      "passed": true
+    },
+    {
+      "name": "Electron grouping property:name",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "text:\"Alpha\"",
+            1
+          ],
+          [
+            "text:\"Beta\"",
+            1
+          ],
+          [
+            "text:\"Delta\"",
+            1
+          ],
+          [
+            "text:\"Gamma\"",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping property:status",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "value:statusValue:workspace-6524ac83bece2b83:active",
+            3
+          ],
+          [
+            "value:statusValue:workspace-6524ac83bece2b83:done",
+            1
+          ],
+          [
+            "empty",
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping text",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "text:\" A\\nSecond line with a long description that wraps around the cell and keeps exact whitespace\"",
+            1
+          ],
+          [
+            "text:\"a\"",
+            1
+          ],
+          [
+            "text:\"A\"",
+            1
+          ],
+          [
+            "empty",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping number",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "number:0",
+            1
+          ],
+          [
+            "number:2",
+            1
+          ],
+          [
+            "number:10",
+            1
+          ],
+          [
+            "empty",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping date",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "date:\"2026-01-01\"",
+            1
+          ],
+          [
+            "date:\"2026-09-01\"",
+            2
+          ],
+          [
+            "empty",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping select",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "value:selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-42adaa87-f102-40db-b32e-c48961d6a9d8",
+            2
+          ],
+          [
+            "value:selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-3c66ebc8-3604-490e-b99f-cf5ebd8fd340",
+            1
+          ],
+          [
+            "value:selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-1a2309de-f658-4241-9501-1eec494e7e83",
+            0
+          ],
+          [
+            "empty",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "Electron grouping multi-select",
+      "passed": true,
+      "data": {
+        "groups": [
+          [
+            "value:selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-f20f0d0f-a49f-417a-891b-921023204d7a",
+            2
+          ],
+          [
+            "value:selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-6fe06505-5b6f-4f5b-bd7c-f48846d02d4d",
+            2
+          ],
+          [
+            "value:selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-9a404c54-6f12-496f-b389-58b974333e71",
+            0
+          ],
+          [
+            "empty",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "multiselect unique total",
+      "passed": true
+    },
+    {
+      "name": "keyboard collapse persisted",
+      "passed": true
+    },
+    {
+      "name": "collapse all",
+      "passed": true
+    },
+    {
+      "name": "expand all",
+      "passed": true
+    },
+    {
+      "name": "hide empty UI",
+      "passed": true
+    },
+    {
+      "name": "hide group UI",
+      "passed": true
+    },
+    {
+      "name": "restore group UI",
+      "passed": true
+    },
+    {
+      "name": "manual order UI",
+      "passed": true
+    },
+    {
+      "name": "search group count updates",
+      "passed": true
+    },
+    {
+      "name": "zero search retains empty group sections",
+      "passed": true
+    },
+    {
+      "name": "zero search hide-empty hides sections",
+      "passed": true
+    },
+    {
+      "name": "delayed rapid UI changes merge both visibility keys",
+      "passed": true
+    },
+    {
+      "name": "delayed double manual move composes",
+      "passed": true
+    },
+    {
+      "name": "hidden grouping property",
+      "passed": true
+    },
+    {
+      "name": "number editor regroups",
+      "passed": true
+    },
+    {
+      "name": "real duplicate copies grouping independently",
+      "passed": true
+    },
+    {
+      "name": "view A-B-A independent",
+      "passed": true
+    },
+    {
+      "name": "workspace B grouped source independent",
+      "passed": true
+    },
+    {
+      "name": "workspace A-B-A settings retained",
+      "passed": true
+    },
+    {
+      "name": "grouped name opens project",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1440×960",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1024×720",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1440×960",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1024×720",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "restart persists settings",
+      "passed": true
+    },
+    {
+      "name": "rename/color preserve group keys",
+      "passed": true
+    },
+    {
+      "name": "delete value normalizes references",
+      "passed": true
+    },
+    {
+      "name": "deleted property notice and flat fallback",
+      "passed": true
+    },
+    {
+      "name": "new grouping clears notice",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/initial-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1440-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Light-1024-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1440-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-cjq/Dark-1024-collapsed-flat.png"
+  ],
+  "ids": {
+    "workspaceId": "workspace:6524ac83bece2b83",
+    "tableId": "view:default-table",
+    "workspaceB": "workspace:6524ac83bece2b83:76de6efa-1d39-4cd2-8acb-c7eb1543963d"
+  },
+  "projects": [
+    {
+      "id": "object:workspace-6524ac83bece2b83:active-alpha-1r7off",
+      "name": "Alpha",
+      "currentRelativePath": "Active/Alpha",
+      "status": {
+        "id": "statusValue:workspace-6524ac83bece2b83:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Alpha",
+        "property:status": "statusValue:workspace-6524ac83bece2b83:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-6524ac83bece2b83:active-beta-118unb",
+      "name": "Beta",
+      "currentRelativePath": "Active/Beta",
+      "status": {
+        "id": "statusValue:workspace-6524ac83bece2b83:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Beta",
+        "property:status": "statusValue:workspace-6524ac83bece2b83:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-6524ac83bece2b83:active-gamma-1i4p9t",
+      "name": "Gamma",
+      "currentRelativePath": "Active/Gamma",
+      "status": {
+        "id": "statusValue:workspace-6524ac83bece2b83:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Gamma",
+        "property:status": "statusValue:workspace-6524ac83bece2b83:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-6524ac83bece2b83:done-delta-14j5z8",
+      "name": "Delta",
+      "currentRelativePath": "Done/Delta",
+      "status": {
+        "id": "statusValue:workspace-6524ac83bece2b83:done",
+        "name": "Done",
+        "relativePath": "Done",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Delta",
+        "property:status": "statusValue:workspace-6524ac83bece2b83:done"
+      },
+      "fileTree": []
+    }
+  ],
+  "props": {
+    "text": "property:2ca0fd8d-16dd-4db6-83c4-0d06435371c1",
+    "number": "property:a23f05f8-91f2-4cf2-aa88-23860117b3fa",
+    "date": "property:25151d98-214a-40f9-ab32-94d3ee6dc376",
+    "select": "property:98f1c5c7-5305-4349-ba86-5e683771d236",
+    "multi-select": "property:3c038d97-1287-4b5c-9ec9-aaea194658f7"
+  },
+  "values": {
+    "select": [
+      "selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-42adaa87-f102-40db-b32e-c48961d6a9d8",
+      "selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-3c66ebc8-3604-490e-b99f-cf5ebd8fd340",
+      "selectValue:property-98f1c5c7-5305-4349-ba86-5e683771d236-1a2309de-f658-4241-9501-1eec494e7e83"
+    ],
+    "multi-select": [
+      "selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-f20f0d0f-a49f-417a-891b-921023204d7a",
+      "selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-6fe06505-5b6f-4f5b-bd7c-f48846d02d4d",
+      "selectValue:property-3c038d97-1287-4b5c-9ec9-aaea194658f7-9a404c54-6f12-496f-b389-58b974333e71"
+    ]
+  }
+}

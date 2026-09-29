@@ -1,3 +1,4 @@
+import { removeGroupingValue } from "../src/workspaceGrouping.js";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
 import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
@@ -483,6 +484,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         workspaceId,
         propertyScopeId: sourceFolderId,
         propertyStore,
+        viewStore,
         now,
       });
     }
@@ -667,6 +669,8 @@ export function createWorkspaceIpcHandler(options = {}) {
               propertyDefinitions,
             }),
             statusValues,
+            propertyDefinitions,
+            selectValues: await propertyStore.listSelectValues(sourceFolderId),
           };
         },
       }));
@@ -1136,6 +1140,8 @@ async function removePropertyFromSourceViews({ viewStore, sourceFolderId, proper
         hiddenPropertyIds,
         propertyOrder,
         valueVisibility,
+        propertyLayout: Object.fromEntries(Object.entries(view.propertyLayout || {}).filter(([id]) => id !== propertyId)),
+        ...(view.grouping?.propertyId === propertyId ? { grouping: null, groupingNotice: "property-removed" } : {}),
         updatedAt: now,
       });
     }
@@ -1260,7 +1266,7 @@ async function reorderSelectValuesResult({ body, workspaceId, propertyScopeId, p
   };
 }
 
-async function deleteSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, now }) {
+async function deleteSelectValueResult({ body, workspaceId, propertyScopeId, propertyStore, viewStore, now }) {
   const selectValueId = requirePayloadString(body, "selectValueId");
   const selectValue = await requireSelectValue({ workspaceId: propertyScopeId, selectValueId, propertyStore });
   const property = await requireSelectableProperty({
@@ -1308,6 +1314,20 @@ async function deleteSelectValueResult({ body, workspaceId, propertyScopeId, pro
       timestamp,
       reason: "select-value-deleted",
     }));
+  }
+
+  for (const workspace of await viewStore.listWorkspaces(propertyScopeId)) {
+    for (const view of await viewStore.listViews(workspace.id)) {
+      const valueVisibility = structuredClone(view.valueVisibility || {});
+      const filter = valueVisibility[property.id];
+      if (filter) {
+        filter.valueIds = filter.valueIds.filter(id => id !== selectValue.id);
+        if (!filter.valueIds.length && !filter.includeEmpty) delete valueVisibility[property.id];
+      }
+      const grouping = view.grouping?.propertyId === property.id ? removeGroupingValue(view.grouping, selectValue.id) : view.grouping;
+      if (JSON.stringify(grouping) !== JSON.stringify(view.grouping) || JSON.stringify(valueVisibility) !== JSON.stringify(view.valueVisibility || {}))
+        await viewStore.saveView({...view, grouping, valueVisibility, updatedAt: timestamp});
+    }
   }
 
   return {

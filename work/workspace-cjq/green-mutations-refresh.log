@@ -1,0 +1,20 @@
+TAP version 13
+# Subtest: rapid grouping changes merge latest draft, serialize writes and isolate view targets
+ok 1 - rapid grouping changes merge latest draft, serialize writes and isolate view targets
+  ---
+  duration_ms: 7.976709
+  ...
+# Subtest: resolved save keeps its draft until refreshed view arrives
+ok 2 - resolved save keeps its draft until refreshed view arrives
+  ---
+  duration_ms: 0.330166
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 67.7435

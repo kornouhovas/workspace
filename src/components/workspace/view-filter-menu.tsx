@@ -1,3 +1,4 @@
+import { WorkspaceViewGroupMenu } from "./view-group-menu";
 import {
   useEffect,
   useRef,
@@ -12,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -71,6 +73,8 @@ type WorkspaceViewFilterMenuProps = {
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
+  readonly groupOptions?: readonly import("@/workspaceAppState").WorkspaceTableGroup[];
+  readonly onGroupingChange?: (mutation: import("@/workspaceGroupingMutations").GroupingMutation) => void;
 };
 
 type WorkspaceFilterValue = {
@@ -132,7 +136,7 @@ function getFilterValues(
 }
 
 function keepDropdownOpenForActionsPopover(event: { target: EventTarget | null; preventDefault: () => void }) {
-  if (event.target instanceof Element && event.target.closest("[data-workspace-actions-popover='true']")) {
+  if (event.target instanceof Element && event.target.closest("[data-workspace-actions-popover='true'], [data-workspace-group-menu='true']")) {
     event.preventDefault();
   }
 }
@@ -152,7 +156,7 @@ const valueFilterItemClassName =
 
 const propertyDragStartThreshold = 4;
 const viewFilterMenuSurfaceSelector =
-  "[data-workspace-view-filter-menu='true'], [data-workspace-actions-popover='true']";
+  "[data-workspace-view-filter-menu='true'], [data-workspace-actions-popover='true'], [data-workspace-group-menu='true']";
 
 export function WorkspaceViewFilterMenu({
   view,
@@ -168,9 +172,12 @@ export function WorkspaceViewFilterMenu({
   onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
+  groupOptions = [],
+  onGroupingChange,
 }: WorkspaceViewFilterMenuProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [groupPanel, setGroupPanel] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [editingPropertyName, setEditingPropertyName] = useState("");
   const [actionsPropertyId, setActionsPropertyId] = useState<string | null>(null);
@@ -646,7 +653,10 @@ export function WorkspaceViewFilterMenu({
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={value => {
+      setOpen(value);
+      if (!value) setGroupPanel(false);
+    }}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon" className="workspace-top-action" aria-label={t("view.customizeColumns")} title={t("view.customizeColumns")}>
           <SlidersHorizontalIcon aria-hidden="true" />
@@ -657,7 +667,25 @@ export function WorkspaceViewFilterMenu({
         align="end"
         className={`${workspaceMenuContentClassName} max-h-[calc(100vh-4.5rem)] w-72 overflow-x-hidden overflow-y-auto p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
+        onKeyDownCapture={event => {
+          if (groupPanel && event.key === "Tab") event.stopPropagation();
+        }}
       >
+        {groupPanel && view && onGroupingChange ? <WorkspaceViewGroupMenu view={view} properties={properties} groups={groupOptions} onChange={onGroupingChange} onBack={() => setGroupPanel(false)} /> : <>
+        {view?.viewType === "table" && onGroupingChange ? <>
+          <DropdownMenuItem
+            data-workspace-group-trigger="true"
+            className={`${workspaceMenuItemClassName} w-full justify-between`}
+            onSelect={event => { event.preventDefault(); setGroupPanel(true); }}
+          >
+            <span>{t("group.title")}</span>
+            <span className="ml-auto max-w-36 truncate text-muted-foreground">
+              {properties.find(property => property.id === view.grouping?.propertyId)?.name ?? t("group.none")}
+            </span>
+            <ChevronRightIcon className="size-3" />
+          </DropdownMenuItem>
+          <Separator className={workspaceMenuSeparatorClassName}/>
+        </> : null}
         <div className="grid gap-2 p-2.5">
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between gap-2">
@@ -804,6 +832,7 @@ export function WorkspaceViewFilterMenu({
             </div>
           </>
         ) : null}
+        </>}
       </DropdownMenuContent>
     </DropdownMenu>
   );

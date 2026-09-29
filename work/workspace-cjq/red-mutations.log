@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: rapid grouping changes merge latest draft, serialize writes and isolate view targets
+not ok 1 - rapid grouping changes merge latest draft, serialize writes and isolate view targets
+  ---
+  duration_ms: 1.425084
+  location: '/Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGroupingMutations.test.js:2:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot find module '/Users/aleksandersk/Documents/programming/Projects/project_folder/src/workspaceGroupingMutations.js' imported from /Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGroupingMutations.test.js"
+  code: 'ERR_MODULE_NOT_FOUND'
+  stack: |-
+    finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    moduleResolve (node:internal/modules/esm/resolve:952:10)
+    defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    ModuleLoader.defaultResolve (node:internal/modules/esm/loader:542:12)
+    ModuleLoader.resolve (node:internal/modules/esm/loader:510:25)
+    ModuleLoader.getModuleJob (node:internal/modules/esm/loader:239:38)
+    ModuleLoader.import (node:internal/modules/esm/loader:472:34)
+    defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:214:31)
+    importModuleDynamicallyCallback (node:internal/modules/esm/utils:253:12)
+    TestContext.<anonymous> (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/test/workspaceGroupingMutations.test.js:3:38)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 52.6155

@@ -1245,3 +1245,23 @@ test("rootless workspaces survive restart and selecting their source preserves s
     assert.equal((await restarted(null, "workspace.getRoot", { workspaceId: b })).root.rootPath, "");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test('Table grouping persists in JSON IPC across views/restart and property deletion disables grouping', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'workspace-grouping-ipc-'));
+  try {
+    const rootPath=join(dir,'projects');await mkdir(join(rootPath,'Active','Alpha'),{recursive:true});
+    const configPath=join(dir,'settings.json'),viewStorePath=join(dir,'views.json');await writeFile(configPath,JSON.stringify({rootPath}));
+    const options={configPath,viewStorePath,propertyStorePath:join(dir,'properties.json')};
+    let handler=createWorkspaceIpcHandler(options);const root=await handler(null,'workspace.getRoot',{});const workspaceId=root.root.workspaceId;
+    const property=await handler(null,'workspace.createProperty',{workspaceId,name:'Tags',type:'multi-select'});
+    const propertyId=property.property.id;
+    const views=await handler(null,'workspace.listViews',{workspaceId});const table=views.views.find(v=>v.viewType==='table');
+    const grouping={propertyId,sort:'manual',manualOrder:['empty'],hiddenGroupIds:[],collapsedGroupIds:['empty'],hideEmpty:false};
+    await handler(null,'workspace.updateView',{workspaceId,viewId:table.id,patch:{grouping}});
+    handler=createWorkspaceIpcHandler(options);
+    const saved=await handler(null,'workspace.listViews',{workspaceId});assert.deepEqual(saved.views.find(v=>v.id===table.id).grouping,grouping);assert.equal(saved.views.find(v=>v.viewType==='board').grouping,null);
+    const projection=await handler(null,'workspace.getViewProjection',{workspaceId,viewId:table.id});assert.equal(projection.projection.groups[0].collapsed,true);assert.equal(projection.projection.totalProjectCount,1);
+    await handler(null,'workspace.deleteProperty',{workspaceId,propertyId,confirmDeleteUsages:true});
+    const after=await handler(null,'workspace.listViews',{workspaceId});assert.equal(after.views.find(v=>v.id===table.id).grouping,null);assert.equal(after.views.find(v=>v.id===table.id).groupingNotice,'property-removed');
+  } finally {await rm(dir,{recursive:true,force:true});}
+});

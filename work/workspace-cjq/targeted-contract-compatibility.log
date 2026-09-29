@@ -1,0 +1,241 @@
+TAP version 13
+# Subtest: renderer composes the workspace product shell
+ok 1 - renderer composes the workspace product shell
+  ---
+  duration_ms: 27.716333
+  ...
+# Subtest: workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+ok 2 - workspace backend uses .workspace default data paths and exposes legacy .folder-kanban paths
+  ---
+  duration_ms: 0.666
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+ok 3 - readWorkspaceSettings migrates legacy settings when the workspace settings file is missing
+  ---
+  duration_ms: 6.751042
+  ...
+# Subtest: workspace backend uses existing .workspace settings over legacy settings without overwriting it
+ok 4 - workspace backend uses existing .workspace settings over legacy settings without overwriting it
+  ---
+  duration_ms: 1.771584
+  ...
+# Subtest: readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+ok 5 - readWorkspaceSettings surfaces corrupt .workspace settings without legacy migration
+  ---
+  duration_ms: 1.699
+  ...
+# Subtest: readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+ok 6 - readWorkspaceSettings migrates legacy settings from custom .workspace companion path
+  ---
+  duration_ms: 1.498292
+  ...
+# Subtest: readWorkspaceSettings custom path without .workspace does not read default legacy settings
+ok 7 - readWorkspaceSettings custom path without .workspace does not read default legacy settings
+  ---
+  duration_ms: 2.40375
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+ok 8 - readWorkspaceProperties migrates legacy properties when the workspace properties file is missing
+  ---
+  duration_ms: 1.644375
+  ...
+# Subtest: readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+ok 9 - readWorkspaceProperties surfaces corrupt .workspace properties without legacy migration
+  ---
+  duration_ms: 1.184792
+  ...
+# Subtest: writeWorkspaceSettings preserves corrupt existing settings before replacing them
+ok 10 - writeWorkspaceSettings preserves corrupt existing settings before replacing them
+  ---
+  duration_ms: 1.64075
+  ...
+# Subtest: readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+ok 11 - readWorkspaceProperties migrates legacy properties from custom .workspace companion path
+  ---
+  duration_ms: 2.221
+  ...
+# Subtest: readWorkspaceProperties custom path without .workspace does not read default legacy properties
+ok 12 - readWorkspaceProperties custom path without .workspace does not read default legacy properties
+  ---
+  duration_ms: 2.304625
+  ...
+# Subtest: createSelectRootResponse saves the selected backend root
+ok 13 - createSelectRootResponse saves the selected backend root
+  ---
+  duration_ms: 2.881583
+  ...
+# Subtest: createScanResponse builds access tree and cards from saved root
+ok 14 - createScanResponse builds access tree and cards from saved root
+  ---
+  duration_ms: 10.368833
+  ...
+# Subtest: createScanResponse can include card descendants for settings folder role configuration
+ok 15 - createScanResponse can include card descendants for settings folder role configuration
+  ---
+  duration_ms: 2.49525
+  ...
+# Subtest: createScanResponse does not expose legacy text as a default card property
+ok 16 - createScanResponse does not expose legacy text as a default card property
+  ---
+  duration_ms: 1.873959
+  ...
+# Subtest: createProjectFileTreeResponse returns a selected project folder tree on demand
+ok 17 - createProjectFileTreeResponse returns a selected project folder tree on demand
+  ---
+  duration_ms: 2.271084
+  ...
+# Subtest: createPropertiesResponse requires an explicit user property id
+ok 18 - createPropertiesResponse requires an explicit user property id
+  ---
+  duration_ms: 1.687875
+  ...
+# Subtest: createPropertiesResponse validates custom properties without overwriting text json
+ok 19 - createPropertiesResponse validates custom properties without overwriting text json
+  ---
+  duration_ms: 2.067334
+  ...
+# Subtest: createPropertiesResponse rejects properties outside workspace root
+ok 20 - createPropertiesResponse rejects properties outside workspace root
+  ---
+  duration_ms: 1.303084
+  ...
+# Subtest: createListEntriesResponse returns visible folders first then files
+ok 21 - createListEntriesResponse returns visible folders first then files
+  ---
+  duration_ms: 1.739792
+  ...
+# Subtest: createListEntriesResponse can list the selected root folder
+ok 22 - createListEntriesResponse can list the selected root folder
+  ---
+  duration_ms: 2.430542
+  ...
+# Subtest: createFileResponse streams previewable files inside root
+ok 23 - createFileResponse streams previewable files inside root
+  ---
+  duration_ms: 1.582292
+  ...
+# Subtest: createFileResponse rejects symlink previews outside root
+ok 24 - createFileResponse rejects symlink previews outside root
+  ---
+  duration_ms: 1.800584
+  ...
+# Subtest: createFileResponse rejects unsupported types and broken symlink previews
+ok 25 - createFileResponse rejects unsupported types and broken symlink previews
+  ---
+  duration_ms: 4.001625
+  ...
+# Subtest: workspace backend rejects paths outside root
+ok 26 - workspace backend rejects paths outside root
+  ---
+  duration_ms: 1.145333
+  ...
+# Subtest: workspace backend rejects an explicit directory symlink outside root
+ok 27 - workspace backend rejects an explicit directory symlink outside root
+  ---
+  duration_ms: 3.8625
+  ...
+# Subtest: createCreateViewResponse creates a default active Board view
+ok 28 - createCreateViewResponse creates a default active Board view
+  ---
+  duration_ms: 0.700584
+  ...
+# Subtest: createListViewsResponse preserves explicit view property visibility while normalizing defaults
+ok 29 - createListViewsResponse preserves explicit view property visibility while normalizing defaults
+  ---
+  duration_ms: 0.229291
+  ...
+# Subtest: createReorderViewsResponse updates orders and preserves active view
+ok 30 - createReorderViewsResponse updates orders and preserves active view
+  ---
+  duration_ms: 0.2815
+  ...
+# Subtest: createReorderViewsResponse rejects invalid view orders without mutation
+    # Subtest: duplicate active id
+    ok 1 - duplicate active id
+      ---
+      duration_ms: 0.138708
+      ...
+    # Subtest: missing active id
+    ok 2 - missing active id
+      ---
+      duration_ms: 0.072084
+      ...
+    # Subtest: extra foreign id
+    ok 3 - extra foreign id
+      ---
+      duration_ms: 0.155625
+      ...
+    # Subtest: deleted id
+    ok 4 - deleted id
+      ---
+      duration_ms: 0.060125
+      ...
+    # Subtest: missing payload
+    ok 5 - missing payload
+      ---
+      duration_ms: 0.0855
+      ...
+    # Subtest: non-array payload
+    ok 6 - non-array payload
+      ---
+      duration_ms: 0.055584
+      ...
+    1..6
+ok 31 - createReorderViewsResponse rejects invalid view orders without mutation
+  ---
+  duration_ms: 0.925917
+  ...
+# Subtest: createSetActiveViewResponse rejects missing foreign and deleted views
+ok 32 - createSetActiveViewResponse rejects missing foreign and deleted views
+  ---
+  duration_ms: 0.150959
+  ...
+# Subtest: createSetActiveViewResponse saves a valid active view
+ok 33 - createSetActiveViewResponse saves a valid active view
+  ---
+  duration_ms: 0.088958
+  ...
+# Subtest: createUpdateViewResponse validates patch references and saves normalized updated view
+ok 34 - createUpdateViewResponse validates patch references and saves normalized updated view
+  ---
+  duration_ms: 0.568375
+  ...
+# Subtest: createUpdateViewResponse forbids invalid view patches
+ok 35 - createUpdateViewResponse forbids invalid view patches
+  ---
+  duration_ms: 0.081958
+  ...
+# Subtest: createUpdateViewResponse rejects property order for hidden properties
+ok 36 - createUpdateViewResponse rejects property order for hidden properties
+  ---
+  duration_ms: 0.166916
+  ...
+# Subtest: createDeleteViewResponse blocks deleting the last non-deleted view
+ok 37 - createDeleteViewResponse blocks deleting the last non-deleted view
+  ---
+  duration_ms: 0.107834
+  ...
+# Subtest: createDeleteViewResponse soft-deletes a non-last active view and switches active view
+ok 38 - createDeleteViewResponse soft-deletes a non-last active view and switches active view
+  ---
+  duration_ms: 0.132209
+  ...
+# Subtest: createViewProjectionResponse projects board and table views with async providers
+ok 39 - createViewProjectionResponse projects board and table views with async providers
+  ---
+  duration_ms: 0.540291
+  ...
+# Subtest: createViewProjectionResponse rejects missing active view when view id is omitted
+ok 40 - createViewProjectionResponse rejects missing active view when view id is omitted
+  ---
+  duration_ms: 0.055875
+  ...
+1..40
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 128.104875

@@ -1,0 +1,6 @@
+# workspace/internal/workspacestore [workspace/internal/workspacestore.test]
+internal/workspacestore/store_test.go:540:15: undefined: GroupingDocument
+internal/workspacestore/store_test.go:541:106: unknown field Grouping in struct literal of type ViewDocument
+internal/workspacestore/store_test.go:545:28: got.Grouping undefined (type ViewDocument has no field or method Grouping)
+FAIL	workspace/internal/workspacestore [build failed]
+FAIL

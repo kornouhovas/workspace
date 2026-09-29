@@ -391,3 +391,5 @@ Rules:
 - If feature UI grows, introduce feature folders only after approval, for example `src/features/workspace/components/`.
 - Do not move shadcn component files casually; updates and CLI behavior expect stable paths from `components.json`.
 - Global theme tokens belong in `src/styles.css`.
+
+Table grouping uses the common dropdown/submenu/Button primitives and existing compact menu styles. Group by and Sort are independently named keyboard controls. Section toggle buttons expose `aria-expanded` and a localized action plus full group name; long section names truncate with a full title. Manual group move controls have named up/down actions; visibility controls are named Show/Hide group. Group sections share the same table header and column grid, retaining consistent widths and horizontal scroll.

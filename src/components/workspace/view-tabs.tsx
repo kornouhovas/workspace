@@ -76,6 +76,8 @@ type WorkspaceViewTabsProps = {
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
+  readonly groupOptions?: readonly import("@/workspaceAppState").WorkspaceTableGroup[];
+  readonly onGroupingChange?: (mutation: import("@/workspaceGroupingMutations").GroupingMutation) => void;
 };
 
 type ViewTabDragPreviewItem = {
@@ -151,6 +153,8 @@ export function WorkspaceViewTabs({
   onReorderViewProperties,
   onRenameProperty,
   onDeleteProperty,
+  groupOptions = [],
+  onGroupingChange,
 }: WorkspaceViewTabsProps) {
   const { t } = useI18n();
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
@@ -590,6 +594,8 @@ export function WorkspaceViewTabs({
         </DropdownMenu>
         <WorkspaceViewFilterMenu
           view={activeView}
+          groupOptions={groupOptions}
+          onGroupingChange={onGroupingChange}
           dismissSignal={dismissSignal}
           properties={properties}
           selectValues={selectValues}

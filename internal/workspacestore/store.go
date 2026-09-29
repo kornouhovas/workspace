@@ -113,7 +113,18 @@ type BoardLayoutDocument struct {
 	ColumnWidth int `json:"columnWidth"`
 }
 
+type GroupingDocument struct {
+	PropertyID        string   `json:"propertyId"`
+	Sort              string   `json:"sort"`
+	ManualOrder       []string `json:"manualOrder"`
+	HiddenGroupIDs    []string `json:"hiddenGroupIds"`
+	CollapsedGroupIDs []string `json:"collapsedGroupIds"`
+	HideEmpty         bool     `json:"hideEmpty"`
+}
+
 type ViewDocument struct {
+	Grouping           *GroupingDocument                  `json:"grouping"`
+	GroupingNotice     string                             `json:"groupingNotice,omitempty"`
 	ID                 string                             `json:"id"`
 	Type               string                             `json:"type"`
 	SchemaVersion      int                                `json:"schemaVersion"`

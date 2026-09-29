@@ -1,0 +1,45 @@
+TAP version 13
+# Subtest: legacy views remain flat and grouping settings normalize without aliases
+ok 1 - legacy views remain flat and grouping settings normalize without aliases
+  ---
+  duration_ms: 1.730417
+  ...
+# Subtest: grouping accepts hidden existing properties and rejects invalid references and sorts
+ok 2 - grouping accepts hidden existing properties and rejects invalid references and sorts
+  ---
+  duration_ms: 0.55925
+  ...
+# Subtest: all types use exact typed values, numeric/date ordering and empty last
+ok 3 - all types use exact typed values, numeric/date ordering and empty last
+  ---
+  duration_ms: 17.039625
+  ...
+# Subtest: catalog order and multi-select membership use unique project IDs without copies
+ok 4 - catalog order and multi-select membership use unique project IDs without copies
+  ---
+  duration_ms: 0.165208
+  ...
+# Subtest: filters/search precede counts but preserve unfiltered group universe
+ok 5 - filters/search precede counts but preserve unfiltered group universe
+  ---
+  duration_ms: 1.018333
+  ...
+# Subtest: manual order, visibility, collapse and hide-empty never mutate catalog or projects
+ok 6 - manual order, visibility, collapse and hide-empty never mutate catalog or projects
+  ---
+  duration_ms: 0.228834
+  ...
+# Subtest: deleted grouping property safely disables and reports recovery; deleted values normalize to empty
+ok 7 - deleted grouping property safely disables and reports recovery; deleted values normalize to empty
+  ---
+  duration_ms: 0.291125
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 79.49125

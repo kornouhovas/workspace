@@ -595,3 +595,19 @@ Add tests before UI wiring for:
 - Board and Table projections are derived from the same Workspace project set.
 - `No status` is represented consistently in filters and Board columns.
 - Public service method changes are covered by tests.
+
+## Table grouping (workspace-cjq)
+
+`workspace.updateView` accepts an additive `grouping` field (`null` disables):
+
+```json
+{"propertyId":"property:tags","sort":"default","manualOrder":[],"hiddenGroupIds":[],"collapsedGroupIds":[],"hideEmpty":false}
+```
+
+Every existing system/custom property is eligible, including a hidden column. `sort` is `default`, `ascending`, `descending`, or `manual`. Default categories follow catalog order; default scalar values ascend. Ascending/descending compare labels for categories, numeric values for Number, saved ISO calendar dates for Date, and exact strings for Text/Name. The transient projection request `locale` selects `en` (default) or `ru`; renderer sends its interface locale. This is not persisted in the view.
+
+Group keys are `value:<stable category ID>`, `text:<JSON string>`, `number:<normalized number>`, `date:<JSON date string>`, or `empty`. Empty always appears last, including descending/manual order. Status uses `No status`; other properties use `No value`. Manual order changes only view settings; unknown/new keys follow the saved keys in stable source/catalog order. Group arrays are independent across views and duplicated via a deep copy.
+
+Table projection retains flat filtered `rows` and adds `groups` (displayed sections), `groupOptions` (all sections including hidden and empty), and `totalProjectCount` (unique filtered projects). Each section contains `id`, `name`, optional `color`, `empty`, `rows`, unique `count`, `hidden`, and `collapsed`. Scalar group universe comes from the original workspace projects; categories include unused catalog options. Search/value filters precede section counts. Multi-select membership is one occurrence in every selected category, with the same project ID; no project is copied or persisted by grouping.
+
+Deleting a category prunes its manual/hidden/collapsed references and existing value filters across source sibling views. Deleting the grouping property persists `grouping: null` and `groupingNotice: "property-removed"`; Table renders an explicit recovery notice. Choosing or removing grouping clears the notice. The active Electron JSON adapter and existing Go view document preserve the additive field; transport, source identity, storage engine, filesystem and Electron security are unchanged.

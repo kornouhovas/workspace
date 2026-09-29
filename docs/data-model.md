@@ -657,3 +657,7 @@ Only sidebar width is shared device-local chrome, stored at `workspace.sidebar-w
 ### Workspace creation before source selection
 
 The transitional Electron adapter can persist a Workspace and its default views before choosing a directory. Its `sourceFolderId` and workspaceSources root locator are empty until selection; the opaque Workspace ID and view IDs remain stable when a validated source is bound. Other Workspaces keep their bindings and source-scoped values. The row menu opens Workspace settings; device language and appearance live in global Settings.
+
+### Table grouping settings
+
+View documents may contain `grouping` or `null`. The object holds `propertyId`, `sort` (`default`, `ascending`, `descending`, `manual`), independent arrays `manualOrder`, `hiddenGroupIds`, `collapsedGroupIds`, and boolean `hideEmpty`. Legacy views without this field load flat. Group IDs are deterministic typed value keys; category IDs remain stable across renames/colors. See [view contract](api/workspace-views.md#table-grouping-workspace-cjq). `groupingNotice: "property-removed"` records recovery after property deletion and is cleared by the next explicit grouping change. These are existing view settings, never project/property-value/history documents.

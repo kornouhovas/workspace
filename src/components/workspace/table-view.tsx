@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
@@ -35,6 +35,8 @@ import { WorkspaceTextValueTextarea } from "@/components/workspace/text-value-ed
 import { useI18n } from "@/i18n";
 import { getStatusDisplayName } from "@/i18n/status";
 import {
+  ChevronDownIcon,
+  ChevronRightIcon,
   CalendarIcon,
   CircleDotIcon,
   EyeIcon,
@@ -75,6 +77,9 @@ import type {
 
 type WorkspaceTableProjection = {
   readonly rows: readonly WorkspaceMockProject[];
+  readonly groups?: readonly (Omit<import("@/workspaceAppState").WorkspaceTableGroup,"rows"> & {readonly rows: readonly WorkspaceMockProject[]})[];
+  readonly totalProjectCount?: number;
+  readonly groupingNotice?: string;
 };
 
 type PropertyTypeOption = {
@@ -110,6 +115,7 @@ type WorkspaceFilterValue = {
 
 type WorkspaceTableViewProps = {
   readonly projection: WorkspaceTableProjection;
+  readonly onGroupingChange?: (mutation: import("@/workspaceGroupingMutations").GroupingMutation) => void;
   readonly view: WorkspaceViewState | null;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
   readonly properties: readonly WorkspacePropertyDefinitionState[];
@@ -381,7 +387,9 @@ export function ProjectTablePropertyValueEditor({
   dismissSignal,
   onStartEditingCell,
   onStopEditingCell,
+  occurrenceId = "flat",
 }: {
+  readonly occurrenceId?: string;
   readonly project: WorkspaceMockProject;
   readonly property: WorkspaceMockVisibleProperty;
   readonly selectValues: readonly WorkspaceSelectValueState[];
@@ -402,7 +410,7 @@ export function ProjectTablePropertyValueEditor({
   const { t } = useI18n();
   const value = getPropertyValue(project, property);
   const editorKey = `${project.id}:${property.id}:${stringifyEditableValue(value)}`;
-  const cellId = getProjectPropertyCellId(project.id, property.id);
+  const cellId = `${occurrenceId}:${getProjectPropertyCellId(project.id, property.id)}`;
 
   function stopCellActivation(event: { stopPropagation: () => void }) {
     event.stopPropagation();
@@ -603,6 +611,7 @@ export function ProjectTablePropertyValueEditor({
 
 export function WorkspaceTableView({
   projection,
+  onGroupingChange,
   view,
   visibleProperties,
   properties,
@@ -1108,8 +1117,30 @@ export function WorkspaceTableView({
     window.addEventListener("pointerup", finishPointerDraggedColumn, { once: true });
   }
 
+  const displaySections = projection.groups ?? [{
+    id: "flat", rows: projection.rows, collapsed: false,
+    name: "", count: projection.rows.length, empty: false,
+  }];
+
+  function groupDisplayName(group: { readonly name: string; readonly empty: boolean }) {
+    return group.empty
+      ? t(view?.grouping?.propertyId === "property:status" ? "property.noStatus" : "group.noValue")
+      : group.name;
+  }
+
+  function toggleGroupCollapse(groupId: string) {
+    onGroupingChange?.(current => current ? {
+      ...current,
+      collapsedGroupIds: current.collapsedGroupIds.includes(groupId)
+        ? current.collapsedGroupIds.filter(id => id !== groupId)
+        : [...current.collapsedGroupIds, groupId],
+    } : null);
+  }
+
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-3 pb-0 pt-3" aria-label={t("app.title")}>
+      {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
+      {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
       <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
         <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
@@ -1395,7 +1426,21 @@ export function WorkspaceTableView({
             </TableRow>
           </TableHeader>
           <TableBody className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
-            {projection.rows.map((project) => (
+            {displaySections.map(group => (
+              <Fragment key={group.id}>
+              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-9 bg-muted/25 hover:bg-muted/30">
+                <TableCell colSpan={visibleProperties.length + 1} className="h-9 p-0">
+                  <button type="button" aria-expanded={!group.collapsed} aria-label={t(group.collapsed ? "group.expand" : "group.collapse", { name: groupDisplayName(group) })}
+                    className="sticky left-0 flex h-9 max-w-[min(32rem,80vw)] items-center gap-2 px-3 text-left text-xs font-medium focus-visible:ring-2 focus-visible:ring-ring/40"
+                    onClick={() => toggleGroupCollapse(group.id)}>
+                    {group.collapsed ? <ChevronRightIcon className="size-3 shrink-0"/> : <ChevronDownIcon className="size-3 shrink-0"/>}
+                    {"color" in group && group.color ? <span data-color={group.color} className="size-2 shrink-0 rounded-full bg-muted-foreground"/> : null}
+                    <span className="min-w-0 truncate" title={group.name}>{groupDisplayName(group)}</span>
+                    <span className="shrink-0 text-muted-foreground">{group.count}</span>
+                  </button>
+                </TableCell>
+              </TableRow> : null}
+            {!group.collapsed && group.rows.map((project) => (
               <TableRow
                 key={project.id}
                 className="h-8 hover:bg-accent/15"
@@ -1416,7 +1461,8 @@ export function WorkspaceTableView({
                           property={property}
                           selectValues={selectValues}
                           wrapContent={wrapContent}
-                          editing={editingCellId === getProjectPropertyCellId(project.id, property.id)}
+                          occurrenceId={group.id}
+                          editing={editingCellId === `${group.id}:${getProjectPropertyCellId(project.id, property.id)}`}
                           dismissSignal={dropdownDismissToken}
                           onProjectPropertyValueChange={onProjectPropertyValueChange}
                           onCreateSelectValue={onCreateSelectValue}
@@ -1446,6 +1492,8 @@ export function WorkspaceTableView({
                 })}
                 <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
               </TableRow>
+            ))}
+              </Fragment>
             ))}
           </TableBody>
         </Table>

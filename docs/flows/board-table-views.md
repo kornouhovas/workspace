@@ -333,3 +333,11 @@ When reviewing implementation, verify against:
 - `docs/flows/settings-source-folder-and-roles.md`
 
 The most important behavioral check is that Board and Table are projections of the same active Workspace project set, while view settings affect display and filtering only.
+
+## Table grouping
+
+Customize Columns → Group opens per-view settings. Group by and Sort are separate keyboard accessible controls. Group by includes Name, Status and all current custom properties, including hidden columns, plus No grouping. Sort selects Default (catalog order or ascending scalar values), Ascending, Descending, or Manual. Manual exposes labeled Move up/down buttons without editing the property catalog; No value/No status always stays last.
+
+Hide empty groups follows current search/filter counts. Each group has Show/Hide controls; Show all groups restores hidden groups. Collapse all/Expand all and the section button persist independently per view. Section headers show category color, truncated exact value with full title, unique visible count, and `aria-expanded`. All sections share the existing table header/colgroup, column widths/order, wrap layout, editors and horizontal/vertical scroll container. Multi-select repeats display occurrences of one project, while the displayed total counts unique projects. Card opening uses the existing project ID and return preserves the view.
+
+A deleted grouping property produces a flat Table and a visible notice until a grouping change. Board/folder roles and the prohibition on moving projects between primary statuses remain governed by their existing contracts. There is no project drag operation, sub-group, aggregate or row-sort feature in this flow.
