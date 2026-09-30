@@ -14,8 +14,8 @@ The shell and shared chrome follow the pinned bb 0.44.0 reference. Workspace sup
 - Primitive base: Radix UI primitives through shadcn components.
 - Icons: bb stroke-rounded Hugeicons through `src/lib/workspace-icons.tsx`; remaining product-specific glyphs use the existing lucide exports.
 - Font: Inter Variable from `@fontsource-variable/inter` (SIL Open Font License).
-- Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px; width is a shared device preference, while visibility and right-panel state remain per Workspace. Shared neutral colours come from bb 0.44.0.
-- Table rows start at 36px; expanded project property rows use 48px; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
+- Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px; width is a shared device preference, while visibility and right-panel state remain per Workspace. The chrome geometry remains the accepted bb 0.44.0 adaptation; neutral and semantic roles now follow the pinned af72bb81 design source (see [application policy](development/design/bb-workspace-policy.md)).
+- Table rows start at 36px; expanded project property rows start at 36px and grow with wrapped values; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
 - Theme: Light, Dark and System in Settings use bb neutral ink/canvas, hover/active and seam tokens in `src/styles.css`. Status and Select colours still come from project data.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.
@@ -393,3 +393,18 @@ Rules:
 - Global theme tokens belong in `src/styles.css`.
 
 Table grouping uses the common dropdown/submenu/Button primitives and existing compact menu styles. Group by and Sort are independently named keyboard controls. Section toggle buttons expose `aria-expanded` and a localized action plus full group name; long section names truncate with a full title. Each non-empty group has a left drag handle available under every sort; Arrow Up/Down on the handle provides the keyboard alternative; visibility controls are named Show/Hide group. Expanded non-empty sections repeat their own column header on a shared column grid and horizontal scroll, with a compact 20px gap between sections. Collapsed and empty sections retain only their heading.
+
+## Applied shared design foundation
+
+The imported [DESIGN_RULES](development/DESIGN_RULES.md) is reference material. The [complete applicability matrix](../work/workspace-6fh/applicability.md) records each section and the Workspace adaptations.
+
+- Both themes use ink/canvas semantic roles. Raised surfaces mix ink 2.5% with transparency; selection mixes primary 16% in light and 12% in dark. Dark input borders use ink 32.6%. File and folder glyphs use `file-accent`; status and Select dots retain source data colours. Errors use `destructive-text`, with separate destructive fill/foreground roles.
+- Generic Button/Input/Select defaults are 36px high with 6px radius and 1px focus ring. Button foreground/background colours are distinct from the primary role. Input stays transparent. Workspace toolbar, tree, tab and inline editor density remains 24–32px where its existing row contract requires it. Tables use muted/50 hover; menus use state-hover. Existing search, rename, tab and cell controls retain their stronger 2px focus treatment.
+- Base text is 15/22px; small text is 13px with the source inherited line ratio, extra-small is 12/16px. Root remains 16px so rem-based geometry is stable. Existing explicit 20px editor leading is a local readability adaptation.
+- Menus remember the last pointer-hovered item until keyboard navigation takes ownership. Tooltips wait 250ms, wrap multiline content and fit within available width up to 320px. Portals remain outside native titlebar drag regions. Workspace dropdowns intercept the first outside pointer in capture phase so underlying controls cannot activate or gain focus; nested menu portals remain interactive.
+- Rename keeps its draft and an associated error until storage acknowledges success. Composing Enter does not submit; pending requests prevent duplicate Enter/blur saves; Escape restores focus and ignores late acknowledgements. A failed view rename shows an associated error in a bounded portal below its input, outside the clipped tab strip. Grouped Table retains empty group headings while announcing the search query and providing Clear search.
+- Loading uses an announced status, errors stay visible, and recovery uses the shared focusable Button. Toasts use neutral semantic colours, 4-second duration and a close action. Hidden sidebar content remains inert; reduced-motion skips animation.
+
+Native Electron evidence and measured styles are recorded in [workspace-6fh](../work/workspace-6fh/). Renderer screenshots are supplementary diagnostics. These measurements do not claim a live bb comparison or a complete VoiceOver audit.
+
+Locale changes update visible labels without projection reloads, folder rescans or property writes. Subsequent legitimate workspace loads use the current locale.

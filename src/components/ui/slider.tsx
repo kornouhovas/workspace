@@ -33,18 +33,18 @@ function Slider({
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-muted"
+        className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-primary/20"
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
-          className="absolute h-full bg-foreground/70"
+          className="absolute h-full bg-primary"
         />
       </SliderPrimitive.Track>
       {values.map((_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
           key={index}
-          className="block size-3.5 shrink-0 rounded-full border border-border bg-foreground shadow-sm outline-none transition-shadow hover:ring-3 hover:ring-ring/20 focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none"
+          className="block size-4 shrink-0 rounded-full border border-primary/50 bg-background shadow-sm outline-none transition-shadow hover:ring-3 hover:ring-ring/20 focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none"
         />
       ))}
     </SliderPrimitive.Root>

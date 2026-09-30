@@ -1,0 +1,132 @@
+[
+  {
+    "theme": "light",
+    "name": "Button36",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Buttonr6",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Buttonforeground",
+    "actual": "oklch(0.3211 0 0)",
+    "expected": "oklch(0.3211 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Input36",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Inputr6",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Inputtransparent",
+    "actual": "rgba(0, 0, 0, 0)",
+    "expected": "rgba(0, 0, 0, 0)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Checkbox16",
+    "actual": "16px",
+    "expected": "16px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Buttonfocus1",
+    "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.27 0 0) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Tooltip bounded multiline",
+    "width": 320,
+    "height": 188,
+    "x": 173,
+    "right": 493,
+    "wrap": "anywhere",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Button36",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Buttonr6",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Buttonforeground",
+    "actual": "oklch(0.81 0 0)",
+    "expected": "oklch(0.81 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Input36",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Inputr6",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Inputtransparent",
+    "actual": "rgba(0, 0, 0, 0)",
+    "expected": "rgba(0, 0, 0, 0)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Checkbox16",
+    "actual": "16px",
+    "expected": "16px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Buttonfocus1",
+    "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.82 0 0) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Tooltip bounded multiline",
+    "width": 320,
+    "height": 188,
+    "x": 173,
+    "right": 493,
+    "wrap": "anywhere",
+    "pass": true
+  }
+]

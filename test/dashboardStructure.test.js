@@ -734,10 +734,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /border-r border-border\/45/);
   assert.match(projectDetailPanelSource, /border-b border-border\/45/);
   assert.match(projectDetailPanelSource, /className="h-7 w-full justify-start px-1\.5 py-0 text-left/);
-  assert.match(projectDetailPanelSource, /text-amber-300/);
-  assert.match(projectDetailPanelSource, /text-emerald-300/);
-  assert.match(projectDetailPanelSource, /text-rose-300/);
-  assert.match(projectDetailPanelSource, /text-sky-300/);
+  assert.match(projectDetailPanelSource, /text-file-accent/);
+  assert.doesNotMatch(projectDetailPanelSource, /text-(amber|emerald|rose|sky)-300/);
   assert.match(projectDetailPanelSource, /text-sm font-normal/);
   assert.match(projectDetailPanelSource, /<ul className="grid gap-0">/);
   assert.doesNotMatch(projectDetailPanelSource, /uppercase tracking-wide/);

@@ -1,0 +1,2 @@
+Modified UI docs/policy/evidence local file links: PASS (44 targets)
+No npm docs script exists; DESIGN_RULES source untouched.

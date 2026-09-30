@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import {
   useEffect,
   useRef,
@@ -61,7 +62,7 @@ type WorkspaceViewTabsProps = {
   readonly onActiveViewChange: (viewId: string) => void;
   readonly onCreateView: (viewType: "board" | "table") => void;
   readonly onDuplicateView: (viewId: string) => void;
-  readonly onRenameView: (viewId: string, name: string) => void;
+  readonly onRenameView: (viewId: string, name: string) => boolean | void | Promise<boolean | void>;
   readonly onDeleteView: (viewId: string) => void;
   readonly onReorderViews: (orderedViewIds: readonly string[]) => void;
   readonly dismissSignal?: number;
@@ -167,6 +168,10 @@ export function WorkspaceViewTabs({
   const editingViewInputRef = useRef<HTMLInputElement | null>(null);
   const viewTabListRef = useRef<HTMLDivElement | null>(null);
   const cancelViewRenameRef = useRef(false);
+  const renameAttemptRef = useRef(0);
+  const renameSavingRef = useRef(false);
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState("");
   const suppressViewClickRef = useRef<string | null>(null);
   const contextMenuView = views.find((view) => view.id === contextMenuViewId) || null;
 
@@ -242,29 +247,47 @@ export function WorkspaceViewTabs({
   }, [openCreateViewMenu]);
 
   function startRenameView(view: WorkspaceView) {
+    renameAttemptRef.current += 1;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    setRenameError("");
     cancelViewRenameRef.current = false;
     setContextMenuViewId(null);
     setEditingViewId(view.id);
     setEditingViewName(view.name);
   }
 
-  function submitViewRename(view: WorkspaceView) {
-    if (cancelViewRenameRef.current) {
-      cancelViewRenameRef.current = false;
+  async function submitViewRename(view: WorkspaceView) {
+    if (cancelViewRenameRef.current || renameSavingRef.current) return;
+    const nextName = editingViewName.trim();
+    if (!nextName || nextName === view.name) {
+      cancelViewRenameRef.current = true;
+      setEditingViewId(null);
       return;
     }
-
-    const nextName = editingViewName.trim();
-    cancelViewRenameRef.current = true;
-    setEditingViewId(null);
-    setEditingViewName("");
-
-    if (nextName && nextName !== view.name) {
-      onRenameView(view.id, nextName);
+    const attempt = renameAttemptRef.current;
+    renameSavingRef.current = true;
+    setRenameSaving(true);
+    setRenameError("");
+    let saved = false;
+    try { saved = (await onRenameView(view.id, nextName)) !== false; } catch { /* App provides detailed error feedback. */ }
+    if (attempt !== renameAttemptRef.current) return;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    if (saved) {
+      cancelViewRenameRef.current = true;
+      setEditingViewId(null);
+      setEditingViewName("");
+    } else {
+      setRenameError(t("toast.viewRenameFailed"));
     }
   }
 
   function cancelViewRename() {
+    renameAttemptRef.current += 1;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    setRenameError("");
     cancelViewRenameRef.current = true;
     setEditingViewId(null);
     setEditingViewName("");
@@ -512,18 +535,35 @@ export function WorkspaceViewTabs({
                   <input
                     ref={editingViewInputRef}
                     aria-label={t("view.renameInput")}
+                      readOnly={renameSaving}
+                      aria-busy={renameSaving || undefined}
+                      aria-invalid={Boolean(renameError)}
+                      aria-describedby={renameError ? "view-rename-error" : undefined}
                     className="h-full w-full rounded-md border border-ring bg-background px-2 text-sm font-normal text-foreground outline-none ring-2 ring-ring/30"
                     value={editingViewName}
                     onChange={(event) => setEditingViewName(event.currentTarget.value)}
                     onBlur={() => submitViewRename(view)}
                     onKeyDown={(event) => {
+                      if (event.key === "Enter" && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229 || renameSavingRef.current)) {
+                        event.preventDefault();
+                        return;
+                      }
                       if (event.key === "Escape") {
                         event.preventDefault();
+                        const list = event.currentTarget.closest("[role=tablist]");
                         cancelViewRename();
+                        requestAnimationFrame(() => list?.querySelector<HTMLButtonElement>("[role=tab][aria-selected=true]")?.focus());
                       }
                     }}
                   />
-                </form>
+                {renameError ? createPortal(
+                    <p id="view-rename-error" role="alert"
+                      className="electron-window-no-drag fixed z-50 max-w-[min(320px,calc(100vw-24px))] rounded-md border border-border bg-popover px-3 py-2 text-xs text-destructive-text shadow-sm"
+                      style={{ left: Math.max(12, Math.min(editingViewInputRef.current?.getBoundingClientRect().left ?? 12, window.innerWidth - 332)), top: (editingViewInputRef.current?.getBoundingClientRect().bottom ?? 40) + 8 }}>
+                      {renameError}
+                    </p>, document.body,
+                  ) : null}
+                  </form>
               );
             }
 

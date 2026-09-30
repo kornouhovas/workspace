@@ -49,7 +49,7 @@ type WorkspaceLeftPanelProps = {
   readonly workspaces: readonly WorkspaceNavigationItem[];
   readonly searchQuery: string;
   readonly onAddWorkspace: () => void;
-  readonly onRenameWorkspace: (workspaceId: string, name: string) => void;
+  readonly onRenameWorkspace: (workspaceId: string, name: string) => boolean | void | Promise<boolean | void>;
   readonly onDeleteWorkspace: (workspaceId: string) => void;
   readonly onReorderWorkspaces: (orderedWorkspaceIds: readonly string[]) => void;
   readonly onWorkspaceOpen: (workspaceId: string) => void;
@@ -141,6 +141,10 @@ export function WorkspaceLeftPanel({
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
   const editingWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
   const cancelWorkspaceRenameRef = useRef(false);
+  const renameAttemptRef = useRef(0);
+  const renameSavingRef = useRef(false);
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState("");
   const suppressWorkspaceClickRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -151,29 +155,47 @@ export function WorkspaceLeftPanel({
   }, [editingWorkspaceId]);
 
   function startRenameWorkspace(workspace: WorkspaceNavigationItem) {
+    renameAttemptRef.current += 1;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    setRenameError("");
     cancelWorkspaceRenameRef.current = false;
     setContextMenuWorkspaceId(null);
     setEditingWorkspaceId(workspace.id);
     setEditingWorkspaceName(workspace.name);
   }
 
-  function submitWorkspaceRename(workspace: WorkspaceNavigationItem) {
-    if (cancelWorkspaceRenameRef.current) {
-      cancelWorkspaceRenameRef.current = false;
+  async function submitWorkspaceRename(workspace: WorkspaceNavigationItem) {
+    if (cancelWorkspaceRenameRef.current || renameSavingRef.current) return;
+    const nextName = editingWorkspaceName.trim();
+    if (!nextName || nextName === workspace.name) {
+      cancelWorkspaceRenameRef.current = true;
+      setEditingWorkspaceId(null);
       return;
     }
-
-    const nextName = editingWorkspaceName.trim();
-    cancelWorkspaceRenameRef.current = true;
-    setEditingWorkspaceId(null);
-    setEditingWorkspaceName("");
-
-    if (nextName && nextName !== workspace.name) {
-      onRenameWorkspace(workspace.id, nextName);
+    const attempt = renameAttemptRef.current;
+    renameSavingRef.current = true;
+    setRenameSaving(true);
+    setRenameError("");
+    let saved = false;
+    try { saved = (await onRenameWorkspace(workspace.id, nextName)) !== false; } catch { /* App provides detailed error feedback. */ }
+    if (attempt !== renameAttemptRef.current) return;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    if (saved) {
+      cancelWorkspaceRenameRef.current = true;
+      setEditingWorkspaceId(null);
+      setEditingWorkspaceName("");
+    } else {
+      setRenameError(t("toast.workspaceRenameFailed"));
     }
   }
 
   function cancelWorkspaceRename() {
+    renameAttemptRef.current += 1;
+    renameSavingRef.current = false;
+    setRenameSaving(false);
+    setRenameError("");
     cancelWorkspaceRenameRef.current = true;
     setEditingWorkspaceId(null);
     setEditingWorkspaceName("");
@@ -472,17 +494,28 @@ export function WorkspaceLeftPanel({
                     <input
                       ref={editingWorkspaceInputRef}
                       aria-label={t("sidebar.renameWorkspaceInput")}
+                      readOnly={renameSaving}
+                      aria-busy={renameSaving || undefined}
+                      aria-invalid={Boolean(renameError)}
+                      aria-describedby={renameError ? "workspace-rename-error" : undefined}
                       className="h-8 w-full rounded-md border border-ring bg-background px-2.5 text-sm text-foreground outline-none ring-2 ring-ring/30"
                       value={editingWorkspaceName}
                       onChange={(event) => setEditingWorkspaceName(event.currentTarget.value)}
                       onBlur={() => submitWorkspaceRename(workspace)}
                       onKeyDown={(event) => {
+                        if (event.key === "Enter" && (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229 || renameSavingRef.current)) {
+                          event.preventDefault();
+                          return;
+                        }
                         if (event.key === "Escape") {
                           event.preventDefault();
+                          const row = event.currentTarget.closest("[data-workspace-row-id]");
                           cancelWorkspaceRename();
+                          requestAnimationFrame(() => row?.querySelector<HTMLButtonElement>("button")?.focus());
                         }
                       }}
                     />
+                  {renameError ? <p id="workspace-rename-error" role="alert" className="px-2 text-xs text-destructive-text">{renameError}</p> : null}
                   </form>
                 ) : (
                   <>

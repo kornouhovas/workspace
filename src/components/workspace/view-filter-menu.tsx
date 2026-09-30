@@ -709,7 +709,7 @@ export function WorkspaceViewFilterMenu({
                   <EyeOffIcon className="size-4 shrink-0" aria-hidden="true" />
                   <span className="truncate">{t("view.hiddenProperties")}</span>
                 </span>
-                <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">
+                <Badge variant="secondary" className="h-5 min-w-5 justify-center rounded-full px-1.5 text-xs">
                   {hiddenViewProperties.length}
                 </Badge>
               </div>
@@ -751,7 +751,7 @@ export function WorkspaceViewFilterMenu({
                     )}
                     <span className="truncate">{property.name}</span>
                     {selectedValueIds.size > 0 ? (
-                      <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-[11px]">
+                      <Badge variant="secondary" className="ml-auto h-5 px-1.5 text-xs">
                         {selectedValueIds.size}
                       </Badge>
                     ) : null}

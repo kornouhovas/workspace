@@ -30,6 +30,7 @@ const icon = (glyph: IconSvgElement) =>
   forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>((props, ref) => (
     <HugeiconsIcon
       ref={ref}
+      aria-hidden={props["aria-label"] ? undefined : true}
       icon={glyph}
       {...props}
       strokeWidth={typeof props.strokeWidth === "number" ? props.strokeWidth : 1.5}

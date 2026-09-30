@@ -1,0 +1,682 @@
+{
+  "phase": "before",
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-bb-desktop-ySxKet",
+  "kind": "Native Electron captures include OS traffic lights; separately named renderer images are diagnostics",
+  "shots": [
+    "work/workspace-6fh/before/renderer-light-1440x960-board.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-board.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowStoreType\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1441;\n    X = 220;\n    Y = 87;\n}, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-board-collapsed.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-board-collapsed.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 42991, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-customize-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-customize-menu.png",
+      "nativeOutput": "window [\"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowAlpha\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-project-preview.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-project-preview.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowName\": Workspace, \"kCGWindowOwnerPID\": 42991, \"kCGWindowNumber\": 1232]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-project-expanded.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-project-expanded.png",
+      "nativeOutput": "window [\"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace, \"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-text-editor.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-text-editor.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 42991, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-grouped-table.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-grouped-table.png",
+      "nativeOutput": "window [\"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowMemoryUsage\": 2432]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-workspace-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-workspace-menu.png",
+      "nativeOutput": "window [\"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-workspace-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-workspace-settings.png",
+      "nativeOutput": "window [\"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 42991, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowNumber\": 1232]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-global-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-global-settings.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-appearance-select.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-appearance-select.png",
+      "nativeOutput": "window [\"kCGWindowSharingState\": 1, \"kCGWindowName\": Workspace, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 42991, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 1232, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1, \"kCGWindowAlpha\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1440x960-search-empty.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1440x960-search-empty.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-board.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-board.png",
+      "nativeOutput": "window [\"kCGWindowNumber\": 1232, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-board-collapsed.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-board-collapsed.png",
+      "nativeOutput": "window [\"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowIsOnscreen\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-customize-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-customize-menu.png",
+      "nativeOutput": "window [\"kCGWindowOwnerPID\": 42991, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-project-preview.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-project-preview.png",
+      "nativeOutput": "window [\"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowName\": Workspace]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-project-expanded.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-project-expanded.png",
+      "nativeOutput": "window [\"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowSharingState\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-text-editor.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-text-editor.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowLayer\": 0, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowAlpha\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-grouped-table.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-grouped-table.png",
+      "nativeOutput": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-workspace-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-workspace-menu.png",
+      "nativeOutput": "window [\"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 42991]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-workspace-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-workspace-settings.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-global-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-global-settings.png",
+      "nativeOutput": "window [\"kCGWindowOwnerPID\": 42991, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-appearance-select.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-appearance-select.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace, \"kCGWindowNumber\": 1232]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-light-1024x720-search-empty.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-light-1024x720-search-empty.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 42991, \"kCGWindowIsOnscreen\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-board.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-board.png",
+      "nativeOutput": "window [\"kCGWindowSharingState\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-board-collapsed.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-board-collapsed.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowOwnerPID\": 42991, \"kCGWindowNumber\": 1232, \"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-customize-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-customize-menu.png",
+      "nativeOutput": "window [\"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowName\": Workspace, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-project-preview.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-project-preview.png",
+      "nativeOutput": "window [\"kCGWindowOwnerPID\": 42991, \"kCGWindowIsOnscreen\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-project-expanded.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-project-expanded.png",
+      "nativeOutput": "window [\"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-text-editor.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-text-editor.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-grouped-table.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-grouped-table.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowAlpha\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-workspace-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-workspace-menu.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 42991, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-workspace-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-workspace-settings.png",
+      "nativeOutput": "window [\"kCGWindowNumber\": 1232, \"kCGWindowStoreType\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-global-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-global-settings.png",
+      "nativeOutput": "window [\"kCGWindowNumber\": 1232, \"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowSharingState\": 1]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-appearance-select.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-appearance-select.png",
+      "nativeOutput": "window [\"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1440x960-search-empty.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1440x960-search-empty.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowName\": Workspace]\npixels 1440 960\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-board.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-board.png",
+      "nativeOutput": "window [\"kCGWindowLayer\": 0, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowSharingState\": 1, \"kCGWindowName\": Workspace]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-board-collapsed.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-board-collapsed.png",
+      "nativeOutput": "window [\"kCGWindowOwnerPID\": 42991, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-customize-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-customize-menu.png",
+      "nativeOutput": "window [\"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 1232, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 42991]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-project-preview.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-project-preview.png",
+      "nativeOutput": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowLayer\": 0, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 1232, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowIsOnscreen\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-project-expanded.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-project-expanded.png",
+      "nativeOutput": "window [\"kCGWindowMemoryUsage\": 2432, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-text-editor.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-text-editor.png",
+      "nativeOutput": "window [\"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-grouped-table.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-grouped-table.png",
+      "nativeOutput": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0, \"kCGWindowSharingState\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowStoreType\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-workspace-menu.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-workspace-menu.png",
+      "nativeOutput": "window [\"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowAlpha\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 1232, \"kCGWindowStoreType\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-workspace-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-workspace-settings.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowNumber\": 1232, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerPID\": 42991, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowOwnerName\": Electron, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-global-settings.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-global-settings.png",
+      "nativeOutput": "window [\"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 1232, \"kCGWindowIsOnscreen\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 42991, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowStoreType\": 1]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-appearance-select.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-appearance-select.png",
+      "nativeOutput": "window [\"kCGWindowName\": Workspace, \"kCGWindowNumber\": 1232, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 42991]\npixels 1024 720\n"
+    },
+    "work/workspace-6fh/before/renderer-dark-1024x720-search-empty.png",
+    {
+      "nativePath": "work/workspace-6fh/before/native-dark-1024x720-search-empty.png",
+      "nativeOutput": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 42991, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 1232]\npixels 1024 720\n"
+    }
+  ],
+  "styles": [
+    {
+      "theme": "light",
+      "width": 1440,
+      "height": 960,
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "roles": {
+        "canvas": "oklch(100% 0 0)",
+        "ink": "oklch(32.11% 0 0)",
+        "input": "color-mix(in oklch, oklch(32.11% 0 0) 29.5%, oklch(100% 0 0))",
+        "surface-raised": "oklch(100% 0 0)",
+        "surface-selected": "color-mix(in oklab, oklch(32.11% 0 0) 11.8%, transparent)",
+        "sidebar-accent": "color-mix(in oklab, oklch(32.11% 0 0) 11.8%, transparent)",
+        "destructive-text": "",
+        "text-base": "1rem",
+        "text-sm": ""
+      },
+      "samples": [
+        {
+          "selector": ".workspace-sidebar",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklch(0.985064 0 0)",
+          "border": "oklch(0.935504 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 960
+          }
+        },
+        {
+          "selector": "header",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.935504 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 320,
+            "y": 0,
+            "width": 1120,
+            "height": 48
+          }
+        },
+        {
+          "selector": ".bb-chrome-action",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.44 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.44 0 0)",
+          "radius": "6px",
+          "shadow": "none",
+          "rect": {
+            "x": 96,
+            "y": 10,
+            "width": 28,
+            "height": 28
+          }
+        },
+        {
+          "selector": "[role=tab]",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "12px",
+          "lineHeight": "16px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklab(0.3211 0 0 / 0.118)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+          "rect": {
+            "x": 328,
+            "y": 9.5,
+            "width": 69.5703125,
+            "height": 28
+          }
+        },
+        null,
+        {
+          "selector": ".workspace-board-card",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklch(1 0 0)",
+          "border": "oklch(0.900202 0 0)",
+          "radius": "8px",
+          "shadow": "oklab(0.3211 0 0 / 0.05) 0px 1px 2px 0px",
+          "rect": {
+            "x": 344,
+            "y": 100,
+            "width": 368,
+            "height": 76
+          }
+        }
+      ]
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 720,
+      "viewport": {
+        "width": 1024,
+        "height": 720
+      },
+      "roles": {
+        "canvas": "oklch(100% 0 0)",
+        "ink": "oklch(32.11% 0 0)",
+        "input": "color-mix(in oklch, oklch(32.11% 0 0) 29.5%, oklch(100% 0 0))",
+        "surface-raised": "oklch(100% 0 0)",
+        "surface-selected": "color-mix(in oklab, oklch(32.11% 0 0) 11.8%, transparent)",
+        "sidebar-accent": "color-mix(in oklab, oklch(32.11% 0 0) 11.8%, transparent)",
+        "destructive-text": "",
+        "text-base": "1rem",
+        "text-sm": ""
+      },
+      "samples": [
+        {
+          "selector": ".workspace-sidebar",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklch(0.985064 0 0)",
+          "border": "oklch(0.935504 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 720
+          }
+        },
+        {
+          "selector": "header",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.935504 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 320,
+            "y": 0,
+            "width": 704,
+            "height": 48
+          }
+        },
+        {
+          "selector": ".bb-chrome-action",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.44 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.44 0 0)",
+          "radius": "6px",
+          "shadow": "none",
+          "rect": {
+            "x": 96,
+            "y": 10,
+            "width": 28,
+            "height": 28
+          }
+        },
+        {
+          "selector": "[role=tab]",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "12px",
+          "lineHeight": "16px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklab(0.3211 0 0 / 0.118)",
+          "border": "rgba(0, 0, 0, 0)",
+          "radius": "6px",
+          "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+          "rect": {
+            "x": 328,
+            "y": 9.5,
+            "width": 69.5703125,
+            "height": 28
+          }
+        },
+        null,
+        {
+          "selector": ".workspace-board-card",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.3211 0 0)",
+          "background": "oklch(1 0 0)",
+          "border": "oklch(0.900202 0 0)",
+          "radius": "8px",
+          "shadow": "oklab(0.3211 0 0 / 0.05) 0px 1px 2px 0px",
+          "rect": {
+            "x": 344,
+            "y": 100,
+            "width": 368,
+            "height": 76
+          }
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "height": 960,
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "roles": {
+        "canvas": "oklch(19.5% 0 0)",
+        "ink": "oklch(81% 0 0)",
+        "input": "color-mix(in oklch, oklch(81% 0 0) 29.5%, oklch(19.5% 0 0))",
+        "surface-raised": "oklch(19.5% 0 0)",
+        "surface-selected": "color-mix(in oklab, oklch(81% 0 0) 22.5%, transparent)",
+        "sidebar-accent": "color-mix(in oklab, oklch(81% 0 0) 22.5%, transparent)",
+        "destructive-text": "",
+        "text-base": "1rem",
+        "text-sm": ""
+      },
+      "samples": [
+        {
+          "selector": ".workspace-sidebar",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklch(0.221445 0 0)",
+          "border": "oklch(0.26265 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 960
+          }
+        },
+        {
+          "selector": "header",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.26265 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 320,
+            "y": 0,
+            "width": 1120,
+            "height": 48
+          }
+        },
+        {
+          "selector": ".bb-chrome-action",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.78 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.78 0 0)",
+          "radius": "6px",
+          "shadow": "none",
+          "rect": {
+            "x": 96,
+            "y": 10,
+            "width": 28,
+            "height": 28
+          }
+        },
+        {
+          "selector": "[role=tab]",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "12px",
+          "lineHeight": "16px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklab(0.81 0 0 / 0.225)",
+          "border": "oklch(0.376425 0 0)",
+          "radius": "6px",
+          "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+          "rect": {
+            "x": 328,
+            "y": 9.5,
+            "width": 69.5703125,
+            "height": 28
+          }
+        },
+        null,
+        {
+          "selector": ".workspace-board-card",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklch(0.195 0 0)",
+          "border": "oklch(0.32415 0 0)",
+          "radius": "8px",
+          "shadow": "oklab(0.81 0 0 / 0.05) 0px 1px 2px 0px",
+          "rect": {
+            "x": 344,
+            "y": 100,
+            "width": 368,
+            "height": 76
+          }
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 720,
+      "viewport": {
+        "width": 1024,
+        "height": 720
+      },
+      "roles": {
+        "canvas": "oklch(19.5% 0 0)",
+        "ink": "oklch(81% 0 0)",
+        "input": "color-mix(in oklch, oklch(81% 0 0) 29.5%, oklch(19.5% 0 0))",
+        "surface-raised": "oklch(19.5% 0 0)",
+        "surface-selected": "color-mix(in oklab, oklch(81% 0 0) 22.5%, transparent)",
+        "sidebar-accent": "color-mix(in oklab, oklch(81% 0 0) 22.5%, transparent)",
+        "destructive-text": "",
+        "text-base": "1rem",
+        "text-sm": ""
+      },
+      "samples": [
+        {
+          "selector": ".workspace-sidebar",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklch(0.221445 0 0)",
+          "border": "oklch(0.26265 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 720
+          }
+        },
+        {
+          "selector": "header",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.26265 0 0)",
+          "radius": "0px",
+          "shadow": "none",
+          "rect": {
+            "x": 320,
+            "y": 0,
+            "width": 704,
+            "height": 48
+          }
+        },
+        {
+          "selector": ".bb-chrome-action",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.78 0 0)",
+          "background": "rgba(0, 0, 0, 0)",
+          "border": "oklch(0.78 0 0)",
+          "radius": "6px",
+          "shadow": "none",
+          "rect": {
+            "x": 96,
+            "y": 10,
+            "width": 28,
+            "height": 28
+          }
+        },
+        {
+          "selector": "[role=tab]",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "12px",
+          "lineHeight": "16px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklab(0.81 0 0 / 0.225)",
+          "border": "oklch(0.376425 0 0)",
+          "radius": "6px",
+          "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px",
+          "rect": {
+            "x": 328,
+            "y": 9.5,
+            "width": 69.5703125,
+            "height": 28
+          }
+        },
+        null,
+        {
+          "selector": ".workspace-board-card",
+          "font": "\"Inter Variable\", Inter, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "oklch(0.81 0 0)",
+          "background": "oklch(0.195 0 0)",
+          "border": "oklch(0.32415 0 0)",
+          "radius": "8px",
+          "shadow": "oklab(0.81 0 0 / 0.05) 0px 1px 2px 0px",
+          "rect": {
+            "x": 344,
+            "y": 100,
+            "width": 368,
+            "height": 76
+          }
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

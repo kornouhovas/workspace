@@ -1,0 +1,198 @@
+[
+  {
+    "theme": "light",
+    "name": "input",
+    "actual": "oklch(0.799724 0 0)",
+    "expected": "oklch(0.799724 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "surface-raised",
+    "actual": "oklab(0.3211 0 0 / 0.025)",
+    "expected": "oklab(0.3211 0 0 / 0.025)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "surface-selected",
+    "actual": "oklab(0.27 0 0 / 0.16)",
+    "expected": "oklab(0.27 0 0 / 0.16)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "destructive-text",
+    "actual": "oklch(0.45 0.19 25.8625)",
+    "expected": "oklch(0.45 0.19 25.8625)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "sidebar-accent",
+    "actual": "oklch(0.945688 0 0)",
+    "expected": "oklch(0.945688 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Select default height",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "Select radius",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "base size",
+    "actual": "15px",
+    "expected": "15px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "base leading",
+    "actual": "22px",
+    "expected": "22px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "file-accent",
+    "actual": "oklch(0.55 0.1 250)",
+    "expected": "oklch(0.55 0.1 250)",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "shadow-xs",
+    "actual": "rgba(51, 51, 51, 0.07) 0px 2px 0px 0px",
+    "expected": "rgba(51, 51, 51, 0.07) 0px 2px 0px 0px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "shadow-sm",
+    "actual": "rgba(51, 51, 51, 0.15) 0px 2px 0px 0px, rgba(51, 51, 51, 0.15) 0px 1px 2px -1px",
+    "expected": "rgba(51, 51, 51, 0.15) 0px 2px 0px 0px, rgba(51, 51, 51, 0.15) 0px 1px 2px -1px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "shadow-md",
+    "actual": "rgba(51, 51, 51, 0.15) 0px 2px 0px 0px, rgba(51, 51, 51, 0.15) 0px 2px 4px -1px",
+    "expected": "rgba(51, 51, 51, 0.15) 0px 2px 0px 0px, rgba(51, 51, 51, 0.15) 0px 2px 4px -1px",
+    "pass": true
+  },
+  {
+    "theme": "light",
+    "name": "root16",
+    "actual": "16px",
+    "expected": "16px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "input",
+    "actual": "oklch(0.39549 0 0)",
+    "expected": "oklch(0.39549 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "surface-raised",
+    "actual": "oklab(0.81 0 0 / 0.025)",
+    "expected": "oklab(0.81 0 0 / 0.025)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "surface-selected",
+    "actual": "oklab(0.82 0 0 / 0.12)",
+    "expected": "oklab(0.82 0 0 / 0.12)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "destructive-text",
+    "actual": "oklch(0.65 0.16 22)",
+    "expected": "oklch(0.65 0.16 22)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "sidebar-accent",
+    "actual": "oklch(0.2688 0 0)",
+    "expected": "oklch(0.2688 0 0)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Select default height",
+    "actual": "36px",
+    "expected": "36px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "Select radius",
+    "actual": "6px",
+    "expected": "6px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "base size",
+    "actual": "15px",
+    "expected": "15px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "base leading",
+    "actual": "22px",
+    "expected": "22px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "file-accent",
+    "actual": "oklch(0.72 0.09 250)",
+    "expected": "oklch(0.72 0.09 250)",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "shadow-xs",
+    "actual": "rgba(0, 0, 0, 0.2) 0px 2px 0px 0px",
+    "expected": "rgba(0, 0, 0, 0.2) 0px 2px 0px 0px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "shadow-sm",
+    "actual": "rgba(0, 0, 0, 0.3) 0px 2px 0px 0px, rgba(0, 0, 0, 0.4) 0px 1px 2px -1px",
+    "expected": "rgba(0, 0, 0, 0.3) 0px 2px 0px 0px, rgba(0, 0, 0, 0.4) 0px 1px 2px -1px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "shadow-md",
+    "actual": "rgba(0, 0, 0, 0.3) 0px 2px 0px 0px, rgba(0, 0, 0, 0.5) 0px 2px 4px -1px",
+    "expected": "rgba(0, 0, 0, 0.3) 0px 2px 0px 0px, rgba(0, 0, 0, 0.5) 0px 2px 4px -1px",
+    "pass": true
+  },
+  {
+    "theme": "dark",
+    "name": "root16",
+    "actual": "16px",
+    "expected": "16px",
+    "pass": true
+  }
+]

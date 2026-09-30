@@ -133,11 +133,11 @@ const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
 const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";
 const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";
 const projectDetailPlainValueClassName =
-  "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-[13px] font-normal text-foreground";
+  "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-sm font-normal text-foreground";
 const projectDetailMultilineValueClassName =
-  "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-[13px] font-normal leading-5 text-foreground";
+  "flex min-h-8 w-full min-w-0 items-start rounded-md px-0 py-1 text-left text-sm font-normal leading-5 text-foreground";
 const projectDetailPlainTriggerClassName =
-  "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-[13px] font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
+  "workspace-project-detail-value-trigger h-8 w-full min-w-0 justify-start gap-2 px-0 py-0.5 text-sm font-normal text-foreground hover:bg-transparent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30";
 const detailAddPropertyMenuSurfaceSelector = "[data-workspace-detail-add-property-menu='true']";
 const spreadsheetFileExtensions = new Set(["csv", "numbers", "ods", "xls", "xlsm", "xlsx"]);
 const defaultPropertyNameByType: Readonly<Record<WorkspaceCustomPropertyType, string>> = {
@@ -320,21 +320,21 @@ function getFileExtension(fileName: string) {
 
 function getFileTreeNodeIconClassName(node: WorkspaceMockFileTreeNode) {
   if (node.kind === "folder") {
-    return "size-4 text-amber-300";
+    return "size-4 text-file-accent";
   }
 
   const extension = getFileExtension(node.name);
 
   if (extension === "pdf") {
-    return "size-4 text-rose-300";
+    return "size-4 text-file-accent";
   }
 
   if (spreadsheetFileExtensions.has(extension)) {
-    return "size-4 text-emerald-300";
+    return "size-4 text-file-accent";
   }
 
   if (extension === "md" || extension === "markdown") {
-    return "size-4 text-sky-300";
+    return "size-4 text-file-accent";
   }
 
   return "size-4 text-muted-foreground";
@@ -483,7 +483,7 @@ function ProjectPropertyValueDisplay({
       <Badge
         variant="secondary"
         data-workspace-status-value
-        className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-[13px] font-normal"
+        className="h-6 gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-sm font-normal"
       >
         <span
           className="size-2 rounded-full bg-muted-foreground/70"
@@ -690,7 +690,7 @@ function ProjectPropertyValueEditor({
         autoFocus
         defaultValue={stringifyPropertyValue(value)}
         aria-label={t("property.editValue", { name: property.name })}
-        className="min-h-8 border-transparent bg-transparent px-0 text-[13px] font-normal leading-5 shadow-none focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
+        className="min-h-8 border-transparent bg-transparent px-0 text-sm font-normal leading-5 shadow-none focus-visible:border-ring focus-visible:bg-transparent focus-visible:ring-1 focus-visible:ring-ring"
         onBlur={(event) => {
           onProjectPropertyValueChange(project.id, property.id, event.target.value);
           onStopEditing();
@@ -725,7 +725,7 @@ function ProjectPropertyValueEditor({
         inputMode="decimal"
         defaultValue={formatNumberEditorValue(value)}
         aria-label={t("property.editValue", { name: property.name })}
-        className="workspace-number-input h-7 border-border bg-background px-2 text-[13px] shadow-none"
+        className="workspace-number-input h-7 border-border bg-background px-2 text-sm shadow-none"
         onBlur={(event) => {
           const text = event.target.value.trim();
           onProjectPropertyValueChange(project.id, property.id, text === "" ? null : text);
@@ -1733,7 +1733,7 @@ export function WorkspaceProjectDetailPanel({
                                   <button
                                     type="button"
                                     aria-label={t("table.propertyActions", { name: property.name })}
-                                    className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                    className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                     onPointerDown={(event) =>
                                       startCardPropertyDrag(event, property.id, {
                                         openActionsOnClick: true,
@@ -1768,7 +1768,7 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={t("detail.reorderProperty", { name: property.name })}
-                                  className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                   onPointerDown={(event) =>
                                     startCardPropertyDrag(event, property.id)
                                   }
@@ -1780,7 +1780,7 @@ export function WorkspaceProjectDetailPanel({
                                 </button>
                               )}
                             </dt>
-                            <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
+                            <dd className="flex min-w-0 items-center px-4 py-1 text-sm">
                               <ProjectPropertyValueEditor
                                 project={displayedProject}
                                 property={property}
@@ -1817,11 +1817,11 @@ export function WorkspaceProjectDetailPanel({
                             <span className="flex h-full items-center justify-center text-muted-foreground/70">
                               <PlusIcon className="size-3.5" aria-hidden="true" />
                             </span>
-                            <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
+                            <span className="min-w-0 truncate pr-3 text-sm font-normal text-muted-foreground">
                               {t("property.add")}
                             </span>
                           </span>
-                          <span className="flex min-w-0 items-center px-4 text-[13px] text-muted-foreground/80">
+                          <span className="flex min-w-0 items-center px-4 text-sm text-muted-foreground/80">
                             {t("property.addDescription")}
                           </span>
                         </button>
@@ -1951,7 +1951,7 @@ export function WorkspaceProjectDetailPanel({
                                         aria-label={t("table.propertyActions", {
                                           name: property.name,
                                         })}
-                                        className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                        className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                         onPointerDown={(event) =>
                                           startCardPropertyDrag(event, property.id, {
                                             group: "hidden",
@@ -1994,7 +1994,7 @@ export function WorkspaceProjectDetailPanel({
                                       aria-label={t("detail.reorderProperty", {
                                         name: property.name,
                                       })}
-                                      className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                       onPointerDown={(event) =>
                                         startCardPropertyDrag(event, property.id, {
                                           group: "hidden",
@@ -2008,7 +2008,7 @@ export function WorkspaceProjectDetailPanel({
                                     </button>
                                   )}
                                 </dt>
-                                <dd className="flex min-w-0 items-center px-4 py-1 text-[13px]">
+                                <dd className="flex min-w-0 items-center px-4 py-1 text-sm">
                                   <ProjectPropertyValueEditor
                                     project={displayedProject}
                                     property={property}

@@ -1,0 +1,10 @@
+[
+  {
+    "name": "IME Enter prevents submit",
+    "pass": true
+  },
+  {
+    "name": "Failed rename preserves draft",
+    "pass": true
+  }
+]

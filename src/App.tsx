@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
 import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
+import { installMenuHoverMemory } from "@/components/ui/menu-hover";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   createPaneLayout,
@@ -514,7 +515,7 @@ function WorkspaceLoadingState() {
   const { t } = useI18n();
 
   return (
-    <div className="grid gap-4 px-4 py-4" aria-label={t("common.loading")}>
+    <div className="grid gap-4 px-4 py-4" role="status" aria-label={t("common.loading")}>
       <Skeleton className="h-28 w-full rounded-lg" />
       <div className="grid gap-3 lg:grid-cols-3">
         <Skeleton className="h-72 rounded-lg" />
@@ -534,7 +535,7 @@ function WorkspaceServiceError({ state }: { readonly state: WorkspaceAppState })
   }
 
   return (
-    <div className="mx-4 mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+    <div role="alert" className="mx-4 mt-4 rounded-lg border border-surface-destructive-border bg-surface-destructive px-3 py-2 text-sm text-destructive-text">
       {t("state.serviceUnavailable", { error: resolveRendererErrorState(state.error, t) })}
     </div>
   );
@@ -557,6 +558,8 @@ export default function App() {
   );
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const navigationSurfaceVersion = useRef(0);
+  useEffect(installMenuHoverMemory, []);
+
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
     try {
       const saved = window.localStorage.getItem("workspace.theme");
@@ -1080,7 +1083,8 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [activeSurface, reloadToken, workspaceClient, locale]);
+  // Locale changes local presentation only. A later legitimate load uses the current locale.
+  }, [activeSurface, reloadToken, workspaceClient]);
 
   useEffect(() => {
     if (
@@ -1245,16 +1249,18 @@ export default function App() {
       });
       setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
       toast.success(t("toast.workspaceRenamed"));
+      return true;
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateWorkspace")) {
         setWorkspaceList((current) => renameWorkspaceListFallback(current, workspaceId, name));
         toast.success(t("toast.workspaceRenamed"));
-        return;
+        return true;
       }
 
       toast.error(t("toast.workspaceRenameFailed"), {
         description: getServiceErrorMessage(error, t),
       });
+      return false;
     }
   }
 
@@ -1398,7 +1404,7 @@ export default function App() {
   async function handleRenameView(viewId: string, name: string) {
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredViews"));
-      return;
+      return false;
     }
 
     try {
@@ -1409,16 +1415,18 @@ export default function App() {
       });
       dispatch({ type: "viewRenamed", viewId, name });
       toast.success(t("toast.viewRenamed"));
+      return true;
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
         dispatch({ type: "viewRenamed", viewId, name });
         toast.success(t("toast.viewRenamed"));
-        return;
+        return true;
       }
 
       toast.error(t("toast.viewRenameFailed"), {
         description: getServiceErrorMessage(error, t),
       });
+      return false;
     }
   }
 
@@ -2702,7 +2710,7 @@ export default function App() {
                     role="status"
                   >
                     <p className="max-w-md break-words text-sm text-muted-foreground">
-                      {t("state.noSearchResults")}
+                      {t("state.noSearchResultsQuery", { query: state.searchQuery.trim() })}
                     </p>
                   </div>
                 ) : activeViewType === "board" ? (
@@ -2726,6 +2734,8 @@ export default function App() {
                 {!searchHasNoResults && activeViewType === "table" ? (
                   <WorkspaceTableView
                     projection={tableProjection as typeof workspaceMockProjection.tableProjection}
+                    searchQuery={state.searchQuery}
+                    onClearSearch={() => dispatch({ type: "searchQueryChanged", searchQuery: "" })}
                     onGroupingChange={handleGroupingChange}
                     view={activeView ?? null}
                     visibleProperties={
@@ -2870,7 +2880,7 @@ export default function App() {
           <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
       </div>
-      <Toaster richColors />
+      <Toaster theme={theme} duration={4000} closeButton />
     </TooltipProvider>
   );
 }

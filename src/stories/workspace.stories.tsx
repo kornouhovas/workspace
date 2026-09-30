@@ -4,11 +4,15 @@ import { workspaceMockProjection, workspaceMockSettings } from "../workspaceMock
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
+import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
 import { WorkspaceEmptyState } from "../components/workspace/states";
 import { WorkspaceLeftPanel } from "../components/workspace/left-panel";
 
-export const Controls = () => (
+export const Controls = () => {
+  const [tooltipOpen, setTooltipOpen] = useState(true);
+  return (
   <div className="grid max-w-xl gap-6">
     <div className="flex flex-wrap items-center gap-3">
       <Button>Primary</Button>
@@ -18,7 +22,12 @@ export const Controls = () => (
       <Button disabled>Saving…</Button>
       <Button variant="destructive">Delete</Button>
     </div>
+    <TooltipProvider><Tooltip open={tooltipOpen}><TooltipTrigger asChild><Button variant="outline" onClick={() => setTooltipOpen(value => !value)}>Long tooltip fixture</Button></TooltipTrigger><TooltipContent>{"A long tooltip with multiline content and averylongunbrokenword".repeat(8)}</TooltipContent></Tooltip></TooltipProvider>
+    <Checkbox aria-label="Fixture checked" defaultChecked />
     <Input aria-label="Project name" placeholder="Project name" />
+    <Input aria-label="Invalid project name" defaultValue="Invalid draft" aria-invalid="true" aria-describedby="catalog-error" />
+    <p id="catalog-error" role="alert" className="text-xs text-destructive-text">Fixture validation error; draft remains available.</p>
+    <Input aria-label="Unavailable project name" disabled defaultValue="Saving fixture" />
     <div className="flex gap-2">
       <Badge variant="secondary">In progress</Badge>
       <Badge variant="outline">Local folder</Badge>
@@ -28,6 +37,7 @@ export const Controls = () => (
     </p>
   </div>
 );
+};
 
 export const Surfaces = () => (
   <div className="grid max-w-3xl grid-cols-3 gap-4">

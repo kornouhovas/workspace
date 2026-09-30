@@ -158,7 +158,7 @@ export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onB
         {drag && drag.beforeId === null && !groups.some(group => group.empty) ? <div className="h-0.5 bg-primary" /> : null}
       </div>
       {drag ? createPortal(<div data-group-drag-preview="true" className="pointer-events-none fixed z-[100] flex h-8 items-center gap-2 rounded-md border bg-popover px-2 text-xs shadow-lg" style={{ left: Math.max(8, drag.x + 12 + drag.width > window.innerWidth ? drag.x - drag.width - 12 : drag.x + 12), top: Math.min(drag.y + 12, window.innerHeight - 40), width: drag.width }}><span className="truncate">{label(groups.find(group => group.id === drag.id)!)}</span></div>, document.body) : null}
-      <p className="px-1 py-1 text-[11px] text-muted-foreground">{t("group.emptyLast")}</p>
+      <p className="px-1 py-1 text-xs text-muted-foreground">{t("group.emptyLast")}</p>
       <div className="my-1 border-t border-border/70" />
       <Button variant="ghost" className="h-7 justify-start px-1 text-xs" onClick={() => onChange(null)}>{t("group.remove")}</Button>
     </>}

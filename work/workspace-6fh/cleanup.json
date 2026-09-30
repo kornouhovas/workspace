@@ -1,0 +1,23 @@
+{
+  "ownProcessesStopped": [
+    60530,
+    60531,
+    47499
+  ],
+  "ports": {
+    "9246": {
+      "listener": "",
+      "closed": true
+    },
+    "9247": {
+      "listener": "",
+      "closed": true
+    },
+    "61000": {
+      "listener": "",
+      "closed": true
+    }
+  },
+  "fixtureRetainedForReproduction": true,
+  "userProcessesTouched": false
+}

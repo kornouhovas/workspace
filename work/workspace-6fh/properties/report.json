@@ -1,0 +1,60 @@
+{
+  "checks": [
+    {
+      "name": "light number expression UI persists",
+      "pass": true
+    },
+    {
+      "name": "light date UI persists",
+      "pass": true
+    },
+    {
+      "name": "light select UI persists opaque id",
+      "pass": true
+    },
+    {
+      "name": "light multi-select UI persists opaque id",
+      "pass": true
+    },
+    {
+      "name": "light text UI persists multiline",
+      "pass": true
+    },
+    {
+      "name": "dark number expression UI persists",
+      "pass": true
+    },
+    {
+      "name": "dark date UI persists",
+      "pass": true
+    },
+    {
+      "name": "dark select UI persists opaque id",
+      "pass": true
+    },
+    {
+      "name": "dark multi-select UI persists opaque id",
+      "pass": true
+    },
+    {
+      "name": "dark text UI persists multiline",
+      "pass": true
+    },
+    {
+      "name": "hidden property value preserved",
+      "pass": true
+    }
+  ],
+  "shots": [
+    "work/workspace-6fh/properties/native-light-1024x720-number-expression.png",
+    "work/workspace-6fh/properties/native-light-1024x720-date-editor.png",
+    "work/workspace-6fh/properties/native-light-1024x720-select-editor.png",
+    "work/workspace-6fh/properties/native-light-1024x720-multi-select-editor.png",
+    "work/workspace-6fh/properties/native-light-1024x720-all-property-values.png",
+    "work/workspace-6fh/properties/native-dark-1024x720-number-expression.png",
+    "work/workspace-6fh/properties/native-dark-1024x720-date-editor.png",
+    "work/workspace-6fh/properties/native-dark-1024x720-select-editor.png",
+    "work/workspace-6fh/properties/native-dark-1024x720-multi-select-editor.png",
+    "work/workspace-6fh/properties/native-dark-1024x720-all-property-values.png"
+  ]
+}

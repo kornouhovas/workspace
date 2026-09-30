@@ -87,7 +87,7 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
   return (
     <Badge
       variant="secondary"
-      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-none border-0 bg-transparent px-0 text-[13px] font-normal text-muted-foreground shadow-none"
+      className="h-6 max-w-full cursor-default select-none gap-1.5 rounded-none border-0 bg-transparent px-0 text-sm font-normal text-muted-foreground shadow-none"
     >
       <span className="size-2 rounded-full bg-muted-foreground/70" data-color={color} aria-hidden="true" />
       <span className="truncate">{label}</span>
@@ -187,7 +187,7 @@ export function WorkspaceBoardView({
                       {populatedProperties.length > 0 ? (
                         <dl className="relative grid gap-0.5">
                           {populatedProperties.map(({ property, value }) => (
-                          <div key={property.id} className="min-w-0 text-[13px]">
+                          <div key={property.id} className="min-w-0 text-sm">
                               <dt className="sr-only">{property.name}</dt>
                               <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
                                 {property.id === "property:status" ? (

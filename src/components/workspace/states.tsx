@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 
 type WorkspaceEmptyStateProps = {
@@ -15,13 +16,13 @@ export function WorkspaceEmptyState({ onOpenSettings }: WorkspaceEmptyStateProps
           {t("state.noSourceDescription")}
         </p>
       </div>
-      <button
+      <Button
         type="button"
-        className="inline-flex h-8 items-center rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+        size="sm"
         onClick={onOpenSettings}
       >
         {t("state.openSettings")}
-      </button>
+      </Button>
     </div>
   );
 }
