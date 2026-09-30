@@ -1,15 +1,16 @@
 # Workspace
 
-Локальное Electron-приложение на React/Vite и any-store для работы с workspace-папкой.
+Локальное Electron-приложение на React/Vite для работы с workspace-папками.
+
+[Документы разработки](docs/development/README.md): продукт, архитектура, правила работы, проверки и место для документа дизайна. Обязательная точка входа в рабочие правила — [AGENTS.md](AGENTS.md).
 
 В проекте есть Electron shell, renderer Workspace Project Board, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Прямой browser/Vite dev режим не используется как пользовательский запуск.
 
 ## Быстрый запуск
 
-Electron app:
+Из корня текущего checkout, Electron app:
 
 ```bash
-cd /Users/aleksandersk/Documents/programming/node/project_folder
 npm run electron
 ```
 
@@ -20,16 +21,16 @@ npm run build:renderer
 npm run electron
 ```
 
-Sidecar:
+Отдельный sidecar (не переключает хранение Electron):
 
 ```bash
 npm run build:sidecar
-./workspace-sidecar -db .workspace/workspace.db
+./build/sidecar/local/workspace-sidecar -db .workspace/workspace.db
 ```
 
 ## Storage
 
-Workspace stores local object and property data through `any-store`, a Go document database on top of SQLite.
+Действующий Electron runtime использует JSON-адаптеры settings/views/properties за WorkspaceServiceClient и preload IPC. Go sidecar с `any-store` поверх SQLite — целевое durable хранение; Electron сейчас не запускает и не подключает его автоматически. См. [ADR-006](docs/adr/006-workspace-source-bindings.md) и [карту архитектуры](docs/development/architecture.md).
 
 `any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
 
@@ -45,6 +46,8 @@ Backend endpoints принимают только относительные п�
 Запросы с абсолютным путем или `../` отклоняются. Это нужно, чтобы локальный runtime не мог открыть произвольный файл вне выбранной workspace-папки.
 
 ## Проверка
+
+Набор выбирается по затронутым границам: [правила проверок](docs/development/quality.md). Ниже доступные команды, а не обязательный прогон для каждой правки.
 
 ```bash
 npm test

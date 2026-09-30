@@ -1,11 +1,17 @@
 # Architecture: Workspace Project Board
 
+## Current Runtime And Document Status
+
+The active Electron path is React → WorkspaceServiceClient → renderer transport → sandboxed preload IPC → main dispatcher → domain/backend with transitional JSON settings/views/property adapters. See [ADR-002](adr/002-electron-preload-ipc-bridge.md), [ADR-006](adr/006-workspace-source-bindings.md) and the [development map](development/architecture.md). Electron does not currently start or wire the Go sidecar as its store; any-store remains the target durable architecture described below.
+
+References below to sidecar persistence/data flows describe that target, not evidence that every running operation uses it. Preload IPC is already implemented under ADR-002. Verification and approval defaults follow [AGENTS.md](../AGENTS.md), rather than older blanket defaults in this document.
+
 ## Tech Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn/ui, Radix UI primitives.
 - Desktop shell: Electron loading the built renderer from `dist/renderer`; explicit development mode loads validated loopback Vite with isolated checkout metadata/userData. See [development boundaries](design/bb-stack-design.md).
 - Local backend: Node.js workspace backend modules in `src/`.
-- Local storage: `any local` through the local `any-store` sidecar.
+- Current Electron storage: transitional JSON adapters; target durable storage: local `any-store` sidecar.
 - Sidecar: Go HTTP process backed by `any-store` on SQLite.
 - Auth: none in MVP.
 - Deployment: local desktop runtime; renderer is built before Electron launch.
@@ -356,7 +362,7 @@ Documents should prefer stable ids and relative locators. Absolute paths are run
 
 ## Testing Strategy
 
-Default verification:
+Full verification for cross-layer changes, migrations or release readiness (scope selection follows AGENTS.md):
 
 ```bash
 npm test
@@ -397,7 +403,7 @@ Create an ADR before:
 - changing project identity strategy;
 - changing folder role semantics;
 - allowing drag and drop between primary statuses;
-- introducing a preload IPC contract;
+- materially changing the accepted preload IPC boundary (ADR-002);
 - exposing sidecar routes as public contracts;
 - changing folder structure boundaries;
 - adding major dependencies.
@@ -408,7 +414,7 @@ Create an ADR before:
 - Using stable local project ids plus relative path locators is more complex than path-only ids, but it protects metadata when folders are renamed or moved.
 - One level of status folders is less flexible, but it makes project discovery and user expectations clear for MVP.
 - Keeping sync out of MVP reduces scope, but document-shaped local data keeps the path open for `any sync`.
-- Electron without preload IPC keeps the current runtime simple, but future native integrations may require an ADR for an explicit IPC boundary.
+- The accepted preload IPC bridge keeps privileged operations outside the sandboxed renderer (ADR-002).
 
 ## Open Architecture Follow-ups
 

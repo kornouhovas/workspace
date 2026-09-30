@@ -1,10 +1,22 @@
 # Quality Gates
 
-Quality gates define what Codex must run before claiming work is complete.
+Проверки выбираются по затронутой границе. [AGENTS.md](../../AGENTS.md) — обязательный источник рабочих правил; этот документ уточняет проверку и не вводит полный прогон для каждой задачи. Команды сверяются с [package.json](../../package.json).
+
+## Documentation
+
+Для одних текстов проверьте ссылки/пути, согласованность с действующими контрактами и runtime, затем `git diff --check`. Запустите существующий docs check, если он есть и затронут (в package.json отдельного docs check сейчас нет). Сборки Electron/Go и `npm test` для прозы не требуются.
+
+## Renderer
+
+Запустите релевантные Node tests, `npm run typecheck`, `npm run build:renderer` и `git diff --check`. Осмотрите изменённые Electron surfaces, когда возможно; при layout-изменениях — 1440×960 и 1024×720. Проверьте загрузку, empty/error/success states, размеры текста и пересечения контролов. Сообщите о недоступной визуальной проверке.
+
+## Backend / Storage
+
+Запустите релевантные Node tests и `git diff --check`. При изменениях Go-кода или sidecar-контрактов добавьте `go test ./...` и `npm run build:sidecar`. Для операций с риском потери данных используйте изолированные временные fixtures.
 
 ## Full Verification
 
-Use before completion when code changed:
+Для межслойных изменений, миграций или готовности к выпуску запустите один раз после интеграции:
 
 ```bash
 npm test
@@ -12,67 +24,9 @@ npm run typecheck
 npm run build:renderer
 go test ./...
 npm run build:sidecar
-git --no-pager diff --check
+git diff --check
 ```
 
-## Backend / Storage Slice
+## Evidence
 
-Use while working on backend, workspace domain, sidecar transport, or Go storage:
-
-```bash
-npm test
-go test ./...
-npm run build:sidecar
-git --no-pager diff --check
-```
-
-## Frontend Slice
-
-Use while working on React, renderer state, UI components, or app shell:
-
-```bash
-npm test
-npm run typecheck
-npm run build:renderer
-git --no-pager diff --check
-```
-
-## UI Visual Gate
-
-Use when user-facing UI changed:
-
-```bash
-npm run build:renderer
-npm run electron
-```
-
-Check:
-
-- changed screen opens;
-- no blank screen;
-- no overlapping controls;
-- text fits in buttons/cards/tabs;
-- loading, empty, error, and success states still make sense;
-- 1440x960 and 1024x720 layouts are usable.
-
-## Documentation Gate
-
-Use when docs changed:
-
-```bash
-git --no-pager diff --check
-npm test
-```
-
-Also check:
-
-- docs do not contradict implementation;
-- task acceptance criteria match tests;
-- links/paths refer to real files;
-- no obsolete instructions remain.
-
-## Completion Rule
-
-Do not say "done", "fixed", or "passing" unless the relevant command output has been observed.
-
-If a check could not be run, state that clearly and explain why.
+Заявляйте об успешной проверке только после наблюдения завершённого результата. Сборка не доказывает поведение runtime и визуальное соответствие. Укажите проверенные сценарии и оставшиеся ограничения. Повторяйте или расширяйте прошедшие проверки при новых изменениях, сбоях или конкретном риске согласно AGENTS.md.

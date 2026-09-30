@@ -17,7 +17,7 @@ This flow establishes the source of projects for the app. Without it, Workspaces
 
 - The app is running in the Electron desktop runtime.
 - User has local filesystem access to the intended project source folder.
-- `any local` / `any-store` storage is available.
+- Local metadata adapters are available. The active Electron runtime uses transitional JSON adapters; any-store remains the target store ([ADR-006](../adr/006-workspace-source-bindings.md)).
 - If folder roles are being edited, an active Workspace exists.
 
 ## Assumptions

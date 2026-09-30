@@ -1,5 +1,7 @@
 # Vision: Workspace Project Board
 
+Актуальное уточнение: [ADR-006](adr/006-workspace-source-bindings.md) заменяет раннее предположение об общем источнике на независимые source bindings Workspaces. Действующий Electron использует JSON-адаптеры через preload IPC; `any-store` ниже описывает целевое хранение, а не подключение runtime. См. [карту архитектуры](development/architecture.md).
+
 ## Product Direction
 
 Мы строим desktop-приложение для работы с проектами, которые уже существуют на диске в виде папок. Пользователь задаёт папку проектов в Settings, а Workspaces в Left Panel становятся сохранёнными рабочими конфигурациями поверх этой папки. Приложение отображает найденные проекты в разных представлениях: Kanban Board и Table.

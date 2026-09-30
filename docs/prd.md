@@ -1,5 +1,7 @@
 # PRD: Workspace Project Board MVP
 
+Актуальное уточнение: [ADR-006](adr/006-workspace-source-bindings.md) заменяет раннее предположение об общем источнике на независимые source bindings Workspaces. Действующий Electron использует JSON-адаптеры через preload IPC; `any-store` ниже описывает целевое хранение, а не подключение runtime. См. [карту архитектуры](development/architecture.md).
+
 ## Goal
 
 Создать desktop-приложение, которое превращает выбранную пользователем папку с проектами в источник данных для Workspaces с Board и Table views, проектными properties и быстрым доступом к файлам проекта.
