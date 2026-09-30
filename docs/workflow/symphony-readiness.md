@@ -1,5 +1,7 @@
 # Symphony Readiness
 
+> Проектный материал для будущей оркестрации. Текущий процесс задают [rules.md](../development/rules.md) и [workflow](../development/workflow.md); схемы ниже не разрешают создавать задачи, делегировать, менять scope или выпускать изменения. Manual equivalent ниже — историческая схема.
+
 This project can adopt a Symphony-like workflow later without adopting a full orchestrator immediately.
 
 ## Current Manual Equivalent

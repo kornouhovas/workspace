@@ -1,5 +1,7 @@
 # Design QA — Notion compact refinement
 
+> Исторический отчёт итерации 22–23 сентября 2026 года. Числа и «current» ниже относятся к этой итерации; это не актуальные универсальные UI-правила и не подтверждение завершения последующей приёмки. Требовавшиеся native captures в исходном отчёте оставались pending; эта документационная задача их не перепроверяет. Текущие источники: [UI guidelines](docs/ui-guidelines.md), [Interface](docs/interface.md), [политика bb](docs/development/design/bb-workspace-policy.md). Исходное evidence и ограничения ниже сохранены.
+
 ## Source of truth
 
 - Board reference: `work/task-loop/notion-compact-refinement-2026-09-22/run/references/board.png` (copied byte-for-byte from `/Users/aleksandersk/Downloads/download (1).png`).

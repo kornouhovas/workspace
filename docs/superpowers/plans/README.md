@@ -1,5 +1,7 @@
 # Plans Folder
 
+> Применяйте [rules.md](../../development/rules.md) и [workflow](../../development/workflow.md). План нужен по сложности задачи; уже одобренный план разрешает весь описанный объём без approvals каждого шага. Существующие планы сохраняют исторические решения, а процессные defaults заменены rules.md.
+
 Use this folder for implementation plans.
 
 Recommended naming:

@@ -1,5 +1,7 @@
 # Backlog Folder
 
+> Рекомендации для задач, которым нужен отдельный backlog-файл. Текущие [rules.md](../development/rules.md) допускают ясный запрос без шаблона. Required Sections ниже относятся к выбранному шаблону; Beads/новый файл не обязательны для каждого запроса.
+
 Backlog items describe work before implementation.
 
 Use one file per feature, bug, or technical task.

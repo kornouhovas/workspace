@@ -2,11 +2,13 @@
 
 Локальное Electron-приложение на React/Vite для работы с workspace-папками.
 
-[Документы разработки](docs/development/README.md): продукт, архитектура, правила работы, проверки и место для документа дизайна. Обязательная точка входа в рабочие правила — [AGENTS.md](AGENTS.md).
+[Документы разработки](docs/development/README.md): продукт, архитектура, правила работы, проверки и [исходник дизайна bb с политикой применения](docs/development/design/README.md). Правила этой папки обязательны при разработке. Обязательная точка входа в рабочие правила — [AGENTS.md](AGENTS.md).
 
 В проекте есть Electron shell, renderer Workspace Project Board, backend modules в `src/` и Go sidecar `cmd/workspace-sidecar`. Прямой browser/Vite dev режим не используется как пользовательский запуск.
 
 ## Быстрый запуск
+
+Установите зависимости через `npm ci`. Для разработки используйте `npm run dev`: Electron + Vite HMR с изолированными метаданными/preferences в `.workspace-dev` текущего checkout.
 
 Из корня текущего checkout, Electron app:
 
@@ -59,6 +61,6 @@ go test ./...
 npm run build:sidecar
 ```
 
-## Development and component catalog
+## Разработка и каталог компонентов
 
 Run `npm run dev` for the Electron app with Vite HMR and isolated checkout-local `.workspace-dev` metadata and Electron preferences. Production `npm run electron` still loads the built renderer. `npm run storybook` opens the Ladle catalog; `npm run storybook:build`, `npm run lint`, and `npm run format:check` verify components and code. See [bb adaptation](docs/design/bb-stack-design.md) for commands and design decisions.

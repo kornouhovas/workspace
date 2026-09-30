@@ -1,5 +1,7 @@
 # Session Handoff Template
 
+> Необязательный шаблон для продолжения между сессиями; используйте нужные поля. Текущие требования — [rules.md](../development/rules.md) и [workflow](../development/workflow.md); Workflow Evidence и Handoff state обязательны только по запросу формального tracked handoff.
+
 Use this when a task spans multiple sessions or another agent needs to continue.
 
 ## Workflow Evidence

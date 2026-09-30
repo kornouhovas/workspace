@@ -1,5 +1,7 @@
 # Compact №3: реализация и проверка
 
+> Исторический материал Compact №3, 21–23 сентября 2026. Визуальные значения и указания следующему агенту ниже относятся к этой итерации. Текущие правила — [UI guidelines](../ui-guidelines.md), [Interface](../interface.md) и [политика bb](../development/design/bb-workspace-policy.md); исходные решения/evidence/непроверенные пункты сохранены, новая приёмка не заявлена.
+
 Ветка `codex/compact-redesign`, попытка `compact-implementation-2026-09-21`. Дизайн-источники: [handoff](compact-redesign-handoff.md) и [матрица](compact-edge-matrix.md). Изменения ограничены renderer, стилями, локализацией, тестом reducer и UI-документацией. Storage, IPC, Electron security, project IDs, правила Status и файлы пользователя не менялись. Браузерные наблюдения проводились на отдельном временном source/config, путь и команды — в `work/task-loop/compact-implementation-2026-09-21/run/`.
 
 ## Результат

@@ -1,5 +1,7 @@
 # Task Lifecycle
 
+> Исторический процессный документ. Текущие обязательные правила: [rules.md](../development/rules.md), [workflow](../development/workflow.md), [quality](../development/quality.md). Шаблоны, обязательное разбиение на slices и повторные approvals ниже не являются текущими требованиями; статусы применяются для учёта tracked work. Исторический текст сохранён для контекста.
+
 This document defines how work moves from idea to done.
 
 ## States

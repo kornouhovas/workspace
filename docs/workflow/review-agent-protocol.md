@@ -1,5 +1,7 @@
 # Review Agent Protocol
 
+> Применяется к уже авторизованному review. Текущие [rules.md](../development/rules.md) и [quality](../development/quality.md) обязательны; Output Format ниже — необязательный шаблон, а не handoff gate.
+
 Use this document when Codex or another agent reviews work.
 
 ## Review Stance

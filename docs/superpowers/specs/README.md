@@ -1,5 +1,7 @@
 # Specs Folder
 
+> Применяйте [rules.md](../../development/rules.md). Review спецификации пользователем требуется для нового существенного решения вне имеющейся авторизации; уже согласованный объём не требует повторного approval перед каждым этапом. Рекомендации ниже не создают обязательный отдельный spec для любого запроса.
+
 Use this folder for design/spec documents that are larger than a backlog item.
 
 Recommended naming:
