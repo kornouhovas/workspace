@@ -148,13 +148,29 @@ export function createTableGrouping({
   };
 }
 
+// Automatic sorts use the displayed universe; pending manual mutations compose on the draft.
+function groupingOrder(setting, groupIds) {
+  const available = new Set(groupIds.filter(id => id !== "empty"));
+  const order = setting.sort === "manual" ? setting.manualOrder.filter(id => available.has(id)) : [];
+  for (const id of groupIds) if (id !== "empty" && !order.includes(id)) order.push(id);
+  return order;
+}
+
+export function reorderGroupingGroup(setting, groupIds, groupId, beforeId) {
+  if (!setting || groupId === "empty" || beforeId === "empty") return setting;
+  const order = groupingOrder(setting, groupIds);
+  if (!order.includes(groupId) || (beforeId !== null && !order.includes(beforeId))) return setting;
+  if (groupId === beforeId) return setting;
+  const reordered = order.filter(id => id !== groupId);
+  reordered.splice(beforeId === null ? reordered.length : reordered.indexOf(beforeId), 0, groupId);
+  if (reordered.every((id, index) => id === order[index])) return setting;
+  return { ...setting, sort: "manual", manualOrder: reordered };
+}
+
 export function moveGroupingGroup(setting, groupIds, groupId, direction) {
   if (!setting) return null;
-  const available = new Set(groupIds.filter(id => id !== "empty"));
-  const order = [...setting.manualOrder.filter(id => available.has(id))];
-  for (const id of groupIds) if (id !== "empty" && !order.includes(id)) order.push(id);
+  const order = groupingOrder(setting, groupIds);
   const index = order.indexOf(groupId), destination = index + direction;
-  if (index < 0 || destination < 0 || destination >= order.length) return setting;
-  [order[index], order[destination]] = [order[destination], order[index]];
-  return { ...setting, sort: "manual", manualOrder: order };
+  if (index < 0 || destination < 0 || destination >= order.length || destination === index) return setting;
+  return reorderGroupingGroup(setting, groupIds, groupId, direction < 0 ? order[destination] : order[destination + 1] ?? null);
 }

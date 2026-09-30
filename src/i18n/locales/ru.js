@@ -13,6 +13,8 @@ export const ru = {
   "group.expandAll": "Раскрыть все",
   "group.showAll": "Показать все группы",
   "group.groups": "Группы",
+  "group.reorder": "Изменить порядок {{name}}",
+  "group.reorderHelp": "Перетащите или нажмите стрелку вверх/вниз",
   "group.moveUp": "Переместить {{name}} выше",
   "group.moveDown": "Переместить {{name}} ниже",
   "group.show": "Показать группу {{name}}",

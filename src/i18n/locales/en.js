@@ -13,6 +13,8 @@ export const en = {
   "group.expandAll": "Expand all",
   "group.showAll": "Show all groups",
   "group.groups": "Groups",
+  "group.reorder": "Reorder {{name}}",
+  "group.reorderHelp": "Drag to reorder; Arrow Up or Arrow Down to move",
   "group.moveUp": "Move {{name}} up",
   "group.moveDown": "Move {{name}} down",
   "group.show": "Show group {{name}}",

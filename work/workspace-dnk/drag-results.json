@@ -1,0 +1,1315 @@
+{
+  "provenance": "Real isolated Electron renderer; Playwright mouse/keyboard inputs. API used only fixture setup and persisted assertions. No native OS titlebar/picker verification.",
+  "checks": [
+    {
+      "name": "real drag preview shown",
+      "passed": true
+    },
+    {
+      "name": "mouse drag from default auto Manual display order",
+      "passed": true,
+      "data": {
+        "ids0": [
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+          "empty"
+        ],
+        "g": {
+          "propertyId": "property:8f623dfc-f13c-4924-a463-b6c8cd4d6bd4",
+          "sort": "manual",
+          "manualOrder": [
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4"
+          ],
+          "hiddenGroupIds": [],
+          "collapsedGroupIds": [],
+          "hideEmpty": false
+        }
+      }
+    },
+    {
+      "name": "mouse drag from ascending auto Manual display order",
+      "passed": true,
+      "data": {
+        "ids0": [
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+          "empty"
+        ],
+        "g": {
+          "propertyId": "property:8f623dfc-f13c-4924-a463-b6c8cd4d6bd4",
+          "sort": "manual",
+          "manualOrder": [
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17"
+          ],
+          "hiddenGroupIds": [],
+          "collapsedGroupIds": [],
+          "hideEmpty": false
+        }
+      }
+    },
+    {
+      "name": "mouse drag from descending auto Manual display order",
+      "passed": true,
+      "data": {
+        "ids0": [
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+          "empty"
+        ],
+        "g": {
+          "propertyId": "property:8f623dfc-f13c-4924-a463-b6c8cd4d6bd4",
+          "sort": "manual",
+          "manualOrder": [
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b"
+          ],
+          "hiddenGroupIds": [],
+          "collapsedGroupIds": [],
+          "hideEmpty": false
+        }
+      }
+    },
+    {
+      "name": "mouse drag from manual auto Manual display order",
+      "passed": true,
+      "data": {
+        "ids0": [
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+          "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4",
+          "empty"
+        ],
+        "g": {
+          "propertyId": "property:8f623dfc-f13c-4924-a463-b6c8cd4d6bd4",
+          "sort": "manual",
+          "manualOrder": [
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5d8bddc5-1846-4195-8585-19b7dd1ad24b",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-157548bc-5329-4765-a7d1-3bb4634dfc17",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a32d69df-c77c-4ab5-9b6b-590bc0d6773d",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-d512b0cf-8bd3-46cc-99ad-418e9ddece93",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-220c477a-3f44-470d-b5e3-19d95f7b7251",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-795e37eb-bc34-4d39-bc36-050d21c66e0c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-32ec3ca4-3ec0-44c1-9273-e3cc050718ec",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-e13dcfe1-3015-4a03-9e1e-ec8e4a63a6af",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-5e495d73-7aff-4416-881c-aa44e12a9cf5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8e7d3d1f-42a8-4f4a-9dbb-a910251ac8a5",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-bfc68850-f569-4cb9-bd74-30f4137023b0",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-3ba958b8-56d9-4003-b1ab-55fd1b51391c",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c72b2dce-05b3-4d35-a36b-238dcd71fdda",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-8a4633b4-1b1b-40bc-bdef-522f0e0eb6d9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-b8946b75-7bb9-4b6b-9abc-cad9cf206ce9",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-f4991d75-9736-4a19-937a-241529c24411",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-c037e4a7-836a-4768-8cbf-aea44622033f",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-7a48dcfa-f509-4bb2-b451-a280d3e6ebe8",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-25316831-dc76-4ba8-aeea-1ad43821f45e",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-a1d8c245-ad26-49b5-b781-341c495f7554",
+            "value:selectValue:property-8f623dfc-f13c-4924-a463-b6c8cd4d6bd4-254e0c65-ae74-49b3-81bb-1a6fdd0c59b4"
+          ],
+          "hiddenGroupIds": [],
+          "collapsedGroupIds": [],
+          "hideEmpty": false
+        }
+      }
+    },
+    {
+      "name": "hidden group retained in settings",
+      "passed": true
+    },
+    {
+      "name": "empty not reorderable",
+      "passed": true
+    },
+    {
+      "name": "drag preserves hidden collapse hideEmpty",
+      "passed": true
+    },
+    {
+      "name": "click no-op Escape outside do not save",
+      "passed": true
+    },
+    {
+      "name": "keyboard handle auto Manual",
+      "passed": true
+    },
+    {
+      "name": "expanded nonempty sections each have header",
+      "passed": true
+    },
+    {
+      "name": "later header one property menu",
+      "passed": true
+    },
+    {
+      "name": "later header one rename input",
+      "passed": true
+    },
+    {
+      "name": "first header one property menu",
+      "passed": true
+    },
+    {
+      "name": "later header one add menu",
+      "passed": true
+    },
+    {
+      "name": "shared repeated headers/body align",
+      "passed": true,
+      "data": {
+        "headers": [
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ]
+        ],
+        "cells": [
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 260
+            },
+            {
+              "x": 272,
+              "w": 180
+            },
+            {
+              "x": 452,
+              "w": 180
+            },
+            {
+              "x": 632,
+              "w": 180
+            },
+            {
+              "x": 812,
+              "w": 180
+            },
+            {
+              "x": 992,
+              "w": 180
+            },
+            {
+              "x": 1172,
+              "w": 180
+            },
+            {
+              "x": 1352,
+              "w": 76
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "resize later header updates shared grid",
+      "passed": true,
+      "data": {
+        "headers": [
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ]
+        ],
+        "cells": [
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "reorder later header keeps grids aligned",
+      "passed": true,
+      "data": {
+        "headers": [
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ]
+        ],
+        "cells": [
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": 12,
+              "w": 315
+            },
+            {
+              "x": 327,
+              "w": 180
+            },
+            {
+              "x": 507,
+              "w": 180
+            },
+            {
+              "x": 687,
+              "w": 180
+            },
+            {
+              "x": 867,
+              "w": 180
+            },
+            {
+              "x": 1047,
+              "w": 180
+            },
+            {
+              "x": 1227,
+              "w": 180
+            },
+            {
+              "x": 1407,
+              "w": 48
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "shared horizontal scroll aligns headers/body",
+      "passed": true,
+      "data": {
+        "headers": [
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ]
+        ],
+        "cells": [
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ],
+          [
+            {
+              "x": -15,
+              "w": 315
+            },
+            {
+              "x": 300,
+              "w": 180
+            },
+            {
+              "x": 480,
+              "w": 180
+            },
+            {
+              "x": 660,
+              "w": 180
+            },
+            {
+              "x": 840,
+              "w": 180
+            },
+            {
+              "x": 1020,
+              "w": 180
+            },
+            {
+              "x": 1200,
+              "w": 180
+            },
+            {
+              "x": 1380,
+              "w": 48
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "real pointer drag edge scrolls group list",
+      "passed": true
+    },
+    {
+      "name": "edge scroll successful durable Manual",
+      "passed": true
+    },
+    {
+      "name": "end marker before fixed empty",
+      "passed": true
+    },
+    {
+      "name": "empty remains final",
+      "passed": true
+    },
+    {
+      "name": "delayed grouping saves do not replace selected view",
+      "passed": true
+    },
+    {
+      "name": "delayed keyboard queue composes",
+      "passed": true
+    },
+    {
+      "name": "real restart durable manual order",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "pointer-preview-insertion.png",
+    "later-header-shared-horizontal.png",
+    "many-groups-edge-scroll-preview.png",
+    "end-marker-before-empty.png"
+  ]
+}

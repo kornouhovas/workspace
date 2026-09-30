@@ -1,0 +1,128 @@
+{
+  "checks": [
+    {
+      "name": "matrix Light 1440 open",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Light 1440 collapsed",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Light 1024 open",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Light 1024 collapsed",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Dark 1440 open",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Dark 1440 collapsed",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Dark 1024 open",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "matrix Dark 1024 collapsed",
+      "passed": true
+    },
+    {
+      "name": "many group settings scroll",
+      "passed": true
+    },
+    {
+      "name": "grouped text editor stores wrapped value",
+      "passed": true
+    },
+    {
+      "name": "wrap retained",
+      "passed": true
+    },
+    {
+      "name": "grouped date editor opens",
+      "passed": true
+    },
+    {
+      "name": "one later rename editor",
+      "passed": true
+    },
+    {
+      "name": "later rename saved once",
+      "passed": true
+    },
+    {
+      "name": "all header occurrences share new name",
+      "passed": true
+    },
+    {
+      "name": "grouped name opens existing project detail",
+      "passed": true
+    },
+    {
+      "name": "Board primary status/project move restriction preserved",
+      "passed": true
+    },
+    {
+      "name": "Board omits Group control",
+      "passed": true
+    },
+    {
+      "name": "Table config survives Board",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "many-Light-1440-open-sections.png",
+    "many-Light-1440-open-menu-scroll.png",
+    "many-Light-1440-collapsed-sections.png",
+    "many-Light-1440-collapsed-menu-scroll.png",
+    "many-Light-1024-open-sections.png",
+    "many-Light-1024-open-menu-scroll.png",
+    "many-Light-1024-collapsed-sections.png",
+    "many-Light-1024-collapsed-menu-scroll.png",
+    "many-Dark-1440-open-sections.png",
+    "many-Dark-1440-open-menu-scroll.png",
+    "many-Dark-1440-collapsed-sections.png",
+    "many-Dark-1440-collapsed-menu-scroll.png",
+    "many-Dark-1024-open-sections.png",
+    "many-Dark-1024-open-menu-scroll.png",
+    "many-Dark-1024-collapsed-sections.png",
+    "many-Dark-1024-collapsed-menu-scroll.png",
+    "sections-edited-card-return.png"
+  ],
+  "provenance": "Isolated real Electron renderer screenshots/input; no native OS titlebar/picker claim."
+}

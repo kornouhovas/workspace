@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
@@ -910,8 +910,8 @@ export function WorkspaceTableView({
     });
   }
 
-  function getColumnDragPreviewColumns() {
-    return Array.from(document.querySelectorAll<HTMLElement>("[data-property-column-id]"))
+  function getColumnDragPreviewColumns(header: Element) {
+    return Array.from(header.querySelectorAll<HTMLElement>("[data-property-column-id]"))
       .map((column) => {
         const propertyId = column.dataset.propertyColumnId;
         const rect = column.getBoundingClientRect();
@@ -1046,7 +1046,7 @@ export function WorkspaceTableView({
     event.preventDefault();
     event.stopPropagation();
 
-    const columnDragPreviewColumns = getColumnDragPreviewColumns();
+    const columnDragPreviewColumns = getColumnDragPreviewColumns(event.currentTarget.closest("tr")!);
     const previousCursor = document.body.style.cursor;
     const previousUserSelect = document.body.style.userSelect;
 
@@ -1137,23 +1137,19 @@ export function WorkspaceTableView({
     } : null);
   }
 
-  return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-3 pb-0 pt-3" aria-label={t("app.title")}>
-      {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
-      {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
-      <div className="min-h-0 w-full flex-1 overflow-auto rounded-lg border border-border/45 bg-background/15">
-        <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
-          <colgroup>
-            {visibleProperties.map((property) => (
-              <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
-            ))}
-            <col aria-label={t("table.addPropertyFiller")} />
-          </colgroup>
-          <TableHeader
-            className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
-            onPointerDownCapture={dismissHeaderTransientState}
-          >
-            <TableRow className="h-8 hover:bg-transparent">
+  const [activeHeaderId, setActiveHeaderId] = useState("flat");
+
+  function renderColumnHeader(sectionId = "flat") {
+    return (
+            <TableRow
+              data-table-section-header="true"
+              className="h-8 bg-background/95 hover:bg-transparent"
+              onFocusCapture={() => setActiveHeaderId(sectionId)}
+              onPointerDownCapture={event => {
+                setActiveHeaderId(sectionId);
+                dismissHeaderTransientState(event);
+              }}
+            >
               {visibleProperties.map((property) => {
                 const propertyColumnWidth = visiblePropertyWidths[property.id];
                 const selectedValueIds = new Set(valueVisibility[property.id]?.valueIds || []);
@@ -1184,7 +1180,7 @@ export function WorkspaceTableView({
                       openPropertyMenuFromPoint(property.id, event.clientX, event.clientY);
                     }}
                   >
-                    {editingPropertyId === property.id ? (
+                    {editingPropertyId === property.id && activeHeaderId === sectionId ? (
                       <Input
                         value={editingPropertyName}
                         aria-label={t("property.rename")}
@@ -1254,7 +1250,7 @@ export function WorkspaceTableView({
                             <MoreHorizontalIcon className="size-3.5" aria-hidden="true" />
                           </button>
                         </div>
-                        {openPropertyMenuId === property.id && propertyMenuAnchor ? createPortal((
+                        {openPropertyMenuId === property.id && activeHeaderId === sectionId && propertyMenuAnchor ? createPortal((
                           <div
                             data-workspace-property-menu="true"
                             role="menu"
@@ -1369,7 +1365,7 @@ export function WorkspaceTableView({
               })}
               <TableHead className="min-w-12 bg-background/95 shadow-[inset_1px_0_0_var(--border)]">
                 <DropdownMenu
-                  open={openAddPropertyMenu}
+                  open={openAddPropertyMenu && activeHeaderId === sectionId}
                   onOpenChange={setOpenAddPropertyMenu}
                 >
                   <DropdownMenuTrigger asChild>
@@ -1424,10 +1420,24 @@ export function WorkspaceTableView({
                 </DropdownMenu>
               </TableHead>
             </TableRow>
-          </TableHeader>
-          <TableBody className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
-            {displaySections.map(group => (
-              <Fragment key={group.id}>
+  ); }
+
+  return (
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-3 pb-0 pt-3" aria-label={t("app.title")}>
+      {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
+      {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
+      <div className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "rounded-lg border border-border/45 bg-background/15"}`}>
+        <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
+          <colgroup>
+            {visibleProperties.map((property) => (
+              <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
+            ))}
+            <col aria-label={t("table.addPropertyFiller")} />
+          </colgroup>
+          {!projection.groups ? <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">{renderColumnHeader()}</TableHeader> : null}
+            {displaySections.map((group, index) => (
+              <TableBody key={group.id} data-table-section={group.id} className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
+              {projection.groups && index > 0 ? <TableRow data-table-group-gap="true" className="h-5 border-0 hover:bg-transparent"><TableCell colSpan={visibleProperties.length + 1} className="h-5 p-0" /></TableRow> : null}
               {projection.groups ? <TableRow data-table-group-id={group.id} className="h-9 bg-muted/25 hover:bg-muted/30">
                 <TableCell colSpan={visibleProperties.length + 1} className="h-9 p-0">
                   <button type="button" aria-expanded={!group.collapsed} aria-label={t(group.collapsed ? "group.expand" : "group.collapse", { name: groupDisplayName(group) })}
@@ -1440,6 +1450,7 @@ export function WorkspaceTableView({
                   </button>
                 </TableCell>
               </TableRow> : null}
+            {projection.groups && !group.collapsed && group.rows.length > 0 ? renderColumnHeader(group.id) : null}
             {!group.collapsed && group.rows.map((project) => (
               <TableRow
                 key={project.id}
@@ -1493,9 +1504,8 @@ export function WorkspaceTableView({
                 <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
               </TableRow>
             ))}
-              </Fragment>
+              </TableBody>
             ))}
-          </TableBody>
         </Table>
       </div>
     </section>

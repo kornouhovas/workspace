@@ -473,7 +473,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
   assert.match(tableViewSource, /group\/column relative cursor-default select-none bg-background\/95 px-1/);
   assert.doesNotMatch(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0/);
-  assert.match(tableViewSource, /<TableBody className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45">/);
+  assert.match(tableViewSource, /<TableBody[^>]*className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45"[^>]*>/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
   assert.match(tableViewSource, /onCreateProperty/);
   assert.match(appSource, /createClientDocumentId\("property"\)/);
@@ -563,9 +563,9 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /setOpenAddPropertyMenu\(false\)/);
   assert.match(tableViewSource, /setDropdownDismissToken/);
   assert.match(tableViewSource, /onDismissFloatingMenus\(\)/);
-  assert.match(tableViewSource, /onPointerDownCapture=\{dismissHeaderTransientState\}/);
+  assert.match(tableViewSource, /onPointerDownCapture=\{event => \{[^}]*dismissHeaderTransientState\(event\)/);
   assert.match(tableViewSource, /dismissSignal=\{dropdownDismissToken\}/);
-  assert.match(tableViewSource, /open=\{openAddPropertyMenu\}/);
+  assert.match(tableViewSource, /open=\{openAddPropertyMenu && activeHeaderId === sectionId\}/);
   assert.match(tableViewSource, /workspace-table-cell-display/);
   assert.match(tableViewSource, /autoFocus/);
   assert.match(tableViewSource, /function renderTextCellDisplay/);

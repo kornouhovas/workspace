@@ -1,11 +1,14 @@
+import { useEffect, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { EyeIcon, EyeOffIcon, ChevronUpIcon, ChevronDownIcon, ChevronLeftIcon } from "@/lib/workspace-icons";
+import { EyeIcon, EyeOffIcon, ChevronLeftIcon } from "@/lib/workspace-icons";
 import { useI18n } from "@/i18n";
 import type { WorkspaceViewState, WorkspaceGroupingState, WorkspaceTableGroup, WorkspacePropertyDefinitionState } from "@/workspaceAppState";
 import type { GroupingMutation } from "@/workspaceGroupingMutations";
-import { normalizeGrouping, moveGroupingGroup } from "@/workspaceGrouping.js";
+import { normalizeGrouping, moveGroupingGroup, reorderGroupingGroup } from "@/workspaceGrouping.js";
 
 type Props = {
   readonly view: WorkspaceViewState;
@@ -18,6 +21,85 @@ type Props = {
 export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onBack }: Props) {
   const { t } = useI18n();
   const grouping = view.grouping;
+  const listRef = useRef<HTMLDivElement>(null);
+  const cancelDrag = useRef<(() => void) | null>(null);
+  const [drag, setDrag] = useState<{ id: string; beforeId: string | null; x: number; y: number; width: number } | null>(null);
+  useEffect(() => () => cancelDrag.current?.(), [view.id, grouping?.propertyId]);
+
+  function startDrag(event: ReactPointerEvent<HTMLButtonElement>, group: WorkspaceTableGroup) {
+    if (event.button !== 0 || !listRef.current) return;
+    event.preventDefault();
+    cancelDrag.current?.();
+    const list = listRef.current;
+    const origin = { x: event.clientX, y: event.clientY };
+    const propertyId = grouping?.propertyId;
+    const ids = groups.filter(item => !item.empty).map(item => item.id);
+    let x = origin.x;
+    let y = origin.y;
+    let active = false;
+    let beforeId: string | null = group.id;
+    let frame = 0;
+    const width = list.getBoundingClientRect().width;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    function inside() {
+      const rect = list.getBoundingClientRect();
+      return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+    function update() {
+      if (!active) return;
+      if (inside()) {
+        const rect = list.getBoundingClientRect();
+        const speed = y < rect.top + 24 ? -8 : y > rect.bottom - 24 ? 8 : 0;
+        if (speed) list.scrollTop += speed;
+        const rows = Array.from(list.querySelectorAll<HTMLElement>("[data-group-option-id]"));
+        beforeId = rows.find(row => row.dataset.groupOptionId !== "empty" && y < row.getBoundingClientRect().top + row.offsetHeight / 2)?.dataset.groupOptionId ?? null;
+      }
+      setDrag({ id: group.id, beforeId, x, y, width });
+    }
+    function tick() {
+      update();
+      frame = requestAnimationFrame(tick);
+    }
+    function move(event: PointerEvent) {
+      x = event.clientX;
+      y = event.clientY;
+      if (!active && Math.hypot(x - origin.x, y - origin.y) > 5) {
+        active = true;
+        tick();
+      }
+      update();
+    }
+    function cleanup() {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", cleanup);
+      window.removeEventListener("keydown", key, true);
+      cancelDrag.current = null;
+      setDrag(null);
+    }
+    function finish(event: PointerEvent) {
+      x = event.clientX;
+      y = event.clientY;
+      update();
+      const changed = active && inside() && reorderGroupingGroup(grouping ?? null, ids, group.id, beforeId) !== grouping;
+      cleanup();
+      if (changed) onChange(current => current?.propertyId === propertyId ? reorderGroupingGroup(current, ids, group.id, beforeId) : current);
+    }
+    function key(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        cleanup();
+      }
+    }
+    cancelDrag.current = cleanup;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", cleanup);
+    window.addEventListener("keydown", key, true);
+  }
+
   const update = (patch: Partial<WorkspaceGroupingState>) => onChange(current => current ? { ...current, ...patch } : null);
   const label = (group: WorkspaceTableGroup) => group.empty
     ? t(grouping?.propertyId === "property:status" ? "property.noStatus" : "group.noValue") : group.name;
@@ -62,19 +144,20 @@ export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onB
       <div className="flex h-7 items-center justify-between px-1 text-xs text-muted-foreground">
         <span>{t("group.groups")}</span><Button variant="ghost" className="h-6 px-1 text-xs" onClick={() => update({ hiddenGroupIds: [] })}>{t("group.showAll")}</Button>
       </div>
-      <div className="max-h-64 overflow-y-auto">
-        {groups.map((group, index) => <div className="flex h-8 min-w-0 items-center gap-1 px-1 text-xs" key={group.id}>
-          {grouping.sort === "manual" && !group.empty && <>
-            <Button variant="ghost" size="icon" className="size-6 shrink-0" disabled={index === 0} aria-label={t("group.moveUp", { name: label(group) })} onClick={() => move(group.id, -1)}><ChevronUpIcon className="size-3" /></Button>
-            <Button variant="ghost" size="icon" className="size-6 shrink-0" disabled={index >= groups.filter(item => !item.empty).length - 1} aria-label={t("group.moveDown", { name: label(group) })} onClick={() => move(group.id, 1)}><ChevronDownIcon className="size-3" /></Button>
-          </>}
+      <div ref={listRef} className="max-h-64 overflow-y-auto">
+        {groups.map((group, index) => <div data-group-option-id={group.id} className={`relative flex h-8 min-w-0 items-center gap-1 px-1 text-xs ${drag?.id === group.id ? "opacity-40" : ""} ${drag && (drag.beforeId === group.id || (group.empty && drag.beforeId === null)) ? "shadow-[inset_0_2px_0_var(--primary)]" : ""}`} key={group.id}>
+          {!group.empty ? <Button variant="ghost" size="icon" className="size-6 shrink-0 touch-none cursor-grab active:cursor-grabbing" aria-label={t("group.reorder", { name: label(group) })} title={t("group.reorderHelp")} onPointerDown={event => startDrag(event, group)} onKeyDown={event => {
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); move(group.id, event.key === "ArrowUp" ? -1 : 1); }
+          }}><svg viewBox="0 0 12 16" className="h-4 w-3" aria-hidden="true"><g fill="currentColor">{[4,8,12].map(y => <g key={y}><circle cx="4" cy={y} r="1"/><circle cx="8" cy={y} r="1"/></g>)}</g></svg></Button> : <span className="w-6 shrink-0"/>}
           {group.color ? <span data-color={group.color} className="size-2 shrink-0 rounded-full" /> : null}
           <span className="min-w-0 flex-1 truncate" title={label(group)}>{label(group)}</span><span className="text-muted-foreground">{group.count}</span>
           <Button variant="ghost" size="icon" className="size-6 shrink-0" aria-label={t(group.hidden ? "group.show" : "group.hide", { name: label(group) })} onClick={() => onChange(current => current ? {
             ...current, hiddenGroupIds: current.hiddenGroupIds.includes(group.id) ? current.hiddenGroupIds.filter(id => id !== group.id) : [...current.hiddenGroupIds, group.id],
           } : null)}>{group.hidden ? <EyeOffIcon className="size-3" /> : <EyeIcon className="size-3" />}</Button>
         </div>)}
+        {drag && drag.beforeId === null && !groups.some(group => group.empty) ? <div className="h-0.5 bg-primary" /> : null}
       </div>
+      {drag ? createPortal(<div data-group-drag-preview="true" className="pointer-events-none fixed z-[100] flex h-8 items-center gap-2 rounded-md border bg-popover px-2 text-xs shadow-lg" style={{ left: Math.max(8, drag.x + 12 + drag.width > window.innerWidth ? drag.x - drag.width - 12 : drag.x + 12), top: Math.min(drag.y + 12, window.innerHeight - 40), width: drag.width }}><span className="truncate">{label(groups.find(group => group.id === drag.id)!)}</span></div>, document.body) : null}
       <p className="px-1 py-1 text-[11px] text-muted-foreground">{t("group.emptyLast")}</p>
       <div className="my-1 border-t border-border/70" />
       <Button variant="ghost" className="h-7 justify-start px-1 text-xs" onClick={() => onChange(null)}>{t("group.remove")}</Button>

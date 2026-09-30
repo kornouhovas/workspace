@@ -9,10 +9,17 @@ export function createGroupingMutationQueue(save) {
       const key = JSON.stringify([target.workspaceId, target.viewId]);
       const baseline = JSON.stringify(normalizeGrouping(initial));
       const previous = drafts.get(key);
-      const current = previous && (previous.pending > 0 || previous.baseline === baseline)
+      const ownRefresh = previous?.snapshots.has(baseline);
+      const current = previous && (previous.pending > 0 || ownRefresh)
         ? previous.value : normalizeGrouping(initial);
+      // A projection for an earlier serialized save may arrive after all writes
+      // resolve. Keep those own snapshots until the latest projection is observed.
+      const latestObserved = previous && JSON.stringify(previous.value) === baseline;
+      const snapshots = previous && !latestObserved && (previous.pending > 0 || ownRefresh)
+        ? new Set(previous.snapshots) : new Set([baseline]);
       const value = normalizeGrouping(typeof mutation === 'function' ? mutation(current) : mutation);
-      const draft = {value, baseline, pending: (previous?.pending || 0) + 1};
+      snapshots.add(JSON.stringify(value));
+      const draft = {value, snapshots, pending: (previous?.pending || 0) + 1};
       drafts.set(key, draft);
       const operation = queue.then(() => save(target, value));
       queue = operation.catch(() => {});

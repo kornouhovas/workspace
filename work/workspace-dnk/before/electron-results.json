@@ -1,0 +1,207 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-cjq-VQh3uy",
+  "metadata": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-cjq-VQh3uy/metadata",
+  "provenance": "Real Electron 41; isolated metadata/source; renderer screenshots and inputs via Playwright CDP; picker outcome for temporary B source injected; no native titlebar claim.",
+  "checks": [
+    {
+      "name": "legacy Table flat",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1440×960",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1024×720",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1440×960",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "dimensions 1024×720",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    },
+    {
+      "name": "horizontal/vertical accessible",
+      "passed": true
+    },
+    {
+      "name": "Group by and Sort distinct",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/initial-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1440-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Light-1024-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1440-collapsed-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-open-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-open-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-open-flat.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-collapsed-grouped.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-collapsed-menu.png",
+    "/Users/aleksandersk/Documents/programming/Projects/project_folder/work/workspace-dnk/before/Dark-1024-collapsed-flat.png"
+  ],
+  "ids": {
+    "workspaceId": "workspace:92d82cf31956ba5e",
+    "tableId": "view:default-table"
+  },
+  "projects": [
+    {
+      "id": "object:workspace-92d82cf31956ba5e:active-alpha-1r7off",
+      "name": "Alpha",
+      "currentRelativePath": "Active/Alpha",
+      "status": {
+        "id": "statusValue:workspace-92d82cf31956ba5e:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Alpha",
+        "property:status": "statusValue:workspace-92d82cf31956ba5e:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-92d82cf31956ba5e:active-beta-118unb",
+      "name": "Beta",
+      "currentRelativePath": "Active/Beta",
+      "status": {
+        "id": "statusValue:workspace-92d82cf31956ba5e:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Beta",
+        "property:status": "statusValue:workspace-92d82cf31956ba5e:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-92d82cf31956ba5e:active-gamma-1i4p9t",
+      "name": "Gamma",
+      "currentRelativePath": "Active/Gamma",
+      "status": {
+        "id": "statusValue:workspace-92d82cf31956ba5e:active",
+        "name": "Active",
+        "relativePath": "Active",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Gamma",
+        "property:status": "statusValue:workspace-92d82cf31956ba5e:active"
+      },
+      "fileTree": []
+    },
+    {
+      "id": "object:workspace-92d82cf31956ba5e:done-delta-14j5z8",
+      "name": "Delta",
+      "currentRelativePath": "Done/Delta",
+      "status": {
+        "id": "statusValue:workspace-92d82cf31956ba5e:done",
+        "name": "Done",
+        "relativePath": "Done",
+        "source": "folderRole"
+      },
+      "propertyValues": {
+        "property:name": "Delta",
+        "property:status": "statusValue:workspace-92d82cf31956ba5e:done"
+      },
+      "fileTree": []
+    }
+  ],
+  "props": {
+    "text": "property:d028bf61-723c-40e2-ac73-bd5904122174",
+    "number": "property:9caf68a4-bff8-4312-8fd5-3d06e264f0a6",
+    "date": "property:29ac2b47-f4dc-4e74-8482-11968ca05cf4",
+    "select": "property:4ed03b84-996d-4236-9673-6031bf27934d",
+    "multi-select": "property:e96f7786-acec-40a5-a69a-1b385befe1d9"
+  },
+  "values": {
+    "select": [
+      "selectValue:property-4ed03b84-996d-4236-9673-6031bf27934d-94edab3d-3722-47d3-b311-5c588ef165ee",
+      "selectValue:property-4ed03b84-996d-4236-9673-6031bf27934d-9e83ea94-8dc1-49b6-93ee-8e95917af349",
+      "selectValue:property-4ed03b84-996d-4236-9673-6031bf27934d-3a9616a0-bc6a-417f-b4a3-492ef877df04"
+    ],
+    "multi-select": [
+      "selectValue:property-e96f7786-acec-40a5-a69a-1b385befe1d9-845841fb-172d-4427-a65c-d42ae689b76f",
+      "selectValue:property-e96f7786-acec-40a5-a69a-1b385befe1d9-2e0fb1d5-31fb-4df5-be3a-17525f4b9f09",
+      "selectValue:property-e96f7786-acec-40a5-a69a-1b385befe1d9-aff27824-bc41-4638-8019-bd816a10c427"
+    ]
+  }
+}

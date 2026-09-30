@@ -1,0 +1,455 @@
+{
+  "baseline": "dcabd126ce54d6f2019f2c31f2ec74e529bf7386",
+  "branch": "codex/table-group-drag-dnk",
+  "self_digest_omitted": "work/workspace-dnk/manifest.json",
+  "files": [
+    {
+      "path": "docs/api/workspace-views.md",
+      "sha256": "93ebdfb51b822fada4cafacdd7fa5740ae0e883abec99fc869c2503ffc086210"
+    },
+    {
+      "path": "docs/flows/board-table-views.md",
+      "sha256": "cd418a86f74daad4fbda283da33f535fbcb1030183c3a7b4740a222ab245cdcc"
+    },
+    {
+      "path": "docs/interface.md",
+      "sha256": "4e5c64a8c3164dc7fa45f840af7a202a0ca9fd26e20dbcf6f3111eaec8e527cc"
+    },
+    {
+      "path": "docs/ui-guidelines.md",
+      "sha256": "1de43ce153ba92365ea653e4bd00ea55a5bde5bed96b5f25699884009998579e"
+    },
+    {
+      "path": "src/components/workspace/table-view.tsx",
+      "sha256": "0c1b00eadc464035dfdd4330aa0eeb7d75f3a9c55e2e37195c2ea2c7c86f7fa9"
+    },
+    {
+      "path": "src/components/workspace/view-group-menu.tsx",
+      "sha256": "2c44ebefa66049218985bfa598b39d5aa755c6e049e215a6a3391931c5d4ac1c"
+    },
+    {
+      "path": "src/i18n/locales/en.js",
+      "sha256": "a95cca25c2e766d42fbd70cb3bb580bfb1e7a949659972a1d78fda39f83c68bb"
+    },
+    {
+      "path": "src/i18n/locales/ru.js",
+      "sha256": "f9e6c3f862f6703aad898816565b456a011c4f9aa8794b2de6a8010540e235d1"
+    },
+    {
+      "path": "src/workspaceGrouping.d.ts",
+      "sha256": "791c79244914343758dfaf09f44586779bf33b65a5af793e855e071b14095593"
+    },
+    {
+      "path": "src/workspaceGrouping.js",
+      "sha256": "eb1bdc34321359141b37af3884ce9d51e8d4eb1c21995febc12f9eb80d7ec675"
+    },
+    {
+      "path": "src/workspaceGroupingMutations.js",
+      "sha256": "ff067580dcc99663d02fcec67c299b85bb2692003eb83f5f4c29256b7d03ec77"
+    },
+    {
+      "path": "test/dashboardStructure.test.js",
+      "sha256": "95c69be2d781295568f09e7cde5283f333428da4eb901514f851adf97eaf54a0"
+    },
+    {
+      "path": "test/workspaceGrouping.test.js",
+      "sha256": "b345785ac8cf4cdc34a89859658368056e14b84307849ad2ddcf5cd6b9059547"
+    },
+    {
+      "path": "test/workspaceGroupingMutations.test.js",
+      "sha256": "a0e1bf61df63d7765439e0cfd6516cc8966bc5de7c12711214682d847a2ccc9f"
+    },
+    {
+      "path": "work/workspace-dnk/README.md",
+      "sha256": "3cf6856fc2c27962d58552be1453c70c09b7425d4f1f2aa2901c7c47e3c749b5"
+    },
+    {
+      "path": "work/workspace-dnk/after-fixture.json",
+      "sha256": "0d41c35db78800e85d92be97da8ac709ac41993c70cf17dd421ced9e7f68e68b"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-collapsed-flat.png",
+      "sha256": "2807d7f1b9d77a08f795b7d4d22b6bbb3498e821492cb908afe18dd5b0585fad"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-collapsed-grouped.png",
+      "sha256": "fb8991203512cc52392047067490393d6c3babf74454f3ea5380ff5a69148e0b"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-collapsed-menu.png",
+      "sha256": "b39af7f4cac4654773445f8d9de3dedb2576efaecca8449998ba46a8bfcef032"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-open-flat.png",
+      "sha256": "f64f23d53594682b110a1954fd9920804b11febbc5cd46fdb7db531912187a21"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-open-grouped.png",
+      "sha256": "7459046205f02d1883126340638bddc67b2f94c85999448adca750b88e7ba6dd"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1024-open-menu.png",
+      "sha256": "6e61b508546bfaa0213d03e22416a52480ee400abccb59eb8cdcb2c795231146"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-collapsed-flat.png",
+      "sha256": "a705419b672499936afcad615c53bff6da59b00e2d3cf8b31974c1dae4283a64"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-collapsed-grouped.png",
+      "sha256": "9fc94c22364e18114a07edda808cc5235afd8a02750720928c83063f6ea8d283"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-collapsed-menu.png",
+      "sha256": "c15c36c338bdbc43719fc7f153e3a190a8cf58f2e3943020f3a317aa67551035"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-open-flat.png",
+      "sha256": "da986716fa6d9158e851bf120f454fa8366d013cfdae377150e15f09dc2ce76d"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-open-grouped.png",
+      "sha256": "ef9af5212ba15f5d2b1ce83f3c7d2beac24572aaf33e2c57002aa59774501013"
+    },
+    {
+      "path": "work/workspace-dnk/after/Dark-1440-open-menu.png",
+      "sha256": "089aaaa92773908889479860e97a43b05e353c97250b768af817709a446482ac"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-collapsed-flat.png",
+      "sha256": "4b501ccb2eddc979c60c490fd047263d77d4464bb8a0d60e954be9c14d87e6c6"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-collapsed-grouped.png",
+      "sha256": "1f1a137124344c8ea22792da10d170b0f6b1d5d668b721c52f7c83fb1716bbff"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-collapsed-menu.png",
+      "sha256": "60c7d13c457d8342b5687fef4987076c64a23ed28a17510a3d3a4d00c404de60"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-open-flat.png",
+      "sha256": "58827a042dc6ceb3f73838d813fac6cd994c4a2f2161f91f527da788992541f1"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-open-grouped.png",
+      "sha256": "ea8bea67ee4cf411275b42e44efe06b157e7cb470f8ed3bde10ed973cb1f19ab"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1024-open-menu.png",
+      "sha256": "7a6fa61151b903228c39879cd003a7b186d6baa3b883cba5f2443a4c2a29b720"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-collapsed-flat.png",
+      "sha256": "15e8810d3f45c9b053996c59069972b00658d607f896877ac9318bb01e60c51e"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-collapsed-grouped.png",
+      "sha256": "0a1dd1912c4deb4b350383fca14c6d4e8d7d43ca212d638968bcf09a94fde35f"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-collapsed-menu.png",
+      "sha256": "77f5f05b207fb9d9da4f7f59329500b6ae57eeea996e5ca40a9efc441ac7a58e"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-open-flat.png",
+      "sha256": "e4262427521e288378f06b4597073464526abefe13103775a31e6f688d8d936f"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-open-grouped.png",
+      "sha256": "808017308261d7c4b6ab8fc48ab209f0d9cae6d53458bf11826a74b2f5299f44"
+    },
+    {
+      "path": "work/workspace-dnk/after/Light-1440-open-menu.png",
+      "sha256": "4dae395c4b6d982f44e00280f015af137065aa83f3f0514b438ad54e5477d457"
+    },
+    {
+      "path": "work/workspace-dnk/after/electron-results.json",
+      "sha256": "a665e477d88cbd4b94a34c2662bcdc2e1003ef98ca0da00fc59acb075f35c378"
+    },
+    {
+      "path": "work/workspace-dnk/after/initial-flat.png",
+      "sha256": "3776761e921b31c7a7d16bf082d5df52f9871826d3875f5d67cf2b7b2e33fb0f"
+    },
+    {
+      "path": "work/workspace-dnk/baseline.log",
+      "sha256": "70c0ce86fdf973c0799af7f3bd80d9ea5b50ea7067ef6881067a4abf636a3539"
+    },
+    {
+      "path": "work/workspace-dnk/baseline.mjs",
+      "sha256": "ed39b22b2259ad6b9bde75f7b61e6527afd48656ea29323e7ad6c1cd21e0b019"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-collapsed-flat.png",
+      "sha256": "e2e226c521ec22068804fc58dd64ac77fa12ff7b7ec552bd5c50a94cf8b01659"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-collapsed-grouped.png",
+      "sha256": "75d40dc80440e776d22e6aa43628375d96dd9c635344e7f18a024cfe326d23d8"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-collapsed-menu.png",
+      "sha256": "6cc662e0f524f248327602e649f6a4acf724ee31599ca0740f4e838be9d5ed77"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-open-flat.png",
+      "sha256": "07c755d674a4c0c9b98b299ffbffa7ed9011d99401987fc32dd7d0941356a87d"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-open-grouped.png",
+      "sha256": "4473ed1bd7ed04167d187d3c7eaaa6dccf3d211444a07209a2a4ab4dd91dceec"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1024-open-menu.png",
+      "sha256": "f5ade869f4b7dcfcb320b71f08295193b9b725337f050cb7a26ccdff948cbfb7"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-collapsed-flat.png",
+      "sha256": "6ab659c5ebd796d532a4f02ca6e3cb0f1986963f5c04bb5c90277703331564b5"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-collapsed-grouped.png",
+      "sha256": "bea34953910b989fedcbcb15baef6a1c1995ba424c7e6400826b69088c7ee357"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-collapsed-menu.png",
+      "sha256": "3d306e773db295d6ea8d89f1d0140c9da7caa478459f8579a19ecbc954213737"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-open-flat.png",
+      "sha256": "241e7e599fee9b75d685c96e894b47230ba39a796e104aa19671c9be3383d00f"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-open-grouped.png",
+      "sha256": "2aa586a189ea0fbb7f7105b687ce7ee6334e424dca19abd5793c801f42c84aa9"
+    },
+    {
+      "path": "work/workspace-dnk/before/Dark-1440-open-menu.png",
+      "sha256": "70b537f1afc30e3d2487036c088e065f49a22e324fbd61fa9fdbe25fae671352"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-collapsed-flat.png",
+      "sha256": "e0243706228b7a3f6f3158fc7d46275feb3a44688b5771ec90ccc7fb12e71b56"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-collapsed-grouped.png",
+      "sha256": "85a461de79e1b1798f61c70684204664ab6c7ac0e7df005f876b8316921ad0d0"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-collapsed-menu.png",
+      "sha256": "afbd0d438310af220dafe69314f28f3d3471f1cf0c0541c32ae3567847e862fb"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-open-flat.png",
+      "sha256": "b1784a8d6a01b5ea1114125997f943a0208c89d56e48f2c67f2e25750a41fd38"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-open-grouped.png",
+      "sha256": "5ff11dd83f0d1b65156dee2a1b048bd2e86d97e023dec45d390c1af2630a6f69"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1024-open-menu.png",
+      "sha256": "1346ed55e2ba22187ca8a6784eec9f37f9e52ef5719a3215e58d652638bce743"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-collapsed-flat.png",
+      "sha256": "172300b34849da4383461682187d68524081db587a174f97bd74acb356f9bf64"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-collapsed-grouped.png",
+      "sha256": "f6c7290113e1aaf0ba3d6f798f54d0b1a9be5721a7fce5de6098aef77e6874f9"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-collapsed-menu.png",
+      "sha256": "5675397c9d2c3dc825caf2755263640fa45cd37e149bea8043d2f9a90216fc41"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-open-flat.png",
+      "sha256": "ed9eff71fb23f0dbeb19a2ca225169c61ec3ee4e2766aea6b7c2c62ad117bfc1"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-open-grouped.png",
+      "sha256": "69f00ada7c82c07c2d3b9e473f6b813299338e85d3dfccbfc73f334b31f2ccfa"
+    },
+    {
+      "path": "work/workspace-dnk/before/Light-1440-open-menu.png",
+      "sha256": "d6c5b7805508d9f9bd7b9f270800a176ab2f2e365812fd2ea6b6a9d85d1ccd44"
+    },
+    {
+      "path": "work/workspace-dnk/before/electron-results.json",
+      "sha256": "253a640a8270474cfa507edc1ef2844636c8d462d984c377f5586e32703573be"
+    },
+    {
+      "path": "work/workspace-dnk/before/initial-flat.png",
+      "sha256": "0c1c224d0c5ae91db306b27a2011725979170e4a9cb99cecee658321f4d90b9f"
+    },
+    {
+      "path": "work/workspace-dnk/build-renderer.log",
+      "sha256": "7a430a30fc2f9a5f7a198fa7ea87ace472256e5321026d48bf52b21137ce2afb"
+    },
+    {
+      "path": "work/workspace-dnk/diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "work/workspace-dnk/drag-results.json",
+      "sha256": "35a498149edc9567ac9219c5868dd4aa2786bfdb87b8f9aaaad3a10585ce0f56"
+    },
+    {
+      "path": "work/workspace-dnk/drag.log",
+      "sha256": "bb46adde38952e8e67996453df7ac1f93c7c4287a0cd45caaf75f847a6226a91"
+    },
+    {
+      "path": "work/workspace-dnk/end-marker-before-empty.png",
+      "sha256": "1978bf3082f99bf8705e602a8480e1529ce4806042bbe2830f68ef7afecb1508"
+    },
+    {
+      "path": "work/workspace-dnk/evidence-whitespace.log",
+      "sha256": "28a411edb84a0125c3d045acd28d61a5e114bd9c12fb6b0e35cc35d7a940f5b9"
+    },
+    {
+      "path": "work/workspace-dnk/fixture.json",
+      "sha256": "f8815be8d9fe8cda0b05a1c6419d7b4ca5c6bfa84cc0d205f79fec8d13eb562b"
+    },
+    {
+      "path": "work/workspace-dnk/green-domain.log",
+      "sha256": "2e9829ebac193afcd8d70b1ffe316a80bcd1c66f0b33f3d02da680159edfff2a"
+    },
+    {
+      "path": "work/workspace-dnk/green-order.log",
+      "sha256": "056f90ab21646414319b6ae0b788bfb92f693f785ed72d0297a6165039532e3f"
+    },
+    {
+      "path": "work/workspace-dnk/intended-files.txt",
+      "sha256": "d25638fbc9f6e1ec8676eb910729081c51ebeefbdaeeecadb520e9be14eb62b6"
+    },
+    {
+      "path": "work/workspace-dnk/later-header-shared-horizontal.png",
+      "sha256": "6d04e76c160eb86f82471c6bde12daa91b95409c276eb7bd2a83b3c30c2010d7"
+    },
+    {
+      "path": "work/workspace-dnk/manifest.json",
+      "sha256": null
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1024-collapsed-menu-scroll.png",
+      "sha256": "f555ffdb644229d0e12c133ddda28f86c53718474f13a0481746457109138592"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1024-collapsed-sections.png",
+      "sha256": "3116e0a50051f49137be694e759fa8705066c1a1b714acfbd1fda8aec6f82ec4"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1024-open-menu-scroll.png",
+      "sha256": "65e11ee4b78893d15bcb8acccc65aaaf2a4310b82b239a6d3c4d4abaa06286b9"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1024-open-sections.png",
+      "sha256": "2a456f3b463f6bc9301230ebcdbd0a5d31a34386da53c4649190fcca9d8813fb"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1440-collapsed-menu-scroll.png",
+      "sha256": "c9a5a39669b8067dd1ac0132e9a419987e2dee78b47d2dfcb648df0cc61e4d3a"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1440-collapsed-sections.png",
+      "sha256": "6141e369a543ae2e2c1594401697723c89085c02b89b805732ae566c1a04c24b"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1440-open-menu-scroll.png",
+      "sha256": "c016d75bf7ba6b49547c6d7ca2aa0421ff4941f450c9d9cf21b67d349d777b57"
+    },
+    {
+      "path": "work/workspace-dnk/many-Dark-1440-open-sections.png",
+      "sha256": "637136f5ebfed1592077d38d89d3b202280735bb9a3b9a621c77a93a9e67bf96"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1024-collapsed-menu-scroll.png",
+      "sha256": "a72b848c2424c2c9f5a2dc7cc229440cb7686d36af8ba78a774b3dbf0a09e677"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1024-collapsed-sections.png",
+      "sha256": "b2871d865a1461ca981ad75a51fd8d69a2974f71d097d3771000bfd0d44a3ef7"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1024-open-menu-scroll.png",
+      "sha256": "9c6a743d833160b14747100da37ed78300b5f07cff5bc5c877f32142d7c1f1c5"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1024-open-sections.png",
+      "sha256": "1bbe17951127712bc45cdd7cf1b9876e873448682401a0b2c89f0be97a05a6f9"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1440-collapsed-menu-scroll.png",
+      "sha256": "147119c93dbee62e54af18577f34cd22ec4479eea3dd6c1e4ad0736a24a66a03"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1440-collapsed-sections.png",
+      "sha256": "c1be96ffd90a387a5353497d21331ea4c9ed63e13de353d79cba81878df999cb"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1440-open-menu-scroll.png",
+      "sha256": "371aa2f9408810a8cb0bf479395c7bf813e2bec5e6f13f3566563fd770b7a417"
+    },
+    {
+      "path": "work/workspace-dnk/many-Light-1440-open-sections.png",
+      "sha256": "b7f2ed74d7921f32a573965c250916f591f56682826c5d1fe76918ee73ed8211"
+    },
+    {
+      "path": "work/workspace-dnk/many-groups-edge-scroll-preview.png",
+      "sha256": "82153abf03f0a6fb800ce39acb8512b384608031384ae0d6fe7499674540b850"
+    },
+    {
+      "path": "work/workspace-dnk/npm-test.log",
+      "sha256": "bb93aaef9e801980436b8da0f59299377114d9ec177bb8942e969aabfbf8c426"
+    },
+    {
+      "path": "work/workspace-dnk/pointer-preview-insertion.png",
+      "sha256": "aa4a456a46ef3e4b08c66ef25d2b0b983e762bfb5a9f56cf190778202c7352c6"
+    },
+    {
+      "path": "work/workspace-dnk/red-intermediate-refresh.log",
+      "sha256": "82f92244622ce24c385ddf7f5cf7c9da933d3fcca2f3c138d0af6d9fef4abb32"
+    },
+    {
+      "path": "work/workspace-dnk/red-order.log",
+      "sha256": "f7220bde6cd1e483150ddd155dfc952bf9ffed731d7233aeba13275ce276a253"
+    },
+    {
+      "path": "work/workspace-dnk/reference.png",
+      "sha256": "f26d6b1483bb87915f12e586c6e304e15e9447e48234d3e92f780293c17cf703"
+    },
+    {
+      "path": "work/workspace-dnk/sections-edited-card-return.png",
+      "sha256": "0f0927947f6b3cda664ef22deb71fc50d590d74fa55e2e4fc74a2598d5350854"
+    },
+    {
+      "path": "work/workspace-dnk/sections-results.json",
+      "sha256": "9a9a8306f8ba35b10b8806f4f25d3e05f264ae72ae6477c8c697490e15a98ac1"
+    },
+    {
+      "path": "work/workspace-dnk/sections.log",
+      "sha256": "bb46adde38952e8e67996453df7ac1f93c7c4287a0cd45caaf75f847a6226a91"
+    },
+    {
+      "path": "work/workspace-dnk/typecheck.log",
+      "sha256": "bb620a92bfa19fc2c62bf3bef4c58fc74d16a770329ce8fbe5d3a00d306c54b0"
+    },
+    {
+      "path": "work/workspace-dnk/verify-drag.mjs",
+      "sha256": "846c225ffb6bbd64d3a40a7fa9540b3ff291d85d821d28d8acac4c1c2e1ec142"
+    },
+    {
+      "path": "work/workspace-dnk/verify-sections.mjs",
+      "sha256": "2ad50a58749f65c2c38b1b2458207b0a3983f43d431ad897c90e730e5d5ae128"
+    },
+    {
+      "path": "work/workspace-dnk/verify.log",
+      "sha256": "63a3110bc7fae0551cdbbab779ee70198d69415b50d7cac8613954c24d757589"
+    },
+    {
+      "path": "work/workspace-dnk/verify.mjs",
+      "sha256": "ccbdd0c86c0ddb18c227eda57753a9e111ac3cf8652778690d7daf78a7ffe547"
+    }
+  ]
+}

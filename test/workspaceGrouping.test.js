@@ -28,3 +28,30 @@ test('filtered duplicate input rows cannot inflate group or workspace counts',()
  const p=project('multi-select',{}, {projects:[projects[0],projects[0],projects[1]]});
  assert.equal(p.totalProjectCount,2);assert.equal(p.groups.find(g=>g.id==='value:one').count,2);
 });
+
+test('moves from automatic display order despite retained manual order, preserving independent settings', async () => {
+ const {moveGroupingGroup}=await import('../src/workspaceGrouping.js');
+ for(const sort of ['default','ascending','descending']) {
+  const base={propertyId:'tags',sort,manualOrder:['c','a','b'],hiddenGroupIds:['b'],collapsedGroupIds:['a'],hideEmpty:true};
+  const result=moveGroupingGroup(base,['a','b','c','empty'],'c',-1);
+  assert.deepEqual(result.manualOrder,['a','c','b']);assert.equal(result.sort,'manual');
+  assert.deepEqual(result.hiddenGroupIds,['b']);assert.deepEqual(result.collapsedGroupIds,['a']);assert.equal(result.hideEmpty,true);
+  assert.equal(moveGroupingGroup(base,['a','b','c','empty'],'a',-1),base);
+  assert.equal(moveGroupingGroup(base,['a','b','c','empty'],'empty',-1),base);
+ }
+});
+
+test('insertion uses stable IDs, keeps empty last, and returns unchanged settings for cancellation/no-op',async()=>{
+ const {reorderGroupingGroup}=await import('../src/workspaceGrouping.js');
+ const base={propertyId:'tags',sort:'descending',manualOrder:['a','b','c'],hiddenGroupIds:['b'],collapsedGroupIds:['c'],hideEmpty:true};
+ const ids=['c','b','a','empty'];
+ assert.equal(reorderGroupingGroup(base,ids,'b','b'),base);
+ assert.equal(reorderGroupingGroup(base,ids,'b','a'),base);
+ assert.equal(reorderGroupingGroup(base,ids,'a',null),base);
+ assert.equal(reorderGroupingGroup(base,ids,'empty','c'),base);
+ assert.equal(reorderGroupingGroup(base,ids,'c','empty'),base);
+ const moved=reorderGroupingGroup(base,ids,'a','c');
+ assert.deepEqual(moved.manualOrder,['a','c','b']);assert.equal(moved.sort,'manual');
+ assert.deepEqual(moved.hiddenGroupIds,['b']);assert.deepEqual(moved.collapsedGroupIds,['c']);
+ assert.deepEqual(reorderGroupingGroup(moved,ids,'b','c').manualOrder,['a','b','c']);
+});
