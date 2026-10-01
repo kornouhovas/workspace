@@ -30,6 +30,7 @@ export type WorkspaceTableGroup = {
   readonly collapsed: boolean;
 };
 export type WorkspaceViewState = {
+  readonly rowOrder?: readonly string[];
   readonly grouping?: WorkspaceGroupingState | null;
   readonly groupingNotice?: string | null;
   readonly id: string;

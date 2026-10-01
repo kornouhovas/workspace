@@ -152,7 +152,7 @@ Role semantics:
 MVP constraints:
 
 - Nested status groups are not supported as primary Board lanes in MVP.
-- Status moves use the existing validated operation; Board columns and explicit Table status zones are destinations.
+- Status moves use the existing validated operation; Board columns and explicit Table Status groups are destinations.
 - Role controls may use segmented controls or compact select controls. Settings uses a centered column capped at 768px, stacked Source → Folder role tree → Properties at every host width, including when Navigation is open. Folder roles wrap onto a separate row and remain reachable without horizontal clipping.
 - Role changes should save to local storage for the active Workspace.
 - Changing roles refreshes Board/Table project discovery.
@@ -267,7 +267,7 @@ Table requirements:
 - Header vertical dividers should visually match the body dividers instead of fading on the first table row.
 - The last visible table row should keep its bottom separator after search or value filtering.
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
-- Table reserves a compact internal left inset for its hover/focus Status handle; no dedicated column or row-sort operation is added.
+- Table reserves a compact internal left inset for its hover/focus row handle; no dedicated drag column is added; row order is saved per Table view.
 - The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
 - Column property menus for `Status`, `Select`, and `Multi-select` should include `Value filters` for the current property, using the same view-level `valueVisibility` settings as `Customize Columns`.
 - The Customize Columns menu should allow hiding `Status` from the active view while keeping `Name` required.
@@ -413,8 +413,8 @@ Preview and expanded Status chips open a keyboard accessible selection of curren
 
 ## Board and Table Status actions (workspace-d9h)
 
-Visible Status in a Board card or Table cell opens the shared keyboard accessible picker. Selecting a different available Status invokes `getProjectStatusOptions` / `moveProjectStatus`; ordinary project opening and custom property editors keep their actions. Hiding Status does not change visibility settings: the Table handle opens the same picker on click or keyboard activation.
+Visible Status in a Board card or Table cell opens the shared keyboard accessible picker. Selecting a different available Status invokes `getProjectStatusOptions` / `moveProjectStatus`; ordinary project opening and custom property editors keep their actions. Hiding Status does not change visibility settings; Status can still be edited in the open project. The Table handle reorders rows and does not open a picker.
 
-Board drag starts from card name/background and highlights available Status columns, including empty columns. Table drag starts only from its compact internal left handle, visible on row hover or focus. During drag, Table shows every fresh backend Status option as an explicit zone in flat, Status, other-property and Multi-select groupings, including empty and filtered statuses. A target is a zone's stable Status ID, never a row or custom value. Multiple occurrences retain one project ID. Shared horizontal/vertical scrolling remains available during drag.
+Board drag starts from card name/background and marks available/active Status columns with neutral background fills, including empty columns; it adds no outline or size change. Table drag starts only from its internal left hover/focus handle and moves the whole row vertically with an insertion marker inside the table. There is no separate Status-zone panel. Same-group drops save only the Table view’s manual row order; Arrow Up/Down on the handle is the keyboard alternative. Crossing into a visible Status group resolves that explicit stable group Status ID against fresh backend options and uses the existing physical move. Empty Status groups are valid destinations. Crossings between groups of another property are unavailable and never write that property. No status remains a group containing accessible projects, but is not a drop destination or picker choice. A project originating there can move to an available Status. Multiple Multi-select occurrences share one canonical opaque project rank. Shared scrolling remains available during drag.
 
-Escape, cancellation, outside drop and current Status make no move. Unavailable No status and nested targets explain their reason. Pending blocks repeat actions and uses the common header indicator; failures are visible. Success refreshes projections, counts, tabs and file trees with the original project ID. A moved row may disappear under existing filters. No custom values/history, view grouping/filter settings, manual group order or visibility settings are written by these actions. Folder safety, no-clobber and journal/recovery are defined by the existing Status move API.
+Escape, cancellation and outside drops do not save order or move folders. Board current-Status drops do not move; Table same-group drops can reorder. No status is omitted from picker/drop choices; unavailable nested destinations retain their reason. Pending blocks repeat actions and uses the common header indicator; failures are visible. Success refreshes projections, counts, tabs and file trees with the original project ID. A moved row may disappear under existing filters. No custom values/history, view grouping/filter settings, manual group order or visibility settings are written by these actions. Folder safety, no-clobber and journal/recovery are defined by the existing Status move API.

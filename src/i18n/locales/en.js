@@ -1,4 +1,9 @@
 export const en = {
+  "table.reorderRow": "Reorder {{name}} row",
+  "table.reorderHelp": "Drag row; Arrow Up or Arrow Down to reorder",
+  "table.rowDragging": "Moving project row",
+  "table.rowSaving": "Saving row order",
+  "table.rowSaveFailed": "Could not save row order",
   "move.recoveryRequired": "Folder moved; recovery needs attention",
   "move.dragOrChooseStatus": "Drag or choose project Status",
   "move.currentStatus": "Current Status",

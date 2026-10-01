@@ -43,7 +43,7 @@ export function ProjectStatusPicker({ project, pending, loadOptions, onSelect, t
         const option = options.find(item => item.id === id);
         if (option && !option.current && !option.disabledReason && option.to) onSelect(project, option);
       }}>
-        {options.map(option => <DropdownMenuRadioItem key={option.id} value={option.id}
+        {options.filter(option => option.id !== "statusValue:no-status").map(option => <DropdownMenuRadioItem key={option.id} value={option.id}
           className={workspaceMenuOptionItemClassName} disabled={!option.current && !!option.disabledReason}>
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="flex items-center gap-2" data-workspace-status-value>

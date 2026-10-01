@@ -402,7 +402,7 @@ Create an ADR before:
 - adding authentication or multi-user collaboration;
 - changing project identity strategy;
 - changing folder role semantics;
-- extending Status drag beyond the explicit Board/Table operation in [ADR-007](adr/007-board-table-status-moves.md);
+- extending Status drag beyond the explicit Board/Table operation in [ADR-007](adr/007-board-table-status-moves.md) and the Table row contract in [ADR-008](adr/008-table-row-order.md);
 - materially changing the accepted preload IPC boundary (ADR-002);
 - exposing sidecar routes as public contracts;
 - changing folder structure boundaries;

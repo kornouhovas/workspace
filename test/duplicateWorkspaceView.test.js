@@ -4,7 +4,7 @@ import { duplicateWorkspaceView } from "../src/duplicateWorkspaceView.js";
 
 for (const viewType of ["board", "table"]) {
   test(`duplicates ${viewType} settings, inserts beside source and activates copy`, async () => {
-    const source = { id: "source", name: "Original", viewType, visiblePropertyIds: ["name"], hiddenPropertyIds: ["status"], propertyOrder: { name: 10 }, valueVisibility: { status: { valueIds: ["active"] } }, propertyLayout: { text: { wrapContent: true } }, boardLayout: { columnWidth: 480 } };
+    const source = { id: "source", name: "Original", viewType, visiblePropertyIds: ["name"], hiddenPropertyIds: ["status"], propertyOrder: { name: 10 }, valueVisibility: { status: { valueIds: ["active"] } }, propertyLayout: { text: { wrapContent: true } }, boardLayout: { columnWidth: 480 }, rowOrder: viewType === "table" ? ["opaque-a", "opaque-b"] : [] };
     const calls = [];
     const client = {
       listViews: async () => ({ activeViewId: "last", views: [source, { id: "last", name: "Original copy" }] }),
@@ -19,6 +19,7 @@ for (const viewType of ["board", "table"]) {
     const { id, name, viewType: ignored, ...settings } = source;
     assert.deepEqual(calls[1][1].patch, settings);
     assert.notEqual(calls[1][1].patch.valueVisibility, source.valueVisibility);
+    assert.notEqual(calls[1][1].patch.rowOrder, source.rowOrder);
     assert.deepEqual(calls[2][1].orderedViewIds, ["source", "copy", "last"]);
     assert.equal(calls[3][1].viewId, "copy");
   });

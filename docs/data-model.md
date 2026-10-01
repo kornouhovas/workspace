@@ -665,3 +665,7 @@ View documents may contain `grouping` or `null`. The object holds `propertyId`, 
 ### Explicit move locator preservation
 
 The transitional JSON settings adapter records only explicitly moved existing project IDs in source-scoped `projectLocators` with path/device/inode evidence. A `projectMove` journal covers copying, holding, locator/role commit and verified cleanup. Values/history documents are retained without rewriting IDs. Source-scoped aliases serve all Workspace bindings for that source; old locator reuse and replacement targets cannot inherit moved metadata. This is bounded explicit-move preservation, not the proposed general identity registry in ADR-004. See [Status move and recovery contract](api/workspace-status-move.md).
+
+### Table row rank
+
+A Table view may retain `rowOrder`, an independent sequence of unique opaque project IDs. It ranks project occurrences before grouping/filtering, retains unavailable identities, and changes no folder membership, properties/history or group order. Missing data preserves discovery order. See [Table order contract](api/workspace-views.md#table-manual-row-order-workspace-9bp).

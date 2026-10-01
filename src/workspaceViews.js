@@ -1,4 +1,5 @@
 import { normalizeGrouping, validateGrouping, createTableGrouping } from "./workspaceGrouping.js";
+import { completeTableRowOrder } from "./workspaceTableOrder.js";
 import { randomUUID } from "node:crypto";
 
 import {
@@ -79,6 +80,7 @@ export function normalizeViewDocument(view = {}) {
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
     boardLayout: normalizeBoardLayout(view.boardLayout),
+    ...(viewType === "table" ? { rowOrder: normalizeStringArray(view.rowOrder) } : {}),
     grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
     groupingNotice: view.groupingNotice === "property-removed" ? "property-removed" : null,
     createdAt: normalizeString(view.createdAt),
@@ -136,6 +138,10 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     }
   }
 
+  if (Object.hasOwn(patch, "rowOrder") && (!Array.isArray(patch.rowOrder) || patch.rowOrder.some(id => typeof id !== "string" || !id) || new Set(patch.rowOrder).size !== patch.rowOrder.length)) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Row order requires unique project IDs.", "rowOrder");
+  }
+
   validateValueVisibilityReferences({
     valueVisibility: patch.valueVisibility,
     propertyDefinitions,
@@ -183,6 +189,11 @@ export function createViewProjection({
       return matches.length ? matches.map(status => status.id) : [id];
     }))];
   }
+  const rowOrder = completeTableRowOrder(normalizedView.rowOrder, projects.map(project => project.id));
+  if (normalizedView.viewType === "table") {
+    const rank = new Map(rowOrder.map((id, index) => [id, index]));
+    projects = [...projects].sort((a, b) => rank.get(a.id) - rank.get(b.id));
+  }
   const filteredProjects = filterProjectsForView({ projects, view: normalizedView, searchQuery });
   const response = {
     workspaceId: normalizedView.workspaceId,
@@ -195,6 +206,7 @@ export function createViewProjection({
       valueVisibility: normalizedView.valueVisibility,
       propertyLayout: normalizedView.propertyLayout,
       boardLayout: normalizedView.boardLayout,
+      ...(normalizedView.viewType === "table" ? { rowOrder } : {}),
       grouping: normalizedView.grouping,
       groupingNotice: normalizedView.groupingNotice,
     },

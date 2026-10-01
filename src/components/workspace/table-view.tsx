@@ -3,7 +3,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
 import { ProjectStatusPicker } from "./project-status-picker";
-import { ProjectStatusDragSurface, StatusRowHandle, type ProjectStatusActions } from "./project-status-drag";
+import { type ProjectStatusActions } from "./project-status-drag";
+import { TableRowDragSurface, TableDragRow, TableDragGroupRow, TableRowHandle } from "./table-row-drag";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -130,6 +131,7 @@ type WorkspaceTableViewProps = ProjectStatusActions & {
   readonly onRenameProperty: (propertyId: string, name: string) => void;
   readonly onDeleteProperty: (propertyId: string) => void;
   readonly onDismissFloatingMenus: () => void;
+  readonly onReorderProjectRows?: (ids: readonly string[]) => Promise<void> | void;
   readonly onReorderViewProperties: (orderedPropertyIds: readonly string[]) => void;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
@@ -629,7 +631,7 @@ export function WorkspaceTableView({
   onRenameProperty,
   onDeleteProperty,
   onDismissFloatingMenus,
-  onReorderViewProperties,
+  onReorderViewProperties, onReorderProjectRows,
   onTogglePropertyVisibility,
   onToggleValueFilter,
   onTogglePropertyWrapContent,
@@ -1430,12 +1432,12 @@ export function WorkspaceTableView({
   ); }
 
   return (
-    <ProjectStatusDragSurface table statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
+    <TableRowDragSurface sections={displaySections} rowOrder={view?.rowOrder ?? projection.rows.map(project => project.id)} statusGrouping={view?.grouping?.propertyId === "property:status"} onReorderRows={onReorderProjectRows} statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
-      <div className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "border-t border-border/45"}`}>
+      <div data-table-scroll className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "border-t border-border/45"}`}>
         <Table className="min-w-full table-fixed border-collapse text-[13px] [&_tr]:border-border/45" style={{ minWidth: tableWidth }}>
           <colgroup>
             {visibleProperties.map((property) => (
@@ -1447,7 +1449,7 @@ export function WorkspaceTableView({
             {displaySections.map((group, index) => (
               <TableBody key={group.id} data-table-section={group.id} className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
               {projection.groups && index > 0 ? <TableRow data-table-group-gap="true" className="h-5 border-0 hover:bg-transparent"><TableCell colSpan={visibleProperties.length + 1} className="h-5 p-0" /></TableRow> : null}
-              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-8 bg-transparent hover:bg-state-hover">
+              {projection.groups ? <TableDragGroupRow groupId={group.id} data-table-group-id={group.id} className="h-8 bg-transparent hover:bg-state-hover">
                 <TableCell colSpan={visibleProperties.length + 1} className="h-8 p-0">
                   <button type="button" aria-expanded={!group.collapsed} aria-label={t(group.collapsed ? "group.expand" : "group.collapse", { name: groupDisplayName(group) })}
                     className="sticky left-0 flex h-8 max-w-[min(32rem,80vw)] items-center gap-2 px-3 text-left text-xs font-medium focus-visible:ring-2 focus-visible:ring-ring/40"
@@ -1458,10 +1460,10 @@ export function WorkspaceTableView({
                     <span className="shrink-0 text-muted-foreground">{group.count}</span>
                   </button>
                 </TableCell>
-              </TableRow> : null}
+              </TableDragGroupRow> : null}
             {projection.groups && !group.collapsed && group.rows.length > 0 ? renderColumnHeader(group.id) : null}
             {!group.collapsed && group.rows.map((project) => (
-              <TableRow
+              <TableDragRow project={project} groupId={group.id}
                 key={project.id}
                 data-workspace-project-row={project.id}
                 className="group/status-row h-8 hover:bg-accent/15"
@@ -1479,7 +1481,7 @@ export function WorkspaceTableView({
                       className={`${getBodyCellClassName(property, editable, wrapContent)} ${property.id === visibleProperties[0]?.id ? "relative !pl-6" : ""}`}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
-                      {property.id === visibleProperties[0]?.id && <StatusRowHandle project={project} occurrenceId={group.id} />}
+                      {property.id === visibleProperties[0]?.id && <TableRowHandle project={project} groupId={group.id} />}
                       {editable ? (
                         <ProjectTablePropertyValueEditor
                           project={project}
@@ -1500,7 +1502,7 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="workspace-table-cell-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="workspace-table-name-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
                           <span className="workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0.5">
@@ -1516,13 +1518,13 @@ export function WorkspaceTableView({
                   );
                 })}
                 <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border-hairline)]" aria-hidden="true" />
-              </TableRow>
+              </TableDragRow>
             ))}
               </TableBody>
             ))}
         </Table>
       </div>
     </section>
-    </ProjectStatusDragSurface>
+    </TableRowDragSurface>
   );
 }

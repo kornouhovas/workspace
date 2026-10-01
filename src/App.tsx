@@ -197,6 +197,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
             : undefined,
           propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
           boardLayout: normalizeViewBoardLayout(view.boardLayout),
+          rowOrder: Array.isArray(view.rowOrder) ? view.rowOrder.filter((id): id is string => typeof id === "string") : [],
           grouping: normalizeGrouping(view.grouping),
           groupingNotice: getString(view.groupingNotice) || null,
         }))
@@ -1738,6 +1739,18 @@ export default function App() {
     }
   }
 
+  async function handleReorderProjectRows(rowOrder: readonly string[]) {
+    const workspaceId = state.workspaceId, viewId = state.activeViewId;
+    if (!workspaceId || !viewId) return;
+    try {
+      await workspaceClient.updateView({ workspaceId, viewId, patch: { rowOrder } });
+      if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId)
+        await refreshActiveViewAfterPatch(viewId);
+    } catch (error) {
+      toast.error(t("table.rowSaveFailed"), { description: getServiceErrorMessage(error, t) });
+    }
+  }
+
   async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
     if (!state.workspaceId || !state.activeViewId) {
       return;
@@ -2158,11 +2171,11 @@ export default function App() {
 
   async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
     const requestWorkspaceId = state.workspaceId;
-    if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return;
+    if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return false;
     try {
       const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
         projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
-      if (!result) return;
+      if (!result) return false;
       if (isRecord(result) && result.state === "recovery-required") {
         if (isRecord(result.project)) {
           const recovered = result.project as unknown as WorkspaceMockProject;
@@ -2171,11 +2184,11 @@ export default function App() {
           if (workspaceIdRef.current === requestWorkspaceId) setSelectedProject(current => current?.id === project.id ? recovered : current);
         }
         toast.error(t("move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
-        return;
+        return false;
       }
     } catch (error) {
       toast.error(t("move.failed"), { description: getServiceErrorMessage(error, t) });
-      return;
+      return false;
     }
     try {
       const affected = new Set([requestWorkspaceId, ...Object.keys(projectTabsByWorkspace).filter(id => projectTabsByWorkspace[id]?.some(tab => tab.id === project.id))]);
@@ -2203,6 +2216,7 @@ export default function App() {
     } catch (error) {
       toast.error(t("move.refreshFailed"), { description: getServiceErrorMessage(error, t) });
     }
+    return true;
   }
 
   async function handleProjectPropertyValueChange(
@@ -2803,7 +2817,7 @@ export default function App() {
                     searchQuery={state.searchQuery}
                     onClearSearch={() => dispatch({ type: "searchQueryChanged", searchQuery: "" })}
                     onGroupingChange={handleGroupingChange}
-                    view={activeView ?? null}
+                    view={activeView ? { ...activeView, rowOrder: serviceProjection?.view.rowOrder ?? activeView.rowOrder } : null}
                     visibleProperties={
                       visibleProperties as typeof workspaceMockProjection.visibleProperties
                     }
@@ -2817,6 +2831,7 @@ export default function App() {
                     onCreateProperty={handleCreateVisibleProperty}
                     onRenameProperty={handleRenameProperty}
                     onDeleteProperty={handleDeleteProperty}
+                    onReorderProjectRows={handleReorderProjectRows}
                     onReorderViewProperties={handleReorderViewProperties}
                     onTogglePropertyVisibility={handleTogglePropertyVisibility}
                     onToggleValueFilter={handleToggleValueFilter}

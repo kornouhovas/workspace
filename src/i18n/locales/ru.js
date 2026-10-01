@@ -1,4 +1,9 @@
 export const ru = {
+  "table.reorderRow": "Изменить порядок строки {{name}}",
+  "table.reorderHelp": "Перетащите строку; стрелки вверх или вниз меняют порядок",
+  "table.rowDragging": "Перенос строки проекта",
+  "table.rowSaving": "Сохранение порядка строк",
+  "table.rowSaveFailed": "Не удалось сохранить порядок строк",
   "move.recoveryRequired": "Папка перемещена; требуется восстановление",
   "move.dragOrChooseStatus": "Перенести или выбрать статус проекта",
   "move.currentStatus": "Текущий статус",

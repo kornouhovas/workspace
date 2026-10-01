@@ -183,11 +183,11 @@ export function WorkspaceBoardView({
                     return (
                     <StatusDragCard project={project}
                       key={project.id}
-                      className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:border-ring/30 focus-within:border-ring"
+                      className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:bg-accent/15 hover:border-ring/30 focus-within:border-ring"
                     >
                       <button data-workspace-card-open type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
                       <h4 className="relative min-w-0 text-sm font-normal leading-5">
-                        <button data-workspace-card-open type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                        <button data-workspace-card-open type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
                           <span className="truncate">{project.name}</span>
                         </button>
                       </h4>

@@ -12,3 +12,5 @@ Table zones come from fresh project Status options, independently of grouping, s
 ## Consequences
 
 Folder-derived Status, selected source validation, no-clobber, opaque identity/values/history preservation and existing journal/recovery remain governed by [Status move API](../api/workspace-status-move.md). No dependencies, storage migration, filesystem protocol or row-sort operation are added. Existing JSON adapters remain active under ADR-006.
+
+Table zones and the handle’s picker action are superseded by [ADR-008](008-table-row-order.md) for workspace-9bp; the existing safe Status operation remains unchanged.

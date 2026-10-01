@@ -66,7 +66,7 @@ MVP включает:
 - интеграции с внешними PM-системами;
 - импорт данных из Notion, Trello, Jira или других инструментов;
 - автоматическая классификация проектов без настройки пользователем;
-- произвольная сортировка проектов drag and drop.
+- произвольная файловая перестановка проектов вне явных Status-переносов. Ручной порядок строк Table сохраняется отдельно для view.
 
 ## User Stories
 
@@ -279,7 +279,7 @@ MVP включает:
 - Search находит проект по имени и в MVP не ищет по property values.
 - Удаление Workspace из приложения не удаляет файлы на диске.
 - Приложение не показывает проекты за пределами выбранной project source folder.
-- Board drop в допустимую Status-колонку и Table drop за внутренний левый захват в явную Status-зону переносят проект через общий безопасный backend.
+- Board drop в допустимую Status-колонку и Table drop за внутренний левый захват между явными Status-группами переносят проект через общий безопасный backend.
 - Workspaces, roles, views, properties, values и история изменений properties сохраняются локально через `any local` / `any-store`.
 
 ## Dependencies And Constraints
@@ -305,10 +305,10 @@ MVP включает:
 - Проекты лучше идентифицировать стабильным локальным id. Относительный путь внутри project source folder хранится как текущий locator; абсолютный путь не используется как primary id.
 - Если проект найден вне папки с ролью `status`, он получает статус `No status`.
 - MVP поддерживает один уровень status folders.
-- Board позволяет перенос карточки в допустимую колонку Status; Table переносит проект только за внутренний левый захват в явную зону Status.
+- Board позволяет перенос карточки в допустимую колонку Status; Table переносит проект за внутренний левый захват между явными Status-группами и сохраняет ручной порядок строк внутри группы.
 - Search в MVP ищет только по project `Name`.
 - История изменений properties и property values нужна в local-first модели.
 
 ### Explicit Status move
 
-In preview/expanded Project Detail, selecting another existing derived Status explicitly moves the entire project folder to that status folder, preserving basename, project ID, properties/history and session. Current selection is a no-op. No status is unavailable unless an unambiguous physical target exists; the active runtime disables it with a reason. A pending-only indicator beside Sidebar opens project/from/to/state details and disappears on success/error. Collisions, unsafe paths and metadata/filesystem failures preserve files and identity through tested recovery. Board cards and Table Status cells offer the same selection. Board drag targets a status column; Table drag starts only from its internal left handle and targets explicit status zones. See [Status move contract](api/workspace-status-move.md).
+In preview/expanded Project Detail, selecting another existing derived Status explicitly moves the entire project folder to that status folder, preserving basename, project ID, properties/history and session. Current selection is a no-op. No status is unavailable unless an unambiguous physical target exists; the active runtime omits it from picker/drop choices while retaining derived groups and project access. A pending-only indicator beside Sidebar opens project/from/to/state details and disappears on success/error. Collisions, unsafe paths and metadata/filesystem failures preserve files and identity through tested recovery. Board cards and Table Status cells offer the same selection. Board drag targets a status column; Table drag starts only from its internal left handle, saves per-view row order, and changes Status only across explicit Status groups. See [Status move contract](api/workspace-status-move.md).
