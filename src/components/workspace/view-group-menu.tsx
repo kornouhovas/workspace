@@ -108,32 +108,32 @@ export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onB
     onChange(current => moveGroupingGroup(current, groups.map(group => group.id), id, direction));
   }
 
-  return <div data-workspace-group-menu="true" className="grid gap-1 p-2">
+  return <div data-workspace-group-menu="true" className="grid gap-0.5 p-1 text-xs">
     <div className="mb-1 flex items-center gap-2">
-      <Button variant="ghost" size="icon" className="size-6" aria-label={t("group.back")} onClick={onBack}><ChevronLeftIcon className="size-3" /></Button>
+      <Button variant="ghost" size="icon" className="size-6 text-muted-foreground" aria-label={t("group.back")} onClick={onBack}><ChevronLeftIcon className="size-3" /></Button>
       <span className="text-xs font-semibold">{t("group.title")}</span>
     </div>
     <div className="flex min-w-0 items-center justify-between gap-2 px-1 text-xs">
       <span className="shrink-0">{t("group.by")}</span>
       <Select value={grouping?.propertyId ?? "none"} onValueChange={propertyId => onChange(propertyId === "none" ? null : normalizeGrouping({ propertyId }))}>
-        <SelectTrigger autoFocus aria-label={t("group.by")} className="h-7 w-40 min-w-0 border-0 bg-transparent text-xs shadow-none"><SelectValue /></SelectTrigger>
-        <SelectContent data-workspace-group-menu="true" className="max-h-72 max-w-64">
-          <SelectItem value="none">{t("group.none")}</SelectItem>
-          {properties.map(property => <SelectItem key={property.id} value={property.id}><span className="truncate" title={property.name}>{property.name}</span></SelectItem>)}
+        <SelectTrigger autoFocus aria-label={t("group.by")} size="sm" className="h-7 data-[size=sm]:h-7 w-40 min-w-0 justify-end gap-2 border-0 bg-transparent px-2 py-1 text-xs text-muted-foreground shadow-none hover:bg-state-hover focus-visible:bg-state-hover [&>span]:max-w-32 [&>span]:justify-end"><SelectValue /></SelectTrigger>
+        <SelectContent data-workspace-group-menu="true" position="popper" align="end" className="max-h-72 max-w-64 p-1">
+          <SelectItem className="py-1 text-xs" value="none">{t("group.none")}</SelectItem>
+          {properties.map(property => <SelectItem className="py-1 text-xs" key={property.id} value={property.id}><span className="truncate" title={property.name}>{property.name}</span></SelectItem>)}
         </SelectContent>
       </Select>
     </div>
     <div className="flex min-w-0 items-center justify-between gap-2 px-1 text-xs">
       <span>{t("group.sort")}</span>
       <Select disabled={!grouping} value={grouping?.sort ?? "default"} onValueChange={sort => update({ sort: sort as WorkspaceGroupingState["sort"] })}>
-        <SelectTrigger aria-label={t("group.sort")} className="h-7 w-40 min-w-0 border-0 bg-transparent text-xs shadow-none"><SelectValue /></SelectTrigger>
-        <SelectContent data-workspace-group-menu="true">
-          {(["default", "ascending", "descending", "manual"] as const).map(sort => <SelectItem value={sort} key={sort}>{t(`group.sort.${sort}`)}</SelectItem>)}
+        <SelectTrigger aria-label={t("group.sort")} size="sm" className="h-7 data-[size=sm]:h-7 w-40 min-w-0 justify-end gap-2 border-0 bg-transparent px-2 py-1 text-xs text-muted-foreground shadow-none hover:bg-state-hover focus-visible:bg-state-hover [&>span]:max-w-32 [&>span]:justify-end"><SelectValue /></SelectTrigger>
+        <SelectContent data-workspace-group-menu="true" position="popper" align="end" className="p-1">
+          {(["default", "ascending", "descending", "manual"] as const).map(sort => <SelectItem className="py-1 text-xs" value={sort} key={sort}>{t(`group.sort.${sort}`)}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>
     {grouping && <>
-      <label className="flex h-8 items-center justify-between gap-2 px-1 text-xs">
+      <label className="flex h-7 items-center justify-between gap-2 px-1 text-xs">
         {t("group.hideEmpty")}<Checkbox aria-label={t("group.hideEmpty")} checked={grouping.hideEmpty} onCheckedChange={hideEmpty => update({ hideEmpty: hideEmpty === true })} />
       </label>
       <div className="my-1 border-t border-border/70" />
@@ -145,7 +145,7 @@ export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onB
         <span>{t("group.groups")}</span><Button variant="ghost" className="h-6 px-1 text-xs" onClick={() => update({ hiddenGroupIds: [] })}>{t("group.showAll")}</Button>
       </div>
       <div ref={listRef} className="max-h-64 overflow-y-auto">
-        {groups.map((group, index) => <div data-group-option-id={group.id} className={`relative flex h-8 min-w-0 items-center gap-1 px-1 text-xs ${drag?.id === group.id ? "opacity-40" : ""} ${drag && (drag.beforeId === group.id || (group.empty && drag.beforeId === null)) ? "shadow-[inset_0_2px_0_var(--primary)]" : ""}`} key={group.id}>
+        {groups.map((group, index) => <div data-group-option-id={group.id} className={`relative flex h-7 rounded-sm hover:bg-state-hover min-w-0 items-center gap-1 px-1 text-xs ${drag?.id === group.id ? "opacity-40" : ""} ${drag && (drag.beforeId === group.id || (group.empty && drag.beforeId === null)) ? "shadow-[inset_0_2px_0_var(--primary)]" : ""}`} key={group.id}>
           {!group.empty ? <Button variant="ghost" size="icon" className="size-6 shrink-0 touch-none cursor-grab active:cursor-grabbing" aria-label={t("group.reorder", { name: label(group) })} title={t("group.reorderHelp")} onPointerDown={event => startDrag(event, group)} onKeyDown={event => {
             if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); move(group.id, event.key === "ArrowUp" ? -1 : 1); }
           }}><svg viewBox="0 0 12 16" className="h-4 w-3" aria-hidden="true"><g fill="currentColor">{[4,8,12].map(y => <g key={y}><circle cx="4" cy={y} r="1"/><circle cx="8" cy={y} r="1"/></g>)}</g></svg></Button> : <span className="w-6 shrink-0"/>}

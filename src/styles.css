@@ -411,7 +411,7 @@
 
 .workspace-project-detail-expanded [data-card-property-row-id],
 .workspace-project-detail-expanded #project-visible-properties > button {
-  min-height: 2.25rem;
+  min-height: 2rem;
 }
 
 .workspace-project-detail-heading {

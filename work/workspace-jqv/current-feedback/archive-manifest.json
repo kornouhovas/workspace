@@ -1,0 +1,29 @@
+{
+  "source": "Four temporary user defect screenshots from workspace-jqv description archived before editing",
+  "files": [
+    {
+      "path": "work/workspace-jqv/current-feedback/user-feedback-1.png",
+      "sha256": "cbc0c4690cac51fef60d0cd77acad2288a683da087c7a2c24d6ff05b94f91827",
+      "width": 3580,
+      "height": 2094
+    },
+    {
+      "path": "work/workspace-jqv/current-feedback/user-feedback-2.png",
+      "sha256": "f618685c64cb30b792b1154564c11335881ae280091d1af6b9c264def6320837",
+      "width": 3580,
+      "height": 2094
+    },
+    {
+      "path": "work/workspace-jqv/current-feedback/user-feedback-3.png",
+      "sha256": "512462bbd645f3c144902d815f28d2ee2536ce619f51016d555f464b197d0149",
+      "width": 3580,
+      "height": 2094
+    },
+    {
+      "path": "work/workspace-jqv/current-feedback/user-feedback-4.png",
+      "sha256": "0a841c7afd89417f119cda721c128e9baf3cd4b8cbd73bd946d3e34d32893eff",
+      "width": 3580,
+      "height": 2094
+    }
+  ]
+}

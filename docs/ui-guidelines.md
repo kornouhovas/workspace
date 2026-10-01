@@ -15,7 +15,7 @@ The shell and shared chrome follow the pinned bb 0.44.0 reference. Workspace sup
 - Icons: bb stroke-rounded Hugeicons through `src/lib/workspace-icons.tsx`; remaining product-specific glyphs use the existing lucide exports.
 - Font: Inter Variable from `@fontsource-variable/inter` (SIL Open Font License).
 - Desktop chrome uses 48px headers, 28px tabs/navigation rows, 12px tab labels with 16px line height, and 13px navigation labels. The sidebar starts at 320px and resizes from 240px to 460px; width is a shared device preference, while visibility and right-panel state remain per Workspace. The chrome geometry remains the accepted bb 0.44.0 adaptation; neutral and semantic roles now follow the pinned af72bb81 design source (see [application policy](development/design/bb-workspace-policy.md)).
-- Table rows start at 36px; expanded project property rows start at 36px and grow with wrapped values; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
+- Table rows start at 32px; expanded project property rows start at 32px and grow with wrapped values; file tree rows start at 28px and board cards grow with content. Wrapped text and additional properties must expand naturally rather than be clipped.
 - Theme: Light, Dark and System in Settings use bb neutral ink/canvas, hover/active and seam tokens in `src/styles.css`. Status and Select colours still come from project data.
 - Notifications: `sonner`.
 - Runtime: Electron desktop shell loading the built renderer.
@@ -121,12 +121,13 @@ Rules:
 - Right-preview card actions belong to its own header. Omit the duplicate main-header actions and the right-header new-tab plus; retain the main Add Board/Table button.
 - Workspace settings stacks Source, Folder role tree and Properties in a centered column capped at 768px, with 24px outer padding (16px horizontal at compact desktop widths); folder labels and role controls remain readable beside Navigation.
 - Project Detail composes into the right panel, a project tab, or the centre split. Its dialog retains the project name as an accessible label in every host. Keep its property/file logic independent of pane chrome.
-- Identify the project in the host tab; omit the duplicate content heading and its spacing above Properties. Partial preview tabs have no hover close icon or title shift. Keep header Hide/Expand and keyboard controls. Do not repeat `Name` inside the Properties table.
+- Identify the project in the host tab; omit the duplicate content heading and its spacing above Properties. Partial preview tabs have no hover close icon or title shift. Keep header Hide/Expand and keyboard controls. Do not repeat `Name` inside the Properties rows.
 - Side panel open/close transitions change occupied width smoothly, retaining outgoing content and making hidden controls inert immediately. Respect reduced motion and rapid reversal. Pointer resize has no easing; reaching the full available workspace width expands the project during drag and Restore uses the partial width at drag start.
-- Properties should appear before file structure.
-- `Status` should appear in the Properties table by default and may be hidden or shown from the Project Detail property menu as a panel-local visibility preference, not as a system property definition mutation.
+- Properties should appear before file structure. Visible, hidden and Add property rows are borderless, with aligned label/value columns, 32px minimum height and accessible hover/focus editing. Do not add an outer table frame or cell/row grid.
+- Customize Columns and Group use compact 12px menu rows and muted section descriptions; Group by and Sort use borderless 28px Radix Select triggers with a trailing value and chevron. Preserve disabled, selection, keyboard and portal dismissal behavior.
+- `Status` should appear in the Properties rows by default and may be hidden or shown from the Project Detail property menu as a panel-local visibility preference, not as a system property definition mutation.
 - Properties must include editable custom properties for `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
-- Project Detail Panel may create a new custom property from the Properties table through a compact `Add property` row using the same property types and service path as Table view.
+- Project Detail Panel may create a new custom property from the Properties rows through a compact `Add property` row using the same property types and service path as Table view.
 - Hidden properties in Project Detail Panel should keep the same row affordances as visible properties: property-name menu, rename/delete/show actions, value editing, and drag reorder within the hidden group.
 - Use autosizing multiline text controls for `Text`, text-like inline inputs for `Numbers` so arithmetic expressions can start with `=`, date-native input or date picker for dates, `Select` for single select, and checkbox/menu composition for multi-select.
 - Use `Badge` for select and multi-select values, including value colors.

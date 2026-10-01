@@ -1,0 +1,800 @@
+[
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1440x960-group.png",
+    "pid": 80208,
+    "surface": "group",
+    "theme": "light",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowOwnerName\": Electron, \"kCGWindowSharingState\": 1, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 2831, \"kCGWindowLayer\": 0]\npixels 1440 960\n",
+    "sha256": "ef452ee5b695c29172bae8f5047fc547552bdd1151a23487d5630e06f070a376"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1024x720-split.png",
+    "pid": 80208,
+    "surface": "split",
+    "theme": "light",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowNumber\": 2831, \"kCGWindowIsOnscreen\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowStoreType\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace]\npixels 1024 720\n",
+    "sha256": "5c3b65823837999d50f1067c75ba521253a560eef0b92a862b14ae0702875cd3"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1024x720-menu.png",
+    "pid": 80208,
+    "surface": "menu",
+    "theme": "light",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 2831, \"kCGWindowOwnerPID\": 80208, \"kCGWindowSharingState\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0]\npixels 1024 720\n",
+    "sha256": "31af31f4ddc3c91fc7eddf1520de20b915f4329b58b06db5b8c6d7c84363fabd"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1024x720-group.png",
+    "pid": 80208,
+    "surface": "group",
+    "theme": "light",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowAlpha\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowName\": Workspace, \"kCGWindowLayer\": 0]\npixels 1024 720\n",
+    "sha256": "c0f6b4df2795f709179cf8353ec654a860b16e712e992348d11f434833aa070e"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-split.png",
+    "pid": 80208,
+    "surface": "split",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowName\": Workspace, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowLayer\": 0, \"kCGWindowOwnerPID\": 80208, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}]\npixels 1024 720\n",
+    "sha256": "e4cae6c66f7eb0cce55c195c77d2edde602bca853b4444186930caf849fffa11"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-menu.png",
+    "pid": 80208,
+    "surface": "menu",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowName\": Workspace, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 80208, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0]\npixels 1024 720\n",
+    "sha256": "fa63e7f6c75b7f0197f815b09fe07b85a6062a6c1e3051246c40189d1de3a08f"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-group.png",
+    "pid": 80208,
+    "surface": "group",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowLayer\": 0, \"kCGWindowNumber\": 2831, \"kCGWindowName\": Workspace, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowSharingState\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 80208, \"kCGWindowIsOnscreen\": 1]\npixels 1024 720\n",
+    "sha256": "28fd58a0c2536e380c545a0888f6c9340fb053ea448447cd99ef1c15af74c091"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1440x960-split.png",
+    "pid": 80208,
+    "surface": "split",
+    "theme": "dark",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowOwnerPID\": 80208, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowMemoryUsage\": 2432]\npixels 1440 960\n",
+    "sha256": "d026add62fef9ab856a0fc559e09257edaa806cc13d1aeaf09b9d6117afab3c5"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1440x960-menu.png",
+    "pid": 80208,
+    "surface": "menu",
+    "theme": "dark",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowNumber\": 2831, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowStoreType\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1]\npixels 1440 960\n",
+    "sha256": "de8ef7a228c3c68e352c83b8ec0e1f124e438495001d502d6ce0b888365af5c1"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1440x960-group.png",
+    "pid": 80208,
+    "surface": "group",
+    "theme": "dark",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 80208, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowStoreType\": 1]\npixels 1440 960\n",
+    "sha256": "2da0ea85fbbc54f8ac13ee194ed6347b00a36dc30e062f1bc372152e2f720776"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1440x960-board.png",
+    "pid": 80208,
+    "surface": "board",
+    "theme": "dark",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowNumber\": 2831, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n",
+    "sha256": "029c723417a9333f9379628b714b49cbb472e4c9d045fa939738f6a5a69a3e42"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1440x960-settings.png",
+    "pid": 80208,
+    "surface": "settings",
+    "theme": "dark",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowSharingState\": 1, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 80208, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowIsOnscreen\": 1]\npixels 1440 960\n",
+    "sha256": "db2ae541fc35abc862df7e7e6ec5fbab6c14a779fcddc0a945a43afdc0557465"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1440x960-split.png",
+    "theme": "light",
+    "surface": "split",
+    "pid": 80208,
+    "window": 2831,
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "validation": "Observed Swift CGWindow output and PNG dimensions during executor native capture, before manifest helper introduced",
+    "sha256": "d862e6855e275de17b55c10af1b86f38beb4356ae0281428d3a73512730fc53c"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1440x960-hidden.png",
+    "theme": "light",
+    "surface": "hidden",
+    "pid": 80208,
+    "window": 2831,
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    "validation": "Observed Swift CGWindow output and PNG dimensions during executor native capture, before manifest helper introduced",
+    "sha256": "d2a880af14c5762ca20e1cd93f7a749754aecfcc6976d859de8dff421fc0ff1c"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-board.png",
+    "pid": 80208,
+    "surface": "board",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowName\": Workspace, \"kCGWindowAlpha\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerPID\": 80208, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 2831, \"kCGWindowIsOnscreen\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowLayer\": 0, \"kCGWindowStoreType\": 1]\npixels 1024 720\n",
+    "sha256": "1d9e8678914fb85e161aba438fbba6730873ce75f969257f075097203d3dc8e6"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1024x720-board.png",
+    "pid": 80208,
+    "surface": "board",
+    "theme": "light",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 2831, \"kCGWindowAlpha\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowName\": Workspace, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowLayer\": 0, \"kCGWindowIsOnscreen\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}]\npixels 1024 720\n",
+    "sha256": "e3a77238353dc5ed746096c4cb508be1d29e23a82fb9051bd3fa6bae63e35054"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1024x720-settings.png",
+    "pid": 80208,
+    "surface": "settings",
+    "theme": "light",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowOwnerPID\": 80208, \"kCGWindowSharingState\": 1, \"kCGWindowIsOnscreen\": 1, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowNumber\": 2831]\npixels 1024 720\n",
+    "sha256": "83557cd13de6a1d71b28c922a6351d262cbb98d5b84648bcd8071a4a098b1ce0"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1440x960-board.png",
+    "pid": 80208,
+    "surface": "board",
+    "theme": "light",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowOwnerPID\": 80208, \"kCGWindowName\": Workspace, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowStoreType\": 1, \"kCGWindowSharingState\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowLayer\": 0]\npixels 1440 960\n",
+    "sha256": "af0c38e57b201546bc5655a34cd3b52cee18631a0f13d2bb27185a6afdfee62f"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-light-1440x960-settings.png",
+    "pid": 80208,
+    "surface": "settings",
+    "theme": "light",
+    "pixels": {
+      "width": 1440,
+      "height": 960
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1440,
+      "height": 960
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1440,
+      "height": 960
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowStoreType\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowIsOnscreen\": 1, \"kCGWindowNumber\": 2831, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 960;\n    Width = 1440;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowOwnerPID\": 80208]\npixels 1440 960\n",
+    "sha256": "14022a3a93d16393bf52f67cb0e6c663845d9800a74d2f897d24fce909ebe312"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-settings.png",
+    "pid": 80208,
+    "surface": "settings",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowSharingState\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowIsOnscreen\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowNumber\": 2831, \"kCGWindowOwnerName\": Electron, \"kCGWindowName\": Workspace, \"kCGWindowStoreType\": 1, \"kCGWindowLayer\": 0, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}]\npixels 1024 720\n",
+    "sha256": "dae1c531c21d84aac7e07bd8a2e4e522826090d52069b1a3162ec443484a7b32"
+  },
+  {
+    "path": "work/workspace-jqv/refinement-after/native-dark-1024x720-group-long-label.png",
+    "pid": 80208,
+    "surface": "group-long-label",
+    "theme": "dark",
+    "pixels": {
+      "width": 1024,
+      "height": 720
+    },
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    },
+    "output": "window [\"kCGWindowLayer\": 0, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowNumber\": 2831, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowSharingState\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowStoreType\": 1, \"kCGWindowIsOnscreen\": 1]\npixels 1024 720\n",
+    "sha256": "58994dc2955df7155e14495bd5b49b200ad88658de7ca0944fe267b0d899368f"
+  }
+]

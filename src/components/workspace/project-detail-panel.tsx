@@ -572,7 +572,7 @@ function FileTreeNode({
         type="button"
         variant="ghost"
         disabled={!node.available}
-        className="h-7 w-full justify-start px-1.5 py-0 text-left text-sm font-normal text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+        className="h-7 w-full justify-start px-1.5 py-0 text-left text-[13px] font-normal text-muted-foreground hover:bg-accent/30 hover:text-foreground"
         title={node.relativePath}
         aria-label={`${t(isFolder ? "detail.folder" : "detail.file")}: ${node.name}`}
         aria-expanded={isFolder ? isExpanded : undefined}
@@ -1669,7 +1669,7 @@ export function WorkspaceProjectDetailPanel({
                 {propertiesExpanded ? (
                   <dl
                     id="project-visible-properties"
-                    className="overflow-hidden rounded-md border border-border/45 bg-background/15"
+                    className="grid gap-0.5"
                   >
                     {orderedVisibleProperties.map((property) => {
                       const propertyProtected = isProtectedCardProperty(property);
@@ -1689,7 +1689,7 @@ export function WorkspaceProjectDetailPanel({
                             data-card-property-row-id={property.id}
                             data-card-property-row-group="visible"
                             className={[
-                              "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
+                              "group/card-property grid min-h-8 items-stretch gap-2 transition-colors duration-150",
                               cardPropertyDrag ? "transition-transform ease-out" : "",
                               cardPropertyDrag?.propertyId === property.id
                                 ? "bg-muted/40 shadow-sm"
@@ -1699,12 +1699,12 @@ export function WorkspaceProjectDetailPanel({
                               .join(" ")}
                             style={{
                               gridTemplateColumns: expanded
-                                ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                                ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
                                 : projectDetailPropertiesGridTemplateColumns,
                               ...getCardPropertyDragStyle(property.id, "visible"),
                             }}
                           >
-                            <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                            <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch">
                               {renamingProperty ? (
                                 <span className="col-span-2 flex min-w-0 items-center px-2">
                                   <Input
@@ -1733,7 +1733,7 @@ export function WorkspaceProjectDetailPanel({
                                   <button
                                     type="button"
                                     aria-label={t("table.propertyActions", { name: property.name })}
-                                    className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                    className="col-span-2 grid min-h-8 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                     onPointerDown={(event) =>
                                       startCardPropertyDrag(event, property.id, {
                                         openActionsOnClick: true,
@@ -1768,7 +1768,7 @@ export function WorkspaceProjectDetailPanel({
                                 <button
                                   type="button"
                                   aria-label={t("detail.reorderProperty", { name: property.name })}
-                                  className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                  className="col-span-2 grid min-h-8 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                   onPointerDown={(event) =>
                                     startCardPropertyDrag(event, property.id)
                                   }
@@ -1780,7 +1780,7 @@ export function WorkspaceProjectDetailPanel({
                                 </button>
                               )}
                             </dt>
-                            <dd className="flex min-w-0 items-center px-4 py-1 text-sm">
+                            <dd className="flex min-w-0 items-center px-1 py-0 text-[13px]">
                               <ProjectPropertyValueEditor
                                 project={displayedProject}
                                 property={property}
@@ -1806,22 +1806,22 @@ export function WorkspaceProjectDetailPanel({
                       <DropdownMenuTrigger asChild>
                         <button
                           type="button"
-                          className="grid min-h-9 w-full items-stretch gap-0 text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="grid min-h-8 w-full items-stretch gap-2 rounded-md text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                           style={{
                             gridTemplateColumns: expanded
-                              ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                              ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
                               : projectDetailPropertiesGridTemplateColumns,
                           }}
                         >
-                          <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center border-r border-border/45">
+                          <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center">
                             <span className="flex h-full items-center justify-center text-muted-foreground/70">
                               <PlusIcon className="size-3.5" aria-hidden="true" />
                             </span>
-                            <span className="min-w-0 truncate pr-3 text-sm font-normal text-muted-foreground">
+                            <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
                               {t("property.add")}
                             </span>
                           </span>
-                          <span className="flex min-w-0 items-center px-4 text-sm text-muted-foreground/80">
+                          <span className="flex min-w-0 items-center px-1 text-[13px] text-muted-foreground/80">
                             {t("property.addDescription")}
                           </span>
                         </button>
@@ -1883,7 +1883,7 @@ export function WorkspaceProjectDetailPanel({
                     {hiddenPropertiesExpanded ? (
                       <dl
                         id="project-hidden-properties"
-                        className="overflow-hidden rounded-md border border-border/45 bg-background/15"
+                        className="grid gap-0.5"
                       >
                         {hiddenCardProperties.map((property) => {
                           const propertyProtected = isProtectedCardProperty(property);
@@ -1905,7 +1905,7 @@ export function WorkspaceProjectDetailPanel({
                                 data-card-property-row-id={property.id}
                                 data-card-property-row-group="hidden"
                                 className={[
-                                  "group/card-property grid min-h-9 items-stretch gap-0 border-b border-border/45 transition-colors duration-150 last:border-b-0",
+                                  "group/card-property grid min-h-8 items-stretch gap-2 transition-colors duration-150",
                                   cardPropertyDrag ? "transition-transform ease-out" : "",
                                   cardPropertyDrag?.propertyId === property.id
                                     ? "bg-muted/40 shadow-sm"
@@ -1915,12 +1915,12 @@ export function WorkspaceProjectDetailPanel({
                                   .join(" ")}
                                 style={{
                                   gridTemplateColumns: expanded
-                                    ? "minmax(12rem, 16.5rem) minmax(0, 1fr)"
+                                    ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
                                     : projectDetailPropertiesGridTemplateColumns,
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
                                 }}
                               >
-                                <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch border-r border-border/45">
+                                <dt className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-stretch">
                                   {renamingProperty ? (
                                     <span className="col-span-2 flex min-w-0 items-center px-2">
                                       <Input
@@ -1951,7 +1951,7 @@ export function WorkspaceProjectDetailPanel({
                                         aria-label={t("table.propertyActions", {
                                           name: property.name,
                                         })}
-                                        className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                        className="col-span-2 grid min-h-8 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                         onPointerDown={(event) =>
                                           startCardPropertyDrag(event, property.id, {
                                             group: "hidden",
@@ -1994,7 +1994,7 @@ export function WorkspaceProjectDetailPanel({
                                       aria-label={t("detail.reorderProperty", {
                                         name: property.name,
                                       })}
-                                      className="col-span-2 grid min-h-9 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-sm font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
+                                      className="col-span-2 grid min-h-8 min-w-0 cursor-grab select-none grid-cols-[2rem_minmax(0,1fr)] items-center rounded-md text-left text-[13px] font-normal text-muted-foreground outline-none transition-colors hover:bg-accent/15 active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-ring/30"
                                       onPointerDown={(event) =>
                                         startCardPropertyDrag(event, property.id, {
                                           group: "hidden",
@@ -2008,7 +2008,7 @@ export function WorkspaceProjectDetailPanel({
                                     </button>
                                   )}
                                 </dt>
-                                <dd className="flex min-w-0 items-center px-4 py-1 text-sm">
+                                <dd className="flex min-w-0 items-center px-1 py-0 text-[13px]">
                                   <ProjectPropertyValueEditor
                                     project={displayedProject}
                                     property={property}

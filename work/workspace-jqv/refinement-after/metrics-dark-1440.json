@@ -1,0 +1,303 @@
+{
+  "theme": "dark",
+  "properties": [
+    {
+      "tag": "DL",
+      "rect": {
+        "x": 901,
+        "y": 88,
+        "width": 519,
+        "height": 100
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "StatusActiveNotesNative verification text with a long valueAdd propertyChoose type"
+    },
+    {
+      "tag": "DIV",
+      "rect": {
+        "x": 901,
+        "y": 88,
+        "width": 519,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "StatusActive"
+    },
+    {
+      "tag": "DT",
+      "rect": {
+        "x": 901,
+        "y": 88,
+        "width": 148,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Status"
+    },
+    {
+      "tag": "DD",
+      "rect": {
+        "x": 1057,
+        "y": 88,
+        "width": 363,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px 4px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Active"
+    },
+    {
+      "tag": "DIV",
+      "rect": {
+        "x": 901,
+        "y": 122,
+        "width": 519,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "NotesNative verification text with a long value"
+    },
+    {
+      "tag": "DT",
+      "rect": {
+        "x": 901,
+        "y": 122,
+        "width": 148,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Notes"
+    },
+    {
+      "tag": "DD",
+      "rect": {
+        "x": 1057,
+        "y": 122,
+        "width": 363,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px 4px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Native verification text with a long value"
+    },
+    {
+      "tag": "BUTTON",
+      "rect": {
+        "x": 901,
+        "y": 156,
+        "width": 519,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Add propertyChoose type"
+    }
+  ],
+  "table": [
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 84,
+        "width": 668,
+        "height": 32.5
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "Done1"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 116.5,
+        "width": 668,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "NameStatusNotes"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 148.5,
+        "width": 668,
+        "height": 33
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "Project GammaDone"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 181.5,
+        "width": 668,
+        "height": 20
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px",
+      "shadow": "none",
+      "text": ""
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 201.5,
+        "width": 668,
+        "height": 32.5
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "Active2"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 234,
+        "width": 668,
+        "height": 32
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "NameStatusNotes"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 266,
+        "width": 668,
+        "height": 33
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "Project AlphaActiveNative verification text with a long value"
+    },
+    {
+      "tag": "TR",
+      "rect": {
+        "x": 332,
+        "y": 299,
+        "width": 668,
+        "height": 33
+      },
+      "font": "13px",
+      "padding": "0px",
+      "border": "0px 0px 1px",
+      "shadow": "none",
+      "text": "Project BetaActive"
+    }
+  ],
+  "group": [
+    {
+      "tag": "BUTTON",
+      "rect": {
+        "x": 703,
+        "y": 76.5,
+        "width": 160,
+        "height": 28
+      },
+      "font": "12px",
+      "padding": "4px 8px",
+      "border": "0px",
+      "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "text": "Status"
+    },
+    {
+      "tag": "BUTTON",
+      "rect": {
+        "x": 703,
+        "y": 106.5,
+        "width": 160,
+        "height": 28
+      },
+      "font": "12px",
+      "padding": "4px 8px",
+      "border": "0px",
+      "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "text": "Manual"
+    },
+    {
+      "tag": "DIV",
+      "rect": {
+        "x": 621,
+        "y": 237.5,
+        "width": 246,
+        "height": 28
+      },
+      "font": "12px",
+      "padding": "0px 4px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Done1"
+    },
+    {
+      "tag": "DIV",
+      "rect": {
+        "x": 621,
+        "y": 265.5,
+        "width": 246,
+        "height": 28
+      },
+      "font": "12px",
+      "padding": "0px 4px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "Active2"
+    },
+    {
+      "tag": "DIV",
+      "rect": {
+        "x": 621,
+        "y": 293.5,
+        "width": 246,
+        "height": 28
+      },
+      "font": "12px",
+      "padding": "0px 4px",
+      "border": "0px",
+      "shadow": "none",
+      "text": "No status0"
+    }
+  ]
+}

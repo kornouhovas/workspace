@@ -263,7 +263,7 @@ Table requirements:
 - In compact one-line `Text` mode, editing opens a popover editor anchored to the cell so the row height does not expand while typing longer text.
 - The Text column property menu includes `Wrap content`; when enabled for that view, the column preserves manual line breaks visually, wraps long text inside the stable column width, and lets row height expand.
 - Clicking a row opens the right Project Detail Panel.
-- Table should render as a compact bordered grid with subtle row separators and vertical dividers aligned between headers and values.
+- Table uses 32px minimum rows, 13px values, 12px muted column/group headers and subtle structural row separators and vertical dividers aligned between headers and values. Wrapped values may increase row height.
 - Header vertical dividers should visually match the body dividers instead of fading on the first table row.
 - The last visible table row should keep its bottom separator after search or value filtering.
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
@@ -312,7 +312,7 @@ Properties section behavior:
 - When both property sections are collapsed, their heading rows have no extra gap. Project tabs share the available width, shrinking from 176px down to 40px as the window narrows or more tabs open; narrow tabs show only their icon, with the full name retained in the tooltip and accessible label. Horizontal scrolling is used only after the minimum widths no longer fit.
 - Keep `Name` in the host tab and accessible dialog label. Show `Status` by default.
 - Show every active custom property that belongs to the active Workspace.
-- Render properties as a compact two-column table: drag handle and property name on the left, editable value on the right, row separators, and a vertical divider between name and value.
+- Render visible and hidden properties as compact borderless rows: drag handle and property name on the left, editable value on the right. Do not draw an outer frame, row separators or label/value cell dividers. Align the Add property row to the same columns. Hover and keyboard focus identify actions and empty editable values.
 - Supported custom property types are `Text`, `Numbers`, `Date`, `Select`, and `Multi-select`.
 - `Text` values use a compact text input or textarea depending on configured display density.
 - `Numbers` values use a text-like inline editor so users can enter either plain numbers or arithmetic expressions that start with `=`. The closed value shows the computed result, while the editor reopens with the original expression.

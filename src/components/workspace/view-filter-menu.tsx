@@ -146,13 +146,13 @@ function stopActionMenuEvent(event: { stopPropagation: () => void }) {
 }
 
 const visiblePropertyRowClassName =
-  "workspace-customize-property-row grid h-8 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-lg px-1.5 text-sm transition-colors";
+  "workspace-customize-property-row grid h-7 min-w-0 select-none grid-cols-[auto_minmax(0,1fr)_minmax(5rem,auto)_1.5rem] items-center gap-2 rounded-sm px-1.5 text-xs transition-colors";
 
 const valueFilterGroupButtonClassName =
   "flex h-7 min-w-0 select-none items-center gap-1.5 rounded-lg px-1.5 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground";
 
 const valueFilterItemClassName =
-  "grid h-7 min-w-0 cursor-default select-none grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 rounded-lg px-1.5 text-sm transition-colors hover:bg-accent/55";
+  "grid h-7 min-w-0 cursor-default select-none grid-cols-[1rem_minmax(0,1fr)] items-center gap-1.5 rounded-sm px-1.5 text-xs transition-colors hover:bg-accent/55";
 
 const propertyDragStartThreshold = 4;
 const viewFilterMenuSurfaceSelector =
@@ -665,7 +665,7 @@ export function WorkspaceViewFilterMenu({
       <DropdownMenuContent
         data-workspace-view-filter-menu="true"
         align="end"
-        className={`${workspaceMenuContentClassName} max-h-[calc(100vh-4.5rem)] w-72 overflow-x-hidden overflow-y-auto p-0`}
+        className={`${workspaceMenuContentClassName} max-h-[calc(100vh-4.5rem)] w-64 overflow-x-hidden overflow-y-auto p-0`}
         onInteractOutside={keepDropdownOpenForActionsPopover}
         onKeyDownCapture={event => {
           if (groupPanel && event.key === "Tab") event.stopPropagation();
@@ -686,25 +686,25 @@ export function WorkspaceViewFilterMenu({
           </DropdownMenuItem>
           <Separator className={workspaceMenuSeparatorClassName}/>
         </> : null}
-        <div className="grid gap-2 p-2.5">
+        <div className="grid gap-1.5 p-2">
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+              <p className="flex items-center gap-2 text-xs font-medium leading-none">
                 <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
                 {t("view.visibleProperties")}
               </p>
-              <Badge variant="outline" className="h-6 min-w-6 justify-center rounded-full px-2">
+              <Badge variant="outline" className="h-5 min-w-5 justify-center rounded-full border-0 px-1.5 text-xs">
                 {visibleViewProperties.length}
               </Badge>
             </div>
-            <p className="pl-6 text-xs text-muted-foreground">{t("view.visiblePropertiesDescription")}</p>
+            <p className="pl-6 text-[11px] text-muted-foreground">{t("view.visiblePropertiesDescription")}</p>
           </div>
           <div className="grid max-h-52 gap-0.5 overflow-auto pr-1">
             {visibleViewProperties.map((property) => renderPropertyVisibilityRow(property, true, "visible"))}
           </div>
           {hiddenViewProperties.length > 0 ? (
             <div className="grid gap-1 border-t border-border/70 pt-2">
-              <div className="flex h-7 items-center justify-between gap-2 px-1.5 text-sm font-semibold text-muted-foreground">
+              <div className="flex h-7 items-center justify-between gap-2 px-1.5 text-xs font-medium text-muted-foreground">
                 <span className="flex min-w-0 items-center gap-2">
                   <EyeOffIcon className="size-4 shrink-0" aria-hidden="true" />
                   <span className="truncate">{t("view.hiddenProperties")}</span>
@@ -720,13 +720,13 @@ export function WorkspaceViewFilterMenu({
           ) : null}
         </div>
         <Separator className={workspaceMenuSeparatorClassName} />
-        <div className="grid gap-2 p-2.5">
+        <div className="grid gap-1.5 p-2">
           <div className="grid gap-1.5">
-            <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+            <p className="flex items-center gap-2 text-xs font-medium leading-none">
               <ListFilterIcon className="size-4 text-muted-foreground" aria-hidden="true" />
               {t("view.valueFilters")}
             </p>
-            <p className="pl-6 text-xs text-muted-foreground">{t("view.valueFiltersDescription")}</p>
+            <p className="pl-6 text-[11px] text-muted-foreground">{t("view.valueFiltersDescription")}</p>
           </div>
           <div className="grid max-h-60 gap-1 overflow-auto pr-1">
             {filterableProperties.length === 0 ? (
@@ -785,11 +785,11 @@ export function WorkspaceViewFilterMenu({
             <div className="grid gap-2.5 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="grid gap-1">
-                  <p className="flex items-center gap-2 text-sm font-semibold leading-none">
+                  <p className="flex items-center gap-2 text-xs font-medium leading-none">
                     <Columns3Icon className="size-4 text-muted-foreground" aria-hidden="true" />
                     {t("view.columnWidth")}
                   </p>
-                  <p className="pl-6 text-xs text-muted-foreground">{t("view.columnWidthDescription")}</p>
+                  <p className="pl-6 text-[11px] text-muted-foreground">{t("view.columnWidthDescription")}</p>
                 </div>
                 <Badge variant="outline" className="h-6 min-w-14 justify-center rounded-full px-2 tabular-nums">
                   {preferredBoardColumnWidth}px

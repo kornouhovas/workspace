@@ -146,7 +146,7 @@ const addPropertyColumnWidth = 48;
 const minimumPropertyColumnWidth = 132;
 const maximumPropertyColumnWidth = 520;
 const defaultCustomPropertyColumnWidth = 180;
-const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border)]";
+const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border-hairline)]";
 const propertyMenuWidth = 240;
 const propertyMenuOffset = 4;
 const propertyMenuViewportMargin = 8;
@@ -327,7 +327,7 @@ function renderTableStatusValue(value: unknown, t: (key: string) => string) {
   }
 
   return (
-    <div className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors">
+    <div className="workspace-table-cell-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors">
       <Badge
         variant="secondary"
         className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-xs font-normal"
@@ -432,7 +432,7 @@ export function ProjectTablePropertyValueEditor({
       <button
         type="button"
         aria-label={`${property.name} — ${project.name}${label ? `: ${label}` : ""}`}
-        className="workspace-table-cell-display workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="workspace-table-cell-display workspace-table-cell-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 text-left text-[13px] text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
@@ -450,7 +450,7 @@ export function ProjectTablePropertyValueEditor({
       <button
         type="button"
         aria-label={`${property.name} — ${project.name}${label ? `: ${label}` : ""}`}
-        className="workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-sm text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-[13px] text-foreground transition-colors focus-visible:border-ring focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
         onClick={startCellEditing}
         onPointerDown={stopCellActivation}
       >
@@ -512,7 +512,7 @@ export function ProjectTablePropertyValueEditor({
   function renderWrappedTextEditor(label: string) {
     return (
       <div
-        className="workspace-table-wrapped-text-editor-frame workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-sm text-foreground transition-colors focus-within:border-ring focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/30"
+        className="workspace-table-wrapped-text-editor-frame workspace-table-cell-display workspace-table-cell-control flex min-h-8 w-full min-w-0 items-start justify-start rounded-md px-2 py-1 text-left text-[13px] text-foreground transition-colors focus-within:border-ring focus-within:bg-background focus-within:ring-2 focus-within:ring-ring/30"
         onPointerDown={stopCellActivation}
         onClick={stopCellActivation}
       >
@@ -552,7 +552,7 @@ export function ProjectTablePropertyValueEditor({
         defaultValue={formatNumberEditorValue(value)}
         aria-label={`${property.name} — ${project.name}: ${t("property.type.number")}`}
         autoFocus
-        className="workspace-number-input h-8 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
+        className="workspace-number-input h-7 min-w-0 border-transparent bg-transparent px-2 shadow-none focus-visible:border-ring focus-visible:bg-background"
         onPointerDown={stopCellActivation}
         onBlur={(event) => {
           const text = event.target.value.trim();
@@ -576,7 +576,7 @@ export function ProjectTablePropertyValueEditor({
         value={value}
         dismissSignal={dismissSignal}
         triggerLabel={`${property.name} — ${project.name}`}
-        triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="workspace-table-cell-control h-7 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
       />
     );
@@ -590,7 +590,7 @@ export function ProjectTablePropertyValueEditor({
         selectValues={selectValues}
         dismissSignal={dismissSignal}
         triggerLabel={`${property.name} — ${project.name}`}
-        triggerClassName="workspace-table-cell-control h-8 w-full min-w-0 justify-start px-2 font-normal"
+        triggerClassName="workspace-table-cell-control h-7 w-full min-w-0 justify-start px-2 font-normal"
         onValueChange={saveValue}
         onCreateSelectValue={onCreateSelectValue}
         onRenameSelectValue={onRenameSelectValue}
@@ -1169,7 +1169,7 @@ export function WorkspaceTableView({
                   <TableHead
                     key={property.id}
                     className={[
-                      "group/column relative cursor-default select-none bg-background/95 px-1",
+                      "group/column relative cursor-default select-none bg-background/95 h-8 px-1 text-xs text-muted-foreground",
                       tableColumnDividerClassName,
                       columnDrag ? "transition-transform ease-out" : "",
                       columnDrag?.propertyId === property.id ? "bg-card shadow-lg" : "",
@@ -1209,7 +1209,7 @@ export function WorkspaceTableView({
                       <>
                         <div
                           className={[
-                            "flex h-8 min-w-0 items-center gap-1 rounded-md px-2 transition-colors",
+                            "flex h-7 min-w-0 items-center gap-1 rounded-md px-2 transition-colors",
                             propertyMenuTriggerActive ? "" : "hover:bg-muted/60 focus-within:bg-muted/60",
                           ].filter(Boolean).join(" ")}
                         >
@@ -1367,7 +1367,7 @@ export function WorkspaceTableView({
                   </TableHead>
                 );
               })}
-              <TableHead className="min-w-12 bg-background/95 shadow-[inset_1px_0_0_var(--border)]">
+              <TableHead className="h-8 min-w-12 bg-background/95 shadow-[inset_1px_0_0_var(--border-hairline)]">
                 <DropdownMenu
                   open={openAddPropertyMenu && activeHeaderId === sectionId}
                   onOpenChange={setOpenAddPropertyMenu}
@@ -1432,7 +1432,7 @@ export function WorkspaceTableView({
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
       <div className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "border-t border-border/45"}`}>
-        <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
+        <Table className="min-w-full table-fixed border-collapse text-[13px] [&_tr]:border-border/45" style={{ minWidth: tableWidth }}>
           <colgroup>
             {visibleProperties.map((property) => (
               <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />
@@ -1443,10 +1443,10 @@ export function WorkspaceTableView({
             {displaySections.map((group, index) => (
               <TableBody key={group.id} data-table-section={group.id} className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
               {projection.groups && index > 0 ? <TableRow data-table-group-gap="true" className="h-5 border-0 hover:bg-transparent"><TableCell colSpan={visibleProperties.length + 1} className="h-5 p-0" /></TableRow> : null}
-              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-9 bg-transparent hover:bg-state-hover">
-                <TableCell colSpan={visibleProperties.length + 1} className="h-9 p-0">
+              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-8 bg-transparent hover:bg-state-hover">
+                <TableCell colSpan={visibleProperties.length + 1} className="h-8 p-0">
                   <button type="button" aria-expanded={!group.collapsed} aria-label={t(group.collapsed ? "group.expand" : "group.collapse", { name: groupDisplayName(group) })}
-                    className="sticky left-0 flex h-9 max-w-[min(32rem,80vw)] items-center gap-2 px-3 text-left text-xs font-medium focus-visible:ring-2 focus-visible:ring-ring/40"
+                    className="sticky left-0 flex h-8 max-w-[min(32rem,80vw)] items-center gap-2 px-3 text-left text-xs font-medium focus-visible:ring-2 focus-visible:ring-ring/40"
                     onClick={() => toggleGroupCollapse(group.id)}>
                     {group.collapsed ? <ChevronRightIcon className="size-3 shrink-0"/> : <ChevronDownIcon className="size-3 shrink-0"/>}
                     {"color" in group && group.color ? <span data-color={group.color} className="size-2 shrink-0 rounded-full bg-muted-foreground"/> : null}
@@ -1491,7 +1491,7 @@ export function WorkspaceTableView({
                       ) : property.id === "property:name" ? (
                         <button
                           type="button"
-                          className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
+                          className="workspace-table-cell-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring/30"
                           onClick={() => openProjectFromNameCell(project)}
                         >
                           <span className="workspace-table-text-value min-w-0 truncate rounded-md px-1 py-0.5">
@@ -1506,7 +1506,7 @@ export function WorkspaceTableView({
                     </TableCell>
                   );
                 })}
-                <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border)]" aria-hidden="true" />
+                <TableCell className="h-8 min-w-12 bg-background/30 py-0 shadow-[inset_1px_0_0_var(--border-hairline)]" aria-hidden="true" />
               </TableRow>
             ))}
               </TableBody>
