@@ -239,7 +239,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(leftPanelSource, /onReorderWorkspaces/);
   assert.match(leftPanelSource, /editingWorkspaceId/);
   assert.match(leftPanelSource, /aria-label=\{t\("sidebar\.renameWorkspaceInput"\)\}/);
-  assert.match(leftPanelSource, /min-w-52/);
+  assert.match(leftPanelSource, /min-w-44/);
   assert.doesNotMatch(leftPanelSource, /draggable/);
   assert.doesNotMatch(leftPanelSource, /onDragStart/);
   assert.doesNotMatch(leftPanelSource, /onDrop/);
@@ -422,7 +422,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(viewTabsSource, /draggable=\{canDragView\}/);
   assert.doesNotMatch(viewTabsSource, /onDragStart=\{\(event\) => handleViewDragStart/);
   assert.doesNotMatch(viewTabsSource, /text-base font-semibold/);
-  assert.match(viewTabsSource, /min-w-56/);
+  assert.match(viewTabsSource, /min-w-44/);
   assert.match(viewTabsSource, /onContextMenu/);
   assert.match(viewTabsSource, /contextMenuViewId/);
   assert.match(viewTabsSource, /function isViewContextMenuTarget/);
@@ -468,7 +468,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /renderTableStatusValue/);
   assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors"/);
   assert.match(tableViewSource, /className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-xs font-normal"/);
-  assert.match(tableViewSource, /rounded-lg border border-border\/45 bg-background\/15/);
+  assert.match(tableViewSource, /border-t border-border\/45/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
   assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
   assert.match(tableViewSource, /group\/column relative cursor-default select-none bg-background\/95 px-1/);
@@ -674,7 +674,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /px-3 pb-0 pt-3/);
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);
   assert.match(tableViewSource, /w-full/);
-  assert.match(tableViewSource, /rounded-lg border border-border\/45/);
+  assert.match(tableViewSource, /border-t border-border\/45/);
   assert.match(viewFilterMenuSource, /t\("view\.customizeColumns"\)/);
   assert.doesNotMatch(viewFilterMenuSource, /ChevronDownIcon data-icon="inline-end"/);
   assert.match(viewTabsSource, /from "@\/components\/ui\/button"/);

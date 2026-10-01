@@ -1,0 +1,230 @@
+[
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-board.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-global-settings.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-table.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-global-settings.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-workspace-settings.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": false
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-workspace-menu.jpg",
+    "pixels": [
+      2878,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": false
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-customize-menu.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-workspace-menu.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": false
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-table.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-project-expanded.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-table.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-global-settings.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-project-expanded.jpg",
+    "pixels": [
+      1168,
+      920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": false
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-project-expanded.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-workspace-settings.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/light-1440x960-board.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-board.jpg",
+    "pixels": [
+      2048,
+      1440
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1440x960-workspace-settings.jpg",
+    "pixels": [
+      2880,
+      1920
+    ],
+    "expectedLogical": [
+      1440,
+      960
+    ],
+    "dimensionsPass": true
+  },
+  {
+    "path": "work/workspace-jqv/before/dark-1024x720-workspace-menu.jpg",
+    "pixels": [
+      396,
+      354
+    ],
+    "expectedLogical": [
+      1024,
+      720
+    ],
+    "dimensionsPass": false
+  }
+]

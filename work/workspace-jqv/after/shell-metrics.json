@@ -1,0 +1,71 @@
+{
+  "viewport": {
+    "width": 1024,
+    "height": 720
+  },
+  "theme": "dark",
+  "samples": [
+    {
+      "selector": ".workspace-sidebar",
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 720,
+      "fontSize": "15px",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "background": "oklch(0.221445 0 0)"
+    },
+    {
+      "selector": ".workspace-history",
+      "x": 252,
+      "y": 0,
+      "width": 60,
+      "height": 48,
+      "fontSize": "15px",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "selector": ".workspace-top-action",
+      "x": 956,
+      "y": 9.5,
+      "width": 28,
+      "height": 28,
+      "fontSize": "13px",
+      "padding": "0px",
+      "borderRadius": "6px",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "selector": ".workspace-sidebar-body",
+      "x": 0,
+      "y": 48,
+      "width": 320,
+      "height": 672,
+      "fontSize": "15px",
+      "padding": "8px",
+      "borderRadius": "0px",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "selector": "[role=tab][data-state=active]",
+      "x": 401.5703125,
+      "y": 9.5,
+      "width": 66.859375,
+      "height": 28,
+      "fontSize": "12px",
+      "padding": "4px 8px 4px 6px",
+      "borderRadius": "6px",
+      "background": "oklab(0.82 0 0 / 0.12)"
+    },
+    {
+      "selector": "button[aria-label=\"Hide sidebar\"]",
+      "x": 84,
+      "y": 10,
+      "width": 28,
+      "height": 28
+    }
+  ]
+}

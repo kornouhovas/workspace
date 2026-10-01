@@ -617,7 +617,7 @@ export function WorkspaceViewTabs({
           <DropdownMenuContent
             data-workspace-view-create-menu="true"
             align="end"
-            className={`${workspaceMenuContentClassName} min-w-56`}
+            className={`${workspaceMenuContentClassName} min-w-44`}
           >
             <DropdownMenuLabel className={workspaceMenuLabelClassName}>{t("view.add")}</DropdownMenuLabel>
             <DropdownMenuGroup>
@@ -654,7 +654,7 @@ export function WorkspaceViewTabs({
       {contextMenuView ? (
         <div
           data-workspace-view-context-menu="true"
-          className={`fixed z-50 min-w-56 ${workspaceMenuContentClassName}`}
+          className={`fixed z-50 min-w-44 ${workspaceMenuContentClassName}`}
           style={{ left: contextMenuPosition.x, top: contextMenuPosition.y }}
           role="menu"
         >

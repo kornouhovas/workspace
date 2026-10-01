@@ -153,7 +153,7 @@ MVP constraints:
 
 - Nested status groups are not supported as primary Board lanes in MVP.
 - Drag and drop projects between statuses is not supported in MVP.
-- Role controls may use segmented controls or compact select controls. Settings uses wide sections stacked Source → Folder role tree → Properties at every host width, including when Navigation is open. Folder roles wrap onto a separate row and remain reachable without horizontal clipping.
+- Role controls may use segmented controls or compact select controls. Settings uses a centered column capped at 768px, stacked Source → Folder role tree → Properties at every host width, including when Navigation is open. Folder roles wrap onto a separate row and remain reachable without horizontal clipping.
 - Role changes should save to local storage for the active Workspace.
 - Changing roles refreshes Board/Table project discovery.
 
@@ -186,7 +186,7 @@ Required behavior:
 - Only one view is active at a time.
 - View tabs should sit in the main surface without extra horizontal divider lines above or below the switcher.
 - View tabs show their view type with a compact icon, such as Board or Table.
-- The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. History arrows and the sidebar toggle stay at fixed positions clear of the macOS controls, with the toggle always to the right of both arrows. The leading tab inset interpolates with the sidebar width. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips. The sidebar toggle uses the same 28px chrome button geometry and 24px vertical center as history and other header actions.
+- The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. The sidebar toggle sits immediately after macOS controls. History arrows sit at the sidebar trailing edge when expanded and beside the toggle when collapsed. The leading tab inset interpolates with the sidebar width. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips. The sidebar toggle uses the same 28px chrome button geometry and 24px vertical center as history and other header actions.
 - View duplicate/rename/delete actions are available from the tab context menu; there is no separate three-dot view menu. Duplicating preserves the view type and display settings, persists a separate view immediately to the right of the source, and activates the copy.
 - Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses remains unavailable.
 - Board cards show populated property values below the project name, without visible property labels. System Status participates in this list and follows the view's property order and visibility instead of being pinned beside the name. Empty values add no rows or spacing. Dates and colored value chips match the project detail display.

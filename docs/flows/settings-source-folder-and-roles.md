@@ -205,7 +205,7 @@ After changing folder roles:
 ## Responsive Behavior
 
 - Primary target is desktop width from 1024px upward.
-- Workspace settings uses one full-width column at every desktop width: Source, Folder role tree, then Properties.
+- Workspace settings uses one centered column capped at 768px at every desktop width: Source, Folder role tree, then Properties. Sections use 16px inner padding; outer horizontal padding is 24px, reduced to 16px at compact desktop widths.
 - Folder tree should scroll inside its region instead of forcing the whole app to overflow horizontally.
 - Long folder paths truncate from the middle or end without breaking layout.
 

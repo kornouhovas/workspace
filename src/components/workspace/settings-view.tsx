@@ -181,17 +181,17 @@ export function WorkspaceSettingsView({
 
   return (
     <section
-      className="workspace-settings grid min-w-0 gap-2 px-3 py-3"
+      className="workspace-settings workspace-settings-surface mx-auto grid w-full min-w-0 max-w-3xl gap-6 px-6 py-6"
       aria-label={t("settings.workspaceTitle")}
     >
-      <div className="grid min-w-0 content-start gap-2">
-        <div className="rounded-md border border-border bg-card">
-          <div className="flex items-center justify-between gap-2 px-3 py-2">
+      <div className="grid min-w-0 content-start gap-3">
+        <div className="workspace-settings-section rounded-lg border border-border bg-card">
+          <div className="workspace-settings-section-header flex items-center justify-between gap-4 px-4 py-4">
             <h3 className="min-w-0 break-all text-sm font-semibold">{t("settings.source")}{workspaceName ? ` · ${workspaceName}` : ""}</h3>
             <Badge className="shrink-0" variant="secondary">{t("settings.localOnly")}</Badge>
           </div>
           <Separator />
-          <div className="grid gap-2 p-3">
+          <div className="grid gap-3 p-4">
             <div className="grid gap-1">
               <p className="text-xs font-medium text-muted-foreground">
                 {t("settings.sourceFolder")}
@@ -213,8 +213,8 @@ export function WorkspaceSettingsView({
           </div>
         </div>
       </div>
-      <div className="min-w-0 rounded-md border border-border bg-card">
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
+      <div className="workspace-settings-section min-w-0 rounded-lg border border-border bg-card">
+        <div className="workspace-settings-section-header flex items-center justify-between gap-4 px-4 py-4">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold">{t("settings.folderRoleTree")}</h3>
             <p className="truncate text-xs text-muted-foreground" title={sourceFolder.path}>
@@ -224,7 +224,7 @@ export function WorkspaceSettingsView({
           <Badge variant="outline">{t("settings.roots", { count: folderRoleTree.length })}</Badge>
         </div>
         <Separator />
-        <ul className="grid max-h-80 gap-1.5 overflow-auto p-3">
+        <ul className="grid max-h-80 gap-1.5 overflow-auto p-4">
           {folderRoleTree.map((node) => (
             <FolderRoleNode
               key={node.id}
@@ -255,12 +255,12 @@ type GlobalSettingsViewProps = {
 export function GlobalSettingsView({ theme, onThemeChange }: GlobalSettingsViewProps) {
   const { locale, setLocale, t } = useI18n();
   return (
-    <section className="grid gap-2 p-3" aria-label={t("settings.title")}>
+    <section className="workspace-device-settings workspace-settings-surface mx-auto grid w-full min-w-0 max-w-3xl gap-6 px-6 py-6" aria-label={t("settings.title")}>
       <section
-        className="rounded-md border border-border bg-card"
+        className="workspace-settings-section rounded-lg border border-border bg-card"
         aria-labelledby="workspace-appearance-heading"
       >
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
+        <div className="workspace-settings-section-header flex items-center justify-between gap-4 px-4 py-4">
           <h3 id="workspace-appearance-heading" className="text-sm font-semibold">
             {t("chrome.appearance")}
           </h3>
@@ -271,7 +271,7 @@ export function GlobalSettingsView({ theme, onThemeChange }: GlobalSettingsViewP
                 onThemeChange(value);
             }}
           >
-            <SelectTrigger className="w-28" aria-label={t("chrome.appearance")}>
+            <SelectTrigger className="w-36 shrink-0" aria-label={t("chrome.appearance")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -285,10 +285,10 @@ export function GlobalSettingsView({ theme, onThemeChange }: GlobalSettingsViewP
         </div>
       </section>
       <section
-        className="rounded-md border border-border bg-card"
+        className="workspace-settings-section rounded-lg border border-border bg-card"
         aria-labelledby="workspace-language-heading"
       >
-        <div className="flex items-center justify-between gap-2 px-3 py-2">
+        <div className="workspace-settings-section-header flex items-center justify-between gap-4 px-4 py-4">
           <div className="min-w-0">
             <h3 id="workspace-language-heading" className="text-sm font-semibold">
               {t("language.title")}
@@ -303,7 +303,7 @@ export function GlobalSettingsView({ theme, onThemeChange }: GlobalSettingsViewP
               }
             }}
           >
-            <SelectTrigger size="sm" className="shrink-0" aria-label={t("language.interface")}>
+            <SelectTrigger size="sm" className="w-36 shrink-0" aria-label={t("language.interface")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

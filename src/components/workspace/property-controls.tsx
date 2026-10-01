@@ -61,15 +61,15 @@ export function WorkspacePropertyControls({
   );
 
   return (
-    <section className="rounded-lg border border-border bg-card" aria-labelledby="workspace-properties-heading">
-      <div className="flex items-center justify-between gap-3 px-3 py-2">
+    <section className="workspace-settings-section rounded-lg border border-border bg-card" aria-labelledby="workspace-properties-heading">
+      <div className="workspace-settings-section-header flex items-center justify-between gap-4 px-4 py-4">
         <div className="min-w-0">
           <h3 id="workspace-properties-heading" className="text-sm font-semibold">{t("property.properties")}</h3>
           <p className="truncate text-xs text-muted-foreground">{t("settings.statusValuesDescription")}</p>
         </div>
         <Badge variant="outline">{t("settings.values", { count: sortedStatusValues.length })}</Badge>
       </div>
-      <div className="grid gap-2 border-t border-border p-3">
+      <div className="grid gap-3 border-t border-border p-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">

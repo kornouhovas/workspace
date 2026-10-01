@@ -1,5 +1,5 @@
 export const workspaceMenuContentClassName =
-  "workspace-menu-surface max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md";
+  "workspace-menu-surface min-w-44 max-h-[calc(100vh-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md";
 
 export const workspaceMenuItemClassName =
   "group/workspace-menu-item flex w-full py-[0.3125rem] cursor-default items-center gap-2 rounded-sm px-2 text-left text-xs font-normal text-popover-foreground outline-none [overflow-wrap:anywhere] hover:bg-state-hover hover:text-foreground focus-visible:bg-state-hover focus-visible:text-foreground data-[highlighted]:bg-state-hover data-[highlighted]:text-foreground disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50";

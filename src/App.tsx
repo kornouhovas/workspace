@@ -2871,7 +2871,7 @@ export default function App() {
           type="button"
           className={[
             "electron-window-no-drag workspace-top-action bb-chrome-action absolute top-[10px] z-40",
-            "left-[168px]",
+            "left-[84px]",
           ].join(" ")}
           aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
           title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}

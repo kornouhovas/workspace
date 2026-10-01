@@ -144,12 +144,12 @@ export function WorkspaceBoardView({
             return (
               <section
               key={column.statusValueId}
-              className="workspace-board-column flex min-w-0 self-start flex-col rounded-lg bg-muted/30"
+              className="workspace-board-column flex min-w-0 self-start flex-col"
               aria-label={t("board.projectsAria", {
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}
             >
-              <header className="flex h-10 shrink-0 items-center justify-between gap-2 px-3">
+              <header className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
                 <h3 className="flex min-w-0 items-center gap-2 truncate text-sm font-medium">
                   <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
                   {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
@@ -162,7 +162,7 @@ export function WorkspaceBoardView({
                   {column.projects.length}
                 </span>
               </header>
-              <div className="grid auto-rows-max content-start gap-2 px-2 pb-2">
+              <div className="grid auto-rows-max content-start gap-3 pb-2">
                 {column.projects.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     {t("board.noProjects")}
@@ -176,10 +176,10 @@ export function WorkspaceBoardView({
                     return (
                     <article
                       key={project.id}
-                      className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:border-ring/60 focus-within:border-ring"
+                      className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:border-ring/30 focus-within:border-ring"
                     >
                       <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
-                      <h4 className="relative min-w-0 text-sm font-medium leading-5">
+                      <h4 className="relative min-w-0 text-sm font-normal leading-5">
                         <button type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
                           <span className="truncate">{project.name}</span>
                         </button>

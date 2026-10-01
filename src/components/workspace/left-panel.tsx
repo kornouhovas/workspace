@@ -461,7 +461,7 @@ export function WorkspaceLeftPanel({
         </label>
         <div className="h-px bg-border" />
         <div className="grid min-h-0 min-w-0 flex-1 content-start gap-1 overflow-y-auto overflow-x-hidden">
-          <p className="px-1 text-xs font-medium text-muted-foreground">
+          <p className="px-2 pb-1 pt-2 text-xs font-normal text-muted-foreground">
             {t("sidebar.workspaces")}
           </p>
           {workspaces.map((workspace) => {
@@ -555,7 +555,7 @@ export function WorkspaceLeftPanel({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className={cn(workspaceMenuContentClassName, "min-w-52")}
+                        className={cn(workspaceMenuContentClassName, "min-w-44")}
                       >
                         <DropdownMenuGroup>
                           <DropdownMenuItem
@@ -597,14 +597,15 @@ export function WorkspaceLeftPanel({
             type="button"
             aria-current={activeSurface === "settings" ? "page" : undefined}
             className={cn(
-              "inline-flex h-8 w-full items-center justify-start gap-2 rounded-md px-2.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               activeSurface === "settings" && "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
+            aria-label={t("sidebar.settings")}
             title={t("sidebar.settings")}
             onClick={onOpenSettings}
           >
             <SettingsIcon className="size-4" aria-hidden="true" />
-            {t("sidebar.settings")}
+            <span className="sr-only">{t("sidebar.settings")}</span>
           </button>
         </div>
       </div>

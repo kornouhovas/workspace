@@ -1431,7 +1431,7 @@ export function WorkspaceTableView({
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
-      <div className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "rounded-lg border border-border/45 bg-background/15"}`}>
+      <div className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "border-t border-border/45"}`}>
         <Table className="min-w-full table-fixed" style={{ minWidth: tableWidth }}>
           <colgroup>
             {visibleProperties.map((property) => (
@@ -1443,7 +1443,7 @@ export function WorkspaceTableView({
             {displaySections.map((group, index) => (
               <TableBody key={group.id} data-table-section={group.id} className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
               {projection.groups && index > 0 ? <TableRow data-table-group-gap="true" className="h-5 border-0 hover:bg-transparent"><TableCell colSpan={visibleProperties.length + 1} className="h-5 p-0" /></TableRow> : null}
-              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-9 bg-muted/25 hover:bg-muted/30">
+              {projection.groups ? <TableRow data-table-group-id={group.id} className="h-9 bg-transparent hover:bg-state-hover">
                 <TableCell colSpan={visibleProperties.length + 1} className="h-9 p-0">
                   <button type="button" aria-expanded={!group.collapsed} aria-label={t(group.collapsed ? "group.expand" : "group.collapse", { name: groupDisplayName(group) })}
                     className="sticky left-0 flex h-9 max-w-[min(32rem,80vw)] items-center gap-2 px-3 text-left text-xs font-medium focus-visible:ring-2 focus-visible:ring-ring/40"
