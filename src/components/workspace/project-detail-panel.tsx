@@ -131,7 +131,7 @@ const projectDetailPanelAnimationMs = 360;
 const projectDetailPanelUnmountBufferMs = 80;
 const cardPropertyOrderStorageKey = "workspace.cardDetailPropertyOrder";
 const cardHiddenPropertyIdsStorageKey = "workspace.cardDetailHiddenPropertyIds";
-const projectDetailPropertiesGridTemplateColumns = "minmax(8.5rem, 9.25rem) minmax(0, 1fr)";
+const projectDetailPropertiesGridTemplateColumns = "clamp(6rem, 35cqw, 10rem) minmax(0, 1fr)";
 const projectDetailPlainValueClassName =
   "flex min-h-8 w-full min-w-0 items-center truncate rounded-md px-0 py-0.5 text-left text-sm font-normal text-foreground";
 const projectDetailMultilineValueClassName =
@@ -1608,7 +1608,7 @@ export function WorkspaceProjectDetailPanel({
           }
         }}
         className={[
-          "electron-window-no-drag relative flex h-full flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "workspace-project-detail-panel electron-window-no-drag relative flex h-full min-w-0 flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
           expanded ? "workspace-project-detail-expanded" : "",
           expanded || inline
             ? "w-full max-w-none border-l-0 shadow-none"
@@ -1630,13 +1630,9 @@ export function WorkspaceProjectDetailPanel({
         ) : null}
         <>
           <div
-            className={
-              expanded
-                ? "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto pb-6 pt-1"
-                : "min-h-0 flex-1 overflow-auto px-5 pb-5 pt-1"
-            }
+            className="workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto"
           >
-            <div className={expanded ? "grid gap-4" : "grid gap-4"}>
+            <div className="grid gap-4">
               <section
                 className={`grid ${propertiesExpanded ? "gap-2" : "gap-0"}`}
                 aria-labelledby="project-properties-heading"
@@ -1698,9 +1694,7 @@ export function WorkspaceProjectDetailPanel({
                               .filter(Boolean)
                               .join(" ")}
                             style={{
-                              gridTemplateColumns: expanded
-                                ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
-                                : projectDetailPropertiesGridTemplateColumns,
+                              gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                               ...getCardPropertyDragStyle(property.id, "visible"),
                             }}
                           >
@@ -1808,20 +1802,18 @@ export function WorkspaceProjectDetailPanel({
                           type="button"
                           className="grid min-h-8 w-full items-stretch gap-2 rounded-md text-left transition-colors hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
                           style={{
-                            gridTemplateColumns: expanded
-                              ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
-                              : projectDetailPropertiesGridTemplateColumns,
+                            gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                           }}
                         >
                           <span className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center">
                             <span className="flex h-full items-center justify-center text-muted-foreground/70">
                               <PlusIcon className="size-3.5" aria-hidden="true" />
                             </span>
-                            <span className="min-w-0 truncate pr-3 text-[13px] font-normal text-muted-foreground">
+                            <span className="min-w-0 whitespace-normal break-words py-1 pr-3 text-[13px] font-normal leading-5 text-muted-foreground">
                               {t("property.add")}
                             </span>
                           </span>
-                          <span className="flex min-w-0 items-center px-1 text-[13px] text-muted-foreground/80">
+                          <span className="flex min-w-0 items-center break-words px-1 text-[13px] text-muted-foreground/80">
                             {t("property.addDescription")}
                           </span>
                         </button>
@@ -1914,9 +1906,7 @@ export function WorkspaceProjectDetailPanel({
                                   .filter(Boolean)
                                   .join(" ")}
                                 style={{
-                                  gridTemplateColumns: expanded
-                                    ? "minmax(8.5rem, 10rem) minmax(0, 1fr)"
-                                    : projectDetailPropertiesGridTemplateColumns,
+                                  gridTemplateColumns: projectDetailPropertiesGridTemplateColumns,
                                   ...getCardPropertyDragStyle(property.id, "hidden"),
                                 }}
                               >

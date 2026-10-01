@@ -1,0 +1,38 @@
+[
+  {
+    "cls": "relative w-full overflow-x-auto",
+    "sw": 668,
+    "cw": 485,
+    "sh": 1320,
+    "ch": 1320,
+    "top": 0,
+    "left": 183
+  },
+  {
+    "cls": "min-h-0 w-full flex-1 overflow-auto border-t border-border/45",
+    "sw": 485,
+    "cw": 485,
+    "sh": 1331,
+    "ch": 899,
+    "top": 431.5,
+    "left": 0
+  },
+  {
+    "cls": "",
+    "sw": 1440,
+    "cw": 1440,
+    "sh": 960,
+    "ch": 960,
+    "top": 0,
+    "left": 0
+  },
+  {
+    "cls": "",
+    "sw": 1440,
+    "cw": 1440,
+    "sh": 960,
+    "ch": 960,
+    "top": 0,
+    "left": 0
+  }
+]

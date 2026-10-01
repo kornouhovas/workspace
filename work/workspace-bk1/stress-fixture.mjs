@@ -1,0 +1,14 @@
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {createWorkspaceIpcHandler} from '../../electron/workspaceIpc.js';
+const rt=JSON.parse(await readFile('work/workspace-bk1/runtime.json','utf8'));
+for(let i=1;i<=36;i++)await mkdir(join(rt.root,'Active',`Project stress ${String(i).padStart(2,'0')} — Long project name for resizing`),{recursive:true});
+for(let i=1;i<=40;i++)await writeFile(join(rt.root,'Active/Project Alpha',`File ${String(i).padStart(2,'0')} — A long file name that must truncate without hiding actions.md`),'Fixture\n');
+const h=createWorkspaceIpcHandler({configPath:join(rt.metadata,'settings.json'),viewStorePath:join(rt.metadata,'views.json'),propertyStorePath:join(rt.metadata,'properties.json')});
+const settings=JSON.parse(await readFile(join(rt.metadata,'settings.json'),'utf8'));console.log(JSON.stringify(settings).slice(0,700));
+const workspaceId=settings.activeWorkspaceId;
+const catalog=await h(null,'workspace.listProperties',{workspaceId});
+const hidden=catalog.properties.find(p=>p.name==='Long hidden property for narrow panel alignment') || (await h(null,'workspace.createProperty',{workspaceId,name:'Long hidden property for narrow panel alignment',type:'text'})).property;
+await h(null,'workspace.updateProperty',{workspaceId,propertyId:hidden.id,patch:{hidden:true}});
+const scan=await h(null,'workspace.scan',{workspaceId});
+await writeFile('work/workspace-bk1/stress-scan.json',JSON.stringify(scan,null,2));

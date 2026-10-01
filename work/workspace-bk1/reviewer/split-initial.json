@@ -1,0 +1,38 @@
+{
+  "split": "true",
+  "panes": [
+    {
+      "id": "workspace",
+      "rect": {
+        "x": 320,
+        "y": 0,
+        "width": 334.515625,
+        "height": 960,
+        "top": 0,
+        "right": 654.515625,
+        "bottom": 960,
+        "left": 320
+      },
+      "text": "Board\nTable\nProject Alpha\nName\n\t\nStatus\n\t\nNotes\n\t\n\n\nProject Alpha\n\t\nActive\n\t\nProject notes with a lo"
+    },
+    {
+      "id": "pane:93368a17-2f10-4806-a1da-22032138e49c",
+      "rect": {
+        "x": 655.515625,
+        "y": 0,
+        "width": 334.5234375,
+        "height": 960,
+        "top": 0,
+        "right": 990.0390625,
+        "bottom": 960,
+        "left": 655.515625
+      },
+      "text": "Project Alpha\nProperties\nStatus\nActive\nNotes\nProject notes with a long line that wraps within the pa"
+    }
+  ],
+  "seps": [
+    "Resize sidebar",
+    "Resize split",
+    "Resize right panel"
+  ]
+}

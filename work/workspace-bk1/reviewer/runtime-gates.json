@@ -1,0 +1,404 @@
+[
+  {
+    "label": "keyboard min280",
+    "viewport": [
+      1440,
+      960
+    ],
+    "edge": 1440,
+    "separators": [
+      {
+        "label": "Resize sidebar",
+        "value": "320",
+        "rect": {
+          "x": 319,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 320,
+          "bottom": 960,
+          "left": 319
+        }
+      },
+      {
+        "label": "Resize right panel",
+        "value": "280",
+        "rect": {
+          "x": 1159.9140625,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 1160.9140625,
+          "bottom": 960,
+          "left": 1159.9140625
+        }
+      }
+    ],
+    "panes": [
+      {
+        "rect": {
+          "x": 1160.9140625,
+          "y": 48,
+          "width": 280,
+          "height": 912,
+          "top": 48,
+          "right": 1440.9140625,
+          "bottom": 960,
+          "left": 1160.9140625
+        },
+        "padding": "12px 24px 24px",
+        "content": [
+          269,
+          269,
+          912,
+          1636,
+          0
+        ],
+        "grids": [
+          "98px 115px",
+          "98px 115px",
+          "98px 115px",
+          "98px 115px"
+        ],
+        "add": [
+          {
+            "text": "Add propertyChoose type",
+            "width": 221,
+            "scrollWidth": 221,
+            "height": 48
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "keyboard max1120",
+    "viewport": [
+      1440,
+      960
+    ],
+    "edge": 1440,
+    "separators": [
+      {
+        "label": "Resize sidebar",
+        "value": "320",
+        "rect": {
+          "x": 319,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 320,
+          "bottom": 960,
+          "left": 319
+        }
+      },
+      {
+        "label": "Resize right panel",
+        "value": "1120",
+        "rect": {
+          "x": 320.0390625,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 321.0390625,
+          "bottom": 960,
+          "left": 320.0390625
+        }
+      }
+    ],
+    "panes": [
+      {
+        "rect": {
+          "x": 321.0390625,
+          "y": 48,
+          "width": 1118.9609375,
+          "height": 912,
+          "top": 48,
+          "right": 1440,
+          "bottom": 960,
+          "left": 321.0390625
+        },
+        "padding": "12px 32px 24px",
+        "content": [
+          1108,
+          1108,
+          912,
+          1484,
+          0
+        ],
+        "grids": [
+          "160px 875.961px",
+          "160px 875.961px",
+          "160px 875.961px",
+          "160px 875.961px"
+        ],
+        "add": [
+          {
+            "text": "Add propertyChoose type",
+            "width": 1044,
+            "scrollWidth": 1044,
+            "height": 32
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "keyboard step296",
+    "viewport": [
+      1440,
+      960
+    ],
+    "edge": 1440,
+    "separators": [
+      {
+        "label": "Resize sidebar",
+        "value": "320",
+        "rect": {
+          "x": 319,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 320,
+          "bottom": 960,
+          "left": 319
+        }
+      },
+      {
+        "label": "Resize right panel",
+        "value": "296",
+        "rect": {
+          "x": 1143.9765625,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 1144.9765625,
+          "bottom": 960,
+          "left": 1143.9765625
+        }
+      }
+    ],
+    "panes": [
+      {
+        "rect": {
+          "x": 1144.9765625,
+          "y": 48,
+          "width": 295.0234375,
+          "height": 912,
+          "top": 48,
+          "right": 1440,
+          "bottom": 960,
+          "left": 1144.9765625
+        },
+        "padding": "12px 24px 24px",
+        "content": [
+          284,
+          284,
+          912,
+          1636,
+          0
+        ],
+        "grids": [
+          "103.25px 124.773px",
+          "103.25px 124.773px",
+          "103.25px 124.773px",
+          "103.25px 124.773px"
+        ],
+        "add": [
+          {
+            "text": "Add propertyChoose type",
+            "width": 236,
+            "scrollWidth": 236,
+            "height": 48
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "pointer width496",
+    "viewport": [
+      1440,
+      960
+    ],
+    "edge": 1440,
+    "separators": [
+      {
+        "label": "Resize sidebar",
+        "value": "320",
+        "rect": {
+          "x": 319,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 320,
+          "bottom": 960,
+          "left": 319
+        }
+      },
+      {
+        "label": "Resize right panel",
+        "value": "496",
+        "rect": {
+          "x": 944,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 945,
+          "bottom": 960,
+          "left": 944
+        }
+      }
+    ],
+    "panes": [
+      {
+        "rect": {
+          "x": 945,
+          "y": 48,
+          "width": 495,
+          "height": 912,
+          "top": 48,
+          "right": 1440,
+          "bottom": 960,
+          "left": 945
+        },
+        "padding": "12px 24px 24px",
+        "content": [
+          484,
+          484,
+          912,
+          1520,
+          0
+        ],
+        "grids": [
+          "160px 268px",
+          "160px 268px",
+          "160px 268px",
+          "160px 268px"
+        ],
+        "add": [
+          {
+            "text": "Add propertyChoose type",
+            "width": 436,
+            "scrollWidth": 436,
+            "height": 32
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "detail reached bottom",
+    "viewport": [
+      1440,
+      960
+    ],
+    "edge": 1440,
+    "separators": [
+      {
+        "label": "Resize sidebar",
+        "value": "320",
+        "rect": {
+          "x": 319,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 320,
+          "bottom": 960,
+          "left": 319
+        }
+      },
+      {
+        "label": "Resize right panel",
+        "value": "496",
+        "rect": {
+          "x": 944,
+          "y": 0,
+          "width": 1,
+          "height": 960,
+          "top": 0,
+          "right": 945,
+          "bottom": 960,
+          "left": 944
+        }
+      }
+    ],
+    "panes": [
+      {
+        "rect": {
+          "x": 945,
+          "y": 48,
+          "width": 495,
+          "height": 912,
+          "top": 48,
+          "right": 1440,
+          "bottom": 960,
+          "left": 945
+        },
+        "padding": "12px 24px 24px",
+        "content": [
+          484,
+          484,
+          912,
+          1520,
+          608
+        ],
+        "grids": [
+          "160px 268px",
+          "160px 268px",
+          "160px 268px",
+          "160px 268px"
+        ],
+        "add": [
+          {
+            "text": "Add propertyChoose type",
+            "width": 436,
+            "scrollWidth": 436,
+            "height": 32
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "board two axis scroll",
+    "geometry": {
+      "scrollTop": 2533,
+      "scrollLeft": 199,
+      "clientWidth": 581,
+      "scrollWidth": 780,
+      "clientHeight": 873,
+      "scrollHeight": 3406
+    }
+  },
+  {
+    "label": "table scroll candidates",
+    "hosts": [
+      {
+        "class": "min-h-0 w-full flex-1 overflow-auto border-t border-border/45",
+        "tag": "DIV",
+        "scrollHeight": 1320,
+        "clientHeight": 899,
+        "scrollWidth": 847,
+        "clientWidth": 847
+      },
+      {
+        "class": "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto",
+        "tag": "DIV",
+        "scrollHeight": 1636,
+        "clientHeight": 912,
+        "scrollWidth": 269,
+        "clientWidth": 269
+      }
+    ]
+  }
+]

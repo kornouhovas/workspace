@@ -342,7 +342,6 @@
     margin: 0;
     background: var(--sidebar);
     overflow-x: hidden;
-    scrollbar-gutter: stable;
     color-scheme: inherit;
   }
   html {
@@ -352,7 +351,6 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     overflow-x: hidden;
-    scrollbar-gutter: stable;
     color-scheme: inherit;
   }
   #root {
@@ -420,9 +418,13 @@
   line-height: 1.25rem;
 }
 
+/* The pane is the container, so insets respond to split/preview width. */
+.workspace-project-detail-panel {
+  container-type: inline-size;
+}
+
 .workspace-project-detail-content-inset {
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding: 12px clamp(24px, 4cqw, 32px) 24px;
 }
 
 .workspace-project-detail-expanded .workspace-file-tree button {
