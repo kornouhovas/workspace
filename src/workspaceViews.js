@@ -227,7 +227,7 @@ export function createViewProjection({
     projection: {
       type: "board",
       capabilities: {
-        canMoveBetweenStatuses: false,
+        canMoveBetweenStatuses: true,
       },
       columns: boardColumns,
     },

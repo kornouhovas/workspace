@@ -66,7 +66,7 @@ MVP включает:
 - интеграции с внешними PM-системами;
 - импорт данных из Notion, Trello, Jira или других инструментов;
 - автоматическая классификация проектов без настройки пользователем;
-- drag and drop проектов между основными статусами в интерфейсе.
+- произвольная сортировка проектов drag and drop.
 
 ## User Stories
 
@@ -142,7 +142,7 @@ MVP включает:
 - Каждая status-группа отображает название статуса.
 - Карточка проекта отображает `Name` и выбранные для view properties. `Status` включён по умолчанию, но может быть скрыт в конкретном view.
 - Board view скрывает проекты, чьи property values исключены настройками видимости values в этом view.
-- Board view не поддерживает перетаскивание карточек между status-группами в MVP.
+- Board view позволяет перетаскивать карточку в другую допустимую status-колонку через существующую операцию физического переноса.
 - Клик по карточке открывает правую панель проекта.
 - Board view обновляется после изменения folder roles, project properties или view settings.
 
@@ -279,7 +279,7 @@ MVP включает:
 - Search находит проект по имени и в MVP не ищет по property values.
 - Удаление Workspace из приложения не удаляет файлы на диске.
 - Приложение не показывает проекты за пределами выбранной project source folder.
-- Drag and drop проектов между основными статусами не поддерживается в MVP.
+- Board drop в допустимую Status-колонку и Table drop за внутренний левый захват в явную Status-зону переносят проект через общий безопасный backend.
 - Workspaces, roles, views, properties, values и история изменений properties сохраняются локально через `any local` / `any-store`.
 
 ## Dependencies And Constraints
@@ -305,10 +305,10 @@ MVP включает:
 - Проекты лучше идентифицировать стабильным локальным id. Относительный путь внутри project source folder хранится как текущий locator; абсолютный путь не используется как primary id.
 - Если проект найден вне папки с ролью `status`, он получает статус `No status`.
 - MVP поддерживает один уровень status folders.
-- MVP не поддерживает drag and drop проектов между основными статусами в программе.
+- Board позволяет перенос карточки в допустимую колонку Status; Table переносит проект только за внутренний левый захват в явную зону Status.
 - Search в MVP ищет только по project `Name`.
 - История изменений properties и property values нужна в local-first модели.
 
 ### Explicit Status move
 
-In preview/expanded Project Detail, selecting another existing derived Status explicitly moves the entire project folder to that status folder, preserving basename, project ID, properties/history and session. Current selection is a no-op. No status is unavailable unless an unambiguous physical target exists; the active runtime disables it with a reason. A pending-only indicator beside Sidebar opens project/from/to/state details and disappears on success/error. Collisions, unsafe paths and metadata/filesystem failures preserve files and identity through tested recovery. Board/Table drag between primary statuses remains out of scope. See [Status move contract](api/workspace-status-move.md).
+In preview/expanded Project Detail, selecting another existing derived Status explicitly moves the entire project folder to that status folder, preserving basename, project ID, properties/history and session. Current selection is a no-op. No status is unavailable unless an unambiguous physical target exists; the active runtime disables it with a reason. A pending-only indicator beside Sidebar opens project/from/to/state details and disappears on success/error. Collisions, unsafe paths and metadata/filesystem failures preserve files and identity through tested recovery. Board cards and Table Status cells offer the same selection. Board drag targets a status column; Table drag starts only from its internal left handle and targets explicit status zones. See [Status move contract](api/workspace-status-move.md).

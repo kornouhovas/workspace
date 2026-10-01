@@ -102,7 +102,7 @@ test("workspace IPC handler serves default views and projection for selected sou
       searchQuery: "alpha",
     });
     assert.equal(projectionResponse.projection.type, "board");
-    assert.equal(projectionResponse.projection.capabilities.canMoveBetweenStatuses, false);
+    assert.equal(projectionResponse.projection.capabilities.canMoveBetweenStatuses, true);
     const project = projectionResponse.projection.columns.at(0).projects.at(0);
     assert.equal(project.name, "Project Alpha");
     assert.deepEqual(project.fileTree, []);

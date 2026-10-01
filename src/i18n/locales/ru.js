@@ -1,5 +1,7 @@
 export const ru = {
   "move.recoveryRequired": "Папка перемещена; требуется восстановление",
+  "move.dragOrChooseStatus": "Перенести или выбрать статус проекта",
+  "move.currentStatus": "Текущий статус",
   "move.chooseStatus": "Выбрать статус проекта",
   "move.showDetails": "Показать сведения о перемещении папки",
   "move.details": "Перемещение папки проекта",

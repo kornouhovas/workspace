@@ -1,5 +1,7 @@
 export const en = {
   "move.recoveryRequired": "Folder moved; recovery needs attention",
+  "move.dragOrChooseStatus": "Drag or choose project Status",
+  "move.currentStatus": "Current Status",
   "move.chooseStatus": "Choose project status",
   "move.showDetails": "Show folder move details",
   "move.details": "Moving project folder",

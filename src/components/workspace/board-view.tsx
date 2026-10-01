@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
 
+import { ProjectStatusPicker } from "./project-status-picker";
+import { ProjectStatusDragSurface, StatusDragCard, StatusDropColumn, type ProjectStatusActions } from "./project-status-drag";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n";
 import { getStatusDisplayName } from "@/i18n/status";
@@ -25,7 +27,7 @@ type WorkspaceBoardProjection = {
 type BoardEditingProps = Pick<ComponentProps<typeof ProjectTablePropertyValueEditor>,
   "onProjectPropertyValueChange" | "onCreateSelectValue" | "onRenameSelectValue" | "onColorSelectValue" | "onDeleteSelectValue">;
 
-type WorkspaceBoardViewProps = BoardEditingProps & {
+type WorkspaceBoardViewProps = BoardEditingProps & ProjectStatusActions & {
   readonly projection: WorkspaceBoardProjection;
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly columnWidth?: number;
@@ -103,6 +105,7 @@ export function WorkspaceBoardView({
   visibleProperties,
   selectValues,
   onProjectOpen,
+  statusMovePending, onLoadStatusOptions, onStatusChange,
   ...editingProps
 }: WorkspaceBoardViewProps) {
   const { t, locale } = useI18n();
@@ -139,13 +142,14 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
+    <ProjectStatusDragSurface statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")}>
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {projection.columns.map((column) => {
             const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (
-              <section
+              <StatusDropColumn statusValueId={column.statusValueId}
               key={column.statusValueId}
               className="workspace-board-column flex min-w-0 self-start flex-col"
               aria-label={t("board.projectsAria", {
@@ -177,13 +181,13 @@ export function WorkspaceBoardView({
                       value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),
                     })).filter(({ property, value }) => value.trim() !== "" || editingCellId === `${project.id}:${property.id}`);
                     return (
-                    <article
+                    <StatusDragCard project={project}
                       key={project.id}
                       className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-card px-2 py-2 text-left text-card-foreground shadow-xs hover:border-ring/30 focus-within:border-ring"
                     >
-                      <button type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
+                      <button data-workspace-card-open type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
                       <h4 className="relative min-w-0 text-sm font-normal leading-5">
-                        <button type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
+                        <button data-workspace-card-open type="button" title={project.name} className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30" onClick={() => onProjectOpen(project)}>
                           <span className="truncate">{project.name}</span>
                         </button>
                       </h4>
@@ -195,7 +199,7 @@ export function WorkspaceBoardView({
                               <dd className="min-w-0 text-foreground [&_[data-workspace-select-value-trigger]]:h-auto [&_[data-workspace-select-value-trigger]]:min-h-8 [&_[data-workspace-select-value-trigger]>span]:flex-wrap">
                                 {property.id === "property:status" ? (
                                   <div className="flex h-7 w-full min-w-0 items-center rounded-md border border-transparent px-2">
-                                    {renderBoardStatusValue(project.status, t)}
+                                    {onLoadStatusOptions && onStatusChange ? <ProjectStatusPicker project={project} pending={!!statusMovePending} loadOptions={onLoadStatusOptions} onSelect={onStatusChange} /> : renderBoardStatusValue(project.status, t)}
                                   </div>
                                 ) : property.system ? <span className="block truncate">{value}</span> : (
                                   <ProjectTablePropertyValueEditor
@@ -215,16 +219,17 @@ export function WorkspaceBoardView({
                           ))}
                         </dl>
                       ) : null}
-                    </article>
+                    </StatusDragCard>
                     );
                   })
                 )}
               </div>
-              </section>
+              </StatusDropColumn>
             );
           })}
         </div>
       </div>
     </section>
+    </ProjectStatusDragSurface>
   );
 }

@@ -2787,6 +2787,9 @@ export default function App() {
                     }
                     selectValues={settingsSelectValues}
                     onProjectOpen={handleProjectOpen}
+                    statusMovePending={projectMovePending !== null}
+                    onLoadStatusOptions={loadProjectStatusOptions}
+                    onStatusChange={handleProjectStatusChange}
                     onProjectPropertyValueChange={handleProjectPropertyValueChange}
                     onCreateSelectValue={handleCreateSelectValue}
                     onRenameSelectValue={handleRenameSelectValue}
@@ -2808,6 +2811,9 @@ export default function App() {
                     selectValues={settingsSelectValues}
                     statusValues={statusValues}
                     onProjectOpen={handleProjectOpen}
+                    statusMovePending={projectMovePending !== null}
+                    onLoadStatusOptions={loadProjectStatusOptions}
+                    onStatusChange={handleProjectStatusChange}
                     onCreateProperty={handleCreateVisibleProperty}
                     onRenameProperty={handleRenameProperty}
                     onDeleteProperty={handleDeleteProperty}

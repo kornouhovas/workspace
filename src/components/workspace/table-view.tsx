@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
+import { ProjectStatusPicker } from "./project-status-picker";
+import { ProjectStatusDragSurface, StatusRowHandle, type ProjectStatusActions } from "./project-status-drag";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -113,7 +115,7 @@ type WorkspaceFilterValue = {
   readonly name: string;
 };
 
-type WorkspaceTableViewProps = {
+type WorkspaceTableViewProps = ProjectStatusActions & {
   readonly projection: WorkspaceTableProjection;
   readonly searchQuery?: string;
   readonly onClearSearch?: () => void;
@@ -622,6 +624,7 @@ export function WorkspaceTableView({
   selectValues,
   statusValues,
   onProjectOpen,
+  statusMovePending, onLoadStatusOptions, onStatusChange,
   onCreateProperty,
   onRenameProperty,
   onDeleteProperty,
@@ -1427,6 +1430,7 @@ export function WorkspaceTableView({
   ); }
 
   return (
+    <ProjectStatusDragSurface table statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
@@ -1459,7 +1463,11 @@ export function WorkspaceTableView({
             {!group.collapsed && group.rows.map((project) => (
               <TableRow
                 key={project.id}
-                className="h-8 hover:bg-accent/15"
+                data-workspace-project-row={project.id}
+                className="group/status-row h-8 hover:bg-accent/15"
+                onClick={event => {
+                  if (!(event.target as Element).closest("button, input, textarea, [role=button], [role=menu]")) openProjectFromNameCell(project);
+                }}
               >
                 {visibleProperties.map((property) => {
                   const editable = isEditableProperty(property);
@@ -1468,9 +1476,10 @@ export function WorkspaceTableView({
                   return (
                     <TableCell
                       key={property.id}
-                      className={getBodyCellClassName(property, editable, wrapContent)}
+                      className={`${getBodyCellClassName(property, editable, wrapContent)} ${property.id === visibleProperties[0]?.id ? "relative !pl-6" : ""}`}
                       style={{ width: visiblePropertyWidths[property.id] }}
                     >
+                      {property.id === visibleProperties[0]?.id && <StatusRowHandle project={project} occurrenceId={group.id} />}
                       {editable ? (
                         <ProjectTablePropertyValueEditor
                           project={project}
@@ -1499,7 +1508,7 @@ export function WorkspaceTableView({
                           </span>
                         </button>
                       ) : property.id === "property:status" ? (
-                        renderTableStatusValue(getPropertyValue(project, property), t)
+                        onLoadStatusOptions && onStatusChange ? <ProjectStatusPicker project={project} pending={!!statusMovePending} loadOptions={onLoadStatusOptions} onSelect={onStatusChange} /> : renderTableStatusValue(getPropertyValue(project, property), t)
                       ) : (
                         formatPropertyValue(getPropertyValue(project, property), property, selectValues)
                       )}
@@ -1514,5 +1523,6 @@ export function WorkspaceTableView({
         </Table>
       </div>
     </section>
+    </ProjectStatusDragSurface>
   );
 }

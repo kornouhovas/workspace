@@ -268,7 +268,7 @@ export const workspaceMockProjection = {
   statusValues: [activeStatus, reviewStatus, noStatus],
   projection: {
     type: "board",
-    capabilities: { canMoveBetweenStatuses: false },
+    capabilities: { canMoveBetweenStatuses: true },
     columns: [
       {
         statusValueId: activeStatus.id,

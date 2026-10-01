@@ -45,7 +45,7 @@ React UI
 - Project `Status` is derived from a folder with role `status`.
 - Projects outside a status folder use `No status`.
 - MVP supports one level of status folders.
-- MVP does not support drag and drop between primary status groups.
+- Board/card and Table/handle Status drag use the explicit validated move operation; see [ADR-007](adr/007-board-table-status-moves.md).
 - Project primary identity must be a stable local id.
 - The relative path inside `project source folder` is a locator, not the primary id.
 - Absolute paths must not be used as stable project ids.
@@ -402,7 +402,7 @@ Create an ADR before:
 - adding authentication or multi-user collaboration;
 - changing project identity strategy;
 - changing folder role semantics;
-- allowing drag and drop between primary statuses;
+- extending Status drag beyond the explicit Board/Table operation in [ADR-007](adr/007-board-table-status-moves.md);
 - materially changing the accepted preload IPC boundary (ADR-002);
 - exposing sidecar routes as public contracts;
 - changing folder structure boundaries;

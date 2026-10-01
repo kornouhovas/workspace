@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { workspaceMenuContentClassName, workspaceMenuOptionItemClassName } from './menu-styles';
@@ -8,7 +8,9 @@ import { getStatusDisplayName } from '@/i18n/status';
 import type { WorkspaceMockProject } from '@/workspaceMockData';
 import type { ProjectStatusMoveOption } from '@/workspaceProjectMoveState.js';
 
-export function ProjectStatusPicker({ project, pending, loadOptions, onSelect }: {
+export function ProjectStatusPicker({ project, pending, loadOptions, onSelect, trigger, label }: {
+  trigger?: ReactNode;
+  label?: string;
   project: WorkspaceMockProject;
   pending: boolean;
   loadOptions: (projectId: string) => Promise<readonly ProjectStatusMoveOption[]>;
@@ -18,20 +20,22 @@ export function ProjectStatusPicker({ project, pending, loadOptions, onSelect }:
   const [options, setOptions] = useState<readonly ProjectStatusMoveOption[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
-  return <DropdownMenu open={open} onOpenChange={next => {
+  function changeOpen(next: boolean) {
     setOpen(next);
     if (next) {
       setOptions(null); setFailed(false);
       void loadOptions(project.id).then(setOptions).catch(() => setFailed(true));
     }
-  }}>
+  }
+  return <DropdownMenu open={open} onOpenChange={changeOpen}>
     <DropdownMenuTrigger asChild>
-      <button type="button" disabled={pending} aria-label={t('move.chooseStatus')} aria-busy={pending || undefined}
+      <button type="button" disabled={pending} data-workspace-status-picker onPointerDown={trigger ? event => event.preventDefault() : undefined}
+        onClick={event => { event.stopPropagation(); if (trigger) changeOpen(!open); }} aria-label={label || t('move.chooseStatus')} aria-busy={pending || undefined}
         className="min-w-0 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:opacity-60">
-        <Badge variant="secondary" data-workspace-status-value className="h-6 max-w-full gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-sm font-normal">
+        {trigger || <Badge variant="secondary" data-workspace-status-value className="h-6 max-w-full gap-1.5 rounded-md border border-border/50 bg-secondary/70 px-2 text-sm font-normal">
           <span className="size-2 shrink-0 rounded-full bg-muted-foreground/70" data-color={project.status.color || 'gray'} aria-hidden="true" />
           <span className="truncate">{getStatusDisplayName(t, project.status)}</span>
-        </Badge>
+        </Badge>}
       </button>
     </DropdownMenuTrigger>
     <DropdownMenuContent className={workspaceMenuContentClassName} align="start" data-workspace-status-menu="true" onPointerDownOutside={event => blockOutsideWorkspaceMenuPointerDown(event, "[data-workspace-status-menu='true']", () => setOpen(false))}>

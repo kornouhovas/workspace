@@ -152,7 +152,7 @@ Role semantics:
 MVP constraints:
 
 - Nested status groups are not supported as primary Board lanes in MVP.
-- Drag and drop projects between statuses is not supported in MVP.
+- Status moves use the existing validated operation; Board columns and explicit Table status zones are destinations.
 - Role controls may use segmented controls or compact select controls. Settings uses a centered column capped at 768px, stacked Source → Folder role tree → Properties at every host width, including when Navigation is open. Folder roles wrap onto a separate row and remain reachable without horizontal clipping.
 - Role changes should save to local storage for the active Workspace.
 - Changing roles refreshes Board/Table project discovery.
@@ -188,9 +188,9 @@ Required behavior:
 - View tabs show their view type with a compact icon, such as Board or Table.
 - The main header contains view tabs on the left and closely spaced, borderless `Customize Columns` and `Add View` icon buttons on the right, with a small top inset. The sidebar toggle sits immediately after macOS controls. History arrows sit at the sidebar trailing edge when expanded and beside the toggle when collapsed. The leading tab inset interpolates with the sidebar width. The workspace title and separate toolbar row are omitted. Icon buttons retain accessible labels and tooltips. The sidebar toggle uses the same 28px chrome button geometry and 24px vertical center as history and other header actions.
 - View duplicate/rename/delete actions are available from the tab context menu; there is no separate three-dot view menu. Duplicating preserves the view type and display settings, persists a separate view immediately to the right of the source, and activates the copy.
-- Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses remains unavailable.
+- Board and Table start at the same top offset below the header. Board has no movement-disabled badge; moving projects between statuses uses the shared backend operation and pending indicator.
 - Board cards show populated property values below the project name, without visible property labels. System Status participates in this list and follows the view's property order and visibility instead of being pinned beside the name. Empty values add no rows or spacing. Dates and colored value chips match the project detail display.
-- Populated custom Board values can be edited directly using the same text, number, date and selection editors as Table. Editing a value does not open project details; the card name/background still opens details. System Status remains read-only, and empty properties remain omitted.
+- Populated custom Board values can be edited directly using the same text, number, date and selection editors as Table. Editing a value does not open project details; the card name/background still opens details. System Status opens its derived folder picker; empty custom properties remain omitted.
 - Switching a view changes the main content to that view type.
 - Switching views does not change project data or folder roles.
 - The `+` action creates a new view.
@@ -229,7 +229,7 @@ Board cards:
 
 Board constraints:
 
-- No drag and drop between primary status columns in MVP.
+- Dragging a card into another available Status column moves its entire project folder; empty columns accept drops.
 - Board may horizontally scroll when there are many statuses.
 - Board status columns use a stable fixed width; hiding a filtered-out status must not widen the remaining columns.
 - `Customize Columns` for a Board view includes a bottom `Column width` slider. It updates all status columns together for that view.
@@ -267,7 +267,7 @@ Table requirements:
 - Header vertical dividers should visually match the body dividers instead of fading on the first table row.
 - The last visible table row should keep its bottom separator after search or value filtering.
 - Status values should use compact chips with a small dot, matching the Project Detail Panel status/value chip styling.
-- Table should not show a dedicated row drag-handle column while row ordering is not persisted.
+- Table reserves a compact internal left inset for its hover/focus Status handle; no dedicated column or row-sort operation is added.
 - The add-property column should stretch to the right edge when visible property columns do not fill the viewport.
 - Column property menus for `Status`, `Select`, and `Multi-select` should include `Value filters` for the current property, using the same view-level `valueVisibility` settings as `Customize Columns`.
 - The Customize Columns menu should allow hiding `Status` from the active view while keeping `Name` required.
@@ -397,7 +397,7 @@ The current app implementation must be reviewed against this list:
 
 Renderer session chrome stores layout under `workspace.pane-layout.v1`, keyed by opaque Workspace ID. Project snapshots retain the existing `workspace.project-tabs.v1` format. The optional `screens[workspaceId].fullScreen` boolean distinguishes an explicitly selected expanded tab from a focused split leaf on restart; older snapshots default to false and retain their layout. UI preferences do not replace the active service transport, JSON adapters or Go sidecar store. See [ADR 005](adr/005-bb-pane-session-chrome.md).
 
-Project tabs expose a leading close control on hover/keyboard focus, middle-click close, close-other/close-right, reopen and drag reorder. Closing multiple tabs chooses a surviving neighbour before the active view fallback. Project tabs dropped over a pane use left/right/top/bottom edge zones to split and the centre to replace content. Drops outside panes or over titlebars do not create a split. Existing pane titles may be moved to an edge or swapped at the centre. Primary-status project drag remains restricted.
+Project tabs expose a leading close control on hover/keyboard focus, middle-click close, close-other/close-right, reopen and drag reorder. Closing multiple tabs chooses a surviving neighbour before the active view fallback. Project tabs dropped over a pane use left/right/top/bottom edge zones to split and the centre to replace content. Drops outside panes or over titlebars do not create a split. Existing pane titles may be moved to an edge or swapped at the centre. Project Status drag follows the explicit Board/Table move contract.
 
 `Cmd/Ctrl+J` toggles the right panel, `Cmd/Ctrl+T` opens its deduplicated empty launcher, `Cmd/Ctrl+W` closes the focused content tab, `Shift+Cmd/Ctrl+T` reopens a closed content tab and `Shift+Cmd/Ctrl+E` maximizes/restores the focused pane. Input, textarea, select, contenteditable and menu focus retain editing shortcuts. Empty launchers are excluded from reopen history. The fixed Workspace Navigation survives closing the last empty launcher.
 
@@ -407,6 +407,14 @@ The right-preview header owns its expand/close controls; the main header does no
 
 Table Customize Columns includes a Group submenu with separate Group by and Sort controls. Group settings and section collapse/visibility are per-view. Each expanded non-empty section has a repeated column header and rows on one shared grid, with compact 20px gaps between sections. Collapsed/empty sections show only their group heading. Left group handles work under every sort; Arrow Up/Down is the keyboard alternative; only a successful move sets Manual from the complete displayed order. Sections reuse existing cell/card controls; category colors and visible unique counts appear in the section header. The empty section stays last. See [Table grouping flow](flows/board-table-views.md#table-grouping).
 
-### Explicit Status move in project details
+### Explicit Status move
 
 Preview and expanded Status chips open a keyboard accessible selection of current Workspace folder statuses, including empty targets. Choosing a different allowed Status physically moves the whole project folder, retains its name/ID/values/history/session, and refreshes the file tree and Board/Table. Current Status is a no-op; No status is disabled with the physical destination reason. A pending-only activity button follows Sidebar in the header navigation group, remains available with sidebar hidden, and opens project/from/to/state details. Success/error removes it; errors visibly explain recovery. See [operation contract](api/workspace-status-move.md).
+
+## Board and Table Status actions (workspace-d9h)
+
+Visible Status in a Board card or Table cell opens the shared keyboard accessible picker. Selecting a different available Status invokes `getProjectStatusOptions` / `moveProjectStatus`; ordinary project opening and custom property editors keep their actions. Hiding Status does not change visibility settings: the Table handle opens the same picker on click or keyboard activation.
+
+Board drag starts from card name/background and highlights available Status columns, including empty columns. Table drag starts only from its compact internal left handle, visible on row hover or focus. During drag, Table shows every fresh backend Status option as an explicit zone in flat, Status, other-property and Multi-select groupings, including empty and filtered statuses. A target is a zone's stable Status ID, never a row or custom value. Multiple occurrences retain one project ID. Shared horizontal/vertical scrolling remains available during drag.
+
+Escape, cancellation, outside drop and current Status make no move. Unavailable No status and nested targets explain their reason. Pending blocks repeat actions and uses the common header indicator; failures are visible. Success refreshes projections, counts, tabs and file trees with the original project ID. A moved row may disappear under existing filters. No custom values/history, view grouping/filter settings, manual group order or visibility settings are written by these actions. Folder safety, no-clobber and journal/recovery are defined by the existing Status move API.

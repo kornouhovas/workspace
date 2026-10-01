@@ -29,7 +29,7 @@ This is the primary daily workflow after the project source folder and folder ro
 - Project `Status` is derived from folder roles.
 - Projects outside status folders appear in `No status`.
 - Search in MVP uses project `Name` only.
-- MVP does not support drag and drop between primary status groups.
+- Explicit Status drag moves the entire project folder through the existing backend operation.
 
 ## Steps
 
@@ -62,7 +62,7 @@ This is the primary daily workflow after the project source folder and folder ro
 Rules:
 
 - Board columns are status groups, not draggable lanes in MVP.
-- Project cards are not draggable between primary statuses in MVP.
+- Project cards can be dragged into another available Status column, including empty columns.
 - Empty status columns remain visible with a compact empty state when no value filter or search query is active.
 - While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
 - Status columns retain their fixed width while other filtered-out columns are removed; Board uses horizontal scrolling when needed.
@@ -241,7 +241,7 @@ Show:
 - Value visibility settings must reference select values for the same property.
 - Search query is text-only and applies to project `Name`.
 - Board must include `No status` when matching projects have no status.
-- Board must not allow drag and drop between primary statuses in MVP.
+- Board drops accept only backend-validated Status IDs.
 - View deletion is blocked when it would remove the last view.
 
 ## Accessibility Requirements
@@ -305,7 +305,7 @@ Preferred components:
 - User can switch between Board and Table views.
 - Board view groups projects by `Status`.
 - Board view includes `No status` for projects outside status folders.
-- Board view does not support drag and drop between primary status groups in MVP.
+- Board view supports card drops into available Status columns.
 - Table view shows the same active project set as rows.
 - View switch does not change project data.
 - User can add a Board view.
@@ -340,8 +340,16 @@ Customize Columns → Group opens per-view settings. Group by and Sort are separ
 
 Hide empty groups follows current search/filter counts. Each group has Show/Hide controls; Show all groups restores hidden groups. Collapse all/Expand all and the section button persist independently per view. Section headers show category color, truncated exact value with full title, unique visible count, and `aria-expanded`. Every expanded non-empty section has its own column header and rows, separated from its neighbour by a compact 20px gap. Collapsed and empty sections have only their compact group heading. Repeated headers share one colgroup, column widths/order, wrap layout, editors and horizontal/vertical scroll container; header menus and rename controls open only in the selected occurrence. Multi-select repeats display occurrences of one project, while the displayed total counts unique projects. Card opening uses the existing project ID and return preserves the view.
 
-A deleted grouping property produces a flat Table and a visible notice until a grouping change. Board/folder roles and the prohibition on moving projects between primary statuses remain governed by their existing contracts. There is no project drag operation, sub-group, aggregate or row-sort feature in this flow.
+A deleted grouping property produces a flat Table and a visible notice until a grouping change. Board/folder roles retain their contracts. Project drag targets explicit Status zones, with no sub-group, aggregate or row-sort operation.
 
 ## Explicit Status move from project detail
 
-Open a project preview or expanded tab and select its Status chip. Choose an existing folder status; current selection changes nothing, and unavailable No status/nested targets explain why. The backend moves the whole folder into the selected status folder with its basename preserved. Header activity beside Sidebar shows pending details; both success and failure clear it. Board/Table, open project tabs, session and file tree refresh using the preserved opaque ID. Collisions or filesystem/metadata faults show an error and preserve recovery copies. Drag between primary statuses remains unavailable. See [backend operation and recovery](../api/workspace-status-move.md).
+Open a project preview or expanded tab and select its Status chip. Choose an existing folder status; current selection changes nothing, and unavailable No status/nested targets explain why. The backend moves the whole folder into the selected status folder with its basename preserved. Header activity beside Sidebar shows pending details; both success and failure clear it. Board/Table, open project tabs, session and file tree refresh using the preserved opaque ID. Collisions or filesystem/metadata faults show an error and preserve recovery copies. Board and Table offer the same explicit move via visible Status pickers and drag. See [backend operation and recovery](../api/workspace-status-move.md).
+
+## Board and Table Status actions (workspace-d9h)
+
+Visible Status in a Board card or Table cell opens the shared keyboard accessible picker. Selecting a different available Status invokes `getProjectStatusOptions` / `moveProjectStatus`; ordinary project opening and custom property editors keep their actions. Hiding Status does not change visibility settings: the Table handle opens the same picker on click or keyboard activation.
+
+Board drag starts from card name/background and highlights available Status columns, including empty columns. Table drag starts only from its compact internal left handle, visible on row hover or focus. During drag, Table shows every fresh backend Status option as an explicit zone in flat, Status, other-property and Multi-select groupings, including empty and filtered statuses. A target is a zone's stable Status ID, never a row or custom value. Multiple occurrences retain one project ID. Shared horizontal/vertical scrolling remains available during drag.
+
+Escape, cancellation, outside drop and current Status make no move. Unavailable No status and nested targets explain their reason. Pending blocks repeat actions and uses the common header indicator; failures are visible. Success refreshes projections, counts, tabs and file trees with the original project ID. A moved row may disappear under existing filters. No custom values/history, view grouping/filter settings, manual group order or visibility settings are written by these actions. Folder safety, no-clobber and journal/recovery are defined by the existing Status move API.

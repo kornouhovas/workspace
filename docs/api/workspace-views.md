@@ -497,7 +497,7 @@ Response for Board:
   "projection": {
     "type": "board",
     "capabilities": {
-      "canMoveBetweenStatuses": false
+      "canMoveBetweenStatuses": true
     },
     "columns": [
       {
@@ -617,3 +617,5 @@ Deleting a category prunes its manual/hidden/collapsed references and existing v
 Dragging the left handle or using Arrow Up/Down on it works in every sort. A successful position change sets `sort: "manual"` and records the complete displayed `groupOptions` order, including hidden groups, excluding the immovable final `empty` group. An old retained manual order is ignored when starting from an automatic sort. Subsequent pending mutations use the latest functional queue draft for the captured workspace/view. Click, same-position drop, Escape, pointer cancellation, and outside drop do not save. Visibility, collapse, counts, and hide-empty remain independent.
 
 Grouped Table uses a separate tbody for each section with a heading, repeated column header for expanded non-empty groups, and rows. Sections use the same colgroup and column state with one horizontal/vertical viewport; 20px gaps separate groups. Header transient controls belong to the selected section occurrence while property mutations remain shared. Flat Table retains its single sticky header.
+
+Board `canMoveBetweenStatuses` advertises explicit Status column moves through [the Status move contract](workspace-status-move.md). It does not authorize custom property writes or arbitrary destinations.

@@ -86,7 +86,7 @@ Rules:
 
 - Board columns represent primary `Status` groups.
 - Include `No status` when projects are outside status folders.
-- Do not implement drag and drop between primary status groups in MVP.
+- Use the shared Status move operation for Board column drops and Table handle drops into explicit Status zones.
 - Cards should show `Name` and selected visible properties. `Status` is visible by default and may be hidden in the active view.
 - Standard property rename menus apply to the display labels for `Name` and `Status`, while delete, type changes, and stored value editing stay unavailable for those system properties.
 - Cards should be compact and predictable in height.
@@ -410,4 +410,4 @@ Native Electron evidence and measured styles are recorded in [workspace-6fh](../
 
 Locale changes update visible labels without projection reloads, folder rescans or property writes. Subsequent legitimate workspace loads use the current locale.
 
-Explicit Status selection in preview/expanded details uses existing chips, folder-derived labels/colors, keyboard focus and radio selection. Disabled destinations include a textual reason. Move activity occupies one 28px header control immediately after Sidebar, exposes from/to/project/state details, remains visible with the sidebar hidden, and respects reduced motion. No percentage or artificial production delay is shown. Board/Table system values and inter-status drag retain their restrictions. See [Status move contract](api/workspace-status-move.md).
+Explicit Status selection in preview/expanded details uses existing chips, folder-derived labels/colors, keyboard focus and radio selection. Disabled destinations include a textual reason. Move activity occupies one 28px header control immediately after Sidebar, exposes from/to/project/state details, remains visible with the sidebar hidden, and respects reduced motion. No percentage or artificial production delay is shown. Board/card and Table/cell Status pickers use the same operation. Table has a compact internal left hover/focus handle; drag reveals all available Status zones independently of grouping and filters. Hover/focus/drag do not change widths. The handle also opens the accessible picker when Status is hidden. See [Status move contract](api/workspace-status-move.md).

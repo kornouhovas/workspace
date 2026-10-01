@@ -980,7 +980,7 @@ test("createViewProjectionResponse projects board and table views with async pro
       ["statusValue:no-status", []],
     ],
   );
-  assert.equal(boardResponse.payload.projection.capabilities.canMoveBetweenStatuses, false);
+  assert.equal(boardResponse.payload.projection.capabilities.canMoveBetweenStatuses, true);
   assert.equal(tableResponse.status, 200);
   assert.deepEqual(
     tableResponse.payload.projection.rows.map((project) => project.id),
