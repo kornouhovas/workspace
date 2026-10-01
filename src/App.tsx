@@ -514,11 +514,16 @@ function getServiceErrorMessage(error: unknown, t: (key: string) => string) {
   return resolveRendererErrorState(createRendererErrorState(error), t);
 }
 
-function WorkspaceLoadingState() {
+function WorkspaceLoadingState({ viewType }: { viewType?: string }) {
   const { t } = useI18n();
 
   return (
     <div className="grid gap-4 px-4 py-4" role="status" aria-label={t("common.loading")}>
+      {viewType === "table" ? <div data-workspace-table-loading className="grid gap-2">
+        {Array.from({ length: 8 }, (_, index) => <div key={index} className="grid h-8 grid-cols-[minmax(160px,2fr)_minmax(100px,1fr)_minmax(100px,1fr)] gap-3">
+          <Skeleton className="h-full rounded-md" /><Skeleton className="h-full rounded-md" /><Skeleton className="h-full rounded-md" />
+        </div>)}
+      </div> : <>
       <Skeleton className="h-28 w-full rounded-lg" />
       <div className="grid gap-3 lg:grid-cols-3">
         <Skeleton className="h-72 rounded-lg" />
@@ -526,6 +531,7 @@ function WorkspaceLoadingState() {
         <Skeleton className="h-72 rounded-lg" />
       </div>
       <Skeleton className="h-48 w-full rounded-lg" />
+      </>}
     </div>
   );
 }
@@ -2773,7 +2779,7 @@ export default function App() {
         >
           <div className="min-h-0 flex-1 overflow-hidden">
             {shouldShowWorkspaceLoadingState ? (
-              <WorkspaceLoadingState />
+              <WorkspaceLoadingState viewType={activeViewType} />
             ) : state.status === "error" && !serviceProjection ? (
               <><WorkspaceServiceError state={state} /><WorkspaceEmptyState onOpenSettings={openCurrentWorkspaceSettings} /></>
             ) : state.sourceFolderMissing ? (

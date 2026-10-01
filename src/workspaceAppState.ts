@@ -771,6 +771,12 @@ function createTransitionProjectionForView(
     return state.projection.view.id === viewId ? state.projection : null;
   }
 
+  // Only the service owns grouping, memberships and filters. The previous view's
+  // rows cannot represent a saved grouped target while its projection is loading.
+  if (view.viewType === "table" && view.grouping) {
+    return null;
+  }
+
   const visiblePropertyIds = view.visiblePropertyIds || state.projection.visibleProperties.map((property) => property.id);
   const transitionBase = {
     ...state.projection,

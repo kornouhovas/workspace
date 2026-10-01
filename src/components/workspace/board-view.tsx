@@ -151,7 +151,7 @@ export function WorkspaceBoardView({
             return (
               <StatusDropColumn statusValueId={column.statusValueId}
               key={column.statusValueId}
-              className="workspace-board-column flex min-w-0 self-start flex-col"
+              className="workspace-board-column flex min-w-0 self-start flex-col px-1"
               aria-label={t("board.projectsAria", {
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}

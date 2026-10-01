@@ -1044,3 +1044,19 @@ test('deleting the grouping property immediately clears section rendering and sh
   const after=workspaceAppStateReducer(state,{type:'propertyDeleted',propertyId:'tags'});
   assert.equal(after.views[0].grouping,null);assert.equal(after.projection.projection.groups,undefined);assert.equal(after.projection.projection.groupingNotice,'property-removed');assert.equal(after.projection.projection.rows.length,1);
 });
+
+test('saved grouped Table waits for its authoritative projection instead of fabricating flat rows', async () => {
+  const {createInitialWorkspaceAppState, workspaceAppStateReducer} = await importAppStateModule();
+  const grouping = {propertyId:'property:status',sort:'manual',manualOrder:['value:active'],hiddenGroupIds:['value:old'],collapsedGroupIds:['value:active'],hideEmpty:true};
+  const target = {id:'view:grouped',name:'Grouped',viewType:'table',grouping,rowOrder:['b','a']};
+  const loaded = workspaceAppStateReducer(createInitialWorkspaceAppState(), {type:'projectionLoaded',root,viewsResponse:{...viewsResponse,views:[...viewsResponse.views,target]},projectionResponse:{...projectionResponse,projection:{...projectionResponse.projection,columns:[{statusValueId:'active',projects:[{id:'a'},{id:'b'}]}]}},folderRoleTree});
+  const pending = workspaceAppStateReducer(loaded,{type:'activeViewChanged',activeViewId:target.id});
+  assert.equal(pending.activeViewId,target.id);
+  assert.equal(pending.projection,null,'pending grouped view must not render a flat Table');
+  assert.deepEqual(pending.views.at(-1),target,'all saved target settings survive the transition');
+  const ready = {...projectionResponse,view:target,projection:{type:'table',rows:[],groups:[],groupOptions:[]}};
+  const next = workspaceAppStateReducer(pending,{type:'projectionUpdated',projectionResponse:ready});
+  assert.equal(next.projection,ready);
+  const switched = workspaceAppStateReducer(next,{type:'activeViewChanged',activeViewId:'view:table'});
+  assert.equal(workspaceAppStateReducer(switched,{type:'projectionUpdated',projectionResponse:ready}),switched);
+});
