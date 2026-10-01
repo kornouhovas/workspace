@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: Board owns both scroll axes, columns follow content, and visible counts are rendered
+ok 1 - Board owns both scroll axes, columns follow content, and visible counts are rendered
+  ---
+  duration_ms: 5.659292
+  ...
+# Subtest: expanded project uses common compact headings and exposes a numeric file count accessibly
+ok 2 - expanded project uses common compact headings and exposes a numeric file count accessibly
+  ---
+  duration_ms: 2.15075
+  ...
+# Subtest: normalizeBoardColumnWidth applies default and persisted bounds
+ok 3 - normalizeBoardColumnWidth applies default and persisted bounds
+  ---
+  duration_ms: 0.897292
+  ...
+# Subtest: getBoardColumnWidthMax limits the slider to one third of the Workspace area
+ok 4 - getBoardColumnWidthMax limits the slider to one third of the Workspace area
+  ---
+  duration_ms: 0.103333
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 79.320709

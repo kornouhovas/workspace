@@ -124,7 +124,10 @@ export function WorkspaceBoardView({
     }
 
     const updateWidth = () => {
-      const viewportWidth = viewport.clientWidth;
+      const content = viewport.firstElementChild;
+      const style = content ? getComputedStyle(content) : null;
+      const contentInset = style ? parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) : 0;
+      const viewportWidth = Math.max(0, viewport.clientWidth - contentInset);
       onViewportWidthChange?.(viewportWidth);
     };
     updateWidth();
@@ -136,9 +139,9 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-4 pb-4 pt-3" aria-label={t("view.boardDefault")}>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")}>
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
-        <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3" style={boardGridStyle}>
+        <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {projection.columns.map((column) => {
             const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (

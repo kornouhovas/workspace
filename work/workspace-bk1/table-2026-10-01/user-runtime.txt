@@ -1,0 +1,4 @@
+  PID  PPID COMMAND
+10851 10830 node scripts/dev-desktop.mjs
+10853 10851 /Users/aleksandersk/Documents/programming/Projects/project_folder/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron electron/main.js
+currentTablePadding True

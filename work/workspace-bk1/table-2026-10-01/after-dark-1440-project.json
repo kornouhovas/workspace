@@ -1,0 +1,528 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 960
+  },
+  "elements": [
+    {
+      "tag": "HTML",
+      "class": "dark",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 960,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "hidden",
+      "overflowY": "auto",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "BODY",
+      "class": "",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 960,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "hidden",
+      "overflowY": "auto",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 960,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "workspace-shell relative flex h-screen min-h-0 bg-background text-foreground",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 960,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "bb-center flex min-h-0 min-w-0 flex-1",
+      "rect": {
+        "x": 320,
+        "y": 0,
+        "width": 560,
+        "height": 960,
+        "right": 880
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 560,
+      "scrollWidth": 560,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "bb-tree-pane",
+      "rect": {
+        "x": 320,
+        "y": 0,
+        "width": 560,
+        "height": 960,
+        "right": 880
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 560,
+      "scrollWidth": 560,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "flex h-full min-h-0 w-full flex-col overflow-hidden pt-3",
+      "rect": {
+        "x": 320,
+        "y": 48,
+        "width": 560,
+        "height": 912,
+        "right": 880
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 560,
+      "scrollWidth": 560,
+      "clientHeight": 912,
+      "scrollHeight": 912,
+      "gutter": "auto",
+      "overflowX": "hidden",
+      "overflowY": "hidden",
+      "padding": "12px 0px 0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "workspace-board-scroll min-h-0 flex-1 overflow-auto",
+      "rect": {
+        "x": 320,
+        "y": 60,
+        "width": 560,
+        "height": 900,
+        "right": 880
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 549,
+      "scrollWidth": 1748,
+      "clientHeight": 889,
+      "scrollHeight": 3392,
+      "gutter": "auto",
+      "overflowX": "auto",
+      "overflowY": "auto",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4",
+      "rect": {
+        "x": 320,
+        "y": 60,
+        "width": 1748,
+        "height": 3392,
+        "right": 2068
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1748,
+      "scrollWidth": 1748,
+      "clientHeight": 3392,
+      "scrollHeight": 3392,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px 16px 16px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "workspace-board-column flex min-w-0 self-start flex-col",
+      "rect": {
+        "x": 336,
+        "y": 60,
+        "width": 420,
+        "height": 3376,
+        "right": 756
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 420,
+      "scrollWidth": 420,
+      "clientHeight": 3376,
+      "scrollHeight": 3376,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "workspace-board-column flex min-w-0 self-start flex-col",
+      "rect": {
+        "x": 768,
+        "y": 60,
+        "width": 420,
+        "height": 120,
+        "right": 1188
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 420,
+      "scrollWidth": 420,
+      "clientHeight": 120,
+      "scrollHeight": 120,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "workspace-board-column flex min-w-0 self-start flex-col",
+      "rect": {
+        "x": 1200,
+        "y": 60,
+        "width": 420,
+        "height": 120,
+        "right": 1620
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 420,
+      "scrollWidth": 420,
+      "clientHeight": 120,
+      "scrollHeight": 120,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "workspace-board-column flex min-w-0 self-start flex-col",
+      "rect": {
+        "x": 1632,
+        "y": 60,
+        "width": 420,
+        "height": 120,
+        "right": 2052
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 420,
+      "scrollWidth": 420,
+      "clientHeight": 120,
+      "scrollHeight": 120,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "ASIDE",
+      "class": "bb-right-panel",
+      "rect": {
+        "x": 880,
+        "y": 0,
+        "width": 560,
+        "height": 960,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 559,
+      "scrollWidth": 559,
+      "clientHeight": 960,
+      "scrollHeight": 960,
+      "gutter": "auto",
+      "overflowX": "clip",
+      "overflowY": "clip",
+      "padding": "0px",
+      "border": "0px 0px 0px 1px"
+    },
+    {
+      "tag": "ASIDE",
+      "class": "workspace-project-detail-panel electron-window-no-drag relative flex h-full min-w-0 flex-col gap-0 border-l border-border bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg will-change-transform transition-transform duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)]  w-full max-w-none border-l-0 shadow-none pointer-events-auto translate-x-0",
+      "rect": {
+        "x": 881,
+        "y": 48,
+        "width": 559,
+        "height": 912,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 559,
+      "scrollWidth": 559,
+      "clientHeight": 912,
+      "scrollHeight": 912,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "DIV",
+      "class": "workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto",
+      "rect": {
+        "x": 881,
+        "y": 48,
+        "width": 559,
+        "height": 912,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 559,
+      "scrollWidth": 559,
+      "clientHeight": 912,
+      "scrollHeight": 912,
+      "gutter": "auto",
+      "overflowX": "auto",
+      "overflowY": "auto",
+      "padding": "12px 24px 24px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "grid gap-2",
+      "rect": {
+        "x": 905,
+        "y": 60,
+        "width": 511,
+        "height": 238,
+        "right": 1416
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 511,
+      "scrollWidth": 511,
+      "clientHeight": 238,
+      "scrollHeight": 238,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "grid gap-2",
+      "rect": {
+        "x": 905,
+        "y": 314,
+        "width": 511,
+        "height": 84,
+        "right": 1416
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 511,
+      "scrollWidth": 511,
+      "clientHeight": 84,
+      "scrollHeight": 84,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    },
+    {
+      "tag": "SECTION",
+      "class": "",
+      "rect": {
+        "x": 0,
+        "y": 960,
+        "width": 1440,
+        "height": 0,
+        "right": 1440
+      },
+      "scrollLeft": 0,
+      "scrollTop": 0,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "clientHeight": 0,
+      "scrollHeight": 0,
+      "gutter": "auto",
+      "overflowX": "visible",
+      "overflowY": "visible",
+      "padding": "0px",
+      "border": "0px"
+    }
+  ],
+  "buttons": [
+    {
+      "name": "Go back",
+      "text": ""
+    },
+    {
+      "name": "Go forward",
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Add Workspace"
+    },
+    {
+      "name": null,
+      "text": "Operations"
+    },
+    {
+      "name": "Workspace actions for Operations",
+      "text": ""
+    },
+    {
+      "name": "Settings",
+      "text": "Settings"
+    },
+    {
+      "name": "Board",
+      "text": "Board"
+    },
+    {
+      "name": "Table",
+      "text": "Table"
+    },
+    {
+      "name": "Add Board or Table view",
+      "text": ""
+    },
+    {
+      "name": "Customize Columns",
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project Alpha"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project Beta"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project stress 0"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project stress 1"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project stress 10"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project stress 11"
+    },
+    {
+      "name": null,
+      "text": ""
+    },
+    {
+      "name": null,
+      "text": "Project stress 12"
+    },
+    {
+      "name": null,
+      "text": ""
+    }
+  ]
+}

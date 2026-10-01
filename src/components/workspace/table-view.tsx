@@ -1427,7 +1427,7 @@ export function WorkspaceTableView({
   ); }
 
   return (
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden px-3 pb-0 pt-3" aria-label={t("app.title")}>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}

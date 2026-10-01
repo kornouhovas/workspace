@@ -1,0 +1,19 @@
+import {chromium}from'@playwright/test';import{writeFile,readFile}from'node:fs/promises';import assert from'node:assert/strict';
+const dir='work/workspace-bk1/table-2026-10-01',rt=JSON.parse(await readFile(`${dir}/runtime.json`));
+const b=await chromium.connectOverCDP('http://127.0.0.1:9466'),p=b.contexts()[0].pages()[0];assert.ok(p.url().endsWith('/dist/renderer/index.html'));p.setDefaultTimeout(5000);
+const out={pid:rt.pid,scope:'Isolated Workspace test windows of workspace-bk1; explicit user CDP/Playwright scrolling/view/theme/project authorization',gates:[]};
+async function measure(label,locator){const m=await locator.evaluate(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {left:r.left,right:r.right,bottom:r.bottom,scrollLeft:e.scrollLeft,scrollTop:e.scrollTop,clientWidth:e.clientWidth,scrollWidth:e.scrollWidth,clientHeight:e.clientHeight,scrollHeight:e.scrollHeight,overflowX:s.overflowX,overflowY:s.overflowY,padding:s.padding,scrollbar:e.offsetWidth-e.clientWidth}});out.gates.push({label,...m});await writeFile(`${dir}/scroll-gates.json`,JSON.stringify(out,null,2));return m;}
+async function wheel(loc,x,y){const r=await loc.boundingBox();await p.mouse.move(r.x+Math.min(300,r.width/2),Math.max(80,r.y)+Math.min(200,(Math.min(720,r.y+r.height)-Math.max(80,r.y))/2));await p.mouse.wheel(x,y);}
+await p.getByRole('tab',{name:'Board',exact:true}).click();const board=p.locator('.workspace-board-scroll');
+const initial=await measure('Board initial',board);assert.ok(initial.scrollWidth>initial.clientWidth&&initial.scrollHeight>initial.clientHeight);
+await wheel(board,10000,10000);await p.waitForFunction(()=>{const e=document.querySelector('.workspace-board-scroll');return e.scrollLeft>=e.scrollWidth-e.clientWidth-1&&e.scrollTop>=e.scrollHeight-e.clientHeight-1});await measure('Board right/bottom reached',board);await p.screenshot({path:`${dir}/renderer-board-right-bottom.png`});
+await wheel(board,-10000,-10000);await p.waitForFunction(()=>{const e=document.querySelector('.workspace-board-scroll');return e.scrollLeft===0&&e.scrollTop===0});await measure('Board left/top reached',board);
+await p.getByRole('tab',{name:'Table',exact:true}).click();const inner=p.locator('[data-slot=table-container]'),outer=inner.locator('..');
+const tm=await measure('Table inner initial',inner);assert.ok(tm.scrollWidth>tm.clientWidth);await measure('Table outer initial',outer);
+await wheel(inner,10000,0);await p.waitForFunction(()=>{const e=document.querySelector('[data-slot=table-container]');return e.scrollLeft>=e.scrollWidth-e.clientWidth-1});await measure('Table nested horizontal right reached',inner);
+await wheel(outer,0,10000);await p.waitForFunction(()=>{const e=document.querySelector('[data-slot=table-container]').parentElement;return e.scrollTop>=e.scrollHeight-e.clientHeight-1});await measure('Table outer bottom reached',outer);
+const end=await inner.evaluate(e=>{const table=e.querySelector('table'),r=table.getBoundingClientRect(),ir=e.getBoundingClientRect();return {innerRight:ir.right,tableRight:r.right,finalCellRight:table.rows[table.rows.length-1].cells[table.rows[table.rows.length-1].cells.length-1].getBoundingClientRect().right}});assert.ok(Math.abs(end.tableRight-end.innerRight)<1);out.tableEnd=end;
+await p.screenshot({path:`${dir}/renderer-table-right-bottom.png`});
+await wheel(inner,-10000,0);await p.waitForFunction(()=>document.querySelector('[data-slot=table-container]').scrollLeft===0);await measure('Table nested horizontal left reached',inner);
+await wheel(outer,0,-10000);await p.waitForFunction(()=>document.querySelector('[data-slot=table-container]').parentElement.scrollTop===0);await measure('Table outer top reached',outer);
+await writeFile(`${dir}/scroll-gates.json`,JSON.stringify(out,null,2));await b.close();console.log(JSON.stringify(out));

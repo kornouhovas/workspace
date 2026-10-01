@@ -1,0 +1,38 @@
+{
+  "pid": 12862,
+  "bounds": {
+    "bounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    }
+  },
+  "pixels": {
+    "width": 1024,
+    "height": 720
+  },
+  "native": "window [\"kCGWindowLayer\": 0, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowOwnerName\": Electron, \"kCGWindowOwnerPID\": 12862, \"kCGWindowNumber\": 1075, \"kCGWindowSharingState\": 1, \"kCGWindowStoreType\": 1, \"kCGWindowAlpha\": 1, \"kCGWindowName\": Workspace, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 221;\n    Y = 87;\n}, \"kCGWindowIsOnscreen\": 1]\npixels 1024 720\n"
+}

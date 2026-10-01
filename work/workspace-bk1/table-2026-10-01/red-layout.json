@@ -1,0 +1,59 @@
+{
+  "width": 1024,
+  "host": {
+    "left": 320,
+    "right": 1024,
+    "bottom": 720,
+    "width": 704,
+    "clientWidth": 704,
+    "scrollWidth": 704,
+    "clientHeight": 672,
+    "scrollHeight": 672,
+    "padding": "12px 12px 0px",
+    "overflowX": "hidden",
+    "overflowY": "hidden",
+    "scrollbar": 0
+  },
+  "outer": {
+    "left": 332,
+    "right": 1012,
+    "bottom": 720,
+    "width": 680,
+    "clientWidth": 669,
+    "scrollWidth": 669,
+    "clientHeight": 659,
+    "scrollHeight": 1386,
+    "padding": "0px",
+    "overflowX": "auto",
+    "overflowY": "auto",
+    "scrollbar": 11
+  },
+  "inner": {
+    "left": 332,
+    "right": 1001,
+    "bottom": 1446.5,
+    "width": 669,
+    "clientWidth": 669,
+    "scrollWidth": 669,
+    "clientHeight": 1386,
+    "scrollHeight": 1386,
+    "padding": "0px",
+    "overflowX": "auto",
+    "overflowY": "auto",
+    "scrollbar": 0
+  },
+  "table": {
+    "left": 332,
+    "right": 1001,
+    "bottom": 1446.5,
+    "width": 669,
+    "clientWidth": 669,
+    "scrollWidth": 669,
+    "clientHeight": 1386,
+    "scrollHeight": 1386,
+    "padding": "0px",
+    "overflowX": "visible",
+    "overflowY": "visible",
+    "scrollbar": 0
+  }
+}

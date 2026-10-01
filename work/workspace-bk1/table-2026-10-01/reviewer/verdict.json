@@ -1,0 +1,15 @@
+{
+  "verdict": "accepted",
+  "product": {
+    "src/components/workspace/board-view.tsx": "a617ed6f61ee2eddf55a8ca823671438124d4b1719d75858ae5856a23947d2be",
+    "src/components/workspace/table-view.tsx": "a986584b608c6c2e92836b6868c3dee0998ae45dd6a0ab6d41f045f4cbeb485d"
+  },
+  "head": "efffec45fc92cea64695863e62c835bb31f6d60f",
+  "evidenceFreezeMatched": true,
+  "limitations": [
+    "Before light1024 native unavailable; corrected manifest discloses dark mislabeled capture"
+  ],
+  "freshRuntime": "fresh-runtime.json",
+  "freshWheel": "fresh-wheel-table-1440.json",
+  "nativeAudit": "evidence-audit.json"
+}
