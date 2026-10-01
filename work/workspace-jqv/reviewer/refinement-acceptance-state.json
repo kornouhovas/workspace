@@ -1,0 +1,29 @@
+{
+  "commit": "32b06fc3cb6c48b2cceda0c13cd97109828194bf",
+  "branch": "codex/workspace-jqv-live-bb-visual",
+  "sourceSHA256": {
+    "src/components/workspace/project-detail-panel.tsx": "4f5e61a839af5725837318788e40291b73f05affb29f6da6d52aa5b0e171e49e",
+    "src/components/workspace/table-view.tsx": "95e1cef94fac972310eb30cd1b41fa098d5d0d3b90793a268a397551f8a3d402",
+    "src/components/workspace/view-filter-menu.tsx": "d5ed42846165d8b2f11276c6e52c680b9db437d8605eae55aa3d90b4ac38ae54",
+    "src/components/workspace/view-group-menu.tsx": "5ac44eb8118d57840c1568b4dceb7e58c50fe03a6ac43aefd774d5e562852bf0",
+    "src/styles.css": "7a75bdc06e16b822552c6cc8781a2522b88c7361b00b0679c352fe269f5bd002",
+    "docs/interface.md": "aa51c1d0ecc4727eaf551cf39a6fd5ff548e6007226cddc9d9e8733eb893f89c",
+    "docs/ui-guidelines.md": "3d129494f2567409bfc273c6680246a1fc3eb27d06c56882ec38c29d856a419c"
+  },
+  "designRulesSHA256": "3b52eb4451902dc7e4363dd42dead1b8cf9b9f60e165e181efd415f79a797b2c",
+  "nativeManifestCount": 21,
+  "verdict": "принято",
+  "criteria": {
+    "1": "принято",
+    "2": "принято",
+    "3": "принято",
+    "4": "принято",
+    "5": "принято",
+    "6": "принято"
+  },
+  "limits": [
+    "Escape during active pointer drag not independently injected: CUA drag is atomic; existing handlers unchanged; no-op/outside drag observed by executor.",
+    "Earlier user stale runtime was unavailable; current fixture identity and built source confirmed.",
+    "No full assistive technology audit; native AX, keyboard and focus observed."
+  ]
+}

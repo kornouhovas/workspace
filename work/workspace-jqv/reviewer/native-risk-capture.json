@@ -1,0 +1,38 @@
+{
+  "path": "work/workspace-jqv/reviewer/native-dark-1024x720-scroll-resize.png",
+  "pixels": [
+    1024,
+    720
+  ],
+  "fixture": {
+    "bounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "contentBounds": {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    },
+    "security": {
+      "allowRunningInsecureContent": false,
+      "contextIsolation": true,
+      "disableDialogs": false,
+      "disablePopups": false,
+      "enableBlinkFeatures": "",
+      "experimentalFeatures": false,
+      "javascript": true,
+      "nodeIntegration": false,
+      "nodeIntegrationInSubFrames": false,
+      "safeDialogs": false,
+      "safeDialogsMessage": "",
+      "sandbox": true,
+      "webSecurity": true,
+      "webviewTag": false
+    }
+  },
+  "capture": "window [\"kCGWindowStoreType\": 1, \"kCGWindowOwnerPID\": 80208, \"kCGWindowIsOnscreen\": 1, \"kCGWindowMemoryUsage\": 2432, \"kCGWindowAlpha\": 1, \"kCGWindowBounds\": {\n    Height = 720;\n    Width = 1024;\n    X = 0;\n    Y = 39;\n}, \"kCGWindowName\": Workspace, \"kCGWindowOwnerName\": Electron, \"kCGWindowLayer\": 0, \"kCGWindowNumber\": 2831, \"kCGWindowSharingState\": 1]\npixels 1024 720\n"
+}
