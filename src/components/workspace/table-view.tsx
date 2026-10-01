@@ -1128,7 +1128,7 @@ export function WorkspaceTableView({
 
   const displaySections = projection.groups ?? [{
     id: "flat", rows: projection.rows, collapsed: false,
-    name: "", count: projection.rows.length, empty: false,
+    name: "", count: projection.rows.length, empty: false, hidden: false,
   }];
 
   function groupDisplayName(group: { readonly name: string; readonly empty: boolean }) {
@@ -1432,7 +1432,7 @@ export function WorkspaceTableView({
   ); }
 
   return (
-    <TableRowDragSurface sections={displaySections} rowOrder={view?.rowOrder ?? projection.rows.map(project => project.id)} statusGrouping={view?.grouping?.propertyId === "property:status"} onReorderRows={onReorderProjectRows} statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
+    <TableRowDragSurface key={view?.id ?? "flat"} sections={displaySections} rowOrder={view?.rowOrder ?? projection.rows.map(project => project.id)} statusGrouping={view?.grouping?.propertyId === "property:status"} hideEmptyGroups={view?.grouping?.hideEmpty} onReorderRows={onReorderProjectRows} statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>{visualSections => (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
@@ -1446,7 +1446,7 @@ export function WorkspaceTableView({
             <col aria-label={t("table.addPropertyFiller")} />
           </colgroup>
           {!projection.groups ? <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">{renderColumnHeader()}</TableHeader> : null}
-            {displaySections.map((group, index) => (
+            {visualSections.map((group, index) => (
               <TableBody key={group.id} data-table-section={group.id} className="[&_tr:last-child]:!border-b [&_tr:last-child]:!border-border/45">
               {projection.groups && index > 0 ? <TableRow data-table-group-gap="true" className="h-5 border-0 hover:bg-transparent"><TableCell colSpan={visibleProperties.length + 1} className="h-5 p-0" /></TableRow> : null}
               {projection.groups ? <TableDragGroupRow groupId={group.id} data-table-group-id={group.id} className="h-8 bg-transparent hover:bg-state-hover">
@@ -1525,6 +1525,6 @@ export function WorkspaceTableView({
         </Table>
       </div>
     </section>
-    </TableRowDragSurface>
+    )}</TableRowDragSurface>
   );
 }

@@ -1747,13 +1747,20 @@ export default function App() {
 
   async function handleReorderProjectRows(rowOrder: readonly string[]) {
     const workspaceId = state.workspaceId, viewId = state.activeViewId;
-    if (!workspaceId || !viewId) return;
+    if (!workspaceId || !viewId || !state.root) return;
     try {
       await workspaceClient.updateView({ workspaceId, viewId, patch: { rowOrder } });
-      if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId)
-        await refreshActiveViewAfterPatch(viewId);
+      const [viewsRawResponse, projectionRawResponse] = await Promise.all([
+        workspaceClient.listViews({ workspaceId }),
+        workspaceClient.getViewProjection({ workspaceId, viewId, locale }),
+      ]);
+      if (workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
+      dispatch({ type: "projectionLoaded", root: state.root,
+        viewsResponse: { ...normalizeViewsResponse(viewsRawResponse, workspaceId), activeViewId: viewId },
+        projectionResponse: normalizeProjectionResponse(projectionRawResponse), folderRoleTree: state.folderRoleTree });
     } catch (error) {
       toast.error(t("table.rowSaveFailed"), { description: getServiceErrorMessage(error, t) });
+      throw error;
     }
   }
 
@@ -2207,14 +2214,15 @@ export default function App() {
         dispatchProjectTabs({ type: "update", workspaceId, project: updated });
         if (workspaceIdRef.current === workspaceId) setSelectedProject(current => current?.id === project.id ? updated : current);
       }
-      if (workspaceIdRef.current === requestWorkspaceId && activeViewIdRef.current) {
+      const refreshViewId = activeViewIdRef.current;
+      if (workspaceIdRef.current === requestWorkspaceId && refreshViewId) {
         const [projection, scan] = await Promise.all([
-          workspaceClient.getViewProjection({ workspaceId: requestWorkspaceId, viewId: activeViewIdRef.current, locale }),
+          workspaceClient.getViewProjection({ workspaceId: requestWorkspaceId, viewId: refreshViewId, locale }),
           workspaceClient.scan({ workspaceId: requestWorkspaceId }),
         ]);
-        if (workspaceIdRef.current === requestWorkspaceId) {
+        if (workspaceIdRef.current === requestWorkspaceId && activeViewIdRef.current === refreshViewId) {
           if (state.root) dispatch({ type: "projectionLoaded", root: state.root,
-            viewsResponse: { workspaceId: requestWorkspaceId, activeViewId: activeViewIdRef.current, views: state.views },
+            viewsResponse: { workspaceId: requestWorkspaceId, activeViewId: refreshViewId, views: state.views },
             projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
         }
       }
@@ -2818,7 +2826,7 @@ export default function App() {
                   />
                 ) : null}
                 {!searchHasNoResults && activeViewType === "table" ? (
-                  <WorkspaceTableView
+                  <WorkspaceTableView key={state.workspaceId ?? "workspace"}
                     projection={tableProjection as typeof workspaceMockProjection.tableProjection}
                     searchQuery={state.searchQuery}
                     onClearSearch={() => dispatch({ type: "searchQueryChanged", searchQuery: "" })}
