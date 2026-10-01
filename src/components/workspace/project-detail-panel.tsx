@@ -9,6 +9,8 @@ import {
 } from "react";
 
 import { shouldClosePaneOnEscape } from "@/workspacePaneKeyboard.js";
+import { ProjectStatusPicker } from "./project-status-picker";
+import type { ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +69,9 @@ import type {
 } from "@/workspaceAppState";
 
 type WorkspaceProjectDetailPanelProps = {
+  readonly statusMovePending?: boolean;
+  readonly onLoadStatusOptions?: (projectId: string) => Promise<readonly ProjectStatusMoveOption[]>;
+  readonly onStatusChange?: (project: WorkspaceMockProject, option: ProjectStatusMoveOption) => void;
   readonly onOpenLocalItem?: (node: WorkspaceMockFileTreeNode) => void;
   readonly expanded?: boolean;
   readonly inline?: boolean;
@@ -790,6 +795,9 @@ export function WorkspaceProjectDetailPanel({
   inline = false,
   keyboardActive = true,
   onOpenLocalItem,
+  statusMovePending = false,
+  onLoadStatusOptions,
+  onStatusChange,
   sidebarCollapsed = false,
   open,
   onOpenChange,
@@ -1775,7 +1783,10 @@ export function WorkspaceProjectDetailPanel({
                               )}
                             </dt>
                             <dd className="flex min-w-0 items-center px-1 py-0 text-[13px]">
-                              <ProjectPropertyValueEditor
+                              {property.id === "property:status" && onLoadStatusOptions && onStatusChange ? (
+                                <ProjectStatusPicker project={displayedProject} pending={statusMovePending}
+                                  loadOptions={onLoadStatusOptions} onSelect={onStatusChange} />
+                              ) : <ProjectPropertyValueEditor
                                 project={displayedProject}
                                 property={property}
                                 selectValues={selectValues}
@@ -1787,7 +1798,7 @@ export function WorkspaceProjectDetailPanel({
                                 onRenameSelectValue={onRenameSelectValue}
                                 onColorSelectValue={onColorSelectValue}
                                 onDeleteSelectValue={onDeleteSelectValue}
-                              />
+                              />}
                             </dd>
                           </div>
                           {propertyMenuAvailable
@@ -1999,7 +2010,10 @@ export function WorkspaceProjectDetailPanel({
                                   )}
                                 </dt>
                                 <dd className="flex min-w-0 items-center px-1 py-0 text-[13px]">
-                                  <ProjectPropertyValueEditor
+                                  {property.id === "property:status" && onLoadStatusOptions && onStatusChange ? (
+                                    <ProjectStatusPicker project={displayedProject} pending={statusMovePending}
+                                      loadOptions={onLoadStatusOptions} onSelect={onStatusChange} />
+                                  ) : <ProjectPropertyValueEditor
                                     project={displayedProject}
                                     property={property}
                                     selectValues={selectValues}
@@ -2011,7 +2025,7 @@ export function WorkspaceProjectDetailPanel({
                                     onRenameSelectValue={onRenameSelectValue}
                                     onColorSelectValue={onColorSelectValue}
                                     onDeleteSelectValue={onDeleteSelectValue}
-                                  />
+                                  />}
                                 </dd>
                               </div>
                               {propertyMenuAvailable

@@ -15,6 +15,14 @@ export class WorkspaceServiceClient {
     return this.request("workspace.getProject", payload);
   }
 
+  getProjectStatusOptions(payload) {
+    return this.request("workspace.getProjectStatusOptions", payload);
+  }
+
+  moveProjectStatus(payload) {
+    return this.request("workspace.moveProjectStatus", payload);
+  }
+
   setRoot(payload) {
     return this.request("workspace.setRoot", payload);
   }

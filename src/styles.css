@@ -804,3 +804,8 @@ button,a,[role="button"],input,textarea,select,label { touch-action:manipulation
 @media(max-width:1100px) {
   .workspace-settings-surface { padding:20px 16px; gap:20px; }
 }
+
+/* A move reports activity only; there is no estimated progress percentage. */
+.workspace-project-move-animation { animation: workspace-project-move-pulse 1s ease-in-out infinite; }
+@keyframes workspace-project-move-pulse { 50% { transform: translateX(2px); opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .workspace-project-move-animation { animation: none; } }

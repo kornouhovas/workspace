@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, statSync, lstatSync } from "node:fs";
 import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join } from "node:path";
@@ -65,6 +65,7 @@ export async function createScanResponse({
   propertiesPath = defaultWorkspacePropertiesPath,
   includeCardChildren = false,
   includeFileTree = false,
+  projectLocators = {},
 }) {
   try {
     if (!root || !existsSync(root) || !statSync(root).isDirectory()) {
@@ -74,12 +75,22 @@ export async function createScanResponse({
     const tree = await listWorkspaceAccessTree(root, rules, [], { includeCardChildren, includeFileTree });
     const folders = flattenAccessTreeCards(tree, { rootStatus: basename(root) });
     const workspaceId = `workspace:${createRootPropertiesKey(root)}`;
+    const projectIds = {};
+    for (const [id, locator] of Object.entries(projectLocators)) {
+      if (!locator || typeof locator.path !== "string") continue;
+      try {
+        const stat = lstatSync(resolveExistingWorkspacePath(root, locator.path));
+        if (stat.isDirectory() && !stat.isSymbolicLink() && stat.dev === locator.dev && stat.ino === locator.ino) projectIds[locator.path] = id;
+      } catch { /* A removed/replaced explicit target cannot inherit its ID. */ }
+    }
     const workspace = {
       id: workspaceId,
       ...projectFoldersToWorkspaceObjects({
         workspaceId,
         rootPath: root,
         folders,
+        projectIds,
+        reservedProjectIds: Object.keys(projectLocators),
       }),
     };
     return createJsonResponse(200, {

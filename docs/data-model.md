@@ -661,3 +661,7 @@ The transitional Electron adapter can persist a Workspace and its default views 
 ### Table grouping settings
 
 View documents may contain `grouping` or `null`. The object holds `propertyId`, `sort` (`default`, `ascending`, `descending`, `manual`), independent arrays `manualOrder`, `hiddenGroupIds`, `collapsedGroupIds`, and boolean `hideEmpty`. Legacy views without this field load flat. Group IDs are deterministic typed value keys; category IDs remain stable across renames/colors. See [view contract](api/workspace-views.md#table-grouping-workspace-cjq). `groupingNotice: "property-removed"` records recovery after property deletion and is cleared by the next explicit grouping change. These are existing view settings, never project/property-value/history documents.
+
+### Explicit move locator preservation
+
+The transitional JSON settings adapter records only explicitly moved existing project IDs in source-scoped `projectLocators` with path/device/inode evidence. A `projectMove` journal covers copying, holding, locator/role commit and verified cleanup. Values/history documents are retained without rewriting IDs. Source-scoped aliases serve all Workspace bindings for that source; old locator reuse and replacement targets cannot inherit moved metadata. This is bounded explicit-move preservation, not the proposed general identity registry in ADR-004. See [Status move and recovery contract](api/workspace-status-move.md).

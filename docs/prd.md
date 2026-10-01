@@ -308,3 +308,7 @@ MVP включает:
 - MVP не поддерживает drag and drop проектов между основными статусами в программе.
 - Search в MVP ищет только по project `Name`.
 - История изменений properties и property values нужна в local-first модели.
+
+### Explicit Status move
+
+In preview/expanded Project Detail, selecting another existing derived Status explicitly moves the entire project folder to that status folder, preserving basename, project ID, properties/history and session. Current selection is a no-op. No status is unavailable unless an unambiguous physical target exists; the active runtime disables it with a reason. A pending-only indicator beside Sidebar opens project/from/to/state details and disappears on success/error. Collisions, unsafe paths and metadata/filesystem failures preserve files and identity through tested recovery. Board/Table drag between primary statuses remains out of scope. See [Status move contract](api/workspace-status-move.md).

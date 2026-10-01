@@ -174,6 +174,15 @@ export function createViewProjection({
   locale = "en",
 } = {}) {
   const normalizedView = normalizeViewDocument(view);
+  const statusFilter = normalizedView.valueVisibility[PROPERTY_STATUS_ID];
+  if (statusFilter) {
+    // A formerly name-based bucket can now describe multiple physical folders.
+    // Expand its legacy filter in the response without rewriting saved settings.
+    statusFilter.valueIds = [...new Set(statusFilter.valueIds.flatMap(id => {
+      const matches = statusValues.filter(status => status.legacyId === id);
+      return matches.length ? matches.map(status => status.id) : [id];
+    }))];
+  }
   const filteredProjects = filterProjectsForView({ projects, view: normalizedView, searchQuery });
   const response = {
     workspaceId: normalizedView.workspaceId,
@@ -317,7 +326,7 @@ function validateValueVisibilityReferences({ valueVisibility, propertyDefinition
     selectValuesByProperty.set(value.propertyId, values);
   }
 
-  const statusValueIds = new Set(statusValues.map((item) => item.id));
+  const statusValueIds = new Set(statusValues.flatMap((item) => [item.id, item.legacyId].filter(Boolean)));
 
   for (const [propertyId, rawSetting] of Object.entries(valueVisibility)) {
     if (typeof propertyId !== "string" || !isPlainObject(rawSetting)) {

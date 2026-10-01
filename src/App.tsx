@@ -6,6 +6,8 @@ import { toast } from "sonner";
 
 import { WorkspaceBoardView } from "@/components/workspace/board-view";
 import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
+import { ProjectMoveIndicator } from "@/components/workspace/project-move-indicator";
+import { createProjectMoveController, type ProjectMovePending, type ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
 import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
@@ -892,6 +894,9 @@ export default function App() {
     () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
     [],
   );
+
+  const [projectMovePending, setProjectMovePending] = useState<ProjectMovePending | null>(null);
+  const projectMoveController = useMemo(() => createProjectMoveController(workspaceClient, setProjectMovePending), [workspaceClient]);
 
   useEffect(() => {
     activeViewIdRef.current = state.activeViewId;
@@ -2145,6 +2150,61 @@ export default function App() {
     }
   }
 
+  async function loadProjectStatusOptions(projectId: string): Promise<readonly ProjectStatusMoveOption[]> {
+    const response = await workspaceClient.getProjectStatusOptions({ workspaceId: state.workspaceId, projectId });
+    if (!isRecord(response) || !Array.isArray(response.options)) throw new Error(t("move.optionsFailed"));
+    return response.options as ProjectStatusMoveOption[];
+  }
+
+  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
+    const requestWorkspaceId = state.workspaceId;
+    if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return;
+    try {
+      const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
+        projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
+      if (!result) return;
+      if (isRecord(result) && result.state === "recovery-required") {
+        if (isRecord(result.project)) {
+          const recovered = result.project as unknown as WorkspaceMockProject;
+          for (const workspaceId of Object.keys(projectTabsByWorkspace))
+            dispatchProjectTabs({ type: "update", workspaceId, project: recovered });
+          if (workspaceIdRef.current === requestWorkspaceId) setSelectedProject(current => current?.id === project.id ? recovered : current);
+        }
+        toast.error(t("move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
+        return;
+      }
+    } catch (error) {
+      toast.error(t("move.failed"), { description: getServiceErrorMessage(error, t) });
+      return;
+    }
+    try {
+      const affected = new Set([requestWorkspaceId, ...Object.keys(projectTabsByWorkspace).filter(id => projectTabsByWorkspace[id]?.some(tab => tab.id === project.id))]);
+      for (const workspaceId of affected) {
+        const response = await workspaceClient.getProject({ workspaceId, projectId: project.id });
+        if (!isRecord(response) || !isRecord(response.project)) continue;
+        const fresh = response.project as unknown as WorkspaceMockProject;
+        const fileTree = normalizeProjectFileTreeResponse(await workspaceClient.listProjectFileTree({ workspaceId, path: fresh.currentRelativePath }));
+        const updated = { ...fresh, fileTree };
+        dispatchProjectTabs({ type: "update", workspaceId, project: updated });
+        if (workspaceIdRef.current === workspaceId) setSelectedProject(current => current?.id === project.id ? updated : current);
+      }
+      if (workspaceIdRef.current === requestWorkspaceId && activeViewIdRef.current) {
+        const [projection, scan] = await Promise.all([
+          workspaceClient.getViewProjection({ workspaceId: requestWorkspaceId, viewId: activeViewIdRef.current, locale }),
+          workspaceClient.scan({ workspaceId: requestWorkspaceId }),
+        ]);
+        if (workspaceIdRef.current === requestWorkspaceId) {
+          if (state.root) dispatch({ type: "projectionLoaded", root: state.root,
+            viewsResponse: { workspaceId: requestWorkspaceId, activeViewId: activeViewIdRef.current, views: state.views },
+            projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
+        }
+      }
+      toast.success(t("move.completed"));
+    } catch (error) {
+      toast.error(t("move.refreshFailed"), { description: getServiceErrorMessage(error, t) });
+    }
+  }
+
   async function handleProjectPropertyValueChange(
     projectId: string,
     propertyId: string,
@@ -2420,6 +2480,9 @@ export default function App() {
         }
       }}
       project={project}
+      statusMovePending={projectMovePending !== null}
+      onLoadStatusOptions={loadProjectStatusOptions}
+      onStatusChange={handleProjectStatusChange}
       visibleProperties={detailProperties}
       selectValues={settingsSelectValues}
       onProjectPropertyValueChange={handleProjectPropertyValueChange}
@@ -2869,6 +2932,7 @@ export default function App() {
         {/* Native no-drag exclusion must follow pane drag regions in DOM order. */}
         <button
           type="button"
+          data-sidebar-toggle
           className={[
             "electron-window-no-drag workspace-top-action bb-chrome-action absolute top-[10px] z-40",
             "left-[84px]",
@@ -2879,6 +2943,9 @@ export default function App() {
         >
           <PanelLeftIcon className="size-4" aria-hidden="true" />
         </button>
+        <div className="electron-window-no-drag absolute left-[116px] top-[10px] z-40">
+          <ProjectMoveIndicator pending={projectMovePending} />
+        </div>
       </div>
       <Toaster theme={theme} duration={4000} closeButton />
     </TooltipProvider>

@@ -1,3 +1,4 @@
+import { createProjectStatusMover, deriveFolderStatusValues, statusForProject } from "../src/workspaceStatusMove.js";
 import { removeGroupingValue } from "../src/workspaceGrouping.js";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, statSync } from "node:fs";
@@ -46,6 +47,8 @@ const statusValueColorTokens = new Set(["gray", "red", "orange", "yellow", "gree
 const supportedMethods = new Set([
   "workspace.getRoot",
   "workspace.getProject",
+  "workspace.getProjectStatusOptions",
+  "workspace.moveProjectStatus",
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",
@@ -96,10 +99,12 @@ export function createWorkspaceIpcHandler(options = {}) {
   const idFactory = options.idFactory || randomUUID;
   const now = options.now || (() => new Date().toISOString());
   const chooseRoot = options.chooseRoot || (async () => "");
+  const statusMover = createProjectStatusMover({ configPath, testHooks: options.moveTestHooks, writeSettings: options.moveWriteSettings });
 
   // Lazily preserve the legacy shared source for every existing workspace. Paths
   // remain locators; workspace/project IDs and source-scoped values are unchanged.
   async function sourceSettings() {
+    await statusMover.recover();
     const settings = await readWorkspaceSettings(configPath);
     const legacyRoot = normalizeRootPath(settings);
     if (!legacyRoot) return settings;
@@ -250,9 +255,33 @@ export function createWorkspaceIpcHandler(options = {}) {
     if (method === "workspace.getProject") {
       const projectId = requirePayloadString(body, "projectId");
       const settings = await readWorkspaceSettings(configPath);
-      const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId: root.root.workspaceId, propertyStore, rules: rulesFor(settings, root.root.workspaceId, rootPath) });
+      const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId: root.root.workspaceId, propertyStore, rules: rulesFor(settings, root.root.workspaceId, rootPath), projectLocators: settings.projectLocators?.[sourceFolderId] });
       const values = await propertyStore.listProjectPropertyValues(sourceFolderId);
       return { project: attachProjectPropertyValues(projects, values).find(project => project.id === projectId) || null };
+    }
+
+    if (method === "workspace.moveProjectStatus" || method === "workspace.getProjectStatusOptions") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({ viewStore, workspaceId, rootPath });
+      const projectId = requirePayloadString(body, "projectId");
+      const statusValueId = method === "workspace.moveProjectStatus" ? requirePayloadString(body, "statusValueId") : null;
+      const settings = await readWorkspaceSettings(configPath);
+      const { projects, statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore,
+        rules: rulesFor(settings, workspaceId, rootPath), projectLocators: settings.projectLocators?.[sourceFolderId] });
+      const project = projects.find(item => item.id === projectId);
+      if (!project) throw createWorkspaceServiceError("PROJECT_NOT_FOUND", "Project was not found.", "projectId");
+      if (method === "workspace.getProjectStatusOptions") {
+        const options = statusValues.some(item => item.id === NO_STATUS_VALUE_ID) ? statusValues : [...statusValues, createNoStatusValue()];
+        return { projectId, options: options.map(status => ({ ...status,
+          from: project.currentRelativePath,
+          to: status.id === project.status.id ? project.currentRelativePath : status.relativePath ? `${status.relativePath}/${basename(project.currentRelativePath)}` : null,
+          current: status.id === project.status.id,
+          disabledReason: status.moveDisabledReason || (!status.relativePath ? "no-status-target" : null),
+        })) };
+      }
+      const status = statusValues.find(item => item.id === statusValueId) || (statusValueId === NO_STATUS_VALUE_ID ? createNoStatusValue() : null);
+      if (!status) throw createWorkspaceServiceError("STATUS_NOT_FOUND", "Status folder was not found.", "statusValueId");
+      return statusMover.move({ rootPath, sourceId: sourceFolderId, project, status });
     }
 
     if (method === "workspace.scan") {
@@ -261,6 +290,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         root: rootPath,
         rules: body.rules || rulesFor(settings, root.root.workspaceId, rootPath),
         includeCardChildren: body.includeCardChildren === true,
+        projectLocators: settings.projectLocators?.[sourceFolderId],
       }));
     }
 
@@ -445,6 +475,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         workspaceId,
         propertyStore,
         rules: rulesFor(settings, root.root.workspaceId, rootPath),
+        projectLocators: settings.projectLocators?.[sourceFolderId],
       });
       return updateStatusValueColorResult({
         body,
@@ -504,6 +535,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         propertyStore,
         rootPath,
         rules: rulesFor(settings, root.root.workspaceId, rootPath),
+        projectLocators: settings.projectLocators?.[sourceFolderId],
         now,
       });
     }
@@ -617,6 +649,7 @@ export function createWorkspaceIpcHandler(options = {}) {
         workspaceId,
         propertyStore,
         rules: rulesFor(settings, root.root.workspaceId, rootPath),
+        projectLocators: settings.projectLocators?.[sourceFolderId],
       });
       return unwrapBackendResponse(await createUpdateViewResponse({
         body,
@@ -646,6 +679,7 @@ export function createWorkspaceIpcHandler(options = {}) {
           workspaceId,
           propertyStore,
           rules,
+          projectLocators: settings.projectLocators?.[sourceFolderId],
         });
         return projectsAndStatusValues;
       };
@@ -699,7 +733,12 @@ export function createWorkspaceIpcHandler(options = {}) {
     mutations = result.catch(() => {});
     return result;
   };
+  const pendingProjects = new Set();
   return async (event, method, payload = {}) => {
+    const moveKey = method === "workspace.moveProjectStatus" ? String(payload.projectId) : null;
+    if (moveKey && pendingProjects.has(moveKey)) throw createWorkspaceServiceError("PROJECT_MOVE_PENDING", "This project is already moving.", "projectId");
+    if (moveKey) pendingProjects.add(moveKey);
+    try {
     if (method === "workspace.setRoot") {
       // Capture the target before opening the native picker; another workspace
       // can be activated while the picker is outstanding.
@@ -707,17 +746,18 @@ export function createWorkspaceIpcHandler(options = {}) {
       const workspaceId = payload.workspaceId || settings.activeWorkspaceId || (await viewStore.listWorkspaces())[0]?.id;
       const selectedRoot = await chooseRoot();
       if (!selectedRoot) return null;
-      return mutate(() => handleWorkspaceRequest(event, method, { ...payload, workspaceId }, selectedRoot));
+      return await mutate(() => handleWorkspaceRequest(event, method, { ...payload, workspaceId }, selectedRoot));
     }
     const readOnly = /^workspace\.(get|list|scan|preview|reveal)/.test(method);
     if (readOnly) {
       await mutate(sourceSettings);
-      return handleWorkspaceRequest(event, method, payload);
+      return await mutate(() => handleWorkspaceRequest(event, method, payload));
     }
-    return mutate(async () => {
+    return await mutate(async () => {
       await sourceSettings();
       return handleWorkspaceRequest(event, method, payload);
     });
+    } finally { if (moveKey) pendingProjects.delete(moveKey); }
   };
 }
 
@@ -840,8 +880,8 @@ async function createWorkspaceDocument({
   });
 }
 
-async function getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {} }) {
-  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules }));
+async function getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {}, projectLocators = {} }) {
+  const scan = await unwrapBackendResponse(await createScanResponse({ root: rootPath, rules, projectLocators }));
   const sourceFolderId = createWorkspaceId(rootPath);
   const workspaceObjects = scan.workspace || projectFoldersToWorkspaceObjects({
     workspaceId: sourceFolderId,
@@ -850,15 +890,14 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore
   });
   const statusValues = await createStatusValuesWithColors({
     workspaceId: sourceFolderId,
-    objects: workspaceObjects.objects || [],
+    tree: scan.tree || [],
     propertyStore,
   });
-  const statusValueByName = new Map(statusValues.map((statusValue) => [statusValue.name, statusValue]));
 
   return {
     statusValues,
     projects: (workspaceObjects.objects || []).map((object) => {
-      const status = statusValueByName.get(object.folderStatus) || createNoStatusValue();
+      const status = statusForProject(object.source.path, statusValues);
       return {
         id: object.id,
         name: object.folderName,
@@ -874,8 +913,8 @@ async function getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore
   };
 }
 
-async function getStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {} }) {
-  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
+async function getStatusValues({ rootPath, workspaceId, propertyStore = null, rules = {}, projectLocators = {} }) {
+  const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules, projectLocators });
   return statusValues;
 }
 
@@ -1336,11 +1375,11 @@ async function deleteSelectValueResult({ body, workspaceId, propertyScopeId, pro
   };
 }
 
-async function updateProjectPropertyValueResult({ body, workspaceId, propertyScopeId, propertyStore, rootPath, rules, now }) {
+async function updateProjectPropertyValueResult({ body, workspaceId, propertyScopeId, propertyStore, rootPath, rules, projectLocators, now }) {
   const projectId = requirePayloadString(body, "projectId");
   const propertyId = requirePayloadString(body, "propertyId");
   const property = await requireCustomProperty({ workspaceId: propertyScopeId, propertyId, propertyStore });
-  const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
+  const { projects } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules, projectLocators });
   const project = projects.find((item) => item.id === projectId);
 
   if (!project) {
@@ -1685,8 +1724,8 @@ function toWorkspaceListItem(workspace) {
   };
 }
 
-async function createStatusValuesWithColors({ workspaceId, objects, propertyStore }) {
-  const statusValues = createStatusValues(workspaceId, objects);
+async function createStatusValuesWithColors({ workspaceId, tree, propertyStore }) {
+  const statusValues = deriveFolderStatusValues(workspaceId, tree);
   if (!propertyStore) {
     return statusValues;
   }
@@ -1694,32 +1733,9 @@ async function createStatusValuesWithColors({ workspaceId, objects, propertyStor
   const colorValues = await propertyStore.listSelectValues(workspaceId, { propertyId: PROPERTY_STATUS_ID });
   const colorByStatusValueId = new Map(colorValues.map((value) => [value.id, value.color]));
   return statusValues.map((statusValue) => {
-    const color = colorByStatusValueId.get(statusValue.id);
+    const color = colorByStatusValueId.get(statusValue.id) || colorByStatusValueId.get(statusValue.legacyId);
     return color ? { ...statusValue, color } : statusValue;
   });
-}
-
-function createStatusValues(workspaceId, objects) {
-  const byName = new Map();
-  for (const object of objects) {
-    const name = typeof object.folderStatus === "string" && object.folderStatus.trim()
-      ? object.folderStatus.trim()
-      : "No status";
-    if (!byName.has(name)) {
-      byName.set(name, {
-        id: name === "No status" ? NO_STATUS_VALUE_ID : `statusValue:${createSlug(workspaceId)}:${createSlug(name)}`,
-        name,
-        relativePath: name === "No status" ? null : name,
-        source: name === "No status" ? "no-status" : "folderRole",
-      });
-    }
-  }
-
-  if (byName.size === 0) {
-    byName.set("No status", createNoStatusValue());
-  }
-
-  return [...byName.values()];
 }
 
 function createNoStatusValue() {

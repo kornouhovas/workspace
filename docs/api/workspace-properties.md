@@ -540,3 +540,7 @@ Every implementation slice must include:
 - renderer typecheck and build after frontend changes;
 - Electron app launch and visual verification after frontend changes;
 - screenshots or equivalent visual evidence for Board, Table, Project Detail Panel, and Settings property management before marking frontend work complete.
+
+## Explicit system Status selection
+
+Project Detail can select an existing derived Status through [the filesystem Status move operation](workspace-status-move.md). This is not an editable stored system property value. `updateProjectPropertyValue` continues to reject system values; only the explicit move changes the folder location and hence derived Status.

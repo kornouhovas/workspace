@@ -409,3 +409,5 @@ The imported [DESIGN_RULES](development/DESIGN_RULES.md) is reference material. 
 Native Electron evidence and measured styles are recorded in [workspace-6fh](../work/workspace-6fh/). Renderer screenshots are supplementary diagnostics. These measurements do not claim a live bb comparison or a complete VoiceOver audit.
 
 Locale changes update visible labels without projection reloads, folder rescans or property writes. Subsequent legitimate workspace loads use the current locale.
+
+Explicit Status selection in preview/expanded details uses existing chips, folder-derived labels/colors, keyboard focus and radio selection. Disabled destinations include a textual reason. Move activity occupies one 28px header control immediately after Sidebar, exposes from/to/project/state details, remains visible with the sidebar hidden, and respects reduced motion. No percentage or artificial production delay is shown. Board/Table system values and inter-status drag retain their restrictions. See [Status move contract](api/workspace-status-move.md).

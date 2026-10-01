@@ -1,9 +1,15 @@
-export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folders }) {
+export function projectFoldersToWorkspaceObjects({ workspaceId, rootPath, folders, projectIds = {}, reservedProjectIds = [] }) {
   const objects = [];
   const propertyValues = [];
 
   for (const folder of Array.isArray(folders) ? folders : []) {
-    const objectId = createFolderObjectId(workspaceId, folder.path);
+    let objectId = projectIds[folder.path] || createFolderObjectId(workspaceId, folder.path);
+    if (!projectIds[folder.path]) {
+      const reserved = new Set(reservedProjectIds);
+      let suffix = 1;
+      const base = objectId;
+      while (reserved.has(objectId)) objectId = `${base}:replacement-${suffix++}`;
+    }
     const object = {
       id: objectId,
       workspaceId,
