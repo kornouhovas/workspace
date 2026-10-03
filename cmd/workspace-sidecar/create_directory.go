@@ -16,7 +16,8 @@ type directoryRequest struct {
 	Name   string `json:"name"`
 }
 
-// Root holds directory handles. A replaced ancestor cannot redirect Mkdir.
+// Root holds directory handles. Production CLI additionally applies the OS
+// creation guard before opening the source; handles alone permit moved parents.
 func createProjectDirectory(req directoryRequest, beforeMkdir func()) error {
 	if req.Name == "" || strings.TrimSpace(req.Name) != req.Name || strings.HasPrefix(req.Name, ".") || strings.ContainsAny(req.Name, "/\\\x00") || strings.IndexFunc(req.Name, unicode.IsControl) >= 0 {
 		return errors.New("invalid project name")
@@ -82,11 +83,16 @@ func runCreateDirectory() {
 	var req directoryRequest
 	err := json.NewDecoder(os.Stdin).Decode(&req)
 	if err == nil {
+		err = guardProjectCreation(req.Root)
+	}
+	if err == nil {
 		err = createProjectDirectory(req, nil)
 	}
 	if err != nil {
 		code := "CREATE_DIRECTORY_FAILED"
-		if errors.Is(err, os.ErrExist) {
+		if errors.Is(err, errCreationGuardUnavailable) {
+			code = "PROJECT_CREATE_GUARD_UNAVAILABLE"
+		} else if errors.Is(err, os.ErrExist) {
 			code = "PROJECT_NAME_CONFLICT"
 		}
 		json.NewEncoder(os.Stdout).Encode(map[string]any{"error": err.Error(), "code": code})
