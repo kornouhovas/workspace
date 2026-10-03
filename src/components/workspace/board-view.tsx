@@ -1,3 +1,4 @@
+import { BoardColumnActions } from "./board-column-actions";
 import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
 
 import { useBoardColumnOrder } from "./use-board-column-order";
@@ -33,6 +34,9 @@ type WorkspaceBoardViewProps = BoardEditingProps & ProjectStatusActions & {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly columnWidth?: number;
   readonly columnOrder?: readonly string[];
+  readonly onHideColumn?: (id: string) => Promise<void>;
+  readonly onCreateProject?: (id: string, name: string) => Promise<void>;
+  readonly noSearchResults?: boolean;
   readonly orderScope?: string;
   readonly interactionDisabled?: boolean;
   readonly onReorderColumns?: (order: readonly string[]) => Promise<void>;
@@ -106,7 +110,7 @@ export function WorkspaceBoardView({
   projection,
   statusValues,
   columnWidth, columnOrder, orderScope = "board", interactionDisabled = false, onReorderColumns,
-  onViewportWidthChange,
+  onViewportWidthChange, onHideColumn, onCreateProject, noSearchResults,
   visibleProperties,
   selectValues,
   onProjectOpen,
@@ -156,6 +160,8 @@ export function WorkspaceBoardView({
       onClickCapture={event => { if (order.suppressClick()) { event.preventDefault(); event.stopPropagation(); } }}>
       <p className="sr-only" id="workspace-board-order-help">{t("board.orderHelp")}</p>
       {order.activeId || order.pending ? <p role="status" className="sr-only">{t(order.pending ? "board.orderSaving" : "board.orderPreview")}</p> : null}
+      {noSearchResults ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("board.noMatchingProjects")}</p> : null}
+      {orderedColumns.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{t("board.allColumnsHidden")}</p> : null}
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {orderedColumns.map((column) => {
@@ -184,6 +190,10 @@ export function WorkspaceBoardView({
                 >
                   {column.projects.length}
                 </span>
+                <BoardColumnActions statusValueId={column.statusValueId} name={getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
+                  disabled={interactionDisabled || !!statusMovePending || !!order.activeId || order.pending}
+                  unavailable={column.statusValueId === "statusValue:no-status" || !!(statusValues.find(value => value.id === column.statusValueId) as {moveDisabledReason?: string} | undefined)?.moveDisabledReason}
+                  onHide={onHideColumn} onCreate={onCreateProject} />
               </header>
               <div className="grid auto-rows-max content-start gap-3 pb-2">
                 {column.projects.length === 0 ? (

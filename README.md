@@ -32,7 +32,7 @@ npm run build:sidecar
 
 ## Storage
 
-Действующий Electron runtime использует JSON-адаптеры settings/views/properties за WorkspaceServiceClient и preload IPC. Go sidecar с `any-store` поверх SQLite — целевое durable хранение; Electron сейчас не запускает и не подключает его автоматически. См. [ADR-006](docs/adr/006-workspace-source-bindings.md) и [карту архитектуры](docs/development/architecture.md).
+Действующий Electron runtime использует JSON-адаптеры settings/views/properties за WorkspaceServiceClient и preload IPC. Go sidecar с `any-store` поверх SQLite — целевое durable хранение; Electron не подключает sidecar как store. Создание новой папки проекта использует только узкий CLI-режим существующего бинарника с удерживаемым дескриптором каталога; `npm run dev` и `npm run electron` собирают helper перед запуском. См. [ADR-006](docs/adr/006-workspace-source-bindings.md) и [карту архитектуры](docs/development/architecture.md).
 
 `any-store` is used under the MIT License. See `THIRD_PARTY_NOTICES.md`.
 

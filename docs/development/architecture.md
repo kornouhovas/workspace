@@ -16,8 +16,10 @@ React отвечает за представление и действия по�
 
 ## Целевое хранение
 
-[ADR-001](../adr/001-local-first-workspace-storage.md) сохраняет целевой durable store: Go sidecar → `any-store` → SQLite. [Sidecar](../../cmd/workspace-sidecar/main.go) и [Go store](../../internal/workspacestore/store.go) существуют, но Electron main не запускает sidecar и не подключает его вместо JSON-адаптеров. Самостоятельный запуск sidecar не переключает storage приложения. ADR-006 прямо сохраняет этот переходный runtime; подключение целевого store — отдельная работа.
+[ADR-001](../adr/001-local-first-workspace-storage.md) сохраняет целевой durable store: Go sidecar → `any-store` → SQLite. [Sidecar](../../cmd/workspace-sidecar/main.go) и [Go store](../../internal/workspacestore/store.go) существуют, но Electron main не запускает sidecar HTTP server и не подключает его вместо JSON-адаптеров. Самостоятельный запуск sidecar не переключает storage приложения. ADR-006 прямо сохраняет этот переходный runtime; подключение целевого store — отдельная работа.
 
 Project IDs — opaque identities, пути — locators. Операции с файлами проверяются относительно выбранного источника; удаление Workspace не удаляет проекты на диске. Контракты изменений данных: [properties](../api/workspace-properties.md), [views](../api/workspace-views.md), [sources/session](../api/workspace-session-sources.md). Не заменяйте схему или адаптер на основании целевого описания без проверки текущего подключения.
 
 В [каталоге ADR](../adr/) ADR-002, ADR-003, ADR-005 и ADR-006 приняты; ADR-004 про реестр идентичности имеет статус Proposed. Его описание не разрешает реализацию миграции.
+
+Создание новой папки проекта использует узкий CLI режим существующего Go бинарника с `os.Root`; он не открывает store/HTTP server и не переключает JSON adapters. См. [контракт](../api/workspace-views.md#confined-directory-helper).

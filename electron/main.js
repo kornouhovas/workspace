@@ -1,3 +1,4 @@
+import { projectDirectoryHelperPath } from "../src/workspaceProjectCreate.js";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +13,7 @@ if (development) app.setPath("userData", development.userData);
 app.setName("Workspace");
 registerWorkspaceIpc(ipcMain, {
   ...development?.storage,
+  projectDirectoryHelperPath: projectDirectoryHelperPath({ packaged: app.isPackaged, resourcesPath: process.resourcesPath }),
   async chooseRoot() {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory"],

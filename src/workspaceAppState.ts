@@ -31,6 +31,7 @@ export type WorkspaceTableGroup = {
 };
 export type WorkspaceViewState = {
   readonly columnOrder?: readonly string[];
+  readonly hiddenColumnIds?: readonly string[];
   readonly rowOrder?: readonly string[];
   readonly grouping?: WorkspaceGroupingState | null;
   readonly groupingNotice?: string | null;

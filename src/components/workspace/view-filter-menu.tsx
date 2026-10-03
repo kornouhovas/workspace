@@ -65,6 +65,7 @@ type WorkspaceViewFilterMenuProps = {
   readonly properties: readonly WorkspacePropertyDefinitionState[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
+  readonly onToggleColumnVisibility?: (statusValueId: string, visible: boolean) => void;
   readonly boardColumnWidthMax: number;
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
@@ -165,6 +166,7 @@ export function WorkspaceViewFilterMenu({
   selectValues,
   statusValues,
   boardColumnWidthMax,
+  onToggleColumnVisibility,
   onTogglePropertyVisibility,
   onToggleValueFilter,
   onBoardColumnWidthPreview,
@@ -782,6 +784,17 @@ export function WorkspaceViewFilterMenu({
         {view?.viewType === "board" ? (
           <>
             <Separator className={workspaceMenuSeparatorClassName} />
+            <div className="grid gap-1 px-2 py-2" data-workspace-board-column-settings>
+              <p className="px-1 text-xs font-medium text-muted-foreground">{t("board.columns")}</p>
+              {[...statusValues].sort((a,b) => {
+                const order = view.columnOrder ?? [];
+                const rank = (id: string) => { const index = order.indexOf(id); return index < 0 ? order.length : index; };
+                return rank(a.id) - rank(b.id);
+              }).map(status => <label key={status.id} className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1.5 text-xs hover:bg-state-hover">
+                <Checkbox checked={!view.hiddenColumnIds?.includes(status.id)} onCheckedChange={checked => onToggleColumnVisibility?.(status.id, checked === true)} aria-label={t("board.showColumn", { name: getStatusDisplayName(t, status) })} />
+                <span className="min-w-0 truncate">{getStatusDisplayName(t, status)}</span>
+              </label>)}
+            </div>
             <div className="grid gap-2.5 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="grid gap-1">

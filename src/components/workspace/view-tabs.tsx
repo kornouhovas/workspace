@@ -73,6 +73,7 @@ type WorkspaceViewTabsProps = {
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly onTogglePropertyVisibility: (propertyId: string, visible: boolean) => void;
   readonly onToggleValueFilter: (propertyId: string, valueId: string, included: boolean) => void;
+  readonly onToggleColumnVisibility?: (statusValueId: string, visible: boolean) => void;
   readonly boardColumnWidthMax: number;
   readonly onBoardColumnWidthPreview: (columnWidth: number) => void;
   readonly onBoardColumnWidthCommit: (columnWidth: number, previousColumnWidth: number) => void;
@@ -153,6 +154,7 @@ export function WorkspaceViewTabs({
   onTogglePropertyVisibility,
   onToggleValueFilter,
   boardColumnWidthMax,
+  onToggleColumnVisibility,
   onBoardColumnWidthPreview,
   onBoardColumnWidthCommit,
   onReorderViewProperties,
@@ -659,6 +661,7 @@ export function WorkspaceViewTabs({
           properties={properties}
           selectValues={selectValues}
           statusValues={statusValues}
+          onToggleColumnVisibility={onToggleColumnVisibility}
           boardColumnWidthMax={boardColumnWidthMax}
           onTogglePropertyVisibility={onTogglePropertyVisibility}
           onToggleValueFilter={onToggleValueFilter}

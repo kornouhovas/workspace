@@ -379,6 +379,9 @@ export async function createUpdateViewResponse({
     const savedView = await viewStore.saveView(normalizeViewDocument({
       ...view,
       ...(body?.patch || {}),
+      ...(body?.patch?.columnVisibility ? { hiddenColumnIds: body.patch.columnVisibility.visible
+        ? (view.hiddenColumnIds || []).filter(id => id !== body.patch.columnVisibility.statusValueId)
+        : [...new Set([...(view.hiddenColumnIds || []), body.patch.columnVisibility.statusValueId])] } : {}),
       ...(Object.hasOwn(body?.patch || {}, "tableColumnWidths") ? { tableColumnWidths: { ...view.tableColumnWidths, ...body.patch.tableColumnWidths } } : {}),
       ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null } : {}),
       updatedAt: now(),

@@ -1,3 +1,4 @@
+import { createEmptyProjectDirectory } from "../src/workspaceProjectCreate.js";
 import { createProjectStatusMover, deriveFolderStatusValues, statusForProject } from "../src/workspaceStatusMove.js";
 import { removeGroupingValue } from "../src/workspaceGrouping.js";
 import { createHash, randomUUID } from "node:crypto";
@@ -49,6 +50,7 @@ const supportedMethods = new Set([
   "workspace.getProject",
   "workspace.getProjectStatusOptions",
   "workspace.moveProjectStatus",
+  "workspace.createProject",
   "workspace.setRoot",
   "workspace.scan",
   "workspace.listEntries",
@@ -250,6 +252,24 @@ export function createWorkspaceIpcHandler(options = {}) {
 
     if (!existsSync(rootPath) || !statSync(rootPath).isDirectory()) {
       throw createWorkspaceServiceError("SOURCE_FOLDER_UNAVAILABLE", "Workspace source folder is unavailable.", "rootPath");
+    }
+
+    if (method === "workspace.createProject") {
+      const workspaceId = requirePayloadString(body, "workspaceId");
+      await requireSourceWorkspace({ viewStore, workspaceId, rootPath });
+      const statusValueId = requirePayloadString(body, "statusValueId");
+      const name = body.name;
+      const settings = await readWorkspaceSettings(configPath);
+      const rules = rulesFor(settings, workspaceId, rootPath);
+      const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
+      const status = statusValues.find(item => item.id === statusValueId);
+      if (!status?.relativePath || status.moveDisabledReason) throw createWorkspaceServiceError("PROJECT_CREATE_DESTINATION_UNAVAILABLE", "This column has no unambiguous available project destination.", "statusValueId");
+      const relativePath = `${status.relativePath}/${name}`;
+      if (rules[relativePath]?.access === false || (rules[relativePath]?.role && !["card", "project"].includes(rules[relativePath].role)))
+        throw createWorkspaceServiceError("PROJECT_CREATE_ROLE_CONFLICT", "The project destination has a different saved folder role.", "name");
+      await createEmptyProjectDirectory({ root: rootPath, parent: status.relativePath, name, helperPath: options.projectDirectoryHelperPath });
+      // Creation is committed on disk. Discovery is a separate, retryable read.
+      return { state: "created", name, relativePath, statusValueId };
     }
 
     if (method === "workspace.getProject") {

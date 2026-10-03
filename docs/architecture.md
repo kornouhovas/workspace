@@ -422,3 +422,5 @@ Create an ADR before:
 - Define service/API contracts for Workspaces, views, folder roles, properties, values, and history.
 - Decide how stable project ids are created and reconciled when folders move.
 - Decide how sidecar lifecycle is managed by Electron for packaged builds.
+
+Создание новой папки проекта использует узкий CLI режим существующего Go бинарника с `os.Root` для confined exclusive mkdir; он не открывает store или HTTP server. JSON adapters остаются действующим хранением. См. [контракт создания](api/workspace-views.md#confined-directory-helper).

@@ -83,7 +83,7 @@ export function normalizeViewDocument(view = {}) {
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
     boardLayout: normalizeBoardLayout(view.boardLayout),
     ...(viewType === "table" ? { tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths) } : {}),
-    ...(viewType === "board" ? { columnOrder: completeBoardColumnOrder(view.columnOrder) } : {}),
+    ...(viewType === "board" ? { columnOrder: completeBoardColumnOrder(view.columnOrder), hiddenColumnIds: completeBoardColumnOrder(view.hiddenColumnIds) } : {}),
     ...(viewType === "table" ? { rowOrder: normalizeStringArray(view.rowOrder) } : {}),
     grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
     groupingNotice: view.groupingNotice === "property-removed" ? "property-removed" : null,
@@ -142,6 +142,12 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     }
   }
 
+  if (Object.hasOwn(patch, "columnVisibility") && (!isPlainObject(patch.columnVisibility) || typeof patch.columnVisibility.statusValueId !== "string" || !patch.columnVisibility.statusValueId || typeof patch.columnVisibility.visible !== "boolean")) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Column visibility requires a status ID and boolean visibility.", "columnVisibility");
+  }
+  if (Object.hasOwn(patch, "hiddenColumnIds") && (!Array.isArray(patch.hiddenColumnIds) || patch.hiddenColumnIds.some(id => typeof id !== "string" || !id) || new Set(patch.hiddenColumnIds).size !== patch.hiddenColumnIds.length)) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Hidden columns require unique status IDs.", "hiddenColumnIds");
+  }
   if (Object.hasOwn(patch, "columnOrder") && (!Array.isArray(patch.columnOrder) || patch.columnOrder.some(id => typeof id !== "string" || !id) || new Set(patch.columnOrder).size !== patch.columnOrder.length)) {
     throw new WorkspaceViewError("VALIDATION_FAILED", "Column order requires unique status IDs.", "columnOrder");
   }
@@ -255,14 +261,14 @@ export function createViewProjection({
 
   return {
     ...response,
-    view: { ...response.view, columnOrder },
+    view: { ...response.view, columnOrder, hiddenColumnIds: normalizedView.hiddenColumnIds },
     statusValues: boardStatusValues,
     projection: {
       type: "board",
       capabilities: {
         canMoveBetweenStatuses: true,
       },
-      columns: boardColumns,
+      columns: boardColumns.filter(column => !normalizedView.hiddenColumnIds.includes(column.statusValueId)),
     },
   };
 }

@@ -201,6 +201,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
           propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
           boardLayout: normalizeViewBoardLayout(view.boardLayout),
           tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths),
+          hiddenColumnIds: Array.isArray(view.hiddenColumnIds) ? view.hiddenColumnIds.filter((id): id is string => typeof id === "string") : [],
           columnOrder: Array.isArray(view.columnOrder) ? view.columnOrder.filter((id): id is string => typeof id === "string") : [],
           rowOrder: Array.isArray(view.rowOrder) ? view.rowOrder.filter((id): id is string => typeof id === "string") : [],
           grouping: normalizeGrouping(view.grouping),
@@ -1952,6 +1953,31 @@ export default function App() {
     }
   }
 
+  async function handleBoardColumnVisibility(statusValueId: string, visible: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
+    const workspaceId = state.workspaceId, viewId = state.activeViewId;
+    if (!workspaceId || !viewId) return;
+    try {
+      await workspaceClient.updateView({ workspaceId, viewId, patch: { columnVisibility: { statusValueId, visible } } });
+      if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId) await refreshActiveViewAfterPatch(viewId);
+    }
+    catch (error) { toast.error(t("board.visibilityFailed"), { description: getServiceErrorMessage(error, t) }); }
+  }
+
+  async function handleCreateBoardProject(statusValueId: string, name: string) {
+    const workspaceId = state.workspaceId;
+    const viewId = state.activeViewId;
+    if (!workspaceId || !viewId || surfaceInteractionDisabledRef.current) throw new Error(t("toast.sourceRequiredViews"));
+    await workspaceClient.createProject({ workspaceId, statusValueId, name });
+    // The folder already exists. A projection error must never invite a second mkdir.
+    try {
+      if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId) await refreshActiveViewAfterPatch(viewId);
+      toast.success(t("board.projectCreated"), { description: t("board.createdFilterNotice") });
+    } catch (error) {
+      toast.warning(t("board.projectCreated"), { description: t("board.createdRefreshFailed") });
+    }
+  }
+
   async function handleReorderBoardColumns(columnOrder: readonly string[]) {
     if (surfaceInteractionDisabledRef.current) throw new RendererLocalizedError("error.activeViewUnavailable");
     const workspaceId = state.workspaceId, viewId = state.activeViewId;
@@ -2944,6 +2970,7 @@ export default function App() {
               statusValues={statusValues}
               onTogglePropertyVisibility={handleTogglePropertyVisibility}
               onToggleValueFilter={handleToggleValueFilter}
+              onToggleColumnVisibility={handleBoardColumnVisibility}
               boardColumnWidthMax={getBoardColumnWidthMax(boardViewportWidth)}
               onBoardColumnWidthPreview={handleBoardColumnWidthPreview}
               onBoardColumnWidthCommit={handleBoardColumnWidthCommit}
@@ -3045,7 +3072,7 @@ export default function App() {
             ) : (
               <>
                 <WorkspaceServiceError state={state} />
-                {searchHasNoResults ? (
+                {searchHasNoResults && activeViewType !== "board" ? (
                   <div
                     data-workspace-preview-surface={activeViewType}
                     className="flex h-full min-h-0 items-center justify-center px-6 text-center"
@@ -3061,6 +3088,9 @@ export default function App() {
                     interactionDisabled={surfaceState.interactionDisabled}
                     columnOrder={serviceProjection?.view.columnOrder ?? activeView?.columnOrder}
                     onReorderColumns={handleReorderBoardColumns}
+                    onHideColumn={id => handleBoardColumnVisibility(id, false)}
+                    onCreateProject={handleCreateBoardProject}
+                    noSearchResults={searchHasNoResults}
                     projection={boardProjection as typeof workspaceMockProjection.projection}
                     statusValues={statusValues}
                     columnWidth={activeView?.boardLayout?.columnWidth}

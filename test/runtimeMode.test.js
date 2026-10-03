@@ -13,8 +13,10 @@ test("workspace runs as an Electron-only app shell", async () => {
   assert.equal(packageJson.main, "electron/main.js");
   assert.equal(packageJson.scripts.dev, "node scripts/dev-desktop.mjs");
   assert.equal(packageJson.scripts.preview, undefined);
+  assert.equal(packageJson.scripts.predev, "npm run build:sidecar");
+  assert.equal(packageJson.scripts.preelectron, "npm run build:sidecar");
   assert.equal(packageJson.scripts.electron, "electron electron/main.js");
-  assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && electron electron/main.js");
+  assert.equal(packageJson.scripts["electron:build"], "npm run build:renderer && npm run electron");
   assert.equal(packageJson.scripts["build:renderer"], "node scripts/build-renderer.mjs");
   assert.equal(packageJson.scripts.typecheck, "tsc --noEmit");
   assert.equal(packageJson.devDependencies?.typescript, "5.9.3");

@@ -11,6 +11,10 @@ export class WorkspaceServiceClient {
     return this.request("workspace.getRoot", payload);
   }
 
+  createProject(payload) {
+    return this.request("workspace.createProject", payload);
+  }
+
   getProject(payload) {
     return this.request("workspace.getProject", payload);
   }
