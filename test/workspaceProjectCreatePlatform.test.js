@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { projectDirectoryHelperPath, validProjectDirectoryName } from '../src/workspaceProjectCreate.js';
 
 test('helper lookup uses native Windows executable suffix in local and packaged runtime', () => {
- assert.match(projectDirectoryHelperPath({platform:'win32',arch:'x64'}), /sidecar\/local\/workspace-sidecar\.exe$/);
+ assert.match(projectDirectoryHelperPath({platform:'win32',arch:'x64'}).replaceAll('\\','/'), /sidecar\/local\/workspace-sidecar\.exe$/);
  assert.equal(projectDirectoryHelperPath({resourcesPath:'C:/app/resources',packaged:true,platform:'win32',arch:'x64'}),'C:/app/resources/sidecar/win32-x64/workspace-sidecar.exe');
- assert.match(projectDirectoryHelperPath({platform:'linux',arch:'x64'}), /sidecar\/local\/workspace-sidecar$/);
+ assert.match(projectDirectoryHelperPath({platform:'linux',arch:'x64'}).replaceAll('\\','/'), /sidecar\/local\/workspace-sidecar$/);
 });
 
 test('Windows rejects reserved names, ADS, wildcards and normalized trailing dots before helper spawn', () => {
