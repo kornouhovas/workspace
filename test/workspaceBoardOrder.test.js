@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { boardOrderPointerActivated, boardOrderPointerInside, boardOrderPointerIndex, boardOrderScrollSpeed, completeBoardColumnOrder, reorderBoardColumns, createBoardOrderSession } from '../src/workspaceBoardOrder.js';
+import { boardOrderDragGeometry, boardOrderPointerActivated, boardOrderPointerInside, boardOrderPointerIndex, boardOrderScrollSpeed, completeBoardColumnOrder, reorderBoardColumns, createBoardOrderSession } from '../src/workspaceBoardOrder.js';
 import { normalizeViewDocument, validateViewPatch, createViewProjection } from '../src/workspaceViews.js';
 
 test('header preview leaves bodies fixed; drop applies whole order immediately and acknowledgement never resets it', () => {
@@ -81,4 +81,23 @@ test('hidden-only changes cannot start from a missing column and obsolete failur
  session.reset(['x','y']);session.start('y');session.preview(0);const current=session.drop(true);
  assert.equal(session.settle(old.token,false),false);assert.deepEqual(session.snapshot().bodies,['y','x']);
  session.settle(current.token,true);assert.deepEqual(session.snapshot().bodies,['y','x']);
+});
+
+
+test('drag follows fractional pointer movement and scrolling without snapping to insertion slots', () => {
+ const origin={startX:180,startY:80,scrollLeft:40,scrollTop:10,sourceIndex:1,step:300};
+ const small=boardOrderDragGeometry(origin,192.5,84.25,40,10);
+ assert.deepEqual(small,{x:12.5,y:4.25,index:1});
+ assert.deepEqual(boardOrderDragGeometry(origin,192.5,84.25,340,30),{x:312.5,y:24.25,index:2});
+ assert.deepEqual(boardOrderDragGeometry(origin,480,80,40,10),{x:300,y:0,index:2});
+ assert.deepEqual(boardOrderDragGeometry(origin,-420,80,40,10),{x:-600,y:0,index:-1});
+});
+test('insertion follows the dragged centre independent of grab point, neighbours and reverse motion', () => {
+ for(const startX of [110,250,390]) {
+  const origin={startX,startY:60,scrollLeft:0,scrollTop:0,sourceIndex:0,step:300};
+  assert.equal(boardOrderDragGeometry(origin,startX+149,60,0,0).index,0);
+  assert.equal(boardOrderDragGeometry(origin,startX+151,60,0,0).index,1);
+  assert.equal(boardOrderDragGeometry(origin,startX+751,60,0,0).index,3);
+  assert.equal(boardOrderDragGeometry(origin,startX+149,60,0,0).index,0);
+ }
 });

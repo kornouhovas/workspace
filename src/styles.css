@@ -809,3 +809,17 @@ button,a,[role="button"],input,textarea,select,label { touch-action:manipulation
 .workspace-project-move-animation { animation: workspace-project-move-pulse 1s ease-in-out infinite; }
 @keyframes workspace-project-move-pulse { 50% { transform: translateX(2px); opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .workspace-project-move-animation { animation: none; } }
+
+/* Only displaced neighbours ease into their insertion slots. The grabbed header
+   follows the pointer directly; drop removes the transition before bodies move. */
+[data-workspace-column-reorder="preview"] [data-workspace-column-header] {
+  will-change: transform;
+  transition: transform var(--workspace-transition) ease-out;
+}
+[data-workspace-column-reorder="preview"] [data-workspace-column-drag-active="true"] {
+  background-color: var(--background);
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-workspace-column-reorder="preview"] [data-workspace-column-header] { transition: none; }
+}

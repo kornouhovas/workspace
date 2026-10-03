@@ -65,3 +65,11 @@ export function boardOrderScrollSpeed(rect, x) {
 export function boardOrderPointerIndex(x, scrollLeft, firstCenter, step) {
   return Math.round((x + scrollLeft - firstCenter) / step);
 }
+
+// The captured slot geometry is independent of animated header rectangles.
+// Pointer displacement is continuous; only the insertion rank is rounded.
+export function boardOrderDragGeometry(origin, x, y, scrollLeft, scrollTop) {
+  const dx = x - origin.startX + scrollLeft - origin.scrollLeft;
+  const dy = y - origin.startY + scrollTop - origin.scrollTop;
+  return { x: dx, y: dy, index: origin.sourceIndex + Math.round(dx / origin.step) };
+}

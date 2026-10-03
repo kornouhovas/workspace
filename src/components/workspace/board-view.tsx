@@ -168,7 +168,7 @@ export function WorkspaceBoardView({
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}
             >
-              <header data-workspace-column-header={column.statusValueId} style={order.headerStyle(column.statusValueId)} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
+              <header data-workspace-column-header={column.statusValueId} data-workspace-column-drag-active={order.activeId === column.statusValueId || undefined} style={order.headerStyle(column.statusValueId)} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
                 <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
                   <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-label={t("board.reorderColumn", {name: getStatusDisplayName(t, {id: column.statusValueId, name: column.name})})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
                     onPointerDown={event => order.onPointerDown(event, column.statusValueId)} onKeyDown={event => order.onKeyDown(event, column.statusValueId)}

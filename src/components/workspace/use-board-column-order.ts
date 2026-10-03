@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
-import { boardOrderPointerActivated, boardOrderPointerInside, boardOrderPointerIndex, boardOrderScrollSpeed, createBoardOrderSession } from '@/workspaceBoardOrder.js';
+import { boardOrderPointerActivated, boardOrderPointerInside, boardOrderDragGeometry, boardOrderScrollSpeed, createBoardOrderSession } from '@/workspaceBoardOrder.js';
 
 type Options = {
   order: readonly string[];
@@ -9,7 +9,7 @@ type Options = {
   viewport: RefObject<HTMLDivElement | null>;
   onReorder?: (order: readonly string[]) => Promise<void>;
 };
-type Pointer = { id: string; pointerId: number; x: number; y: number; startX: number; startY: number; scrollLeft: number; step: number; firstCenter: number; active: boolean; target: HTMLButtonElement };
+type Pointer = { id: string; pointerId: number; x: number; y: number; startX: number; startY: number; scrollLeft: number; scrollTop: number; step: number; sourceIndex: number; active: boolean; target: HTMLButtonElement };
 export function useBoardColumnOrder(options: Options) {
   const session = useRef(createBoardOrderSession(options.order, options.visibleIds));
   const [snapshot, setSnapshot] = useState(() => session.current.snapshot());
@@ -19,7 +19,13 @@ export function useBoardColumnOrder(options: Options) {
   const suppressUntil = useRef(0);
   const scopeKey = options.scope + '\0' + options.visibleIds.join('\0');
   const orderKey = options.order.join('\0');
-  const publish = () => { if (alive.current) setSnapshot(session.current.snapshot()); };
+  const publish = () => {
+    if (!alive.current) return;
+    const next=session.current.snapshot();
+    setSnapshot(previous => previous.activeId===next.activeId && previous.pending===next.pending
+      && previous.headers.join('\0')===next.headers.join('\0') && previous.bodies.join('\0')===next.bodies.join('\0')
+      ? previous : next);
+  };
   function releasePointer() {
     const drag = pointer.current; pointer.current = null;
     if (drag?.target.hasPointerCapture(drag.pointerId)) drag.target.releasePointerCapture(drag.pointerId);
@@ -61,15 +67,21 @@ export function useBoardColumnOrder(options: Options) {
     function preview() {
       const drag = pointer.current, viewport = current.current.viewport.current;
       if (!drag?.active || !viewport) return;
-      const index = boardOrderPointerIndex(drag.x, viewport.scrollLeft, drag.firstCenter, drag.step);
-      session.current.preview(index); publish();
+      const geometry = boardOrderDragGeometry(drag, drag.x, drag.y, viewport.scrollLeft, viewport.scrollTop);
+      // Direct tracking avoids rerendering every card at pointer/frame frequency.
+      // React still owns the discrete insertion order and all lifecycle resets.
+      const header=drag.target.closest<HTMLElement>('[data-workspace-column-header]');
+      if (header) header.style.transform=`translate(${geometry.x}px, ${geometry.y}px)`;
+      session.current.preview(geometry.index); publish();
     }
     function tick() {
       const drag = pointer.current, viewport = current.current.viewport.current;
       if (drag?.active && viewport && inside({clientX:drag.x,clientY:drag.y})) {
         const rect=viewport.getBoundingClientRect();
         const speed=boardOrderScrollSpeed(rect,drag.x);
-        if (speed) { viewport.scrollLeft += speed; preview(); }
+        if (speed) viewport.scrollLeft += speed;
+        // Also repaint after wheel/manual scrolling while the pointer is still.
+        preview();
       }
       frame=requestAnimationFrame(tick);
     }
@@ -114,7 +126,7 @@ export function useBoardColumnOrder(options: Options) {
     const step=columns[1].getBoundingClientRect().left-rect.left;
     event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
     pointer.current={ id, pointerId:event.pointerId, x:event.clientX, y:event.clientY, startX:event.clientX, startY:event.clientY,
-      scrollLeft:viewport.scrollLeft, step, firstCenter:rect.left+rect.width/2+viewport.scrollLeft, active:false, target:event.currentTarget };
+      scrollLeft:viewport.scrollLeft, scrollTop:viewport.scrollTop, step, sourceIndex:columns.findIndex(column => column.dataset.workspaceStatusTarget === id), active:false, target:event.currentTarget };
   }
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, id: string) {
     if(!event.altKey || !['ArrowLeft','ArrowRight'].includes(event.key) || options.disabled || !options.onReorder || pointer.current) return;
@@ -134,8 +146,13 @@ export function useBoardColumnOrder(options: Options) {
     suppressClick: () => performance.now() < suppressUntil.current,
     headerStyle(id: string) {
       const from=bodies.indexOf(id),to=headers.indexOf(id);
-      const step=pointer.current?.step ?? 0;
-      return { transform: `translateX(${(to-from)*step}px)`,
+      const drag=pointer.current;
+      const viewport=options.viewport.current;
+      const geometry=drag?.active && viewport && id===snapshot.activeId
+        ? boardOrderDragGeometry(drag,drag.x,drag.y,viewport.scrollLeft,viewport.scrollTop) : null;
+      const x=geometry?.x ?? (to-from)*(drag?.step ?? 0);
+      const y=geometry?.y ?? 0;
+      return { transform: `translate(${x}px, ${y}px)`,
         position:'relative' as const, zIndex:id===snapshot.activeId ? 1 : undefined };
     },
   };
