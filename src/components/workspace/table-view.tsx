@@ -3,6 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 
 import { ProjectStatusPicker } from "./project-status-picker";
+import { getHiddenTableProperties } from "./table-property-visibility";
 import { type ProjectStatusActions } from "./project-status-drag";
 import { TableRowDragSurface, TableDragRow, TableDragGroupRow, TableRowHandle } from "./table-row-drag";
 import { Badge } from "@/components/ui/badge";
@@ -697,11 +698,7 @@ export function WorkspaceTableView({
     [visibleProperties],
   );
   const hiddenViewProperties = useMemo(
-    () => properties.filter((property) => (
-      !property.hidden &&
-      !property.system &&
-      !visiblePropertyIds.has(property.id)
-    )),
+    () => getHiddenTableProperties(properties, visiblePropertyIds),
     [properties, visiblePropertyIds],
   );
   const visiblePropertyWidths = useMemo(() => (
