@@ -90,6 +90,7 @@ Rules:
 - Cards should show `Name` and selected visible properties. `Status` is visible by default and may be hidden in the active view.
 - Standard property rename menus apply to the display labels for `Name` and `Status`, while delete, type changes, and stored value editing stay unavailable for those system properties.
 - Cards should be compact and predictable in height.
+- Ordinary Board cards use `--surface-sidebar`, the same semantic base surface as the left sidebar, in Light, Dark and the active System theme, including when the sidebar is hidden. Hover mixes the existing 15% accent into that opaque base; focus, project selection and drag feedback retain their existing cues. The inert drag snapshot retains this rendered background and card geometry. Board column, Table, sidebar and Project Detail surfaces keep their own tokens.
 - Long project names and property values must truncate or wrap without resizing the whole board unexpectedly.
 - Status columns use a stable fixed width. Removing filtered-out columns shifts the remaining columns but must not widen their cards.
 - Board `Customize Columns` uses a compact slider for column width and shows the current pixel value. New width selection starts at `288px` and is limited to one third of the current working area; an already selected width remains fixed when the window becomes narrower, with horizontal scrolling used instead of resizing columns.
