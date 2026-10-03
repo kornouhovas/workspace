@@ -1,3 +1,4 @@
+import { normalizeTableColumnWidths, TABLE_COLUMN_WIDTH_MIN } from './workspaceTableLayout.js';
 import { normalizeGrouping, validateGrouping, createTableGrouping } from "./workspaceGrouping.js";
 import { completeBoardColumnOrder } from "./workspaceBoardOrder.js";
 import { completeTableRowOrder } from "./workspaceTableOrder.js";
@@ -81,6 +82,7 @@ export function normalizeViewDocument(view = {}) {
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
     boardLayout: normalizeBoardLayout(view.boardLayout),
+    ...(viewType === "table" ? { tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths) } : {}),
     ...(viewType === "board" ? { columnOrder: completeBoardColumnOrder(view.columnOrder) } : {}),
     ...(viewType === "table" ? { rowOrder: normalizeStringArray(view.rowOrder) } : {}),
     grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
@@ -158,6 +160,15 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
     propertyLayout: patch.propertyLayout,
     propertyDefinitions,
   });
+  if (Object.hasOwn(patch, "tableColumnWidths")) {
+    if (!isPlainObject(patch.tableColumnWidths) || Object.entries(patch.tableColumnWidths).some(([id, width]) =>
+      !id || typeof width !== "number" || !Number.isFinite(width) || width < TABLE_COLUMN_WIDTH_MIN)) {
+      throw new WorkspaceViewError("VALIDATION_FAILED", "Table widths must be finite numbers at least 132px.", "tableColumnWidths");
+    }
+    for (const id of Object.keys(patch.tableColumnWidths)) {
+      if (!propertyIds.has(id)) throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Column property does not exist.", "tableColumnWidths");
+    }
+  }
   validateBoardLayout(patch.boardLayout);
   validateGrouping(patch.grouping, propertyDefinitions, (code, message) => { throw new WorkspaceViewError(code, message, "grouping"); });
 }
@@ -212,6 +223,7 @@ export function createViewProjection({
       valueVisibility: normalizedView.valueVisibility,
       propertyLayout: normalizedView.propertyLayout,
       boardLayout: normalizedView.boardLayout,
+      ...(normalizedView.viewType === "table" ? { tableColumnWidths: normalizedView.tableColumnWidths } : {}),
       ...(normalizedView.viewType === "table" ? { rowOrder } : {}),
       grouping: normalizedView.grouping,
       groupingNotice: normalizedView.groupingNotice,

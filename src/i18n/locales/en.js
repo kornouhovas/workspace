@@ -138,6 +138,7 @@ export const en = {
   "view.valueFilters": "Value filters",
   "view.valueFiltersDescription": "Limit visible projects by select values",
   "view.noValues": "No values",
+  "toast.tableWidthFailed": "Could not save column width",
   "view.columnWidth": "Column width",
   "view.columnWidthDescription": "Resize every Board column",
   "board.moveDisabled": "Move disabled",

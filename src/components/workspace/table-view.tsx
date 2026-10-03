@@ -1,3 +1,4 @@
+import { normalizeTableColumnWidth } from "@/workspaceTableLayout.js";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
@@ -122,6 +123,8 @@ type WorkspaceTableViewProps = ProjectStatusActions & {
   readonly projection: WorkspaceTableProjection;
   readonly searchQuery?: string;
   readonly onClearSearch?: () => void;
+  readonly onColumnWidthPreview?: (propertyId: string, width: number) => void;
+  readonly onColumnWidthCommit?: (propertyId: string, width: number, previousWidth: number) => void;
   readonly onGroupingChange?: (mutation: import("@/workspaceGroupingMutations").GroupingMutation) => void;
   readonly view: WorkspaceViewState | null;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
@@ -149,8 +152,6 @@ type WorkspaceTableViewProps = ProjectStatusActions & {
 };
 
 const addPropertyColumnWidth = 48;
-const minimumPropertyColumnWidth = 132;
-const maximumPropertyColumnWidth = 520;
 const defaultCustomPropertyColumnWidth = 180;
 const tableColumnDividerClassName = "shadow-[inset_-1px_0_0_var(--border-hairline)]";
 const propertyMenuWidth = 240;
@@ -170,10 +171,6 @@ function getDefaultPropertyColumnWidth(property: WorkspaceMockVisibleProperty) {
   }
 
   return defaultCustomPropertyColumnWidth;
-}
-
-function clampPropertyColumnWidth(width: number) {
-  return Math.min(maximumPropertyColumnWidth, Math.max(minimumPropertyColumnWidth, width));
 }
 
 function getPropertyValue(project: WorkspaceMockProject, property: WorkspaceMockVisibleProperty) {
@@ -622,7 +619,7 @@ export function WorkspaceTableView({
   projection,
   searchQuery,
   onClearSearch,
-  onGroupingChange,
+  onGroupingChange, onColumnWidthPreview, onColumnWidthCommit,
   view,
   visibleProperties,
   properties,
@@ -686,7 +683,8 @@ export function WorkspaceTableView({
   const [openAddPropertyMenu, setOpenAddPropertyMenu] = useState(false);
   const [dropdownDismissToken, setDropdownDismissToken] = useState(0);
   const [columnDrag, setColumnDrag] = useState<ColumnDragState | null>(null);
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [previewWidths, setPreviewWidths] = useState<Record<string, number>>({});
+  const columnWidths = onColumnWidthPreview ? (view?.tableColumnWidths || {}) : { ...view?.tableColumnWidths, ...previewWidths };
   const [resizingColumn, setResizingColumn] = useState<{
     readonly propertyId: string;
     readonly startX: number;
@@ -709,9 +707,9 @@ export function WorkspaceTableView({
       ]),
     ) as Record<string, number>
   ), [columnWidths, visibleProperties]);
+  // Saturate only arithmetic overflow of the total; individual finite widths have no cap.
   const tableWidth = useMemo(() => (
-    addPropertyColumnWidth +
-    visibleProperties.reduce((totalWidth, property) => totalWidth + visiblePropertyWidths[property.id], 0)
+    visibleProperties.reduce((totalWidth, property) => Math.min(Number.MAX_VALUE, totalWidth + visiblePropertyWidths[property.id]), addPropertyColumnWidth)
   ), [visibleProperties, visiblePropertyWidths]);
 
   useEffect(() => {
@@ -728,29 +726,46 @@ export function WorkspaceTableView({
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
 
+    let nextWidth = startWidth;
+    let finished = false;
+
     function resizePropertyColumn(event: PointerEvent) {
-      const nextWidth = clampPropertyColumnWidth(
+      nextWidth = normalizeTableColumnWidth(
         startWidth + event.clientX - startX,
       );
 
-      setColumnWidths((currentColumnWidths) => ({
+      onColumnWidthPreview?.(propertyId, nextWidth);
+      setPreviewWidths((currentColumnWidths) => ({
         ...currentColumnWidths,
         [propertyId]: nextWidth,
       }));
     }
 
     function finishPropertyColumnResize() {
+      if (finished) return;
+      finished = true;
+      if (nextWidth !== startWidth) onColumnWidthCommit?.(propertyId, nextWidth, startWidth);
+      setResizingColumn(null);
+    }
+    function cancelPropertyColumnResize() {
+      finished = true;
+      onColumnWidthPreview?.(propertyId, startWidth);
+      setPreviewWidths(current => ({ ...current, [propertyId]: startWidth }));
       setResizingColumn(null);
     }
 
     window.addEventListener("pointermove", resizePropertyColumn);
     window.addEventListener("pointerup", finishPropertyColumnResize, { once: true });
 
+    window.addEventListener("pointercancel", cancelPropertyColumnResize, { once: true });
+
     return () => {
+      if (!finished && nextWidth !== startWidth) onColumnWidthCommit?.(propertyId, nextWidth, startWidth);
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
       window.removeEventListener("pointermove", resizePropertyColumn);
       window.removeEventListener("pointerup", finishPropertyColumnResize);
+      window.removeEventListener("pointercancel", cancelPropertyColumnResize);
     };
   }, [resizingColumn]);
 
@@ -910,6 +925,7 @@ export function WorkspaceTableView({
   ) {
     event.preventDefault();
     event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
 
     setResizingColumn({
       propertyId: property.id,
@@ -1432,12 +1448,12 @@ export function WorkspaceTableView({
 
   return (
     <TableRowDragSurface key={view?.id ?? "flat"} sections={displaySections} rowOrder={view?.rowOrder ?? projection.rows.map(project => project.id)} statusGrouping={view?.grouping?.propertyId === "property:status"} hideEmptyGroups={view?.grouping?.hideEmpty} onReorderRows={onReorderProjectRows} statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>{visualSections => (
-    <section data-workspace-preview-surface="table" className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
+    <section data-table-view-id={view?.id} data-workspace-preview-surface="table" className="flex h-full min-h-0 w-full flex-col overflow-hidden pl-3 pb-0 pt-3" aria-label={t("app.title")}>
       {searchQuery?.trim() && projection.rows.length === 0 ? <div role="status" className="flex flex-wrap items-center gap-2 px-2 pb-2 text-sm text-muted-foreground"><p>{t("state.noSearchResultsQuery", { query: searchQuery.trim() })}</p><Button variant="ghost" size="sm" onClick={onClearSearch}>{t("state.clearSearch")}</Button></div> : null}
       {projection.groupingNotice ? <p role="status" className="px-2 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {projection.groups ? <p className="px-2 pb-2 text-xs text-muted-foreground">{t("group.total", { count: projection.totalProjectCount ?? projection.rows.length })}</p> : null}
       <div data-table-scroll className={`min-h-0 w-full flex-1 overflow-auto ${projection.groups ? "" : "border-t border-border/45"}`}>
-        <Table className="min-w-full table-fixed border-collapse text-[13px] [&_tr]:border-border/45" style={{ minWidth: tableWidth }}>
+        <Table className="min-w-full table-fixed border-collapse text-[13px] [&_tr]:border-border/45" style={{ width: tableWidth, minWidth: "100%" }}>
           <colgroup>
             {visibleProperties.map((property) => (
               <col key={property.id} style={{ width: visiblePropertyWidths[property.id] }} />

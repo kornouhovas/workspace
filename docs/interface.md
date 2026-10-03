@@ -257,6 +257,8 @@ When the active view type is Table:
 
 Table requirements:
 
+- Resize Name, Status and custom columns by their existing header handles. Widths persist independently per Workspace/Table view and stable property ID, including hidden/reordered columns and grouped sections. The first frame after view activation restores saved widths. Keep the 132px minimum; finite wider sizes have no product or viewport maximum and use horizontal scrolling. Save failures restore the confirmed width and show an error.
+
 - Rows remain compact for short values.
 - `Text` property values preserve stored manual line breaks, but Table shows them compactly in one line by default.
 - Empty and populated editable Table controls have accessible names containing the property and project; empty text/number cells remain identifiable without a displayed value.

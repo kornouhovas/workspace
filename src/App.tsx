@@ -1,3 +1,4 @@
+import { createTableColumnWidthQueue, normalizeTableColumnWidths, type TableWidthTarget } from "@/workspaceTableLayout.js";
 import { createGroupingMutationQueue, type GroupingMutation } from "@/workspaceGroupingMutations.js";
 import { normalizeGrouping } from "@/workspaceGrouping.js";
 import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";
@@ -199,6 +200,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
             : undefined,
           propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
           boardLayout: normalizeViewBoardLayout(view.boardLayout),
+          tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths),
           columnOrder: Array.isArray(view.columnOrder) ? view.columnOrder.filter((id): id is string => typeof id === "string") : [],
           rowOrder: Array.isArray(view.rowOrder) ? view.rowOrder.filter((id): id is string => typeof id === "string") : [],
           grouping: normalizeGrouping(view.grouping),
@@ -439,6 +441,7 @@ function normalizeCreatedViewResponse(
       propertyLayout:
         normalizeViewPropertyLayout(view.propertyLayout) || fallbackView.propertyLayout,
       boardLayout: normalizeViewBoardLayout(view.boardLayout || fallbackView.boardLayout),
+      tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths || fallbackView.tableColumnWidths),
       grouping: normalizeGrouping(view.grouping),
       groupingNotice: getString(view.groupingNotice) || null,
     },
@@ -1730,6 +1733,22 @@ export default function App() {
     }
   }
 
+  const [, setTableWidthRevision] = useState(0);
+  const tableWidthQueue = useRef(createTableColumnWidthQueue((target, tableColumnWidths) =>
+    workspaceClient.updateView({ ...target, patch: { tableColumnWidths } })));
+
+  function handleTableColumnWidthPreview(target: TableWidthTarget, propertyId: string, width: number) {
+    tableWidthQueue.current.preview(target, propertyId, width);
+    setTableWidthRevision(value => value + 1);
+  }
+
+  function handleTableColumnWidthCommit(target: TableWidthTarget, propertyId: string, width: number, previousWidth: number) {
+    void tableWidthQueue.current.commit(target, propertyId, width, previousWidth).catch(error => {
+      setTableWidthRevision(value => value + 1);
+      toast.error(t("toast.tableWidthFailed"), { description: getServiceErrorMessage(error, t) });
+    });
+  }
+
   const groupingSaveQueue = useRef(createGroupingMutationQueue(async (target, grouping) => {
     await workspaceClient.updateView({ ...target, patch: { grouping } });
   }));
@@ -2663,9 +2682,12 @@ export default function App() {
       ),
     [state.searchQuery],
   );
-  const activeView = (serviceProjection?.view || viewState.views.find((view) => view.id === viewState.activeViewId)) as
+  const activeViewSnapshot = (serviceProjection?.view || viewState.views.find((view) => view.id === viewState.activeViewId)) as
     | WorkspaceViewState
     | undefined;
+  const tableWidthTarget = { workspaceId: serviceProjection?.workspaceId || state.workspaceId || "", viewId: activeViewSnapshot?.id || "" };
+  const activeView = activeViewSnapshot ? { ...activeViewSnapshot,
+    tableColumnWidths: tableWidthQueue.current.read(tableWidthTarget, activeViewSnapshot.tableColumnWidths) } : undefined;
   const activeViewType =
     serviceProjection?.projection.type === "table"
       ? "table"
@@ -3059,10 +3081,12 @@ export default function App() {
                   />
                 ) : null}
                 {!searchHasNoResults && activeViewType === "table" ? (
-                  <WorkspaceTableView key={state.workspaceId ?? "workspace"}
+                  <WorkspaceTableView key={`${tableWidthTarget.workspaceId}:${tableWidthTarget.viewId}`}
                     projection={tableProjection as typeof workspaceMockProjection.tableProjection}
                     searchQuery={state.searchQuery}
                     onClearSearch={() => dispatch({ type: "searchQueryChanged", searchQuery: "" })}
+                    onColumnWidthPreview={(id, width) => handleTableColumnWidthPreview(tableWidthTarget, id, width)}
+                    onColumnWidthCommit={(id, width, previousWidth) => handleTableColumnWidthCommit(tableWidthTarget, id, width, previousWidth)}
                     onGroupingChange={handleGroupingChange}
                     view={activeView ? { ...activeView, rowOrder: serviceProjection?.view.rowOrder ?? activeView.rowOrder } : null}
                     visibleProperties={

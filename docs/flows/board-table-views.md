@@ -86,6 +86,7 @@ Rules:
 - Table view should keep rows compact for short values.
 - `Text` values are compact and single-line by default; editing a compact Text cell opens a popover editor anchored to the cell so the row height stays stable. When `Wrap content` is enabled for that Text property in the active view, manual line breaks are preserved visually and long text wraps inside the column, allowing row height to expand.
 - Horizontal scrolling is allowed when columns exceed viewport width.
+- Resize Name, Status and custom columns by their existing header handles. Widths persist independently per Workspace/Table view and stable property ID, including hidden/reordered columns and grouped sections. The first frame after view activation restores saved widths. Keep the 132px minimum; finite wider sizes have no product or viewport maximum and use horizontal scrolling. Save failures restore the confirmed width and show an error.
 
 ## View Management Path
 

@@ -674,3 +674,7 @@ A Table view may retain `rowOrder`, an independent sequence of unique opaque pro
 ### Board column rank
 
 A Board view may retain `columnOrder`, independently per view and Workspace. Projection ranks complete Status columns before search/value filtering; hidden columns retain their positions, and only visible slots change during filtered reorder. No status uses its stable derived ID. Legacy views load in catalog order; duplication copies the rank independently. This display preference changes no Status catalog, roles, projects, property/history records or paths. See [view contract](api/workspace-views.md#board-column-order-workspace-fns).
+
+### Table column widths
+
+A Table view stores `tableColumnWidths`, an optional map of stable property IDs to finite numeric pixel widths of at least `132`. Legacy views default to an empty map and use renderer defaults. Widths belong to the Workspace/view, survive hide/show, reorder, grouping and restart, and have no product maximum. Partial width patches merge without replacing other columns or view settings. The current JSON adapter persists this field; see [Table width contract](api/workspace-views.md#table-column-widths-workspace-bja).

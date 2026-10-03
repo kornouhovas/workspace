@@ -41,6 +41,7 @@ export type WorkspaceViewState = {
   readonly propertyOrder?: Record<string, number>;
   readonly valueVisibility?: Record<string, { readonly valueIds: readonly string[]; readonly includeEmpty?: boolean }>;
   readonly propertyLayout?: Record<string, { readonly wrapContent?: boolean }>;
+  readonly tableColumnWidths?: Record<string, number>;
   readonly boardLayout?: { readonly columnWidth: number };
 };
 

@@ -9,7 +9,7 @@ export async function duplicateWorkspaceView(client, workspaceId, sourceId, copy
   const viewId = created.view.id;
   try {
     const patch = {};
-    for (const key of ["visiblePropertyIds", "hiddenPropertyIds", "propertyOrder", "valueVisibility", "propertyLayout", "boardLayout", "columnOrder", "rowOrder", "grouping", "groupingNotice"]) {
+    for (const key of ["visiblePropertyIds", "hiddenPropertyIds", "propertyOrder", "valueVisibility", "propertyLayout", "boardLayout", "tableColumnWidths", "columnOrder", "rowOrder", "grouping", "groupingNotice"]) {
       if (source[key] !== undefined) patch[key] = structuredClone(source[key]);
     }
     await client.updateView({ workspaceId, viewId, patch });

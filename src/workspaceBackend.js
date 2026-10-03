@@ -379,6 +379,7 @@ export async function createUpdateViewResponse({
     const savedView = await viewStore.saveView(normalizeViewDocument({
       ...view,
       ...(body?.patch || {}),
+      ...(Object.hasOwn(body?.patch || {}, "tableColumnWidths") ? { tableColumnWidths: { ...view.tableColumnWidths, ...body.patch.tableColumnWidths } } : {}),
       ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null } : {}),
       updatedAt: now(),
     }));

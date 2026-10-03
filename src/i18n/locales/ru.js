@@ -138,6 +138,7 @@ export const ru = {
   "view.valueFilters": "Фильтры значений",
   "view.valueFiltersDescription": "Ограничьте проекты значениями списков",
   "view.noValues": "Значений нет",
+  "toast.tableWidthFailed": "Не удалось сохранить ширину колонки",
   "view.columnWidth": "Ширина колонки",
   "view.columnWidthDescription": "Изменить ширину всех колонок доски",
   "board.moveDisabled": "Перемещение отключено",
