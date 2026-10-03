@@ -87,8 +87,8 @@ test('hidden-only changes cannot start from a missing column and obsolete failur
 test('drag follows fractional pointer movement and scrolling without snapping to insertion slots', () => {
  const origin={startX:180,startY:80,scrollLeft:40,scrollTop:10,sourceIndex:1,step:300};
  const small=boardOrderDragGeometry(origin,192.5,84.25,40,10);
- assert.deepEqual(small,{x:12.5,y:4.25,index:1});
- assert.deepEqual(boardOrderDragGeometry(origin,192.5,84.25,340,30),{x:312.5,y:24.25,index:2});
+ assert.deepEqual(small,{x:12.5,y:0,index:1});
+ assert.deepEqual(boardOrderDragGeometry(origin,192.5,84.25,340,30),{x:312.5,y:0,index:2});
  assert.deepEqual(boardOrderDragGeometry(origin,480,80,40,10),{x:300,y:0,index:2});
  assert.deepEqual(boardOrderDragGeometry(origin,-420,80,40,10),{x:-600,y:0,index:-1});
 });
@@ -99,5 +99,21 @@ test('insertion follows the dragged centre independent of grab point, neighbours
   assert.equal(boardOrderDragGeometry(origin,startX+151,60,0,0).index,1);
   assert.equal(boardOrderDragGeometry(origin,startX+751,60,0,0).index,3);
   assert.equal(boardOrderDragGeometry(origin,startX+149,60,0,0).index,0);
+ }
+});
+
+test('only horizontal displacement activates Board header drag; vertical and steep diagonal gestures below the X threshold stay inactive', () => {
+ for(const y of [-1000,0,80,1000]) {
+  assert.equal(boardOrderPointerActivated(100,80,100,y),false);
+  assert.equal(boardOrderPointerActivated(100,80,105.99,y),false);
+  assert.equal(boardOrderPointerActivated(100,80,106,y),true);
+  assert.equal(boardOrderPointerActivated(100,80,94,y),true);
+ }
+});
+test('header stays on the Board header line independently of pointer Y and vertical scroll; targets use only X', () => {
+ const origin={startX:180,startY:80,scrollLeft:40,scrollTop:10,sourceIndex:1,step:300};
+ for(const y of [-500,80,900]) for(const top of [0,10,200]) {
+  assert.deepEqual(boardOrderDragGeometry(origin,492.5,y,40,top),{x:312.5,y:0,index:2});
+  assert.deepEqual(boardOrderDragGeometry(origin,-132.5,y,40,top),{x:-312.5,y:0,index:0});
  }
 });

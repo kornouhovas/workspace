@@ -52,7 +52,7 @@ export function createBoardOrderSession(order = [], visibleIds = order) {
 }
 
 export function boardOrderPointerActivated(startX, startY, x, y) {
-  return Math.hypot(x - startX, y - startY) >= 6;
+  return Math.abs(x - startX) >= 6;
 }
 export function boardOrderPointerInside(rect, x, y) {
   return !!rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
@@ -70,6 +70,6 @@ export function boardOrderPointerIndex(x, scrollLeft, firstCenter, step) {
 // Pointer displacement is continuous; only the insertion rank is rounded.
 export function boardOrderDragGeometry(origin, x, y, scrollLeft, scrollTop) {
   const dx = x - origin.startX + scrollLeft - origin.scrollLeft;
-  const dy = y - origin.startY + scrollTop - origin.scrollTop;
-  return { x: dx, y: dy, index: origin.sourceIndex + Math.round(dx / origin.step) };
+  // Y belongs to the Board header line, including when the Board scrolls.
+  return { x: dx, y: 0, index: origin.sourceIndex + Math.round(dx / origin.step) };
 }
