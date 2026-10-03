@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode"
 )
@@ -19,7 +20,7 @@ type directoryRequest struct {
 // Root holds directory handles. Production CLI additionally applies the OS
 // creation guard before opening the source; handles alone permit moved parents.
 func createProjectDirectory(req directoryRequest, beforeMkdir func()) error {
-	if req.Name == "" || strings.TrimSpace(req.Name) != req.Name || strings.HasPrefix(req.Name, ".") || strings.ContainsAny(req.Name, "/\\\x00") || strings.IndexFunc(req.Name, unicode.IsControl) >= 0 {
+	if !validProjectName(req.Name, runtime.GOOS) {
 		return errors.New("invalid project name")
 	}
 	if !filepath.IsAbs(req.Root) {
@@ -83,10 +84,7 @@ func runCreateDirectory() {
 	var req directoryRequest
 	err := json.NewDecoder(os.Stdin).Decode(&req)
 	if err == nil {
-		err = guardProjectCreation(req.Root)
-	}
-	if err == nil {
-		err = createProjectDirectory(req, nil)
+		err = createGuardedProjectDirectory(req, nil)
 	}
 	if err != nil {
 		code := "CREATE_DIRECTORY_FAILED"
@@ -99,4 +97,27 @@ func runCreateDirectory() {
 		os.Exit(1)
 	}
 	fmt.Println(`{"created":true}`)
+}
+
+// Windows also rejects DOS aliases, ADS syntax and names normalized by Win32.
+// Validate in the helper even when a non-JS caller invokes its internal CLI.
+func validProjectName(name, platform string) bool {
+	if name == "" || strings.TrimSpace(name) != name || strings.HasPrefix(name, ".") || strings.ContainsAny(name, "/\\\x00") || strings.IndexFunc(name, unicode.IsControl) >= 0 {
+		return false
+	}
+	if platform != "windows" {
+		return true
+	}
+	if strings.ContainsAny(name, `<>:"|?*`) || strings.HasSuffix(name, ".") {
+		return false
+	}
+	base := strings.ToUpper(strings.TrimRight(strings.Split(name, ".")[0], " "))
+	switch base {
+	case "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$":
+		return false
+	}
+	if len([]rune(base)) == 4 && (strings.HasPrefix(base, "COM") || strings.HasPrefix(base, "LPT")) && strings.ContainsRune("123456789¹²³", []rune(base)[3]) {
+		return false
+	}
+	return true
 }

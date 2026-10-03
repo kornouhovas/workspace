@@ -33,12 +33,11 @@ func TestCreationGuardChild(t *testing.T) {
 			os.Exit(9)
 		}
 	}
-	if err := guardProjectCreation(req.Root); err != nil {
-		fmt.Println("GUARD", err)
-		if mode == "preexisting" {
+	if mode == "preexisting" {
+		if err := guardProjectCreation(req.Root); err != nil {
+			fmt.Println("GUARD", err)
 			os.Exit(0)
 		}
-		os.Exit(8)
 	}
 	if mode == "preexisting" {
 		if err := os.Mkdir(filepath.Join(filepath.Dir(req.Root), "Escape"), 0700); err == nil {
@@ -46,7 +45,7 @@ func TestCreationGuardChild(t *testing.T) {
 		}
 		os.Exit(0)
 	}
-	err := createProjectDirectory(req, func() { fmt.Println("READY"); bufio.NewReader(os.Stdin).ReadString('\n') })
+	err := createGuardedProjectDirectory(req, func() { fmt.Println("READY"); bufio.NewReader(os.Stdin).ReadString('\n') })
 	if err != nil {
 		fmt.Println("DENIED", err)
 		os.Exit(3)
@@ -67,6 +66,8 @@ func guardChild(t *testing.T, req directoryRequest, mode string, before func()) 
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
+	defer cmd.Process.Kill()
+	defer stdin.Close()
 	reader := bufio.NewReader(stdout)
 	line, _ := reader.ReadString('\n')
 	if strings.TrimSpace(line) == "READY" {
@@ -83,6 +84,9 @@ func guardChild(t *testing.T, req directoryRequest, mode string, before func()) 
 }
 
 func TestCreationGuardProfile(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("macOS SBPL profile")
+	}
 	root := filepath.Join(t.TempDir(), `source "quoted" \ unicode Ж`)
 	os.Mkdir(root, 0700)
 	profile, err := creationGuardProfile(root)

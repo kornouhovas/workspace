@@ -38,7 +38,9 @@ func TestCreateProjectDirectory(t *testing.T) {
 func TestCreateProjectDirectoryRejectsSymlinkAndPinsDestination(t *testing.T) {
 	root, outside := t.TempDir(), t.TempDir()
 	os.Mkdir(filepath.Join(root, "Active"), 0700)
-	os.Symlink(outside, filepath.Join(root, "Link"))
+	if err := os.Symlink(outside, filepath.Join(root, "Link")); err != nil {
+		t.Skipf("symlink fixture unavailable: %v", err)
+	}
 	if err := createProjectDirectory(directoryRequest{Root: root, Parent: "Link", Name: "Escape"}, nil); err == nil {
 		t.Fatal("symlink accepted")
 	}
@@ -58,5 +60,21 @@ func TestCreateProjectDirectoryRejectsSymlinkAndPinsDestination(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(outside, "Pinned")); !os.IsNotExist(err) {
 		t.Fatal("escaped through replacement symlink")
+	}
+}
+
+func TestProjectNameWindowsRules(t *testing.T) {
+	for _, name := range []string{"CON", "CON .txt", "con.txt", "NUL", "COM1", "LPT9.txt", "COM¹", "LPT².log", "CONIN$", "CONOUT$", "a:b", "a?b", "a*b", "a<b", "a>b", "a\"b", "a|b", "trailing."} {
+		if validProjectName(name, "windows") {
+			t.Fatalf("accepted %q", name)
+		}
+	}
+	for _, name := range []string{"Normal Ж", "CONSOLE", "COM0", "COM10", "Alpha.txt"} {
+		if !validProjectName(name, "windows") {
+			t.Fatalf("rejected %q", name)
+		}
+	}
+	if !validProjectName("CON", "darwin") {
+		t.Fatal("macOS names changed")
 	}
 }

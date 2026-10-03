@@ -33,11 +33,10 @@ test("workspace runs as an Electron-only app shell", async () => {
   ]);
   assert.equal(packageJson.scripts.verify, "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar");
   assert.equal(packageJson.scripts["test:go"], "GOFLAGS=-buildvcs=false go test ./...");
-  assert.equal(packageJson.scripts["build:sidecar"].includes("GOFLAGS=-buildvcs=false"), true);
-  assert.equal(packageJson.scripts["build:sidecar"].includes("-o build/sidecar/local/workspace-sidecar"), true);
-  assert.equal(packageJson.scripts["build:sidecar"].includes("-o workspace-sidecar"), false);
-  assert.equal(packageJson.scripts["build:sidecar:mac"].includes("GOFLAGS=-buildvcs=false GOOS=darwin GOARCH=arm64"), true);
-  assert.equal(packageJson.scripts["build:sidecar:win"].includes("GOFLAGS=-buildvcs=false GOOS=windows GOARCH=amd64"), true);
+  assert.equal(packageJson.scripts["build:sidecar"], "node scripts/build-sidecar.mjs");
+  assert.equal(packageJson.scripts["build:sidecar:mac"], "node scripts/build-sidecar.mjs mac");
+  assert.equal(packageJson.scripts["build:sidecar:win"], "node scripts/build-sidecar.mjs win");
+  assert.equal(packageJson.scripts["build:sidecar:linux"], "node scripts/build-sidecar.mjs linux");
   assert.equal(packageJson.scripts["prepare:electron:mac"], undefined);
   assert.equal(packageJson.scripts["dist:mac"], undefined);
   assert.equal(packageJson.scripts["dist:win"], undefined);
