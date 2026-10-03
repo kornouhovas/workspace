@@ -164,6 +164,7 @@ Fields:
 - `propertyOrder`: object mapping property id to order number.
 - `valueVisibility`: object keyed by property id, with view-level value filter settings.
 - `propertyLayout`: object keyed by property id, with view-level display settings such as `wrapContent` for custom Text properties.
+- `columnOrder`: Board-only ordered array of unique opaque Status IDs; unavailable IDs retain slots and new IDs append in stable catalog order.
 - `boardLayout`: Board-only display settings. `columnWidth` stores the preferred status-column width in pixels.
 - `createdAt`: timestamp.
 - `updatedAt`: timestamp.
@@ -183,7 +184,7 @@ Business rules:
 - `includeEmpty` controls whether projects without a custom select value remain visible when an include filter is active.
 - `propertyLayout.<propertyId>.wrapContent: true` makes a custom Text property wrap in Table view and allows row height to expand; missing or false means compact single-line display.
 - `boardLayout.columnWidth` is normalized to the supported persisted range of `288..1600`. The renderer keeps the stored width stable across window resizing; the one-third working-area limit applies when choosing a new width, not when rendering an existing preference.
-- Board views do not support drag and drop between primary status groups in MVP.
+- Board card Status drops use the existing validated explicit folder move; column reorder changes only view metadata.
 
 Example:
 
@@ -669,3 +670,7 @@ The transitional JSON settings adapter records only explicitly moved existing pr
 ### Table row rank
 
 A Table view may retain `rowOrder`, an independent sequence of unique opaque project IDs. It ranks project occurrences before grouping/filtering, retains unavailable identities, and changes no folder membership, properties/history or group order. Missing data preserves discovery order. See [Table order contract](api/workspace-views.md#table-manual-row-order-workspace-9bp).
+
+### Board column rank
+
+A Board view may retain `columnOrder`, independently per view and Workspace. Projection ranks complete Status columns before search/value filtering; hidden columns retain their positions, and only visible slots change during filtered reorder. No status uses its stable derived ID. Legacy views load in catalog order; duplication copies the rank independently. This display preference changes no Status catalog, roles, projects, property/history records or paths. See [view contract](api/workspace-views.md#board-column-order-workspace-fns).

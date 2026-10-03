@@ -1153,3 +1153,19 @@ test('workspace intent keeps the outgoing identity and disables data until activ
   const loaded = reduce(pending, { type: 'projectionLoaded', root, viewsResponse, projectionResponse, folderRoleTree, replaceWorkspace: true });
   assert.equal(getWorkspaceSurfaceState(loaded).interactionDisabled, false);
 });
+
+
+test('Board order acknowledgement updates only its current view; late replies leave navigation and project preview intact', async () => {
+ const {createInitialWorkspaceAppState,workspaceAppStateReducer:reduce}=await importAppStateModule();
+ const initial=reduce(createInitialWorkspaceAppState(),{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree});
+ const selected=reduce(initial,{type:'projectSelected',projectId:'project:alpha'});
+ const action={type:'viewBoardOrderUpdated',workspaceId:root.workspaceId,viewId:'view:board',viewRequestVersion:selected.viewRequestVersion,columnOrder:['done','active']};
+ const updated=reduce(selected,action);
+ assert.deepEqual(updated.views.find(v=>v.id==='view:board').columnOrder,['done','active']);
+ assert.deepEqual(updated.projection.view.columnOrder,['done','active']);
+ assert.equal(updated.selectedProjectId,selected.selectedProjectId);
+ assert.equal(updated.views.find(v=>v.id==='view:table'),selected.views.find(v=>v.id==='view:table'));
+ assert.equal(reduce(selected,{...action,workspaceId:'other'}),selected);
+ assert.equal(reduce(selected,{...action,viewId:'other'}),selected);
+ assert.equal(reduce(selected,{...action,viewRequestVersion:selected.viewRequestVersion+1}),selected);
+});

@@ -30,6 +30,7 @@ export type WorkspaceTableGroup = {
   readonly collapsed: boolean;
 };
 export type WorkspaceViewState = {
+  readonly columnOrder?: readonly string[];
   readonly rowOrder?: readonly string[];
   readonly grouping?: WorkspaceGroupingState | null;
   readonly groupingNotice?: string | null;
@@ -198,6 +199,13 @@ export type WorkspaceAppAction =
       readonly type: "viewPropertyLayoutUpdated";
       readonly viewId: string;
       readonly propertyLayout: NonNullable<WorkspaceViewState["propertyLayout"]>;
+    }
+  | {
+      readonly type: "viewBoardOrderUpdated";
+      readonly workspaceId: string;
+      readonly viewId: string;
+      readonly viewRequestVersion: number;
+      readonly columnOrder: readonly string[];
     }
   | {
       readonly type: "viewBoardLayoutUpdated";
@@ -500,6 +508,16 @@ export function workspaceAppStateReducer(
           }
         : state.projection,
       error: null,
+    };
+  }
+
+  if (action.type === "viewBoardOrderUpdated") {
+    if (state.workspaceId !== action.workspaceId || state.activeViewId !== action.viewId ||
+      state.viewRequestVersion !== action.viewRequestVersion) return state;
+    return { ...state,
+      views: state.views.map(view => view.id === action.viewId ? { ...view, columnOrder: action.columnOrder } : view),
+      projection: state.projection?.view.id === action.viewId ? { ...state.projection,
+        view: { ...state.projection.view, columnOrder: action.columnOrder } } : state.projection,
     };
   }
 

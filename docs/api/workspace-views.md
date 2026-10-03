@@ -540,7 +540,7 @@ Validation:
 - Search is applied to project `Name` only.
 - Search combines with active view value filters.
 - Board projection must include `No status` when matching projects have no status.
-- Board projection must not expose a move-between-status operation in MVP.
+- Board card moves use the existing [Status move contract](workspace-status-move.md); column order never invokes a physical move.
 - Table projection uses the same filtered project set as Board for the same Workspace and filters.
 
 ## Backend / Sidecar Persistence Contract
@@ -625,3 +625,11 @@ Board `canMoveBetweenStatuses` advertises explicit Status column moves through [
 Optional `rowOrder: string[]` is a per-Table sequence of unique opaque project IDs in the existing JSON view document. Missing order defaults to discovery order; no migration is required. `updateView` rejects non-arrays, invalid/empty entries and duplicates. Board ignores this setting. The projection returns the complete retained sequence plus new discovered IDs, applies its rank before search/value filtering/grouping, and uses the same rank for all Multi-select occurrences. Unknown/unavailable saved IDs remain retained without producing rows. View duplication deep-copies the sequence.
 
 A reorder replaces only the selected visible group’s slots in the canonical sequence, retaining filtered/hidden/unavailable IDs and other groups’ ranks. Group sort/manualOrder, visibility, custom values/history, folder roles and paths are independent. Manual drops target the same group; crossings between groups of custom properties are unavailable. Across explicit Status groups, a fresh verified Status option invokes the existing move; only a completed move may then save the requested insertion order. A failed move cannot save that order. Empty Status group headers accept moves; No status stays accessible as a group but never as a physical destination. Click/current-position, Escape, outside and pointer cancellation do not save. Arrow Up/Down on a focused handle reorders inside its group.
+
+## Board column order (workspace-fns)
+
+`workspace.updateView` accepts `patch.columnOrder: string[]` for a Board view. Entries must be unique non-empty opaque Status IDs. Invalid structure rejects the whole update with `VALIDATION_FAILED`, field `columnOrder`. Unknown/unavailable IDs are retained for source/filter recovery. This additive view field is normalized on JSON read/write, defaults to `[]`, and is copied by Duplicate Tab independently. Table views do not consume it. Width, visibility, property order and filters are preserved by a columnOrder-only patch.
+
+`workspace.getViewProjection` returns the complete effective `view.columnOrder`: saved IDs followed by newly discovered Status IDs in catalog order. It ranks Board columns by stable `statusValueId` and leaves the response Status catalog unchanged. Empty columns remain accessible; search/value filters never alter the complete rank. Renderer search retains the complete rank. Filtered reorder changes only visible slots. Updates survive adapter restart and Workspace/view switching without writing project data, properties/history, roles or paths.
+
+UI preview has separate header and body orders. A changed valid drop applies both synchronously, then sends exactly one update. Cancel/outside/unchanged drops send none. Pending prevents conflicting moves; storage failure restores the confirmed complete order. Navigation cancels unfinished previews and invalidates late replies; acknowledgement is scoped to Workspace, view and navigation version. Card Status drops continue targeting stable Status IDs after reorder.

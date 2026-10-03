@@ -199,6 +199,7 @@ function normalizeViewsResponse(response: unknown, workspaceId: string): Workspa
             : undefined,
           propertyLayout: normalizeViewPropertyLayout(view.propertyLayout),
           boardLayout: normalizeViewBoardLayout(view.boardLayout),
+          columnOrder: Array.isArray(view.columnOrder) ? view.columnOrder.filter((id): id is string => typeof id === "string") : [],
           rowOrder: Array.isArray(view.rowOrder) ? view.rowOrder.filter((id): id is string => typeof id === "string") : [],
           grouping: normalizeGrouping(view.grouping),
           groupingNotice: getString(view.groupingNotice) || null,
@@ -1932,6 +1933,25 @@ export default function App() {
     }
   }
 
+  async function handleReorderBoardColumns(columnOrder: readonly string[]) {
+    if (surfaceInteractionDisabledRef.current) throw new RendererLocalizedError("error.activeViewUnavailable");
+    const workspaceId = state.workspaceId, viewId = state.activeViewId;
+    const viewRequestVersion = viewRequestVersionRef.current, loadRequestId = loadRequestIdRef.current;
+    if (!workspaceId || !viewId || !state.root) throw new RendererLocalizedError("error.activeViewUnavailable");
+    try {
+      await workspaceClient.updateView({ workspaceId, viewId, patch: { columnOrder } });
+      if (workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId ||
+        loadRequestIdRef.current !== loadRequestId || viewRequestVersionRef.current !== viewRequestVersion) return;
+      dispatch({ type: "viewBoardOrderUpdated", workspaceId, viewId, viewRequestVersion, columnOrder });
+    } catch (error) {
+      if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId &&
+        loadRequestIdRef.current === loadRequestId && viewRequestVersionRef.current === viewRequestVersion) {
+        toast.error(t("board.orderSaveFailed"), { description: getServiceErrorMessage(error, t) });
+      }
+      throw error;
+    }
+  }
+
   async function handleReorderProjectRows(rowOrder: readonly string[]) {
     if (surfaceInteractionDisabledRef.current) return;
     const workspaceId = state.workspaceId, viewId = state.activeViewId;
@@ -3014,7 +3034,11 @@ export default function App() {
                     </p>
                   </div>
                 ) : activeViewType === "board" ? (
-                  <WorkspaceBoardView
+                  <WorkspaceBoardView key={`${state.workspaceId}:${serviceProjection?.view.id ?? state.activeViewId}`}
+                    orderScope={`${state.workspaceId}:${serviceProjection?.view.id ?? state.activeViewId}`}
+                    interactionDisabled={surfaceState.interactionDisabled}
+                    columnOrder={serviceProjection?.view.columnOrder ?? activeView?.columnOrder}
+                    onReorderColumns={handleReorderBoardColumns}
                     projection={boardProjection as typeof workspaceMockProjection.projection}
                     statusValues={statusValues}
                     columnWidth={activeView?.boardLayout?.columnWidth}

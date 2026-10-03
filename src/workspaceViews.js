@@ -1,4 +1,5 @@
 import { normalizeGrouping, validateGrouping, createTableGrouping } from "./workspaceGrouping.js";
+import { completeBoardColumnOrder } from "./workspaceBoardOrder.js";
 import { completeTableRowOrder } from "./workspaceTableOrder.js";
 import { randomUUID } from "node:crypto";
 
@@ -80,6 +81,7 @@ export function normalizeViewDocument(view = {}) {
     valueVisibility: normalizeValueVisibility(view.valueVisibility),
     propertyLayout: normalizePropertyLayout(view.propertyLayout),
     boardLayout: normalizeBoardLayout(view.boardLayout),
+    ...(viewType === "board" ? { columnOrder: completeBoardColumnOrder(view.columnOrder) } : {}),
     ...(viewType === "table" ? { rowOrder: normalizeStringArray(view.rowOrder) } : {}),
     grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
     groupingNotice: view.groupingNotice === "property-removed" ? "property-removed" : null,
@@ -136,6 +138,10 @@ export function validateViewPatch({ patch = {}, propertyDefinitions = [], select
         throw new WorkspaceViewError("INVALID_PROPERTY_REFERENCE", "Property order references a hidden property.", "propertyOrder");
       }
     }
+  }
+
+  if (Object.hasOwn(patch, "columnOrder") && (!Array.isArray(patch.columnOrder) || patch.columnOrder.some(id => typeof id !== "string" || !id) || new Set(patch.columnOrder).size !== patch.columnOrder.length)) {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Column order requires unique status IDs.", "columnOrder");
   }
 
   if (Object.hasOwn(patch, "rowOrder") && (!Array.isArray(patch.rowOrder) || patch.rowOrder.some(id => typeof id !== "string" || !id) || new Set(patch.rowOrder).size !== patch.rowOrder.length)) {
@@ -227,7 +233,9 @@ export function createViewProjection({
   }
 
   const boardStatusValues = createBoardStatusValues({ statusValues, filteredProjects });
-  const boardColumns = boardStatusValues.map((statusValue) => ({
+  const columnOrder = completeBoardColumnOrder(normalizedView.columnOrder, boardStatusValues.map(value => value.id));
+  const rank = new Map(columnOrder.map((id, index) => [id, index]));
+  const boardColumns = [...boardStatusValues].sort((a, b) => rank.get(a.id) - rank.get(b.id)).map((statusValue) => ({
     statusValueId: statusValue.id,
     name: statusValue.name,
     projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
@@ -235,6 +243,7 @@ export function createViewProjection({
 
   return {
     ...response,
+    view: { ...response.view, columnOrder },
     statusValues: boardStatusValues,
     projection: {
       type: "board",

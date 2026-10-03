@@ -566,6 +566,7 @@ test("createCreateViewResponse creates a default active Board view", async () =>
     valueVisibility: {},
     propertyLayout: {},
     boardLayout: { columnWidth: 384 },
+    columnOrder: [],
     grouping: null,
     groupingNotice: null,
     createdAt: now,

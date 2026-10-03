@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
 
+import { useBoardColumnOrder } from "./use-board-column-order";
 import { ProjectStatusPicker } from "./project-status-picker";
 import { ProjectStatusDragSurface, StatusDragCard, StatusDropColumn, type ProjectStatusActions } from "./project-status-drag";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,10 @@ type WorkspaceBoardViewProps = BoardEditingProps & ProjectStatusActions & {
   readonly projection: WorkspaceBoardProjection;
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly columnWidth?: number;
+  readonly columnOrder?: readonly string[];
+  readonly orderScope?: string;
+  readonly interactionDisabled?: boolean;
+  readonly onReorderColumns?: (order: readonly string[]) => Promise<void>;
   readonly onViewportWidthChange?: (viewportWidth: number) => void;
   readonly visibleProperties: readonly WorkspaceMockVisibleProperty[];
   readonly selectValues: readonly WorkspaceSelectValueState[];
@@ -100,7 +105,7 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
 export function WorkspaceBoardView({
   projection,
   statusValues,
-  columnWidth,
+  columnWidth, columnOrder, orderScope = "board", interactionDisabled = false, onReorderColumns,
   onViewportWidthChange,
   visibleProperties,
   selectValues,
@@ -115,6 +120,10 @@ export function WorkspaceBoardView({
   );
   const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
+  const columnIds = projection.columns.map(column => column.statusValueId);
+  const order = useBoardColumnOrder({ order: columnOrder ?? columnIds, visibleIds: columnIds, scope: orderScope, disabled: interactionDisabled || !!statusMovePending, viewport: boardViewportRef, onReorder: onReorderColumns });
+  const columnsById = new Map(projection.columns.map(column => [column.statusValueId, column]));
+  const orderedColumns = order.bodies.flatMap(id => { const column = columnsById.get(id); return column ? [column] : []; });
   const boardGridStyle = {
     "--workspace-board-column-width": `${preferredColumnWidth}px`,
     gridAutoColumns: "var(--workspace-board-column-width)",
@@ -142,11 +151,14 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <ProjectStatusDragSurface statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
-    <section data-workspace-preview-surface="board" className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")}>
+    <ProjectStatusDragSurface statusMovePending={statusMovePending || !!order.activeId || order.pending || interactionDisabled} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
+    <section data-workspace-preview-surface="board" className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")} data-workspace-column-reorder={order.activeId ? "preview" : order.pending ? "saving" : undefined}
+      onClickCapture={event => { if (order.suppressClick()) { event.preventDefault(); event.stopPropagation(); } }}>
+      <p className="sr-only" id="workspace-board-order-help">{t("board.orderHelp")}</p>
+      {order.activeId || order.pending ? <p role="status" className="sr-only">{t(order.pending ? "board.orderSaving" : "board.orderPreview")}</p> : null}
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
-          {projection.columns.map((column) => {
+          {orderedColumns.map((column) => {
             const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (
               <StatusDropColumn statusValueId={column.statusValueId}
@@ -156,10 +168,14 @@ export function WorkspaceBoardView({
                 name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
               })}
             >
-              <header className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
-                <h3 className="flex min-w-0 items-center gap-2 truncate text-sm font-medium">
+              <header data-workspace-column-header={column.statusValueId} style={order.headerStyle(column.statusValueId)} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
+                <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
+                  <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-label={t("board.reorderColumn", {name: getStatusDisplayName(t, {id: column.statusValueId, name: column.name})})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
+                    onPointerDown={event => order.onPointerDown(event, column.statusValueId)} onKeyDown={event => order.onKeyDown(event, column.statusValueId)}
+                    className="flex w-full min-w-0 touch-none select-none items-center gap-2 rounded-sm text-left cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
                   <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
-                  {getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
+                  <span className="truncate">{getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}</span>
+                  </button>
                 </h3>
                 <span
                   data-workspace-column-count
