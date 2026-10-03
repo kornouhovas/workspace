@@ -212,6 +212,7 @@ export function ChromeTab({
 }
 export function WorkspaceRightPanel({
   previewIdentity,
+  interactionDisabled = false,
   layout,
   suppressed = false,
   send,
@@ -222,6 +223,7 @@ export function WorkspaceRightPanel({
   onMaximizeProject,
 }: {
   previewIdentity: string;
+  interactionDisabled?: boolean;
   layout: PaneLayout;
   suppressed?: boolean;
   send: (action: PaneAction) => void;
@@ -289,7 +291,10 @@ export function WorkspaceRightPanel({
   return (
     <aside
       className="bb-right-panel"
-      inert={!visible}
+      inert={!visible || interactionDisabled}
+      onClickCapture={event => { if (interactionDisabled) { event.preventDefault(); event.stopPropagation(); } }}
+      onPointerDownCapture={event => { if (interactionDisabled) { event.preventDefault(); event.stopPropagation(); } }}
+      onKeyDownCapture={event => { if (interactionDisabled) { event.preventDefault(); event.stopPropagation(); } }}
       aria-hidden={!visible}
       data-open={visible}
       data-suppressed={suppressed}

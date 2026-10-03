@@ -62,6 +62,7 @@ import {
 import {
   createInitialWorkspaceAppState,
   filterWorkspaceProjectionBySearch,
+  getWorkspaceSurfaceState,
   workspaceAppStateReducer,
   type WorkspaceAppState,
   type WorkspacePropertyCatalogState,
@@ -566,6 +567,11 @@ export default function App() {
     undefined,
     createInitialWorkspaceAppState,
   );
+  const surfaceState = getWorkspaceSurfaceState(state);
+  const surfaceInteractionDisabledRef = useRef(false);
+  surfaceInteractionDisabledRef.current = surfaceState.interactionDisabled;
+  const viewRequestVersionRef = useRef(state.viewRequestVersion);
+  viewRequestVersionRef.current = state.viewRequestVersion;
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const navigationSurfaceVersion = useRef(0);
   useEffect(installMenuHoverMemory, []);
@@ -615,6 +621,7 @@ export default function App() {
   useEffect(() => { writeSidebarWidth(window.localStorage, sidebarWidth); }, [sidebarWidth]);
   const workspaceSwitchVersion = useRef(0);
   const workspaceSwitchQueue = useRef(Promise.resolve());
+  const viewSelectionQueue = useRef(Promise.resolve());
   const [closedProjectTabs, setClosedProjectTabs] = useState<
     Record<string, (typeof savedProjectSession.tabs)[string]>
   >({});
@@ -665,6 +672,7 @@ export default function App() {
     if (
       state.status !== "ready" ||
       state.workspaceSwitchPending ||
+      surfaceState.interactionDisabled ||
       pendingWorkspaceScreen.current ||
       restoreStartupScreen.current
     )
@@ -692,6 +700,7 @@ export default function App() {
     selectedProject,
     state.status,
     state.workspaceSwitchPending,
+    surfaceState.interactionDisabled,
     state.activeViewId,
     activeSurface,
   ]);
@@ -710,7 +719,7 @@ export default function App() {
   useEffect(() => {
     const identity = JSON.stringify([state.workspaceId, state.activeViewId]);
     if (!previewRestoreTracker.current.needsRestore(identity) || state.status !== "ready" ||
-      restoreStartupScreen.current || pendingWorkspaceScreen.current) return;
+      surfaceState.interactionDisabled || restoreStartupScreen.current || pendingWorkspaceScreen.current) return;
     previewRestoreTracker.current.markRestored(identity);
     const workspaceId = state.workspaceId;
     const viewId = state.activeViewId;
@@ -734,17 +743,44 @@ export default function App() {
       rememberPreview(null, viewId);
       toast.error(t("error.projectUnavailable"), { description: getServiceErrorMessage(error, t) });
     });
-  }, [state.workspaceId, state.activeViewId, state.status, previewSelectionRevision]);
+  }, [state.workspaceId, state.activeViewId, state.status, surfaceState.interactionDisabled, previewSelectionRevision]);
+
+  function invalidateActiveProjection() {
+    viewRequestVersionRef.current += 1;
+    dispatch({ type: "projectionInvalidated" });
+  }
+
+  function persistSavedView(workspaceId: string, viewId: string) {
+    const sourceLoadRequestId = loadRequestIdRef.current;
+    const intentVersion = viewRequestVersionRef.current;
+    const request = viewSelectionQueue.current.then(() => {
+      if (workspaceIdRef.current !== workspaceId || loadRequestIdRef.current !== sourceLoadRequestId ||
+        viewRequestVersionRef.current !== intentVersion) return;
+      return workspaceClient.setActiveView({ workspaceId, viewId });
+    });
+    viewSelectionQueue.current = request.then(() => {}, () => {});
+    return request;
+  }
 
   function selectSavedView(activeViewId: string) {
-    setPreviewSelectionRevision(previewRestoreTracker.current.request());
+    if (pendingWorkspaceScreen.current) return;
     previewRequests.current.invalidate();
-    // An explicit return from an expanded tab closes this destination preview.
-    if (projectExpanded) rememberPreview(null, activeViewId);
-    setSelectedProject(null);
-    setActiveProjectTabId(null);
-    setProjectTabSelected(false);
-    sendPane({ type: "selectView" });
+    dismissWorkspaceFloatingMenus();
+    activeViewIdRef.current = activeViewId;
+    viewRequestVersionRef.current += 1;
+    surfaceInteractionDisabledRef.current = state.projectionInvalidated || state.projection?.view.id !== activeViewId;
+    if (projectExpanded) {
+      // Explicit return from an expanded tab keeps its existing close semantics.
+      rememberPreview(null, activeViewId);
+      setSelectedProject(null);
+      setActiveProjectTabId(null);
+      setProjectTabSelected(false);
+      sendPane({ type: "selectView" });
+      setPreviewSelectionRevision(previewRestoreTracker.current.request());
+    } else if (!state.projectionInvalidated && state.projection?.view.id === activeViewId) {
+      // Reversing an unfinished switch can reactivate the still-ready snapshot.
+      previewRestoreTracker.current.markRestored(JSON.stringify([state.workspaceId, activeViewId]));
+    }
     dispatch({ type: "activeViewChanged", activeViewId });
   }
 
@@ -913,7 +949,7 @@ export default function App() {
       const editing =
         event.target instanceof Element &&
         event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
-      if (editing) return;
+      if (editing || surfaceState.interactionDisabled) return;
       const key = event.key.toLowerCase();
       if (key === "j") {
         event.preventDefault();
@@ -953,6 +989,7 @@ export default function App() {
     activeProjectTabId,
     expandedProjectTabs,
     closedProjectTabs,
+    surfaceState.interactionDisabled,
   ]);
 
   const [selectingFolder, setSelectingFolder] = useState(false);
@@ -1003,10 +1040,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     const loadRequestId = loadRequestIdRef.current + 1;
+    const loadViewRequestVersion = state.status === "ready" && !pendingWorkspaceScreen.current ? viewRequestVersionRef.current : null;
     loadRequestIdRef.current = loadRequestId;
 
     function isCurrentLoad() {
-      return !cancelled && loadRequestIdRef.current === loadRequestId;
+      return !cancelled && loadRequestIdRef.current === loadRequestId &&
+        (loadViewRequestVersion === null || viewRequestVersionRef.current === loadViewRequestVersion);
     }
 
     async function loadWorkspaceState() {
@@ -1069,7 +1108,8 @@ export default function App() {
         );
 
         const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
-        const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId;
+        const restorePendingView = state.workspaceId === root.workspaceId && surfaceState.interactionDisabled;
+        const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView;
         const savedPreviewId = viewPreviewId(savedScreen, activeViewId);
         const previewResponse = restoreScreen && !savedScreen?.tabId && savedPreviewId
           ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedPreviewId }).catch(() => null)
@@ -1090,7 +1130,7 @@ export default function App() {
             type: "propertiesLoaded",
             propertiesResponse,
           });
-          if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId) {
+          if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView) {
             previewRestoreTracker.current.markRestored(JSON.stringify([root.workspaceId, activeViewId]));
             workspaceScreenMemory.current.set(root.workspaceId, pruneViewPreviews(savedScreen, viewsResponse.views.map(view => view.id)));
             restoreStartupScreen.current = false;
@@ -1184,25 +1224,46 @@ export default function App() {
     }
 
     let cancelled = false;
+    const viewRequestVersion = state.viewRequestVersion;
+    const loadRequestId = loadRequestIdRef.current;
+    const workspaceId = state.workspaceId;
+    const viewId = state.activeViewId;
+    const previewToken = previewRequests.current.current();
+    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
+    const isCurrent = () => !cancelled && loadRequestIdRef.current === loadRequestId &&
+      viewRequestVersionRef.current === viewRequestVersion &&
+      workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId;
 
     async function loadActiveViewProjection() {
       try {
-        const projectionResponse = normalizeProjectionResponse(
-          await workspaceClient.getViewProjection({
-            workspaceId: state.workspaceId,
-            viewId: state.activeViewId,
-            locale,
-          }),
-        );
-
-        if (!cancelled) {
-          dispatch({ type: "projectionUpdated", projectionResponse });
+        const [rawProjection, rawPreview] = await Promise.all([
+          workspaceClient.getViewProjection({ workspaceId, viewId, locale }),
+          projectId ? workspaceClient.getProject({ workspaceId, projectId }).catch(() => null) : null,
+        ]);
+        const projectionResponse = normalizeProjectionResponse(rawProjection);
+        if (!isCurrent()) return;
+        if (projectionResponse.workspaceId !== workspaceId || projectionResponse.view.id !== viewId) {
+          throw new RendererLocalizedError("error.activeViewUnavailable");
+        }
+        const project = isRecord(rawPreview) && isRecord(rawPreview.project)
+          ? rawPreview.project as unknown as WorkspaceMockProject : null;
+        // Projection and destination preview activate in the same React batch.
+        previewRestoreTracker.current.markRestored(JSON.stringify([workspaceId, viewId]));
+        dispatch({ type: "projectionUpdated", projectionResponse, viewRequestVersion });
+        if (previewRequests.current.accepts(previewToken)) {
+          setSelectedProject(project);
+          setActiveProjectTabId(null);
+          setProjectTabSelected(false);
+          sendPane({ type: project ? "previewProject" : "selectView" });
+          if (project) void loadProjectFileTree(project, workspaceId);
+          else if (projectId) {
+            rememberPreview(null, viewId, workspaceId);
+            toast.error(t("error.projectUnavailable"));
+          }
         }
       } catch (error) {
-        if (!cancelled) {
-          toast.error(t("toast.viewLoadFailed"), {
-            description: getServiceErrorMessage(error, t),
-          });
+        if (isCurrent()) {
+          toast.error(t("toast.viewLoadFailed"), { description: getServiceErrorMessage(error, t) });
         }
       }
     }
@@ -1221,6 +1282,7 @@ export default function App() {
     state.workspaceId,
     state.activeViewId,
     state.projectionRefreshing,
+    state.viewRequestVersion,
     state.projection?.workspaceId,
     state.projection?.view.id,
   ]);
@@ -1308,6 +1370,9 @@ export default function App() {
     const version = ++workspaceSwitchVersion.current;
     loadRequestIdRef.current += 1;
     pendingWorkspaceScreen.current = workspaceId;
+    surfaceInteractionDisabledRef.current = true;
+    viewRequestVersionRef.current += 1;
+    dispatch({ type: "workspaceSwitchStarted" });
     // Keep the outgoing workspace coherent until the destination is ready.
     // Serialize activation writes, then ignore superseded results.
     const request = workspaceSwitchQueue.current.then(() => workspaceClient.setActiveWorkspace({ workspaceId }));
@@ -1321,6 +1386,7 @@ export default function App() {
     } catch (error) {
       if (version !== workspaceSwitchVersion.current) return;
       pendingWorkspaceScreen.current = null;
+      dispatch({ type: "workspaceSwitchCancelled" });
       toast.error(t("toast.workspaceOpenFailed"), { description: getServiceErrorMessage(error, t) });
     }
   }
@@ -1421,12 +1487,29 @@ export default function App() {
     }
   }
 
+  function captureViewMutation(workspaceId: string) {
+    return { workspaceId, version: viewRequestVersionRef.current, loadRequestId: loadRequestIdRef.current };
+  }
+
+  async function acceptViewMutationResult(request: ReturnType<typeof captureViewMutation>, restoreSelection = false) {
+    const sourceIsCurrent = () => workspaceIdRef.current === request.workspaceId && loadRequestIdRef.current === request.loadRequestId;
+    if (!sourceIsCurrent()) return false;
+    if (viewRequestVersionRef.current === request.version) return true;
+    // Activating mutations can finish after a later saved-view intent. Persist
+    // that latest choice before refreshing its authoritative view catalog.
+    if (restoreSelection && activeViewIdRef.current) await persistSavedView(request.workspaceId, activeViewIdRef.current);
+    if (sourceIsCurrent()) setReloadToken(value => value + 1);
+    return false;
+  }
+
   async function handleCreateView(viewType: "board" | "table") {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredViews"));
       return;
     }
 
+    const mutationRequest = captureViewMutation(state.workspaceId);
     const label = viewType === "board" ? t("view.boardDefault") : t("view.tableDefault");
     const currentViews = state.views.length > 0 ? state.views : workspaceMockProjection.views;
     const nextIndex = currentViews.filter((view) => view.viewType === viewType).length + 1;
@@ -1443,6 +1526,7 @@ export default function App() {
         name: fallbackView.name,
       });
       const createdView = normalizeCreatedViewResponse(response, state.workspaceId, fallbackView);
+      if (!await acceptViewMutationResult(mutationRequest, true)) return;
       dispatch({
         type: "viewCreated",
         workspaceId: createdView.workspaceId,
@@ -1460,10 +1544,12 @@ export default function App() {
 
   const duplicatingViewRef = useRef(false);
   async function handleDuplicateView(sourceId: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId || duplicatingViewRef.current) return;
     const source = state.views.find((view) => view.id === sourceId);
     if (!source) return;
     const workspaceId = state.workspaceId;
+    const mutationRequest = captureViewMutation(workspaceId);
     duplicatingViewRef.current = true;
     try {
       const viewId = await duplicateWorkspaceView(
@@ -1472,7 +1558,7 @@ export default function App() {
         sourceId,
         t("view.copyName", { name: source.name }),
       );
-      if (workspaceIdRef.current !== workspaceId) return;
+      if (!await acceptViewMutationResult(mutationRequest, true)) return;
       setSelectedProject(null);
       setActiveProjectTabId(null);
       dispatch({ type: "activeViewChanged", activeViewId: viewId });
@@ -1486,22 +1572,26 @@ export default function App() {
   }
 
   async function handleRenameView(viewId: string, name: string) {
+    if (surfaceInteractionDisabledRef.current) return false;
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredViews"));
       return false;
     }
 
+    const mutationRequest = captureViewMutation(state.workspaceId);
     try {
       await workspaceClient.updateView({
         workspaceId: state.workspaceId,
         viewId,
         patch: { name },
       });
+      if (!await acceptViewMutationResult(mutationRequest)) return false;
       dispatch({ type: "viewRenamed", viewId, name });
       toast.success(t("toast.viewRenamed"));
       return true;
     } catch (error) {
       if (isUnsupportedWorkspaceMethodError(error, "workspace.updateView")) {
+        if (!await acceptViewMutationResult(mutationRequest)) return false;
         dispatch({ type: "viewRenamed", viewId, name });
         toast.success(t("toast.viewRenamed"));
         return true;
@@ -1515,17 +1605,20 @@ export default function App() {
   }
 
   async function handleDeleteView(viewId: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredViews"));
       return;
     }
 
+    const mutationRequest = captureViewMutation(state.workspaceId);
     try {
       const response = await workspaceClient.deleteView({
         workspaceId: state.workspaceId,
         viewId,
       });
       const deletedView = normalizeDeletedViewResponse(response);
+      if (!await acceptViewMutationResult(mutationRequest, true)) return;
       const screen = workspaceScreenMemory.current.get(projectTabsWorkspaceId);
       workspaceScreenMemory.current.set(projectTabsWorkspaceId,
         pruneViewPreviews(screen, Object.keys(screen?.previewByView || {}).filter(id => id !== viewId)));
@@ -1547,10 +1640,12 @@ export default function App() {
   }
 
   async function handleReorderViews(orderedViewIds: readonly string[]) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
 
+    const mutationRequest = captureViewMutation(state.workspaceId);
     const currentViewIds = state.views.map((view) => view.id);
     const currentViewIdSet = new Set(currentViewIds);
     const nextOrderedViewIds = orderedViewIds.filter((viewId) => currentViewIdSet.has(viewId));
@@ -1580,6 +1675,7 @@ export default function App() {
         return;
       }
 
+      if (!await acceptViewMutationResult(mutationRequest)) return;
       dispatch({ type: "viewsReordered", orderedViewIds: currentViewIds });
       toast.error(t("toast.viewReorderFailed"), {
         description: getServiceErrorMessage(error, t),
@@ -1592,6 +1688,8 @@ export default function App() {
       return;
     }
 
+    const viewRequestVersion = viewRequestVersionRef.current;
+    const loadRequestId = loadRequestIdRef.current;
     const [viewsRawResponse, projectionRawResponse] = await Promise.all([
       workspaceClient.listViews({ workspaceId: state.workspaceId }),
       workspaceClient.getViewProjection({ workspaceId: state.workspaceId, viewId, locale }),
@@ -1599,8 +1697,10 @@ export default function App() {
     const viewsResponse = normalizeViewsResponse(viewsRawResponse, state.workspaceId);
     const projectionResponse = normalizeProjectionResponse(projectionRawResponse);
 
+    if (loadRequestIdRef.current !== loadRequestId || viewRequestVersionRef.current !== viewRequestVersion) return;
     dispatch({
       type: "projectionLoaded",
+      viewRequestVersion,
       root: state.root,
       viewsResponse: { ...viewsResponse, activeViewId: viewId },
       projectionResponse,
@@ -1617,11 +1717,13 @@ export default function App() {
     }
 
     const activeViewId = state.activeViewId;
+    const operationLoadRequestId = loadRequestIdRef.current;
     await workspaceClient.updateView({
       workspaceId: state.workspaceId,
       viewId: activeViewId,
       patch,
     });
+    if (loadRequestIdRef.current !== operationLoadRequestId) return;
     if (options.refreshProjection !== false) {
       await refreshActiveViewAfterPatch(activeViewId);
     }
@@ -1632,13 +1734,15 @@ export default function App() {
   }));
 
   function handleGroupingChange(mutation: GroupingMutation) {
+    if (surfaceInteractionDisabledRef.current) return;
     const workspaceId = state.workspaceId;
     const viewId = state.activeViewId;
     if (!workspaceId || !viewId) return;
     const initial = state.views.find(view => view.id === viewId)?.grouping;
+    const operationLoadRequestId = loadRequestIdRef.current;
     void groupingSaveQueue.current.enqueue({ workspaceId, viewId }, initial, mutation)
       .then(() => {
-        if (workspaceIdRef.current === workspaceId) setReloadToken(value => value + 1);
+        if (workspaceIdRef.current === workspaceId && loadRequestIdRef.current === operationLoadRequestId) invalidateActiveProjection();
       })
       .catch(error => {
         toast.error(t("group.saveFailed"), { description: getServiceErrorMessage(error, t) });
@@ -1650,6 +1754,7 @@ export default function App() {
   }
 
   async function handleTogglePropertyVisibility(propertyId: string, visible: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId || !state.activeViewId) {
       return;
     }
@@ -1703,6 +1808,7 @@ export default function App() {
   }
 
   async function handleToggleValueFilter(propertyId: string, valueId: string, included: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.activeViewId) {
       return;
     }
@@ -1745,6 +1851,7 @@ export default function App() {
   }
 
   async function handleTogglePropertyWrapContent(propertyId: string, wrapContent: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.activeViewId) {
       return;
     }
@@ -1786,6 +1893,7 @@ export default function App() {
   }
 
   function handleBoardColumnWidthPreview(columnWidth: number) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.activeViewId) {
       return;
     }
@@ -1798,6 +1906,7 @@ export default function App() {
   }
 
   async function handleBoardColumnWidthCommit(columnWidth: number, previousColumnWidth: number) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.activeViewId) {
       return;
     }
@@ -1824,7 +1933,10 @@ export default function App() {
   }
 
   async function handleReorderProjectRows(rowOrder: readonly string[]) {
+    if (surfaceInteractionDisabledRef.current) return;
     const workspaceId = state.workspaceId, viewId = state.activeViewId;
+    const viewRequestVersion = viewRequestVersionRef.current;
+    const loadRequestId = loadRequestIdRef.current;
     if (!workspaceId || !viewId || !state.root) return;
     try {
       await workspaceClient.updateView({ workspaceId, viewId, patch: { rowOrder } });
@@ -1832,8 +1944,9 @@ export default function App() {
         workspaceClient.listViews({ workspaceId }),
         workspaceClient.getViewProjection({ workspaceId, viewId, locale }),
       ]);
-      if (workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
-      dispatch({ type: "projectionLoaded", root: state.root,
+      if (workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId ||
+        loadRequestIdRef.current !== loadRequestId || viewRequestVersionRef.current !== viewRequestVersion) return;
+      dispatch({ type: "projectionLoaded", viewRequestVersion, root: state.root,
         viewsResponse: { ...normalizeViewsResponse(viewsRawResponse, workspaceId), activeViewId: viewId },
         projectionResponse: normalizeProjectionResponse(projectionRawResponse), folderRoleTree: state.folderRoleTree });
     } catch (error) {
@@ -1843,6 +1956,7 @@ export default function App() {
   }
 
   async function handleReorderViewProperties(orderedPropertyIds: readonly string[]) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId || !state.activeViewId) {
       return;
     }
@@ -1892,6 +2006,7 @@ export default function App() {
     name: string;
     type: WorkspaceCustomPropertyType;
   }) {
+    if (surfaceInteractionDisabledRef.current) throw new RendererLocalizedError("error.activeViewUnavailable");
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredProperties"));
       return;
@@ -1979,6 +2094,7 @@ export default function App() {
   }
 
   async function handleCreateProperty(input: { name: string; type: WorkspaceCustomPropertyType }) {
+    if (surfaceInteractionDisabledRef.current) throw new RendererLocalizedError("error.activeViewUnavailable");
     if (!state.workspaceId) {
       toast.error(t("toast.sourceRequiredProperties"));
       return;
@@ -2001,6 +2117,7 @@ export default function App() {
   }
 
   async function handleRenameProperty(propertyId: string, name: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2021,6 +2138,7 @@ export default function App() {
   }
 
   async function handleHideProperty(propertyId: string, hidden: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2041,28 +2159,35 @@ export default function App() {
   }
 
   async function handleDeleteProperty(propertyId: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
 
+    const operationLoadRequestId = loadRequestIdRef.current;
     try {
       await workspaceClient.deleteProperty({
         workspaceId: state.workspaceId,
         propertyId,
         confirmDeleteValues: true,
       });
+      if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== state.workspaceId) return;
       dispatch({ type: "propertyDeleted", propertyId });
       setSelectedProject((currentProject) =>
         currentProject ? removeProjectPropertyValue(currentProject, propertyId) : currentProject,
       );
       await refreshPropertyCatalog();
       if (state.activeViewId) {
+        const viewRequestVersion = viewRequestVersionRef.current;
+        const loadRequestId = loadRequestIdRef.current;
         const projectionResponse = normalizeProjectionResponse(await workspaceClient.getViewProjection({
           workspaceId: state.workspaceId,
           viewId: state.activeViewId,
           locale,
         }));
-        dispatch({ type: "projectionUpdated", projectionResponse });
+        if (loadRequestIdRef.current !== loadRequestId || viewRequestVersionRef.current !== viewRequestVersion) return;
+        if (surfaceInteractionDisabledRef.current) invalidateActiveProjection();
+        else dispatch({ type: "projectionUpdated", projectionResponse, viewRequestVersion });
       }
       toast.success(t("toast.propertyDeleted"));
     } catch (error) {
@@ -2073,6 +2198,7 @@ export default function App() {
   }
 
   async function handleReorderProperties(orderedPropertyIds: readonly string[]) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2095,6 +2221,7 @@ export default function App() {
     propertyId: string,
     input: { name: string; color: string },
   ): Promise<WorkspaceSelectValueState | null> {
+    if (surfaceInteractionDisabledRef.current) return null;
     if (!state.workspaceId) {
       return null;
     }
@@ -2122,6 +2249,7 @@ export default function App() {
   }
 
   async function handleRenameSelectValue(selectValueId: string, name: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2142,6 +2270,7 @@ export default function App() {
   }
 
   async function handleColorSelectValue(selectValueId: string, color: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2181,6 +2310,7 @@ export default function App() {
   }
 
   async function handleHideSelectValue(selectValueId: string, hidden: boolean) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2202,6 +2332,7 @@ export default function App() {
   }
 
   async function handleDeleteSelectValue(selectValueId: string) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2236,6 +2367,7 @@ export default function App() {
     propertyId: string,
     orderedSelectValueIds: readonly string[],
   ) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
@@ -2261,12 +2393,15 @@ export default function App() {
   }
 
   async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
+    if (surfaceInteractionDisabledRef.current) return;
     const requestWorkspaceId = state.workspaceId;
+    const operationLoadRequestId = loadRequestIdRef.current;
     if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return false;
     try {
       const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
         projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
       if (!result) return false;
+      if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== requestWorkspaceId) return true;
       if (isRecord(result) && result.state === "recovery-required") {
         if (isRecord(result.project)) {
           const recovered = result.project as unknown as WorkspaceMockProject;
@@ -2293,13 +2428,17 @@ export default function App() {
         if (workspaceIdRef.current === workspaceId) setSelectedProject(current => current?.id === project.id ? updated : current);
       }
       const refreshViewId = activeViewIdRef.current;
+      const viewRequestVersion = viewRequestVersionRef.current;
+      const loadRequestId = loadRequestIdRef.current;
       if (workspaceIdRef.current === requestWorkspaceId && refreshViewId) {
         const [projection, scan] = await Promise.all([
           workspaceClient.getViewProjection({ workspaceId: requestWorkspaceId, viewId: refreshViewId, locale }),
           workspaceClient.scan({ workspaceId: requestWorkspaceId }),
         ]);
-        if (workspaceIdRef.current === requestWorkspaceId && activeViewIdRef.current === refreshViewId) {
-          if (state.root) dispatch({ type: "projectionLoaded", root: state.root,
+        if (workspaceIdRef.current === requestWorkspaceId && activeViewIdRef.current === refreshViewId &&
+          loadRequestIdRef.current === loadRequestId && viewRequestVersionRef.current === viewRequestVersion) {
+          if (surfaceInteractionDisabledRef.current) invalidateActiveProjection();
+          else if (state.root) dispatch({ type: "projectionLoaded", viewRequestVersion, root: state.root,
             viewsResponse: { workspaceId: requestWorkspaceId, activeViewId: refreshViewId, views: state.views },
             projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
         }
@@ -2316,10 +2455,12 @@ export default function App() {
     propertyId: string,
     value: unknown,
   ) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!state.workspaceId) {
       return;
     }
 
+    const operationLoadRequestId = loadRequestIdRef.current;
     const requestVersion = createPropertySaveRequestVersion(projectId, propertyId);
     dispatch({
       type: "projectPropertyValueSaveStarted",
@@ -2335,6 +2476,7 @@ export default function App() {
         propertyId,
         value,
       });
+      if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== state.workspaceId) return;
       const savedValue =
         isRecord(response) && Object.hasOwn(response, "value") ? response.value : value;
       dispatch({
@@ -2345,17 +2487,7 @@ export default function App() {
         requestVersion,
       });
       if (isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
-        if (state.projection?.view.grouping && state.activeViewId) {
-          const projectionResponse = normalizeProjectionResponse(await workspaceClient.getViewProjection({
-            workspaceId: state.workspaceId,
-            viewId: state.activeViewId,
-            locale,
-          }));
-          if (workspaceIdRef.current === state.workspaceId && isCurrentPropertySaveRequest(projectId, propertyId, requestVersion)) {
-            // The reducer also rejects a response for a view that is no longer active.
-            dispatch({ type: "projectionUpdated", projectionResponse });
-          }
-        }
+        if (workspaceIdRef.current === state.workspaceId) invalidateActiveProjection();
         dispatchProjectTabs({
           type: "valueSaved",
           workspaceId: projectTabsWorkspaceId,
@@ -2415,6 +2547,7 @@ export default function App() {
   }
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
+    if (surfaceInteractionDisabledRef.current) return;
     if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
       closeSelectedProject();
       return;
@@ -2455,7 +2588,7 @@ export default function App() {
   const shouldUseMockViews = !state.root && !state.workspaceId;
   const viewState = {
     activeViewId:
-      state.activeViewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
+      surfaceState.viewId || (shouldUseMockViews ? workspaceMockProjection.activeViewId : ""),
     views:
       state.views.length > 0
         ? state.views
@@ -2487,29 +2620,9 @@ export default function App() {
         state: "connected",
       }
     : { name: t("state.noSourceTitle"), path: "", state: "missing" };
-  const serviceProjection = useMemo(() => {
-    if (!state.projection) {
-      return null;
-    }
-
-    const projectionMatchesActiveWorkspace =
-      state.projection.workspaceId === state.workspaceId &&
-      state.projection.view.id === state.activeViewId;
-    const projectionIsStaleWorkspaceSurface =
-      state.workspaceSwitchPending && state.projection.workspaceId !== state.workspaceId;
-
-    if (!projectionMatchesActiveWorkspace && !projectionIsStaleWorkspaceSurface) {
-      return null;
-    }
-
-    return filterWorkspaceProjectionBySearch(state.projection, state.searchQuery);
-  }, [
-    state.activeViewId,
-    state.projection,
-    state.searchQuery,
-    state.workspaceId,
-    state.workspaceSwitchPending,
-  ]);
+  const serviceProjection = useMemo(() => surfaceState.projection
+    ? filterWorkspaceProjectionBySearch(surfaceState.projection, state.searchQuery)
+    : null, [surfaceState.projection, state.searchQuery]);
   const mockBoardProjectionResponse = useMemo(
     () =>
       filterWorkspaceProjectionBySearch(
@@ -2530,7 +2643,7 @@ export default function App() {
       ),
     [state.searchQuery],
   );
-  const activeView = viewState.views.find((view) => view.id === viewState.activeViewId) as
+  const activeView = (serviceProjection?.view || viewState.views.find((view) => view.id === viewState.activeViewId)) as
     | WorkspaceViewState
     | undefined;
   const activeViewType =
@@ -2556,11 +2669,7 @@ export default function App() {
   const settingsProperties = state.propertyCatalog?.properties ?? visibleProperties;
   const settingsSelectValues = state.propertyCatalog?.selectValues ?? [];
   const detailProperties = state.propertyCatalog?.properties ?? visibleProperties;
-  const isWorkspaceSwitchPendingSurface =
-    activeSurface === "workspace" &&
-    state.workspaceSwitchPending &&
-    serviceProjection !== null &&
-    serviceProjection.workspaceId !== state.workspaceId;
+  const isWorkspaceSwitchPendingSurface = activeSurface === "workspace" && surfaceState.interactionDisabled;
   const shouldShowWorkspaceLoadingState =
     state.status === "loading" ||
     state.status === "idle" ||
@@ -2579,12 +2688,12 @@ export default function App() {
   ) => (
     <WorkspaceProjectDetailPanel
       inline
-      keyboardActive={keyboardActive}
+      keyboardActive={keyboardActive && !surfaceState.interactionDisabled}
       expanded={projectExpanded}
       sidebarCollapsed={sidebarCollapsed}
       open={project !== null}
       onOpenChange={(open) => {
-        if (!open) {
+        if (!open && !surfaceInteractionDisabledRef.current) {
           onClose();
         }
       }}
@@ -2604,6 +2713,7 @@ export default function App() {
       onHideProperty={handleHideProperty}
       onDeleteProperty={handleDeleteProperty}
       onOpenLocalItem={(node) => {
+        if (surfaceInteractionDisabledRef.current) return;
         void workspaceClient
           .reveal({ workspaceId: state.workspaceId, kind: node.kind === "folder" ? "directory" : "file", path: node.relativePath })
           .catch((error) =>
@@ -2659,7 +2769,7 @@ export default function App() {
         {activeSurface === "workspace" ? (
           <div
             aria-busy={isWorkspaceSwitchPendingSurface || undefined}
-            inert={isWorkspaceSwitchPendingSurface || undefined}
+            inert={state.workspaceSwitchPending || undefined}
             className="electron-window-no-drag min-w-0 flex-1 overflow-hidden"
           >
             <WorkspaceViewTabs
@@ -2765,16 +2875,15 @@ export default function App() {
                   }
                 />
               }
+              actionsDisabled={surfaceState.interactionDisabled}
+              pendingViewId={surfaceState.pendingViewId}
               activeViewId={viewState.activeViewId}
               views={viewState.views}
               onActiveViewChange={(activeViewId) => {
+                if (pendingWorkspaceScreen.current) return;
                 selectSavedView(activeViewId);
                 if (state.workspaceId) {
-                  void workspaceClient
-                    .setActiveView({
-                      workspaceId: state.workspaceId,
-                      viewId: activeViewId,
-                    })
+                  void persistSavedView(state.workspaceId, activeViewId)
                     .catch((error: unknown) => {
                       toast.error(t("toast.activeViewSaveFailed"), {
                         description: getServiceErrorMessage(error, t),
@@ -2857,7 +2966,16 @@ export default function App() {
         </div>
       ) : (
         <div
-          onPointerDownCapture={event => previewBackgroundGesture.current.start(event)}
+          data-workspace-surface-view-id={surfaceState.viewId || undefined}
+          data-workspace-pending-view-id={surfaceState.pendingViewId || undefined}
+          aria-label={activeView?.name}
+          inert={isWorkspaceSwitchPendingSurface}
+          onClickCapture={event => { if (surfaceInteractionDisabledRef.current) { event.preventDefault(); event.stopPropagation(); } }}
+          onKeyDownCapture={event => { if (surfaceInteractionDisabledRef.current) { event.preventDefault(); event.stopPropagation(); } }}
+          onPointerDownCapture={event => {
+            if (surfaceInteractionDisabledRef.current) { event.preventDefault(); event.stopPropagation(); return; }
+            previewBackgroundGesture.current.start(event);
+          }}
           onPointerMoveCapture={event => previewBackgroundGesture.current.move(event)}
           onPointerCancelCapture={() => previewBackgroundGesture.current.cancel()}
           onScrollCapture={() => previewBackgroundGesture.current.cancel()}
@@ -2986,7 +3104,7 @@ export default function App() {
             onReorderWorkspaces={handleReorderWorkspaces}
             onWorkspaceOpen={handleWorkspaceOpen}
             onSearchQueryChange={(searchQuery) => {
-              dispatch({ type: "searchQueryChanged", searchQuery });
+              if (!surfaceInteractionDisabledRef.current) dispatch({ type: "searchQueryChanged", searchQuery });
             }}
             onOpenWorkspaceSettings={(id) => { void handleWorkspaceOpen(id, "workspace-settings"); }}
             onOpenSettings={openSettingsSurface}
@@ -3036,7 +3154,8 @@ export default function App() {
         </div>
         {(
           <WorkspaceRightPanel
-            previewIdentity={JSON.stringify([projectTabsWorkspaceId, state.activeViewId])}
+            interactionDisabled={surfaceState.interactionDisabled}
+            previewIdentity={JSON.stringify([projectTabsWorkspaceId, surfaceState.viewId])}
             key={projectTabsWorkspaceId}
             suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}

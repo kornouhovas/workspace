@@ -53,6 +53,8 @@ type WorkspaceView = WorkspaceViewState;
 
 type WorkspaceViewTabsProps = {
   readonly actionsHidden?: boolean;
+  readonly actionsDisabled?: boolean;
+  readonly pendingViewId?: string | null;
   readonly projectActions?: ReactNode;
   readonly projectTabs?: ReactNode;
   readonly projectActive?: boolean;
@@ -130,6 +132,8 @@ function isViewContextMenuTarget(target: EventTarget | null) {
 
 export function WorkspaceViewTabs({
   actionsHidden = false,
+  actionsDisabled = false,
+  pendingViewId,
   projectActions,
   projectTabs,
   projectActive = false,
@@ -159,6 +163,8 @@ export function WorkspaceViewTabs({
 }: WorkspaceViewTabsProps) {
   const { t } = useI18n();
   const activeView = views.find((view) => view.id === activeViewId) || views[0] || null;
+  const actionsDisabledRef = useRef(actionsDisabled);
+  actionsDisabledRef.current = actionsDisabled;
   const [viewTabDragState, setViewTabDragState] = useState<ViewTabPointerDragState | null>(null);
   const [contextMenuViewId, setContextMenuViewId] = useState<string | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
@@ -201,6 +207,14 @@ export function WorkspaceViewTabs({
     setViewTabDragState(null);
     suppressViewClickRef.current = null;
   }, [dismissSignal]);
+
+  useEffect(() => {
+    if (!actionsDisabled) return;
+    setContextMenuViewId(null);
+    setOpenCreateViewMenu(false);
+    setViewTabDragState(null);
+    cancelViewRename();
+  }, [actionsDisabled]);
 
   useEffect(() => {
     if (!contextMenuViewId) {
@@ -247,6 +261,7 @@ export function WorkspaceViewTabs({
   }, [openCreateViewMenu]);
 
   function startRenameView(view: WorkspaceView) {
+    if (actionsDisabledRef.current) return;
     renameAttemptRef.current += 1;
     renameSavingRef.current = false;
     setRenameSaving(false);
@@ -258,7 +273,7 @@ export function WorkspaceViewTabs({
   }
 
   async function submitViewRename(view: WorkspaceView) {
-    if (cancelViewRenameRef.current || renameSavingRef.current) return;
+    if (actionsDisabledRef.current || cancelViewRenameRef.current || renameSavingRef.current) return;
     const nextName = editingViewName.trim();
     if (!nextName || nextName === view.name) {
       cancelViewRenameRef.current = true;
@@ -294,6 +309,7 @@ export function WorkspaceViewTabs({
   }
 
   function deleteView(view: WorkspaceView) {
+    if (actionsDisabledRef.current) return;
     if (window.confirm(t("confirm.deleteView", { name: view.name }))) {
       onDeleteView(view.id);
     }
@@ -403,7 +419,7 @@ export function WorkspaceViewTabs({
   }
 
   function startPointerViewTabDrag(event: ReactPointerEvent<HTMLButtonElement>, viewId: string) {
-    if (event.button !== 0 || editingViewId === viewId) {
+    if (actionsDisabledRef.current || event.button !== 0 || editingViewId === viewId) {
       return;
     }
 
@@ -481,7 +497,7 @@ export function WorkspaceViewTabs({
       window.removeEventListener("pointerup", finishViewTabDrag);
       setViewTabDragState(null);
 
-      if (!moved) {
+      if (actionsDisabledRef.current || !moved) {
         return;
       }
 
@@ -504,6 +520,7 @@ export function WorkspaceViewTabs({
   function handleViewTabClick(event: ReactMouseEvent<HTMLButtonElement>, viewId: string) {
     if (suppressViewClickRef.current !== viewId) {
       onShowView?.();
+      if (pendingViewId && viewId === activeViewId) onActiveViewChange(viewId);
       return;
     }
 
@@ -572,6 +589,7 @@ export function WorkspaceViewTabs({
                 key={view.id}
                 value={view.id}
                 data-view-tab-id={view.id}
+                aria-busy={view.id === pendingViewId || undefined}
                 title={view.name}
                 aria-label={view.name}
                 className={[
@@ -582,6 +600,7 @@ export function WorkspaceViewTabs({
                 onClick={(event) => handleViewTabClick(event, view.id)}
                 onContextMenu={(event) => {
                   event.preventDefault();
+                  if (actionsDisabledRef.current) return;
                   setContextMenuViewId(view.id);
                   setContextMenuPosition({
                     x: Math.max(8, Math.min(event.clientX, window.innerWidth - 232)),
@@ -599,7 +618,7 @@ export function WorkspaceViewTabs({
       <div aria-hidden="true" className="mx-2 h-5 w-px shrink-0 bg-border" />
       {projectTabs}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1" inert={actionsDisabled}>
         {actionsHidden ? projectActions : <>
         <DropdownMenu open={openCreateViewMenu} onOpenChange={setOpenCreateViewMenu}>
           <DropdownMenuTrigger asChild>
@@ -651,7 +670,7 @@ export function WorkspaceViewTabs({
         />
         </>}
       </div>
-      {contextMenuView ? (
+      {contextMenuView && !actionsDisabled ? (
         <div
           data-workspace-view-context-menu="true"
           className={`fixed z-50 min-w-44 ${workspaceMenuContentClassName}`}
@@ -662,6 +681,7 @@ export function WorkspaceViewTabs({
             type="button"
             className={workspaceMenuItemClassName}
             onClick={() => {
+              if (actionsDisabledRef.current) return;
               onDuplicateView(contextMenuView.id);
               setContextMenuViewId(null);
             }}

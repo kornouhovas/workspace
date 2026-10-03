@@ -149,7 +149,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceIdRef\.current === root\.workspaceId/);
   assert.doesNotMatch(appSource, /workspacePreview/);
   assert.doesNotMatch(appSource, /isWorkspaceSwitchPreview/);
-  assert.match(appSource, /projectionIsStaleWorkspaceSurface/);
   assert.match(appSource, /isWorkspaceSwitchPendingSurface/);
   assert.match(appSource, /pointer-events-none select-none/);
   assert.doesNotMatch(appSource, /transition-\[opacity,transform\]/);

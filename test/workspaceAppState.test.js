@@ -793,8 +793,8 @@ test("workspace app state switches the active view", async () => {
   assert.equal(state.activeViewId, "view:table");
   assert.equal(state.searchQuery, "Проект 🧪");
   assert.equal(state.projection.workspaceId, "workspace:ops");
-  assert.equal(state.projection.view.id, "view:table");
-  assert.equal(state.projection.projection.type, "table");
+  assert.equal(state.projection, loadedState.projection);
+  assert.equal(state.projection.projection.type, "board");
 });
 
 test("workspace app state ignores older property save completions for the same cell", async () => {
@@ -869,7 +869,7 @@ test("workspace app state adds a created view to only the active workspace state
     ["view:board", "view:table", "view:board-2"],
   );
   assert.equal(state.activeViewId, "view:board-2");
-  assert.equal(state.projection.view.id, "view:board-2");
+  assert.equal(state.projection, loadedState.projection);
   assert.equal(state.projection.projection.type, "board");
   assert.equal(state.projectionRefreshing, true);
 });
@@ -1052,11 +1052,104 @@ test('saved grouped Table waits for its authoritative projection instead of fabr
   const loaded = workspaceAppStateReducer(createInitialWorkspaceAppState(), {type:'projectionLoaded',root,viewsResponse:{...viewsResponse,views:[...viewsResponse.views,target]},projectionResponse:{...projectionResponse,projection:{...projectionResponse.projection,columns:[{statusValueId:'active',projects:[{id:'a'},{id:'b'}]}]}},folderRoleTree});
   const pending = workspaceAppStateReducer(loaded,{type:'activeViewChanged',activeViewId:target.id});
   assert.equal(pending.activeViewId,target.id);
-  assert.equal(pending.projection,null,'pending grouped view must not render a flat Table');
+  assert.equal(pending.projection,loaded.projection,'pending grouped view retains the complete previous service surface');
   assert.deepEqual(pending.views.at(-1),target,'all saved target settings survive the transition');
   const ready = {...projectionResponse,view:target,projection:{type:'table',rows:[],groups:[],groupOptions:[]}};
   const next = workspaceAppStateReducer(pending,{type:'projectionUpdated',projectionResponse:ready});
   assert.equal(next.projection,ready);
   const switched = workspaceAppStateReducer(next,{type:'activeViewChanged',activeViewId:'view:table'});
   assert.equal(workspaceAppStateReducer(switched,{type:'projectionUpdated',projectionResponse:ready}),switched);
+});
+
+
+test('saved-view transitions retain the previous identity and settings until authoritative activation', async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer: reduce, getWorkspaceSurfaceState } = await importAppStateModule();
+  const target = { id: 'view:grouped', name: 'Grouped', viewType: 'table', grouping: {propertyId:'priority', sort:'manual', manualOrder:['blue','red'], hiddenGroupIds:['red'], collapsedGroupIds:['blue'], hideEmpty:true}, rowOrder:['b','a'], visiblePropertyIds:['property:name','priority'] };
+  const prior = {...projectionResponse, projection:{type:'board',capabilities:{canMoveBetweenStatuses:false},columns:[{statusValueId:'active',name:'Active',projects:[{id:'a',name:'Alpha'}]}]}};
+  const ready = reduce(createInitialWorkspaceAppState(), { type:'projectionLoaded',root,viewsResponse:{...viewsResponse,views:[...viewsResponse.views,target]},projectionResponse:prior,folderRoleTree });
+  const pending = reduce(ready,{type:'activeViewChanged',activeViewId:target.id});
+  assert.equal(pending.projection,prior,'previous authoritative projection survives');
+  const surface = getWorkspaceSurfaceState(pending);
+  assert.equal(surface.projection, prior);
+  assert.equal(surface.viewId, 'view:board');
+  assert.equal(surface.pendingViewId, 'view:grouped');
+  assert.equal(surface.interactionDisabled, true);
+  assert.deepEqual(pending.views.at(-1),target);
+  const fresh = {...projectionResponse,view:target,projection:{type:'table',rows:[{id:'b',name:'Beta'}],groups:[{id:'blue',name:'Blue',count:1,rows:[{id:'b',name:'Beta'}],collapsed:true,hidden:false,empty:false}],groupOptions:[]}};
+  const activated=reduce(pending,{type:'projectionUpdated',projectionResponse:fresh,viewRequestVersion:pending.viewRequestVersion});
+  assert.equal(getWorkspaceSurfaceState(activated).projection,fresh);
+  assert.equal(getWorkspaceSurfaceState(activated).viewId,target.id);
+  assert.equal(getWorkspaceSurfaceState(activated).interactionDisabled,false);
+});
+
+test('A to B to A reuses the retained ready A and rejects responses from an earlier intent', async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer: reduce, getWorkspaceSurfaceState }=await importAppStateModule();
+  const ready=reduce(createInitialWorkspaceAppState(),{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree});
+  const b=reduce(ready,{type:'activeViewChanged',activeViewId:'view:table'});
+  const a=reduce(b,{type:'activeViewChanged',activeViewId:'view:board'});
+  assert.equal(a.projection,projectionResponse,'ready A survives reversal');
+  assert.equal(getWorkspaceSurfaceState(a).projection,projectionResponse);
+  assert.equal(getWorkspaceSurfaceState(a).interactionDisabled,false);
+  assert.equal(reduce(a,{type:'projectionUpdated',projectionResponse,viewRequestVersion:ready.viewRequestVersion}),a);
+  const bAgain=reduce(a,{type:'activeViewChanged',activeViewId:'view:table'});
+  const bResponse={...projectionResponse,view:viewsResponse.views[1],projection:{type:'table',rows:[]}};
+  assert.equal(reduce(bAgain,{type:'projectionUpdated',projectionResponse:bResponse,viewRequestVersion:b.viewRequestVersion}),bAgain);
+});
+
+test('first load keeps loading and a source change never treats the old view as current', async () => {
+  const { createInitialWorkspaceAppState,workspaceAppStateReducer:reduce,getWorkspaceSurfaceState }=await importAppStateModule();
+  const initial=reduce(createInitialWorkspaceAppState(),{type:'rootSelected',root});
+  assert.equal(initial.status,'loading');
+  assert.equal(typeof getWorkspaceSurfaceState,'function','surface selector must distinguish initial loading');
+  assert.equal(getWorkspaceSurfaceState(initial).projection,null);
+  const ready=reduce(initial,{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree});
+  const switching=reduce(ready,{type:'workspaceActivated',workspaceId:'workspace:other'});
+  assert.equal(getWorkspaceSurfaceState(switching).interactionDisabled,true);
+  assert.equal(getWorkspaceSurfaceState(switching).projection,projectionResponse);
+  assert.equal(reduce(switching,{type:'projectionUpdated',projectionResponse}),switching);
+});
+
+
+test('confirmed mutation invalidates a retained snapshot so reversal must load fresh groups', async () => {
+  const {createInitialWorkspaceAppState,workspaceAppStateReducer:reduce,getWorkspaceSurfaceState}=await importAppStateModule();
+  const ready=reduce(createInitialWorkspaceAppState(),{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree});
+  const b=reduce(ready,{type:'activeViewChanged',activeViewId:'view:table'});
+  const invalid=reduce(b,{type:'projectionInvalidated'});
+  const a=reduce(invalid,{type:'activeViewChanged',activeViewId:'view:board'});
+  assert.equal(a.projectionRefreshing,true);
+  assert.equal(getWorkspaceSurfaceState(a).interactionDisabled,true);
+  assert.equal(reduce(a,{type:'projectionUpdated',projectionResponse,viewRequestVersion:ready.viewRequestVersion}),a);
+  const refreshed=reduce(a,{type:'projectionUpdated',projectionResponse,viewRequestVersion:a.viewRequestVersion});
+  assert.equal(getWorkspaceSurfaceState(refreshed).interactionDisabled,false);
+});
+
+
+test('source replacement and same-ID full refresh reject the previous projection generation',async()=>{
+  const {createInitialWorkspaceAppState,workspaceAppStateReducer:reduce}=await importAppStateModule();
+  const ready=reduce(createInitialWorkspaceAppState(),{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree});
+  const rebound=reduce(ready,{type:'rootSelected',root:{...root,path:'/replacement-source'}});
+  assert.equal(reduce(rebound,{type:'projectionLoaded',root,viewsResponse,projectionResponse,folderRoleTree,viewRequestVersion:ready.viewRequestVersion}),rebound);
+});
+
+
+test('workspace intent keeps the outgoing identity and disables data until activation or cancellation', async () => {
+  const { createInitialWorkspaceAppState, workspaceAppStateReducer: reduce, getWorkspaceSurfaceState } = await importAppStateModule();
+  const ready = reduce(createInitialWorkspaceAppState(), { type: 'projectionLoaded', root, viewsResponse, projectionResponse, folderRoleTree });
+  const searched = reduce(ready, { type: 'searchQueryChanged', searchQuery: 'Alpha' });
+  const pending = reduce(searched, { type: 'workspaceSwitchStarted' });
+  assert.equal(pending.workspaceId, searched.workspaceId);
+  assert.equal(pending.root, searched.root);
+  assert.equal(pending.views, searched.views);
+  assert.equal(pending.activeViewId, searched.activeViewId);
+  assert.equal(pending.searchQuery, 'Alpha');
+  assert.equal(getWorkspaceSurfaceState(pending).projection, projectionResponse);
+  assert.equal(getWorkspaceSurfaceState(pending).viewId, searched.activeViewId);
+  assert.equal(getWorkspaceSurfaceState(pending).interactionDisabled, true);
+  assert.equal(reduce(pending, { type: 'projectionUpdated', projectionResponse, viewRequestVersion: searched.viewRequestVersion }), pending);
+  const cancelled = reduce(pending, { type: 'workspaceSwitchCancelled' });
+  assert.equal(getWorkspaceSurfaceState(cancelled).interactionDisabled, false);
+  assert.equal(cancelled.projection, projectionResponse);
+  assert.equal(cancelled.searchQuery, 'Alpha');
+  const loaded = reduce(pending, { type: 'projectionLoaded', root, viewsResponse, projectionResponse, folderRoleTree, replaceWorkspace: true });
+  assert.equal(getWorkspaceSurfaceState(loaded).interactionDisabled, false);
 });
