@@ -1,6 +1,13 @@
+// Capture the drag's Escape ownership before its cancellation removes DOM
+// markers. Propagation continues so document/window drag handlers still cancel.
+export function consumeDragEscape(event, dragging) {
+  if (event.key !== "Escape" || !dragging) return false;
+  event.preventDefault();
+  return true;
+}
 // One focused presentation host owns Escape; editors/overlays retain it.
-export function shouldClosePaneOnEscape({ key, defaultPrevented, editing, active }) {
-  return key === "Escape" && !defaultPrevented && !editing && active;
+export function shouldClosePaneOnEscape({ key, defaultPrevented, editing, active, dragging = false }) {
+  return key === "Escape" && !defaultPrevented && !editing && !dragging && active;
 }
 export function focusedPaneCloseCommand(layout, projectTabId = null, projectExpanded = false) {
   if (layout.focused === "right")

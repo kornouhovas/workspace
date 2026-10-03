@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { shouldClosePaneOnEscape } from "../src/workspacePaneKeyboard.js";
+import { consumeDragEscape, shouldClosePaneOnEscape } from "../src/workspacePaneKeyboard.js";
 test("Escape closes exactly the focused leaf among multiple details and respects editor/menu consumption", () => {
   const event = { key: "Escape", defaultPrevented: false, editing: false };
   assert.deepEqual(
@@ -40,4 +40,54 @@ test("CmdW belongs to fixedNavigation/primary/detail focus and never closes a di
     focusedPaneCloseCommand({ ...layout, activeRightTab: "launcher" }, "tab:a", true),
     { kind: "rightTab", id: "launcher" },
   );
+});
+
+test('Escape cancels an active drag without closing preview even when preview listener registered first', () => {
+  const window = new EventTarget();
+  let dragging = true;
+  let previewOpen = true;
+  let cancelled = false;
+  window.addEventListener('keydown', event => {
+    if (shouldClosePaneOnEscape({ key: event.key, defaultPrevented: event.defaultPrevented, editing: false, active: true, dragging })) {
+      event.preventDefault(); previewOpen = false;
+    }
+  });
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && dragging) {
+      event.preventDefault(); dragging = false; cancelled = true;
+    }
+  });
+  const escape = () => Object.assign(new Event('keydown', { cancelable: true }), { key: 'Escape' });
+  window.dispatchEvent(escape());
+  assert.equal(cancelled, true);
+  assert.equal(previewOpen, true, 'row/card cancellation owns the first Escape regardless of listener order');
+  window.dispatchEvent(escape());
+  assert.equal(previewOpen, false, 'normal preview Escape remains available after drag is cancelled');
+});
+
+
+test('capture keeps Escape consumed after document drag cancellation removes active marker before window preview listener', () => {
+  const propagation = new EventTarget();
+  let dragging = true;
+  let previewOpen = true;
+  let dragCancelled = false;
+  // These represent browser capture → document cancellation → window bubble.
+  // The cancellation deliberately does not preventDefault, matching the Board
+  // PointerSensor behavior, and removes the marker before the preview handler.
+  propagation.addEventListener('keydown', event => consumeDragEscape(event, dragging));
+  propagation.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && dragging) { dragging = false; dragCancelled = true; }
+  });
+  propagation.addEventListener('keydown', event => {
+    if (shouldClosePaneOnEscape({ key: event.key, defaultPrevented: event.defaultPrevented, editing: false, active: true, dragging })) previewOpen = false;
+  });
+  const escape = () => Object.assign(new Event('keydown', { cancelable: true }), { key: 'Escape' });
+  const event = escape();
+  propagation.dispatchEvent(event);
+  assert.equal(dragCancelled, true, 'capture must preserve propagation to cancellation');
+  assert.equal(dragging, false);
+  assert.equal(event.defaultPrevented, true, 'ownership survives removed DOM marker');
+  assert.equal(previewOpen, true);
+  propagation.dispatchEvent(escape());
+  assert.equal(previewOpen, false, 'a subsequent ordinary Escape remains unchanged');
 });

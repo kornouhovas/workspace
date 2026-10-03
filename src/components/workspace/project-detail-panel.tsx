@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-import { shouldClosePaneOnEscape } from "@/workspacePaneKeyboard.js";
+import { consumeDragEscape, shouldClosePaneOnEscape } from "@/workspacePaneKeyboard.js";
 import { ProjectStatusPicker } from "./project-status-picker";
 import type { ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { Badge } from "@/components/ui/badge";
@@ -1044,6 +1044,11 @@ export function WorkspaceProjectDetailPanel({
       return undefined;
     }
 
+    function captureDragEscape(event: KeyboardEvent) {
+      if (dialogRef.current?.closest("[inert]")) return;
+      consumeDragEscape(event, Boolean(document.querySelector("[data-table-row-drag], [data-workspace-project-drag-preview]")));
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (dialogRef.current?.closest("[inert]")) return;
       if (
@@ -1051,6 +1056,7 @@ export function WorkspaceProjectDetailPanel({
           key: event.key,
           defaultPrevented: event.defaultPrevented,
           active: keyboardActive,
+          dragging: Boolean(document.querySelector("[data-table-row-drag], [data-workspace-project-drag-preview]")),
           editing: Boolean(
             event.target instanceof Element &&
             event.target.closest(
@@ -1064,8 +1070,12 @@ export function WorkspaceProjectDetailPanel({
       }
     }
 
+    window.addEventListener("keydown", captureDragEscape, true);
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", captureDragEscape, true);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onOpenChange, keyboardActive]);
 
   useEffect(() => {

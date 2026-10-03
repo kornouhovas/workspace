@@ -143,7 +143,7 @@ export function WorkspaceBoardView({
 
   return (
     <ProjectStatusDragSurface statusMovePending={statusMovePending} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
-    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")}>
+    <section data-workspace-preview-surface="board" className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")}>
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {projection.columns.map((column) => {

@@ -46,7 +46,9 @@ This is the primary daily workflow after the project source folder and folder ro
 11. User can adjust visible select values for the active view to filter projects.
 12. User can search projects by project `Name`.
 13. User selects a card or row.
-14. App opens the Project Detail Panel for the selected project.
+14. App opens the Project Detail Panel for the selected project. Repeated activation closes it; selecting another project replaces preview.
+15. Ordinary saved-view switches restore each view’s own partial preview (open project ID or closed), scoped to Workspace and kept in existing renderer session storage. A first visit starts closed. Returning explicitly from an expanded project tab hides the destination preview, preserving expanded tabs and split tree.
+16. A completed primary click on free Board/Table background closes preview, remembers closed state and returns focus to Workspace. Cards, rows (including empty editable cells), headers/group controls, menus, toolbar, tabs, panel and separators are excluded. The first outside click dismisses only an open menu. Drag, text selection, scroll and context click do not close preview.
 
 ## Board Path
 
@@ -134,6 +136,7 @@ Rules:
 - Search in MVP does not search property values.
 - Search is scoped to the active Workspace.
 - Search combines with active view filters.
+- A selected preview hidden by search or filters stays available; project lookup determines unavailability independently of projection. Superseded async responses never replace another view’s project or reopen an explicitly closed preview.
 
 ## Loading State
 

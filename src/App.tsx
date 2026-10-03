@@ -17,6 +17,7 @@ import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
 import { Button } from "@/components/ui/button";
 import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
+import { viewPreviewId, rememberViewPreview, pruneViewPreviews, createPreviewRequestGuard, createPreviewRestoreTracker, createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
 import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
 import { installMenuHoverMemory } from "@/components/ui/menu-hover";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -603,6 +604,10 @@ export default function App() {
     savedProjectSession.tabs,
   );
   const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
+  const previewRequests = useRef(createPreviewRequestGuard());
+  const previewBackgroundGesture = useRef(createPreviewBackgroundGesture());
+  const previewRestoreTracker = useRef(createPreviewRestoreTracker());
+  const [previewSelectionRevision, setPreviewSelectionRevision] = useState(0);
   const restoreStartupScreen = useRef(true);
   const pendingWorkspaceScreen = useRef<string | null>(null);
   const [paneLayouts, setPaneLayouts] = useState(() => readPaneLayouts(window.localStorage));
@@ -622,6 +627,10 @@ export default function App() {
   const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
   const sidebarCollapsed = paneLayout.sidebarCollapsed;
   function sendPane(action: PaneAction) {
+    if (action.type === "rightToggle" && selectedProject && !activeProjectTabId) {
+      previewRequests.current.invalidate();
+      rememberPreview(paneLayout.rightVisible ? null : selectedProject.id);
+    }
     if (action.type === "resizeSidebar") {
       setSidebarWidth(Math.min(460, Math.max(240, action.width)));
       return;
@@ -662,6 +671,7 @@ export default function App() {
       return;
     if (activeSurface === "workspace") {
       workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
         viewId: state.activeViewId,
         tabId: projectExpanded ? activeProjectTabId : null,
         fullScreen: projectFullScreen,
@@ -685,6 +695,58 @@ export default function App() {
     state.activeViewId,
     activeSurface,
   ]);
+
+  function rememberPreview(projectId: string | null, viewId = state.activeViewId, workspaceId = projectTabsWorkspaceId) {
+    if (!viewId) return;
+    workspaceScreenMemory.current.set(workspaceId,
+      rememberViewPreview(workspaceScreenMemory.current.get(workspaceId), viewId, projectId));
+    // Unavailable lookups and inactive deletion can change memory without a
+    // selected-project render. Persist those transitions immediately as well.
+    writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
+  }
+
+  // Restore by saved-view identity, including same-type views and filtered-out
+  // projects. The service lookup, rather than the projection, decides availability.
+  useEffect(() => {
+    const identity = JSON.stringify([state.workspaceId, state.activeViewId]);
+    if (!previewRestoreTracker.current.needsRestore(identity) || state.status !== "ready" ||
+      restoreStartupScreen.current || pendingWorkspaceScreen.current) return;
+    previewRestoreTracker.current.markRestored(identity);
+    const workspaceId = state.workspaceId;
+    const viewId = state.activeViewId;
+    if (!workspaceId || !viewId) return;
+    const token = previewRequests.current.invalidate();
+    setSelectedProject(null);
+    setActiveProjectTabId(null);
+    setProjectTabSelected(false);
+    sendPane({ type: "selectView" });
+    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
+    if (!projectId) return;
+    void workspaceClient.getProject({ workspaceId, projectId }).then(response => {
+      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
+      const project = isRecord(response) && isRecord(response.project) ? response.project as unknown as WorkspaceMockProject : null;
+      if (!project) throw new RendererLocalizedError("error.projectUnavailable");
+      setSelectedProject(project);
+      sendPane({ type: "previewProject" });
+      void loadProjectFileTree(project, workspaceId);
+    }).catch(error => {
+      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
+      rememberPreview(null, viewId);
+      toast.error(t("error.projectUnavailable"), { description: getServiceErrorMessage(error, t) });
+    });
+  }, [state.workspaceId, state.activeViewId, state.status, previewSelectionRevision]);
+
+  function selectSavedView(activeViewId: string) {
+    setPreviewSelectionRevision(previewRestoreTracker.current.request());
+    previewRequests.current.invalidate();
+    // An explicit return from an expanded tab closes this destination preview.
+    if (projectExpanded) rememberPreview(null, activeViewId);
+    setSelectedProject(null);
+    setActiveProjectTabId(null);
+    setProjectTabSelected(false);
+    sendPane({ type: "selectView" });
+    dispatch({ type: "activeViewChanged", activeViewId });
+  }
 
   useEffect(() => {
     if (selectedProject) {
@@ -772,6 +834,7 @@ export default function App() {
         tabId: activeProjectTabId,
       });
       setActiveProjectTabId(null);
+      rememberPreview(selectedProject.id);
       sendPane({ type: "previewProject" });
     } else {
       createExpandedProject(selectedProject);
@@ -836,9 +899,11 @@ export default function App() {
       closeProjectTab(activeProjectTabId);
       return;
     }
+    previewRequests.current.invalidate();
+    rememberPreview(null);
     setActiveProjectTabId(null);
     setSelectedProject(null);
-    sendPane({ type: "closeSplit" });
+    sendPane({ type: "selectView" });
   }
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [boardViewportWidth, setBoardViewportWidth] = useState(0);
@@ -1005,8 +1070,9 @@ export default function App() {
 
         const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
         const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId;
-        const previewResponse = restoreScreen && savedScreen?.previewId
-          ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedScreen.previewId })
+        const savedPreviewId = viewPreviewId(savedScreen, activeViewId);
+        const previewResponse = restoreScreen && !savedScreen?.tabId && savedPreviewId
+          ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedPreviewId }).catch(() => null)
           : null;
         const restoredPreview = isRecord(previewResponse) && isRecord(previewResponse.project) ? previewResponse.project : null;
         if (isCurrentLoad()) {
@@ -1025,13 +1091,15 @@ export default function App() {
             propertiesResponse,
           });
           if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId) {
+            previewRestoreTracker.current.markRestored(JSON.stringify([root.workspaceId, activeViewId]));
+            workspaceScreenMemory.current.set(root.workspaceId, pruneViewPreviews(savedScreen, viewsResponse.views.map(view => view.id)));
             restoreStartupScreen.current = false;
             pendingWorkspaceScreen.current = null;
             const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
             const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
               (item) => item.tabId === tabId,
             );
-            const projectId = cachedProject?.id || workspaceScreenMemory.current.get(root.workspaceId)?.previewId;
+            const projectId = cachedProject?.id || savedPreviewId;
             const projects =
               projectionResponse.projection.type === "board"
                 ? projectionResponse.projection.columns.flatMap((column) => column.projects)
@@ -1043,12 +1111,14 @@ export default function App() {
             // A removed preview cannot leave a visible empty shell. Expanded
             // tabs retain their existing cached behavior and identities.
             if (!project && projectId) {
+              rememberPreview(null, activeViewId, root.workspaceId);
               setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: "selectView" }) }));
               toast.error(t("error.projectUnavailable"));
             }
             setActiveProjectTabId(project ? tabId || null : null);
             setSelectedProject(project || null);
             setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
+            if (!cachedProject) setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: project ? "previewProject" : "selectView" }) }));
             if (project) void loadProjectFileTree(project, root.workspaceId);
           }
           if (folderSelectionPendingRef.current) {
@@ -1227,12 +1297,14 @@ export default function App() {
     }
     if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
       workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
+        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
         viewId: state.activeViewId,
         tabId: projectExpanded ? activeProjectTabId : null,
         fullScreen: projectFullScreen,
         previewId: !projectExpanded ? selectedProject?.id || null : null,
       });
     }
+    previewRequests.current.invalidate();
     const version = ++workspaceSwitchVersion.current;
     loadRequestIdRef.current += 1;
     pendingWorkspaceScreen.current = workspaceId;
@@ -1454,13 +1526,19 @@ export default function App() {
         viewId,
       });
       const deletedView = normalizeDeletedViewResponse(response);
+      const screen = workspaceScreenMemory.current.get(projectTabsWorkspaceId);
+      workspaceScreenMemory.current.set(projectTabsWorkspaceId,
+        pruneViewPreviews(screen, Object.keys(screen?.previewByView || {}).filter(id => id !== viewId)));
+      writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
+      if (workspaceIdRef.current !== state.workspaceId) return;
+      const currentViewId = activeViewIdRef.current;
+      if (viewId === currentViewId) previewRequests.current.invalidate();
       dispatch({
         type: "viewDeleted",
         viewId,
-        activeViewId: deletedView.activeViewId,
+        activeViewId: viewId === currentViewId ? deletedView.activeViewId : currentViewId,
       });
       toast.success(t("toast.viewDeleted"));
-      setSelectedProject(null);
     } catch (error) {
       toast.error(t("toast.viewDeleteFailed"), {
         description: getServiceErrorMessage(error, t),
@@ -2318,17 +2396,18 @@ export default function App() {
     project: WorkspaceMockProject,
     requestWorkspaceId = state.workspaceId,
   ) {
+    const token = previewRequests.current.current();
     try {
       const fileTree = normalizeProjectFileTreeResponse(
         await workspaceClient.listProjectFileTree({ workspaceId: requestWorkspaceId, path: project.currentRelativePath }),
       );
       setSelectedProject((currentProject) =>
-        workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id
+        previewRequests.current.accepts(token) && workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id && currentProject.currentRelativePath === project.currentRelativePath
           ? { ...currentProject, fileTree }
           : currentProject,
       );
     } catch (error) {
-      if (workspaceIdRef.current !== requestWorkspaceId) return;
+      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== requestWorkspaceId) return;
       toast.error(t("toast.fileTreeLoadFailed"), {
         description: getServiceErrorMessage(error, t),
       });
@@ -2337,9 +2416,11 @@ export default function App() {
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
     if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
-      sendPane({ type: "rightToggle" });
+      closeSelectedProject();
       return;
     }
+    previewRequests.current.invalidate();
+    if (!tabId) rememberPreview(project.id);
     setProjectTabSelected(fullScreen);
     setActiveProjectTabId(tabId);
     setSelectedProject(project);
@@ -2549,11 +2630,8 @@ export default function App() {
           key={view.id}
           className="bb-navigation-row"
           onClick={() => {
-            setSelectedProject(null);
-            setActiveProjectTabId(null);
+            selectSavedView(view.id);
             openWorkspaceSurface();
-            sendPane({ type: "selectView" });
-            dispatch({ type: "activeViewChanged", activeViewId: view.id });
           }}
         >
           <FolderIcon className="size-4" aria-hidden="true" />
@@ -2619,6 +2697,9 @@ export default function App() {
                 ) : null
               }
               onShowView={() => {
+                if (!projectExpanded) return;
+                previewRequests.current.invalidate();
+                rememberPreview(null);
                 setSelectedProject(null);
                 setActiveProjectTabId(null);
                 sendPane({ type: "selectView" });
@@ -2687,10 +2768,7 @@ export default function App() {
               activeViewId={viewState.activeViewId}
               views={viewState.views}
               onActiveViewChange={(activeViewId) => {
-                setSelectedProject(null);
-                setActiveProjectTabId(null);
-                sendPane({ type: "selectView" });
-                dispatch({ type: "activeViewChanged", activeViewId });
+                selectSavedView(activeViewId);
                 if (state.workspaceId) {
                   void workspaceClient
                     .setActiveView({
@@ -2779,6 +2857,18 @@ export default function App() {
         </div>
       ) : (
         <div
+          onPointerDownCapture={event => previewBackgroundGesture.current.start(event)}
+          onPointerMoveCapture={event => previewBackgroundGesture.current.move(event)}
+          onPointerCancelCapture={() => previewBackgroundGesture.current.cancel()}
+          onScrollCapture={() => previewBackgroundGesture.current.cancel()}
+          onContextMenuCapture={() => previewBackgroundGesture.current.cancel()}
+          onClick={event => {
+            if (previewBackgroundGesture.current.finish(event, window.getSelection()?.toString()) &&
+              !projectExpanded && selectedProject && paneLayout.rightVisible) {
+              closeSelectedProject();
+              document.querySelector<HTMLElement>('[data-pane-id="workspace"]')?.focus({ preventScroll: true });
+            }
+          }}
           aria-busy={isWorkspaceSwitchPendingSurface || undefined}
           className={[
             "electron-window-no-drag flex min-h-0 flex-1 flex-col overflow-hidden",
@@ -2797,6 +2887,7 @@ export default function App() {
                 <WorkspaceServiceError state={state} />
                 {searchHasNoResults ? (
                   <div
+                    data-workspace-preview-surface={activeViewType}
                     className="flex h-full min-h-0 items-center justify-center px-6 text-center"
                     role="status"
                   >
@@ -2945,6 +3036,7 @@ export default function App() {
         </div>
         {(
           <WorkspaceRightPanel
+            previewIdentity={JSON.stringify([projectTabsWorkspaceId, state.activeViewId])}
             key={projectTabsWorkspaceId}
             suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}

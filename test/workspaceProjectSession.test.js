@@ -54,3 +54,20 @@ test('preview identity survives independently of expanded tabs and is scoped to 
   assert.equal(restored.screens.a.previewId, 'alpha');
   assert.equal(restored.screens.b.previewId, 'beta');
 });
+
+test('per-view previews round trip including explicit close and legacy active-view migration', () => {
+  let value = JSON.stringify({ version: 2, tabs: {}, screens: { a: { viewId: 'old', tabId: null, previewId: 'alpha' } } });
+  const storage = { getItem: () => value, setItem: (_, next) => { value = next; } };
+  assert.deepEqual(readProjectSession(storage).screens.a.previewByView, { old: 'alpha' });
+  writeProjectSession(storage, {}, { a: { viewId: 'table', tabId: null, previewId: 'beta', previewByView: { old: null, table: 'beta', anotherBoard: 'gamma' } }, b: { viewId: 'old', tabId: null, previewByView: { old: 'delta' } } });
+  const restored = readProjectSession(storage);
+  assert.deepEqual(restored.screens.a.previewByView, { old: null, table: 'beta', anotherBoard: 'gamma' });
+  assert.deepEqual(restored.screens.b.previewByView, { old: 'delta' });
+});
+
+test('malformed preview entries are ignored without losing valid tab and screen state', () => {
+  const data = { version: 2, tabs: {}, screens: { a: { viewId: 'board', fullScreen: true, previewByView: { a: {}, b: '', c: null, d: 'opaque/id' } } } };
+  const restored = readProjectSession({ getItem: () => JSON.stringify(data) });
+  assert.deepEqual(restored.screens.a.previewByView, { c: null, d: 'opaque/id' });
+  assert.equal(restored.screens.a.fullScreen, true);
+});

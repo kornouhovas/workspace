@@ -25,7 +25,7 @@ function blockWorkspaceMenuClick(event: MouseEvent) {
   clearWorkspaceMenuClickBlocker();
 }
 
-function blockNextWorkspaceMenuClick() {
+export function blockNextWorkspaceMenuClick() {
   clearWorkspaceMenuClickBlocker();
   document.addEventListener("click", blockWorkspaceMenuClick, true);
   clickBlockerTimeout = window.setTimeout(clearWorkspaceMenuClickBlocker, 400);

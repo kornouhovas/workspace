@@ -20,6 +20,8 @@ export function readProjectSession(storage) {
     }));
     const screens = Object.fromEntries(Object.entries(record(raw.screens) ? raw.screens : {}).filter(([, screen]) => record(screen)).map(([id, screen]) => [id, {
       previewId: typeof screen.previewId === "string" ? screen.previewId : null,
+      previewByView: Object.fromEntries(Object.entries(record(screen.previewByView) ? screen.previewByView :
+        typeof screen.viewId === "string" && !screen.tabId ? { [screen.viewId]: screen.previewId ?? null } : {}).filter(([, id]) => id === null || typeof id === "string" && id.length > 0)),
       fullScreen: screen.fullScreen === true,
       viewId: typeof screen.viewId === "string" ? screen.viewId : null,
       tabId: tabs[id]?.find(project => raw.version === 1 ? project.id === screen.projectId : project.tabId === screen.tabId)?.tabId || null,

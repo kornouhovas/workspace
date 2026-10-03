@@ -1,3 +1,4 @@
+import { retainViewPreview } from "@/workspaceViewPreview.js";
 import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from "react";
 import { ContextMenu } from "radix-ui";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
@@ -210,6 +211,7 @@ export function ChromeTab({
   );
 }
 export function WorkspaceRightPanel({
+  previewIdentity,
   layout,
   suppressed = false,
   send,
@@ -219,6 +221,7 @@ export function WorkspaceRightPanel({
   onCloseProject,
   onMaximizeProject,
 }: {
+  previewIdentity: string;
   layout: PaneLayout;
   suppressed?: boolean;
   send: (action: PaneAction) => void;
@@ -268,19 +271,21 @@ export function WorkspaceRightPanel({
       ?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [layout.activeRightTab]);
   const visible = layout.rightVisible && !suppressed;
-  const previousProject = useRef(showProject ? project : undefined);
+  const previousProject = useRef<{ identity: string; project: ReactNode | undefined } | undefined>(undefined);
+  const identityChanged = previousProject.current?.identity !== previewIdentity;
+  previousProject.current = retainViewPreview(previousProject.current, previewIdentity, showProject ? project : undefined, visible);
   const previousName = useRef(projectName);
-  if (visible) { previousProject.current = showProject ? project : undefined; previousName.current = projectName; }
+  if (visible || identityChanged) previousName.current = visible ? projectName : undefined;
   const [exitComplete, setExitComplete] = useState(!visible);
   useEffect(() => {
     if (visible) { setExitComplete(false); return; }
     const timer = window.setTimeout(() => {
-      previousProject.current = undefined;
+      previousProject.current = { identity: previewIdentity, project: undefined };
       setExitComplete(true);
     }, 240);
     return () => window.clearTimeout(timer);
-  }, [visible]);
-  const contentProject = suppressed ? undefined : visible ? (showProject ? project : undefined) : exitComplete ? undefined : previousProject.current;
+  }, [visible, previewIdentity]);
+  const contentProject = suppressed ? undefined : visible ? (showProject ? project : undefined) : exitComplete ? undefined : previousProject.current?.project;
   return (
     <aside
       className="bb-right-panel"
@@ -401,7 +406,7 @@ export function WorkspaceRightPanel({
           label={t("chrome.hideRight")}
           onClick={() => {
             if (showProject) onCloseProject();
-            if (layout.rightVisible) send({ type: "rightToggle" });
+            else if (layout.rightVisible) send({ type: "rightToggle" });
           }}
         >
           <ChromeIcon icon={SidebarRightIcon} />
