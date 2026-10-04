@@ -1178,3 +1178,13 @@ test('Board renderer search retains collapsed memberships and counts unique matc
  assert.equal(match.totalProjectCount,1);assert.equal(match.columns[0].count,1);assert.deepEqual(match.columns[0].projects,[alpha]);assert.equal(match.groupOptions[1].count,1);
  const empty=filterWorkspaceProjectionBySearch(response,'missing').projection;assert.equal(empty.totalProjectCount,0);assert.equal(empty.columns[0].count,0);assert.equal(empty.groupOptions[0].count,0);
 });
+
+
+test('Board None and deleted-property flat fallback search count the accessible column projects',async()=>{
+ const {filterWorkspaceProjectionBySearch}=await importAppStateModule();const alpha={id:'a',name:'Alpha'};
+ for(const groupingNotice of [undefined,'property-removed']){
+  const response={...projectionResponse,view:{...projectionResponse.view,grouping:null},projection:{type:'board',capabilities:{canMoveBetweenStatuses:false},groupOptions:[],groupingNotice,totalProjectCount:1,columns:[{statusValueId:'ungrouped',name:'Board',projects:[alpha]}]}};
+  const match=filterWorkspaceProjectionBySearch(response,'Alpha').projection;assert.equal(match.totalProjectCount,1);assert.deepEqual(match.columns[0].projects,[alpha]);
+  const empty=filterWorkspaceProjectionBySearch(response,'missing').projection;assert.equal(empty.totalProjectCount,0);assert.deepEqual(empty.columns[0].projects,[]);
+ }
+});

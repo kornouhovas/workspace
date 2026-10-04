@@ -880,8 +880,9 @@ export function filterWorkspaceProjectionBySearch(
     ...projectionResponse,
     projection: {
       ...projectionResponse.projection,
-      totalProjectCount: new Set((projectionResponse.projection.groupOptions?.flatMap(group => group.rows)
-        ?? projectionResponse.projection.columns.flatMap(column => column.projects))
+      totalProjectCount: new Set((projectionResponse.projection.groupOptions?.length
+        ? projectionResponse.projection.groupOptions.flatMap(group => group.rows)
+        : projectionResponse.projection.columns.flatMap(column => column.projects))
         .filter(project => projectMatchesSearch(project, query)).map(project => isRecord(project) ? project.id : project)).size,
       groupOptions: projectionResponse.projection.groupOptions?.map(group => {
         const rows = group.rows.filter(project => projectMatchesSearch(project, query));
