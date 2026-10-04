@@ -8,7 +8,7 @@ import { EyeIcon, EyeOffIcon, ChevronLeftIcon } from "@/lib/workspace-icons";
 import { useI18n } from "@/i18n";
 import type { WorkspaceViewState, WorkspaceGroupingState, WorkspaceTableGroup, WorkspacePropertyDefinitionState } from "@/workspaceAppState";
 import type { GroupingMutation } from "@/workspaceGroupingMutations";
-import { normalizeGrouping, moveGroupingGroup, reorderGroupingGroup } from "@/workspaceGrouping.js";
+import { normalizeGrouping, moveGroupingGroup, reorderGroupingGroup, groupingMenuOrder } from "@/workspaceGrouping.js";
 
 type Props = {
   readonly view: WorkspaceViewState;
@@ -21,6 +21,8 @@ type Props = {
 export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onBack }: Props) {
   const { t } = useI18n();
   const grouping = view.grouping;
+  // Presentation partitions visibility; mutations continue using the authoritative order.
+  const menuGroups = groupingMenuOrder(groups);
   const listRef = useRef<HTMLDivElement>(null);
   const cancelDrag = useRef<(() => void) | null>(null);
   const [drag, setDrag] = useState<{ id: string; beforeId: string | null; x: number; y: number; width: number } | null>(null);
@@ -145,7 +147,7 @@ export function WorkspaceViewGroupMenu({ view, properties, groups, onChange, onB
         <span>{t("group.groups")}</span><Button variant="ghost" className="h-6 px-1 text-xs" onClick={() => update({ hiddenGroupIds: [] })}>{t("group.showAll")}</Button>
       </div>
       <div ref={listRef} className="max-h-64 overflow-y-auto">
-        {groups.map((group, index) => <div data-group-option-id={group.id} className={`relative flex h-7 rounded-sm hover:bg-state-hover min-w-0 items-center gap-1 px-1 text-xs ${drag?.id === group.id ? "opacity-40" : ""} ${drag && (drag.beforeId === group.id || (group.empty && drag.beforeId === null)) ? "shadow-[inset_0_2px_0_var(--primary)]" : ""}`} key={group.id}>
+        {menuGroups.map((group) => <div data-group-option-id={group.id} className={`relative flex h-7 rounded-sm hover:bg-state-hover min-w-0 items-center gap-1 px-1 text-xs ${drag?.id === group.id ? "opacity-40" : ""} ${drag && (drag.beforeId === group.id || (group.empty && drag.beforeId === null)) ? "shadow-[inset_0_2px_0_var(--primary)]" : ""}`} key={group.id}>
           {!group.empty ? <Button variant="ghost" size="icon" className="size-6 shrink-0 touch-none cursor-grab active:cursor-grabbing" aria-label={t("group.reorder", { name: label(group) })} title={t("group.reorderHelp")} onPointerDown={event => startDrag(event, group)} onKeyDown={event => {
             if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); move(group.id, event.key === "ArrowUp" ? -1 : 1); }
           }}><svg viewBox="0 0 12 16" className="h-4 w-3" aria-hidden="true"><g fill="currentColor">{[4,8,12].map(y => <g key={y}><circle cx="4" cy={y} r="1"/><circle cx="8" cy={y} r="1"/></g>)}</g></svg></Button> : <span className="w-6 shrink-0"/>}

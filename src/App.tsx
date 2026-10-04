@@ -1958,7 +1958,12 @@ export default function App() {
     const workspaceId = state.workspaceId, viewId = state.activeViewId;
     if (!workspaceId || !viewId) return;
     try {
-      await workspaceClient.updateView({ workspaceId, viewId, patch: { columnVisibility: { statusValueId, visible } } });
+      const grouping = state.views.find(view => view.id === viewId)?.grouping;
+      if (!grouping) return;
+      const groupId = grouping.propertyId === "property:status" ? statusValueId === "statusValue:no-status" ? "empty" : `value:${statusValueId}` : statusValueId;
+      await groupingSaveQueue.current.enqueue({ workspaceId, viewId }, grouping, current => current ? {
+        ...current, hiddenGroupIds: visible ? current.hiddenGroupIds.filter(id => id !== groupId) : [...new Set([...current.hiddenGroupIds, groupId])],
+      } : current);
       if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId) await refreshActiveViewAfterPatch(viewId);
     }
     catch (error) { toast.error(t("board.visibilityFailed"), { description: getServiceErrorMessage(error, t) }); }
@@ -1984,10 +1989,15 @@ export default function App() {
     const viewRequestVersion = viewRequestVersionRef.current, loadRequestId = loadRequestIdRef.current;
     if (!workspaceId || !viewId || !state.root) throw new RendererLocalizedError("error.activeViewUnavailable");
     try {
-      await workspaceClient.updateView({ workspaceId, viewId, patch: { columnOrder } });
+      const grouping = state.views.find(view => view.id === viewId)?.grouping;
+      await groupingSaveQueue.current.enqueue({ workspaceId, viewId }, grouping, current => {
+        if (!current || current.propertyId !== grouping?.propertyId) throw new RendererLocalizedError("error.activeViewUnavailable");
+        return { ...current, sort: "manual", manualOrder: columnOrder.filter(id => id !== "statusValue:no-status" && id !== "empty").map(id =>
+          current.propertyId === "property:status" ? `value:${id}` : id) };
+      });
       if (workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId ||
         loadRequestIdRef.current !== loadRequestId || viewRequestVersionRef.current !== viewRequestVersion) return;
-      dispatch({ type: "viewBoardOrderUpdated", workspaceId, viewId, viewRequestVersion, columnOrder });
+      await refreshActiveViewAfterPatch(viewId);
     } catch (error) {
       if (workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId &&
         loadRequestIdRef.current === loadRequestId && viewRequestVersionRef.current === viewRequestVersion) {
@@ -2746,7 +2756,7 @@ export default function App() {
     state.searchQuery.trim().length > 0 &&
     (activeViewType === "board"
       ? boardProjection.type === "board" &&
-        boardProjection.columns.every((column) => column.projects.length === 0)
+        ("totalProjectCount" in boardProjection ? boardProjection.totalProjectCount === 0 : boardProjection.columns.every((column) => column.projects.length === 0))
       : tableProjection.type === "table" && tableProjection.rows.length === 0 && !tableProjection.groupOptions && !tableProjection.groupingNotice);
 
   const renderDetailPanel = (
@@ -2882,7 +2892,7 @@ export default function App() {
                 setActiveProjectTabId(null);
                 sendPane({ type: "selectView" });
               }}
-              groupOptions={tableProjection.type === "table" ? tableProjection.groupOptions : undefined}
+              groupOptions={serviceProjection?.projection.groupOptions}
               onGroupingChange={handleGroupingChange}
               actionsHidden={projectFullScreen}
               projectTabs={

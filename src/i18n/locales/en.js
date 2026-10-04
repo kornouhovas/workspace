@@ -64,7 +64,7 @@ export const en = {
   "group.hide": "Hide group {{name}}",
   "group.remove": "Remove grouping",
   "group.noValue": "No value",
-  "group.emptyLast": "No value always appears last.",
+  "group.emptyLast": "No value stays last within visible or hidden groups.",
   "group.removed": "Grouping was disabled because its property was deleted.",
   "group.saveFailed": "Could not save grouping",
   "group.collapse": "Collapse group {{name}}",

@@ -1259,7 +1259,7 @@ test('Table grouping persists in JSON IPC across views/restart and property dele
     const grouping={propertyId,sort:'manual',manualOrder:['empty'],hiddenGroupIds:[],collapsedGroupIds:['empty'],hideEmpty:false};
     await handler(null,'workspace.updateView',{workspaceId,viewId:table.id,patch:{grouping}});
     handler=createWorkspaceIpcHandler(options);
-    const saved=await handler(null,'workspace.listViews',{workspaceId});assert.deepEqual(saved.views.find(v=>v.id===table.id).grouping,grouping);assert.equal(saved.views.find(v=>v.viewType==='board').grouping,null);
+    const saved=await handler(null,'workspace.listViews',{workspaceId});assert.deepEqual(saved.views.find(v=>v.id===table.id).grouping,grouping);assert.equal(saved.views.find(v=>v.viewType==='board').grouping.propertyId,'property:status');
     const projection=await handler(null,'workspace.getViewProjection',{workspaceId,viewId:table.id});assert.equal(projection.projection.groups[0].collapsed,true);assert.equal(projection.projection.totalProjectCount,1);
     await handler(null,'workspace.deleteProperty',{workspaceId,propertyId,confirmDeleteUsages:true});
     const after=await handler(null,'workspace.listViews',{workspaceId});assert.equal(after.views.find(v=>v.id===table.id).grouping,null);assert.equal(after.views.find(v=>v.id===table.id).groupingNotice,'property-removed');

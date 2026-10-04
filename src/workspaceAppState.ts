@@ -109,6 +109,9 @@ export type WorkspaceProjectionResponse = {
   readonly projection:
     | {
         readonly type: "board";
+        readonly groupOptions?: readonly WorkspaceTableGroup[];
+        readonly groupingNotice?: string;
+        readonly totalProjectCount?: number;
         readonly capabilities: {
           readonly canMoveBetweenStatuses: boolean;
         };
@@ -877,10 +880,18 @@ export function filterWorkspaceProjectionBySearch(
     ...projectionResponse,
     projection: {
       ...projectionResponse.projection,
+      totalProjectCount: new Set((projectionResponse.projection.groupOptions?.flatMap(group => group.rows)
+        ?? projectionResponse.projection.columns.flatMap(column => column.projects))
+        .filter(project => projectMatchesSearch(project, query)).map(project => isRecord(project) ? project.id : project)).size,
+      groupOptions: projectionResponse.projection.groupOptions?.map(group => {
+        const rows = group.rows.filter(project => projectMatchesSearch(project, query));
+        return { ...group, rows, count: rows.length };
+      }),
       columns: projectionResponse.projection.columns
         .map((column) => ({
           ...column,
           projects: column.projects.filter((project) => projectMatchesSearch(project, query)),
+          count: column.projects.filter((project) => projectMatchesSearch(project, query)).length,
         })),
     },
   };

@@ -379,11 +379,21 @@ export async function createUpdateViewResponse({
     const savedView = await viewStore.saveView(normalizeViewDocument({
       ...view,
       ...(body?.patch || {}),
+      ...(!Object.hasOwn(body?.patch || {}, "grouping") && view.grouping?.propertyId === "property:status" && (body?.patch?.columnOrder || body?.patch?.hiddenColumnIds) ? { grouping: {
+        ...view.grouping,
+        ...(body.patch.columnOrder ? { sort: "manual", manualOrder: body.patch.columnOrder.filter(id => id !== "statusValue:no-status").map(id => `value:${id}`) } : {}),
+        ...(body.patch.hiddenColumnIds ? { hiddenGroupIds: body.patch.hiddenColumnIds.map(id => id === "statusValue:no-status" ? "empty" : `value:${id}`) } : {}),
+      } } : {}),
+      ...(body?.patch?.columnVisibility && view.grouping?.propertyId === "property:status" ? { grouping: {
+        ...view.grouping, hiddenGroupIds: body.patch.columnVisibility.visible
+          ? view.grouping.hiddenGroupIds.filter(id => id !== (body.patch.columnVisibility.statusValueId === "statusValue:no-status" ? "empty" : `value:${body.patch.columnVisibility.statusValueId}`))
+          : [...new Set([...view.grouping.hiddenGroupIds, body.patch.columnVisibility.statusValueId === "statusValue:no-status" ? "empty" : `value:${body.patch.columnVisibility.statusValueId}`])],
+      } } : {}),
       ...(body?.patch?.columnVisibility ? { hiddenColumnIds: body.patch.columnVisibility.visible
         ? (view.hiddenColumnIds || []).filter(id => id !== body.patch.columnVisibility.statusValueId)
         : [...new Set([...(view.hiddenColumnIds || []), body.patch.columnVisibility.statusValueId])] } : {}),
       ...(Object.hasOwn(body?.patch || {}, "tableColumnWidths") ? { tableColumnWidths: { ...view.tableColumnWidths, ...body.patch.tableColumnWidths } } : {}),
-      ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null } : {}),
+      ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null, boardGroupingVersion: 1 } : {}),
       updatedAt: now(),
     }));
 

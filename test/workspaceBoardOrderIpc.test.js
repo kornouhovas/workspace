@@ -26,7 +26,7 @@ test('Board order persists across runtime restart, duplicate and Workspace switc
   const columns=original.projection.columns;
   const ids=columns.map(c=>c.statusValueId);assert.equal(ids.length,4);
   assert.ok(ids.includes("statusValue:no-status"));
-  const order=[ids[2],ids[0],ids[3],ids[1],'opaque-unavailable'];
+  const order=[ids[2],ids[0],ids[1],'opaque-unavailable',ids[3]];
   const projects=columns.flatMap(c=>c.projects), catalog=original.statusValues;
   const viewBefore=(await call("listViews")).views.find(view=>view.id==="view:default-board");
   const settingsBefore=JSON.parse(await readFile(configPath));
@@ -35,11 +35,11 @@ test('Board order persists across runtime restart, duplicate and Workspace switc
   await call('updateView',{viewId:'view:default-board',patch:{columnOrder:order}});
   handler=make();
   const reordered=await call('getViewProjection',{viewId:'view:default-board'});
-  assert.deepEqual(reordered.projection.columns.map(c=>c.statusValueId),order.slice(0,4));
+  assert.deepEqual(reordered.projection.columns.map(c=>c.statusValueId),order.filter(id=>id!=="opaque-unavailable"));
   assert.deepEqual(reordered.statusValues,catalog);
   const viewAfter=(await call("listViews")).views.find(view=>view.id==="view:default-board");
-  const {columnOrder:beforeRank,updatedAt:beforeUpdated,...beforeSettings}=viewBefore;
-  const {columnOrder:afterRank,updatedAt:afterUpdated,...afterSettings}=viewAfter;
+  const {columnOrder:beforeRank,grouping:beforeGrouping,updatedAt:beforeUpdated,...beforeSettings}=viewBefore;
+  const {columnOrder:afterRank,grouping:afterGrouping,updatedAt:afterUpdated,...afterSettings}=viewAfter;
   assert.deepEqual(afterSettings,beforeSettings);
 
   assert.deepEqual(await call('getViewProjection',{viewId:'view:default-table'}),tableBefore);
@@ -47,7 +47,7 @@ test('Board order persists across runtime restart, duplicate and Workspace switc
   assert.equal(await readFile(propertyStorePath,'utf8'),propertiesBefore);
   const searched=await call('getViewProjection',{viewId:'view:default-board',searchQuery:'Alpha'});
   assert.deepEqual(searched.view.columnOrder,order);assert.equal(searched.projection.columns.filter(c=>c.projects.length>0).length,1);
-  assert.deepEqual((await call('getViewProjection',{viewId:'view:default-board'})).projection.columns.map(c=>c.statusValueId),order.slice(0,4));
+  assert.deepEqual((await call('getViewProjection',{viewId:'view:default-board'})).projection.columns.map(c=>c.statusValueId),order.filter(id=>id!=="opaque-unavailable"));
   const client=Object.fromEntries(['listViews','createView','updateView','reorderViews','setActiveView','deleteView'].map(method=>[method,payload=>call(method,payload)]));
   const copyId=await duplicateWorkspaceView(client,workspaceId,'view:default-board','Second Board');
   assert.deepEqual((await call('getViewProjection',{viewId:copyId})).view.columnOrder,order);
@@ -66,7 +66,7 @@ test('Board order persists across runtime restart, duplicate and Workspace switc
   assert.deepEqual((await call('getViewProjection',{viewId:'view:default-board'})).view.columnOrder,order);
   await mkdir(join(root,'New'));await call('updateFolderRole',{path:'New',role:'status'});
   const added=await call('getViewProjection',{viewId:'view:default-board'});
-  assert.deepEqual(added.view.columnOrder.slice(0,5),order);assert.equal(added.view.columnOrder.length,6);
+  assert.deepEqual(added.view.columnOrder.filter(id=>!id.endsWith(":new")),order);assert.equal(added.view.columnOrder.length,6);
   for(const project of projects) assert.equal(await readFile(join(root,project.currentRelativePath,'content'),'utf8'),project.name);
   const alpha=projects.find(p=>p.name==='Alpha');const done=columns.find(c=>c.name==='Done');
   const options=(await call('getProjectStatusOptions',{projectId:alpha.id})).options;
@@ -75,6 +75,6 @@ test('Board order persists across runtime restart, duplicate and Workspace switc
   await call('moveProjectStatus',{projectId:alpha.id,statusValueId:target.id});
   const moved=await call('getViewProjection',{viewId:'view:default-board'});
   assert.ok(moved.projection.columns.find(c=>c.statusValueId===done.statusValueId).projects.some(p=>p.id===alpha.id));
-  assert.deepEqual(moved.view.columnOrder.slice(0,5),order);
+  assert.deepEqual(moved.view.columnOrder.filter(id=>!id.endsWith(":new")),order);
  } finally { await rm(dir,{recursive:true,force:true}); }
 });

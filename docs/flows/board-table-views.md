@@ -53,7 +53,7 @@ This is the primary daily workflow after the project source folder and folder ro
 ## Board Path
 
 1. User selects a Board view.
-2. Board shows one column per primary status group.
+2. Board defaults to Status columns; Group by selects another supported property or None.
 3. Projects inside status folders appear in their status column.
 4. Projects outside status folders appear in the `No status` column.
 5. Each card shows `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
@@ -63,7 +63,7 @@ This is the primary daily workflow after the project source folder and folder ro
 
 Rules:
 
-- Board columns are status groups with independent view ordering by dragging their names; see [Board column order](#board-column-order-workspace-fns).
+- Board columns follow the selected grouping property with independent view ordering by dragging their names; see [Board column order](#board-column-order-workspace-fns).
 - Project cards can be dragged into another available Status column, including empty columns.
 - Empty status columns remain visible with a compact empty state when no value filter or search query is active.
 - While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
@@ -340,7 +340,7 @@ The most important behavioral check is that Board and Table are projections of t
 
 ## Table grouping
 
-Customize Columns → Group opens per-view settings. Group by and Sort are separate keyboard accessible controls. Group by includes Name, Status and all current custom properties, including hidden columns, plus No grouping. Sort selects Default (catalog order or ascending scalar values), Ascending, Descending, or Manual. Every movable group exposes a left drag handle in all four sorts; Arrow Up/Down on the handle is the keyboard alternative. A successful move selects Manual using the complete displayed order, including hidden groups. Click, no-op drop, Escape and outside cancellation do not save. No value/No status always stays last and has no handle.
+Customize Columns → Group opens per-view settings. Group by and Sort are separate keyboard accessible controls. Group by includes Name, Status and all current custom properties, including hidden columns, plus No grouping. Sort selects Default (catalog order or ascending scalar values), Ascending, Descending, or Manual. Every movable group exposes a left drag handle in all four sorts; Arrow Up/Down on the handle is the keyboard alternative. A successful move selects Manual using the complete displayed order, including hidden groups. Click, no-op drop, Escape and outside cancellation do not save. No value/No status stays last on the surface and within its visibility part in the Group menu, and has no handle.
 
 Hide empty groups follows current search/filter counts. Each group has Show/Hide controls; Show all groups restores hidden groups. Collapse all/Expand all and the section button persist independently per view. Section headers show category color, truncated exact value with full title, unique visible count, and `aria-expanded`. Every expanded non-empty section has its own column header and rows, separated from its neighbour by a compact 20px gap. Collapsed and empty sections have only their compact group heading. Repeated headers share one colgroup, column widths/order, wrap layout, editors and horizontal/vertical scroll container; header menus and rename controls open only in the selected occurrence. Multi-select repeats display occurrences of one project, while the displayed total counts unique projects. Card opening uses the existing project ID and return preserves the view.
 
@@ -380,3 +380,14 @@ Escape, pointer cancellation/lost capture, outside drop and unchanged position d
 Use the ⋯ button after the displayed-card counter to add a card or hide its column. Add card asks for a name and creates a new empty project folder in the current physical Status folder. Confirmed creation refreshes discovery; search and filters remain active. No status and unavailable destinations explain why creation is disabled. Escape/Cancel before submission creates nothing; pending submission blocks repeated confirmation. Creation errors leave the dialog open. If the folder exists but refresh fails, the notification explains that the view must be refreshed.
 
 Hide column affects only the current saved Board view. View settings list every column with visibility checkboxes, including when all columns are hidden. Showing a column returns it to its saved position. Filters/search, switching Workspace/view and restart preserve explicit visibility, projects and folder roles. See [API contract](../api/workspace-views.md#board-column-actions-workspace-rei).
+
+
+## Board property grouping (workspace-4r0)
+
+Board and Table share per-view Group by and Sort settings. Supported properties are Name, Status, Text, Number, Date, Select and Multi-select, including hidden properties. None displays all matching projects in a single Board column. Typed memberships, exact values, empty groups, unique totals, filtering and catalog/default or ascending scalar order follow Table. Multi-select may display a project in several columns. Group order never sorts cards.
+
+Board supports Default, Ascending, Descending and Manual. A successful changed horizontal header move (or Alt+Left/Right) persists Manual and the resulting order; click, unchanged drop, cancellation and failed saves retain the confirmed sort. No value/No status is pinned after value groups and cannot be dragged. Hidden and unavailable IDs retain saved manual ranks. Legacy Board documents with null/missing grouping restore Status, existing column order and visibility; `boardGroupingVersion: 1` distinguishes explicit None. The current JSON adapter normalizes this compatibly without changing project data or status catalogs.
+
+Both Group menus present visible groups first, hidden groups second, preserving the selected sort within each part. No value/No status is last within its visibility part, so a visible empty group precedes hidden value groups. This presentation never writes manual ranks. Hide/show and Show all restore the underlying group order; grouping, ranks, hide-empty and collapse/visibility settings are independent per saved view and Workspace.
+
+Folder create and card-drop destinations are available only when Board is grouped by Status. For other properties and None, Add card is disabled with an unavailable-destination explanation and card dragging cannot invoke a Status move or write a property. Existing Status pickers remain available inside cards/details and use the existing validated source operation. Hide remains available for grouped columns; None cannot hide the single column. Collapse all/Expand all in Group controls content visibility while retaining group counts. A deleted property displays flat accessible projects and a recovery notice.

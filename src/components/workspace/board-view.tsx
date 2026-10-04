@@ -16,10 +16,14 @@ import { ProjectTablePropertyValueEditor } from "./table-view";
 type WorkspaceBoardColumn = {
   readonly statusValueId: string;
   readonly name: string;
+  readonly color?: string;
+  readonly collapsed?: boolean;
+  readonly count?: number;
   readonly projects: readonly WorkspaceMockProject[];
 };
 
 type WorkspaceBoardProjection = {
+  readonly groupingNotice?: string;
   readonly capabilities: {
     readonly canMoveBetweenStatuses: boolean;
   };
@@ -125,9 +129,10 @@ export function WorkspaceBoardView({
   const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
   const columnIds = projection.columns.map(column => column.statusValueId);
-  const order = useBoardColumnOrder({ order: columnOrder ?? columnIds, visibleIds: columnIds, scope: orderScope, disabled: interactionDisabled || !!statusMovePending, viewport: boardViewportRef, onReorder: onReorderColumns });
+  const movableIds = columnIds.filter(id => !["empty", "statusValue:no-status", "ungrouped"].includes(id));
+  const order = useBoardColumnOrder({ order: columnOrder ?? columnIds, visibleIds: movableIds, scope: orderScope, disabled: interactionDisabled || !!statusMovePending, viewport: boardViewportRef, onReorder: onReorderColumns });
   const columnsById = new Map(projection.columns.map(column => [column.statusValueId, column]));
-  const orderedColumns = order.bodies.flatMap(id => { const column = columnsById.get(id); return column ? [column] : []; });
+  const orderedColumns = [...order.bodies, ...columnIds.filter(id => !movableIds.includes(id))].flatMap(id => { const column = columnsById.get(id); return column ? [column] : []; });
   const boardGridStyle = {
     "--workspace-board-column-width": `${preferredColumnWidth}px`,
     gridAutoColumns: "var(--workspace-board-column-width)",
@@ -155,48 +160,50 @@ export function WorkspaceBoardView({
   }, [onViewportWidthChange]);
 
   return (
-    <ProjectStatusDragSurface statusMovePending={statusMovePending || !!order.activeId || order.pending || interactionDisabled} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
+    <ProjectStatusDragSurface statusMovePending={!projection.capabilities.canMoveBetweenStatuses || statusMovePending || !!order.activeId || order.pending || interactionDisabled} onLoadStatusOptions={onLoadStatusOptions} onStatusChange={onStatusChange}>
     <section data-workspace-preview-surface="board" className="flex h-full min-h-0 w-full flex-col overflow-hidden pt-3" aria-label={t("view.boardDefault")} data-workspace-column-reorder={order.activeId ? "preview" : order.pending ? "saving" : undefined}
       onClickCapture={event => { if (order.suppressClick()) { event.preventDefault(); event.stopPropagation(); } }}>
       <p className="sr-only" id="workspace-board-order-help">{t("board.orderHelp")}</p>
       {order.activeId || order.pending ? <p role="status" className="sr-only">{t(order.pending ? "board.orderSaving" : "board.orderPreview")}</p> : null}
+      {projection.groupingNotice ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {noSearchResults ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("board.noMatchingProjects")}</p> : null}
       {orderedColumns.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{t("board.allColumnsHidden")}</p> : null}
       <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {orderedColumns.map((column) => {
-            const statusColor = statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
+            const columnName = column.statusValueId === "empty" ? t("group.noValue") : getStatusDisplayName(t, { id: column.statusValueId, name: column.name });
+            const statusColor = column.color || statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (
               <StatusDropColumn statusValueId={column.statusValueId}
               key={column.statusValueId}
               className="workspace-board-column flex min-w-0 self-start flex-col px-1"
               aria-label={t("board.projectsAria", {
-                name: getStatusDisplayName(t, { id: column.statusValueId, name: column.name }),
+                name: columnName,
               })}
             >
               <header data-workspace-column-header={column.statusValueId} data-workspace-column-drag-active={order.activeId === column.statusValueId || undefined} style={order.headerStyle(column.statusValueId)} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
                 <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
-                  <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-label={t("board.reorderColumn", {name: getStatusDisplayName(t, {id: column.statusValueId, name: column.name})})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
-                    onPointerDown={event => order.onPointerDown(event, column.statusValueId)} onKeyDown={event => order.onKeyDown(event, column.statusValueId)}
+                  <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-label={t("board.reorderColumn", {name: columnName})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
+                    disabled={!movableIds.includes(column.statusValueId)} onPointerDown={event => order.onPointerDown(event, column.statusValueId)} onKeyDown={event => order.onKeyDown(event, column.statusValueId)}
                     className="flex w-full min-w-0 touch-none select-none items-center gap-2 rounded-sm text-left cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
                   <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
-                  <span className="truncate">{getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}</span>
+                  <span className="truncate">{columnName}</span>
                   </button>
                 </h3>
                 <span
                   data-workspace-column-count
-                  aria-label={t("board.visibleCount", { count: column.projects.length })}
+                  aria-label={t("board.visibleCount", { count: column.count ?? column.projects.length })}
                   className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-background/75 px-1.5 text-xs tabular-nums text-muted-foreground"
                 >
-                  {column.projects.length}
+                  {column.count ?? column.projects.length}
                 </span>
-                <BoardColumnActions statusValueId={column.statusValueId} name={getStatusDisplayName(t, { id: column.statusValueId, name: column.name })}
+                <BoardColumnActions statusValueId={column.statusValueId} name={columnName}
                   disabled={interactionDisabled || !!statusMovePending || !!order.activeId || order.pending}
-                  unavailable={column.statusValueId === "statusValue:no-status" || !!(statusValues.find(value => value.id === column.statusValueId) as {moveDisabledReason?: string} | undefined)?.moveDisabledReason}
-                  onHide={onHideColumn} onCreate={onCreateProject} />
+                  unavailable={!projection.capabilities.canMoveBetweenStatuses || column.statusValueId === "statusValue:no-status" || !!(statusValues.find(value => value.id === column.statusValueId) as {moveDisabledReason?: string} | undefined)?.moveDisabledReason}
+                  onHide={column.statusValueId === "ungrouped" ? undefined : onHideColumn} onCreate={projection.capabilities.canMoveBetweenStatuses ? onCreateProject : undefined} />
               </header>
               <div className="grid auto-rows-max content-start gap-3 pb-2">
-                {column.projects.length === 0 ? (
+                {column.collapsed ? null : column.projects.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     {t("board.noProjects")}
                   </div>

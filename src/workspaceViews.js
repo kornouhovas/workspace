@@ -85,7 +85,13 @@ export function normalizeViewDocument(view = {}) {
     ...(viewType === "table" ? { tableColumnWidths: normalizeTableColumnWidths(view.tableColumnWidths) } : {}),
     ...(viewType === "board" ? { columnOrder: completeBoardColumnOrder(view.columnOrder), hiddenColumnIds: completeBoardColumnOrder(view.hiddenColumnIds) } : {}),
     ...(viewType === "table" ? { rowOrder: normalizeStringArray(view.rowOrder) } : {}),
-    grouping: viewType === "table" ? normalizeGrouping(view.grouping) : null,
+    ...(viewType === "board" ? { boardGroupingVersion: 1 } : {}),
+    grouping: viewType === "board" && !view.boardGroupingVersion && !view.grouping
+      ? normalizeGrouping({ propertyId: PROPERTY_STATUS_ID,
+          sort: view.columnOrder?.length ? "manual" : "default",
+          manualOrder: (view.columnOrder || []).filter(id => id !== NO_STATUS_VALUE_ID).map(id => `value:${id}`),
+          hiddenGroupIds: (view.hiddenColumnIds || []).map(id => id === NO_STATUS_VALUE_ID ? "empty" : `value:${id}`) })
+      : normalizeGrouping(view.grouping),
     groupingNotice: view.groupingNotice === "property-removed" ? "property-removed" : null,
     createdAt: normalizeString(view.createdAt),
     updatedAt: normalizeString(view.updatedAt),
@@ -251,25 +257,30 @@ export function createViewProjection({
   }
 
   const boardStatusValues = createBoardStatusValues({ statusValues, filteredProjects });
-  const columnOrder = completeBoardColumnOrder(normalizedView.columnOrder, boardStatusValues.map(value => value.id));
-  const rank = new Map(columnOrder.map((id, index) => [id, index]));
-  const boardColumns = [...boardStatusValues].sort((a, b) => rank.get(a.id) - rank.get(b.id)).map((statusValue) => ({
-    statusValueId: statusValue.id,
-    name: statusValue.name,
-    projects: filteredProjects.filter((project) => getProjectStatusValueId(project) === statusValue.id),
-  }));
-
+  const grouped = createTableGrouping({ grouping: normalizedView.grouping, projects, filteredProjects,
+    propertyDefinitions: propertyDefinitions.some(p => p.id === PROPERTY_STATUS_ID) ? propertyDefinitions : [...propertyDefinitions, { id: PROPERTY_STATUS_ID, type: "select" }], selectValues, statusValues: boardStatusValues, locale });
+  const statusGrouping = normalizedView.grouping?.propertyId === PROPERTY_STATUS_ID;
+  const toColumnId = group => statusGrouping ? group.empty ? NO_STATUS_VALUE_ID : group.value : group.id;
+  // Unlike Table, the legacy Status Board exposes No status only when projects exist there.
+  if (statusGrouping && !projects.some(project => getProjectStatusValueId(project) === NO_STATUS_VALUE_ID)) {
+    grouped.groupOptions = grouped.groupOptions?.filter(group => !group.empty);
+    grouped.groups = grouped.groups?.filter(group => !group.empty);
+  }
+  const allGroups = grouped.groupOptions || [];
+  const projectedColumns = grouped.groups ? grouped.groups.map(group => ({
+    statusValueId: toColumnId(group), groupId: group.id, name: group.name, color: group.color,
+    empty: group.empty, collapsed: group.collapsed, projects: group.rows,
+    count: group.count,
+  })) : [{ statusValueId: "ungrouped", name: normalizedView.name, projects: filteredProjects }];
   return {
     ...response,
-    view: { ...response.view, columnOrder, hiddenColumnIds: normalizedView.hiddenColumnIds },
+    view: { ...response.view, columnOrder: normalizedView.grouping?.sort === "manual"
+      ? completeBoardColumnOrder(normalizedView.grouping.manualOrder.map(id => statusGrouping && id.startsWith("value:") ? id.slice(6) : id), allGroups.filter(g => !g.empty).map(toColumnId)).concat(allGroups.filter(g => g.empty).map(toColumnId))
+      : allGroups.map(toColumnId), hiddenColumnIds: allGroups.filter(g => g.hidden).map(toColumnId) },
     statusValues: boardStatusValues,
-    projection: {
-      type: "board",
-      capabilities: {
-        canMoveBetweenStatuses: true,
-      },
-      columns: boardColumns.filter(column => !normalizedView.hiddenColumnIds.includes(column.statusValueId)),
-    },
+    projection: { type: "board", capabilities: { canMoveBetweenStatuses: statusGrouping },
+      columns: projectedColumns, groupOptions: allGroups, totalProjectCount: new Set(filteredProjects.map(p => p.id)).size,
+      ...(grouped.groupingNotice || normalizedView.groupingNotice ? { groupingNotice: grouped.groupingNotice || normalizedView.groupingNotice } : {}) },
   };
 }
 

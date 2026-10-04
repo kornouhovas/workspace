@@ -17,7 +17,7 @@ test("Board owns both scroll axes, columns follow content, and visible counts ar
   assert.match(boardSource, /workspace-board-column[^"\n]*self-start/);
   assert.match(boardSource, /data-workspace-column-count/);
   assert.match(boardSource, /aria-label=\{t\("board\.visibleCount"/);
-  assert.match(boardSource, /\{column\.projects\.length\}/);
+  assert.match(boardSource, /\{column\.count \?\? column\.projects\.length\}/);
 });
 
 test("expanded project uses common compact headings and exposes a numeric file count accessibly", async () => {

@@ -150,27 +150,40 @@ export function createTableGrouping({
 
 // Automatic sorts use the displayed universe; pending manual mutations compose on the draft.
 function groupingOrder(setting, groupIds) {
-  const available = new Set(groupIds.filter(id => id !== "empty"));
-  const order = setting.sort === "manual" ? setting.manualOrder.filter(id => available.has(id)) : [];
-  for (const id of groupIds) if (id !== "empty" && !order.includes(id)) order.push(id);
-  return order;
+  const available = [...new Set(groupIds.filter(id => id !== "empty"))];
+  const availableSet = new Set(available);
+  const previous = setting.manualOrder.filter(id => id !== "empty");
+  const complete = [...previous, ...available.filter(id => !previous.includes(id))];
+  if (setting.sort === "manual") return complete;
+  // Automatic sorts replace available slots; unavailable opaque identities retain their ranks.
+  let index = 0;
+  return complete.map(id => availableSet.has(id) ? available[index++] : id);
 }
 
 export function reorderGroupingGroup(setting, groupIds, groupId, beforeId) {
   if (!setting || groupId === "empty" || beforeId === "empty") return setting;
   const order = groupingOrder(setting, groupIds);
-  if (!order.includes(groupId) || (beforeId !== null && !order.includes(beforeId))) return setting;
+  const available = new Set(groupIds.filter(id => id !== "empty"));
+  const movable = order.filter(id => available.has(id));
+  if (!movable.includes(groupId) || (beforeId !== null && !movable.includes(beforeId))) return setting;
   if (groupId === beforeId) return setting;
-  const reordered = order.filter(id => id !== groupId);
+  const reordered = movable.filter(id => id !== groupId);
   reordered.splice(beforeId === null ? reordered.length : reordered.indexOf(beforeId), 0, groupId);
-  if (reordered.every((id, index) => id === order[index])) return setting;
-  return { ...setting, sort: "manual", manualOrder: reordered };
+  if (reordered.every((id, index) => id === movable[index])) return setting;
+  let index = 0;
+  return { ...setting, sort: "manual", manualOrder: order.map(id => available.has(id) ? reordered[index++] : id) };
 }
 
 export function moveGroupingGroup(setting, groupIds, groupId, direction) {
   if (!setting) return null;
-  const order = groupingOrder(setting, groupIds);
+  const available = new Set(groupIds.filter(id => id !== "empty"));
+  const order = groupingOrder(setting, groupIds).filter(id => available.has(id));
   const index = order.indexOf(groupId), destination = index + direction;
   if (index < 0 || destination < 0 || destination >= order.length || destination === index) return setting;
   return reorderGroupingGroup(setting, groupIds, groupId, direction < 0 ? order[destination] : order[destination + 1] ?? null);
+}
+
+// Visibility is a menu presentation only; No value is last within its partition.
+export function groupingMenuOrder(groups) {
+  return [...groups.filter(group => !group.hidden), ...groups.filter(group => group.hidden)];
 }

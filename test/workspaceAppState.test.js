@@ -1169,3 +1169,12 @@ test('Board order acknowledgement updates only its current view; late replies le
  assert.equal(reduce(selected,{...action,viewId:'other'}),selected);
  assert.equal(reduce(selected,{...action,viewRequestVersion:selected.viewRequestVersion+1}),selected);
 });
+
+test('Board renderer search retains collapsed memberships and counts unique matches including hidden groups',async()=>{
+ const {filterWorkspaceProjectionBySearch}=await importAppStateModule();
+ const alpha={id:'a',name:'Alpha'},beta={id:'b',name:'Beta'};
+ const response={...projectionResponse,projection:{type:'board',capabilities:{canMoveBetweenStatuses:false},totalProjectCount:2,columns:[{statusValueId:'one',name:'One',collapsed:true,projects:[alpha,beta],count:2}],groupOptions:[{id:'one',rows:[alpha,beta],count:2},{id:'hidden',hidden:true,rows:[alpha],count:1}]}};
+ const match=filterWorkspaceProjectionBySearch(response,'Alpha').projection;
+ assert.equal(match.totalProjectCount,1);assert.equal(match.columns[0].count,1);assert.deepEqual(match.columns[0].projects,[alpha]);assert.equal(match.groupOptions[1].count,1);
+ const empty=filterWorkspaceProjectionBySearch(response,'missing').projection;assert.equal(empty.totalProjectCount,0);assert.equal(empty.columns[0].count,0);assert.equal(empty.groupOptions[0].count,0);
+});
