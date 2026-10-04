@@ -678,3 +678,7 @@ A Board view may retain `columnOrder`, independently per view and Workspace. Pro
 ### Table column widths
 
 A Table view stores `tableColumnWidths`, an optional map of stable property IDs to finite numeric pixel widths of at least `132`. Legacy views default to an empty map and use renderer defaults. Widths belong to the Workspace/view, survive hide/show, reorder, grouping and restart, and have no product maximum. Partial width patches merge without replacing other columns or view settings. The current JSON adapter persists this field; see [Table width contract](api/workspace-views.md#table-column-widths-workspace-bja).
+
+## Explicit folder rename locators
+
+The active Electron JSON adapter preserves an existing opaque project ID during a physical same-parent folder rename through `projectLocators[sourceId][projectId] = { path, dev, ino }`. The folder identity remains unchanged; shared-source roles are remapped with its subtree. Property values/history, saved row ranks and session references continue using the original ID. A new occupant of the former path cannot inherit those documents. A separate `projectRename` journal prevents discovery from publishing partial physical/metadata state; see [project rename](api/workspace-project-rename.md). Linux implementation and native Windows validation remain incomplete in the current task.

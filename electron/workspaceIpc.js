@@ -1,3 +1,4 @@
+import { createProjectRenamer } from '../src/workspaceProjectRename.js';
 import { createEmptyProjectDirectory } from "../src/workspaceProjectCreate.js";
 import { createProjectStatusMover, deriveFolderStatusValues, statusForProject } from "../src/workspaceStatusMove.js";
 import { removeGroupingValue } from "../src/workspaceGrouping.js";
@@ -50,6 +51,7 @@ const supportedMethods = new Set([
   "workspace.getProject",
   "workspace.getProjectStatusOptions",
   "workspace.moveProjectStatus",
+  "workspace.renameProject",
   "workspace.createProject",
   "workspace.setRoot",
   "workspace.scan",
@@ -87,7 +89,15 @@ const supportedMethods = new Set([
 ]);
 
 export function registerWorkspaceIpc(ipcMain, options = {}) {
-  ipcMain.handle(ipcChannel, createWorkspaceIpcHandler(options));
+  const handler = createWorkspaceIpcHandler(options);
+  ipcMain.handle(ipcChannel, async (event, method, payload) => {
+    try { return await handler(event, method, payload); }
+    catch (error) {
+      // Electron invoke otherwise drops service codes and wraps the message.
+      if (method === "workspace.renameProject") return { state: "failed", error: { code: error.code || "PROJECT_RENAME_FAILED", message: error.message } };
+      throw error;
+    }
+  });
 }
 
 export function createWorkspaceIpcHandler(options = {}) {
@@ -103,10 +113,13 @@ export function createWorkspaceIpcHandler(options = {}) {
   const chooseRoot = options.chooseRoot || (async () => "");
   const statusMover = createProjectStatusMover({ configPath, testHooks: options.moveTestHooks, writeSettings: options.moveWriteSettings });
 
+  const projectRenamer = createProjectRenamer({ configPath, helperPath: options.projectDirectoryHelperPath, testHooks: options.renameTestHooks, writeSettings: options.renameWriteSettings });
+
   // Lazily preserve the legacy shared source for every existing workspace. Paths
   // remain locators; workspace/project IDs and source-scoped values are unchanged.
   async function sourceSettings() {
     await statusMover.recover();
+    await projectRenamer.recover();
     const settings = await readWorkspaceSettings(configPath);
     const legacyRoot = normalizeRootPath(settings);
     if (!legacyRoot) return settings;
@@ -262,6 +275,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       const settings = await readWorkspaceSettings(configPath);
       const rules = rulesFor(settings, workspaceId, rootPath);
       const { statusValues } = await getProjectsAndStatusValues({ rootPath, workspaceId, propertyStore, rules });
+      if (method === "workspace.renameProject") return projectRenamer.rename({ rootPath, sourceId: sourceFolderId, project, name: body.name });
       const status = statusValues.find(item => item.id === statusValueId);
       if (!status?.relativePath || status.moveDisabledReason) throw createWorkspaceServiceError("PROJECT_CREATE_DESTINATION_UNAVAILABLE", "This column has no unambiguous available project destination.", "statusValueId");
       const relativePath = `${status.relativePath}/${name}`;
@@ -280,7 +294,7 @@ export function createWorkspaceIpcHandler(options = {}) {
       return { project: attachProjectPropertyValues(projects, values).find(project => project.id === projectId) || null };
     }
 
-    if (method === "workspace.moveProjectStatus" || method === "workspace.getProjectStatusOptions") {
+    if (method === "workspace.moveProjectStatus" || method === "workspace.getProjectStatusOptions" || method === "workspace.renameProject") {
       const workspaceId = requirePayloadString(body, "workspaceId");
       await requireSourceWorkspace({ viewStore, workspaceId, rootPath });
       const projectId = requirePayloadString(body, "projectId");
@@ -299,6 +313,7 @@ export function createWorkspaceIpcHandler(options = {}) {
           disabledReason: status.moveDisabledReason || (!status.relativePath ? "no-status-target" : null),
         })) };
       }
+      if (method === "workspace.renameProject") return projectRenamer.rename({ rootPath, sourceId: sourceFolderId, project, name: body.name });
       const status = statusValues.find(item => item.id === statusValueId) || (statusValueId === NO_STATUS_VALUE_ID ? createNoStatusValue() : null);
       if (!status) throw createWorkspaceServiceError("STATUS_NOT_FOUND", "Status folder was not found.", "statusValueId");
       return statusMover.move({ rootPath, sourceId: sourceFolderId, project, status });
@@ -755,7 +770,7 @@ export function createWorkspaceIpcHandler(options = {}) {
   };
   const pendingProjects = new Set();
   return async (event, method, payload = {}) => {
-    const moveKey = method === "workspace.moveProjectStatus" ? String(payload.projectId) : null;
+    const moveKey = ["workspace.moveProjectStatus", "workspace.renameProject"].includes(method) ? String(payload.projectId) : null;
     if (moveKey && pendingProjects.has(moveKey)) throw createWorkspaceServiceError("PROJECT_MOVE_PENDING", "This project is already moving.", "projectId");
     if (moveKey) pendingProjects.add(moveKey);
     try {

@@ -1,4 +1,21 @@
 export const en = {
+  "rename.pendingAnnouncement": "Renaming {{name}}",
+  "rename.showDetails": "Show project rename",
+  "rename.details": "Project rename",
+
+  "rename.invalidName": "Enter one folder name without path separators, control characters or surrounding spaces.",
+  "rename.conflict": "A file or folder with this name already exists.",
+  "rename.guardUnavailable": "The OS rename guard is unavailable in this environment.",
+  "rename.recoveryRequired": "Rename recovery requires attention. Folders and journal were retained; check source availability and retry.",
+
+  "rename.action": "Rename project",
+  "rename.description": "The project name and its folder name will change together.",
+  "rename.name": "Folder name",
+  "rename.pending": "Renaming…",
+  "rename.confirm": "Rename",
+  "rename.completed": "Project folder renamed",
+  "rename.failed": "Could not rename project",
+
   "board.columnActions": "Column actions: {{name}}",
   "board.addCard": "Add card",
   "board.hideColumn": "Hide column",

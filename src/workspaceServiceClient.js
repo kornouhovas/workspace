@@ -23,6 +23,12 @@ export class WorkspaceServiceClient {
     return this.request("workspace.getProjectStatusOptions", payload);
   }
 
+  async renameProject(payload) {
+    const result = await this.request("workspace.renameProject", payload);
+    if (result?.state === "failed") throw Object.assign(new Error(result.error.message), { code: result.error.code });
+    return result;
+  }
+
   moveProjectStatus(payload) {
     return this.request("workspace.moveProjectStatus", payload);
   }

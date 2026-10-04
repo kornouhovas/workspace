@@ -37,3 +37,13 @@ test('renderer clears pending after failure and a subsequent request can recover
   assert.equal(events.filter(Boolean).length, 2);
   assert.equal(events.at(-1), null);
 });
+
+test('rename and status share synchronous renderer pending guard and send only ID/name',async()=>{
+ let release;const calls=[],events=[];
+ const backend=new Promise(resolve=>release=resolve);
+ const controller=createProjectMoveController({renameProject:async payload=>{calls.push(payload);return backend},moveProjectStatus:async()=>{throw new Error('should be blocked')}},value=>events.push(value));
+ const input={workspaceId:'w',projectId:'p',projectName:'Alpha',statusValueId:'s',from:'Active/Alpha',to:'Active/Beta'};
+ const first=controller.rename(input,'Beta');assert.equal(await controller.rename(input,'Other'),null);assert.equal(await controller.move(input),null);
+ assert.deepEqual(calls,[{workspaceId:'w',projectId:'p',name:'Beta'}]);assert.equal(events[0].operation,'rename');
+ release({state:'completed'});await first;assert.equal(events.at(-1),null);
+});

@@ -17,5 +17,5 @@ export type ProjectMoveInput = {
   readonly from: string;
   readonly to: string;
 };
-export type ProjectMovePending = ProjectMoveInput & { readonly state: 'pending' };
-export function createProjectMoveController(client: { moveProjectStatus(payload: Record<string, unknown>): Promise<unknown> }, onPending: (pending: ProjectMovePending | null) => void): { move(input: ProjectMoveInput): Promise<unknown> };
+export type ProjectMovePending = ProjectMoveInput & { readonly state: 'pending'; readonly operation?: 'rename' };
+export function createProjectMoveController(client: { moveProjectStatus(payload: Record<string, unknown>): Promise<unknown>; renameProject?(payload: Record<string, unknown>): Promise<unknown> }, onPending: (pending: ProjectMovePending | null) => void): { move(input: ProjectMoveInput): Promise<unknown>; rename(input: ProjectMoveInput, name: string): Promise<unknown> };

@@ -2467,13 +2467,17 @@ export default function App() {
     return response.options as ProjectStatusMoveOption[];
   }
 
-  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
+  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption, renameName?: string) {
     if (surfaceInteractionDisabledRef.current) return;
     const requestWorkspaceId = state.workspaceId;
     const operationLoadRequestId = loadRequestIdRef.current;
     if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return false;
     try {
-      const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
+      let result: unknown;
+      if (renameName !== undefined) {
+        result = await projectMoveController.rename({ workspaceId: requestWorkspaceId, projectId: project.id,
+          projectName: project.name, statusValueId: option.id, from: option.from, to: option.to }, renameName);
+      } else result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
         projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
       if (!result) return false;
       if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== requestWorkspaceId) return true;
@@ -2484,10 +2488,15 @@ export default function App() {
             dispatchProjectTabs({ type: "update", workspaceId, project: recovered });
           if (workspaceIdRef.current === requestWorkspaceId) setSelectedProject(current => current?.id === project.id ? recovered : current);
         }
-        toast.error(t("move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
+        toast.error(t(renameName !== undefined ? "rename.recoveryRequired" : "move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
         return false;
       }
     } catch (error) {
+      if (renameName !== undefined) {
+        const code = isRecord(error) ? getString(error.code) : "";
+        const key = code === "INVALID_PROJECT_NAME" ? "rename.invalidName" : code === "PROJECT_NAME_CONFLICT" ? "rename.conflict" : code === "PROJECT_RENAME_GUARD_UNAVAILABLE" ? "rename.guardUnavailable" : code === "RENAME_RECOVERY_REQUIRED" ? "rename.recoveryRequired" : "";
+        throw new Error(key ? t(key) : getServiceErrorMessage(error, t));
+      }
       toast.error(t("move.failed"), { description: getServiceErrorMessage(error, t) });
       return false;
     }
@@ -2518,8 +2527,9 @@ export default function App() {
             projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
         }
       }
-      toast.success(t("move.completed"));
+      toast.success(t(renameName !== undefined ? "rename.completed" : "move.completed"));
     } catch (error) {
+      if (renameName !== undefined) throw error;
       toast.error(t("move.refreshFailed"), { description: getServiceErrorMessage(error, t) });
     }
     return true;
@@ -2779,6 +2789,13 @@ export default function App() {
       statusMovePending={projectMovePending !== null}
       onLoadStatusOptions={loadProjectStatusOptions}
       onStatusChange={handleProjectStatusChange}
+      onRenameProject={async (project, name) => {
+        if (projectMovePending) throw new Error(t("rename.pending"));
+        const from = project.currentRelativePath;
+        const to = [...from.split("/").slice(0, -1), name].join("/");
+        const completed = await handleProjectStatusChange(project, { id: project.status.id, name: project.status.name, source: "folderRole", relativePath: null, current: false, from, to }, name);
+        if (!completed) throw new Error(t("rename.failed"));
+      }}
       visibleProperties={detailProperties}
       selectValues={settingsSelectValues}
       onProjectPropertyValueChange={handleProjectPropertyValueChange}

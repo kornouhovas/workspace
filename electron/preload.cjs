@@ -5,6 +5,7 @@ const allowedMethods = new Set([
   "workspace.getProject",
   "workspace.getProjectStatusOptions",
   "workspace.moveProjectStatus",
+  "workspace.renameProject",
   "workspace.createProject",
   "workspace.setRoot",
   "workspace.scan",
