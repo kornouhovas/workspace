@@ -1,5 +1,5 @@
 import { retainViewPreview } from "@/workspaceViewPreview.js";
-import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type PointerEvent, type Ref } from "react";
 import { ContextMenu } from "radix-ui";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
@@ -30,16 +30,19 @@ export function ChromeAction({
   children,
   onClick,
   disabled = false,
+  ref,
 }: {
   label: string;
   children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
+          ref={ref}
           type="button"
           className="bb-chrome-action electron-window-no-drag"
           aria-label={label}
@@ -219,6 +222,7 @@ export function WorkspaceRightPanel({
   navigation,
   project,
   projectName,
+  projectActions,
   onCloseProject,
   onMaximizeProject,
 }: {
@@ -230,6 +234,7 @@ export function WorkspaceRightPanel({
   navigation: ReactNode;
   project?: ReactNode;
   projectName?: string;
+  projectActions?: ReactNode;
   onCloseProject: () => void;
   onMaximizeProject: () => void;
 }) {
@@ -399,6 +404,7 @@ export function WorkspaceRightPanel({
             </ChromeAction>
           </>
         )}
+        {showProject ? projectActions : null}
         <ChromeAction
           label={t(layout.maximized === "right" ? "chrome.restoreSplit" : "chrome.maximize")}
           onClick={

@@ -1,4 +1,3 @@
-import { ProjectRenameAction } from './project-rename-action';
 import {
   useEffect,
   useMemo,
@@ -72,7 +71,6 @@ import type {
 type WorkspaceProjectDetailPanelProps = {
   readonly statusMovePending?: boolean;
   readonly onLoadStatusOptions?: (projectId: string) => Promise<readonly ProjectStatusMoveOption[]>;
-  readonly onRenameProject?: (project: WorkspaceMockProject, name: string) => Promise<void>;
   readonly onStatusChange?: (project: WorkspaceMockProject, option: ProjectStatusMoveOption) => void;
   readonly onOpenLocalItem?: (node: WorkspaceMockFileTreeNode) => void;
   readonly expanded?: boolean;
@@ -800,7 +798,6 @@ export function WorkspaceProjectDetailPanel({
   statusMovePending = false,
   onLoadStatusOptions,
   onStatusChange,
-  onRenameProject,
   sidebarCollapsed = false,
   open,
   onOpenChange,
@@ -1654,7 +1651,6 @@ export function WorkspaceProjectDetailPanel({
             className="workspace-project-detail-content-inset min-h-0 flex-1 overflow-auto"
           >
             <div className="grid gap-4">
-              {onRenameProject && <div className="flex justify-end"><ProjectRenameAction name={displayedProject.name} relativePath={displayedProject.currentRelativePath} disabled={statusMovePending} onRename={name => onRenameProject(displayedProject, name)} /></div>}
               <section
                 className={`grid ${propertiesExpanded ? "gap-2" : "gap-0"}`}
                 aria-labelledby="project-properties-heading"

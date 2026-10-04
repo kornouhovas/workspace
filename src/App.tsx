@@ -10,6 +10,7 @@ import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
 import { ProjectMoveIndicator } from "@/components/workspace/project-move-indicator";
 import { createProjectMoveController, type ProjectMovePending, type ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
+import { ProjectRenameAction } from "@/components/workspace/project-rename-action";
 import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
@@ -2769,6 +2770,22 @@ export default function App() {
         ("totalProjectCount" in boardProjection ? boardProjection.totalProjectCount === 0 : boardProjection.columns.every((column) => column.projects.length === 0))
       : tableProjection.type === "table" && tableProjection.rows.length === 0 && !tableProjection.groupOptions && !tableProjection.groupingNotice);
 
+  const renderProjectRenameAction = (project: WorkspaceMockProject | null) => project ? (
+    <ProjectRenameAction
+      key={project.id}
+      name={project.name}
+      relativePath={project.currentRelativePath}
+      disabled={projectMovePending !== null || surfaceState.interactionDisabled}
+      onRename={async (name) => {
+        if (projectMovePending) throw new Error(t("rename.pending"));
+        const from = project.currentRelativePath;
+        const to = [...from.split("/").slice(0, -1), name].join("/");
+        const completed = await handleProjectStatusChange(project, { id: project.status.id, name: project.status.name, source: "folderRole", relativePath: null, current: false, from, to }, name);
+        if (!completed) throw new Error(t("rename.failed"));
+      }}
+    />
+  ) : null;
+
   const renderDetailPanel = (
     project = selectedProject,
     onClose = closeSelectedProject,
@@ -2789,13 +2806,6 @@ export default function App() {
       statusMovePending={projectMovePending !== null}
       onLoadStatusOptions={loadProjectStatusOptions}
       onStatusChange={handleProjectStatusChange}
-      onRenameProject={async (project, name) => {
-        if (projectMovePending) throw new Error(t("rename.pending"));
-        const from = project.currentRelativePath;
-        const to = [...from.split("/").slice(0, -1), name].join("/");
-        const completed = await handleProjectStatusChange(project, { id: project.status.id, name: project.status.name, source: "folderRole", relativePath: null, current: false, from, to }, name);
-        if (!completed) throw new Error(t("rename.failed"));
-      }}
       visibleProperties={detailProperties}
       selectValues={settingsSelectValues}
       onProjectPropertyValueChange={handleProjectPropertyValueChange}
@@ -2872,6 +2882,7 @@ export default function App() {
               projectActions={
                 projectFullScreen ? (
                   <>
+                    {renderProjectRenameAction(selectedProject)}
                     <Button
                       type="button"
                       variant="ghost"
@@ -3254,6 +3265,9 @@ export default function App() {
                 paneLayout.focused === pane.paneId,
               )
             }
+            renderProjectActions={(pane) => renderProjectRenameAction(
+              expandedProjectTabs.find((tab) => tab.tabId === pane.tabId) || null,
+            )}
             onClosePane={closeLayoutPane}
           />}
         </div>
@@ -3274,6 +3288,7 @@ export default function App() {
                 : undefined
             }
             projectName={selectedProject?.name}
+            projectActions={renderProjectRenameAction(selectedProject)}
             onCloseProject={closeSelectedProject}
             onMaximizeProject={() => {
               if (selectedProject) createExpandedProject(selectedProject);

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PencilIcon } from '@/lib/workspace-icons';
 import { useI18n } from '@/i18n';
+import { ChromeAction } from './pane-chrome';
 
 export function ProjectRenameAction({name,relativePath,disabled,onRename}:{name:string;relativePath:string;disabled:boolean;onRename:(name:string)=>Promise<void>}) {
  const {t}=useI18n();const id=useId(),trigger=useRef<HTMLButtonElement>(null),input=useRef<HTMLInputElement>(null),submitting=useRef(false);
@@ -16,7 +17,7 @@ export function ProjectRenameAction({name,relativePath,disabled,onRename}:{name:
   finally{submitting.current=false;setPending(false)}
  }
  return <Dialog.Root open={open} onOpenChange={next=>{if(!submitting.current)setOpen(next)}}>
-  <Button ref={trigger} type="button" variant="ghost" size="sm" disabled={disabled||pending} onClick={()=>{setDraft(name);setError('');setShowDetails(false);setOpen(true)}}><PencilIcon data-icon="inline-start"/>{t('rename.action')}</Button>
+  <ChromeAction ref={trigger} label={t('rename.action')} disabled={disabled||pending} onClick={()=>{setDraft(name);setError('');setShowDetails(false);setOpen(true)}}><PencilIcon className="size-[13px]" aria-hidden="true"/></ChromeAction>
   <Dialog.Portal><Dialog.Overlay className="fixed inset-0 z-50 bg-black/30"/><Dialog.Content data-workspace-rename-project className="fixed left-1/2 top-1/2 z-50 grid w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-lg" onCloseAutoFocus={event=>{event.preventDefault();trigger.current?.focus()}} onPointerDownOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>{if(pending)event.preventDefault()}}>
    <Dialog.Title className="text-sm font-medium">{t('rename.action')}</Dialog.Title>
    <Dialog.Description className="text-xs text-muted-foreground">{t('rename.description')}</Dialog.Description>
