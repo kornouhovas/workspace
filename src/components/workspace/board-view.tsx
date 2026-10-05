@@ -1,3 +1,4 @@
+import { useBoardWrapLayout } from "./use-board-wrap-layout";
 import { BoardColumnActions } from "./board-column-actions";
 import { useEffect, useRef, useState, type ComponentProps, type CSSProperties } from "react";
 
@@ -9,7 +10,7 @@ import { useI18n } from "@/i18n";
 import { getStatusDisplayName } from "@/i18n/status";
 import type { WorkspaceMockProject, WorkspaceMockVisibleProperty } from "@/workspaceMockData";
 import type { WorkspaceProjectionResponse, WorkspaceSelectValueState } from "@/workspaceAppState";
-import { normalizeBoardColumnWidth } from "@/workspaceBoardLayout.js";
+import { normalizeBoardColumnWidth, packBoardCards } from "@/workspaceBoardLayout.js";
 import { formatDateForDisplay } from "@/formatDateForDisplay.js";
 import { ProjectTablePropertyValueEditor } from "./table-view";
 
@@ -37,6 +38,8 @@ type WorkspaceBoardViewProps = BoardEditingProps & ProjectStatusActions & {
   readonly projection: WorkspaceBoardProjection;
   readonly statusValues: WorkspaceProjectionResponse["statusValues"];
   readonly columnWidth?: number;
+  readonly wrapContent?: boolean;
+  readonly onWrapContentChange?: (enabled: boolean) => Promise<void>;
   readonly columnOrder?: readonly string[];
   readonly onHideColumn?: (id: string) => Promise<void>;
   readonly onCreateProject?: (id: string, name: string) => Promise<void>;
@@ -113,7 +116,7 @@ function renderBoardStatusValue(value: unknown, t: (key: string) => string) {
 export function WorkspaceBoardView({
   projection,
   statusValues,
-  columnWidth, columnOrder, orderScope = "board", interactionDisabled = false, onReorderColumns,
+  columnWidth, wrapContent = false, onWrapContentChange, columnOrder, orderScope = "board", interactionDisabled = false, onReorderColumns,
   onViewportWidthChange, onHideColumn, onCreateProject, noSearchResults,
   visibleProperties,
   selectValues,
@@ -123,11 +126,15 @@ export function WorkspaceBoardView({
 }: WorkspaceBoardViewProps) {
   const { t, locale } = useI18n();
   const [editingCellId, setEditingCellId] = useState<string | null>(null);
+  const [contextRequest, setContextRequest] = useState({id: "", sequence: 0});
   const cardProperties = visibleProperties.filter(
     (property) => property.id !== "property:name",
   );
   const preferredColumnWidth = normalizeBoardColumnWidth(columnWidth);
   const boardViewportRef = useRef<HTMLDivElement | null>(null);
+  const geometry = useBoardWrapLayout(boardViewportRef, wrapContent, [projection, visibleProperties, selectValues, preferredColumnWidth, editingCellId].map(value => typeof value === "object" ? JSON.stringify(value) : value).join("\0"));
+  const packing = new Map(projection.columns.map(column => [column.statusValueId, packBoardCards(column.collapsed ? [] : column.projects.map(project => geometry.heights[JSON.stringify([column.statusValueId, project.id])] ?? 40), geometry.height)]));
+  const oversized = wrapContent && [...packing.values()].some(value => value.oversized);
   const columnIds = projection.columns.map(column => column.statusValueId);
   const movableIds = columnIds.filter(id => !["empty", "statusValue:no-status", "ungrouped"].includes(id));
   const order = useBoardColumnOrder({ order: columnOrder ?? columnIds, visibleIds: movableIds, scope: orderScope, disabled: interactionDisabled || !!statusMovePending, viewport: boardViewportRef, onReorder: onReorderColumns });
@@ -135,7 +142,6 @@ export function WorkspaceBoardView({
   const orderedColumns = [...order.bodies, ...columnIds.filter(id => !movableIds.includes(id))].flatMap(id => { const column = columnsById.get(id); return column ? [column] : []; });
   const boardGridStyle = {
     "--workspace-board-column-width": `${preferredColumnWidth}px`,
-    gridAutoColumns: "var(--workspace-board-column-width)",
   } as CSSProperties;
 
   useEffect(() => {
@@ -168,22 +174,29 @@ export function WorkspaceBoardView({
       {projection.groupingNotice ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {noSearchResults ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("board.noMatchingProjects")}</p> : null}
       {orderedColumns.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{t("board.allColumnsHidden")}</p> : null}
-      <div ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
-        <div className="grid min-h-full min-w-full w-max grid-flow-col items-start gap-3 px-4 pb-4" style={boardGridStyle}>
+      {wrapContent ? <p role="status" title={t(oversized ? "board.wrapOversized" : "board.wrapHelp")} className="h-6 shrink-0 truncate px-4 text-xs text-muted-foreground">{t(oversized ? "board.wrapOversized" : "board.wrapHelp")}</p> : null}
+      <div tabIndex={wrapContent ? 0 : undefined} aria-label={wrapContent ? t("board.wrapScroll") : undefined} data-workspace-board-wrap={wrapContent || undefined} ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
+        <div className="flex min-h-full min-w-full w-max items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {orderedColumns.map((column) => {
+            const packed = packing.get(column.statusValueId)!;
+            const groupWidth = wrapContent ? packed.segments * preferredColumnWidth + (packed.segments - 1) * 12 : preferredColumnWidth;
             const columnName = column.statusValueId === "empty" ? t("group.noValue") : getStatusDisplayName(t, { id: column.statusValueId, name: column.name });
             const statusColor = column.color || statusValues.find((value) => value.id === column.statusValueId)?.color || "gray";
             return (
               <StatusDropColumn statusValueId={column.statusValueId}
               key={column.statusValueId}
-              className="workspace-board-column flex min-w-0 self-start flex-col px-1"
+              className="workspace-board-column relative flex min-w-0 shrink-0 self-start flex-col px-1"
+              style={{ width: groupWidth }}
               aria-label={t("board.projectsAria", {
                 name: columnName,
               })}
             >
-              <header data-workspace-column-header={column.statusValueId} data-workspace-column-drag-active={order.activeId === column.statusValueId || undefined} style={order.headerStyle(column.statusValueId)} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1">
+              <header tabIndex={!movableIds.includes(column.statusValueId) ? 0 : undefined}
+                onContextMenu={event => { event.preventDefault(); if (!interactionDisabled && !statusMovePending && !order.activeId && !order.pending) setContextRequest(previous => ({id: column.statusValueId, sequence: previous.sequence + 1})); }}
+                onKeyDown={event => { if (event.key === "ContextMenu" || event.shiftKey && event.key === "F10") { event.preventDefault(); event.stopPropagation(); if (!interactionDisabled && !statusMovePending && !order.activeId && !order.pending) setContextRequest(previous => ({id: column.statusValueId, sequence: previous.sequence + 1})); } }}
+                data-workspace-column-header={column.statusValueId} data-workspace-column-drag-active={order.activeId === column.statusValueId || undefined} style={{...order.headerStyle(column.statusValueId), width: preferredColumnWidth - 8}} className="flex h-9 shrink-0 items-center justify-between gap-2 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
                 <h3 className="min-w-0 flex-1 truncate text-sm font-medium">
-                  <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" aria-label={t("board.reorderColumn", {name: columnName})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
+                  <button type="button" data-workspace-column-order-handle aria-describedby="workspace-board-order-help" aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Shift+F10" aria-label={t("board.reorderColumn", {name: columnName})} title={t("board.orderHelp")} aria-disabled={order.pending || interactionDisabled || !!statusMovePending || !onReorderColumns}
                     disabled={!movableIds.includes(column.statusValueId)} onPointerDown={event => order.onPointerDown(event, column.statusValueId)} onKeyDown={event => order.onKeyDown(event, column.statusValueId)}
                     className="flex w-full min-w-0 touch-none select-none items-center gap-2 rounded-sm text-left cursor-grab active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
                   <span className="size-2.5 shrink-0 rounded-full bg-muted-foreground/70" data-color={statusColor} aria-hidden="true" />
@@ -197,25 +210,27 @@ export function WorkspaceBoardView({
                 >
                   {column.count ?? column.projects.length}
                 </span>
-                <BoardColumnActions statusValueId={column.statusValueId} name={columnName}
+                <BoardColumnActions wrapContent={wrapContent} onWrapContentChange={onWrapContentChange} contextRequest={contextRequest.id === column.statusValueId ? contextRequest.sequence : 0} statusValueId={column.statusValueId} name={columnName}
                   disabled={interactionDisabled || !!statusMovePending || !!order.activeId || order.pending}
                   unavailable={!projection.capabilities.canMoveBetweenStatuses || column.statusValueId === "statusValue:no-status" || !!(statusValues.find(value => value.id === column.statusValueId) as {moveDisabledReason?: string} | undefined)?.moveDisabledReason}
                   onHide={column.statusValueId === "ungrouped" ? undefined : onHideColumn} onCreate={projection.capabilities.canMoveBetweenStatuses ? onCreateProject : undefined} />
               </header>
-              <div className="grid auto-rows-max content-start gap-3 pb-2">
+              <div data-workspace-wrap-body className="relative grid auto-rows-max content-start gap-3 pb-2" style={wrapContent && !column.collapsed && column.projects.length ? {height: packed.height + 8} : undefined}>
                 {column.collapsed ? null : column.projects.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     {t("board.noProjects")}
                   </div>
                 ) : (
-                  column.projects.map((project) => {
+                  column.projects.map((project, index) => {
                     const populatedProperties = cardProperties.map((property) => ({
                       property,
                       value: formatPropertyValue(getPropertyValue(project, property), property, selectValues, locale),
                     })).filter(({ property, value }) => value.trim() !== "" || editingCellId === `${project.id}:${property.id}`);
                     return (
+                    <div key={project.id} data-workspace-wrap-occurrence={JSON.stringify([column.statusValueId, project.id])}
+                      data-workspace-wrap-segment={wrapContent ? packed.positions[index].segment : undefined}
+                      style={wrapContent ? {position: "absolute", width: preferredColumnWidth - 8, left: packed.positions[index].segment * (preferredColumnWidth + 12), top: packed.positions[index].top} : undefined}>
                     <StatusDragCard project={project}
-                      key={project.id}
                       className="workspace-board-card relative flex min-h-10 w-full min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border border-border bg-[var(--surface-sidebar)] px-2 py-2 text-left text-card-foreground shadow-xs hover:bg-[color-mix(in_oklab,var(--accent)_15%,var(--surface-sidebar))] hover:border-ring/30 focus-within:border-ring"
                     >
                       <button data-workspace-card-open type="button" tabIndex={-1} aria-hidden="true" className="absolute inset-0 rounded-lg" onClick={() => onProjectOpen(project)} />
@@ -253,6 +268,7 @@ export function WorkspaceBoardView({
                         </dl>
                       ) : null}
                     </StatusDragCard>
+                    </div>
                     );
                   })
                 )}

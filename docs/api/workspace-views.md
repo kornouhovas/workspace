@@ -672,3 +672,11 @@ Board supports Default, Ascending, Descending and Manual. A successful changed h
 Both Group menus present visible groups first, hidden groups second, preserving the selected sort within each part. No value/No status is last within its visibility part, so a visible empty group precedes hidden value groups. This presentation never writes manual ranks. Hide/show and Show all restore the underlying group order; grouping, ranks, hide-empty and collapse/visibility settings are independent per saved view and Workspace.
 
 Folder create and card-drop destinations are available only when Board is grouped by Status. For other properties and None, Add card is disabled with an unavailable-destination explanation and card dragging cannot invoke a Status move or write a property. Existing Status pickers remain available inside cards/details and use the existing validated source operation. Hide remains available for grouped columns; None cannot hide the single column. Collapse all/Expand all in Group controls content visibility while retaining group counts. A deleted property displays flat accessible projects and a recovery notice.
+
+## Board Wrap content (workspace-y3m)
+
+Optional `boardLayout.wrapContent: boolean` selects continuation layout for the current Board view. Missing/false defaults off, including legacy documents; `true` is preserved by normalization, projection, JSON restart and Duplicate Tab. Nonboolean update values reject atomically with `VALIDATION_FAILED`, field `boardLayout.wrapContent`. Table does not consume this setting or change its Text wrap semantics.
+
+`workspace.updateView` merges a partial `boardLayout` patch with the authoritative stored layout before normalization. `{ wrapContent: true }` preserves saved columnWidth; `{ columnWidth: 450 }` preserves wrapContent. The serialized Electron dispatcher remains the active persistence path. No transport/storage migration or filesystem mutation is involved.
+
+Continuation segments are renderer geometry of the same logical group, never new groups, Status IDs or projects. Counts, filters, grouping capabilities, hidden/collapsed/manual ranks and Status move validation remain authoritative. Measured whole-card packing and full-height oversized-card vertical access are defined in [Board/Table flow](../flows/board-table-views.md#board-wrap-content-workspace-y3m).

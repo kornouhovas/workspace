@@ -133,6 +133,7 @@ function normalizeViewPropertyLayout(
 function normalizeViewBoardLayout(value: unknown): NonNullable<WorkspaceViewState["boardLayout"]> {
   return {
     columnWidth: normalizeBoardColumnWidth(isRecord(value) ? value.columnWidth : undefined),
+    ...(isRecord(value) && value.wrapContent === true ? { wrapContent: true } : {}),
   };
 }
 
@@ -1566,8 +1567,10 @@ export default function App() {
       if (!await acceptViewMutationResult(mutationRequest, true)) return;
       setSelectedProject(null);
       setActiveProjectTabId(null);
-      dispatch({ type: "activeViewChanged", activeViewId: viewId });
-      await refreshActiveViewAfterPatch(viewId);
+      // The copy is not in the current catalog yet. Activate through the same
+      // versioned intent as ordinary tabs and reload its authoritative catalog.
+      selectSavedView(viewId);
+      setReloadToken(value => value + 1);
     } catch (error) {
       toast.error(t("view.duplicateFailed"), { description: getServiceErrorMessage(error, t) });
       if (workspaceIdRef.current === workspaceId) setReloadToken((value) => value + 1);
@@ -1922,7 +1925,7 @@ export default function App() {
     dispatch({
       type: "viewBoardLayoutUpdated",
       viewId: state.activeViewId,
-      boardLayout: { columnWidth: normalizeBoardColumnWidth(columnWidth) },
+      boardLayout: { ...activeView?.boardLayout, columnWidth: normalizeBoardColumnWidth(columnWidth) },
     });
   }
 
@@ -1933,17 +1936,18 @@ export default function App() {
     }
 
     const activeViewId = state.activeViewId;
-    const boardLayout = { columnWidth: normalizeBoardColumnWidth(columnWidth) };
+    const boardLayout = { ...activeView?.boardLayout, columnWidth: normalizeBoardColumnWidth(columnWidth) };
 
     dispatch({ type: "viewBoardLayoutUpdated", viewId: activeViewId, boardLayout });
 
     try {
-      await updateActiveViewPatch({ boardLayout }, { refreshProjection: false });
+      await updateActiveViewPatch({ boardLayout: { columnWidth: boardLayout.columnWidth } }, { refreshProjection: false });
     } catch (error) {
       dispatch({
         type: "viewBoardLayoutUpdated",
         viewId: activeViewId,
         boardLayout: {
+          ...activeView?.boardLayout,
           columnWidth: normalizeBoardColumnWidth(previousColumnWidth, BOARD_COLUMN_WIDTH_DEFAULT),
         },
       });
@@ -1951,6 +1955,21 @@ export default function App() {
         description: getServiceErrorMessage(error, t),
       });
     }
+  }
+
+  const boardWrapSaving = useRef(false);
+  const [boardWrapSavePending, setBoardWrapSavePending] = useState(false);
+  async function handleBoardWrapContent(wrapContent: boolean) {
+    if (surfaceInteractionDisabledRef.current || boardWrapSaving.current || !state.workspaceId || !state.activeViewId) return;
+    const workspaceId = state.workspaceId, viewId = state.activeViewId;
+    const requestId = loadRequestIdRef.current;
+    boardWrapSaving.current = true; setBoardWrapSavePending(true);
+    try {
+      await workspaceClient.updateView({ workspaceId, viewId, patch: { boardLayout: { wrapContent } } });
+      if (loadRequestIdRef.current === requestId) await refreshActiveViewAfterPatch(viewId);
+    } catch (error) {
+      toast.error(t("toast.boardWrapFailed"), { description: getServiceErrorMessage(error, t) });
+    } finally { boardWrapSaving.current = false; setBoardWrapSavePending(false); }
   }
 
   async function handleBoardColumnVisibility(statusValueId: string, visible: boolean) {
@@ -3095,7 +3114,7 @@ export default function App() {
                 ) : activeViewType === "board" ? (
                   <WorkspaceBoardView key={`${state.workspaceId}:${serviceProjection?.view.id ?? state.activeViewId}`}
                     orderScope={`${state.workspaceId}:${serviceProjection?.view.id ?? state.activeViewId}`}
-                    interactionDisabled={surfaceState.interactionDisabled}
+                    interactionDisabled={surfaceState.interactionDisabled || boardWrapSavePending}
                     columnOrder={serviceProjection?.view.columnOrder ?? activeView?.columnOrder}
                     onReorderColumns={handleReorderBoardColumns}
                     onHideColumn={id => handleBoardColumnVisibility(id, false)}
@@ -3104,6 +3123,8 @@ export default function App() {
                     projection={boardProjection as typeof workspaceMockProjection.projection}
                     statusValues={statusValues}
                     columnWidth={activeView?.boardLayout?.columnWidth}
+                    wrapContent={activeView?.boardLayout?.wrapContent === true}
+                    onWrapContentChange={handleBoardWrapContent}
                     onViewportWidthChange={setBoardViewportWidth}
                     visibleProperties={
                       visibleProperties as typeof workspaceMockProjection.visibleProperties

@@ -1,4 +1,9 @@
 export const en = {
+  'board.wrapHelp': 'Cards continue in columns to the right.',
+  'board.wrapContent': 'Wrap content',
+  'board.wrapOversized': 'A card exceeds the available height. Scroll vertically to read its full content.',
+  'board.wrapScroll': 'Board: scroll horizontally for continued columns; vertically for oversized cards.',
+  'toast.boardWrapFailed': 'Could not save Board wrap content',
   "board.columnActions": "Column actions: {{name}}",
   "board.addCard": "Add card",
   "board.hideColumn": "Hide column",

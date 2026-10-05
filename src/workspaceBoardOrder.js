@@ -71,5 +71,11 @@ export function boardOrderPointerIndex(x, scrollLeft, firstCenter, step) {
 export function boardOrderDragGeometry(origin, x, y, scrollLeft, scrollTop) {
   const dx = x - origin.startX + scrollLeft - origin.scrollLeft;
   // Y belongs to the Board header line, including when the Board scrolls.
-  return { x: dx, y: 0, index: origin.sourceIndex + Math.round(dx / origin.step) };
+  let index = origin.sourceIndex + Math.round(dx / origin.step);
+  if (origin.slotOffsets?.length) {
+    const position = origin.slotOffsets[origin.sourceIndex] + dx;
+    index = origin.slotOffsets.reduce((nearest, offset, candidate) =>
+      Math.abs(offset - position) < Math.abs(origin.slotOffsets[nearest] - position) ? candidate : nearest, 0);
+  }
+  return { x: dx, y: 0, index };
 }

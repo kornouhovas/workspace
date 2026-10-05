@@ -15,5 +15,5 @@ export function boardOrderPointerInside(rect: { left: number; right: number; top
 export function boardOrderScrollSpeed(rect: { left: number; right: number }, x: number): number;
 export function boardOrderPointerIndex(x: number, scrollLeft: number, firstCenter: number, step: number): number;
 
-export type BoardOrderDragOrigin = { startX: number; startY: number; scrollLeft: number; scrollTop: number; sourceIndex: number; step: number };
+export type BoardOrderDragOrigin = { startX: number; startY: number; scrollLeft: number; scrollTop: number; sourceIndex: number; step: number; slotOffsets?: readonly number[] };
 export function boardOrderDragGeometry(origin: BoardOrderDragOrigin, x: number, y: number, scrollLeft: number, scrollTop: number): { x: number; y: number; index: number };

@@ -392,6 +392,7 @@ export async function createUpdateViewResponse({
       ...(body?.patch?.columnVisibility ? { hiddenColumnIds: body.patch.columnVisibility.visible
         ? (view.hiddenColumnIds || []).filter(id => id !== body.patch.columnVisibility.statusValueId)
         : [...new Set([...(view.hiddenColumnIds || []), body.patch.columnVisibility.statusValueId])] } : {}),
+      ...(Object.hasOwn(body?.patch || {}, "boardLayout") ? { boardLayout: { ...view.boardLayout, ...body.patch.boardLayout } } : {}),
       ...(Object.hasOwn(body?.patch || {}, "tableColumnWidths") ? { tableColumnWidths: { ...view.tableColumnWidths, ...body.patch.tableColumnWidths } } : {}),
       ...(Object.hasOwn(body?.patch || {}, "grouping") ? { groupingNotice: null, boardGroupingVersion: 1 } : {}),
       updatedAt: now(),

@@ -24,3 +24,20 @@ export function getBoardColumnWidthMax(workspaceWidth) {
     BOARD_COLUMN_WIDTH_PERSISTED_MAX,
   );
 }
+
+// Presentation only: preserve every occurrence, including repeated Multi-select cards.
+// Oversized cards own a segment and keep their full height for shared scroll access.
+export function packBoardCards(heights, availableHeight, gap = 12) {
+  const budget = Math.max(0, Number.isFinite(availableHeight) ? availableHeight : 0);
+  let segment = 0, top = 0, height = budget, oversized = false;
+  const positions = heights.map(rawHeight => {
+    const cardHeight = Math.max(0, Number.isFinite(rawHeight) ? rawHeight : 0);
+    if (top > 0 && top + cardHeight > budget) { segment++; top = 0; }
+    const position = { segment, top };
+    height = Math.max(height, top + cardHeight);
+    oversized ||= cardHeight > budget;
+    top += cardHeight + gap;
+    return position;
+  });
+  return { positions, segments: segment + 1, height, oversized };
+}

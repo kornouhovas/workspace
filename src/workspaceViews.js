@@ -332,6 +332,7 @@ function normalizePropertyLayout(value) {
 function normalizeBoardLayout(value) {
   return {
     columnWidth: normalizeBoardColumnWidth(value?.columnWidth),
+    ...(value?.wrapContent === true ? { wrapContent: true } : {}),
   };
 }
 
@@ -342,6 +343,10 @@ function validateBoardLayout(value) {
 
   if (!isPlainObject(value)) {
     throw new WorkspaceViewError("VALIDATION_FAILED", "Board layout must be an object.", "boardLayout");
+  }
+
+  if (Object.hasOwn(value, "wrapContent") && typeof value.wrapContent !== "boolean") {
+    throw new WorkspaceViewError("VALIDATION_FAILED", "Board wrap content must be boolean.", "boardLayout.wrapContent");
   }
 
   if (!Object.hasOwn(value, "columnWidth")) {

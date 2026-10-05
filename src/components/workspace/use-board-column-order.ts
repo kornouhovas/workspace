@@ -9,7 +9,7 @@ type Options = {
   viewport: RefObject<HTMLDivElement | null>;
   onReorder?: (order: readonly string[]) => Promise<void>;
 };
-type Pointer = { id: string; pointerId: number; x: number; y: number; startX: number; startY: number; scrollLeft: number; scrollTop: number; step: number; sourceIndex: number; active: boolean; target: HTMLButtonElement };
+type Pointer = { id: string; pointerId: number; x: number; y: number; startX: number; startY: number; scrollLeft: number; scrollTop: number; step: number; slotOffsets: number[]; slotIds: string[]; slotWidths: number[]; sourceIndex: number; active: boolean; target: HTMLButtonElement };
 export function useBoardColumnOrder(options: Options) {
   const session = useRef(createBoardOrderSession(options.order, options.visibleIds));
   const [snapshot, setSnapshot] = useState(() => session.current.snapshot());
@@ -120,13 +120,15 @@ export function useBoardColumnOrder(options: Options) {
     if(event.button!==0 || !event.isPrimary || options.disabled || !options.onReorder || snapshot.pending!==null || pointer.current) return;
     const viewport=options.viewport.current;
     if(!viewport) return;
-    const columns=Array.from(viewport.querySelectorAll<HTMLElement>('[data-workspace-status-target]'));
+    const columns=Array.from(viewport.querySelectorAll<HTMLElement>('[data-workspace-status-target]')).filter(column => options.visibleIds.includes(column.dataset.workspaceStatusTarget!));
     if(columns.length < 2) return;
     const rect=columns[0].getBoundingClientRect();
     const step=columns[1].getBoundingClientRect().left-rect.left;
     event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
     pointer.current={ id, pointerId:event.pointerId, x:event.clientX, y:event.clientY, startX:event.clientX, startY:event.clientY,
-      scrollLeft:viewport.scrollLeft, scrollTop:viewport.scrollTop, step, sourceIndex:columns.findIndex(column => column.dataset.workspaceStatusTarget === id), active:false, target:event.currentTarget };
+      scrollLeft:viewport.scrollLeft, scrollTop:viewport.scrollTop, step,
+      slotOffsets:columns.map(column=>column.getBoundingClientRect().left-rect.left),
+      slotIds:columns.map(column=>column.dataset.workspaceStatusTarget!), slotWidths:columns.map(column=>column.getBoundingClientRect().width+12), sourceIndex:columns.findIndex(column => column.dataset.workspaceStatusTarget === id), active:false, target:event.currentTarget };
   }
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, id: string) {
     if(!event.altKey || !['ArrowLeft','ArrowRight'].includes(event.key) || options.disabled || !options.onReorder || pointer.current) return;
@@ -150,7 +152,13 @@ export function useBoardColumnOrder(options: Options) {
       const viewport=options.viewport.current;
       const geometry=drag?.active && viewport && id===snapshot.activeId
         ? boardOrderDragGeometry(drag,drag.x,drag.y,viewport.scrollLeft,viewport.scrollTop) : null;
-      const x=geometry?.x ?? (to-from)*(drag?.step ?? 0);
+      let displacement = (to-from)*(drag?.step ?? 0);
+      if (drag && from >= 0 && to >= 0) {
+        const oldOffset=drag.slotOffsets[drag.slotIds.indexOf(id)] ?? 0;
+        const nextOffset=headers.slice(0,to).reduce((offset, previousId)=>offset+(drag.slotWidths[drag.slotIds.indexOf(previousId)] ?? 0),0);
+        displacement=nextOffset-oldOffset;
+      }
+      const x=geometry?.x ?? displacement;
       const y=geometry?.y ?? 0;
       return { transform: `translate(${x}px, ${y}px)`,
         position:'relative' as const, zIndex:id===snapshot.activeId ? 1 : undefined };
