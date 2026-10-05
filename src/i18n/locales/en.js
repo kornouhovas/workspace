@@ -1,5 +1,4 @@
 export const en = {
-  'board.wrapHelp': 'Cards continue in columns to the right.',
   'board.wrapContent': 'Wrap content',
   'board.wrapOversized': 'A card exceeds the available height. Scroll vertically to read its full content.',
   'board.wrapScroll': 'Board: scroll horizontally for continued columns; vertically for oversized cards.',

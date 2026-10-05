@@ -394,7 +394,7 @@ Folder create and card-drop destinations are available only when Board is groupe
 
 ## Board Wrap content (workspace-y3m)
 
-`Wrap content` in a Board column's common actions menu applies to every logical column in the current saved Board view. Right-click any header, use Shift+F10/Context Menu on its focused title (or pinned header), or open the existing keyboard actions trigger. The checkbox reflects the saved mode. The setting is independent of Table text wrapping and defaults off for old and new views.
+`Wrap content` in a Board column's common actions menu applies to every logical column in the current saved Board view. Right-click any header, use Shift+F10/Context Menu on its focused title (or pinned header), or open the existing keyboard actions trigger. The menu action has a leading columns icon using the shared menu icon size and alignment, with the checked indicator at the trailing edge. The checkbox reflects the saved mode. Ordinary Wrap content shows no explanatory row or reserved spacing above the Board. The setting is independent of Table text wrapping and defaults off for old and new views.
 
 When enabled, measure the actual Board scroll viewport's client height, subtract the content insets, one header row and bottom spacing, and pack whole cards downward, then into fixed-width continuation segments to the right. Horizontal scrollbar space is already excluded by client height. Continuations align their first card below the original header row, use the same card width and 12px gap, and show no repeated title/count. Each logical group retains one header, total visible count and drop target spanning all its segments; the next group starts after them. Empty and collapsed groups keep one compact segment.
 

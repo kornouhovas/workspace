@@ -174,7 +174,7 @@ export function WorkspaceBoardView({
       {projection.groupingNotice ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("group.removed")}</p> : null}
       {noSearchResults ? <p role="status" className="px-4 pb-2 text-xs text-muted-foreground">{t("board.noMatchingProjects")}</p> : null}
       {orderedColumns.length === 0 ? <p role="status" className="px-4 py-6 text-sm text-muted-foreground">{t("board.allColumnsHidden")}</p> : null}
-      {wrapContent ? <p role="status" title={t(oversized ? "board.wrapOversized" : "board.wrapHelp")} className="h-6 shrink-0 truncate px-4 text-xs text-muted-foreground">{t(oversized ? "board.wrapOversized" : "board.wrapHelp")}</p> : null}
+      {oversized ? <p role="status" title={t("board.wrapOversized")} className="h-6 shrink-0 truncate px-4 text-xs text-muted-foreground">{t("board.wrapOversized")}</p> : null}
       <div tabIndex={wrapContent ? 0 : undefined} aria-label={wrapContent ? t("board.wrapScroll") : undefined} data-workspace-board-wrap={wrapContent || undefined} ref={boardViewportRef} className="workspace-board-scroll min-h-0 flex-1 overflow-auto">
         <div className="flex min-h-full min-w-full w-max items-start gap-3 px-4 pb-4" style={boardGridStyle}>
           {orderedColumns.map((column) => {

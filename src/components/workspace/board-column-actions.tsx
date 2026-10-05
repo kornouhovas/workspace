@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontalIcon, PlusIcon, EyeOffIcon } from '@/lib/workspace-icons';
+import { MoreHorizontalIcon, PlusIcon, EyeOffIcon, Columns2Icon } from '@/lib/workspace-icons';
 import { workspaceMenuContentClassName, workspaceMenuItemClassName, workspaceMenuIconClassName } from './menu-styles';
 import { blockOutsideWorkspaceMenuPointerDown } from './menu-dismissal';
 import { useI18n } from '@/i18n';
@@ -28,7 +28,7 @@ export function BoardColumnActions({ statusValueId, name, disabled, unavailable,
    <DropdownMenuTrigger asChild><Button ref={trigger} type="button" variant="ghost" size="icon" className="size-7 shrink-0" disabled={disabled||pending} data-workspace-column-actions aria-label={t('board.columnActions',{name})} onPointerDown={event=>event.stopPropagation()} onClick={event=>event.stopPropagation()}><MoreHorizontalIcon className="size-4" /></Button></DropdownMenuTrigger>
    <DropdownMenuContent align="end" className={workspaceMenuContentClassName} data-workspace-column-menu onPointerDownOutside={event=>blockOutsideWorkspaceMenuPointerDown(event,'[data-workspace-column-menu]',()=>setMenu(false))} onCloseAutoFocus={event=>{if(dialog)event.preventDefault()}}>
     <DropdownMenuItem className={workspaceMenuItemClassName} disabled={unavailable||!onCreate} onSelect={()=>{setName('');setError('');setDialog(true)}}><PlusIcon className={workspaceMenuIconClassName}/><span>{t('board.addCard')}{unavailable&&<span className="block max-w-56 text-[11px] text-muted-foreground">{t('board.noCreationDestination')}</span>}</span></DropdownMenuItem>
-    <DropdownMenuCheckboxItem className={workspaceMenuItemClassName} checked={wrapContent === true} disabled={!onWrapContentChange} onCheckedChange={enabled=>void onWrapContentChange?.(enabled)}>{t('board.wrapContent')}</DropdownMenuCheckboxItem>
+    <DropdownMenuCheckboxItem className={`${workspaceMenuItemClassName} pr-8`} checked={wrapContent === true} disabled={!onWrapContentChange} onCheckedChange={enabled=>void onWrapContentChange?.(enabled)}><Columns2Icon className={workspaceMenuIconClassName}/>{t('board.wrapContent')}</DropdownMenuCheckboxItem>
     <DropdownMenuItem className={workspaceMenuItemClassName} disabled={!onHide} onSelect={()=>void onHide?.(statusValueId)}><EyeOffIcon className={workspaceMenuIconClassName}/>{t('board.hideColumn')}</DropdownMenuItem>
    </DropdownMenuContent>
   </DropdownMenu>

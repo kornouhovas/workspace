@@ -96,6 +96,7 @@ Rules:
 - Board `Customize Columns` uses a compact slider for column width and shows the current pixel value. New width selection starts at `288px` and is limited to one third of the current working area; an already selected width remains fixed when the window becomes narrower, with horizontal scrolling used instead of resizing columns.
 - Use Badge for status/value chips instead of custom styled spans.
 - Empty status columns should show a compact empty state, not disappear.
+- Board `Wrap content` uses a leading columns icon aligned with other column menu actions and a separate trailing checked indicator. Ordinary wrapping adds no explanatory row or empty spacing; retain the visible vertical-access helper only for oversized cards.
 
 ### Table View
 
