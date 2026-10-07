@@ -2,6 +2,8 @@
 
 Status: inventory and non-deleting instruction reconciliation delivered; the exact reduction list below awaits user review. [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4) stays open until the reviewed cleanup is applied and verified.
 
+The subsequent [full semantic audit](documentation-audit.md) assesses all 75 documents at `34ad688`, plus original-checkout variants and its original-only rename contract. It identifies contradictions in active product/API/UI documents as well as historical duplication. Its recommended order is to reconcile active contracts first, then review historical reductions. The 14-body list below is a preliminary proposal, not approved removal scope; for its six template candidates, the audit recommends concise useful optional forms rather than blanket replacement with pointers.
+
 ## Baseline and method
 
 Inventory baseline: `5981cf971bea0a202ba5e9e3bf395d67d3d32afd` on `codex/bb-architecture-workflow`. The private Git repository preserves the original bytes at this revision. Scanned 191 tracked Markdown files: 74 under `docs/`, 108 under `work/`, 3 under `outputs/`, 5 at the root and 1 under `.beads/`. The 74 documentation files contain 14,529 lines.

@@ -41,12 +41,14 @@ Implementation: [ADR-011](../adr/011-renderer-session-lifecycle.md). [Verificati
 
 [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4).
 
-No code dependency. The user requested an exact list and history preservation before removal. The [documentation inventory and cleanup proposal](documentation-cleanup.md) records all 74 baseline documentation paths, incoming references for the proposed reductions, protected evidence and original-checkout exceptions.
+No code dependency. The user requested an exact list and history preservation before removal. The [documentation inventory and cleanup proposal](documentation-cleanup.md) records all 74 earlier baseline paths, incoming references, protected evidence and original-checkout exceptions. The subsequent [full semantic audit](documentation-audit.md) assesses all 75 current baseline documents and the original-only rename contract, identifies active-contract drift, and recommends reconciliation before historical reductions.
 
 - [x] Reconcile active Status instructions with accepted ADR-007/008 and the existing safe API.
 - [x] Make GitHub the primary tracker in active workflow/index guidance; read legacy material conditionally.
 - [x] Inventory historical bodies and incoming links; preserve product contracts and unfinished evidence.
-- [ ] Review the exact 14-file body-reduction list with the user, then apply only the approved scope.
+- [x] Assess every documentation file semantically; compare consequential runtime claims, original-checkout variants, local links/anchors and repeated prose.
+- [ ] Reconcile the active product/API/UI contradictions identified by the full audit without changing product behavior.
+- [ ] Review the historical reductions and optional template treatment with the user, then apply only the approved scope.
 - [ ] Update documentation discoverability checks after the approved reductions and verify the resulting links.
 
 The quality-gates file is already a short policy pointer; it needs no duplicate cleanup. No historical body, evidence artifact or path has been deleted or moved by this preparation. Keep Issue #4 open until reviewed cleanup is applied and verified. The original checkout remains unmerged.

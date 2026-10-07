@@ -26,4 +26,4 @@
 
 For Matt skills, read the [tracker configuration](../agents/issue-tracker.md) and [domain docs](../agents/domain.md). The first bb architecture stage is defined in the [session specification](../specs/bb-architecture.md); the [approved issue breakdown and cleanup proposal](../specs/bb-architecture-tickets.md) links to the GitHub tracker.
 
-Documentation reconciliation is tracked in [Issue #4](https://github.com/kornouhovas/workspace/issues/4); the [exact cleanup inventory](../specs/documentation-cleanup.md) records proposed scope and protected history.
+Documentation reconciliation is tracked in [Issue #4](https://github.com/kornouhovas/workspace/issues/4). The [full semantic audit](../specs/documentation-audit.md) records per-file assessments, current-runtime contradictions and recommended order; the [earlier cleanup inventory](../specs/documentation-cleanup.md) preserves proposed reductions and protected history. The audit is analysis, not a new mandatory implementation checklist.
