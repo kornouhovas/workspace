@@ -1,6 +1,6 @@
 # Workspace architecture issue breakdown
 
-Status: issue size, blocking edges, and verification boundary approved. Issue #2 is implemented, verified and reviewed on the dedicated branch. Issues #3–4 remain open. The [specification](bb-architecture.md) covers the renderer session stage.
+Status: issue size, blocking edges, and verification boundary approved. Issues #2–3 are implemented, verified and reviewed on the dedicated branch. Issue #4 remains open. The [specification](bb-architecture.md) covers the renderer session stage; integration remains pending.
 
 The architecture parent is [Issue #1](https://github.com/kornouhovas/workspace/issues/1). Documentation cleanup has its own issue because it is outside the session code scope.
 
@@ -24,16 +24,18 @@ Implementation: [ADR-010](../adr/010-renderer-session-command-owner.md). [Verifi
 
 [GitHub Issue #3](https://github.com/kornouhovas/workspace/issues/3).
 
-Blocked by: [Issue #2](https://github.com/kornouhovas/workspace/issues/2), represented by a native GitHub dependency.
+Dependency: completed [Issue #2](https://github.com/kornouhovas/workspace/issues/2), represented by a native GitHub dependency.
 
 Delivery: restart and Workspace/view transitions restore tabs, panes, and preview through an explicit storage adapter. Delayed responses leave the currently selected screen unchanged.
 
-- [ ] Retain existing session keys/versions and read previously saved sessions.
-- [ ] Scope preview requests by Workspace/view identity; reject responses after a new selection or closing.
-- [ ] Storage failures and malformed data leave the UI usable; unavailable projects leave no empty visible shell.
-- [ ] Session lifecycle owns persistence/restoration; requests use the current service client.
-- [ ] The root component consumes snapshot/commands while CRUD and product mutation queues retain their behavior.
-- [ ] Restart/race tests, architecture boundary checks, software checks, and isolated Electron before/after checks pass.
+- [x] Retain existing session keys/versions and read previously saved sessions.
+- [x] Scope preview requests by Workspace/view identity; reject responses after a new selection or closing.
+- [x] Storage failures and malformed data leave the UI usable; unavailable projects leave no empty visible shell.
+- [x] Session lifecycle owns persistence/restoration; requests use the current service client.
+- [x] The root component consumes snapshot/commands while CRUD and product mutation queues retain their behavior.
+- [x] Restart/race tests, architecture boundary checks, software checks, and isolated Electron before/after checks pass.
+
+Implementation: [ADR-011](../adr/011-renderer-session-lifecycle.md). [Verification and review](session-lifecycle-verification.md) record storage compatibility/recovery, request races, native behavior and the pre-existing full-suite limitation. The original checkout remains unmerged.
 
 ## 3. Documentation reconciliation and cleanup — Issue #4
 

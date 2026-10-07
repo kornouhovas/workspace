@@ -2,7 +2,7 @@
 
 Issue: [#2](https://github.com/kornouhovas/workspace/issues/2). Refactor baseline: `bb00ac9`.
 
-Status: Issue #2 implemented, verified and reviewed on the dedicated branch. Integration into the original checkout and Issue #3 lifecycle extraction remain pending.
+Status: Issue #2 implemented, verified and reviewed on the dedicated branch. Issue #3 lifecycle extraction is delivered in the [follow-up verification](session-lifecycle-verification.md). Integration into the original checkout remains pending.
 
 ## Completed checks
 

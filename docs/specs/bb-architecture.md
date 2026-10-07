@@ -1,6 +1,6 @@
 # Workspace renderer session architecture
 
-Status: scope, verification boundary, and issue breakdown approved. Issue #2 is implemented, verified and reviewed on the dedicated branch; the complete lifecycle extraction in Issue #3 has not started.
+Status: scope, verification boundary, and issue breakdown approved. Issues #2–3 are implemented, verified and reviewed on the dedicated branch. Integration into the original checkout remains pending.
 
 Primary tracker specification: [GitHub Issue #1](https://github.com/kornouhovas/workspace/issues/1). This file is the versioned specification snapshot; update the issue when its scope changes.
 
@@ -40,6 +40,7 @@ Introduce one owner of renderer session state behind a small snapshot-and-comman
 - Preserve Workspace/view identity and request-freshness checks for asynchronous previews. Requests use the current service client; accepted responses apply coherently.
 - Introduce the owner in compatible increments. The first slice retains current restoration adapters; the second moves the complete session lifecycle.
 - The first increment is implemented by [ADR-010](../adr/010-renderer-session-command-owner.md); see its [verification evidence](session-commands-verification.md).
+- The complete lifecycle increment is implemented by [ADR-011](../adr/011-renderer-session-lifecycle.md); see its [verification evidence](session-lifecycle-verification.md).
 - Leave CRUD, product mutation queues, and general data-loading lifecycle outside this slice. No new state library or monorepo is required.
 - Preserve Workspace APIs, opaque IDs, sources, property values/history, folder roles, and accepted Status moves. Electron security and active JSON adapters remain unchanged.
 - Use a dedicated branch. Preserve pre-existing uncommitted changes and unfinished tasks. Establish an explicit, verifiable implementation baseline and keep unrelated changes out of refactor commits.
