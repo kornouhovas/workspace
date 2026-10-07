@@ -1,26 +1,26 @@
 # Workspace
 
-Понятия приложения для работы с проектами, уже существующими как папки. Название продукта Workspace и отдельная рабочая конфигурация Workspace различаются по контексту.
+Product concepts for managing projects that already exist as folders. Workspace names both the application and an individual working configuration; use the surrounding context to distinguish them.
 
 ## Language
 
-**Workspace (рабочая конфигурация)**:
-Сохранённая конфигурация с собственным источником проектов, ролями папок и представлениями. Разные Workspaces могут использовать один источник или разные источники.
+**Workspace (working configuration)**:
+A saved configuration with its own project source, folder roles, and views. Workspaces may share a source or use independent sources.
 
-**Источник проектов (project source)**:
-Выбранная корневая папка, внутри которой Workspace обнаруживает проекты. Один источник может использоваться несколькими Workspaces.
+**Project source**:
+The selected root folder within which a Workspace discovers projects. Multiple Workspaces may use the same source.
 
-**Проект (Project)**:
-Папка, распознанная как проект по назначенным ролям, вместе с её свойствами. Это единица работы пользователя, а не задача разработки приложения.
+**Project**:
+A folder identified as a project through its assigned role, together with its properties. It is the user's unit of work, distinct from an application development issue.
 
-**Представление (View)**:
-Сохранённый способ показывать проекты конкретного Workspace, например Board или Table, с собственными настройками отображения и фильтрации.
+**View**:
+A saved presentation of a Workspace's projects, such as Board or Table, with its own display and filtering settings.
 
-**Свойство (Property)**:
-Поле проекта, например Name, Status или пользовательское поле. Значение свойства относится к конкретному проекту.
+**Property**:
+A project field, such as Name, Status, or a custom field. A property value belongs to an individual project.
 
-**Роль папки (Folder role)**:
-Назначение папки при обнаружении проектов: group — контейнер, status — источник статуса, project — сам проект.
+**Folder role**:
+A folder's discovery purpose: group is a container, status supplies a project status, and project identifies the project itself.
 
-**Статус (Status)**:
-Состояние проекта, определяемое папкой с ролью status. Проект вне такой папки получает No status.
+**Status**:
+A project's state derived from its enclosing status-role folder. A project outside such a folder has No status.

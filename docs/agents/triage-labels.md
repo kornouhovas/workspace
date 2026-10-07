@@ -1,11 +1,11 @@
 # Triage labels
 
-| Роль навыков Matt | Метка GitHub | Значение |
+| Matt skill role | GitHub label | Meaning |
 | --- | --- | --- |
-| `needs-triage` | `needs-triage` | Требуется разбор входящего запроса |
-| `needs-info` | `needs-info` | Не хватает сведений |
-| `ready-for-agent` | `ready-for-agent` | Есть достаточная спецификация для выполнения |
-| `ready-for-human` | `ready-for-human` | Требуется работа человека |
-| `wontfix` | `wontfix` | Запрос не будет выполняться |
+| `needs-triage` | `needs-triage` | An incoming request needs evaluation |
+| `needs-info` | `needs-info` | Required information is missing |
+| `ready-for-agent` | `ready-for-agent` | The specification is sufficient for agent execution |
+| `ready-for-human` | `ready-for-human` | Human implementation is required |
+| `wontfix` | `wontfix` | The request will not be implemented |
 
-`to-tickets` создаёт уже подготовленные задачи; повторный triage им не нужен. Метка готовности не отменяет блокирующие зависимости.
+`to-tickets` produces prepared issues; they do not need another triage pass. A readiness label does not override blocking dependencies.

@@ -28,6 +28,7 @@ This repository uses a spec-first, agent-ready workflow.
 
 ## Agent skills
 
-- При работе с задачами, спецификациями и PR используйте приватные GitHub Issues; роль Beads и операции описаны в [issue tracker](docs/agents/issue-tracker.md).
-- При triage используйте [отображение меток](docs/agents/triage-labels.md).
-- При анализе предметной области и архитектуры прочитайте [domain docs](docs/agents/domain.md): словарь и относящиеся к задаче ADR.
+- For issues, specifications, and PRs, use private GitHub Issues; read [issue tracker](docs/agents/issue-tracker.md) for Beads integration and operations.
+- For triage, use the [label mapping](docs/agents/triage-labels.md).
+- For domain and architecture exploration, read [domain docs](docs/agents/domain.md): the glossary and relevant ADRs.
+- Discuss work in Russian; write new specifications, documentation, and issues in technical English where practical.

@@ -24,4 +24,4 @@
 
 Старые планы и отчёты дают контекст конкретной работы. Их исторические процессные требования заменены rules.md; они не расширяют полномочия. Статус ADR проверяйте в самом документе: предложенное решение не считается принятым.
 
-Для работы через навыки Matt используйте [настройку трекера](../agents/issue-tracker.md) и [предметные документы](../agents/domain.md). Текущий первый этап адаптации архитектуры bb описан в [спецификации сессии](../specs/bb-architecture.md); [разбиение и очистка](../specs/bb-architecture-tickets.md) пока имеют статус draft.
+For Matt skills, read the [tracker configuration](../agents/issue-tracker.md) and [domain docs](../agents/domain.md). The first bb architecture stage is defined in the [session specification](../specs/bb-architecture.md); the [approved issue breakdown and cleanup proposal](../specs/bb-architecture-tickets.md) links to the GitHub tracker.
