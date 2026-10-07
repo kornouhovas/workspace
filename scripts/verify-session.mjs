@@ -1,4 +1,4 @@
-import { _electron as electron } from "@playwright/test";
+import { _electron as electron, expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -73,6 +73,9 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
       await page.mouse.move(target.x + target.width - 12, target.y + target.height / 2, { steps: 15 });
       await page.mouse.up();
       await page.locator(".bb-tree-split").first().waitFor();
+      // PointerSensor briefly suppresses click after a drop. A subsequent
+      // independent action must start after that suppression interval.
+      await page.waitForTimeout(100);
     };
     await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
     await capture("board");
@@ -115,18 +118,13 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
     check("Settings navigation and existing session restoration after reload");
     await view();
     await split("Project Beta");
-    await page.evaluate(() => {
-      globalThis.sessionCheckEvents = [];
-      for (const type of ["click", "keydown"])
-        document.addEventListener(type, event => globalThis.sessionCheckEvents.push({ type, target: event.target.textContent, prevented: event.defaultPrevented }));
-    });
-    await page.getByRole("button", { name: "Secondary", exact: true }).press("Enter");
+    await page.getByRole("button", { name: "Secondary", exact: true }).click();
     await page.locator("[data-project-tab-id]").first().waitFor({ state: "detached" });
     await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
     assert.equal(await page.locator("[data-project-tab-id]").count(), 0);
     await open("Project Alpha");
     assert.equal(await page.locator("[data-project-tab-id]").count(), 1);
-    await page.getByRole("button", { name: "Operations", exact: true }).press("Enter");
+    await page.getByRole("button", { name: "Operations", exact: true }).click();
     await tab("Project Beta").waitFor();
     await tab("Project Alpha").waitFor();
     await page.locator(".bb-tree-split").first().waitFor();
@@ -134,6 +132,41 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
     await page.locator(".bb-tree-split").first().waitFor();
     await capture("workspace-restored-split");
     check("Workspace switching isolates tabs and retains its split through reload");
+
+    // Delay time at the IPC boundary while retaining the real fixture backend.
+    // The retained outgoing surface must reject project selection commands.
+    await app.evaluate(({ ipcMain }, config) => {
+      const require = process.getBuiltinModule("module").createRequire(config.modulePath);
+      const { createWorkspaceIpcHandler } = require(config.modulePath);
+      const handler = createWorkspaceIpcHandler(config.options);
+      globalThis.sessionCheckPending = false;
+      let released = false;
+      const gate = new Promise(resolve => {
+        globalThis.releaseSessionCheck = () => { released = true; resolve(); };
+      });
+      ipcMain.removeHandler("workspace:request");
+      ipcMain.handle("workspace:request", async (event, method, payload) => {
+        if (!released && method === "workspace.getViewProjection" && payload?.viewId === "view:default-table") {
+          globalThis.sessionCheckPending = true;
+          await gate;
+        }
+        return handler(event, method, payload);
+      });
+    }, {
+      modulePath: resolve("electron/workspaceIpc.js"),
+      options: { configPath: join(metadata, "settings.json"), viewStorePath: join(metadata, "views.json"), propertyStorePath: join(metadata, "properties.json") },
+    });
+    await tab("Table").first().click();
+    await page.waitForFunction(() => document.querySelector('[aria-busy="true"]'));
+    await expect.poll(() => app.evaluate(() => globalThis.sessionCheckPending)).toBe(true);
+    assert.equal(await page.locator(".bb-tree-split").first().isVisible(), true);
+    await tab("Project Alpha").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Duplicate tab", exact: true }).click();
+    assert.equal(await page.locator(".bb-tree-split").first().isVisible(), true, "pending view retains the outgoing split instead of selecting the duplicate full-screen");
+    await app.evaluate(() => globalThis.releaseSessionCheck());
+    await tab("Table").first().waitFor();
+    await page.locator('[aria-busy="true"]').first().waitFor({ state: "detached" });
+    check("pending saved-view response rejects a project-tab selection command");
     report.windows.push(await app.evaluate(({ BrowserWindow }) => ({ bounds: BrowserWindow.getAllWindows()[0].getBounds(), contentBounds: BrowserWindow.getAllWindows()[0].getContentBounds() })));
   } catch (error) {
     report.errors.push(error.stack || String(error));
@@ -143,7 +176,6 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
         workspaces: await window.workspace.request("workspace.listWorkspaces", {}),
         currentButtons: [...document.querySelectorAll("button[aria-current]")].map(button => button.textContent),
         storage: { ...localStorage },
-        events: globalThis.sessionCheckEvents,
       })).catch(() => null);
       await page.screenshot({ path: join(evidence, `failure-${width}.png`) }).catch(() => {});
       await writeFile(join(evidence, `failure-${width}.txt`), await page.locator("body").innerText().catch(() => ""));

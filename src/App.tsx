@@ -16,7 +16,7 @@ import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
 import { Button } from "@/components/ui/button";
-import { createWorkspaceSession, type SessionResult } from "@/workspaceSession.js";
+import { createWorkspaceSession, type SessionCommand, type SessionResult } from "@/workspaceSession.js";
 import type { ProjectTabsAction } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
 import { viewPreviewId, rememberViewPreview, pruneViewPreviews, createPreviewRequestGuard, createPreviewRestoreTracker, createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
@@ -816,13 +816,18 @@ export default function App() {
     });
   }
 
+  function dispatchSessionInteraction(command: SessionCommand): SessionResult {
+    if (surfaceInteractionDisabledRef.current) return { snapshot: session.getSnapshot() };
+    return session.dispatch(command);
+  }
+
   function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
-    const result = session.dispatch({
+    const result = dispatchSessionInteraction({
       type: "expandProject", workspaceId: projectTabsWorkspaceId, project,
       tabId: createClientDocumentId("project-tab"), afterTabId,
     });
     applySessionEffects(result);
-    return result.tabId!;
+    return result.tabId;
   }
 
   function openProjectInSplit(
@@ -831,18 +836,18 @@ export default function App() {
     target?: string,
     side: SplitSide | "center" = "right",
   ) {
-    applySessionEffects(session.dispatch({
+    applySessionEffects(dispatchSessionInteraction({
       type: "splitProject", workspaceId: projectTabsWorkspaceId, project, tabId, target, side,
       newTabId: createClientDocumentId("project-tab"), paneId: createClientDocumentId("pane"),
     }));
   }
 
   function closeLayoutPane(paneId: string) {
-    applySessionEffects(session.dispatch({ type: "closePane", workspaceId: projectTabsWorkspaceId, paneId }));
+    applySessionEffects(dispatchSessionInteraction({ type: "closePane", workspaceId: projectTabsWorkspaceId, paneId }));
   }
 
   function restoreProjectTab(tabId: string) {
-    const result = session.dispatch({ type: "restoreProject", workspaceId: projectTabsWorkspaceId, tabId });
+    const result = dispatchSessionInteraction({ type: "restoreProject", workspaceId: projectTabsWorkspaceId, tabId });
     if (result.projectToLoad) rememberPreview(result.projectToLoad.id);
     applySessionEffects(result);
   }
@@ -854,7 +859,7 @@ export default function App() {
   }
 
   function closeProjectTabs(tabIds: readonly string[]) {
-    applySessionEffects(session.dispatch({ type: "closeTabs", workspaceId: projectTabsWorkspaceId, tabIds }));
+    applySessionEffects(dispatchSessionInteraction({ type: "closeTabs", workspaceId: projectTabsWorkspaceId, tabIds }));
   }
 
   function closeProjectTab(tabId: string) {
@@ -862,7 +867,7 @@ export default function App() {
   }
 
   function reopenProjectTab() {
-    applySessionEffects(session.dispatch({ type: "reopenProject", workspaceId: projectTabsWorkspaceId }));
+    applySessionEffects(dispatchSessionInteraction({ type: "reopenProject", workspaceId: projectTabsWorkspaceId }));
   }
 
   function closeSelectedProject() {
