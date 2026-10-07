@@ -11,4 +11,4 @@ export function focusedPaneCloseCommand(
   layout: PaneLayout,
   projectTabId?: string | null,
   projectExpanded?: boolean,
-): { kind: "rightTab" | "projectTab" | "pane"; id: string } | null;
+): { kind: "projectTab" | "pane"; id: string } | { kind: "preview" } | null;

@@ -1,20 +1,15 @@
 import { retainViewPreview } from "@/workspaceViewPreview.js";
 import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from "react";
-import { ContextMenu } from "radix-ui";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import Cancel01Icon from "@hugeicons/core-free-icons/Cancel01Icon";
-import ArrowLeft01Icon from "@hugeicons/core-free-icons/ArrowLeft01Icon";
-import ArrowRight01Icon from "@hugeicons/core-free-icons/ArrowRight01Icon";
 import SidebarRightIcon from "@hugeicons/core-free-icons/SidebarRightIcon";
 import ExpandIcon from "@hugeicons/core-free-icons/ExpandIcon";
 import CollapseIcon from "@hugeicons/core-free-icons/CollapseIcon";
-import Navigation03Icon from "@hugeicons/core-free-icons/Navigation03Icon";
 import File01Icon from "@hugeicons/core-free-icons/File01Icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { PaneAction, PaneLayout } from "@/workspacePaneLayout";
-import { workspaceMenuContentClassName, workspaceMenuItemClassName } from "./menu-styles";
 
 export function ChromeIcon({
   icon,
@@ -216,7 +211,6 @@ export function WorkspaceRightPanel({
   layout,
   suppressed = false,
   send,
-  navigation,
   project,
   projectName,
   onCloseProject,
@@ -227,7 +221,6 @@ export function WorkspaceRightPanel({
   layout: PaneLayout;
   suppressed?: boolean;
   send: (action: PaneAction) => void;
-  navigation: ReactNode;
   project?: ReactNode;
   projectName?: string;
   onCloseProject: () => void;
@@ -246,33 +239,8 @@ export function WorkspaceRightPanel({
       ? availableWidth / 2
       : Math.min(layout.rightWidth, availableWidth);
   const resizeStartWidth = useRef(rightWidth);
-  const list = useRef<HTMLDivElement>(null);
-  const [scroll, setScroll] = useState({ left: false, right: false });
-  const showProject = !!project && layout.activeRightTab === "navigation";
-  const hasNew = layout.activeRightTab !== "navigation";
-  useEffect(() => {
-    const el = list.current;
-    if (!el) return;
-    const update = () =>
-      setScroll({
-        left: el.scrollLeft > 1,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
-      });
-    update();
-    const obs = new ResizeObserver(update);
-    obs.observe(el);
-    el.addEventListener("scroll", update);
-    return () => {
-      obs.disconnect();
-      el.removeEventListener("scroll", update);
-    };
-  }, [layout.rightTabs.length, layout.rightWidth, projectName]);
-  useEffect(() => {
-    list.current
-      ?.querySelector<HTMLElement>('[aria-selected="true"]')
-      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
-  }, [layout.activeRightTab]);
-  const visible = layout.rightVisible && !suppressed;
+  const showProject = !!project;
+  const visible = layout.rightVisible && !suppressed && showProject;
   const previousProject = useRef<{ identity: string; project: ReactNode | undefined } | undefined>(undefined);
   const identityChanged = previousProject.current?.identity !== previewIdentity;
   previousProject.current = retainViewPreview(previousProject.current, previewIdentity, showProject ? project : undefined, visible);
@@ -319,116 +287,28 @@ export function WorkspaceRightPanel({
         onResize={(width) => send({ type: "resizeRight", width })}
       />
       <header className={cn("bb-pane-header", visible && "electron-window-drag")}>
-        <div
-          className="bb-tab-overflow"
-          ref={list}
-          role="tablist"
-          aria-label={t("chrome.rightViews")}
-        >
+        <div className="bb-tab-overflow" role="tablist" aria-label={t("chrome.rightViews")}>
           <ChromeTab
-            label={contentProject ? (visible ? projectName : previousName.current) || "Project" : t("chrome.navigation")}
-            active={!hasNew}
-            icon={contentProject ? File01Icon : Navigation03Icon}
-            onSelect={() => send({ type: "rightSelect", id: "navigation" })}
+            label={(visible ? projectName : previousName.current) || "Project"}
+            active
+            icon={File01Icon}
+            onSelect={() => send({ type: "focus", pane: "right" })}
           />
-          {layout.rightTabs.map((id, index) => (
-            <ContextMenu.Root key={id} modal={false}>
-              <ContextMenu.Trigger asChild>
-                <div>
-                  <ChromeTab
-                    label={t("chrome.newTab") + (index ? ` ${index + 1}` : "")}
-                    active={id === layout.activeRightTab}
-                    onSelect={() => send({ type: "rightSelect", id })}
-                    onClose={() => send({ type: "rightClose", id })}
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData("application/x-workspace-tab", id)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const source = e.dataTransfer.getData("application/x-workspace-tab");
-                      if (!layout.rightTabs.includes(source)) return;
-                      const ids = layout.rightTabs.filter((t) => t !== source);
-                      ids.splice(ids.indexOf(id), 0, source);
-                      send({ type: "rightReorder", ids });
-                    }}
-                  />
-                </div>
-              </ContextMenu.Trigger>
-              <ContextMenu.Portal>
-                <ContextMenu.Content className={workspaceMenuContentClassName}>
-                  <ContextMenu.Item
-                    className={workspaceMenuItemClassName}
-                    onSelect={() => send({ type: "rightClose", id })}
-                  >
-                    {t("chrome.closeTab")}
-                  </ContextMenu.Item>
-                  <ContextMenu.Separator className="my-1 h-px bg-border" />
-                  <ContextMenu.Item
-                    className={workspaceMenuItemClassName}
-                    disabled={layout.rightTabs.length < 2}
-                    onSelect={() => send({ type: "rightCloseOthers", id })}
-                  >
-                    {t("chrome.closeOthers")}
-                  </ContextMenu.Item>
-                  <ContextMenu.Item
-                    className={workspaceMenuItemClassName}
-                    disabled={index === layout.rightTabs.length - 1}
-                    onSelect={() => send({ type: "rightCloseAfter", id })}
-                  >
-                    {t("chrome.closeAfter")}
-                  </ContextMenu.Item>
-                </ContextMenu.Content>
-              </ContextMenu.Portal>
-            </ContextMenu.Root>
-          ))}
         </div>
-        {(scroll.left || scroll.right) && (
-          <>
-            <ChromeAction
-              disabled={!scroll.left}
-              label={t("chrome.previousTabs")}
-              onClick={() => list.current?.scrollBy({ left: -180, behavior: "smooth" })}
-            >
-              <ChromeIcon icon={ArrowLeft01Icon} />
-            </ChromeAction>
-            <ChromeAction
-              disabled={!scroll.right}
-              label={t("chrome.nextTabs")}
-              onClick={() => list.current?.scrollBy({ left: 180, behavior: "smooth" })}
-            >
-              <ChromeIcon icon={ArrowRight01Icon} />
-            </ChromeAction>
-          </>
-        )}
         <ChromeAction
           label={t(layout.maximized === "right" ? "chrome.restoreSplit" : "chrome.maximize")}
-          onClick={
-            showProject ? onMaximizeProject : () => send({ type: "maximize", pane: "right" })
-          }
+          onClick={onMaximizeProject}
         >
           <ChromeIcon icon={layout.maximized === "right" ? CollapseIcon : ExpandIcon} className="size-[13px]" />
         </ChromeAction>
         <ChromeAction
           label={t("chrome.hideRight")}
-          onClick={() => {
-            if (showProject) onCloseProject();
-            else if (layout.rightVisible) send({ type: "rightToggle" });
-          }}
+          onClick={onCloseProject}
         >
           <ChromeIcon icon={SidebarRightIcon} />
         </ChromeAction>
       </header>
-      <div className="bb-pane-content">
-        {hasNew ? (
-          <div className="bb-new-tab">
-            <p>{t("chrome.actions")}</p>
-            {navigation}
-          </div>
-        ) : contentProject ? (
-          contentProject
-        ) : (
-          navigation
-        )}
-      </div>
+      <div className="bb-pane-content">{contentProject}</div>
     </aside>
   );
 }

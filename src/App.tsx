@@ -640,10 +640,6 @@ export default function App() {
   const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
   const sidebarCollapsed = paneLayout.sidebarCollapsed;
   function sendPane(action: PaneAction) {
-    if (action.type === "rightToggle" && selectedProject && !activeProjectTabId) {
-      previewRequests.current.invalidate();
-      rememberPreview(paneLayout.rightVisible ? null : selectedProject.id);
-    }
     if (action.type === "resizeSidebar") {
       setSidebarWidth(Math.min(460, Math.max(240, action.width)));
       return;
@@ -903,9 +899,13 @@ export default function App() {
     if (!activeProjectTabId || !tabIds.includes(activeProjectTabId)) return;
     if (fallback) handleProjectOpen(fallback, fallback.tabId);
     else {
+      previewRequests.current.invalidate();
+      rememberPreview(null);
       setActiveProjectTabId(null);
+      setProjectTabSelected(false);
       setSelectedProject(null);
-      sendPane({ type: "closeSplit" });
+      sendPane({ type: "selectView" });
+      sendPane({ type: "showWorkspace" });
     }
     requestAnimationFrame(() => {
       const target = fallback
@@ -957,27 +957,18 @@ export default function App() {
         event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
       if (editing || surfaceState.interactionDisabled) return;
       const key = event.key.toLowerCase();
-      if (key === "j") {
-        event.preventDefault();
-        sendPane({ type: "rightToggle" });
-      }
       if (key === "\\") {
         event.preventDefault();
         sendPane({ type: "sidebarToggle" });
       }
-      if (key === "t" && !event.shiftKey) {
-        event.preventDefault();
-        sendPane({ type: "rightOpen", id: "launcher" });
-      }
       if (key === "t" && event.shiftKey) {
         event.preventDefault();
-        if (paneLayout.focused === "right") sendPane({ type: "rightReopen" });
-        else reopenProjectTab();
+        reopenProjectTab();
       }
       if (key === "w") {
         event.preventDefault();
         const command = focusedPaneCloseCommand(paneLayout, activeProjectTabId, projectExpanded);
-        if (command?.kind === "rightTab") sendPane({ type: "rightClose", id: command.id });
+        if (command?.kind === "preview") closeSelectedProject();
         else if (command?.kind === "pane") closeLayoutPane(command.id);
         else if (command?.kind === "projectTab") closeProjectTab(command.id);
       }
@@ -2642,7 +2633,7 @@ export default function App() {
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
     if (surfaceInteractionDisabledRef.current) return;
-    if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
+    if (!tabId && !projectExpanded && paneLayout.rightVisible && selectedProject?.id === project.id) {
       closeSelectedProject();
       return;
     }
@@ -2822,35 +2813,6 @@ export default function App() {
     />
   );
   const detailPanel = renderDetailPanel();
-  const navigationPanel = (
-    <nav className="bb-navigation" aria-label={t("chrome.navigation")}>
-      <p className="bb-navigation-heading">
-        {listWorkspacePanes(paneLayout.tree).some(
-          (p) => p.paneId === paneLayout.focused && p.tabId,
-        ) && selectedProject
-          ? selectedProject.name
-          : currentWorkspaceName}
-      </p>
-      {viewState.views.map((view) => (
-        <button
-          type="button"
-          key={view.id}
-          className="bb-navigation-row"
-          onClick={() => {
-            selectSavedView(view.id);
-            openWorkspaceSurface();
-          }}
-        >
-          <FolderIcon className="size-4" aria-hidden="true" />
-          {view.name}
-        </button>
-      ))}
-      <button type="button" className="bb-navigation-row" onClick={openSettingsSurface}>
-        {t("sidebar.settings")}
-      </button>
-    </nav>
-  );
-
   const primaryPane = (
     <main
       onFocusCapture={() => sendPane({ type: "focus", pane: "workspace" })}
@@ -3233,7 +3195,7 @@ export default function App() {
         )}
         <div
           className="bb-center flex min-h-0 min-w-0 flex-1"
-          style={{ display: !projectFullScreen && paneLayout.maximized === "right" ? "none" : undefined }}
+          style={{ display: !projectFullScreen && !projectExpanded && selectedProject && activeSurface === "workspace" && state.status !== "error" && paneLayout.rightVisible && paneLayout.maximized === "right" ? "none" : undefined }}
           data-maximized={paneLayout.maximized || undefined}
         >
           {projectFullScreen ? primaryPane : <WorkspaceSplitTree
@@ -3269,7 +3231,6 @@ export default function App() {
             suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
-            navigation={navigationPanel}
             project={
               !projectExpanded &&
               activeSurface === "workspace" &&
