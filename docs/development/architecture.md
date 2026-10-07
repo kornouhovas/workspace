@@ -1,27 +1,25 @@
-# Архитектура и действующий runtime
+# Current runtime and architectural boundaries
 
-Карта слоёв и границы находятся в [архитектуре](../architecture.md), контракты — в [модели данных](../data-model.md) и [API](../api/). Перед изменением транспорта прочитайте [ADR-002](../adr/002-electron-preload-ipc-bridge.md) и [ADR-006](../adr/006-workspace-source-bindings.md).
+Use [architecture](../architecture.md) for layer ownership and target integration, [data model](../data-model.md#current-runtime-and-target-scope) for current/target scopes, and the relevant [API](../api/) for operations. Read accepted ADRs for the affected boundary; ADR-004 remains Proposed.
 
-## Electron сейчас
+## Active Electron path
 
 ```text
-React UI → WorkspaceServiceClient → renderer transport
-  → window.workspace.request → sandboxed preload IPC
-    → Electron main dispatcher → domain/backend → JSON-адаптеры
+React -> WorkspaceServiceClient -> renderer transport
+  -> sandboxed preload IPC -> Electron dispatcher
+    -> domain/backend -> JSON settings/views/property adapters
 ```
 
-Это можно проследить в [App.tsx](../../src/App.tsx), [service client](../../src/workspaceServiceClient.js), [renderer transport](../../src/workspaceRendererTransport.ts), [preload](../../electron/preload.cjs), [main](../../electron/main.js) и [dispatcher](../../electron/workspaceIpc.js). Dispatcher использует файловые adapters settings/views/properties; при обычном запуске метаданные лежат в `.workspace`, при `npm run dev` — в изолированной `.workspace-dev` текущего checkout.
+Trace [client](../../src/workspaceServiceClient.js), [transport](../../src/workspaceRendererTransport.ts), [preload](../../electron/preload.cjs), [main](../../electron/main.js) and [dispatcher](../../electron/workspaceIpc.js). Normal metadata uses .workspace; development uses an isolated checkout profile described in [bb stack/dev guide](../design/bb-stack-design.md).
 
-React отвечает за представление и действия пользователя. Проверка путей, обнаружение проектов, роли папок, нормализация свойств, идентичность и проекция views принадлежат backend/domain. Renderer не импортирует Node builtins, backend storage или sidecar clients. Сохраняются `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
+Filesystem validation, discovery, roles, property normalization and projections belong to backend/domain modules. React composes presentation and current service actions. Retain contextIsolation, sandbox and disabled nodeIntegration; renderer has no Node/storage/sidecar imports. Workspace deletion changes app metadata, not project files.
 
-Renderer session commands use [workspaceSession.js](../../src/workspaceSession.js), subscribed to by React. The owner coordinates tabs, pane layout, selection, fallback and transient closed-tab history without React or platform imports. [workspaceSessionLifecycle.js](../../src/workspaceSessionLifecycle.js) composes that owner with injected storage and the current service client, owning screen memory, persistence/restoration and preview request freshness. General data loading, CRUD queues and DOM effects remain composition-root adapters; see [ADR-010](../adr/010-renderer-session-command-owner.md) and [ADR-011](../adr/011-renderer-session-lifecycle.md).
+[workspaceSession](../../src/workspaceSession.js) owns pure tab/pane/selection commands and subscribed snapshots ([ADR-010](../adr/010-renderer-session-command-owner.md)). [workspaceSessionLifecycle](../../src/workspaceSessionLifecycle.js) adds injected storage/current service adapters for persistence, restoration and request freshness ([ADR-011](../adr/011-renderer-session-lifecycle.md)). General loading, CRUD queues and DOM effects remain composition adapters.
 
-## Целевое хранение
+## Target store and bounded filesystem helper
 
-[ADR-001](../adr/001-local-first-workspace-storage.md) сохраняет целевой durable store: Go sidecar → `any-store` → SQLite. [Sidecar](../../cmd/workspace-sidecar/main.go) и [Go store](../../internal/workspacestore/store.go) существуют, но Electron main не запускает sidecar HTTP server и не подключает его вместо JSON-адаптеров. Самостоятельный запуск sidecar не переключает storage приложения. ADR-006 прямо сохраняет этот переходный runtime; подключение целевого store — отдельная работа.
+[ADR-001](../adr/001-local-first-workspace-storage.md) retains Go/any-store/SQLite as the durable target. Standalone [sidecar](../../cmd/workspace-sidecar/main.go) and [store](../../internal/workspacestore/store.go) implement document operations; Electron neither starts their HTTP server nor replaces its JSON adapters. Running sidecar separately does not change app storage.
 
-Project IDs — opaque identities, пути — locators. Операции с файлами проверяются относительно выбранного источника; удаление Workspace не удаляет проекты на диске. Контракты изменений данных: [properties](../api/workspace-properties.md), [views](../api/workspace-views.md), [sources/session](../api/workspace-session-sources.md). Не заменяйте схему или адаптер на основании целевого описания без проверки текущего подключения.
+The [integration gap list](../architecture.md#storage--sidecar-layer) covers view-field parity, scope compatibility, migration/recovery and lifecycle. [ADR-006](../adr/006-workspace-source-bindings.md) preserves independent roots and source-scoped compatibility data; target examples do not authorize a namespace rewrite.
 
-В [каталоге ADR](../adr/) ADR-002, ADR-003, ADR-005 и ADR-006 приняты; ADR-004 про реестр идентичности имеет статус Proposed. Его описание не разрешает реализацию миграции.
-
-Создание новой папки проекта использует узкий CLI режим существующего Go бинарника с `os.Root`; он не открывает store/HTTP server и не переключает JSON adapters. См. [контракт](../api/workspace-views.md#confined-directory-helper).
+Project creation uses a confined CLI mode of the existing Go binary, distinct from storage/HTTP. Its contract and platform limits are in [creation helper](../api/workspace-views.md#confined-directory-helper) and [ADR-009](../adr/009-project-creation-os-guard.md). Current Status moves retain their [recovery contract](../api/workspace-status-move.md); a general identity registry and original-checkout rename changes are separate work.

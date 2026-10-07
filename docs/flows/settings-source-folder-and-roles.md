@@ -26,7 +26,7 @@ This flow establishes the source of projects for the app. Without it, Workspaces
 - Folder role configuration is Workspace-scoped.
 - Add Workspace is available without a source. It creates saved Board/Table views and opens that Workspace settings, where the user chooses its source. Empty initial recovery can also choose a source and create the initial Workspace.
 - MVP supports one level of status folders.
-- MVP does not support drag and drop between primary status groups.
+- Explicit Board drops into eligible Status columns and Table crossings into visible explicit Status groups use the [safe Status move operation](../api/workspace-status-move.md). No status and custom-property crossings are unavailable; roles are not an arbitrary filesystem-move API.
 
 ## Steps
 

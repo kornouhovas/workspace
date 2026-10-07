@@ -2,8 +2,6 @@
 
 ## Purpose and precedence
 
-Project instructions for Codex, tuned for GPT-6 Astra. Model selection belongs in Codex settings, not this file. These rules also apply to other capable coding models.
-
 This repository uses a spec-first, agent-ready workflow: the user owns product direction and major tradeoffs; the agent owns implementation, verification and handoff within the requested scope.
 
 - Follow system/developer instructions and the user's current request. Earlier authorization remains valid unless revoked.

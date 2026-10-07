@@ -1,5 +1,7 @@
 # Feature: English And Russian Interface Localisation
 
+> Historical requirements snapshot. Current scope/status belongs to GitHub Issues; current behavior follows accepted contracts/ADRs. Old Current State, execution gates and checkboxes below are historical, not evidence of present completion. Preserve unmet criteria using the [carry-forward map](../specs/documentation-cleanup.md#legacy-acceptance-carry-forward).
+
 ## Goal
 
 Support English and Russian across the Workspace Project Board interface. The user selects the interface language in Settings, the app updates immediately, and the choice remains active after restart on the same device.

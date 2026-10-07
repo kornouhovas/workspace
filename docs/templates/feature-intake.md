@@ -1,94 +1,14 @@
-# Feature Intake Template
+# Optional feature intake form
 
-Use this template when the user describes a new capability.
+Use to resolve a consequential feature boundary. Existing conversation/issue decisions remain valid; ask only for a missing decision that changes behavior, data, security or scope.
 
-## Workflow Evidence
+- GitHub issue / original request:
+- Intended outcome and user value:
+- Scope and exclusions:
+- Observable acceptance criteria:
+- Relevant product/API/UI/ADR links:
+- Impact on service, storage, identity, filesystem or dependencies:
+- Necessary unresolved decision:
+- Smallest coherent implementation/verification slices:
 
-- Mode: Feature Intake
-- Docs read:
-- Branch:
-- Acceptance criteria:
-- Quality gates:
-- Commit:
-- Handoff state: Backlog
-
-## Status
-
-Backlog
-
-## Short Request
-
-Record the user's original request in plain language.
-
-## Interpreted Goal
-
-State what the feature should enable in one or two sentences.
-
-## User Value
-
-Explain why this matters to the user.
-
-## Questions
-
-List only questions that are necessary before implementation.
-
-Examples:
-
-- Which screen owns this action?
-- Should this persist locally?
-- Should this affect current filters/search/view settings?
-- Should this work in Electron only?
-- Does this need export/save/open dialog behavior?
-
-## Existing Docs To Read
-
-- `AGENTS.md`
-- `docs/vision.md`
-- `docs/prd.md`
-- `docs/architecture.md`
-- `docs/ui-guidelines.md`
-- `docs/data-model.md`
-
-Add relevant API/flow/ADR docs.
-
-## Scope Proposal
-
-Define what is included.
-
-## Out Of Scope
-
-Define what is not included.
-
-## Architecture Impact
-
-State whether this changes:
-
-- data model;
-- service/API contract;
-- Electron IPC;
-- sidecar/storage;
-- React UI;
-- filesystem safety;
-- dependencies;
-- release/package behavior.
-
-## Docs Needed
-
-- Backlog item: yes/no.
-- API contract: yes/no.
-- UX flow: yes/no.
-- ADR: yes/no.
-- Implementation plan: yes/no.
-
-## Proposed Implementation Slices
-
-1. Smallest backend/domain slice.
-2. Storage/sidecar slice if needed.
-3. Electron IPC slice if needed.
-4. Renderer state slice if needed.
-5. UI slice if needed.
-6. Visual verification slice if needed.
-
-## Recommended Next Step
-
-State the next safe action.
+[Rules](../development/rules.md) owns authorization/commits, [quality](../development/quality.md) owns verification, and the [tracker](../agents/issue-tracker.md) owns task state. Use relevant fields; the form adds no approval gate or mandatory report.

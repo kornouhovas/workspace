@@ -1,0 +1,32 @@
+{
+  "baseline": "e291a9c43ab3c1e69668f2d4b90ab18bad720865",
+  "date": "2026-10-08",
+  "documentationTests": {
+    "command": "node --test test/documentation.test.js test/securityAuditReport.test.js",
+    "passed": 21,
+    "failed": 0
+  },
+  "links": {
+    "files": 76,
+    "local": 494,
+    "fragments": 102,
+    "errors": 0,
+    "externalTargetsNotRevalidated": 158
+  },
+  "repeatedActiveParagraphs": 0,
+  "retainedBaselineRequirementGroups": 20,
+  "allBaselineDocumentationPathsRetained": true,
+  "changedDocumentationFiles": 43,
+  "protectedRuntimeAndExistingEvidenceFiles": 2386,
+  "originalMarkdownFilesUnchanged": 59,
+  "originalExternalDeletionsPreserved": 7,
+  "historicalFullOriginalsVerified": 8,
+  "documentationLines": {
+    "before": 14882,
+    "after": 10199,
+    "reduction": 4683
+  },
+  "softwareAndNativeBuildsRun": false,
+  "diffWhitespaceCheckPassed": true,
+  "originalDiffDecodedBytesVerified": true
+}

@@ -76,7 +76,7 @@ Rules:
 - Board and Table must share the same active project set.
 - Switching views must not imply data changes.
 - View controls should sit close to the view tabs and use familiar icon actions where possible.
-- Keep view tabs, project tabs, and their existing actions in one top row: 48px for Board/Table and expanded project details. Tabs keep text and scroll horizontally when they overflow; actions remain visible at the right.
+- Keep view tabs, project tabs, and their existing actions in one top row: 48px for Board/Table and expanded project details. Project tabs shrink from 176px to 40px, then use icon-only presentation with full accessible names/tooltips and horizontal overflow. Saved-view tabs retain their text/scroll behavior. Actions stay visible at the right.
 - `Add View` and `Customize Columns` are icon-only actions with accessible names and tooltips. Hover does not add a background; keyboard focus stays visible.
 - Keep primary content full-width and unframed; avoid wrapping entire page sections in cards.
 
@@ -84,7 +84,7 @@ Rules:
 
 Rules:
 
-- Board columns represent primary `Status` groups.
+- Board columns represent the selected grouping property. Status is the default; other supported properties and None retain the same visual language.
 - Include `No status` when projects are outside status folders.
 - Use the shared Status move operation for Board column drops and Table row-handle drops across explicit Status groups.
 - Cards should show `Name` and selected visible properties. `Status` is visible by default and may be hidden in the active view.
@@ -95,12 +95,12 @@ Rules:
 - Status columns use a stable fixed width. Removing filtered-out columns shifts the remaining columns but must not widen their cards.
 - Board `Customize Columns` uses a compact slider for column width and shows the current pixel value. New width selection starts at `288px` and is limited to one third of the current working area; an already selected width remains fixed when the window becomes narrower, with horizontal scrolling used instead of resizing columns.
 - Use Badge for status/value chips instead of custom styled spans.
-- Empty status columns should show a compact empty state, not disappear.
+- Empty groups use compact states; explicit visibility and current search/value filters follow the [grouping flow](flows/board-table-views.md#board-property-grouping-workspace-4r0).
 - Board `Wrap content` uses a leading columns icon aligned with other column menu actions and a separate trailing checked indicator. Ordinary wrapping adds no explanatory row or empty spacing; retain the visible vertical-access helper only for oversized cards.
 
 ### Table View
 
-- Resize Name, Status and custom columns by their existing header handles. Widths persist independently per Workspace/Table view and stable property ID, including hidden/reordered columns and grouped sections. The first frame after view activation restores saved widths. Keep the 132px minimum; finite wider sizes have no product or viewport maximum and use horizontal scrolling. Save failures restore the confirmed width and show an error.
+Keep stable header/body grids and accessible resize handles. The [Table flow](flows/board-table-views.md#table-path) owns restoration/save-failure behavior; the [API](api/workspace-views.md#table-column-widths-workspace-bja) owns width validation.
 
 Rules:
 
@@ -120,11 +120,10 @@ Rules:
 
 Rules:
 
-- Partial previews remember selection and explicit closed state per saved view within each Workspace. Ordinary Board/Table switches restore the destination’s project after lookup; no visible empty shell or stale project is shown. Keep the previous preview inert while the requested view awaits its projection and lookup; discard retained exit content when that destination activates; explicit close in the same view keeps the outgoing card during width release. A completed primary click on free Board/Table background closes preview and returns focus to Workspace. Protect editable cells, cards/rows, headers/groups, menus, toolbar, tabs and pane chrome; menu dismissal consumes the first outside click, and drag/scroll/selection/context gestures do not close preview.
+- Session selection, closed-state memory and protected background gestures belong to [Interface](interface.md#project-detail-panel) and the [view flow](flows/board-table-views.md#steps). Render the adopted project identity without an empty visible host or stale interactive preview.
 - Selecting an expanded project tab displays its full working screen immediately, without slide-in or intermediate preview width. Expanded screens suppress the right panel; returning to any saved view hides the right host while preserving tabs and the saved split tree.
 - Expand/restore controls use bb Hugeicons ExpandIcon/CollapseIcon at 13px in 28px hit areas. Sidebar toggle sits immediately after native traffic lights; history stays at the sidebar’s trailing edge and moves beside the toggle when collapsed. Reserve native traffic-light space in both states. The leading header inset animates with sidebar width. Native no-drag exclusions must follow overlapping pane drag regions; verify sidebar restoration with OS pointer events, since CDP input does not exercise macOS titlebar routing.
 - Right-preview card actions belong to its own header. Omit the duplicate main-header actions and the right-header new-tab plus; retain the main Add Board/Table button.
-- Workspace settings stacks Source, Folder role tree and Properties in a centered column capped at 768px, with 24px outer padding (16px horizontal at compact desktop widths); folder labels and role controls remain readable beside Navigation.
 - Project Detail composes into the right panel, a project tab, or the centre split. Its dialog retains the project name as an accessible label in every host. Keep its property/file logic independent of pane chrome.
 - Identify the project in the host tab; omit the duplicate content heading and its spacing above Properties. Partial preview tabs have no hover close icon or title shift. Keep header Hide/Expand and keyboard controls. Do not repeat `Name` inside the Properties rows.
 - Side panel open/close transitions change occupied width smoothly, retaining outgoing content and making hidden controls inert immediately. Respect reduced motion and rapid reversal. Pointer resize has no easing; reaching the full available workspace width expands the project during drag and Restore uses the partial width at drag start.
@@ -138,7 +137,7 @@ Rules:
 - Use `Badge` for select and multi-select values, including value colors.
 - Empty `Date`, `Select`, and `Multi-select` values should keep their editable row affordance but render visually blank instead of showing `Empty`.
 - `Select` and `Multi-select` value chips should expose the same direct value menu as Table cells: rename value, delete value, and change value color. Re-clicking the same chip closes its direct menu. Clicking the row value area outside a chip closes any direct value menu and opens the normal value picker.
-- Do not duplicate full property management controls inside every Board card or Table cell; use Settings or a focused property menu for definition/value administration.
+- Use focused Table/Detail/Customize property menus for custom definition/option administration. Workspace Settings manages derived Status colors, not custom-property CRUD.
 - Board cards should display only the custom properties enabled for the active view.
 - Table should display custom properties as stable-width columns in active view order.
 - File structure should clearly distinguish folders from files.
@@ -147,6 +146,8 @@ Rules:
 - The panel should preserve context when switching between Board and Table.
 
 ### Settings
+
+Workspace settings stacks Source, Folder role tree and Properties in a centered column capped at 768px, with 24px outer padding (16px horizontal at compact desktop widths); folder labels and role controls remain readable beside Navigation.
 
 Global Settings owns device interface language and Light/Dark/System appearance selection. Workspace settings, opened from the target row menu or its keyboard trigger, owns:
 
@@ -260,7 +261,7 @@ Rules:
 - Property type choices should use select or segmented controls.
 - Binary settings should use checkbox or toggle controls.
 - Value visibility filters should use checkboxes, multi-select UI, or menu checklists depending on density.
-- Numeric values should use numeric inputs.
+- Numbers property editing uses text-like inputs so `=` arithmetic expressions remain editable; plain numeric controls are appropriate only for settings without expression semantics.
 - Date values should use a date input or date picker pattern approved by the existing component set.
 - Changes that persist immediately must show a success or saved state only when useful; avoid noisy toast spam for every keystroke.
 
@@ -270,7 +271,7 @@ Every feature surface should define applicable states before implementation.
 
 ### Loading
 
-- Use `Skeleton` for panels, tables, and card lists.
+- Use announced skeletons on first load without a ready surface; saved-view activation keeps the confirmed surface inert until its destination is ready, as defined in the [view flow](flows/board-table-views.md#board-and-table-visual-refinement-workspace-zlj).
 - Do not use generic centered spinners for dense surfaces unless the whole page is blocked.
 - Loading should preserve layout dimensions where possible.
 
@@ -417,42 +418,24 @@ Locale changes update visible labels without projection reloads, folder rescans 
 
 Explicit Status selection in preview/expanded details uses existing chips, folder-derived labels/colors, keyboard focus and radio selection. Disabled destinations include a textual reason. Move activity occupies one 28px header control immediately after Sidebar, exposes from/to/project/state details, remains visible with the sidebar hidden, and respects reduced motion. No percentage or artificial production delay is shown. Board/card and Table/cell Status pickers use the same operation. Table has a compact internal left hover/focus handle for vertical row reorder; the whole row moves and neighbouring rows shift by its captured height to expose the future insertion gap. A drop across explicit Status groups uses the existing safe move; other-property group crossings are unavailable. No separate Status panel appears. Hover/focus/drag do not change widths. Name has no separate hover background inside the general card/row highlight; keyboard focus and editor/Status states remain visible. Board targets use available/active background fills without new outlines. No status is hidden only from picker/drop choices, keeping derived labels, groups and projects accessible. See [Status move contract](api/workspace-status-move.md).
 
-
 ### Board and Table visual refinement (workspace-zlj)
+
+Confirmed-surface retention and row-placement transitions follow the [activation/drag flow](flows/board-table-views.md#board-and-table-visual-refinement-workspace-zlj). Preserve thin separators, visible keyboard focus and measured geometry; reduced motion removes displacement animation without removing direct manipulation.
 
 Board captures an inert visual snapshot of the complete rendered card at drag activation, retaining its exact border-box width/height, property content, wrapping and padding until drop or cancellation, including scrolling and different target-column widths. Each column uses `px-1` (4px from the existing spacing scale) on both sides inside its saved total width; cards therefore occupy saved width minus 8px. Existing saved widths are never rewritten. Compact content-height backgrounds and available/active background fills retain the same geometry.
 
-Saved-view activation keeps the previous complete service surface, its selected tab and partial preview visible and inert until the destination projection and saved preview are ready together. The waiting surface retains its previous view identity; the requested tab is marked busy, and navigation can supersede the request. The first destination frame contains its authoritative grouping, columns and filters, without a skeleton, fabricated flat rows or empty intermediate screen. Returning to the still-ready retained view can activate it immediately. Other targets are read freshly from the service; confirmed data changes invalidate retained readiness, and superseded requests cannot activate a newer intent. First load without a previous ready surface retains announced loading. Grouping, sort/manual order, hidden/collapsed groups, hide-empty and project ranks remain per-view settings; search remains scoped to the Workspace.
-
-Table drag previews the future insertion gap by moving intervening rows using their measured layout and the captured dragged-row height, including section headings/headers/gaps on allowed Status crossings. The dragged row preserves its height and column grid. Ordinary thin separators and keyboard focus remain; there is no thick underline, insertion line or preview shadow. Scroll compensation uses the captured layout, avoiding target feedback from animated rows. Reduced-motion removes displacement animation. Escape, pointer cancellation and outside drops restore the original layout without a write; successful drops synchronously convert the preview into a provisional in-table placement while the existing rank and safe Status-move services confirm it. Neighbours retain their preview positions through release and successful responses; no original-order frame or second displacement animation appears. Status previews account for repeated headers appearing in an empty destination or disappearing from an emptied source. Pending blocks repeat actions and retains the common move indicator; save/move errors explicitly return to the confirmed projection. View changes discard the local provisional placement, and late responses cannot replace a different active view. No success is announced before service confirmation.
-
 ### Board column ordering (workspace-fns)
 
-Column names are keyboard reachable reorder handles with visible focus, full accessible labels, truncation and help for Alt + Left/Right and Escape. Preview moves only header name/colour/count; bodies and their content-height backgrounds stay fixed until drop. Preserve the fixed width, shared scrolling, details preview and card Status interactions. Saving blocks conflicting drags; failure restores a coherent confirmed order with localized feedback. Edge scrolling reaches offscreen columns. Drag activates only after 6px of horizontal movement; pure vertical gestures do not activate or save order. The grabbed header follows pointer X directly without a smoothing delay and stays on the Board header line along Y, preserving its dimensions and horizontal grab point during scrolling. Insertion targets depend only on X. Neighbours ease between insertion slots with the existing motion token and captured geometry. Reduced motion removes only neighbour transitions. Whole columns adopt the preview order synchronously at drop, without replaying displacement on successful persistence. See [Board column order](flows/board-table-views.md#board-column-order-workspace-fns).
+Keep column titles focusable, truncated with full accessible names, and shortcut help for Alt+Left/Right and Escape. Header/card geometry stays stable during preview; reduced motion retains direct pointer feedback. Detailed activation, edge scrolling, cancellation and confirmed order belong to the [column-order flow](flows/board-table-views.md#board-column-order-workspace-fns).
 
 ### Board column actions
 
 Keep title, displayed-card count and ⋯ in one header row, with a truncating title and fixed count/trigger. Use shared menu/button/icon primitives and tokens. Menu interaction is outside the title drag handle, consumes the first outside click, supports keyboard/Escape and restores trigger focus. The name dialog uses a visible title/label, autofocus, pending/disabled confirmation, inline errors and Cancel/Escape. Column visibility belongs to saved Board view settings, with every catalog column available for restoration when all are hidden. No status creation displays an explicit unavailable-destination reason. See [Interface](interface.md#board-column-menu-workspace-rei).
 
-
 ## Board property grouping (workspace-4r0)
 
-Board and Table share per-view Group by and Sort settings. Supported properties are Name, Status, Text, Number, Date, Select and Multi-select, including hidden properties. None displays all matching projects in a single Board column. Typed memberships, exact values, empty groups, unique totals, filtering and catalog/default or ascending scalar order follow Table. Multi-select may display a project in several columns. Group order never sorts cards.
-
-Board supports Default, Ascending, Descending and Manual. A successful changed horizontal header move (or Alt+Left/Right) persists Manual and the resulting order; click, unchanged drop, cancellation and failed saves retain the confirmed sort. No value/No status is pinned after value groups and cannot be dragged. Hidden and unavailable IDs retain saved manual ranks. Legacy Board documents with null/missing grouping restore Status, existing column order and visibility; `boardGroupingVersion: 1` distinguishes explicit None. The current JSON adapter normalizes this compatibly without changing project data or status catalogs.
-
-Both Group menus present visible groups first, hidden groups second, preserving the selected sort within each part. No value/No status is last within its visibility part, so a visible empty group precedes hidden value groups. This presentation never writes manual ranks. Hide/show and Show all restore the underlying group order; grouping, ranks, hide-empty and collapse/visibility settings are independent per saved view and Workspace.
-
-Folder create and card-drop destinations are available only when Board is grouped by Status. For other properties and None, Add card is disabled with an unavailable-destination explanation and card dragging cannot invoke a Status move or write a property. Existing Status pickers remain available inside cards/details and use the existing validated source operation. Hide remains available for grouped columns; None cannot hide the single column. Collapse all/Expand all in Group controls content visibility while retaining group counts. A deleted property displays flat accessible projects and a recovery notice.
+Reuse the shared compact Group menus, Group by/Sort controls, muted descriptions, selected checks and keyboard focus. The [grouping flow](flows/board-table-views.md#board-property-grouping-workspace-4r0) owns memberships, menu partition order, visibility and Status-only mutation permissions.
 
 ## Board Wrap content (workspace-y3m)
 
-`Wrap content` in a Board column's common actions menu applies to every logical column in the current saved Board view. Right-click any header, use Shift+F10/Context Menu on its focused title (or pinned header), or open the existing keyboard actions trigger. The checkbox reflects the saved mode. The setting is independent of Table text wrapping and defaults off for old and new views.
-
-When enabled, measure the actual Board scroll viewport's client height, subtract the content insets, one header row and bottom spacing, and pack whole cards downward, then into fixed-width continuation segments to the right. Horizontal scrollbar space is already excluded by client height. Continuations align their first card below the original header row, use the same card width and 12px gap, and show no repeated title/count. Each logical group retains one header, total visible count and drop target spanning all its segments; the next group starts after them. Empty and collapsed groups keep one compact segment.
-
-Viewport/panel resizing, card intrinsic-size changes, search/filter results and new data recompute positions without changing IDs, memberships, card order or saved width. Each displayed occurrence retains one card DOM instance, including Multi-select occurrences. Header reorder captures the widths of whole groups: its existing header-only preview is preserved, and drop moves the complete logical group with every continuation. Hide/collapse/manual order and Status permissions retain their contracts.
-
-Ordinary cards fit without vertical Board scrolling. An individual card taller than the available height gets its own segment at full intrinsic height. For that exception, including very small viewports, the common Board scrollbar permits vertical access; the visible helper announces the exception, and the focusable scroll viewport supports keyboard scrolling. Cards are never clipped or split. Turning Wrap content off restores the ordinary shared vertical Board scrolling and content-height layout.
-
-Save `boardLayout.wrapContent` through WorkspaceServiceClient/preload IPC and the active JSON view adapter. `true` opts in; missing/false is off. The mode survives view/Workspace switching and runtime restart; Duplicate Tab copies it independently. Partial boardLayout patches merge width and wrap settings at the service boundary, so a width-only update preserves the mode and a wrap-only update preserves width. Saving blocks conflicting Board gestures; failure keeps the confirmed mode and reports a localized error. No project files, folder roles, property values or history change from layout alone.
+Use the shared columns icon at the leading menu edge and a separate trailing check. Continuation cards retain fixed width and 12px spacing, with one title/count per logical group. The common scrollbar and visible helper keep oversized cards accessible; [wrap flow](flows/board-table-views.md#board-wrap-content-workspace-y3m) owns viewport packing, identity preservation and interaction states, and [view API](api/workspace-views.md#board-wrap-content-workspace-y3m) owns persistence/patch validation.

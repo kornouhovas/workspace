@@ -1,5 +1,7 @@
 # Feature: Workspace Frontend Electron App
 
+> Historical requirements snapshot. Current scope/status belongs to GitHub Issues; current behavior follows accepted contracts/ADRs. Old Current State, execution gates and checkboxes below are historical, not evidence of present completion. Preserve unmet criteria using the [carry-forward map](../specs/documentation-cleanup.md#legacy-acceptance-carry-forward).
+
 ## Goal
 
 Replace the current shadcn dashboard template with the Workspace Project Board Electron frontend, using React, Tailwind CSS, shadcn/ui, and the accepted preload IPC bridge.

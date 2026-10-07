@@ -1,156 +1,111 @@
-# Documentation reconciliation and cleanup
+# Documentation reconciliation delivery
 
-Status: inventory and non-deleting instruction reconciliation delivered; the exact reduction list below awaits user review. [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4) stays open until the reviewed cleanup is applied and verified.
+Status: implemented and verified, 2026-10-08. Tracked by [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4), on codex/bb-architecture-workflow. The user authorized all documentation recommendations from the [baseline audit](documentation-audit.md), including historical reductions and concise optional templates. This scope changes documentation/discoverability checks and preserves evidence; runtime, appearance, data migration, merge and release remain separate.
 
-The subsequent [full semantic audit](documentation-audit.md) assesses all 75 documents at `34ad688`, plus original-checkout variants and its original-only rename contract. It identifies contradictions in active product/API/UI documents as well as historical duplication. Its recommended order is to reconcile active contracts first, then review historical reductions. The 14-body list below is a preliminary proposal, not approved removal scope; for its six template candidates, the audit recommends concise useful optional forms rather than blanket replacement with pointers.
+## Preserved baselines
 
-## Baseline and method
+- [Full audit at e291a9c](https://github.com/kornouhovas/workspace/blob/e291a9c43ab3c1e69668f2d4b90ab18bad720865/docs/specs/documentation-audit.md): assessment of all 75 documentation files at 34ad688, five original-checkout variants and the original-only rename contract.
+- [Earlier inventory and preliminary 14-body proposal](https://github.com/kornouhovas/workspace/blob/e291a9c43ab3c1e69668f2d4b90ab18bad720865/docs/specs/documentation-cleanup.md): full 74-file inventory, incoming references, original revisions and historical-link limitations.
+- Every condensed historical body retains its existing path and a direct link to its complete original at the immutable e291a9c revision. Git history is preserved.
+- [Ownership/preservation evidence](../../work/documentation-reconciliation/) records retained duplicated requirements and original-checkout document variants. Evidence is conditional reference material, not a new operational policy.
 
-Inventory baseline: `5981cf971bea0a202ba5e9e3bf395d67d3d32afd` on `codex/bb-architecture-workflow`. The private Git repository preserves the original bytes at this revision. Scanned 191 tracked Markdown files: 74 under `docs/`, 108 under `work/`, 3 under `outputs/`, 5 at the root and 1 under `.beads/`. The 74 documentation files contain 14,529 lines.
+## Audit recommendation outcomes
 
-Incoming-reference inspection covers relative Markdown links and exact repository-path literals in tracked Markdown, JS/TS, JSON/JSONL, YAML and TOML. Line numbers below refer to the baseline. Links and literals are both listed; zero detected references is not proof of disuse. External issues, closed Beads records, unqualified filenames and untracked files are outside this textual scan. Existing local Beads ownership and open tasks were inspected separately.
+| ID | Applied documentation outcome | Separate implementation/acceptance boundary |
+| --- | --- | --- |
+| D01 | Properties API and architecture distinguish current JSON adapters from target Go/any-store; active write paths are explicit | No adapter switch or data migration |
+| D02 | Vision/PRD/data-model body statements describe independent/shared roots and unbound creation | Accepted ADR-006 behavior retained |
+| D03 | Data model owns the current/target scope table; APIs reference source-scoped definitions/values/history | Agree any future namespace migration separately |
+| D04 | Current fallback/explicit-move identity is separated from Proposed ADR-004 registry and target examples | No registry acceptance, A1 closure or general move/rename guarantee |
+| D05 | Active Vision/source-flow/stack references describe allowed Status moves and precise unavailable destinations | No permission for arbitrary filesystem rearrangement |
+| D06 | Stale missing-controls list, startup restoration, borderless rows, numeric expression editing, grouping multiplicity, No status and loading/activation exceptions reconciled | No UI changes; original-checkout variants remain versioned separately |
+| D07 | Repeated paragraphs have retained owners; Interface/UI/API point to detailed flows and wire contracts | Required geometry, cancellation, safety/recovery and accessibility remain |
+| D08 | Standalone Go capabilities and missing view-field round trips are explicit | Future store integration needs parity/migration/recovery checks |
+| D09 | Existing sources contract expanded with lifecycle/discovery/filesystem payloads, results, errors, targeting and actual queue limits | No new method/transport/authentication implemented |
+| D10 | Historical backlogs are marked; unfinished criteria mapped below; security/design/session evidence retained | No new vulnerability status, native/platform acceptance or stale advisory claims |
+| D11 | Imported bb source/license retained byte-for-byte; policy now specifies conditional section access and distinct revisions | No new visual defaults, bb functions or dependencies |
+| D12 | Eight historical plan/process bodies condensed; six useful templates retained as concise optional forms | No mandatory intake/report/test ritual; ADR/release forms retained |
+| D13 | Exact original documentation diffs/rename source captured with hashes and explicit integration instructions | Original files/deletions untouched; matching product changes reviewed before merge |
 
-The baseline has 47 unresolved relative-link occurrences (44 distinct targets), all in historical `work/` snapshots/evidence; no missing local Markdown path was found in `docs/` or active entry instructions. Preserve those snapshots rather than rewriting or deleting evidence. This inventory is not a claim that every repository link or historical acceptance check passes.
+The expanded API contract also corrects previously inaccurate queue descriptions and legacy saveProperty alias assumptions. Reads share the current dispatcher queue; picker waits are outside it. Several lifecycle/property writes remain separate commits, not transactions. Documentation does not imply security fixes.
 
-## Applied now: instructions, without removing historical bodies
+## Requirement ownership
 
-| Path | Reconciliation |
+| Requirement family | Canonical owner | Other documents |
+| --- | --- | --- |
+| Current adapter/scope/identity compatibility | Data model scope table; runtime guide for wiring | API and architecture pointers, plus operation-local safeguards |
+| Product purpose and supported actions | PRD; Vision for positioning | Short scope context in specialized contracts |
+| Screen composition and project/session navigation | Interface and accepted session ADRs | UI keeps geometry/accessibility; service keeps targeting/results |
+| Status drag/picker cancellation, provisional placement, activation | Board/Table flow | Status API retains filesystem/recovery/publication invariants |
+| Board card snapshot/padding and component geometry | UI guidelines | Flow/Interface reference visuals; no repeated full paragraph |
+| Board grouping/order/wrap interactions | Board/Table flow | View API owns serialization, validation and compatibility |
+| Table column resize/restoration and failure handling | Table flow | API owns width keys/limits/merge; UI owns grids/handles |
+| Operational policy/checks/tracker | development/rules, quality and agents/issue-tracker | Historical paths/forms link current authority |
+
+[requirements-ownership.json](../../work/documentation-reconciliation/requirements-ownership.json) preserves the baseline repeated text, owner and original locations for all 20 occurrences/groups. Nineteen paragraphs are retained under an owner; the duplicated introductory override is replaced by corrected product body statements and distinct pointers. This evidence permits retention checks without keeping active requirements in four places.
+
+## Historical body reductions
+
+| Preserved path | Treatment and full original |
 | --- | --- |
-| [AGENTS.md](../../AGENTS.md) | Replace the obsolete primary-Status drag prohibition with accepted ADR/API pointers; preserve data and source safeguards. |
-| [docs/backlog/README.md](../backlog/README.md) | Mark earlier items as historical context, not a second backlog or evidence of current completion. |
-| [docs/development/product.md](../development/product.md) | Describe permitted Status moves and same-group Table rank accurately; preserve current product/backend boundaries. |
-| [docs/development/rules.md](../development/rules.md) | Use current contracts and originating issues/specifications; read legacy plans conditionally. Align Status actions with ADR-007/008 and existing safeguards. |
-| [docs/development/workflow.md](../development/workflow.md) | Point to the single operational policy and GitHub tracker; retain auxiliary Beads and commit/authorization boundaries. |
-| [docs/superpowers/plans/README.md](../superpowers/plans/README.md) | Keep old plans discoverable while replacing their process defaults with current policy. |
-| [docs/superpowers/specs/README.md](../superpowers/specs/README.md) | Retain the old location as a pointer to current versioned specifications and policy. |
-| [docs/development/README.md](../development/README.md) | Make the exact inventory discoverable from the source map. |
-| [docs/specs/bb-architecture-tickets.md](bb-architecture-tickets.md) | Link the concrete list and distinguish delivered preparation from pending cleanup. |
+| docs/superpowers/plans/2026-05-14-workspace-views-backend-storage.md | [Short historical pointer](../superpowers/plans/2026-05-14-workspace-views-backend-storage.md); links full original and storage/view requirements |
+| docs/superpowers/plans/2026-05-15-workspace-custom-properties.md | [Short historical pointer](../superpowers/plans/2026-05-15-workspace-custom-properties.md); retains property/history acceptance boundaries |
+| docs/superpowers/plans/2026-05-15-workspace-frontend-electron-app.md | [Short historical pointer](../superpowers/plans/2026-05-15-workspace-frontend-electron-app.md); retains shell/IPC/native acceptance context |
+| docs/superpowers/plans/2026-07-13-russian-localization.md | [Short historical pointer](../superpowers/plans/2026-07-13-russian-localization.md); links ADR/locale flow and original acceptance |
+| docs/superpowers/plans/2026-09-18-audit-seven-fixes.md | [Short historical pointer](../superpowers/plans/2026-09-18-audit-seven-fixes.md); A1–A7 remain below and in full backlog/original |
+| docs/workflow/codex-chat-workflow.md | [Compatibility pointer](../workflow/codex-chat-workflow.md) to current policy/tracker and original process |
+| docs/workflow/task-lifecycle.md | [Compatibility pointer](../workflow/task-lifecycle.md), with current GitHub/Beads ownership |
+| docs/workflow/symphony-readiness.md | [Future research pointer](../workflow/symphony-readiness.md); orchestration is separate scope |
 
-All existing paths remain. Product/API behavior, runtime code and historical plan bodies are unchanged. These instruction corrections do not declare unfinished product work complete.
+Existing historical indexes remain. Useful optional [issue](../templates/backlog-item.md), [bug](../templates/bug-intake.md), [feature](../templates/feature-intake.md), [implementation](../templates/implementation-plan.md), [review](../templates/review-request.md) and [continuation](../templates/session-handoff.md) forms remain. ADR/release templates and frozen reports remain full; review guidance is concise and optional. No document path is deleted or moved.
 
-## Proposed exact reduction list: 14 bodies, no path deletion
+## Legacy acceptance carry-forward
 
-The following files contain 4,723 baseline lines. Replace each body with a short English compatibility pointer identifying its historical/optional status, the current authoritative rules/tracker, and its full original version at the pinned baseline. Git retains the complete original body; do not rewrite Git history. Keep paths usable for existing links. This reduces active instructions without creating a second physical archive or moving files with relative links.
+These rows preserve unfinished requirements for future issue reconciliation. They are not a second live backlog and do not claim completion. Read original requirements only when continuing that work; record current scope/status and verification in GitHub.
 
-Approval covers only these 14 body reductions and the documentation-test adjustment described below. It does not approve deletion of product requirements, unresolved evidence, or files from the original checkout.
+| Original work | Requirements retained / unresolved verification |
+| --- | --- |
+| Views/backend/storage plan | Named client operations; pure view defaults/validation; filtering/projection; Go documents/routes; backend use cases; transport wiring; full acceptance. Standalone store progress is distinct from active Electron wiring and complete current view-field parity. |
+| Properties plan | All five types/editors, normalization, system restrictions, select lifecycle/colors, value visibility/projections, history, persistence/restart and visual consistency across Board/Table/details. Confirm lifecycle history, cascade/value-history atomicity and store integration separately; do not infer completion from UI presence. |
+| Frontend plan | Preload security, renderer transport, one active surface, real view CRUD, Settings/details, service state and native/error checks. Existing features do not close every old edge/native criterion; source-checkout variants and prior full-suite limitation remain. |
+| Localization plan | English fallback/device persistence, complete app-owned RU/EN text coverage, unchanged user text, no data reload/write on locale change; native and regression criteria preserved in full original/backlog and ADR-003/flow. |
+| Width requirement | Independent saved Board width, narrow-window scrolling, constraints on new selection, stable existing widths and per-view independence. Current API/flow own behavior; historic width/native acceptance not rerun here. |
+| Future Symphony/process research | Preserve scheduling/intake/ownership/recovery requirements at pinned originals. No automation or agent/chat creation is configured by this cleanup. |
 
-| Original path / preserved full version | Reason | Baseline lines | Incoming references at baseline |
-| --- | --- | ---: | --- |
-| [docs/superpowers/plans/2026-05-14-workspace-views-backend-storage.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/superpowers/plans/2026-05-14-workspace-views-backend-storage.md) | Historical executable plan; current policy replaces process defaults. Preserve requirements and unchecked steps in the pinned version. | 1706 | None detected |
-| [docs/superpowers/plans/2026-05-15-workspace-custom-properties.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/superpowers/plans/2026-05-15-workspace-custom-properties.md) | Historical executable plan; current policy replaces process defaults. Preserve requirements and unchecked steps in the pinned version. | 823 | `docs/backlog/workspace-custom-properties.md:201` (literal); `docs/workflow/codex-chat-workflow.md:44` (literal) |
-| [docs/superpowers/plans/2026-05-15-workspace-frontend-electron-app.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/superpowers/plans/2026-05-15-workspace-frontend-electron-app.md) | Historical executable plan; current policy replaces process defaults. Preserve requirements and unchecked steps in the pinned version. | 800 | `docs/backlog/workspace-frontend-electron-app.md:167` (literal) |
-| [docs/superpowers/plans/2026-07-13-russian-localization.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/superpowers/plans/2026-07-13-russian-localization.md) | Historical executable plan; current policy replaces process defaults. Preserve requirements and unchecked steps in the pinned version. | 94 | None detected |
-| [docs/superpowers/plans/2026-09-18-audit-seven-fixes.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/superpowers/plans/2026-09-18-audit-seven-fixes.md) | Historical executable plan; current policy replaces process defaults. Preserve requirements and unchecked steps in the pinned version. | 504 | `docs/backlog/audit-seven-fixes.md:58` (link) |
-| [docs/workflow/codex-chat-workflow.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/workflow/codex-chat-workflow.md) | Historical process/orchestration guidance; superseded by current rules and tracker. | 143 | `docs/development/workflow.md:21` (link); `docs/development/workspace-460-report.md:22` (link); `docs/specs/bb-architecture-tickets.md:52` (link); `test/documentation.test.js:36` (literal) |
-| [docs/workflow/task-lifecycle.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/workflow/task-lifecycle.md) | Historical process/orchestration guidance; superseded by current rules and tracker. | 94 | `docs/development/workflow.md:21` (link); `docs/development/workspace-460-report.md:22` (link); `docs/specs/bb-architecture-tickets.md:52` (link) |
-| [docs/workflow/symphony-readiness.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/workflow/symphony-readiness.md) | Historical process/orchestration guidance; superseded by current rules and tracker. | 87 | `docs/development/workspace-460-report.md:24` (link); `docs/specs/bb-architecture-tickets.md:52` (link) |
-| [docs/templates/backlog-item.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/backlog-item.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 81 | `docs/backlog/README.md:47` (literal) |
-| [docs/templates/bug-intake.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/bug-intake.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 102 | `test/documentation.test.js:38` (literal) |
-| [docs/templates/feature-intake.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/feature-intake.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 94 | `test/documentation.test.js:37` (literal) |
-| [docs/templates/implementation-plan.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/implementation-plan.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 96 | None detected |
-| [docs/templates/review-request.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/review-request.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 40 | None detected |
-| [docs/templates/session-handoff.md](https://github.com/kornouhovas/workspace/blob/5981cf971bea0a202ba5e9e3bf395d67d3d32afd/docs/templates/session-handoff.md) | Optional legacy form duplicating current intake/execution guidance; no default requirement to fill it. | 59 | `docs/development/workspace-460-report.md:25` (link) |
+### Seven-fix safety requirements
 
-The existing documentation test names the old chat workflow and feature/bug templates at `test/documentation.test.js:36–38`. After approval, change its discoverability targets to current development rules, verification and tracker instructions. Retain the useful license/security-boundary assertions. Existing path pointers still resolve; avoid tests that require exact prose or a template for every task.
+The [full A1–A7 backlog](../backlog/audit-seven-fixes.md) is retained. All seven need current acceptance evidence; no row is closed by this task.
 
-Incoming links from current readers should point to current policy when appropriate. Frozen historical reports and evidence must remain unchanged. A pointer must not imply that the old plan was completed; the pinned version preserves any unresolved requirement for task-specific reconciliation.
+| ID | Required outcome and dependency |
+| --- | --- |
+| A1 | Accept ADR-004 before registry work. Preserve existing opaque IDs; UUID identities for new registry projects; retain values/history after supported registered-folder rename/move/restart; reject ambiguous matching. Do not reconstruct overwritten metadata or infer complete identity from explicit-move aliases. |
+| A2 | Same-root/A → B → A/restart retain view names, filters, visibility, order, Board layout and active view. New default IDs must be unique; retained legacy views are not regenerated. |
+| A3 | Same-root reselection and source reversal preserve roles/active selection. Cancellation, invalid paths and write failure keep previous settings. Current independent Workspace bindings supersede the old shared-root-role assumptions. |
+| A4 | Distinguish slug collisions, same-name statuses under different groups and a real No status folder. Each project occurs once under Status grouping; filter/color changes target only the correct folder. This does not prohibit Multi-select grouping occurrences. |
+| A5 | Removed option ID disappears from current values and filters in every live Workspace of that source. Preserve remaining options/includeEmpty/history; remove empty filter key when includeEmpty=false. Cascades recover after failure and repeat safely. |
+| A6 | Initial/bridge/missing-source/corrupt-storage/switch/reload failures show no fabricated projects, roots, Workspaces or views. Retry/Settings and RU/EN remain usable; required native sizes/evidence must be verified separately. |
+| A7 | System definition labels survive independent sources, A → B → A and restart. Keep public property:name/property:status IDs and compatible source namespaces. Do not split same-root shared custom data as an extra migration. |
 
-## Retained material and exceptions
+Migration criteria also remain: repeatability, backup/parse/schema/atomic replacement, untouched corrupt JSON, retained values/history, truthful write-failure feedback, compatible rollback and isolated temporary fixtures. Original sequencing/risk details remain in the pinned full plan; subsequent accepted ADRs take precedence over obsolete scope assumptions.
 
-- `docs/workflow/quality-gates.md` is already a five-line compatibility pointer; retain it without claiming a new gate reduction.
-- `docs/workflow/review-agent-protocol.md` remains optional review guidance under current rules; do not make it a mandatory workflow.
-- `docs/templates/adr.md` and `docs/templates/release-checklist.md` remain optional, useful forms. Keeping the release form does not authorize a release.
-- Retain product, flows, data model, API, accepted/proposed ADRs, bb design sources/policy, security and license material. ADR-004 remains Proposed; it does not establish sidecar wiring.
-- Retain all six historical backlog item bodies and `docs/plans/completed/20260923-project-security-audit.md`; old status fields do not prove completion.
-- Retain `docs/design/compact-redesign-handoff.md`, `docs/design/compact-edge-matrix.md`, `docs/design/compact-implementation-review.md`, `design-qa.md` and `docs/development/workspace-460-report.md` in place. They contain provenance, evidence links and unresolved acceptance context.
-- Retain all tracked `work/` artifacts (2,191 files in 15 top-level groups) and `outputs/` artifacts (31 files in 3 groups), including fixtures and screenshots. No deletion or move allowlist exists for these directories.
-- Preserve original-checkout untracked/unfinished work. Open legacy Beads task `workspace-ub5` references ADR-009, the views API and `work/workspace-la8/run-20261003-201334/`; those paths are not cleanup candidates.
+### Evidence and platform limits
 
-The original checkout already has external deletions of five legacy plans and both `docs/superpowers` indexes. This branch preserves all seven paths. Reconcile that separate change before integration; do not silently adopt it or restore it over the user’s checkout.
+Keep the complete dated security report, completed audit plan, Compact edge/handoff/review documents, workspace-460 report, session command/lifecycle verification and all existing work/outputs artifacts. The security report remains its test-coupled 34-Open-finding snapshot; verified remediation/current status belongs in GitHub. Old advisory counts, screenshot checks or compilation results are not current security/native acceptance.
 
-## Complete documentation inventory at baseline
+ADR-004 remains Proposed. Linux confined project creation remains the existing workspace-ub5 follow-up; ADR-009 keeps Windows/native limitations. A creation guard decision does not establish acceptance for an arbitrary rename. Session issues #2/#3 retain their branch verification and pre-existing full-suite limitation; parent integration remains open.
 
-Disposition codes: **C** = instruction/index correction applied above; **P** = proposed body reduction, not applied; **R** = retain current contract/reference/history/evidence. Reference counts count inspected source-line/kind occurrences, not independent users.
+## Original-checkout integration exceptions
 
-| Tracked documentation path | Disposition | Lines | Incoming references |
-| --- | --- | ---: | ---: |
-| `docs/adr/001-local-first-workspace-storage.md` | R | 123 | 5 |
-| `docs/adr/002-electron-preload-ipc-bridge.md` | R | 163 | 9 |
-| `docs/adr/003-renderer-localisation-catalogs.md` | R | 59 | 0 |
-| `docs/adr/004-project-identity-and-audit-migrations.md` | R | 75 | 4 |
-| `docs/adr/005-bb-pane-session-chrome.md` | R | 24 | 4 |
-| `docs/adr/006-workspace-source-bindings.md` | R | 18 | 11 |
-| `docs/adr/007-board-table-status-moves.md` | R | 16 | 3 |
-| `docs/adr/008-table-row-order.md` | R | 14 | 3 |
-| `docs/adr/009-project-creation-os-guard.md` | R | 44 | 1 |
-| `docs/adr/010-renderer-session-command-owner.md` | R | 30 | 4 |
-| `docs/adr/011-renderer-session-lifecycle.md` | R | 26 | 5 |
-| `docs/agents/domain.md` | R | 7 | 2 |
-| `docs/agents/issue-tracker.md` | R | 28 | 2 |
-| `docs/agents/triage-labels.md` | R | 11 | 1 |
-| `docs/api/workspace-properties.md` | R | 546 | 22 |
-| `docs/api/workspace-session-sources.md` | R | 15 | 2 |
-| `docs/api/workspace-status-move.md` | R | 54 | 11 |
-| `docs/api/workspace-views.md` | R | 682 | 35 |
-| `docs/architecture.md` | R | 426 | 37 |
-| `docs/backlog/README.md` | C | 47 | 1 |
-| `docs/backlog/audit-seven-fixes.md` | R | 96 | 1 |
-| `docs/backlog/board-column-width-control.md` | R | 50 | 0 |
-| `docs/backlog/russian-localization.md` | R | 65 | 0 |
-| `docs/backlog/workspace-custom-properties.md` | R | 203 | 2 |
-| `docs/backlog/workspace-frontend-electron-app.md` | R | 167 | 1 |
-| `docs/backlog/workspace-views-backend-storage.md` | R | 200 | 2 |
-| `docs/data-model.md` | R | 680 | 45 |
-| `docs/design/bb-stack-design.md` | R | 42 | 7 |
-| `docs/design/compact-edge-matrix.md` | R | 86 | 86 |
-| `docs/design/compact-implementation-review.md` | R | 83 | 38 |
-| `docs/design/compact-redesign-handoff.md` | R | 98 | 178 |
-| `docs/development/DESIGN_RULES.md` | R | 1547 | 10 |
-| `docs/development/README.md` | C | 27 | 9 |
-| `docs/development/architecture.md` | R | 27 | 9 |
-| `docs/development/design/README.md` | R | 15 | 7 |
-| `docs/development/design/bb-workspace-policy.md` | R | 39 | 14 |
-| `docs/development/product.md` | C | 15 | 5 |
-| `docs/development/quality.md` | R | 24 | 15 |
-| `docs/development/rules.md` | C | 101 | 21 |
-| `docs/development/workflow.md` | C | 21 | 11 |
-| `docs/development/workspace-460-report.md` | R | 65 | 1 |
-| `docs/flows/board-table-views.md` | R | 405 | 16 |
-| `docs/flows/language-selection.md` | R | 33 | 2 |
-| `docs/flows/settings-source-folder-and-roles.md` | R | 265 | 13 |
-| `docs/interface.md` | R | 470 | 29 |
-| `docs/plans/completed/20260923-project-security-audit.md` | R | 197 | 0 |
-| `docs/prd.md` | R | 314 | 31 |
-| `docs/security/20260923-project-security-audit.md` | R | 981 | 9 |
-| `docs/specs/bb-architecture-tickets.md` | C | 67 | 2 |
-| `docs/specs/bb-architecture.md` | R | 72 | 3 |
-| `docs/specs/session-commands-verification.md` | R | 39 | 4 |
-| `docs/specs/session-lifecycle-verification.md` | R | 40 | 3 |
-| `docs/superpowers/plans/2026-05-14-workspace-views-backend-storage.md` | P | 1706 | 0 |
-| `docs/superpowers/plans/2026-05-15-workspace-custom-properties.md` | P | 823 | 2 |
-| `docs/superpowers/plans/2026-05-15-workspace-frontend-electron-app.md` | P | 800 | 1 |
-| `docs/superpowers/plans/2026-07-13-russian-localization.md` | P | 94 | 0 |
-| `docs/superpowers/plans/2026-09-18-audit-seven-fixes.md` | P | 504 | 1 |
-| `docs/superpowers/plans/README.md` | C | 28 | 1 |
-| `docs/superpowers/specs/README.md` | C | 21 | 1 |
-| `docs/templates/adr.md` | R | 55 | 0 |
-| `docs/templates/backlog-item.md` | P | 81 | 1 |
-| `docs/templates/bug-intake.md` | P | 102 | 1 |
-| `docs/templates/feature-intake.md` | P | 94 | 1 |
-| `docs/templates/implementation-plan.md` | P | 96 | 0 |
-| `docs/templates/release-checklist.md` | R | 58 | 0 |
-| `docs/templates/review-request.md` | P | 40 | 0 |
-| `docs/templates/session-handoff.md` | P | 59 | 1 |
-| `docs/ui-guidelines.md` | R | 458 | 50 |
-| `docs/vision.md` | R | 178 | 8 |
-| `docs/workflow/codex-chat-workflow.md` | P | 143 | 4 |
-| `docs/workflow/quality-gates.md` | R | 5 | 4 |
-| `docs/workflow/review-agent-protocol.md` | R | 61 | 2 |
-| `docs/workflow/symphony-readiness.md` | P | 87 | 2 |
-| `docs/workflow/task-lifecycle.md` | P | 94 | 3 |
+The [original manifest](../../work/documentation-reconciliation/original-checkout-manifest.json), [five-document patch](../../work/documentation-reconciliation/original-docs.patch.gz) and [exact rename contract snapshot](../../work/documentation-reconciliation/workspace-project-rename.md.txt) preserve the original HEAD/branch, hashes and variants. The snapshot is raw original Markdown with its original relative-path context, not an active API contract at its archive location.
 
-## Verification and next step
+Before merging into that checkout:
 
-Observed results: `node --test test/documentation.test.js` passed both checks; the 10 changed/new files had 90 valid local path links and no fragment links; all 18 template/workflow/legacy plan bodies remained byte-identical to baseline; no `work/` or `outputs/` evidence changed; `git diff --check` passed. The baseline inventory checked documentation path targets and original-file SHA-256 values. No Electron/Go build was run for these prose changes.
+1. Review Status-operation rename barriers and data-model aliases/journal with the pending rename implementation; keep containment/recovery/platform requirements separate from project creation.
+2. Review native left-header arrangement, visible/hidden property presentation and rename affordances together in Interface/UI guidelines and matching code. Apply the accepted current UI version; do not overwrite it with older branch composition.
+3. Review the untracked rename contract with its code/tests; retain its complete source snapshot until it has an accepted integrated version.
+4. Reconcile the seven external deletions (five plans and two indexes) against retained compatibility paths and incoming references. They are not automatically staged/restored in the original checkout by this task.
+5. Keep unrelated runtime, work evidence and settings untouched. Verify integration as a separate slice; this documentation commit does not merge the two versions.
 
-After review of the exact list, apply only approved reductions, recheck links/anchors and documentation tests, commit verified changes and update Issue #4. Keep the architecture PR draft; integration and unresolved native acceptance remain separate.
+## Verification
+
+Observed checks passed: node --test test/documentation.test.js test/securityAuditReport.test.js (21/21); all 76 documentation paths retained; local Markdown paths/anchors valid; zero repeated active paragraphs at the audited 180-character threshold; all 20 baseline requirement groups accounted for; all eight full historical originals verified in pinned Git objects. SHA-256 checks preserve 2,386 existing runtime/source/work/outputs files, imported bb source/license, frozen security/design/session reports and ADR/release templates. The original checkout's 59 Markdown files and seven external deletions are unchanged; its additional metadata file is preserved too. Documentation discoverability checks now target active rules/workflow/quality/tracker sources. git diff --check passed. Exact final link counts and preservation results are in the [verification record](../../work/documentation-reconciliation/verification.json). Software/native builds are unnecessary for this documentation-only scope and are not claimed.

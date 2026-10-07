@@ -1,6 +1,6 @@
 # Full documentation audit
 
-Status: analysis delivered for [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4). This report proposes reconciliation; it does not apply document removal, change product behavior, approve a migration or close the issue.
+Status: historical baseline analysis for [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4). Findings and per-file recommendations below describe the audited revision; the subsequent authorized [cleanup delivery](documentation-cleanup.md) records their implementation. This audit itself changes no product behavior or migration decision.
 
 ## Scope and evidence
 

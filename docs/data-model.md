@@ -12,6 +12,23 @@ The model follows the architecture decisions in `docs/architecture.md` and ADR-0
 - Workspaces are saved configurations with a selected project source folder per Workspace;
 - project ids are stable local ids, while relative paths are locators.
 
+## Current runtime and target scope
+
+The entity examples and collection/index definitions below describe the target durable model. Electron currently uses JSON adapters behind preload IPC, as accepted in [ADR-006](adr/006-workspace-source-bindings.md). Standalone Go operations are not proof of active integration.
+
+| Data | Current Electron scope and storage | Target/integration qualification |
+| --- | --- | --- |
+| Workspace source and roles | settings.json `workspaceSources[workspaceId]`, with retained `rulesByRoot` snapshots | Independent bindings; preserve legacy fields and previous-root recovery |
+| Workspace and saved views | views.json, per opaque Workspace/view ID | Go Workspace/View documents exist; view-field parity remains incomplete |
+| Project identities | Source-scoped discovery IDs plus verified explicit-move `projectLocators` | A general durable registry is Proposed ADR-004, not implemented acceptance |
+| Property definitions, options, values, history and derived Status colors | properties.json, keyed by source identity; same-root Workspaces share data | Workspace-scoped target examples require a separately agreed compatibility/migration decision |
+| Tabs, panes, previews, last screen | Renderer storage, per Workspace and saved-view/session identity | UI state remains distinct from durable project metadata |
+| Sidebar width, locale, appearance, property-section preferences | Device-local renderer preferences | Keep existing keys/formats; not synced product documents |
+
+`workspaceId` in UI requests identifies the selected Workspace. In legacy property documents the same field can hold the resolved source scope; do not reinterpret it as the request Workspace or rewrite records to match the target examples. IDs remain opaque references. Values and history follow their retained IDs.
+
+Current fallback project IDs are generated from discovery locators. Explicit Status moves preserve known IDs through verified path/device/inode aliases. External arbitrary moves/renames are not covered by a complete reconciler; keep ADR-004 Proposed. Target examples such as `project:<uuid>` and `discoveryState: missing` are requirements for that future registry, not claims about every current scan.
+
 ## Document Conventions
 
 - Documents are JSON-shaped records stored through `any-store`.
@@ -123,7 +140,7 @@ Fields:
 Business rules:
 
 - A Workspace can select its own root folder; changing the binding preserves the Workspace ID and its views.
-- All Workspaces in MVP use the selected project source folder.
+- Workspaces may share a source or bind independent roots; an unbound Workspace retains its ID/views until source selection.
 - Deleting a Workspace deletes only app metadata, never project files.
 - A Workspace must keep at least one active view after setup.
 
@@ -165,10 +182,19 @@ Fields:
 - `valueVisibility`: object keyed by property id, with view-level value filter settings.
 - `propertyLayout`: object keyed by property id, with view-level display settings such as `wrapContent` for custom Text properties.
 - `columnOrder`: Board-only ordered array of unique opaque Status IDs; unavailable IDs retain slots and new IDs append in stable catalog order.
-- `boardLayout`: Board-only display settings. `columnWidth` stores the preferred status-column width in pixels.
+- `boardLayout`: Board-only display settings: preferred `columnWidth` and optional boolean `wrapContent` (missing/false means ordinary shared vertical scrolling).
+- `rowOrder`: Table-only unique opaque project rank, retaining unavailable IDs and applying consistently to Multi-select occurrences.
+- `hiddenColumnIds`: legacy Status-Board visibility preference, independent of search and manual rank.
+- `tableColumnWidths`: Table property-ID width map, minimum 132px with no finite product maximum; partial patches merge.
+- `grouping`: nullable typed grouping settings; Group by, sort, manual/hidden/collapsed groups and hideEmpty are independent per view.
+- `groupingNotice`: optional property-removed recovery notice.
+- `boardGroupingVersion`: version 1 distinguishes explicit None from legacy missing/null Board grouping, which restores Status.
+
 - `createdAt`: timestamp.
 - `updatedAt`: timestamp.
 - `deletedAt`: nullable timestamp.
+
+These additive view preferences are implemented by the JSON adapter. The current Go ViewDocument/BoardLayoutDocument lacks some fields; [architecture parity gaps](architecture.md#storage--sidecar-layer) must be resolved before integration. Wire validation and compatibility belong to the [views API](api/workspace-views.md).
 
 Business rules:
 
@@ -278,7 +304,7 @@ Example:
 
 ## Entity: Project
 
-Represents a discovered project folder with stable local identity.
+Represents the target registry record for a discovered project folder. Its stable identity/missing-state lifecycle depends on acceptance and implementation of ADR-004; current fallback/explicit-move behavior is defined in the scope section above.
 
 Collection: `projects`
 
@@ -623,7 +649,7 @@ These are logical access patterns. The physical `any-store` indexing strategy ca
 - Legacy `.folder-kanban` data can be migrated only when current `.workspace` data is missing.
 - Corrupt current `.workspace` data must not be overwritten by legacy data.
 - Moving from transitional JSON files to sidecar documents requires a migration that preserves:
-  - selected project source folder;
+  - all Workspace source bindings and retained previous-root role snapshots;
   - Workspaces;
   - views;
   - folder roles;
@@ -661,7 +687,7 @@ The transitional Electron adapter can persist a Workspace and its default views 
 
 ### Table grouping settings
 
-View documents may contain `grouping` or `null`. The object holds `propertyId`, `sort` (`default`, `ascending`, `descending`, `manual`), independent arrays `manualOrder`, `hiddenGroupIds`, `collapsedGroupIds`, and boolean `hideEmpty`. Legacy views without this field load flat. Group IDs are deterministic typed value keys; category IDs remain stable across renames/colors. See [view contract](api/workspace-views.md#table-grouping-workspace-cjq). `groupingNotice: "property-removed"` records recovery after property deletion and is cleared by the next explicit grouping change. These are existing view settings, never project/property-value/history documents.
+View documents may contain `grouping` or `null`. The object holds `propertyId`, `sort` (`default`, `ascending`, `descending`, `manual`), independent arrays `manualOrder`, `hiddenGroupIds`, `collapsedGroupIds`, and boolean `hideEmpty`. Legacy Table views without this field load flat. Legacy Board views restore Status grouping unless `boardGroupingVersion: 1` records explicit None. Group IDs are deterministic typed value keys; category IDs remain stable across renames/colors. See [view contract](api/workspace-views.md#table-grouping-workspace-cjq). `groupingNotice: "property-removed"` records recovery after property deletion and is cleared by the next explicit grouping change. These are existing view settings, never project/property-value/history documents.
 
 ### Explicit move locator preservation
 

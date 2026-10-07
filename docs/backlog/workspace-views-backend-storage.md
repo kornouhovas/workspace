@@ -1,5 +1,7 @@
 # Feature: Workspace Views Backend And Storage
 
+> Historical requirements snapshot. Current scope/status belongs to GitHub Issues; current behavior follows accepted contracts/ADRs. Old Current State, execution gates and checkboxes below are historical, not evidence of present completion. Preserve unmet criteria using the [carry-forward map](../specs/documentation-cleanup.md#legacy-acceptance-carry-forward).
+
 ## Goal
 
 Implement the backend and local storage foundation for Workspace views so the UI can later manage Board and Table views through documented service methods without owning view validation, filtering, project projection, filesystem traversal, or persistence logic.

@@ -4,6 +4,8 @@
 
 Accepted
 
+Current qualification: [ADR-006](006-workspace-source-bindings.md) supersedes the original shared-source assumption and retains current JSON adapters. This ADR still owns the target any-store decision; it does not claim active Go integration. See the [runtime/scope table](../data-model.md#current-runtime-and-target-scope).
+
 Date: 2026-05-14
 
 ## Context

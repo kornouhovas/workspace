@@ -33,7 +33,13 @@ test("agent instructions define the spec-first Codex workflow", async () => {
   await assert.rejects(access(new URL(`../${removedStyleGuidePath}`, import.meta.url)), {
     code: "ENOENT",
   });
-  await access(new URL("../docs/workflow/codex-chat-workflow.md", import.meta.url));
-  await access(new URL("../docs/templates/feature-intake.md", import.meta.url));
-  await access(new URL("../docs/templates/bug-intake.md", import.meta.url));
+  for (const document of [
+    "docs/development/README.md",
+    "docs/development/rules.md",
+    "docs/development/workflow.md",
+    "docs/development/quality.md",
+    "docs/agents/issue-tracker.md",
+  ]) {
+    await access(new URL(`../${document}`, import.meta.url));
+  }
 });

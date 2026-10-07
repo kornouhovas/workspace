@@ -1,6 +1,6 @@
 # Workspace architecture issue breakdown
 
-Status: issue size, blocking edges, and verification boundary approved. Issues #2–3 are implemented, verified and reviewed on the dedicated branch. Issue #4 remains open. The [specification](bb-architecture.md) covers the renderer session stage; integration remains pending.
+Status: issue size, blocking edges, and verification boundary approved. Issues #2–3 are implemented, verified and reviewed on the dedicated branch. Issue #4 documentation recommendations are implemented and verified. The [specification](bb-architecture.md) covers the renderer session stage; integration remains pending.
 
 The architecture parent is [Issue #1](https://github.com/kornouhovas/workspace/issues/1). Documentation cleanup has its own issue because it is outside the session code scope.
 
@@ -41,17 +41,18 @@ Implementation: [ADR-011](../adr/011-renderer-session-lifecycle.md). [Verificati
 
 [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4).
 
-No code dependency. The user requested an exact list and history preservation before removal. The [documentation inventory and cleanup proposal](documentation-cleanup.md) records all 74 earlier baseline paths, incoming references, protected evidence and original-checkout exceptions. The subsequent [full semantic audit](documentation-audit.md) assesses all 75 current baseline documents and the original-only rename contract, identifies active-contract drift, and recommends reconciliation before historical reductions.
+No code dependency. The user authorized all documentation recommendations after the [full baseline audit](documentation-audit.md). The [cleanup delivery](documentation-cleanup.md) records current/target contract reconciliation, canonical requirement ownership, eight historical body reductions, six concise optional forms, acceptance carry-forward and preserved original-checkout variants.
 
-- [x] Reconcile active Status instructions with accepted ADR-007/008 and the existing safe API.
-- [x] Make GitHub the primary tracker in active workflow/index guidance; read legacy material conditionally.
-- [x] Inventory historical bodies and incoming links; preserve product contracts and unfinished evidence.
-- [x] Assess every documentation file semantically; compare consequential runtime claims, original-checkout variants, local links/anchors and repeated prose.
-- [ ] Reconcile the active product/API/UI contradictions identified by the full audit without changing product behavior.
-- [ ] Review the historical reductions and optional template treatment with the user, then apply only the approved scope.
-- [ ] Update documentation discoverability checks after the approved reductions and verify the resulting links.
+- [x] Reconcile active operational Status guidance and GitHub/Beads ownership.
+- [x] Assess every baseline documentation file and retain findings/history.
+- [x] Record user authorization for all documentation recommendations.
+- [x] Reconcile current/target storage, source/scope/identity, Status and UI exceptions.
+- [x] Retain canonical interaction requirements and expand existing lifecycle/filesystem contracts.
+- [x] Condense authorized historical bodies; retain useful optional templates and unfinished acceptance.
+- [x] Preserve original-checkout variants, untracked rename contract and external-deletion exceptions.
+- [x] Complete links/anchors, consistency, retained-original/evidence checks and existing docs tests; deliver the verified documentation changes through the dedicated branch and Issue #4.
 
-The quality-gates file is already a short policy pointer; it needs no duplicate cleanup. No historical body, evidence artifact or path has been deleted or moved by this preparation. Keep Issue #4 open until reviewed cleanup is applied and verified. The original checkout remains unmerged.
+No document path is deleted or moved. No runtime/UI/data migration is implemented here; the original checkout remains unmerged. Closing documentation reconciliation does not close the architecture parent's integration scope.
 
 ## Separate future specifications
 

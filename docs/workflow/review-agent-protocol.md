@@ -1,61 +1,14 @@
-# Review Agent Protocol
+# Optional review protocol
 
-> Применяется к уже авторизованному review. Текущие [rules.md](../development/rules.md) и [quality](../development/quality.md) обязательны; Output Format ниже — необязательный шаблон, а не handoff gate.
+Use for an already authorized review. [Rules](../development/rules.md) and [quality](../development/quality.md) govern scope and evidence. Read the diff, originating GitHub issue/current specification, and affected API/product/UI/ADR contracts; read a legacy plan only when it is relevant to the reviewed change.
 
-Use this document when Codex or another agent reviews work.
+Lead with concrete findings ordered by impact: bugs, regressions, data/filesystem/security violations, missing acceptance/regression evidence, architecture boundary violations or stale contracts. Cite file/line and explain the consequence. Style observations earn a finding only when they affect behavior, accessibility or maintenance.
 
-## Review Stance
+| Priority | Meaning |
+| --- | --- |
+| P0 | Data loss/security boundary break or application cannot start |
+| P1 | Broken user-facing function, major regression or storage corruption risk |
+| P2 | Edge case, missing meaningful regression coverage or contract mismatch |
+| P3 | Maintainability/minor UX issue with a concrete consequence |
 
-Lead with findings. Focus on:
-
-- bugs;
-- regressions;
-- missing tests;
-- architecture violations;
-- stale docs;
-- acceptance criteria gaps;
-- user-facing risks;
-- security or filesystem safety issues.
-
-Avoid style-only comments unless style affects maintainability, accessibility, or consistency with the design system.
-
-## Review Inputs
-
-Read:
-
-- current diff;
-- `AGENTS.md`;
-- relevant backlog item;
-- relevant implementation plan;
-- relevant API/flow/architecture docs.
-
-## Output Format
-
-```markdown
-Findings
-- [Severity] file:line — issue and impact.
-
-Open Questions
-- question, if any.
-
-Test Gaps
-- missing verification, if any.
-
-Summary
-- short change summary only after findings.
-```
-
-## Severity
-
-- P0: data loss, security boundary break, app cannot start.
-- P1: user-facing feature broken, major regression, storage corruption risk.
-- P2: edge-case bug, missing regression coverage, spec mismatch.
-- P3: maintainability issue or minor UX polish with real impact.
-
-## Review Rules
-
-- Do not approve based on vibes.
-- Cite concrete files and lines.
-- Do not request broad refactors unrelated to the change.
-- If no findings, say so clearly and mention residual risk.
-- Do not fix code during review unless the user asks.
+Optionally report findings, unresolved questions, verification gaps and a short summary. If no findings, state that and the limits of the review; passing compilation or a commit is not native acceptance. Keep changes outside review scope intact and implement fixes only when authorized. This protocol does not itself authorize delegation, agent creation, merge or release.
