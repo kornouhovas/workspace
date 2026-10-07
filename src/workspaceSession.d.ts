@@ -16,6 +16,7 @@ export type SessionSnapshot = Readonly<{
   closedProjectTabs: Readonly<Record<string, readonly ProjectTab[]>>;
 }>;
 export type SessionCommand = { workspaceId: string } & (
+  | { type: "restoreScreen"; project: WorkspaceMockProject | null; tabId?: string | null; fullScreen?: boolean }
   | { type: "openProject"; project: WorkspaceMockProject; tabId?: string | null; fullScreen?: boolean }
   | { type: "expandProject"; project: WorkspaceMockProject; tabId: string; afterTabId?: string }
   | { type: "splitProject"; project: WorkspaceMockProject; tabId?: string; newTabId: string; paneId: string; target?: string; side?: SplitSide | "center" }

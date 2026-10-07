@@ -51,6 +51,15 @@ export function createWorkspaceSession({ tabs = {}, layouts = {}, sidebarWidth =
       const tabs = own(snapshot.tabs, workspaceId, []);
       let result = {};
       switch (command.type) {
+        case "restoreScreen":
+          snapshot = {
+            ...snapshot,
+            selectedProject: command.project,
+            activeProjectTabId: command.project ? command.tabId || null : null,
+            projectTabSelected: command.fullScreen === true,
+            ...(!command.tabId ? { layouts: setPane(workspaceId, { type: command.project ? "previewProject" : "selectView" }) } : {}),
+          };
+          break;
         // Transitional adapters for restoration/data refresh, moved in issue #3.
         case "selection": {
           const selection = {};

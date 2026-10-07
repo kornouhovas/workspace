@@ -24,7 +24,7 @@ export function readProjectSession(storage) {
         typeof screen.viewId === "string" && !screen.tabId ? { [screen.viewId]: screen.previewId ?? null } : {}).filter(([, id]) => id === null || typeof id === "string" && id.length > 0)),
       fullScreen: screen.fullScreen === true,
       viewId: typeof screen.viewId === "string" ? screen.viewId : null,
-      tabId: tabs[id]?.find(project => raw.version === 1 ? project.id === screen.projectId : project.tabId === screen.tabId)?.tabId || null,
+      tabId: (Object.hasOwn(tabs, id) ? tabs[id] : [])?.find(project => raw.version === 1 ? project.id === screen.projectId : project.tabId === screen.tabId)?.tabId || null,
     }]));
     return { tabs, screens };
   } catch { return empty; }

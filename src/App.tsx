@@ -16,20 +16,14 @@ import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
 import { Button } from "@/components/ui/button";
-import { createWorkspaceSession, type SessionCommand, type SessionResult } from "@/workspaceSession.js";
+import type { SessionCommand, SessionResult } from "@/workspaceSession.js";
+import { createWorkspaceSessionLifecycle } from "@/workspaceSessionLifecycle.js";
 import type { ProjectTabsAction } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
-import { viewPreviewId, rememberViewPreview, pruneViewPreviews, createPreviewRequestGuard, createPreviewRestoreTracker, createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
-import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
+import { createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
 import { installMenuHoverMemory } from "@/components/ui/menu-hover";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  createPaneLayout,
-  readPaneLayouts,
-  readSidebarWidth,
-  writeSidebarWidth,
-  writePaneLayouts,
-} from "@/workspacePaneLayout.js";
+import { createPaneLayout } from "@/workspacePaneLayout.js";
 import { WorkspaceSplitTree } from "@/components/workspace/split-tree";
 import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";
 import type { PaneAction } from "@/workspacePaneLayout";
@@ -606,27 +600,24 @@ export default function App() {
     return () => media.removeEventListener("change", apply);
   }, [theme]);
 
-  const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
-  const [session] = useState(() => {
-    const layouts = readPaneLayouts(window.localStorage);
-    return createWorkspaceSession({
-      tabs: savedProjectSession.tabs,
-      layouts,
-      sidebarWidth: readSidebarWidth(window.localStorage, layouts),
-    });
-  });
+  const workspaceClient = useMemo(
+    () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
+    [],
+  );
+  const [session] = useState(() => createWorkspaceSessionLifecycle({
+    storage: {
+      getItem: (key: string) => window.localStorage.getItem(key),
+      setItem: (key: string, value: string) => window.localStorage.setItem(key, value),
+    },
+    client: workspaceClient,
+    normalizeFileTree: normalizeProjectFileTreeResponse,
+  }));
+  const sessionSnapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const {
     selectedProject, activeProjectTabId, projectTabSelected, activeSurface,
     tabs: projectTabsByWorkspace, layouts: paneLayouts, sidebarWidth, closedProjectTabs,
-  } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
-  const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
-  const previewRequests = useRef(createPreviewRequestGuard());
+  } = sessionSnapshot;
   const previewBackgroundGesture = useRef(createPreviewBackgroundGesture());
-  const previewRestoreTracker = useRef(createPreviewRestoreTracker());
-  const [previewSelectionRevision, setPreviewSelectionRevision] = useState(0);
-  const restoreStartupScreen = useRef(true);
-  const pendingWorkspaceScreen = useRef<string | null>(null);
-  useEffect(() => { writeSidebarWidth(window.localStorage, sidebarWidth); }, [sidebarWidth]);
   const workspaceSwitchVersion = useRef(0);
   const workspaceSwitchQueue = useRef(Promise.resolve());
   const viewSelectionQueue = useRef(Promise.resolve());
@@ -638,16 +629,13 @@ export default function App() {
   const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
   const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
   const sidebarCollapsed = paneLayout.sidebarCollapsed;
-  // Compatibility adapters for data loading/restoration; their lifecycle moves
-  // in issue #3. The session remains the sole owner of the rendered state.
+  // Product mutation adapters update the same session owner; lifecycle is
+  // coordinated by the injected storage/service adapter.
   function setSelectedProject(value: React.SetStateAction<WorkspaceMockProject | null>) {
     session.dispatch({ type: "selection", workspaceId: projectTabsWorkspaceId, selectedProject: value });
   }
   function setActiveProjectTabId(value: React.SetStateAction<string | null>) {
     session.dispatch({ type: "selection", workspaceId: projectTabsWorkspaceId, activeProjectTabId: value });
-  }
-  function setProjectTabSelected(value: React.SetStateAction<boolean>) {
-    session.dispatch({ type: "selection", workspaceId: projectTabsWorkspaceId, projectTabSelected: value });
   }
   function setActiveSurface(surface: WorkspaceSurface) {
     session.dispatch({ type: "surface", workspaceId: projectTabsWorkspaceId, surface });
@@ -656,15 +644,8 @@ export default function App() {
     session.dispatch({ type: "tabs", workspaceId: action.workspaceId, action });
   }
   function sendPane(action: PaneAction) {
-    if (action.type === "rightToggle" && selectedProject && !activeProjectTabId) {
-      previewRequests.current.invalidate();
-      rememberPreview(paneLayout.rightVisible ? null : selectedProject.id);
-    }
     session.dispatch({ type: "pane", workspaceId: projectTabsWorkspaceId, action });
   }
-  useEffect(() => {
-    writePaneLayouts(window.localStorage, paneLayouts);
-  }, [paneLayouts]);
   const expandedProjectTabs = projectTabsByWorkspace[projectTabsWorkspaceId] || [];
   const projectExpanded =
     selectedProject !== null &&
@@ -675,81 +656,21 @@ export default function App() {
   const projectFullScreen = activeSurface === "workspace" && projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
 
   useEffect(() => {
-    if (
-      state.status !== "ready" ||
-      state.workspaceSwitchPending ||
-      surfaceState.interactionDisabled ||
-      pendingWorkspaceScreen.current ||
-      restoreStartupScreen.current
-    )
-      return;
-    if (activeSurface === "workspace") {
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
-        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
-        viewId: state.activeViewId,
-        tabId: projectExpanded ? activeProjectTabId : null,
-        fullScreen: projectFullScreen,
-        previewId: !projectExpanded ? selectedProject?.id || null : null,
-      });
-    }
-    writeProjectSession(
-      window.localStorage,
-      projectTabsByWorkspace,
-      Object.fromEntries(workspaceScreenMemory.current),
-    );
-  }, [
-    projectTabsByWorkspace,
-    projectTabsWorkspaceId,
-    projectExpanded,
-    projectFullScreen,
-    activeProjectTabId,
-    selectedProject,
-    state.status,
-    state.workspaceSwitchPending,
-    surfaceState.interactionDisabled,
-    state.activeViewId,
-    activeSurface,
-  ]);
-
-  function rememberPreview(projectId: string | null, viewId = state.activeViewId, workspaceId = projectTabsWorkspaceId) {
-    if (!viewId) return;
-    workspaceScreenMemory.current.set(workspaceId,
-      rememberViewPreview(workspaceScreenMemory.current.get(workspaceId), viewId, projectId));
-    // Unavailable lookups and inactive deletion can change memory without a
-    // selected-project render. Persist those transitions immediately as well.
-    writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
-  }
-
-  // Restore by saved-view identity, including same-type views and filtered-out
-  // projects. The service lookup, rather than the projection, decides availability.
-  useEffect(() => {
-    const identity = JSON.stringify([state.workspaceId, state.activeViewId]);
-    if (!previewRestoreTracker.current.needsRestore(identity) || state.status !== "ready" ||
-      surfaceState.interactionDisabled || restoreStartupScreen.current || pendingWorkspaceScreen.current) return;
-    previewRestoreTracker.current.markRestored(identity);
-    const workspaceId = state.workspaceId;
-    const viewId = state.activeViewId;
-    if (!workspaceId || !viewId) return;
-    const token = previewRequests.current.invalidate();
-    setSelectedProject(null);
-    setActiveProjectTabId(null);
-    setProjectTabSelected(false);
-    sendPane({ type: "selectView" });
-    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
-    if (!projectId) return;
-    void workspaceClient.getProject({ workspaceId, projectId }).then(response => {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
-      const project = isRecord(response) && isRecord(response.project) ? response.project as unknown as WorkspaceMockProject : null;
-      if (!project) throw new RendererLocalizedError("error.projectUnavailable");
-      setSelectedProject(project);
-      sendPane({ type: "previewProject" });
-      void loadProjectFileTree(project, workspaceId);
-    }).catch(error => {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
-      rememberPreview(null, viewId);
-      toast.error(t("error.projectUnavailable"), { description: getServiceErrorMessage(error, t) });
+    session.syncScreen({
+      workspaceId: projectTabsWorkspaceId,
+      viewId: state.activeViewId,
+      ready: state.status === "ready" && !state.workspaceSwitchPending && !surfaceState.interactionDisabled,
     });
-  }, [state.workspaceId, state.activeViewId, state.status, surfaceState.interactionDisabled, previewSelectionRevision]);
+  }, [sessionSnapshot, projectTabsWorkspaceId, state.activeViewId, state.status, state.workspaceSwitchPending, surfaceState.interactionDisabled]);
+
+  useEffect(() => {
+    if (state.status !== "ready" || surfaceState.interactionDisabled) return;
+    void session.restoreReadyView({ workspaceId: state.workspaceId, viewId: state.activeViewId }).then(result => {
+      if (!result.accepted) return;
+      if (result.project) void loadProjectFileTree(result.project, state.workspaceId);
+      if (result.unavailable) toast.error(t("error.projectUnavailable"));
+    });
+  }, [sessionSnapshot, state.workspaceId, state.activeViewId, state.status, surfaceState.interactionDisabled]);
 
   function invalidateActiveProjection() {
     viewRequestVersionRef.current += 1;
@@ -769,24 +690,17 @@ export default function App() {
   }
 
   function selectSavedView(activeViewId: string) {
-    if (pendingWorkspaceScreen.current) return;
-    previewRequests.current.invalidate();
+    if (session.pendingWorkspaceId) return;
     dismissWorkspaceFloatingMenus();
     activeViewIdRef.current = activeViewId;
     viewRequestVersionRef.current += 1;
     surfaceInteractionDisabledRef.current = state.projectionInvalidated || state.projection?.view.id !== activeViewId;
-    if (projectExpanded) {
-      // Explicit return from an expanded tab keeps its existing close semantics.
-      rememberPreview(null, activeViewId);
-      setSelectedProject(null);
-      setActiveProjectTabId(null);
-      setProjectTabSelected(false);
-      sendPane({ type: "selectView" });
-      setPreviewSelectionRevision(previewRestoreTracker.current.request());
-    } else if (!state.projectionInvalidated && state.projection?.view.id === activeViewId) {
-      // Reversing an unfinished switch can reactivate the still-ready snapshot.
-      previewRestoreTracker.current.markRestored(JSON.stringify([state.workspaceId, activeViewId]));
-    }
+    session.selectView({
+      workspaceId: state.workspaceId,
+      viewId: activeViewId,
+      expanded: projectExpanded,
+      ready: !state.projectionInvalidated && state.projection?.view.id === activeViewId,
+    });
     dispatch({ type: "activeViewChanged", activeViewId });
   }
 
@@ -802,7 +716,6 @@ export default function App() {
 
   function applySessionEffects(result: SessionResult) {
     if (result.projectToLoad) {
-      previewRequests.current.invalidate();
       if (state.status === "ready" && state.root) void loadProjectFileTree(result.projectToLoad);
     }
     const focus = result.focus;
@@ -848,7 +761,6 @@ export default function App() {
 
   function restoreProjectTab(tabId: string) {
     const result = dispatchSessionInteraction({ type: "restoreProject", workspaceId: projectTabsWorkspaceId, tabId });
-    if (result.projectToLoad) rememberPreview(result.projectToLoad.id);
     applySessionEffects(result);
   }
 
@@ -875,8 +787,6 @@ export default function App() {
       closeProjectTab(activeProjectTabId);
       return;
     }
-    previewRequests.current.invalidate();
-    rememberPreview(null);
     session.dispatch({ type: "closePreview", workspaceId: projectTabsWorkspaceId });
   }
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
@@ -937,10 +847,6 @@ export default function App() {
   const workspaceIdRef = useRef<string | null>(null);
   const propertySaveRequestVersionsRef = useRef(new Map<string, number>());
   const folderSelectionPendingRef = useRef(false);
-  const workspaceClient = useMemo(
-    () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
-    [],
-  );
 
   const [projectMovePending, setProjectMovePending] = useState<ProjectMovePending | null>(null);
   const projectMoveController = useMemo(() => createProjectMoveController(workspaceClient, setProjectMovePending), [workspaceClient]);
@@ -978,7 +884,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     const loadRequestId = loadRequestIdRef.current + 1;
-    const loadViewRequestVersion = state.status === "ready" && !pendingWorkspaceScreen.current ? viewRequestVersionRef.current : null;
+    const loadViewRequestVersion = state.status === "ready" && !session.pendingWorkspaceId ? viewRequestVersionRef.current : null;
     loadRequestIdRef.current = loadRequestId;
 
     function isCurrentLoad() {
@@ -990,7 +896,7 @@ export default function App() {
       dispatch({ type: "loadStarted" });
 
       try {
-        const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }));
+        const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: session.pendingWorkspaceId || undefined }));
         if (!isCurrentLoad()) {
           return;
         }
@@ -1001,7 +907,7 @@ export default function App() {
           setWorkspaceList(workspaces);
           dispatch({ type: "sourceFolderMissing", root });
           workspaceIdRef.current = root?.workspaceId || null;
-          pendingWorkspaceScreen.current = null;
+          session.cancelWorkspace();
           return;
         }
 
@@ -1020,9 +926,8 @@ export default function App() {
           root.workspaceId,
         );
         const requestedActiveViewId =
-          restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
-            ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId ||
-              viewsResponse.activeViewId
+          session.needsWorkspaceRestore(root.workspaceId)
+            ? session.preferredView(root.workspaceId) || viewsResponse.activeViewId
             : workspaceIdRef.current === root.workspaceId ||
                 previousWorkspaceId === root.workspaceId
               ? activeViewIdRef.current
@@ -1045,14 +950,14 @@ export default function App() {
           }),
         );
 
-        const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
+        if (!isCurrentLoad()) return;
         const restorePendingView = state.workspaceId === root.workspaceId && surfaceState.interactionDisabled;
-        const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView;
-        const savedPreviewId = viewPreviewId(savedScreen, activeViewId);
-        const previewResponse = restoreScreen && !savedScreen?.tabId && savedPreviewId
-          ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedPreviewId }).catch(() => null)
+        const projects = projectionResponse.projection.type === "board"
+          ? projectionResponse.projection.columns.flatMap(column => column.projects)
+          : projectionResponse.projection.rows;
+        const restoration = session.needsWorkspaceRestore(root.workspaceId, restorePendingView)
+          ? await session.prepareWorkspace({ workspaceId: root.workspaceId, viewId: activeViewId, viewIds: viewsResponse.views.map(view => view.id), projects })
           : null;
-        const restoredPreview = isRecord(previewResponse) && isRecord(previewResponse.project) ? previewResponse.project : null;
         if (isCurrentLoad()) {
           setWorkspaceList(workspacesResponse);
           workspaceIdRef.current = root.workspaceId;
@@ -1068,36 +973,10 @@ export default function App() {
             type: "propertiesLoaded",
             propertiesResponse,
           });
-          if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView) {
-            previewRestoreTracker.current.markRestored(JSON.stringify([root.workspaceId, activeViewId]));
-            workspaceScreenMemory.current.set(root.workspaceId, pruneViewPreviews(savedScreen, viewsResponse.views.map(view => view.id)));
-            restoreStartupScreen.current = false;
-            pendingWorkspaceScreen.current = null;
-            const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
-            const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
-              (item) => item.tabId === tabId,
-            );
-            const projectId = cachedProject?.id || savedPreviewId;
-            const projects =
-              projectionResponse.projection.type === "board"
-                ? projectionResponse.projection.columns.flatMap((column) => column.projects)
-                : projectionResponse.projection.rows;
-            const freshProject = restoredPreview || projects.find((item) => isRecord(item) && item.id === projectId);
-            const project = isRecord(freshProject)
-              ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
-              : cachedProject;
-            // A removed preview cannot leave a visible empty shell. Expanded
-            // tabs retain their existing cached behavior and identities.
-            if (!project && projectId) {
-              rememberPreview(null, activeViewId, root.workspaceId);
-              session.dispatch({ type: "pane", workspaceId: root.workspaceId, action: { type: "selectView" } });
-              toast.error(t("error.projectUnavailable"));
-            }
-            setActiveProjectTabId(project ? tabId || null : null);
-            setSelectedProject(project || null);
-            setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
-            if (!cachedProject) session.dispatch({ type: "pane", workspaceId: root.workspaceId, action: { type: project ? "previewProject" : "selectView" } });
-            if (project) void loadProjectFileTree(project, root.workspaceId);
+          if (restoration) {
+            const result = session.acceptWorkspace(restoration);
+            if (result.project) void loadProjectFileTree(result.project, root.workspaceId);
+            if (result.unavailable) toast.error(t("error.projectUnavailable"));
           }
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -1110,7 +989,7 @@ export default function App() {
         const message = resolveRendererErrorState(errorState, t);
         if (isCurrentLoad()) {
           // Keep navigation and the stored path available for source recovery.
-          const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }).catch(() => null));
+          const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: session.pendingWorkspaceId || undefined }).catch(() => null));
           const recoveredWorkspaces = root ? await loadWorkspaceList(workspaceClient, root).catch(() => workspaceList) : null;
           if (!isCurrentLoad()) return;
           if (root && recoveredWorkspaces) {
@@ -1120,8 +999,7 @@ export default function App() {
             setWorkspaceList(recoveredWorkspaces);
             setSelectedProject(null);
           }
-          pendingWorkspaceScreen.current = null;
-          restoreStartupScreen.current = false;
+          session.cancelWorkspace(true);
           dispatch({ type: "serviceError", error: errorState });
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -1166,8 +1044,6 @@ export default function App() {
     const loadRequestId = loadRequestIdRef.current;
     const workspaceId = state.workspaceId;
     const viewId = state.activeViewId;
-    const previewToken = previewRequests.current.current();
-    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
     const isCurrent = () => !cancelled && loadRequestIdRef.current === loadRequestId &&
       viewRequestVersionRef.current === viewRequestVersion &&
       workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId;
@@ -1176,29 +1052,18 @@ export default function App() {
       try {
         const [rawProjection, rawPreview] = await Promise.all([
           workspaceClient.getViewProjection({ workspaceId, viewId, locale }),
-          projectId ? workspaceClient.getProject({ workspaceId, projectId }).catch(() => null) : null,
+          session.preparePreview({ workspaceId, viewId }),
         ]);
         const projectionResponse = normalizeProjectionResponse(rawProjection);
         if (!isCurrent()) return;
         if (projectionResponse.workspaceId !== workspaceId || projectionResponse.view.id !== viewId) {
           throw new RendererLocalizedError("error.activeViewUnavailable");
         }
-        const project = isRecord(rawPreview) && isRecord(rawPreview.project)
-          ? rawPreview.project as unknown as WorkspaceMockProject : null;
         // Projection and destination preview activate in the same React batch.
-        previewRestoreTracker.current.markRestored(JSON.stringify([workspaceId, viewId]));
         dispatch({ type: "projectionUpdated", projectionResponse, viewRequestVersion });
-        if (previewRequests.current.accepts(previewToken)) {
-          setSelectedProject(project);
-          setActiveProjectTabId(null);
-          setProjectTabSelected(false);
-          sendPane({ type: project ? "previewProject" : "selectView" });
-          if (project) void loadProjectFileTree(project, workspaceId);
-          else if (projectId) {
-            rememberPreview(null, viewId, workspaceId);
-            toast.error(t("error.projectUnavailable"));
-          }
-        }
+        const result = session.acceptPreview(rawPreview);
+        if (result.project) void loadProjectFileTree(result.project, workspaceId);
+        if (result.unavailable) toast.error(t("error.projectUnavailable"));
       } catch (error) {
         if (isCurrent()) {
           toast.error(t("toast.viewLoadFailed"), { description: getServiceErrorMessage(error, t) });
@@ -1234,7 +1099,7 @@ export default function App() {
       const root = normalizeRootResponse(await workspaceClient.setRoot({ workspaceId: requestWorkspaceId }));
       if (!root) return; // Native picker cancellation leaves the session intact.
       if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== (requestWorkspaceId || null)) return;
-      pendingWorkspaceScreen.current = root.workspaceId;
+      session.beginWorkspace(root.workspaceId);
       folderSelectionPendingRef.current = true;
       loadRequestIdRef.current += 1;
       setReloadToken(value => value + 1);
@@ -1290,23 +1155,14 @@ export default function App() {
   async function handleWorkspaceOpen(workspaceId: string, surface: WorkspaceSurface = "workspace") {
     const surfaceVersion = ++navigationSurfaceVersion.current;
     const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
-    if (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current) {
+    if (workspaceId === activeWorkspaceId && !session.pendingWorkspaceId) {
       session.dispatch({ type: "showSurface", workspaceId: projectTabsWorkspaceId, surface });
       return;
     }
-    if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
-        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
-        viewId: state.activeViewId,
-        tabId: projectExpanded ? activeProjectTabId : null,
-        fullScreen: projectFullScreen,
-        previewId: !projectExpanded ? selectedProject?.id || null : null,
-      });
-    }
-    previewRequests.current.invalidate();
+    session.syncScreen({ workspaceId: projectTabsWorkspaceId, viewId: state.activeViewId, ready: state.status === "ready" && !surfaceState.interactionDisabled && !session.pendingWorkspaceId });
     const version = ++workspaceSwitchVersion.current;
     loadRequestIdRef.current += 1;
-    pendingWorkspaceScreen.current = workspaceId;
+    session.beginWorkspace(workspaceId);
     surfaceInteractionDisabledRef.current = true;
     viewRequestVersionRef.current += 1;
     dispatch({ type: "workspaceSwitchStarted" });
@@ -1322,7 +1178,7 @@ export default function App() {
       setReloadToken(value => value + 1);
     } catch (error) {
       if (version !== workspaceSwitchVersion.current) return;
-      pendingWorkspaceScreen.current = null;
+      session.cancelWorkspace();
       dispatch({ type: "workspaceSwitchCancelled" });
       toast.error(t("toast.workspaceOpenFailed"), { description: getServiceErrorMessage(error, t) });
     }
@@ -1558,13 +1414,10 @@ export default function App() {
       });
       const deletedView = normalizeDeletedViewResponse(response);
       if (!await acceptViewMutationResult(mutationRequest, true)) return;
-      const screen = workspaceScreenMemory.current.get(projectTabsWorkspaceId);
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId,
-        pruneViewPreviews(screen, Object.keys(screen?.previewByView || {}).filter(id => id !== viewId)));
-      writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
+      session.removeView(projectTabsWorkspaceId, viewId);
       if (workspaceIdRef.current !== state.workspaceId) return;
       const currentViewId = activeViewIdRef.current;
-      if (viewId === currentViewId) previewRequests.current.invalidate();
+      if (viewId === currentViewId) session.invalidatePreview();
       dispatch({
         type: "viewDeleted",
         viewId,
@@ -2553,22 +2406,10 @@ export default function App() {
     project: WorkspaceMockProject,
     requestWorkspaceId = state.workspaceId,
   ) {
-    const token = previewRequests.current.current();
-    try {
-      const fileTree = normalizeProjectFileTreeResponse(
-        await workspaceClient.listProjectFileTree({ workspaceId: requestWorkspaceId, path: project.currentRelativePath }),
-      );
-      setSelectedProject((currentProject) =>
-        previewRequests.current.accepts(token) && workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id && currentProject.currentRelativePath === project.currentRelativePath
-          ? { ...currentProject, fileTree }
-          : currentProject,
-      );
-    } catch (error) {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== requestWorkspaceId) return;
-      toast.error(t("toast.fileTreeLoadFailed"), {
-        description: getServiceErrorMessage(error, t),
-      });
-    }
+    const result = await session.loadProjectFileTree(project, requestWorkspaceId);
+    if (result.error) toast.error(t("toast.fileTreeLoadFailed"), {
+      description: getServiceErrorMessage(result.error, t),
+    });
   }
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
@@ -2577,8 +2418,6 @@ export default function App() {
       closeSelectedProject();
       return;
     }
-    previewRequests.current.invalidate();
-    if (!tabId) rememberPreview(project.id);
     applySessionEffects(session.dispatch({ type: "openProject", workspaceId: projectTabsWorkspaceId, project, tabId, fullScreen }));
   }
 
@@ -2827,11 +2666,7 @@ export default function App() {
               }
               onShowView={() => {
                 if (!projectExpanded) return;
-                previewRequests.current.invalidate();
-                rememberPreview(null);
-                setSelectedProject(null);
-                setActiveProjectTabId(null);
-                sendPane({ type: "selectView" });
+                session.dispatch({ type: "closePreview", workspaceId: projectTabsWorkspaceId });
               }}
               groupOptions={serviceProjection?.projection.groupOptions}
               onGroupingChange={handleGroupingChange}
@@ -2891,7 +2726,7 @@ export default function App() {
               activeViewId={viewState.activeViewId}
               views={viewState.views}
               onActiveViewChange={(activeViewId) => {
-                if (pendingWorkspaceScreen.current) return;
+                if (session.pendingWorkspaceId) return;
                 selectSavedView(activeViewId);
                 if (state.workspaceId) {
                   void persistSavedView(state.workspaceId, activeViewId)
@@ -2957,7 +2792,7 @@ export default function App() {
         detailPanel
       ) : activeSurface !== "workspace" ? (
         <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
-          {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || pendingWorkspaceScreen.current ? (
+          {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || session.pendingWorkspaceId ? (
             <WorkspaceLoadingState />
           ) : (
             <>

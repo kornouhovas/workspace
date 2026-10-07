@@ -169,6 +169,92 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
     await tab("Table").first().waitFor();
     await page.locator('[aria-busy="true"]').first().waitFor({ state: "detached" });
     check("pending saved-view response rejects a project-tab selection command");
+
+    // Restore each saved view's partial preview independently of expanded tabs.
+    while (await page.locator("[data-project-tab-id]").count()) {
+      await page.locator("[data-project-tab-id]").first().click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Close view", exact: true }).click();
+    }
+    await view();
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    await capture("preview-board");
+    await tab("Table").first().click();
+    await page.locator('[aria-busy="true"]').first().waitFor({ state: "detached" });
+    await page.getByRole("button", { name: "Project Beta", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "Project Beta", exact: true }).waitFor();
+    await capture("preview-table");
+    await view();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    await page.reload();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    check("independent saved-view previews survive switching and reload");
+
+    // Delay the Table's project lookup at the existing IPC boundary, then reverse
+    // the navigation before the destination is ready.
+    const betaId = await page.evaluate(() => {
+      const screens = JSON.parse(localStorage.getItem("workspace.project-tabs.v1")).screens;
+      return Object.values(screens).find(screen => screen.previewByView?.["view:default-table"])?.previewByView["view:default-table"];
+    });
+    assert.ok(betaId);
+    await app.evaluate(({ ipcMain }, config) => {
+      const require = process.getBuiltinModule("module").createRequire(config.modulePath);
+      const { createWorkspaceIpcHandler } = require(config.modulePath);
+      const handler = createWorkspaceIpcHandler(config.options);
+      globalThis.lifecycleLookupPending = false;
+      globalThis.lifecycleLookupFinished = false;
+      let released = false;
+      const gate = new Promise(resolve => { globalThis.releaseLifecycleLookup = () => { released = true; resolve(); }; });
+      ipcMain.removeHandler("workspace:request");
+      ipcMain.handle("workspace:request", async (event, method, payload) => {
+        const delayed = !released && method === "workspace.getProject" && payload?.projectId === config.projectId;
+        if (delayed) { globalThis.lifecycleLookupPending = true; await gate; }
+        const response = await handler(event, method, payload);
+        if (delayed) globalThis.lifecycleLookupFinished = true;
+        return response;
+      });
+    }, { modulePath: resolve("electron/workspaceIpc.js"), projectId: betaId,
+      options: { configPath: join(metadata, "settings.json"), viewStorePath: join(metadata, "views.json"), propertyStorePath: join(metadata, "properties.json") } });
+    await tab("Table").first().click();
+    await expect.poll(() => app.evaluate(() => globalThis.lifecycleLookupPending)).toBe(true);
+    await view();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    await app.evaluate(() => globalThis.releaseLifecycleLookup());
+    await expect.poll(() => app.evaluate(() => globalThis.lifecycleLookupFinished)).toBe(true);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(page.getByRole("dialog", { name: "Project Alpha", exact: true })).toBeVisible();
+    assert.equal(await tab("Table").first().getAttribute("aria-selected"), "false");
+    check("reversing a pending saved-view lookup rejects its delayed preview");
+
+    await page.evaluate(workspaceId => {
+      const saved = JSON.parse(localStorage.getItem("workspace.project-tabs.v1"));
+      saved.screens[workspaceId] = { viewId: "view:default-board", tabId: null, previewId: "missing-project", previewByView: { "view:default-board": "missing-project" } };
+      localStorage.setItem("workspace.project-tabs.v1", JSON.stringify(saved));
+    }, initial.root.workspaceId);
+    await page.reload();
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
+    await expect(page.getByRole("dialog", { name: "Project Alpha", exact: true })).toHaveCount(0);
+    const cleared = await page.evaluate(workspaceId => JSON.parse(localStorage.getItem("workspace.project-tabs.v1")).screens[workspaceId].previewByView["view:default-board"], initial.root.workspaceId);
+    assert.equal(cleared, null);
+    check("unavailable saved preview closes its host and persists cleanup");
+
+    await page.evaluate(() => {
+      localStorage.setItem("workspace.project-tabs.v1", "malformed");
+      localStorage.setItem("workspace.pane-layout.v1", "malformed");
+    });
+    await page.reload();
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    check("malformed session storage leaves project selection usable");
+
+    // Include a failing storage getter, not only getItem/setItem failures.
+    await page.addInitScript(() => Object.defineProperty(window, "localStorage", { get() { throw new Error("Session storage unavailable"); } }));
+    await page.reload();
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
+    await page.keyboard.press("ControlOrMeta+J");
+    await expect(page.getByRole("dialog", { name: "Project Alpha", exact: true })).toHaveCount(0);
+    check("unavailable storage getter leaves preview open and close commands usable");
     report.windows.push(await app.evaluate(({ BrowserWindow }) => ({ bounds: BrowserWindow.getAllWindows()[0].getBounds(), contentBounds: BrowserWindow.getAllWindows()[0].getContentBounds() })));
   } catch (error) {
     report.errors.push(error.stack || String(error));

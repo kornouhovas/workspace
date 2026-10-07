@@ -177,9 +177,21 @@ function readSavedProjectDetailPanelWidth() {
     return defaultProjectDetailPanelWidth;
   }
 
-  return clampProjectDetailPanelWidth(
-    Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)),
-  );
+  try {
+    return clampProjectDetailPanelWidth(
+      Number(window.localStorage.getItem(projectDetailPanelWidthStorageKey)),
+    );
+  } catch {
+    return defaultProjectDetailPanelWidth;
+  }
+}
+
+function writeCardPreference(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* Device preferences are optional; storage failure must not block details. */
+  }
 }
 
 function readSavedCardPropertyOrder() {
@@ -935,7 +947,7 @@ export function WorkspaceProjectDetailPanel({
       setCardHiddenPropertyIds(nextHiddenPropertyIds);
 
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(
+        writeCardPreference(
           cardHiddenPropertyIdsStorageKey,
           JSON.stringify(nextHiddenPropertyIds),
         );
@@ -1023,7 +1035,7 @@ export function WorkspaceProjectDetailPanel({
       return;
     }
 
-    window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(projectDetailPanelWidth));
+    writeCardPreference(projectDetailPanelWidthStorageKey, String(projectDetailPanelWidth));
   }, [isOpen, projectDetailPanelWidth]);
 
   useEffect(() => {
@@ -1118,7 +1130,7 @@ export function WorkspaceProjectDetailPanel({
       window.removeEventListener("pointerup", handlePointerUp);
       document.body.style.cursor = previousCursor;
       document.body.style.userSelect = previousUserSelect;
-      window.localStorage.setItem(projectDetailPanelWidthStorageKey, String(panelWidthRef.current));
+      writeCardPreference(projectDetailPanelWidthStorageKey, String(panelWidthRef.current));
     }
 
     document.body.style.cursor = "ew-resize";
@@ -1198,7 +1210,7 @@ export function WorkspaceProjectDetailPanel({
     cardPropertyOrderRef.current = nextPropertyIds;
 
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(cardPropertyOrderStorageKey, JSON.stringify(nextPropertyIds));
+      writeCardPreference(cardPropertyOrderStorageKey, JSON.stringify(nextPropertyIds));
     }
   }
 
@@ -1211,7 +1223,7 @@ export function WorkspaceProjectDetailPanel({
       setCardHiddenPropertyIds(nextHiddenPropertyIds);
 
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(
+        writeCardPreference(
           cardHiddenPropertyIdsStorageKey,
           JSON.stringify(nextHiddenPropertyIds),
         );

@@ -200,8 +200,8 @@ test("pure session boundary detects React, browser globals and backend imports",
   ]) assert.throws(() => assertPureSessionSourceBoundary(source, "fixture.js"));
 });
 
-test("session owner and its transitive modules remain independent of React, DOM and platform runtimes", async () => {
-  const files = await collectRendererGraph(resolve(projectRoot, "src/workspaceSession.js"));
+test("session owner, lifecycle and their transitive modules remain independent of React, DOM and platform runtimes", async () => {
+  const files = await collectRendererGraph(resolve(projectRoot, "src/workspaceSessionLifecycle.js"));
   for (const file of files) {
     assert.ok(file.startsWith(resolve(projectRoot, "src") + "/"), `session imports a platform implementation: ${file}`);
     assertPureSessionSourceBoundary(await readFile(file, "utf8"), file);

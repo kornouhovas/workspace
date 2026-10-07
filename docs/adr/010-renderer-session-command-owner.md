@@ -26,3 +26,5 @@ Session transitions can be verified without mounting React or launching Electron
 No state library, HTTP transport, new bb feature or visual redesign is introduced. Compatibility with unfinished changes in the original checkout still requires review before integration.
 
 Verification: [Issue #2 evidence](../specs/session-commands-verification.md). The previous pane rules remain defined by [ADR-005](005-bb-pane-session-chrome.md).
+
+Follow-up: [ADR-011](011-renderer-session-lifecycle.md) completes the lifecycle extraction described above. The intermediate React restoration adapters are superseded by the injected session lifecycle.

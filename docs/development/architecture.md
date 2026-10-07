@@ -14,7 +14,7 @@ React UI → WorkspaceServiceClient → renderer transport
 
 React отвечает за представление и действия пользователя. Проверка путей, обнаружение проектов, роли папок, нормализация свойств, идентичность и проекция views принадлежат backend/domain. Renderer не импортирует Node builtins, backend storage или sidecar clients. Сохраняются `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 
-Renderer session commands now use [workspaceSession.js](../../src/workspaceSession.js), subscribed to by React. The owner coordinates tabs, pane layout, selection, fallback and transient closed-tab history without React or platform imports. Existing storage/restoration and request guards remain React adapters in this intermediate slice; see [ADR-010](../adr/010-renderer-session-command-owner.md).
+Renderer session commands use [workspaceSession.js](../../src/workspaceSession.js), subscribed to by React. The owner coordinates tabs, pane layout, selection, fallback and transient closed-tab history without React or platform imports. [workspaceSessionLifecycle.js](../../src/workspaceSessionLifecycle.js) composes that owner with injected storage and the current service client, owning screen memory, persistence/restoration and preview request freshness. General data loading, CRUD queues and DOM effects remain composition-root adapters; see [ADR-010](../adr/010-renderer-session-command-owner.md) and [ADR-011](../adr/011-renderer-session-lifecycle.md).
 
 ## Целевое хранение
 
