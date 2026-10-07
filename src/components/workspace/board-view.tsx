@@ -215,7 +215,7 @@ export function WorkspaceBoardView({
                   unavailable={!projection.capabilities.canMoveBetweenStatuses || column.statusValueId === "statusValue:no-status" || !!(statusValues.find(value => value.id === column.statusValueId) as {moveDisabledReason?: string} | undefined)?.moveDisabledReason}
                   onHide={column.statusValueId === "ungrouped" ? undefined : onHideColumn} onCreate={projection.capabilities.canMoveBetweenStatuses ? onCreateProject : undefined} />
               </header>
-              <div data-workspace-wrap-body className="relative grid auto-rows-max content-start gap-3 pb-2" style={wrapContent && !column.collapsed && column.projects.length ? {height: packed.height + 8} : undefined}>
+              <div data-workspace-wrap-body className="relative grid grid-cols-1 auto-rows-max content-start gap-3 pb-2" style={wrapContent && !column.collapsed && column.projects.length ? {height: packed.height + 8} : undefined}>
                 {column.collapsed ? null : column.projects.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                     {t("board.noProjects")}
