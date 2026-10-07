@@ -25,3 +25,9 @@ This repository uses a spec-first, agent-ready workflow.
 - Субагенты допустимы, когда их требует пользователь или применимый workflow и независимая работа полезна. Чаты создавайте только по запросу.
 
 Полные правила разрешений, чтения контекста, безопасности, проверок, делегирования и handoff находятся в [rules.md](docs/development/rules.md). Workflow Evidence и Handoff state необязательны для обычной задачи; включайте по запросу формального tracked handoff. Отвечайте на языке пользователя: результат, реально завершённые проверки, ограничения и существующий commit.
+
+## Agent skills
+
+- При работе с задачами, спецификациями и PR используйте приватные GitHub Issues; роль Beads и операции описаны в [issue tracker](docs/agents/issue-tracker.md).
+- При triage используйте [отображение меток](docs/agents/triage-labels.md).
+- При анализе предметной области и архитектуры прочитайте [domain docs](docs/agents/domain.md): словарь и относящиеся к задаче ADR.
