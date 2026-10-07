@@ -25,3 +25,5 @@
 Старые планы и отчёты дают контекст конкретной работы. Их исторические процессные требования заменены rules.md; они не расширяют полномочия. Статус ADR проверяйте в самом документе: предложенное решение не считается принятым.
 
 For Matt skills, read the [tracker configuration](../agents/issue-tracker.md) and [domain docs](../agents/domain.md). The first bb architecture stage is defined in the [session specification](../specs/bb-architecture.md); the [approved issue breakdown and cleanup proposal](../specs/bb-architecture-tickets.md) links to the GitHub tracker.
+
+Documentation reconciliation is tracked in [Issue #4](https://github.com/kornouhovas/workspace/issues/4); the [exact cleanup inventory](../specs/documentation-cleanup.md) records proposed scope and protected history.

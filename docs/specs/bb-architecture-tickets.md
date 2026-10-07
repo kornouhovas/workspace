@@ -41,26 +41,15 @@ Implementation: [ADR-011](../adr/011-renderer-session-lifecycle.md). [Verificati
 
 [GitHub Issue #4](https://github.com/kornouhovas/workspace/issues/4).
 
-Blocked by: no code dependency. Deletion requires review of the exact file list and incoming links; this scope is independent of issues #2–3.
+No code dependency. The user requested an exact list and history preservation before removal. The [documentation inventory and cleanup proposal](documentation-cleanup.md) records all 74 baseline documentation paths, incoming references for the proposed reductions, protected evidence and original-checkout exceptions.
 
-Delivery: concise active instructions consistent with accepted contracts, while preserving history and verification evidence.
+- [x] Reconcile active Status instructions with accepted ADR-007/008 and the existing safe API.
+- [x] Make GitHub the primary tracker in active workflow/index guidance; read legacy material conditionally.
+- [x] Inventory historical bodies and incoming links; preserve product contracts and unfinished evidence.
+- [ ] Review the exact 14-file body-reduction list with the user, then apply only the approved scope.
+- [ ] Update documentation discoverability checks after the approved reductions and verify the resulting links.
 
-| Material | Proposed disposition | Condition |
-| --- | --- | --- |
-| [AGENTS](../../AGENTS.md), [rules](../development/rules.md), [product](../development/product.md) | Reconcile the old Status drag prohibition with ADR-007/008 | Preserve accepted entry points and filesystem safeguards |
-| [Quality gates](../workflow/quality-gates.md) | Reduce duplicate requirements to a current-policy pointer | Preserve incoming links |
-| [Chat workflow](../workflow/codex-chat-workflow.md), [task lifecycle](../workflow/task-lifecycle.md), [review protocol](../workflow/review-agent-protocol.md), [Symphony readiness](../workflow/symphony-readiness.md) | Remove historical obligations from active reading; retain history | Some files are already marked historical; verify the benefit of further edits |
-| [Templates](../templates/) | Identify unused templates and duplicated instructions | Inspect backlinks and documentation tests before moving/deleting |
-| [Legacy plans](../superpowers/plans/), [compact handoff](../design/compact-redesign-handoff.md), [matrix](../design/compact-edge-matrix.md), [review](../design/compact-implementation-review.md) | Separate completed history from current pointers | Preserve provenance, evidence, and links from unfinished tasks |
-| [work](../../work/), [outputs](../../outputs/) | Inventory completed runs/fixtures and active references | Preserve unrelated untracked material and incomplete acceptance evidence |
-| [Documentation test](../../test/documentation.test.js) | Update discoverability checks after approved cleanup | Retain useful license and navigation checks |
-
-Retain current product documents, data model, API contracts, accepted ADRs, security/license material, and unfinished verification evidence. Finalize the deletion list after backlink inspection. The original checkout's `docs/superpowers` directory was removed externally during preparation; that deletion is outside this branch. This proposal reflects the isolated baseline and must be reconciled before application.
-
-- [ ] Every affected path has a reason, disposition, and verified incoming links.
-- [ ] Active rules agree with product contracts and accepted ADRs.
-- [ ] History is preserved; local links and the documentation check pass.
-- [ ] Commit only approved changes; `git diff --check` passes.
+The quality-gates file is already a short policy pointer; it needs no duplicate cleanup. No historical body, evidence artifact or path has been deleted or moved by this preparation. Keep Issue #4 open until reviewed cleanup is applied and verified. The original checkout remains unmerged.
 
 ## Separate future specifications
 

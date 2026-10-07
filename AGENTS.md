@@ -19,7 +19,7 @@ This repository uses a spec-first, agent-ready workflow.
 - Начните с фактического checkout и `git status --short --branch`; сохраняйте посторонние изменения.
 - React must stay thin. Вызовы идут через WorkspaceServiceClient и Electron preload IPC. Сохраняйте `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 - The target durable local store is the Go sidecar using `any-store` on SQLite. Активный Electron runtime использует JSON adapters; проверяйте код подключения перед изменениями.
-- Сохраняйте выбранные источники, opaque IDs, данные/историю/настройки, роли папок и ограничение drag между основными статусами. Файловые операции валидируются относительно выбранного источника.
+- Preserve selected sources, opaque IDs, data/history/settings and folder roles. Explicit Status moves follow [ADR-007](docs/adr/007-board-table-status-moves.md), [ADR-008](docs/adr/008-table-row-order.md) and the [Status move API](docs/api/workspace-status-move.md); filesystem operations validate the selected source.
 - Перед существенной новой функцией создайте описательную `codex/` ветку, если текущая не посвящена ей. Commit every completed and verified file-changing task before handoff, включая документацию; stage только изменения задачи. Push/merge/publish/release требуют соответствующего разрешения.
 - Проверки выбирайте по затронутым границам. Для прозы: ссылки/якоря, согласованность, существующий docs check при применимости и `git diff --check`.
 - Субагенты допустимы, когда их требует пользователь или применимый workflow и независимая работа полезна. Чаты создавайте только по запросу.

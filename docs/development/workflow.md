@@ -1,21 +1,11 @@
-# Работа над задачей
+# Task workflow
 
-Обязательную рабочую политику задаёт [rules.md](rules.md); [AGENTS.md](../../AGENTS.md) служит точкой входа. Пользователь определяет продукт и существенные компромиссы; агент реализует, проверяет и завершает разрешённый объём. Короткого запроса достаточно, если цель, границы и проверка ясны; отдельные шаблоны и согласование каждого шага не обязательны.
+[rules.md](rules.md) owns operational policy; [AGENTS.md](../../AGENTS.md) is the entry point. Follow the [source map](README.md) for task-specific contracts and [quality.md](quality.md) for verification. Clear requests do not require a separate intake template or approval at every step.
 
-Начните с фактического checkout, `git status --short --branch` и затронутого кода. Прочитайте только относящиеся к задаче документы из [карты источников](README.md). Диагностика и review разрешают чтение и объяснение; изменения выполняются по запросу реализации. Не расширяйте задачу в несвязанное переустройство.
+For tracked work, [GitHub Issues](../agents/issue-tracker.md) owns scope, acceptance criteria and completion status. Read the originating issue and relevant versioned specification before implementation. Use the existing dedicated branch when it fits the task; preserve unrelated checkout changes.
 
-Перед существенной новой функцией создайте описательную ветку `codex/`, если текущая не выделена для неё. Небольшая правка может оставаться в подходящей текущей ветке. Сохраняйте посторонние правки; изолированный worktree используйте при необходимости и укажите его путь при передаче результата.
+Beads supports local execution steps and continuation notes linked to a GitHub issue. Inspect existing ownership and dependencies before updating a record. Closing a local step does not close its GitHub issue; Beads does not hold a second independent product backlog.
 
-Рутинные обратимые решения принимайте в разрешённом объёме. Дополнительное решение пользователя требуется, когда существенный вопрос продукта, данных, безопасности или объёма нельзя разрешить по источникам. Уже выданное разрешение сохраняется. Последствия архитектурного решения фиксируются ADR; тексты контрактов обновляются вместе с изменением поведения.
+Complete the authorized scope, inspect the combined diff and run relevant checks. Commit verified task changes before handoff and report the result, checks, limitations and existing commit. Push, merge, publish and release follow the authorization rules in [rules.md](rules.md).
 
-## Review и завершение
-
-Проверьте интегрированный diff по цели, границам и [результатам проверок](quality.md). Завершённые и проверенные изменения сохраните локальным коммитом, включая документацию; stage только файлы задачи. Push, merge, publish и release требуют соответствующего разрешённого объёма.
-
-В ответе сообщите результат, реально выполненные проверки и незавершённые пункты. Шаблон отчёта и отдельное человеческое подтверждение для каждой небольшой правки не требуются. Если согласованный процесс включает приёмку, завершайте после неё.
-
-## Если задача отслеживается в Beads
-
-Прочитайте существующую задачу, критерии, статус, владельца и зависимости; не перехватывайте чужую работу. Обновляйте прогресс и точку продолжения средствами принятого в задаче workflow. Статусы помогают учёту, а не создают новое разрешение на изменения. Beads не обязателен для любого запроса.
-
-[Task lifecycle](../workflow/task-lifecycle.md) и [chat workflow](../workflow/codex-chat-workflow.md) дают контекст старого процесса; их исторические требования шаблонов, разбиения и остановок не применяются как текущие правила. Планы будущей оркестрации не разрешают создавать задачи, делегировать или выпускать изменения самостоятельно.
+Read historical backlog items, plans and reports only for a task that explicitly needs their context. Their old templates, approval stops and orchestration instructions do not define current policy. Preserve unfinished acceptance evidence when reconciling historical work.

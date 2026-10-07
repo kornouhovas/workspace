@@ -1,15 +1,15 @@
-# Продукт
+# Product boundaries
 
-Workspace — локальное Electron-приложение для проектов, уже существующих как папки на диске. Оно показывает найденные проекты в Board и Table, хранит свойства и настройки представлений, даёт доступ к файлам через панель проекта. Назначение и границы описаны в [Vision](../vision.md) и [PRD](../prd.md).
+Workspace is a local Electron app for projects that already exist as folders on disk. Board and Table show discovered projects, retain properties and view settings, and expose files through project detail. See [Vision](../vision.md) and [PRD](../prd.md).
 
-Рабочая конфигурация Workspace имеет собственный источник проектов и роли папок. Несколько Workspaces могут использовать один источник или разные корни; при общем источнике проектные значения остаются общими. Это принято в [ADR-006](../adr/006-workspace-source-bindings.md), который уточняет раннюю модель общего source в Vision/PRD.
+Each Workspace configuration binds its own project source and folder roles. Workspaces may share a source or use separate roots; project values remain shared for a shared source. Accepted [ADR-006](../adr/006-workspace-source-bindings.md) refines the early shared-source model in Vision/PRD.
 
-Роли `group`, `status`, `project` определяют обнаружение проектов. Статус происходит от статусной папки; вне неё проект получает `No status`. В MVP поддерживается один уровень статусных папок, перенос проектов между основными статусами перетаскиванием не поддерживается согласно [PRD](../prd.md) и [AGENTS.md](../../AGENTS.md).
+Roles `group`, `status` and `project` govern discovery. Status derives from a status folder; projects outside one retain `No status`. One level of status folders is supported. [ADR-007](../adr/007-board-table-status-moves.md) and [ADR-008](../adr/008-table-row-order.md) permit explicit Status pickers, Board Status-column drops and Table row crossings into visible explicit Status groups. All use the existing safe [Status move API](../api/workspace-status-move.md). Custom-property crossings and `No status` destinations are unavailable; a project originating in `No status` may move to an available Status. Table same-group reorder changes only view rank.
 
-## Сценарии
+## Flows
 
-- [Источник и роли папок](../flows/settings-source-folder-and-roles.md) — Workspace settings, выбор папки, обнаружение проектов.
-- [Board и Table](../flows/board-table-views.md) — представления, поиск, фильтры и панель проекта.
-- [Язык интерфейса](../flows/language-selection.md) — локальная настройка устройства.
+- [Source and folder roles](../flows/settings-source-folder-and-roles.md): Workspace settings, folder selection and discovery.
+- [Board and Table](../flows/board-table-views.md): views, search, filters and project detail.
+- [Interface language](../flows/language-selection.md): local device preference.
 
-Авторизация, облачная синхронизация, совместная работа, публичный web-доступ и редактор файлов остаются за границами MVP. Будущий `any sync` — направление развития, а не действующая функция. Продуктовые изменения сверяйте с PRD и актуальными принятыми ADR; работа приложения проверяется отдельно по коду/runtime.
+Authentication, cloud sync, collaboration, public web access and a file editor remain outside the current MVP. Future `any sync` is a direction, not a wired feature. Check product changes against PRD and accepted ADRs; verify current implementation separately in code/runtime.

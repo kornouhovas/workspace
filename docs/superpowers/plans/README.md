@@ -1,28 +1,5 @@
-# Plans Folder
+# Historical implementation plans
 
-> Применяйте [rules.md](../../development/rules.md) и [workflow](../../development/workflow.md). План нужен по сложности задачи; уже одобренный план разрешает весь описанный объём без approvals каждого шага. Существующие планы сохраняют исторические решения, а процессные defaults заменены rules.md.
+Existing plans preserve earlier implementation scope and decisions. Read them only when the originating task needs that context; unchecked steps do not prove either completion or a current task assignment.
 
-Use this folder for implementation plans.
-
-Recommended naming:
-
-```text
-docs/superpowers/plans/YYYY-MM-DD-<topic>.md
-```
-
-Plans should break work into small tasks with:
-
-- exact files to inspect/create/modify;
-- failing tests before implementation where practical;
-- focused commands;
-- expected outcomes;
-- commit/checkpoint guidance;
-- final verification.
-
-Use a plan when implementation spans multiple boundaries, such as:
-
-- backend and sidecar;
-- Electron IPC and renderer;
-- UI and visual verification;
-- data model and migration;
-- API contract and service implementation.
+[Development rules](../../development/rules.md) replace their process defaults, including required subskills, templates and per-step approval stops. Current tasks live in [GitHub Issues](../../agents/issue-tracker.md); versioned specifications live in [docs/specs](../../specs/). An approved plan authorizes its described scope within the current rules.
