@@ -1,6 +1,6 @@
 # Workspace architecture issue breakdown
 
-Status: issue size, blocking edges, and verification boundary approved. Implementation is not complete. The [specification](bb-architecture.md) covers the renderer session stage.
+Status: issue size, blocking edges, and verification boundary approved. Issue #2 is implemented, verified and reviewed on the dedicated branch. Issues #3–4 remain open. The [specification](bb-architecture.md) covers the renderer session stage.
 
 The architecture parent is [Issue #1](https://github.com/kornouhovas/workspace/issues/1). Documentation cleanup has its own issue because it is outside the session code scope.
 
@@ -12,11 +12,13 @@ Blocked by: None. Use the explicit committed baseline and reconcile unfinished s
 
 Delivery: current tab open/close/reopen, split, focus, maximize/restore, and Workspace/Settings navigation use one session owner. Preserve appearance and behavior. Existing restoration adapters remain operational in this intermediate slice.
 
-- [ ] The model exposes explicit commands and a coherent snapshot; React connects them to existing components.
-- [ ] DOM/platform effects remain outside the pure model.
-- [ ] Closing an active tab/pane selects the current fallback and retains other panes.
-- [ ] Workspaces retain independent tabs and layouts.
-- [ ] Persistence/restoration remain operational; relevant behavior tests, typecheck, renderer build, and desktop action/layout checks pass.
+- [x] The model exposes explicit commands and a coherent snapshot; React connects them to existing components.
+- [x] DOM/platform effects remain outside the pure model.
+- [x] Closing an active tab/pane selects the current fallback and retains other panes.
+- [x] Workspaces retain independent tabs and layouts.
+- [x] Persistence/restoration remain operational; relevant behavior tests, typecheck, renderer build, and desktop action/layout checks pass.
+
+Implementation: [ADR-010](../adr/010-renderer-session-command-owner.md). [Verification and review](session-commands-verification.md) record the preserved interface, delayed-response regression check and pre-existing full-suite limitation. The original checkout remains unmerged.
 
 ## 2. Session restoration and asynchronous preview lifecycle — Issue #3
 

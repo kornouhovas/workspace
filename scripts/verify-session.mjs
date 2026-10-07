@@ -36,16 +36,13 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
   try {
     page = await app.firstWindow();
     page.on("pageerror", error => report.errors.push(error.message));
-    await app.evaluate(({ BrowserWindow }, [width, height]) => {
-      const window = BrowserWindow.getAllWindows()[0];
-      window.setBounds({ x: 0, y: 0, width, height });
-    }, [width, height]);
     const preferences = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
     assert.equal(preferences.contextIsolation, true);
     assert.equal(preferences.nodeIntegration, false);
     assert.equal(preferences.sandbox, true);
     const check = name => report.checks.push(`${width}x${height}: ${name}`);
     const capture = async name => {
+      await page.mouse.move(0, height - 1);
       await page.evaluate(async () => {
         await document.fonts.ready;
         await Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {})));
@@ -78,6 +75,11 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
       await page.waitForTimeout(100);
     };
     await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible())).toBe(true);
+    await app.evaluate(({ BrowserWindow }, [width, height]) => {
+      BrowserWindow.getAllWindows()[0].setBounds({ x: 0, y: 0, width, height });
+    }, [width, height]);
+    await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, { width, height });
     await capture("board");
     await open("Project Alpha");
     await capture("expanded");

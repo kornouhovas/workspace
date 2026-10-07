@@ -15,6 +15,8 @@ Commands coordinate expansion, split placement, restoring a tab to preview, tab/
 
 The owner imports no React, browser globals, Node, Electron or backend implementation. Command results describe service-load and DOM-focus effects; the React adapter executes them through the existing service client and browser APIs.
 
+The user-command adapter rejects selection-changing compound interactions while the current surface is disabled during loading. Restoration and CRUD compatibility updates continue to reach the owner; they are not user-selection requests.
+
 This is a compatible increment. Existing serialization, screen memory, Workspace/view restoration and preview freshness guards remain in the React adapter until [Issue #3](https://github.com/kornouhovas/workspace/issues/3). Temporary selection, tab-refresh and surface commands connect those adapters to the same state owner. They are not a claim that the complete lifecycle has been extracted.
 
 ## Consequences

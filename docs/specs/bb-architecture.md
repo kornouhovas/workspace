@@ -1,6 +1,6 @@
 # Workspace renderer session architecture
 
-Status: scope, verification boundary, and issue breakdown approved. Issue #2 is implemented and under review; the complete lifecycle extraction in Issue #3 has not started.
+Status: scope, verification boundary, and issue breakdown approved. Issue #2 is implemented, verified and reviewed on the dedicated branch; the complete lifecycle extraction in Issue #3 has not started.
 
 Primary tracker specification: [GitHub Issue #1](https://github.com/kornouhovas/workspace/issues/1). This file is the versioned specification snapshot; update the issue when its scope changes.
 
