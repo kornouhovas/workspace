@@ -14,6 +14,8 @@ React UI → WorkspaceServiceClient → renderer transport
 
 React отвечает за представление и действия пользователя. Проверка путей, обнаружение проектов, роли папок, нормализация свойств, идентичность и проекция views принадлежат backend/domain. Renderer не импортирует Node builtins, backend storage или sidecar clients. Сохраняются `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
 
+Renderer session commands now use [workspaceSession.js](../../src/workspaceSession.js), subscribed to by React. The owner coordinates tabs, pane layout, selection, fallback and transient closed-tab history without React or platform imports. Existing storage/restoration and request guards remain React adapters in this intermediate slice; see [ADR-010](../adr/010-renderer-session-command-owner.md).
+
 ## Целевое хранение
 
 [ADR-001](../adr/001-local-first-workspace-storage.md) сохраняет целевой durable store: Go sidecar → `any-store` → SQLite. [Sidecar](../../cmd/workspace-sidecar/main.go) и [Go store](../../internal/workspacestore/store.go) существуют, но Electron main не запускает sidecar HTTP server и не подключает его вместо JSON-адаптеров. Самостоятельный запуск sidecar не переключает storage приложения. ADR-006 прямо сохраняет этот переходный runtime; подключение целевого store — отдельная работа.

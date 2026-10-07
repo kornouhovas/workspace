@@ -1,0 +1,158 @@
+import { _electron as electron } from "@playwright/test";
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { createWorkspaceIpcHandler } from "../electron/workspaceIpc.js";
+
+const evidence = resolve(process.env.WORKSPACE_SESSION_EVIDENCE || ".workspace-dev/session-commands/electron");
+await mkdir(evidence, { recursive: true });
+const report = { checks: [], windows: [], errors: [] };
+const fixture = await mkdtemp(join(tmpdir(), "workspace-session-"));
+report.fixture = fixture;
+const root = join(fixture, "projects");
+for (const name of ["Alpha", "Beta"])
+  await mkdir(join(root, "Active", `Project ${name}`), { recursive: true });
+
+for (const [width, height] of [[1440, 960], [1024, 720]]) {
+  const metadata = join(fixture, `metadata-${width}`);
+  const handler = createWorkspaceIpcHandler({
+    configPath: join(metadata, "settings.json"),
+    viewStorePath: join(metadata, "views.json"),
+    propertyStorePath: join(metadata, "properties.json"),
+    chooseRoot: async () => root,
+  });
+  const initial = await handler(null, "workspace.setRoot");
+  const secondary = await handler(null, "workspace.createWorkspace", { name: "Secondary" });
+  await handler(null, "workspace.setRoot", { workspaceId: secondary.workspace.id });
+  await handler(null, "workspace.setActiveWorkspace", { workspaceId: initial.root.workspaceId });
+  const app = await electron.launch({
+    executablePath: process.env.WORKSPACE_ELECTRON_EXECUTABLE || undefined,
+    args: ["electron/main.js"],
+    cwd: process.cwd(),
+    env: { ...process.env, WORKSPACE_DEV: "1", WORKSPACE_DEV_DATA: metadata, WORKSPACE_DEV_URL: "" },
+  });
+  let page;
+  try {
+    page = await app.firstWindow();
+    page.on("pageerror", error => report.errors.push(error.message));
+    await app.evaluate(({ BrowserWindow }, [width, height]) => {
+      const window = BrowserWindow.getAllWindows()[0];
+      window.setBounds({ x: 0, y: 0, width, height });
+    }, [width, height]);
+    const preferences = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
+    assert.equal(preferences.contextIsolation, true);
+    assert.equal(preferences.nodeIntegration, false);
+    assert.equal(preferences.sandbox, true);
+    const check = name => report.checks.push(`${width}x${height}: ${name}`);
+    const capture = async name => {
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        await Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {})));
+      });
+      await page.screenshot({ path: join(evidence, `${name}-${width}x${height}.png`) });
+    };
+    const tab = name => page.getByRole("tab", { name, exact: true });
+    const view = () => tab("Board").first().click();
+    const open = async name => {
+      await page.getByRole("button", { name, exact: true }).first().click();
+      await page.getByRole("button", { name: "Maximize pane (⇧ ⌘ E)", exact: true }).click();
+      await tab(name).waitFor();
+    };
+    const split = async name => {
+      const source = await tab(name).boundingBox();
+      const target = await page.locator('[data-pane-id="workspace"]').first().boundingBox();
+      assert.ok(source && target);
+      await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+      // Radix selects inactive tabs on mouse-down; Control-drag keeps the existing
+      // Workspace host mounted while the PointerSensor starts.
+      await page.keyboard.down("Control");
+      await page.mouse.down();
+      await page.keyboard.up("Control");
+      await page.mouse.move(source.x + source.width / 2 + 8, source.y + source.height / 2, { steps: 3 });
+      await page.mouse.move(target.x + target.width - 12, target.y + target.height / 2, { steps: 15 });
+      await page.mouse.up();
+      await page.locator(".bb-tree-split").first().waitFor();
+    };
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
+    await capture("board");
+    await open("Project Alpha");
+    await capture("expanded");
+    await view();
+    await open("Project Beta");
+    await tab("Project Beta").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Close view", exact: true }).click();
+    await page.locator('[data-project-tab-id][aria-selected="true"]').filter({ hasText: "Project Alpha" }).waitFor();
+    await page.keyboard.press("ControlOrMeta+Shift+T");
+    await tab("Project Beta").waitFor();
+    check("tab close fallback and keyboard reopen");
+
+    await view();
+    await split("Project Beta");
+    await capture("split");
+    const paneId = await page.locator(".bb-tree-split [data-pane-id]").filter({ has: page.getByRole("button", { name: "Close pane", exact: true }) }).last().getAttribute("data-pane-id");
+    const projectPane = page.locator(`[data-pane-id="${paneId}"]`);
+    await projectPane.getByRole("button", { name: "Maximize pane (⇧ ⌘ E)", exact: true }).click();
+    await projectPane.getByRole("button", { name: "Restore split", exact: true }).click();
+    await projectPane.getByRole("button", { name: "Close pane", exact: true }).click();
+    await tab("Project Beta").waitFor();
+    check("split drag, maximize/restore and pane close retain project tabs");
+
+    await tab("Project Beta").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Close other tabs", exact: true }).click();
+    assert.equal(await page.locator("[data-project-tab-id]").count(), 1);
+    await page.keyboard.press("ControlOrMeta+Shift+T");
+    await tab("Project Alpha").waitFor();
+    check("bulk close and reopen");
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("heading", { name: "Appearance", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Back to workspace", exact: true }).click();
+    await tab("Project Alpha").waitFor();
+    await page.reload();
+    await tab("Project Alpha").waitFor();
+    await tab("Project Beta").waitFor();
+    await capture("restored");
+    check("Settings navigation and existing session restoration after reload");
+    await view();
+    await split("Project Beta");
+    await page.evaluate(() => {
+      globalThis.sessionCheckEvents = [];
+      for (const type of ["click", "keydown"])
+        document.addEventListener(type, event => globalThis.sessionCheckEvents.push({ type, target: event.target.textContent, prevented: event.defaultPrevented }));
+    });
+    await page.getByRole("button", { name: "Secondary", exact: true }).press("Enter");
+    await page.locator("[data-project-tab-id]").first().waitFor({ state: "detached" });
+    await page.getByRole("button", { name: "Project Alpha", exact: true }).first().waitFor();
+    assert.equal(await page.locator("[data-project-tab-id]").count(), 0);
+    await open("Project Alpha");
+    assert.equal(await page.locator("[data-project-tab-id]").count(), 1);
+    await page.getByRole("button", { name: "Operations", exact: true }).press("Enter");
+    await tab("Project Beta").waitFor();
+    await tab("Project Alpha").waitFor();
+    await page.locator(".bb-tree-split").first().waitFor();
+    await page.reload();
+    await page.locator(".bb-tree-split").first().waitFor();
+    await capture("workspace-restored-split");
+    check("Workspace switching isolates tabs and retains its split through reload");
+    report.windows.push(await app.evaluate(({ BrowserWindow }) => ({ bounds: BrowserWindow.getAllWindows()[0].getBounds(), contentBounds: BrowserWindow.getAllWindows()[0].getContentBounds() })));
+  } catch (error) {
+    report.errors.push(error.stack || String(error));
+    if (page) {
+      report.diagnostics = await page.evaluate(async () => ({
+        root: await window.workspace.request("workspace.getRoot", {}),
+        workspaces: await window.workspace.request("workspace.listWorkspaces", {}),
+        currentButtons: [...document.querySelectorAll("button[aria-current]")].map(button => button.textContent),
+        storage: { ...localStorage },
+        events: globalThis.sessionCheckEvents,
+      })).catch(() => null);
+      await page.screenshot({ path: join(evidence, `failure-${width}.png`) }).catch(() => {});
+      await writeFile(join(evidence, `failure-${width}.txt`), await page.locator("body").innerText().catch(() => ""));
+    }
+    throw error;
+  } finally {
+    await app.close();
+    await writeFile(join(evidence, "report.json"), JSON.stringify(report, null, 2));
+  }
+}
+assert.deepEqual(report.errors, []);
+console.log(`Session desktop checks passed: ${report.checks.length}; evidence: ${evidence}`);

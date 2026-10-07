@@ -193,7 +193,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /selectedProject/);
-  assert.match(appSource, /useState<WorkspaceMockProject \| null>\(\s*null\s*\)/);
   assert.match(appSource, /activeSurface/);
   assert.match(appSource, /activeSurface === "settings"/);
   assert.match(appSource, /activeViewType === "board"/);
