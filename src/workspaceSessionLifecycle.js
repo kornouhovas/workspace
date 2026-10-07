@@ -45,7 +45,7 @@ export function createWorkspaceSessionLifecycle({ storage, client, normalizeFile
         rememberPreview(own(before.layouts, command.workspaceId, createPaneLayout()).rightVisible ? null : before.selectedProject.id);
       }
       const result = session.dispatch(command);
-      if (result.projectToLoad || ["openProject", "closePreview", "closeTabs", "closePane", "showSurface"].includes(command.type)) generation++;
+      if (result.projectToLoad || ["openProject", "closePreview", "closeTabs", "closePane"].includes(command.type)) generation++;
       if (command.type === "openProject" && !command.tabId) rememberPreview(command.project.id);
       if (command.type === "restoreProject" && result.projectToLoad) rememberPreview(result.projectToLoad.id);
       if (command.type === "closePreview") rememberPreview(null);

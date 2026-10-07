@@ -209,3 +209,19 @@ test("fresh file trees retain intervening project edits and current errors remai
   failed.dispatch({ type: "openProject", workspaceId: "one", project: project("alpha") });
   assert.equal((await failed.loadProjectFileTree(project("alpha"), "one")).error.message, "offline");
 });
+
+test("Settings navigation during Workspace restoration retains the chosen surface and completes destination adoption", async () => {
+  const lookup = deferred();
+  const session = createWorkspaceSessionLifecycle({ storage: memoryStorage(), client: { ...client, getProject: () => lookup.promise } });
+  session.acceptWorkspace(await session.prepareWorkspace({ ...context, viewIds: ["board"], projects: [] }));
+  session.dispatch({ type: "openProject", workspaceId: "one", project: project("alpha") });
+  session.rememberPreview("beta", "board", "two");
+  session.beginWorkspace("two");
+  const pending = session.prepareWorkspace({ workspaceId: "two", viewId: "board", viewIds: ["board"], projects: [] });
+  session.dispatch({ type: "showSurface", workspaceId: "one", surface: "settings" });
+  lookup.resolve({ project: project("beta") });
+  assert.equal(session.acceptWorkspace(await pending).accepted, true);
+  assert.equal(session.pendingWorkspaceId, null);
+  assert.equal(session.getSnapshot().selectedProject.id, "beta");
+  assert.equal(session.getSnapshot().activeSurface, "settings");
+});
