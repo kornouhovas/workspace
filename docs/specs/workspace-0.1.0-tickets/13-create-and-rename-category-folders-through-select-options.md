@@ -1,6 +1,6 @@
 # T13: Create and rename category folders through Select options
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #20](https://github.com/kornouhovas/workspace/issues/20); Beads execution step: `workspace-31i.13`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 22, 23, 28, 30, 44.
 
 ## Blocked by
 
-- T12: Move projects by editing folder-backed Select
+- [T12 / GitHub #19](https://github.com/kornouhovas/workspace/issues/19): Move projects by editing folder-backed Select
 
 ## Verification and boundaries
 

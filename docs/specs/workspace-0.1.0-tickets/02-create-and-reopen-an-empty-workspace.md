@@ -1,6 +1,6 @@
 # T02: Create and reopen an empty workspace
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #9](https://github.com/kornouhovas/workspace/issues/9); Beads execution step: `workspace-31i.2`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M1. Specification user stories: 3, 9, 56, 73.
 
 ## Blocked by
 
-- T01: Launch desktop and persist the interface language
+- [T01 / GitHub #8](https://github.com/kornouhovas/workspace/issues/8): Launch desktop and persist the interface language
 
 ## Verification and boundaries
 

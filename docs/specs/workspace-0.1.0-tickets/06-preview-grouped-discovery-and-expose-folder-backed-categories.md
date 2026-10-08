@@ -1,6 +1,6 @@
 # T06: Preview grouped discovery and expose folder-backed categories
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #13](https://github.com/kornouhovas/workspace/issues/13); Beads execution step: `workspace-31i.6`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 11, 12, 14, 15, 18, 20, 28, 32.
 
 ## Blocked by
 
-- T04: Preview and discover direct project folders
+- [T04 / GitHub #11](https://github.com/kornouhovas/workspace/issues/11): Preview and discover direct project folders
 
 ## Verification and boundaries
 

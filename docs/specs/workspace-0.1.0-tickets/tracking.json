@@ -1,0 +1,512 @@
+{
+  "specification": "https://github.com/kornouhovas/workspace/issues/7",
+  "approved_draft_commit": "4994848",
+  "status": "verified",
+  "tickets": {
+    "T01": {
+      "title": "T01: Launch desktop and persist the interface language",
+      "document": "01-launch-desktop-and-persist-the-interface-language.md",
+      "blocked_by": [],
+      "github_number": 8,
+      "github_id": 5769646679,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/8",
+      "beads_id": "workspace-31i.1",
+      "github_body_sha256": "72d0e0e508ee5a1e02389c3ba6542e83a3ba74e18eabf9bfa4f5f2c7b72537ba",
+      "status": "published"
+    },
+    "T02": {
+      "title": "T02: Create and reopen an empty workspace",
+      "document": "02-create-and-reopen-an-empty-workspace.md",
+      "blocked_by": [
+        "T01"
+      ],
+      "github_number": 9,
+      "github_id": 5769647733,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/9",
+      "beads_id": "workspace-31i.2",
+      "github_body_sha256": "55b7af14c817103e2012602de53998d4890ad4f144d62612cac4815787590a38",
+      "status": "published"
+    },
+    "T03": {
+      "title": "T03: Manage multiple workspace configurations over shared roots",
+      "document": "03-manage-multiple-workspace-configurations-over-shared-roots.md",
+      "blocked_by": [
+        "T02"
+      ],
+      "github_number": 10,
+      "github_id": 5769649115,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/10",
+      "beads_id": "workspace-31i.3",
+      "github_body_sha256": "544a82824d45a7462a2b11d808768104265661de0e6f06ad9b177f364cebf8e9",
+      "status": "published"
+    },
+    "T04": {
+      "title": "T04: Preview and discover direct project folders",
+      "document": "04-preview-and-discover-direct-project-folders.md",
+      "blocked_by": [
+        "T02"
+      ],
+      "github_number": 11,
+      "github_id": 5769650339,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/11",
+      "beads_id": "workspace-31i.4",
+      "github_body_sha256": "ecc2af6d4442b04d4d38c00aaae3fdadd43641fb7792e9f78f63b17eca5e1083",
+      "status": "published"
+    },
+    "T05": {
+      "title": "T05: Create and edit shared Text properties",
+      "document": "05-create-and-edit-shared-text-properties.md",
+      "blocked_by": [
+        "T03",
+        "T04"
+      ],
+      "github_number": 12,
+      "github_id": 5769651664,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/12",
+      "beads_id": "workspace-31i.5",
+      "github_body_sha256": "31d9701ffc5dc9541c4f2d737eceaadccf24a5b23dd066870616ef750017cf26",
+      "status": "published"
+    },
+    "T06": {
+      "title": "T06: Preview grouped discovery and expose folder-backed categories",
+      "document": "06-preview-grouped-discovery-and-expose-folder-backed-categories.md",
+      "blocked_by": [
+        "T04"
+      ],
+      "github_number": 13,
+      "github_id": 5769653110,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/13",
+      "beads_id": "workspace-31i.6",
+      "github_body_sha256": "e1c7aa00c98774e6ea4524fbf87adc5e3d7649d7951528ceac481cdc50291c83",
+      "status": "published"
+    },
+    "T07": {
+      "title": "T07: Recover missing folders and unavailable sources",
+      "document": "07-recover-missing-folders-and-unavailable-sources.md",
+      "blocked_by": [
+        "T05"
+      ],
+      "github_number": 14,
+      "github_id": 5769654431,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/14",
+      "beads_id": "workspace-31i.7",
+      "github_body_sha256": "e00ba54a6a47021b4f24664bbd70aa70781676945608c998ffd019ef30c3f8cd",
+      "status": "published"
+    },
+    "T08": {
+      "title": "T08: Reconcile unambiguous external folder changes",
+      "document": "08-reconcile-unambiguous-external-folder-changes.md",
+      "blocked_by": [
+        "T06",
+        "T07"
+      ],
+      "github_number": 15,
+      "github_id": 5769655762,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/15",
+      "beads_id": "workspace-31i.8",
+      "github_body_sha256": "468535e6876f956f64eb839c7a2efae452f50dd19c11659fd3e5c5009faa48ab",
+      "status": "published"
+    },
+    "T09": {
+      "title": "T09: Change discovery mode with a non-destructive preview",
+      "document": "09-change-discovery-mode-with-a-non-destructive-preview.md",
+      "blocked_by": [
+        "T06",
+        "T07"
+      ],
+      "github_number": 16,
+      "github_id": 5769657210,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/16",
+      "beads_id": "workspace-31i.9",
+      "github_body_sha256": "e5053dfddcc4988848d7a6f74af1267651535236f112f64a9cce11e29ee3ac19",
+      "status": "published"
+    },
+    "T10": {
+      "title": "T10: Create project folders and reveal them in the file manager",
+      "document": "10-create-project-folders-and-reveal-them-in-the-file-manager.md",
+      "blocked_by": [
+        "T06"
+      ],
+      "github_number": 17,
+      "github_id": 5769658652,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/17",
+      "beads_id": "workspace-31i.10",
+      "github_body_sha256": "7ad5fac99a1a20071f9e570ba644a6ab9d666e1637e71a6438c08d5f0731604e",
+      "status": "published"
+    },
+    "T11": {
+      "title": "T11: Rename project folders without losing identity",
+      "document": "11-rename-project-folders-without-losing-identity.md",
+      "blocked_by": [
+        "T06",
+        "T07"
+      ],
+      "github_number": 18,
+      "github_id": 5769659875,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/18",
+      "beads_id": "workspace-31i.11",
+      "github_body_sha256": "d74f77a1e9cac7f00c373d839d280a8ac74da7e65a3624cc8ee8d270351d7d8e",
+      "status": "published"
+    },
+    "T12": {
+      "title": "T12: Move projects by editing folder-backed Select",
+      "document": "12-move-projects-by-editing-folder-backed-select.md",
+      "blocked_by": [
+        "T11"
+      ],
+      "github_number": 19,
+      "github_id": 5769661323,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/19",
+      "beads_id": "workspace-31i.12",
+      "github_body_sha256": "0171a2e4b91f87a074ce50abcf3be95506a4260d798af51b7400a87c737f55de",
+      "status": "published"
+    },
+    "T13": {
+      "title": "T13: Create and rename category folders through Select options",
+      "document": "13-create-and-rename-category-folders-through-select-options.md",
+      "blocked_by": [
+        "T12"
+      ],
+      "github_number": 20,
+      "github_id": 5769662697,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/20",
+      "beads_id": "workspace-31i.13",
+      "github_body_sha256": "5b418a37956d584f9b90d3d1a8e8f2f5c20a545c8b099e123d8b3c96bb0b4f61",
+      "status": "published"
+    },
+    "T14": {
+      "title": "T14: Remove occupied categories with an explicit destination",
+      "document": "14-remove-occupied-categories-with-an-explicit-destination.md",
+      "blocked_by": [
+        "T13"
+      ],
+      "github_number": 21,
+      "github_id": 5769664026,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/21",
+      "beads_id": "workspace-31i.14",
+      "github_body_sha256": "3fceac1ace3c70a404ab8c084d1059e4ac57fb29d4e7abc584ab4021605de348",
+      "status": "published"
+    },
+    "T15": {
+      "title": "T15: Archive and restore projects inside their source",
+      "document": "15-archive-and-restore-projects-inside-their-source.md",
+      "blocked_by": [
+        "T09",
+        "T12"
+      ],
+      "github_number": 22,
+      "github_id": 5769665212,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/22",
+      "beads_id": "workspace-31i.15",
+      "github_body_sha256": "116cc420862e36c76781e63c42e7c628e70af79a4e2d6d87cd94f15d73dd0a8b",
+      "status": "published"
+    },
+    "T16": {
+      "title": "T16: Edit Number properties with arithmetic input",
+      "document": "16-edit-number-properties-with-arithmetic-input.md",
+      "blocked_by": [
+        "T05"
+      ],
+      "github_number": 23,
+      "github_id": 5769666710,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/23",
+      "beads_id": "workspace-31i.16",
+      "github_body_sha256": "313b00ef99df4ae9d7681c6efa3f1b1eeee7033d2748e8b19c12f7508d21b5e6",
+      "status": "published"
+    },
+    "T17": {
+      "title": "T17: Edit Date properties without unintended date shifts",
+      "document": "17-edit-date-properties-without-unintended-date-shifts.md",
+      "blocked_by": [
+        "T05"
+      ],
+      "github_number": 24,
+      "github_id": 5769668075,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/24",
+      "beads_id": "workspace-31i.17",
+      "github_body_sha256": "38050604ab02187a124c509fc0c33793e44de4186cd010b93b4566f1dc09ec01",
+      "status": "published"
+    },
+    "T18": {
+      "title": "T18: Edit ordinary Single Select values and option presentation",
+      "document": "18-edit-ordinary-single-select-values-and-option-presentation.md",
+      "blocked_by": [
+        "T05"
+      ],
+      "github_number": 25,
+      "github_id": 5769669545,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/25",
+      "beads_id": "workspace-31i.18",
+      "github_body_sha256": "5f2b142a83a78e9062e57560f44a955851201bbef9355db7ed1bdc781f530482",
+      "status": "published"
+    },
+    "T19": {
+      "title": "T19: Edit MultiSelect values as stable option sets",
+      "document": "19-edit-multiselect-values-as-stable-option-sets.md",
+      "blocked_by": [
+        "T18"
+      ],
+      "github_number": 26,
+      "github_id": 5769670818,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/26",
+      "beads_id": "workspace-31i.19",
+      "github_body_sha256": "5cfc5060197a5b1178c54990ba45ea8a598a925e3a9c24ccd0fda8f24f2ed6dc",
+      "status": "published"
+    },
+    "T20": {
+      "title": "T20: Manage independent Table and Board views",
+      "document": "20-manage-independent-table-and-board-views.md",
+      "blocked_by": [
+        "T05"
+      ],
+      "github_number": 27,
+      "github_id": 5769672129,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/27",
+      "beads_id": "workspace-31i.20",
+      "github_body_sha256": "20b5eb442e6ce139f18f737df2bfd8021f492da2a2e3aabafb035d872d221bf7",
+      "status": "published"
+    },
+    "T21": {
+      "title": "T21: Search projects and save typed view filters",
+      "document": "21-search-projects-and-save-typed-view-filters.md",
+      "blocked_by": [
+        "T06",
+        "T16",
+        "T17",
+        "T19",
+        "T20"
+      ],
+      "github_number": 28,
+      "github_id": 5769673336,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/28",
+      "beads_id": "workspace-31i.21",
+      "github_body_sha256": "791801259deeec9eb8f1f686c7493add3a6584cec436d01e8d6e36a7cfa8814d",
+      "status": "published"
+    },
+    "T22": {
+      "title": "T22: Group Table and Board by exact scalar values",
+      "document": "22-group-table-and-board-by-exact-scalar-values.md",
+      "blocked_by": [
+        "T16",
+        "T17",
+        "T20"
+      ],
+      "github_number": 29,
+      "github_id": 5769675425,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/29",
+      "beads_id": "workspace-31i.22",
+      "github_body_sha256": "06f20d76a8c13edc649441d23db7d40f7283e4367b3f50233ebd14c351d9b810",
+      "status": "published"
+    },
+    "T23": {
+      "title": "T23: Group Select categories and MultiSelect memberships",
+      "document": "23-group-select-categories-and-multiselect-memberships.md",
+      "blocked_by": [
+        "T06",
+        "T19",
+        "T22"
+      ],
+      "github_number": 30,
+      "github_id": 5769677042,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/30",
+      "beads_id": "workspace-31i.23",
+      "github_body_sha256": "8c9ebbbd212bb8f84d59cf4ba6e59721918a810bafaae6a35ac74882d54ff5fe",
+      "status": "published"
+    },
+    "T24": {
+      "title": "T24: Customize Table columns and manual row order",
+      "document": "24-customize-table-columns-and-manual-row-order.md",
+      "blocked_by": [
+        "T20"
+      ],
+      "github_number": 31,
+      "github_id": 5769678704,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/31",
+      "beads_id": "workspace-31i.24",
+      "github_body_sha256": "bc74130971e29fb98b1cf5201f3d0be534c4320087e75065e88edfca6f4acd5f",
+      "status": "published"
+    },
+    "T25": {
+      "title": "T25: Customize Board columns and card wrapping",
+      "document": "25-customize-board-columns-and-card-wrapping.md",
+      "blocked_by": [
+        "T23"
+      ],
+      "github_number": 32,
+      "github_id": 5769680048,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/32",
+      "beads_id": "workspace-31i.25",
+      "github_body_sha256": "3d3d1dbda1d5b45c8924619e7ead3643f1b945f21a657d3fca819c32529e96e3",
+      "status": "published"
+    },
+    "T26": {
+      "title": "T26: Change scalar and Single Select values by group dragging",
+      "document": "26-change-scalar-and-single-select-values-by-group-dragging.md",
+      "blocked_by": [
+        "T21",
+        "T23"
+      ],
+      "github_number": 33,
+      "github_id": 5769681284,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/33",
+      "beads_id": "workspace-31i.26",
+      "github_body_sha256": "293929dc30ebf566076c2c29819d40ab577a13bb6cddc38cfcd4df1f5f860455",
+      "status": "published"
+    },
+    "T27": {
+      "title": "T27: Replace MultiSelect membership by group dragging",
+      "document": "27-replace-multiselect-membership-by-group-dragging.md",
+      "blocked_by": [
+        "T26"
+      ],
+      "github_number": 34,
+      "github_id": 5769682760,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/34",
+      "beads_id": "workspace-31i.27",
+      "github_body_sha256": "d3c9b5cafd9ed80b976d293232a18a46b7d90acd63a20d1d64daa893aa064161",
+      "status": "published"
+    },
+    "T28": {
+      "title": "T28: Rename and move real folders through group dragging",
+      "document": "28-rename-and-move-real-folders-through-group-dragging.md",
+      "blocked_by": [
+        "T15",
+        "T26"
+      ],
+      "github_number": 35,
+      "github_id": 5769684001,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/35",
+      "beads_id": "workspace-31i.28",
+      "github_body_sha256": "67bac40b52db5637baf7ecb3dc8b7f12bbf13b1089d0a389b673ae7bbffc694e",
+      "status": "published"
+    },
+    "T29": {
+      "title": "T29: Delete custom properties and ordinary options without broken views",
+      "document": "29-delete-custom-properties-and-ordinary-options-without-broken-views.md",
+      "blocked_by": [
+        "T21",
+        "T24",
+        "T25"
+      ],
+      "github_number": 36,
+      "github_id": 5769685300,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/36",
+      "beads_id": "workspace-31i.29",
+      "github_body_sha256": "d2d27285d4583255d9f9a424a586684e6c5380fba02f90043d0d93ad402ee550",
+      "status": "published"
+    },
+    "T30": {
+      "title": "T30: Export and restore local application data",
+      "document": "30-export-and-restore-local-application-data.md",
+      "blocked_by": [
+        "T07",
+        "T20"
+      ],
+      "github_number": 37,
+      "github_id": 5769686975,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/37",
+      "beads_id": "workspace-31i.30",
+      "github_body_sha256": "6fc03419290dc38f54966ba55e19b7b71cfe288d45b83bff1b1f68857de2af34",
+      "status": "published"
+    },
+    "T31": {
+      "title": "T31: Create automatic and pre-migration backups with recovery",
+      "document": "31-create-automatic-and-pre-migration-backups-with-recovery.md",
+      "blocked_by": [
+        "T30"
+      ],
+      "github_number": 38,
+      "github_id": 5769688374,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/38",
+      "beads_id": "workspace-31i.31",
+      "github_body_sha256": "afa949d7e76dc5a4bb16a637b59d64daa712a7f0f2c6d0f3d729ffd0b51ead81",
+      "status": "published"
+    },
+    "T32": {
+      "title": "T32: Install and reopen the local app on macOS",
+      "document": "32-install-and-reopen-the-local-app-on-macos.md",
+      "blocked_by": [
+        "T02"
+      ],
+      "github_number": 39,
+      "github_id": 5769689684,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/39",
+      "beads_id": "workspace-31i.32",
+      "github_body_sha256": "bfa9fa0fad911ad9278cfcb32d18289768e4d4c0316149c662ee86407441eba4",
+      "status": "published"
+    },
+    "T33": {
+      "title": "T33: Install and reopen the local app on Windows",
+      "document": "33-install-and-reopen-the-local-app-on-windows.md",
+      "blocked_by": [
+        "T02"
+      ],
+      "github_number": 40,
+      "github_id": 5769690974,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/40",
+      "beads_id": "workspace-31i.33",
+      "github_body_sha256": "10aaa7808e1b443d2ce3579971c56cfc272546d202695f0cfccdca47974c6f59",
+      "status": "published"
+    },
+    "T34": {
+      "title": "T34: Keep discovery and views responsive at an agreed project scale",
+      "document": "34-keep-discovery-and-views-responsive-at-an-agreed-project-scale.md",
+      "blocked_by": [
+        "T08",
+        "T24",
+        "T25",
+        "T26",
+        "T32",
+        "T33"
+      ],
+      "github_number": 41,
+      "github_id": 5769692163,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/41",
+      "beads_id": "workspace-31i.34",
+      "github_body_sha256": "f7e2d6fddb75f6c172ee714f5c0ba020ecfcdfdb21c35e24a42e2b9a67c06afa",
+      "status": "published"
+    },
+    "T35": {
+      "title": "T35: Prepare and verify the complete local 0.1.0 release candidate",
+      "document": "35-prepare-and-verify-the-complete-local-0-1-0-release-candidate.md",
+      "blocked_by": [
+        "T10",
+        "T14",
+        "T27",
+        "T28",
+        "T29",
+        "T31",
+        "T34"
+      ],
+      "github_number": 42,
+      "github_id": 5769694344,
+      "github_url": "https://github.com/kornouhovas/workspace/issues/42",
+      "beads_id": "workspace-31i.35",
+      "github_body_sha256": "31950f42f57f8c9afee42917c57f000ffa357902e7ee851d2df710d6115c0392",
+      "status": "published"
+    }
+  },
+  "parents": {
+    "6": {
+      "body_sha256": "b6e95422dea525c0f3e8fa384cc941c54327bcbf5be130a0a6afa94fccbc6033",
+      "state": "open",
+      "title": "Define the greenfield Workspace product and architecture"
+    },
+    "7": {
+      "body_sha256": "b0bbc7772fbc159a4b765950ad3c73ba0526e2b7b994e9beb66856300baeae09",
+      "state": "open",
+      "title": "Spec: Workspace 0.1.0 local desktop release"
+    }
+  },
+  "beads_epic": "workspace-31i",
+  "verification": {
+    "github_issues": 35,
+    "beads_steps": 35,
+    "blocking_edges": 63,
+    "native_subissues": 35,
+    "parents_body_title_state_unchanged": true,
+    "initial_frontier": [
+      "T01"
+    ]
+  }
+}

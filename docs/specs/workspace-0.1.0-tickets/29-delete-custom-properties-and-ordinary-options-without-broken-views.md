@@ -1,6 +1,6 @@
 # T29: Delete custom properties and ordinary options without broken views
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #36](https://github.com/kornouhovas/workspace/issues/36); Beads execution step: `workspace-31i.29`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,9 +22,9 @@ Roadmap scope: M3. Specification user stories: 41, 44, 49, 50, 56.
 
 ## Blocked by
 
-- T21: Search projects and save typed view filters
-- T24: Customize Table columns and manual row order
-- T25: Customize Board columns and card wrapping
+- [T21 / GitHub #28](https://github.com/kornouhovas/workspace/issues/28): Search projects and save typed view filters
+- [T24 / GitHub #31](https://github.com/kornouhovas/workspace/issues/31): Customize Table columns and manual row order
+- [T25 / GitHub #32](https://github.com/kornouhovas/workspace/issues/32): Customize Board columns and card wrapping
 
 ## Verification and boundaries
 

@@ -1,6 +1,6 @@
 # T07: Recover missing folders and unavailable sources
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #14](https://github.com/kornouhovas/workspace/issues/14); Beads execution step: `workspace-31i.7`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 17, 25, 26, 27.
 
 ## Blocked by
 
-- T05: Create and edit shared Text properties
+- [T05 / GitHub #12](https://github.com/kornouhovas/workspace/issues/12): Create and edit shared Text properties
 
 ## Verification and boundaries
 

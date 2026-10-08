@@ -1,6 +1,6 @@
 # T03: Manage multiple workspace configurations over shared roots
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #10](https://github.com/kornouhovas/workspace/issues/10); Beads execution step: `workspace-31i.3`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 4, 5, 7, 8, 9, 18.
 
 ## Blocked by
 
-- T02: Create and reopen an empty workspace
+- [T02 / GitHub #9](https://github.com/kornouhovas/workspace/issues/9): Create and reopen an empty workspace
 
 ## Verification and boundaries
 

@@ -1,6 +1,6 @@
 # T12: Move projects by editing folder-backed Select
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #19](https://github.com/kornouhovas/workspace/issues/19); Beads execution step: `workspace-31i.12`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 18, 22, 23, 27, 29, 32.
 
 ## Blocked by
 
-- T11: Rename project folders without losing identity
+- [T11 / GitHub #18](https://github.com/kornouhovas/workspace/issues/18): Rename project folders without losing identity
 
 ## Verification and boundaries
 

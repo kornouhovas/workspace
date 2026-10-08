@@ -1,6 +1,6 @@
 # T26: Change scalar and Single Select values by group dragging
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #33](https://github.com/kornouhovas/workspace/issues/33); Beads execution step: `workspace-31i.26`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M3. Specification user stories: 57, 58, 59, 64.
 
 ## Blocked by
 
-- T21: Search projects and save typed view filters
-- T23: Group Select categories and MultiSelect memberships
+- [T21 / GitHub #28](https://github.com/kornouhovas/workspace/issues/28): Search projects and save typed view filters
+- [T23 / GitHub #30](https://github.com/kornouhovas/workspace/issues/30): Group Select categories and MultiSelect memberships
 
 ## Verification and boundaries
 

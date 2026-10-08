@@ -1,6 +1,6 @@
 # T25: Customize Board columns and card wrapping
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #32](https://github.com/kornouhovas/workspace/issues/32); Beads execution step: `workspace-31i.25`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 41, 55, 56.
 
 ## Blocked by
 
-- T23: Group Select categories and MultiSelect memberships
+- [T23 / GitHub #30](https://github.com/kornouhovas/workspace/issues/30): Group Select categories and MultiSelect memberships
 
 ## Verification and boundaries
 

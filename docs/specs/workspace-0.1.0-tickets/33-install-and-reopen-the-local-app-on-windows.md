@@ -1,6 +1,6 @@
 # T33: Install and reopen the local app on Windows
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #40](https://github.com/kornouhovas/workspace/issues/40); Beads execution step: `workspace-31i.33`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M4. Specification user stories: 1, 9, 71, 72, 75.
 
 ## Blocked by
 
-- T02: Create and reopen an empty workspace
+- [T02 / GitHub #9](https://github.com/kornouhovas/workspace/issues/9): Create and reopen an empty workspace
 
 ## Verification and boundaries
 

@@ -1,6 +1,6 @@
 # T10: Create project folders and reveal them in the file manager
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #17](https://github.com/kornouhovas/workspace/issues/17); Beads execution step: `workspace-31i.10`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 19, 20, 21, 22, 27.
 
 ## Blocked by
 
-- T06: Preview grouped discovery and expose folder-backed categories
+- [T06 / GitHub #13](https://github.com/kornouhovas/workspace/issues/13): Preview grouped discovery and expose folder-backed categories
 
 ## Verification and boundaries
 

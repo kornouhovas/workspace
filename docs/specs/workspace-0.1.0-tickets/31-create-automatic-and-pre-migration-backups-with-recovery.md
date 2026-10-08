@@ -1,6 +1,6 @@
 # T31: Create automatic and pre-migration backups with recovery
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #38](https://github.com/kornouhovas/workspace/issues/38); Beads execution step: `workspace-31i.31`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M1/M4. Specification user stories: 68, 69, 70, 71.
 
 ## Blocked by
 
-- T30: Export and restore local application data
+- [T30 / GitHub #37](https://github.com/kornouhovas/workspace/issues/37): Export and restore local application data
 
 ## Verification and boundaries
 

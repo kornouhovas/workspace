@@ -1,6 +1,6 @@
 # T14: Remove occupied categories with an explicit destination
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #21](https://github.com/kornouhovas/workspace/issues/21); Beads execution step: `workspace-31i.14`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 22, 27, 31.
 
 ## Blocked by
 
-- T13: Create and rename category folders through Select options
+- [T13 / GitHub #20](https://github.com/kornouhovas/workspace/issues/20): Create and rename category folders through Select options
 
 ## Verification and boundaries
 

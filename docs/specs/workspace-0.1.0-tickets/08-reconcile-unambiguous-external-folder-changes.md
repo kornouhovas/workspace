@@ -1,6 +1,6 @@
 # T08: Reconcile unambiguous external folder changes
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #15](https://github.com/kornouhovas/workspace/issues/15); Beads execution step: `workspace-31i.8`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M2. Specification user stories: 23, 24, 25, 26, 27.
 
 ## Blocked by
 
-- T06: Preview grouped discovery and expose folder-backed categories
-- T07: Recover missing folders and unavailable sources
+- [T06 / GitHub #13](https://github.com/kornouhovas/workspace/issues/13): Preview grouped discovery and expose folder-backed categories
+- [T07 / GitHub #14](https://github.com/kornouhovas/workspace/issues/14): Recover missing folders and unavailable sources
 
 ## Verification and boundaries
 

@@ -1,6 +1,6 @@
 # T34: Keep discovery and views responsive at an agreed project scale
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #41](https://github.com/kornouhovas/workspace/issues/41); Beads execution step: `workspace-31i.34`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,12 +22,12 @@ Roadmap scope: M4. Specification user stories: 1, 49, 50, 54, 55, 57, 67, 73.
 
 ## Blocked by
 
-- T08: Reconcile unambiguous external folder changes
-- T24: Customize Table columns and manual row order
-- T25: Customize Board columns and card wrapping
-- T26: Change scalar and Single Select values by group dragging
-- T32: Install and reopen the local app on macOS
-- T33: Install and reopen the local app on Windows
+- [T08 / GitHub #15](https://github.com/kornouhovas/workspace/issues/15): Reconcile unambiguous external folder changes
+- [T24 / GitHub #31](https://github.com/kornouhovas/workspace/issues/31): Customize Table columns and manual row order
+- [T25 / GitHub #32](https://github.com/kornouhovas/workspace/issues/32): Customize Board columns and card wrapping
+- [T26 / GitHub #33](https://github.com/kornouhovas/workspace/issues/33): Change scalar and Single Select values by group dragging
+- [T32 / GitHub #39](https://github.com/kornouhovas/workspace/issues/39): Install and reopen the local app on macOS
+- [T33 / GitHub #40](https://github.com/kornouhovas/workspace/issues/40): Install and reopen the local app on Windows
 
 ## Verification and boundaries
 

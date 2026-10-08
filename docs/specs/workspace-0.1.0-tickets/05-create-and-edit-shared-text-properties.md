@@ -1,6 +1,6 @@
 # T05: Create and edit shared Text properties
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #12](https://github.com/kornouhovas/workspace/issues/12); Beads execution step: `workspace-31i.5`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M3. Specification user stories: 6, 40, 41, 42, 43, 45, 73.
 
 ## Blocked by
 
-- T03: Manage multiple workspace configurations over shared roots
-- T04: Preview and discover direct project folders
+- [T03 / GitHub #10](https://github.com/kornouhovas/workspace/issues/10): Manage multiple workspace configurations over shared roots
+- [T04 / GitHub #11](https://github.com/kornouhovas/workspace/issues/11): Preview and discover direct project folders
 
 ## Verification and boundaries
 

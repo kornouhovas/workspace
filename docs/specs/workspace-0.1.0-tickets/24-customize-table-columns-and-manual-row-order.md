@@ -1,6 +1,6 @@
 # T24: Customize Table columns and manual row order
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #31](https://github.com/kornouhovas/workspace/issues/31); Beads execution step: `workspace-31i.24`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 41, 54, 56.
 
 ## Blocked by
 
-- T20: Manage independent Table and Board views
+- [T20 / GitHub #27](https://github.com/kornouhovas/workspace/issues/27): Manage independent Table and Board views
 
 ## Verification and boundaries
 

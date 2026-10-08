@@ -1,20 +1,20 @@
-# Workspace 0.1.0 ticket proposal
+# Workspace 0.1.0 implementation tickets
 
-Status: draft, awaiting owner approval of granularity, blocking edges and merge/split choices. No implementation tickets or new Beads execution steps have been published.
+Status: approved by the owner and published. All 35 tickets are native sub-issues of [specification #7](https://github.com/kornouhovas/workspace/issues/7), labeled `ready-for-agent`, with native GitHub blockers and matching Beads steps under `workspace-31i`. Publication and both dependency graphs have been verified; implementation has not started.
 
-Source: [specification #7](https://github.com/kornouhovas/workspace/issues/7), including its full body and comments (none at drafting time). These are proposed vertical implementation slices, not approved Ralphex plans. The new branch contains documentation/tool configuration and no runtime to prefactor; the first slice introduces a minimal real application path.
+Source: [specification #7](https://github.com/kornouhovas/workspace/issues/7), including its full body and comments (none at drafting time). These are approved vertical implementation tickets, not execution plans. The new branch contains documentation/tool configuration and no runtime to prefactor; the first slice introduces a minimal real application path.
 
-## How to read this proposal
+## How to use the tickets
 
 Each ticket delivers an observable user workflow through the layers it needs, with acceptance and verification included. T01 establishes the first settings-to-database path; T02 creates and reopens an empty workspace. Later tickets extend real behavior rather than building a complete database, backend or frontend in isolation. Milestones are outcome groupings, not extra all-to-all dependencies.
 
-Only actual prerequisite tickets appear in Blocked by. T01 is the initial executable frontier once approved. Numbers are stable draft identifiers, not GitHub issue numbers and not an instruction to execute strictly in sequence. T32/T33 can begin after T02; backups and view work need not wait for all filesystem features.
+Only actual prerequisite tickets appear in Blocked by. T01 is the initial executable frontier. T-numbers are stable planning identifiers, not GitHub issue numbers and not an instruction to execute strictly in sequence. T32/T33 can begin after T02; backups and view work need not wait for all filesystem features.
 
 Localization, keyboard usability, validation, persistence/restart, renderer isolation, temporary test data and bb provenance are acceptance obligations in every affected slice. T35 verifies the composed release and does not postpone those obligations until the end. No new remote/sync/AI/site scope is introduced.
 
 Open design details from the specification stay inside their bounded slice as explicit gates. Approval of this breakdown does not silently select retention periods, signing credentials, deletion policies, performance thresholds or other unaccepted product choices. Agents can settle ordinary implementation details; consequential alternatives require the owner's specific decision before dependent work.
 
-## Proposed tickets
+## Published tickets
 
 | Ticket | Deliverable | Blocked by | Roadmap |
 | --- | --- | --- | --- |
@@ -54,11 +54,51 @@ Open design details from the specification stay inside their bounded slice as ex
 | [T34](34-keep-discovery-and-views-responsive-at-an-agreed-project-scale.md) | Keep discovery and views responsive at an agreed project scale | T08, T24, T25, T26, T32, T33 | M4 |
 | [T35](35-prepare-and-verify-the-complete-local-0-1-0-release-candidate.md) | Prepare and verify the complete local 0.1.0 release candidate | T10, T14, T27, T28, T29, T31, T34 | M4 |
 
-## Publication after approval
+## Tracking and execution
 
-Publish one English GitHub issue per approved ticket under specification #7, in dependency order, with the ready-for-agent label and native blocking relationships where supported. If native blockers are unavailable, keep explicit links in each issue's Blocked by section. Do not change or close parent issues #7 or #6.
+GitHub owns requirements and completion; Beads records execution progress/evidence and matching blocking edges. The parent issues remain open with unchanged titles and bodies. Publication did not start implementation or Ralphex.
 
-Create one linked Beads execution step per approved issue as the initial execution scaffold, retaining the GitHub URL and matching blocking edges. GitHub owns requirements and completion; Beads holds execution state/evidence. Add finer Beads steps only when implementation warrants them, rather than duplicating all acceptance text. Keep a mapping from draft ticket to GitHub issue and Beads ID, and verify both graphs after publication. No Ralphex execution starts from approval to publish tickets alone.
+The mapping below is a publication snapshot, not a second live status tracker. Consult GitHub and Beads for current state; update both deliberately when dependencies change. The machine-readable publication record is [tracking.json](tracking.json).
+
+| Ticket | GitHub issue | Beads execution step |
+| --- | --- | --- |
+| T01 | [#8](https://github.com/kornouhovas/workspace/issues/8) | `workspace-31i.1` |
+| T02 | [#9](https://github.com/kornouhovas/workspace/issues/9) | `workspace-31i.2` |
+| T03 | [#10](https://github.com/kornouhovas/workspace/issues/10) | `workspace-31i.3` |
+| T04 | [#11](https://github.com/kornouhovas/workspace/issues/11) | `workspace-31i.4` |
+| T05 | [#12](https://github.com/kornouhovas/workspace/issues/12) | `workspace-31i.5` |
+| T06 | [#13](https://github.com/kornouhovas/workspace/issues/13) | `workspace-31i.6` |
+| T07 | [#14](https://github.com/kornouhovas/workspace/issues/14) | `workspace-31i.7` |
+| T08 | [#15](https://github.com/kornouhovas/workspace/issues/15) | `workspace-31i.8` |
+| T09 | [#16](https://github.com/kornouhovas/workspace/issues/16) | `workspace-31i.9` |
+| T10 | [#17](https://github.com/kornouhovas/workspace/issues/17) | `workspace-31i.10` |
+| T11 | [#18](https://github.com/kornouhovas/workspace/issues/18) | `workspace-31i.11` |
+| T12 | [#19](https://github.com/kornouhovas/workspace/issues/19) | `workspace-31i.12` |
+| T13 | [#20](https://github.com/kornouhovas/workspace/issues/20) | `workspace-31i.13` |
+| T14 | [#21](https://github.com/kornouhovas/workspace/issues/21) | `workspace-31i.14` |
+| T15 | [#22](https://github.com/kornouhovas/workspace/issues/22) | `workspace-31i.15` |
+| T16 | [#23](https://github.com/kornouhovas/workspace/issues/23) | `workspace-31i.16` |
+| T17 | [#24](https://github.com/kornouhovas/workspace/issues/24) | `workspace-31i.17` |
+| T18 | [#25](https://github.com/kornouhovas/workspace/issues/25) | `workspace-31i.18` |
+| T19 | [#26](https://github.com/kornouhovas/workspace/issues/26) | `workspace-31i.19` |
+| T20 | [#27](https://github.com/kornouhovas/workspace/issues/27) | `workspace-31i.20` |
+| T21 | [#28](https://github.com/kornouhovas/workspace/issues/28) | `workspace-31i.21` |
+| T22 | [#29](https://github.com/kornouhovas/workspace/issues/29) | `workspace-31i.22` |
+| T23 | [#30](https://github.com/kornouhovas/workspace/issues/30) | `workspace-31i.23` |
+| T24 | [#31](https://github.com/kornouhovas/workspace/issues/31) | `workspace-31i.24` |
+| T25 | [#32](https://github.com/kornouhovas/workspace/issues/32) | `workspace-31i.25` |
+| T26 | [#33](https://github.com/kornouhovas/workspace/issues/33) | `workspace-31i.26` |
+| T27 | [#34](https://github.com/kornouhovas/workspace/issues/34) | `workspace-31i.27` |
+| T28 | [#35](https://github.com/kornouhovas/workspace/issues/35) | `workspace-31i.28` |
+| T29 | [#36](https://github.com/kornouhovas/workspace/issues/36) | `workspace-31i.29` |
+| T30 | [#37](https://github.com/kornouhovas/workspace/issues/37) | `workspace-31i.30` |
+| T31 | [#38](https://github.com/kornouhovas/workspace/issues/38) | `workspace-31i.31` |
+| T32 | [#39](https://github.com/kornouhovas/workspace/issues/39) | `workspace-31i.32` |
+| T33 | [#40](https://github.com/kornouhovas/workspace/issues/40) | `workspace-31i.33` |
+| T34 | [#41](https://github.com/kornouhovas/workspace/issues/41) | `workspace-31i.34` |
+| T35 | [#42](https://github.com/kornouhovas/workspace/issues/42) | `workspace-31i.35` |
+
+Initial ready step: `workspace-31i.1` ([T01 / #8](https://github.com/kornouhovas/workspace/issues/8)). The remaining tickets become available as their actual blockers complete. The execution epic `workspace-31i` groups the work without replacing specification #7.
 
 ## Coverage
 

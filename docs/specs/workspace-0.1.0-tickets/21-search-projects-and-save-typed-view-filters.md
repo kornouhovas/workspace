@@ -1,6 +1,6 @@
 # T21: Search projects and save typed view filters
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #28](https://github.com/kornouhovas/workspace/issues/28); Beads execution step: `workspace-31i.21`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,11 +22,11 @@ Roadmap scope: M3. Specification user stories: 49, 56, 64.
 
 ## Blocked by
 
-- T06: Preview grouped discovery and expose folder-backed categories
-- T16: Edit Number properties with arithmetic input
-- T17: Edit Date properties without unintended date shifts
-- T19: Edit MultiSelect values as stable option sets
-- T20: Manage independent Table and Board views
+- [T06 / GitHub #13](https://github.com/kornouhovas/workspace/issues/13): Preview grouped discovery and expose folder-backed categories
+- [T16 / GitHub #23](https://github.com/kornouhovas/workspace/issues/23): Edit Number properties with arithmetic input
+- [T17 / GitHub #24](https://github.com/kornouhovas/workspace/issues/24): Edit Date properties without unintended date shifts
+- [T19 / GitHub #26](https://github.com/kornouhovas/workspace/issues/26): Edit MultiSelect values as stable option sets
+- [T20 / GitHub #27](https://github.com/kornouhovas/workspace/issues/27): Manage independent Table and Board views
 
 ## Verification and boundaries
 

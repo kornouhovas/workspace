@@ -1,6 +1,6 @@
 # T01: Launch desktop and persist the interface language
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #8](https://github.com/kornouhovas/workspace/issues/8); Beads execution step: `workspace-31i.1`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M1. Specification user stories: 1, 2, 65, 66, 67, 73, 75.
 
 ## Blocked by
 
-None (can start immediately after the breakdown is approved).
+None (can start immediately).
 
 ## Verification and boundaries
 

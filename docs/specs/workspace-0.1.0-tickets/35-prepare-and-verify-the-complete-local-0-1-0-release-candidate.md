@@ -1,6 +1,6 @@
 # T35: Prepare and verify the complete local 0.1.0 release candidate
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #42](https://github.com/kornouhovas/workspace/issues/42); Beads execution step: `workspace-31i.35`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,13 +22,13 @@ Roadmap scope: M4. Specification user stories: 1–75 (integration verification;
 
 ## Blocked by
 
-- T10: Create project folders and reveal them in the file manager
-- T14: Remove occupied categories with an explicit destination
-- T27: Replace MultiSelect membership by group dragging
-- T28: Rename and move real folders through group dragging
-- T29: Delete custom properties and ordinary options without broken views
-- T31: Create automatic and pre-migration backups with recovery
-- T34: Keep discovery and views responsive at an agreed project scale
+- [T10 / GitHub #17](https://github.com/kornouhovas/workspace/issues/17): Create project folders and reveal them in the file manager
+- [T14 / GitHub #21](https://github.com/kornouhovas/workspace/issues/21): Remove occupied categories with an explicit destination
+- [T27 / GitHub #34](https://github.com/kornouhovas/workspace/issues/34): Replace MultiSelect membership by group dragging
+- [T28 / GitHub #35](https://github.com/kornouhovas/workspace/issues/35): Rename and move real folders through group dragging
+- [T29 / GitHub #36](https://github.com/kornouhovas/workspace/issues/36): Delete custom properties and ordinary options without broken views
+- [T31 / GitHub #38](https://github.com/kornouhovas/workspace/issues/38): Create automatic and pre-migration backups with recovery
+- [T34 / GitHub #41](https://github.com/kornouhovas/workspace/issues/41): Keep discovery and views responsive at an agreed project scale
 
 ## Verification and boundaries
 

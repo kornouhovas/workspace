@@ -1,6 +1,6 @@
 # T18: Edit ordinary Single Select values and option presentation
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #25](https://github.com/kornouhovas/workspace/issues/25); Beads execution step: `workspace-31i.18`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 32, 40, 42, 43, 44, 45.
 
 ## Blocked by
 
-- T05: Create and edit shared Text properties
+- [T05 / GitHub #12](https://github.com/kornouhovas/workspace/issues/12): Create and edit shared Text properties
 
 ## Verification and boundaries
 

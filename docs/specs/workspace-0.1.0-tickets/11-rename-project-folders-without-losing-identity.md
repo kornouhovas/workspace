@@ -1,6 +1,6 @@
 # T11: Rename project folders without losing identity
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #18](https://github.com/kornouhovas/workspace/issues/18); Beads execution step: `workspace-31i.11`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M2. Specification user stories: 21, 22, 23, 27.
 
 ## Blocked by
 
-- T06: Preview grouped discovery and expose folder-backed categories
-- T07: Recover missing folders and unavailable sources
+- [T06 / GitHub #13](https://github.com/kornouhovas/workspace/issues/13): Preview grouped discovery and expose folder-backed categories
+- [T07 / GitHub #14](https://github.com/kornouhovas/workspace/issues/14): Recover missing folders and unavailable sources
 
 ## Verification and boundaries
 

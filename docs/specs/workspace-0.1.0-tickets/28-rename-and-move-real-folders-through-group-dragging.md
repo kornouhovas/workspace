@@ -1,6 +1,6 @@
 # T28: Rename and move real folders through group dragging
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #35](https://github.com/kornouhovas/workspace/issues/35); Beads execution step: `workspace-31i.28`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M3. Specification user stories: 57, 62, 63, 64.
 
 ## Blocked by
 
-- T15: Archive and restore projects inside their source
-- T26: Change scalar and Single Select values by group dragging
+- [T15 / GitHub #22](https://github.com/kornouhovas/workspace/issues/22): Archive and restore projects inside their source
+- [T26 / GitHub #33](https://github.com/kornouhovas/workspace/issues/33): Change scalar and Single Select values by group dragging
 
 ## Verification and boundaries
 

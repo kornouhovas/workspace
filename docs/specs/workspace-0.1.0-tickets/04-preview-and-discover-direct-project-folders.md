@@ -1,6 +1,6 @@
 # T04: Preview and discover direct project folders
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #11](https://github.com/kornouhovas/workspace/issues/11); Beads execution step: `workspace-31i.4`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M2. Specification user stories: 10, 12, 13, 14, 15, 23.
 
 ## Blocked by
 
-- T02: Create and reopen an empty workspace
+- [T02 / GitHub #9](https://github.com/kornouhovas/workspace/issues/9): Create and reopen an empty workspace
 
 ## Verification and boundaries
 

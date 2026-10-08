@@ -1,6 +1,6 @@
 # T20: Manage independent Table and Board views
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #27](https://github.com/kornouhovas/workspace/issues/27); Beads execution step: `workspace-31i.20`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 7, 46, 47, 48, 50, 56.
 
 ## Blocked by
 
-- T05: Create and edit shared Text properties
+- [T05 / GitHub #12](https://github.com/kornouhovas/workspace/issues/12): Create and edit shared Text properties
 
 ## Verification and boundaries
 

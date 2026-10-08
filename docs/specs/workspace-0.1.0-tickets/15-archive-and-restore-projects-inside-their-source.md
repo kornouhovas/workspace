@@ -1,6 +1,6 @@
 # T15: Archive and restore projects inside their source
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #22](https://github.com/kornouhovas/workspace/issues/22); Beads execution step: `workspace-31i.15`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M2. Specification user stories: 33, 34, 35, 36, 37, 38, 39.
 
 ## Blocked by
 
-- T09: Change discovery mode with a non-destructive preview
-- T12: Move projects by editing folder-backed Select
+- [T09 / GitHub #16](https://github.com/kornouhovas/workspace/issues/16): Change discovery mode with a non-destructive preview
+- [T12 / GitHub #19](https://github.com/kornouhovas/workspace/issues/19): Move projects by editing folder-backed Select
 
 ## Verification and boundaries
 

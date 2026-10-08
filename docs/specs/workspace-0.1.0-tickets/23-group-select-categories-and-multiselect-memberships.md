@@ -1,6 +1,6 @@
 # T23: Group Select categories and MultiSelect memberships
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #30](https://github.com/kornouhovas/workspace/issues/30); Beads execution step: `workspace-31i.23`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,9 +22,9 @@ Roadmap scope: M3. Specification user stories: 50, 51, 52, 53, 56.
 
 ## Blocked by
 
-- T06: Preview grouped discovery and expose folder-backed categories
-- T19: Edit MultiSelect values as stable option sets
-- T22: Group Table and Board by exact scalar values
+- [T06 / GitHub #13](https://github.com/kornouhovas/workspace/issues/13): Preview grouped discovery and expose folder-backed categories
+- [T19 / GitHub #26](https://github.com/kornouhovas/workspace/issues/26): Edit MultiSelect values as stable option sets
+- [T22 / GitHub #29](https://github.com/kornouhovas/workspace/issues/29): Group Table and Board by exact scalar values
 
 ## Verification and boundaries
 

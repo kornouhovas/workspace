@@ -1,6 +1,6 @@
 # T19: Edit MultiSelect values as stable option sets
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #26](https://github.com/kornouhovas/workspace/issues/26); Beads execution step: `workspace-31i.19`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 40, 42, 43, 44, 45, 53.
 
 ## Blocked by
 
-- T18: Edit ordinary Single Select values and option presentation
+- [T18 / GitHub #25](https://github.com/kornouhovas/workspace/issues/25): Edit ordinary Single Select values and option presentation
 
 ## Verification and boundaries
 

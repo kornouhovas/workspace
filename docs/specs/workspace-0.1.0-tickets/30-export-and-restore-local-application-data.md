@@ -1,6 +1,6 @@
 # T30: Export and restore local application data
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #37](https://github.com/kornouhovas/workspace/issues/37); Beads execution step: `workspace-31i.30`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,8 +22,8 @@ Roadmap scope: M1/M4. Specification user stories: 68, 69, 70, 71.
 
 ## Blocked by
 
-- T07: Recover missing folders and unavailable sources
-- T20: Manage independent Table and Board views
+- [T07 / GitHub #14](https://github.com/kornouhovas/workspace/issues/14): Recover missing folders and unavailable sources
+- [T20 / GitHub #27](https://github.com/kornouhovas/workspace/issues/27): Manage independent Table and Board views
 
 ## Verification and boundaries
 

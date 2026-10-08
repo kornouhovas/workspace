@@ -1,6 +1,6 @@
 # T27: Replace MultiSelect membership by group dragging
 
-Draft for owner approval. Not published; no GitHub issue or Beads execution step has been created for this ticket.
+Approved and published: [GitHub #34](https://github.com/kornouhovas/workspace/issues/34); Beads execution step: `workspace-31i.27`. GitHub owns current requirements and status.
 
 ## Parent
 
@@ -22,7 +22,7 @@ Roadmap scope: M3. Specification user stories: 57, 60, 61, 64.
 
 ## Blocked by
 
-- T26: Change scalar and Single Select values by group dragging
+- [T26 / GitHub #33](https://github.com/kornouhovas/workspace/issues/33): Change scalar and Single Select values by group dragging
 
 ## Verification and boundaries
 
