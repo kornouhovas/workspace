@@ -6,6 +6,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { createPortal } from "react-dom";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
   FolderIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -34,7 +34,7 @@ import {
   workspaceMenuSeparatorClassName,
 } from "@/components/workspace/menu-styles";
 import { useI18n } from "@/i18n";
-import { ChromeAction } from "./pane-chrome";
+import { ChromeAction, NavigationChromeIcon } from "./pane-chrome";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavigationItem = {
@@ -44,6 +44,7 @@ type WorkspaceNavigationItem = {
 
 type WorkspaceLeftPanelProps = {
   readonly collapsed?: boolean;
+  readonly historyHost: HTMLElement | null;
   readonly activeSurface: "workspace" | "settings" | "workspace-settings";
   readonly activeWorkspaceId: string | null;
   readonly workspaces: readonly WorkspaceNavigationItem[];
@@ -90,6 +91,7 @@ function getWorkspaceDragOrder(
 
 export function WorkspaceLeftPanel({
   collapsed = false,
+  historyHost,
   activeSurface,
   activeWorkspaceId,
   workspaces,
@@ -417,24 +419,22 @@ export function WorkspaceLeftPanel({
 
   return (
     <aside className={`workspace-sidebar flex h-full shrink-0 flex-col bg-sidebar ${collapsed ? "w-0" : "w-[var(--workspace-sidebar-width)] border-r border-border"}`}>
-      <div
-        className="workspace-history absolute left-24 top-0 z-40 flex min-h-[var(--workspace-header-height)] items-center gap-1"
-      >
+      {historyHost && createPortal(<div className="workspace-history flex items-center gap-1">
         <ChromeAction
           label={t("chrome.back")}
           disabled={history.index <= 0}
           onClick={() => goHistory(history.index - 1)}
         >
-          <ChevronLeftIcon className="size-4" />
+          <NavigationChromeIcon kind="back" />
         </ChromeAction>
         <ChromeAction
           label={t("chrome.forward")}
           disabled={history.index >= history.entries.length - 1}
           onClick={() => goHistory(history.index + 1)}
         >
-          <ChevronRightIcon className="size-4" />
+          <NavigationChromeIcon kind="forward" />
         </ChromeAction>
-      </div>
+      </div>, historyHost)}
       <div className="h-[var(--workspace-header-height)] shrink-0" />
       <div inert={collapsed} aria-hidden={collapsed} className={`workspace-sidebar-body electron-window-no-drag flex min-h-0 flex-1 flex-col gap-2 px-3 pb-3 pt-1 ${collapsed ? "opacity-0" : "opacity-100"}`}>
         <button

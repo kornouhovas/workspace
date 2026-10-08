@@ -10,6 +10,7 @@ import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
 import { ProjectMoveIndicator } from "@/components/workspace/project-move-indicator";
 import { createProjectMoveController, type ProjectMovePending, type ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
+import { ProjectRenameAction } from "@/components/workspace/project-rename-action";
 import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
@@ -29,6 +30,7 @@ import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";
 import type { PaneAction } from "@/workspacePaneLayout";
 import {
   ChromeAction,
+  NavigationChromeIcon,
   ChromeIcon,
   PaneResize,
   WorkspaceRightPanel,
@@ -46,7 +48,6 @@ import {
 } from "@/i18n/errors.js";
 import {
   FolderIcon,
-  PanelLeftIcon,
   XIcon,
 } from "@/lib/workspace-icons";
 import {
@@ -561,6 +562,7 @@ function createClientDocumentId(prefix: string) {
 }
 
 export default function App() {
+  const [historyHost, setHistoryHost] = useState<HTMLDivElement | null>(null);
   const { t, locale } = useI18n();
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
@@ -799,27 +801,18 @@ export default function App() {
         event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
       if (editing || surfaceState.interactionDisabled) return;
       const key = event.key.toLowerCase();
-      if (key === "j") {
-        event.preventDefault();
-        sendPane({ type: "rightToggle" });
-      }
       if (key === "\\") {
         event.preventDefault();
         sendPane({ type: "sidebarToggle" });
       }
-      if (key === "t" && !event.shiftKey) {
-        event.preventDefault();
-        sendPane({ type: "rightOpen", id: "launcher" });
-      }
       if (key === "t" && event.shiftKey) {
         event.preventDefault();
-        if (paneLayout.focused === "right") sendPane({ type: "rightReopen" });
-        else reopenProjectTab();
+        reopenProjectTab();
       }
       if (key === "w") {
         event.preventDefault();
         const command = focusedPaneCloseCommand(paneLayout, activeProjectTabId, projectExpanded);
-        if (command?.kind === "rightTab") sendPane({ type: "rightClose", id: command.id });
+        if (command?.kind === "preview") closeSelectedProject();
         else if (command?.kind === "pane") closeLayoutPane(command.id);
         else if (command?.kind === "projectTab") closeProjectTab(command.id);
       }
@@ -2270,13 +2263,17 @@ export default function App() {
     return response.options as ProjectStatusMoveOption[];
   }
 
-  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
+  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption, renameName?: string) {
     if (surfaceInteractionDisabledRef.current) return;
     const requestWorkspaceId = state.workspaceId;
     const operationLoadRequestId = loadRequestIdRef.current;
     if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return false;
     try {
-      const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
+      let result: unknown;
+      if (renameName !== undefined) {
+        result = await projectMoveController.rename({ workspaceId: requestWorkspaceId, projectId: project.id,
+          projectName: project.name, statusValueId: option.id, from: option.from, to: option.to }, renameName);
+      } else result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
         projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
       if (!result) return false;
       if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== requestWorkspaceId) return true;
@@ -2287,10 +2284,15 @@ export default function App() {
             dispatchProjectTabs({ type: "update", workspaceId, project: recovered });
           if (workspaceIdRef.current === requestWorkspaceId) setSelectedProject(current => current?.id === project.id ? recovered : current);
         }
-        toast.error(t("move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
+        toast.error(t(renameName !== undefined ? "rename.recoveryRequired" : "move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
         return false;
       }
     } catch (error) {
+      if (renameName !== undefined) {
+        const code = isRecord(error) ? getString(error.code) : "";
+        const key = code === "INVALID_PROJECT_NAME" ? "rename.invalidName" : code === "PROJECT_NAME_CONFLICT" ? "rename.conflict" : code === "PROJECT_RENAME_GUARD_UNAVAILABLE" ? "rename.guardUnavailable" : code === "RENAME_RECOVERY_REQUIRED" ? "rename.recoveryRequired" : "";
+        throw new Error(key ? t(key) : getServiceErrorMessage(error, t));
+      }
       toast.error(t("move.failed"), { description: getServiceErrorMessage(error, t) });
       return false;
     }
@@ -2321,8 +2323,9 @@ export default function App() {
             projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
         }
       }
-      toast.success(t("move.completed"));
+      toast.success(t(renameName !== undefined ? "rename.completed" : "move.completed"));
     } catch (error) {
+      if (renameName !== undefined) throw error;
       toast.error(t("move.refreshFailed"), { description: getServiceErrorMessage(error, t) });
     }
     return true;
@@ -2414,7 +2417,7 @@ export default function App() {
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
     if (surfaceInteractionDisabledRef.current) return;
-    if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
+    if (!tabId && !projectExpanded && paneLayout.rightVisible && selectedProject?.id === project.id) {
       closeSelectedProject();
       return;
     }
@@ -2539,6 +2542,22 @@ export default function App() {
         ("totalProjectCount" in boardProjection ? boardProjection.totalProjectCount === 0 : boardProjection.columns.every((column) => column.projects.length === 0))
       : tableProjection.type === "table" && tableProjection.rows.length === 0 && !tableProjection.groupOptions && !tableProjection.groupingNotice);
 
+  const renderProjectRenameAction = (project: WorkspaceMockProject | null) => project ? (
+    <ProjectRenameAction
+      key={project.id}
+      name={project.name}
+      relativePath={project.currentRelativePath}
+      disabled={projectMovePending !== null || surfaceState.interactionDisabled}
+      onRename={async (name) => {
+        if (projectMovePending) throw new Error(t("rename.pending"));
+        const from = project.currentRelativePath;
+        const to = [...from.split("/").slice(0, -1), name].join("/");
+        const completed = await handleProjectStatusChange(project, { id: project.status.id, name: project.status.name, source: "folderRole", relativePath: null, current: false, from, to }, name);
+        if (!completed) throw new Error(t("rename.failed"));
+      }}
+    />
+  ) : null;
+
   const renderDetailPanel = (
     project = selectedProject,
     onClose = closeSelectedProject,
@@ -2583,35 +2602,6 @@ export default function App() {
     />
   );
   const detailPanel = renderDetailPanel();
-  const navigationPanel = (
-    <nav className="bb-navigation" aria-label={t("chrome.navigation")}>
-      <p className="bb-navigation-heading">
-        {listWorkspacePanes(paneLayout.tree).some(
-          (p) => p.paneId === paneLayout.focused && p.tabId,
-        ) && selectedProject
-          ? selectedProject.name
-          : currentWorkspaceName}
-      </p>
-      {viewState.views.map((view) => (
-        <button
-          type="button"
-          key={view.id}
-          className="bb-navigation-row"
-          onClick={() => {
-            selectSavedView(view.id);
-            openWorkspaceSurface();
-          }}
-        >
-          <FolderIcon className="size-4" aria-hidden="true" />
-          {view.name}
-        </button>
-      ))}
-      <button type="button" className="bb-navigation-row" onClick={openSettingsSurface}>
-        {t("sidebar.settings")}
-      </button>
-    </nav>
-  );
-
   const primaryPane = (
     <main
       onFocusCapture={() => sendPane({ type: "focus", pane: "workspace" })}
@@ -2635,6 +2625,7 @@ export default function App() {
               projectActions={
                 projectFullScreen ? (
                   <>
+                    {renderProjectRenameAction(selectedProject)}
                     <Button
                       type="button"
                       variant="ghost"
@@ -2951,6 +2942,7 @@ export default function App() {
           ].join(" ")}
         >
           <WorkspaceLeftPanel
+            historyHost={historyHost}
             collapsed={sidebarCollapsed}
             activeSurface={activeSurface}
             activeWorkspaceId={workspaceList.activeWorkspaceId || state.workspaceId}
@@ -2982,7 +2974,7 @@ export default function App() {
         )}
         <div
           className="bb-center flex min-h-0 min-w-0 flex-1"
-          style={{ display: !projectFullScreen && paneLayout.maximized === "right" ? "none" : undefined }}
+          style={{ display: !projectFullScreen && !projectExpanded && selectedProject && activeSurface === "workspace" && state.status !== "error" && paneLayout.rightVisible && paneLayout.maximized === "right" ? "none" : undefined }}
           data-maximized={paneLayout.maximized || undefined}
         >
           {projectFullScreen ? primaryPane : <WorkspaceSplitTree
@@ -3007,6 +2999,9 @@ export default function App() {
                 paneLayout.focused === pane.paneId,
               )
             }
+            renderProjectActions={(pane) => renderProjectRenameAction(
+              expandedProjectTabs.find((tab) => tab.tabId === pane.tabId) || null,
+            )}
             onClosePane={closeLayoutPane}
           />}
         </div>
@@ -3018,7 +3013,6 @@ export default function App() {
             suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
-            navigation={navigationPanel}
             project={
               !projectExpanded &&
               activeSurface === "workspace" &&
@@ -3027,6 +3021,7 @@ export default function App() {
                 : undefined
             }
             projectName={selectedProject?.name}
+            projectActions={renderProjectRenameAction(selectedProject)}
             onCloseProject={closeSelectedProject}
             onMaximizeProject={() => {
               if (selectedProject) createExpandedProject(selectedProject);
@@ -3034,20 +3029,18 @@ export default function App() {
           />
         )}
         {/* Native no-drag exclusion must follow pane drag regions in DOM order. */}
-        <button
-          type="button"
-          data-sidebar-toggle
-          className={[
-            "electron-window-no-drag workspace-top-action bb-chrome-action absolute top-[10px] z-40",
-            "left-[84px]",
-          ].join(" ")}
-          aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          onClick={() => sendPane({ type: "sidebarToggle" })}
-        >
-          <PanelLeftIcon className="size-4" aria-hidden="true" />
-        </button>
-        <div className="electron-window-no-drag absolute left-[116px] top-[10px] z-40">
+        <div className="workspace-navigation-chrome electron-window-no-drag absolute left-[84px] top-[10px] z-40 flex items-center gap-1">
+          <div ref={setHistoryHost} />
+          <button
+            type="button"
+            data-sidebar-toggle
+            className="electron-window-no-drag workspace-top-action bb-chrome-action"
+            aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+            title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+            onClick={() => sendPane({ type: "sidebarToggle" })}
+          >
+            <NavigationChromeIcon kind="sidebar" />
+          </button>
           <ProjectMoveIndicator pending={projectMovePending} />
         </div>
       </div>

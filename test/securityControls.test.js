@@ -99,7 +99,7 @@ test("preload and main process enforce the same explicit IPC method allowlist", 
   assert.equal(new Set(preloadMethods).size, preloadMethods.length);
   assert.equal(new Set(mainMethods).size, mainMethods.length);
   assert.deepEqual(preloadMethods, mainMethods);
-  assert.match(ipc, /ipcMain\.handle\(ipcChannel,\s*createWorkspaceIpcHandler\(options\)\)/);
+  assert.match(ipc, /const handler = createWorkspaceIpcHandler\(options\);[\s\S]*ipcMain\.handle\(ipcChannel, async/);
 });
 
 test("filesystem boundary canonicalizes existing targets and opens them without a shell", async () => {

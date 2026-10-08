@@ -46,3 +46,15 @@ export function blockOutsideWorkspaceMenuPointerDown(
   dismiss();
   return true;
 }
+
+// The shared capture guard runs before Radix item selection handlers.
+export function blockOutsideWorkspaceDropdownPointerDown(
+  event: WorkspaceMenuPointerEvent,
+  dismiss: () => void,
+) {
+  if (event.target instanceof Element && event.target.closest('[data-slot="dropdown-menu-trigger"][aria-expanded="true"]')) return false;
+  return blockOutsideWorkspaceMenuPointerDown(event,
+    '.workspace-menu-surface, [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-workspace-group-menu="true"]',
+    dismiss,
+  );
+}

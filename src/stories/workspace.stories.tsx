@@ -68,6 +68,7 @@ export const Sidebar = () => {
   return (
     <div className="workspace-sidebar w-64 rounded-lg border border-border p-3">
       <WorkspaceLeftPanel
+        historyHost={null}
         activeSurface="workspace"
         activeWorkspaceId={active}
         workspaces={[

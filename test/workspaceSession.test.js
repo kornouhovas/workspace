@@ -43,17 +43,19 @@ test("expanding a project reuses its tab unless a duplicate is explicitly reques
   assert.equal(session.getSnapshot().projectTabSelected, true);
 });
 
-test("closing multiple tabs publishes only the surviving fallback and can reopen the last closed tab", () => {
+test("closing active tabs publishes the saved view fallback and can reopen the last closed tab", () => {
   const session = createWorkspaceSession();
   for (const id of ["a", "b", "c"])
     session.dispatch({ type: "expandProject", workspaceId: "w", project: project(id), tabId: id });
   const observed = [];
   session.subscribe(() => observed.push(session.getSnapshot().activeProjectTabId));
   const result = session.dispatch({ type: "closeTabs", workspaceId: "w", tabIds: ["a", "c"] });
-  assert.deepEqual(observed, ["b"]);
+  assert.deepEqual(observed, [null]);
   assert.deepEqual(result.snapshot.tabs.w.map(tab => tab.tabId), ["b"]);
-  assert.equal(result.snapshot.selectedProject.id, "b");
-  assert.deepEqual(result.focus, { kind: "projectTab", id: "b" });
+  assert.equal(result.snapshot.selectedProject, null);
+  assert.equal(result.snapshot.projectTabSelected, false);
+  assert.equal(result.snapshot.layouts.w.rightVisible, false);
+  assert.deepEqual(result.focus, { kind: "viewTab" });
   session.dispatch({ type: "reopenProject", workspaceId: "w" });
   assert.deepEqual(session.getSnapshot().tabs.w.map(tab => tab.tabId), ["b", "c"]);
   assert.equal(session.getSnapshot().activeProjectTabId, "c");
@@ -82,8 +84,9 @@ test("closing an active tab retains unrelated split content and closing an inact
   for (const id of ["a", "b", "c"])
     session.dispatch({ type: "splitProject", workspaceId: "w", project: project(id), newTabId: id, paneId: `pane:${id}`, target: "workspace", side: "right" });
   session.dispatch({ type: "closeTabs", workspaceId: "w", tabIds: ["c"] });
-  assert.equal(session.getSnapshot().activeProjectTabId, "b");
+  assert.equal(session.getSnapshot().activeProjectTabId, null);
   assert.deepEqual(new Set(listWorkspacePanes(session.getSnapshot().layouts.w.tree).map(p => p.tabId)), new Set([null, "a", "b"]));
+  session.dispatch({ type: "openProject", workspaceId: "w", project: project("b"), tabId: "b", fullScreen: true });
   session.dispatch({ type: "closeTabs", workspaceId: "w", tabIds: ["a"] });
   assert.equal(session.getSnapshot().selectedProject.id, "b");
   session.dispatch({ type: "closeTabs", workspaceId: "w", tabIds: ["b"] });

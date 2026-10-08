@@ -1,4 +1,4 @@
-import { projectTabsReducer, projectTabCloseSelection } from "./workspaceProjectTabs.js";
+import { projectTabsReducer } from "./workspaceProjectTabs.js";
 import { createPaneLayout, paneLayoutReducer } from "./workspacePaneLayout.js";
 import { listWorkspacePanes } from "./workspaceSplitTree.js";
 
@@ -172,7 +172,6 @@ export function createWorkspaceSession({ tabs = {}, layouts = {}, sidebarWidth =
         case "closeTabs": {
           const closed = tabs.filter(tab => command.tabIds.includes(tab.tabId));
           if (!closed.length) return { snapshot };
-          const fallback = projectTabCloseSelection(tabs, snapshot.activeProjectTabId, command.tabIds);
           const layout = withoutTabPanes(pane(workspaceId), command.tabIds);
           let nextTabs = snapshot.tabs;
           for (const tab of closed)
@@ -181,14 +180,11 @@ export function createWorkspaceSession({ tabs = {}, layouts = {}, sidebarWidth =
           snapshot = {
             ...snapshot,
             tabs: nextTabs,
-            layouts: { ...snapshot.layouts, [workspaceId]: activeClosed && !fallback ? paneLayoutReducer(layout, { type: "closeSplit" }) : layout },
+            layouts: { ...snapshot.layouts, [workspaceId]: activeClosed ? paneLayoutReducer(paneLayoutReducer(layout, { type: "selectView" }), { type: "showWorkspace" }) : layout },
             closedProjectTabs: { ...snapshot.closedProjectTabs, [workspaceId]: [...own(snapshot.closedProjectTabs, workspaceId, []), ...closed].slice(-20) },
-            ...(activeClosed ? { selectedProject: fallback, activeProjectTabId: fallback?.tabId || null, ...(fallback ? { projectTabSelected: false } : {}) } : {}),
+            ...(activeClosed ? { selectedProject: null, activeProjectTabId: null, projectTabSelected: false } : {}),
           };
-          if (activeClosed) result = {
-            projectToLoad: fallback || undefined,
-            focus: fallback ? { kind: "projectTab", id: fallback.tabId } : { kind: "viewTab" },
-          };
+          if (activeClosed) result = { focus: { kind: "viewTab" } };
           break;
         }
         case "reopenProject": {

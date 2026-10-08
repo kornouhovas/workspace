@@ -43,3 +43,5 @@ The [Status interaction flow](../flows/board-table-views.md#board-and-table-stat
 ### Board and Table visual refinement (workspace-zlj)
 
 [Visual geometry](../ui-guidelines.md#board-and-table-visual-refinement-workspace-zlj) and the [activation/drag flow](../flows/board-table-views.md#board-and-table-visual-refinement-workspace-zlj) define presentation. Initial loading uses an announced loading surface; saved-view activation retains the confirmed inert surface until the authoritative destination and preview are ready. Superseded responses cannot publish into another active view. The operation does not change grouping, filters, property values/history or manual group ranks.
+
+Same-parent [project renaming](workspace-project-rename.md) shares the mutation/read barrier and pending-project set with Status moves. Both operations preserve opaque IDs and source-scoped roles/values, but rename uses an exclusive native staged rename journal instead of the copy/holding Status protocol. A concurrent rename and Status move for the same project rejects with `PROJECT_MOVE_PENDING`.

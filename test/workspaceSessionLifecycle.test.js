@@ -225,3 +225,25 @@ test("Settings navigation during Workspace restoration retains the chosen surfac
   assert.equal(session.getSnapshot().selectedProject.id, "beta");
   assert.equal(session.getSnapshot().activeSurface, "settings");
 });
+
+
+test("active tab Close forgets its saved preview and rejects a delayed restore while preserving inactive tabs", async () => {
+  const storage = memoryStorage();
+  let finish;
+  const session = createWorkspaceSessionLifecycle({ storage, client: { ...client, getProject: () => new Promise(resolve => { finish = resolve; }) } });
+  session.acceptWorkspace(await session.prepareWorkspace({ ...context, viewIds: ["board"], projects: [] }));
+  session.dispatch({ type: "openProject", workspaceId: "one", project: project("alpha") });
+  session.dispatch({ type: "expandProject", workspaceId: "one", project: project("alpha"), tabId: "tab-a" });
+  session.dispatch({ type: "expandProject", workspaceId: "one", project: project("beta"), tabId: "tab-b" });
+  const delayed = session.preparePreview(context);
+  session.dispatch({ type: "closeTabs", workspaceId: "one", tabIds: ["tab-b"] });
+  finish({ project: project("alpha") });
+  assert.equal(session.acceptPreview(await delayed).accepted, false);
+  session.syncScreen({ ...context, ready: true });
+  const restarted = createWorkspaceSessionLifecycle({ storage, client });
+  restarted.acceptWorkspace(await restarted.prepareWorkspace({ ...context, viewIds: ["board"], projects: [] }));
+  assert.equal(restarted.getSnapshot().selectedProject, null);
+  assert.equal(restarted.getSnapshot().layouts.one.rightVisible, false);
+  assert.deepEqual(restarted.getSnapshot().tabs.one.map(tab => tab.tabId), ["tab-a"]);
+  assert.equal(restarted.getScreen("one").previewByView.board, null);
+});

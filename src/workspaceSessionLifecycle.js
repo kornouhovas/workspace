@@ -40,15 +40,12 @@ export function createWorkspaceSessionLifecycle({ storage, client, normalizeFile
     ...session,
     dispatch(command) {
       const before = session.getSnapshot();
-      if (command.type === "pane" && command.action.type === "rightToggle" && before.selectedProject && !before.activeProjectTabId) {
-        generation++;
-        rememberPreview(own(before.layouts, command.workspaceId, createPaneLayout()).rightVisible ? null : before.selectedProject.id);
-      }
       const result = session.dispatch(command);
       if (result.projectToLoad || ["openProject", "closePreview", "closeTabs", "closePane"].includes(command.type)) generation++;
       if (command.type === "openProject" && !command.tabId) rememberPreview(command.project.id);
       if (command.type === "restoreProject" && result.projectToLoad) rememberPreview(result.projectToLoad.id);
-      if (command.type === "closePreview") rememberPreview(null);
+      if (command.type === "closePreview" || command.type === "closeTabs" && command.tabIds.includes(before.activeProjectTabId))
+        rememberPreview(null, readyContext.viewId, command.workspaceId);
       return result;
     },
     rememberPreview,

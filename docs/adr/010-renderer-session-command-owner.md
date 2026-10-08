@@ -28,3 +28,5 @@ No state library, HTTP transport, new bb feature or visual redesign is introduce
 Verification: [Issue #2 evidence](../specs/session-commands-verification.md). The previous pane rules remain defined by [ADR-005](005-bb-pane-session-chrome.md).
 
 Follow-up: [ADR-011](011-renderer-session-lifecycle.md) completes the lifecycle extraction described above. The intermediate React restoration adapters are superseded by the injected session lifecycle.
+
+Integration update, 2026-10-08: [ADR-012](012-project-close-and-preview-only-right-host.md) supersedes active-tab fallback and the right Navigation host. The [unification record](../../work/workspace-unification/README.md) records compatibility with the admitted current product changes; the original slice evidence above remains historical.

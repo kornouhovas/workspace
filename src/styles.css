@@ -740,12 +740,12 @@
 .workspace-settings > * { min-width: 0; }
 .workspace-folder-role-row > div:first-of-type { overflow-wrap: anywhere; }
 
-/* Native controls lead with the sidebar toggle, followed by history at the sidebar edge. */
+/* Native controls, Back, Forward and Sidebar share the leading 48px chrome row. */
 .bb-tree-pane[data-leading=true] > main > header,
 .bb-tree-pane[data-leading=true] > header,
 .bb-center > main > header,
 .bb-right-panel[data-leading=true] > header { transition:padding-left 220ms cubic-bezier(.2,.7,.2,1); }
-/* Reserve native traffic lights, sidebar toggle and history only in the leading header. */
+/* Reserve the native controls and navigation group only in the leading header. */
 .workspace-shell[data-sidebar-collapsed=true] .bb-tree-pane[data-leading=true] > main > header,
 .workspace-shell[data-sidebar-collapsed=true] .bb-tree-pane[data-leading=true] > header,
 .workspace-shell[data-sidebar-collapsed=true] .bb-center > main > header,
@@ -793,8 +793,6 @@ button,a,[role="button"],input,textarea,select,label { touch-action:manipulation
 [data-menu-remembered-hover=true] { background-color:var(--state-hover); }
 
 /* workspace-jqv: measured live bb desktop composition. */
-.workspace-history { left:auto; right:calc(100% - var(--workspace-sidebar-width) + 8px); }
-.workspace-shell[data-sidebar-collapsed=true] .workspace-history { left:136px;right:auto; }
 .workspace-settings-surface { align-self:center; }
 .workspace-settings-surface .workspace-settings-section { border-color:var(--border-hairline); }
 .workspace-settings-surface .workspace-settings-section-header { min-height:64px; }

@@ -6,30 +6,13 @@ import {
   readPaneLayouts,
   writePaneLayouts,
 } from "../src/workspacePaneLayout.js";
-test("right tabs deduplicate, close active/inactive/last with neighbour fallback, reopen", () => {
-  let s = createPaneLayout();
-  for (const id of ["a", "b", "c", "b"]) s = reduce(s, { type: "rightOpen", id });
-  assert.deepEqual(s.rightTabs, ["a", "b", "c"]);
-  assert.equal(s.activeRightTab, "b");
-  s = reduce(s, { type: "rightClose", id: "a" });
-  assert.equal(s.activeRightTab, "b");
-  s = reduce(s, { type: "rightClose", id: "b" });
-  assert.equal(s.activeRightTab, "c");
-  s = reduce(s, { type: "rightClose", id: "c" });
-  assert.equal(s.activeRightTab, "navigation");
-  s = reduce(s, { type: "rightReopen" });
-  assert.equal(s.activeRightTab, "c");
-  assert.deepEqual(s.rightTabs, ["c"]);
-});
-test("context close variants and reorder preserve identities", () => {
-  let s = createPaneLayout();
-  for (const id of ["a", "b", "c", "d"]) s = reduce(s, { type: "rightOpen", id });
-  s = reduce(s, { type: "rightReorder", ids: ["c", "b", "c", "missing"] });
-  assert.deepEqual(s.rightTabs, ["c", "b", "a", "d"]);
-  s = reduce(s, { type: "rightCloseAfter", id: "b" });
-  assert.deepEqual(s.rightTabs, ["c", "b"]);
-  s = reduce(s, { type: "rightCloseOthers", id: "b" });
-  assert.deepEqual(s.rightTabs, ["b"]);
+test("obsolete navigation and launcher commands cannot open a right host", () => {
+  const state = createPaneLayout();
+  for (const action of [
+    { type: "rightToggle" }, { type: "rightOpen", id: "launcher" },
+    { type: "rightSelect", id: "navigation" }, { type: "rightReopen" },
+  ]) assert.equal(reduce(state, action), state);
+  assert.equal(state.rightVisible, false);
 });
 test("split maximize restore close retains ratio and follows focus", () => {
   let s = reduce(createPaneLayout(), { type: "split" });
@@ -46,7 +29,7 @@ test("split maximize restore close retains ratio and follows focus", () => {
 test("session round trip validates surviving maximize/focus and validates malformed storage", () => {
   let raw;
   const store = { setItem: (_, value) => (raw = value), getItem: () => raw };
-  let s = reduce(createPaneLayout(), { type: "rightOpen", id: "tab:a" });
+  let s = reduce(createPaneLayout(), { type: "previewProject" });
   s = reduce(s, {
     type: "split",
     tabId: "project:a",
@@ -58,7 +41,7 @@ test("session round trip validates surviving maximize/focus and validates malfor
   assert.equal(writePaneLayouts(store, { opaque: s }), true);
   const loaded = readPaneLayouts(store).opaque;
   assert.equal(loaded.split, true);
-  assert.equal(loaded.activeRightTab, "tab:a");
+  assert.equal(loaded.rightVisible, true);
   assert.equal(loaded.maximized, "project");
   assert.equal(loaded.focused, "project");
   raw = "{bad";
@@ -76,8 +59,8 @@ test("session round trip validates surviving maximize/focus and validates malfor
     },
   });
   const a = readPaneLayouts(store).a;
-  assert.deepEqual(a.rightTabs, ["a"]);
-  assert.equal(a.activeRightTab, "navigation");
+  assert.equal(a.rightTabs, undefined);
+  assert.equal(a.activeRightTab, undefined);
   assert.equal(a.rightWidth, 16384);
   assert.equal(a.sidebarWidth, 240);
   assert.equal(a.splitRatio, 0.2);
@@ -92,14 +75,6 @@ test("session round trip validates surviving maximize/focus and validates malfor
     ),
     false,
   );
-});
-test("empty launcher is deduplicated and excluded from reopen history", () => {
-  let s = reduce(createPaneLayout(), { type: "rightOpen", id: "launcher" });
-  s = reduce(s, { type: "rightOpen", id: "launcher" });
-  assert.deepEqual(s.rightTabs, ["launcher"]);
-  s = reduce(s, { type: "rightClose", id: "launcher" });
-  assert.deepEqual(s.closedRightTabs, []);
-  assert.equal(reduce(s, { type: "rightReopen" }), s);
 });
 test("persisted invalid focus/maximize recover to surviving leaf without changing content", () => {
   const state = reduce(createPaneLayout(), {
@@ -120,7 +95,6 @@ test("persisted invalid focus/maximize recover to surviving leaf without changin
 
 test("opening an independent project preview preserves a restored split and its tab identities", () => {
   let state = reduce(createPaneLayout(), { type: "split", tabId: "alpha", paneId: "alpha-pane", target: "workspace", side: "right" });
-  state = reduce(state, { type: "rightOpen", id: "launcher" });
   state = reduce(state, { type: "maximize", pane: "alpha-pane" });
   let raw;
   const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
@@ -130,19 +104,15 @@ test("opening an independent project preview preserves a restored split and its 
   assert.deepEqual(preview.tree, restored.tree);
   assert.equal(preview.split, true);
   assert.equal(preview.rightVisible, true);
-  assert.equal(preview.activeRightTab, "navigation");
   assert.equal(preview.focused, "right");
   assert.equal(preview.maximized, null);
-  assert.deepEqual(preview.rightTabs, ["launcher"]);
 });
 
-test("selecting a saved view hides the right host without discarding split or right tabs", () => {
+test("selecting a saved view hides the right preview without discarding split panes", () => {
   let state = reduce(createPaneLayout(), { type: "split", tabId: "alpha", paneId: "alpha-pane", target: "workspace", side: "right" });
-  state = reduce(state, { type: "rightOpen", id: "launcher" });
   const next = reduce(state, { type: "selectView" });
   assert.equal(next.rightVisible, false);
   assert.deepEqual(next.tree, state.tree);
-  assert.deepEqual(next.rightTabs, state.rightTabs);
   let raw;
   const storage = { setItem: (_, value) => { raw = value; }, getItem: () => raw };
   writePaneLayouts(storage, { workspace: next });
@@ -179,4 +149,27 @@ test('shared sidebar width migrates legacy width and changes without mixing pane
   writeSidebarWidth(storage, 420);
   assert.equal(readSidebarWidth(storage, layouts), 420);
   assert.equal(layouts.b.rightVisible, false);
+});
+
+
+test("closing an expanded project cannot leave an empty right host visible", () => {
+  let state = reduce(createPaneLayout(), { type: "previewProject" });
+  state = reduce(state, { type: "closeSplit" });
+  assert.equal(state.rightVisible, false);
+  assert.equal(state.focused, "workspace");
+  assert.equal(state.maximized, null);
+});
+
+
+test("legacy navigation tabs are ignored without losing preview widths, sidebar or split identities", () => {
+  let state = reduce(createPaneLayout(), { type: "split", tabId: "project:a", paneId: "project-pane", target: "workspace", side: "right" });
+  state = { ...state, rightWidth: 735, rightWidthManual: true, sidebarWidth: 360, rightTabs: ["launcher"], activeRightTab: "launcher", closedRightTabs: ["old"], maximized: "project-pane" };
+  const restored = readPaneLayouts({ getItem: () => JSON.stringify({ version: 1, layouts: { opaque: state } }) }).opaque;
+  assert.deepEqual(restored.tree, state.tree);
+  assert.equal(restored.rightWidth, 735);
+  assert.equal(restored.sidebarWidth, 360);
+  assert.equal(restored.maximized, "project-pane");
+  assert.equal(restored.rightTabs, undefined);
+  assert.equal(restored.activeRightTab, undefined);
+  assert.equal(reduce(restored, { type: "previewProject" }).rightVisible, true);
 });

@@ -25,19 +25,14 @@ export function createPaneLayout() {
     splitRatio: 0.5,
     maximized: null,
     focused: "workspace",
-    rightTabs: [],
-    activeRightTab: "navigation",
-    closedRightTabs: [],
   };
 }
 export function paneLayoutReducer(state, action) {
   switch (action.type) {
     case "previewProject":
-      return { ...state, rightVisible: true, activeRightTab: "navigation", maximized: null, focused: "right" };
+      return { ...state, rightVisible: true, maximized: null, focused: "right" };
     case "selectView":
       return { ...state, rightVisible: false, maximized: null, focused: "workspace" };
-    case "rightToggle":
-      return { ...state, rightVisible: !state.rightVisible };
     case "sidebarToggle":
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed };
     case "resizeRight":
@@ -133,6 +128,7 @@ export function paneLayoutReducer(state, action) {
       return {
         ...state,
         tree: workspacePane(),
+        rightVisible: false,
         split: false,
         maximized: null,
         focused: "workspace",
@@ -143,69 +139,6 @@ export function paneLayoutReducer(state, action) {
         maximized: state.maximized === action.pane ? null : action.pane,
         focused: action.pane,
       };
-    case "rightOpen": {
-      if (typeof action.id !== "string" || !action.id) return state;
-      const tabs = state.rightTabs.includes(action.id)
-        ? state.rightTabs
-        : [...state.rightTabs, action.id];
-      return {
-        ...state,
-        rightVisible: true,
-        rightTabs: tabs,
-        activeRightTab: action.id,
-        focused: "right",
-      };
-    }
-    case "rightSelect":
-      return action.id === "navigation" || state.rightTabs.includes(action.id)
-        ? { ...state, activeRightTab: action.id, focused: "right" }
-        : state;
-    case "rightClose": {
-      const index = state.rightTabs.indexOf(action.id);
-      if (index < 0) return state;
-      const tabs = state.rightTabs.filter((id) => id !== action.id);
-      return {
-        ...state,
-        rightTabs: tabs,
-        activeRightTab:
-          state.activeRightTab === action.id
-            ? tabs[index - 1] || tabs[index] || "navigation"
-            : state.activeRightTab,
-        closedRightTabs:
-          action.id === "launcher"
-            ? state.closedRightTabs
-            : [...state.closedRightTabs.filter((id) => id !== action.id), action.id].slice(-20),
-      };
-    }
-    case "rightCloseOthers":
-      return state.rightTabs.reduce(
-        (next, id) =>
-          id === action.id ? next : paneLayoutReducer(next, { type: "rightClose", id }),
-        state,
-      );
-    case "rightCloseAfter": {
-      const index = state.rightTabs.indexOf(action.id);
-      return index < 0
-        ? state
-        : state.rightTabs
-            .slice(index + 1)
-            .reduce((next, id) => paneLayoutReducer(next, { type: "rightClose", id }), state);
-    }
-    case "rightReopen": {
-      const id = state.closedRightTabs.at(-1);
-      if (!id) return state;
-      return {
-        ...paneLayoutReducer(state, { type: "rightOpen", id }),
-        closedRightTabs: state.closedRightTabs.slice(0, -1),
-      };
-    }
-    case "rightReorder": {
-      const ids = [...new Set(action.ids)].filter((id) => state.rightTabs.includes(id));
-      return {
-        ...state,
-        rightTabs: [...ids, ...state.rightTabs.filter((id) => !ids.includes(id))],
-      };
-    }
     default:
       return state;
   }
@@ -219,12 +152,6 @@ export function readPaneLayouts(storage) {
         .filter(([, value]) => value && typeof value === "object")
         .map(([id, value]) => {
           const base = createPaneLayout();
-          const ids = Array.isArray(value.rightTabs)
-            ? [...new Set(value.rightTabs.filter((id) => typeof id === "string" && id))].slice(
-                0,
-                100,
-              )
-            : [];
           const tree = readWorkspaceSplitTree(value.tree) || workspacePane();
           const panes = listWorkspacePanes(tree);
           const surviving = (id) =>
@@ -243,10 +170,7 @@ export function readPaneLayouts(storage) {
               rightWidth: clamp(value.rightWidth, 280, 16384, 560),
               rightWidthManual: value.rightWidthManual === true || (Number.isFinite(value.rightWidth) && value.rightWidth !== 560),
               sidebarWidth: clamp(value.sidebarWidth, 240, 460, 320),
-              rightTabs: ids,
-              activeRightTab: ids.includes(value.activeRightTab)
-                ? value.activeRightTab
-                : "navigation",
+
             },
           ];
         }),

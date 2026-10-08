@@ -87,7 +87,9 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
     await open("Project Beta");
     await tab("Project Beta").click({ button: "right" });
     await page.getByRole("menuitem", { name: "Close view", exact: true }).click();
-    await page.locator('[data-project-tab-id][aria-selected="true"]').filter({ hasText: "Project Alpha" }).waitFor();
+    await expect(tab("Board")).toHaveAttribute("aria-selected", "true");
+    await expect(tab("Project Alpha")).toHaveAttribute("aria-selected", "false");
+    await expect(page.getByTestId("workspace-right-panel")).toHaveAttribute("data-open", "false");
     await page.keyboard.press("ControlOrMeta+Shift+T");
     await tab("Project Beta").waitFor();
     check("tab close fallback and keyboard reopen");
@@ -252,7 +254,7 @@ for (const [width, height] of [[1440, 960], [1024, 720]]) {
     await page.reload();
     await page.getByRole("button", { name: "Project Alpha", exact: true }).first().click();
     await page.getByRole("dialog", { name: "Project Alpha", exact: true }).waitFor();
-    await page.keyboard.press("ControlOrMeta+J");
+    await page.getByRole("button", { name: "Close project preview", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "Project Alpha", exact: true })).toHaveCount(0);
     check("unavailable storage getter leaves preview open and close commands usable");
     report.windows.push(await app.evaluate(({ BrowserWindow }) => ({ bounds: BrowserWindow.getAllWindows()[0].getBounds(), contentBounds: BrowserWindow.getAllWindows()[0].getContentBounds() })));

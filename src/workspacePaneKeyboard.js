@@ -11,9 +11,9 @@ export function shouldClosePaneOnEscape({ key, defaultPrevented, editing, active
 }
 export function focusedPaneCloseCommand(layout, projectTabId = null, projectExpanded = false) {
   if (layout.focused === "right")
-    return layout.activeRightTab === "navigation"
-      ? null
-      : { kind: "rightTab", id: layout.activeRightTab };
+    return projectExpanded && projectTabId
+      ? { kind: "projectTab", id: projectTabId }
+      : layout.rightVisible ? { kind: "preview" } : null;
   const leaves = [];
   function walk(node) {
     if (node.type === "pane") leaves.push(node);

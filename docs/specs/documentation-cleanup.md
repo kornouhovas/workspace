@@ -109,3 +109,7 @@ Before merging into that checkout:
 ## Verification
 
 Observed checks passed: node --test test/documentation.test.js test/securityAuditReport.test.js (21/21); all 76 documentation paths retained; local Markdown paths/anchors valid; zero repeated active paragraphs at the audited 180-character threshold; all 20 baseline requirement groups accounted for; all eight full historical originals verified in pinned Git objects. SHA-256 checks preserve 2,386 existing runtime/source/work/outputs files, imported bb source/license, frozen security/design/session reports and ADR/release templates. The original checkout's 59 Markdown files and seven external deletions are unchanged; its additional metadata file is preserved too. Documentation discoverability checks now target active rules/workflow/quality/tracker sources. git diff --check passed. Exact final link counts and preservation results are in the [verification record](../../work/documentation-reconciliation/verification.json). Software/native builds are unnecessary for this documentation-only scope and are not claimed.
+
+## Subsequent product integration
+
+The user authorized one main/local version including current functions and appearance on 2026-10-08. The [unification record](../../work/workspace-unification/README.md) records reconciliation of the incoming rename/property/chrome variants and retention of the seven shortened compatibility paths. The preservation manifest and verification counts above remain evidence of the earlier documentation-only delivery.

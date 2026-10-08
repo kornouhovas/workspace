@@ -24,3 +24,5 @@ The lifecycle and pure owner import no React, browser globals, Node or Electron 
 Restart, storage recovery, independent screen memory and preview races can be tested through session commands/snapshots with temporary storage and controlled service responses. An architecture check covers the lifecycle's transitive imports. The small reader correction for prototype-like Workspace IDs prevents an unrelated empty screen from discarding valid saved tabs.
 
 The own backend, active Electron JSON adapters, filesystem safeguards, visual components/CSS and Electron security settings are preserved. Server/web/mobile, AI, plugins and Go-store integration remain separate stages. Integration with the original checkout's unfinished changes remains pending in the draft PR.
+
+Integration update, 2026-10-08: [ADR-012](012-project-close-and-preview-only-right-host.md) supersedes active-tab fallback and the right Navigation host. The [unification record](../../work/workspace-unification/README.md) records compatibility with the admitted current product changes; the original slice evidence above remains historical.
