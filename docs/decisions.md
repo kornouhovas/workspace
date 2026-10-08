@@ -35,10 +35,11 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D25 | The local release associates project records with folders using paths and native filesystem IDs, without permanent project-ID marker files in project folders. Cross-computer identity remains a separate sharing-protocol decision. |
 | D26 | Ambiguous or missing folder matches retain the project and properties and offer manual reassociation. An unavailable root is shown as source unavailability. Neither case automatically deletes metadata. |
 | D27 | Grouped discovery requires a folder-backed category for every active project, including at creation; its value cannot be cleared. Direct discovery has no folder-backed Select. Ordinary Select properties may be empty in either mode. |
-| D28 | Board and Table support changing grouping-property values through group-to-group dragging for all property types. This extends the previous product's behavior; folder-backed Select dragging represents a physical move. Existing Number/Text/Date groups use exact values, which provide the destination assignment. Name behavior still needs an explicit contract. |
+| D28 | Board and Table support changing grouping-property values through group-to-group dragging for all property types. This extends the previous product's behavior; folder-backed Select dragging represents a physical move. Existing Number/Text/Date groups use exact values, which provide the destination assignment. Name behavior follows D32. |
 | D29 | Dragging an ordinary Single Select into its empty-value group clears that property. Folder-backed Select has no empty destination in grouped discovery because its category is required. |
 | D30 | The local release includes automatic application-data backups, a backup before schema migrations, and manual export/restore of the new format. These cover properties, views and settings; project-file backups remain the user's separate responsibility. |
 | D31 | MultiSelect dragging replaces the source option with the destination while preserving other options: A+B dragged from A to C becomes B+C. Dropping into the empty group clears all options; dragging from empty to C sets C. |
+| D32 | Name-group dragging renames the project folder to the destination group's name. Invalid names and occupied destinations in the same parent are rejected with an explanation; an empty-name destination is unavailable. |
 
 ## Open design branches
 
@@ -50,7 +51,7 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O04 | D18/D22/D27 settle bidirectional folder-backed Select, required grouped categories and discovery exclusions. Define option creation details, external renames, move collisions, empty folders and mixed-depth projects. |
 | O05 | D19/D24 settle relative archive paths, explicit restore recovery and archived editing. Define archive folder selection/default and archive-time collisions. |
 | O06 | D25/D26 settle local path/filesystem-ID matching without permanent project markers and non-destructive recovery. Define matching details for external moves, copied/replaced folders, reused IDs and case differences; portable replica identity remains in O11. |
-| O07 | D27-D29/D31 settle required folder categories, all-type drag changes in Board/Table, Single Select empty destinations and MultiSelect assignment. Define Name behavior, validation and filtered/sorted-view interactions. Range/date-bucket grouping is not in the preserved baseline. |
+| O07 | D27-D29/D31/D32 settle required folder categories, all-type drag changes in Board/Table, Single Select empty destinations, MultiSelect assignment and Name renames. Specify validation and filtered/sorted-view feedback. Range/date-bucket grouping is not in the preserved baseline. |
 | O08 | D23 settles initial native folder actions and excludes in-app project-file deletion. Define command details and keyboard/accessibility acceptance. |
 | O09 | D20/D30 settle the separate backend process and application-data backup scope. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery mechanics, watcher strategy and performance targets. |
 | O10 | Define local ownership and storage of private views and preferences; distinguish workspace configuration from shared-source metadata. |

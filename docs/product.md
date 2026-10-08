@@ -43,7 +43,9 @@ The following is a feature checklist derived from the previous product, not a co
 
 The old product's `Status` represented folder placement. The new configurable folder-backed Select replaces that fixed assumption. Board and Table now require value changes through dragging between groups for all property types. Ordinary property changes affect metadata; folder-backed Select changes move folders. Dragging Single Select into its empty-value group clears it, while folder-backed Select has no empty destination.
 
-Number, Text and Date retain exact-value grouping from the previous product; dropping into a group assigns its corresponding value. Range and calendar-bucket grouping are not part of that baseline. For MultiSelect, a drop replaces the source option with the target and preserves all other options: A+B dragged from A to C becomes B+C. Dropping into the empty group clears the entire selection; moving from empty to C assigns C. Name-group dragging still needs a separate folder-rename contract.
+Number, Text and Date retain exact-value grouping from the previous product; dropping into a group assigns its corresponding value. Range and calendar-bucket grouping are not part of that baseline. For MultiSelect, a drop replaces the source option with the target and preserves all other options: A+B dragged from A to C becomes B+C. Dropping into the empty group clears the entire selection; moving from empty to C assigns C.
+
+Dragging between Name groups renames the project folder to the destination group's name. Invalid names or names already occupied in the same parent cause rejection with an explanation. Empty names are unavailable as destinations. This command must use the filesystem rename boundary rather than only changing a display label.
 
 Full historical change tracking and transactional cascades were not guaranteed by the previous JSON runtime and must not be described as preserved implemented guarantees.
 
