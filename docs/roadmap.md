@@ -47,6 +47,7 @@ Depends on M1; folder-backed behavior also depends on M2.
 - Rebuild Table and Board with grouping, filtering and name search.
 - Preserve visibility/order controls, row/group ordering, widths and wrapping.
 - Reconcile fixed Status interactions with the new folder-backed Select model.
+- Add ordinary Select value changes through group-to-group dragging, with explicit type/layout coverage and destination rules.
 - Add empty/loading/error states, keyboard behavior and accessible interactions.
 - Validate every row of the [preservation baseline](product.md), including persistence after restart and shared-root configurations.
 

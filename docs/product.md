@@ -41,7 +41,7 @@ The following is a feature checklist derived from the previous product, not a co
 | Filesystem actions | Create/rename/reveal a project folder, explicit folder-backed category moves, archive/restore and source-bound safety; deleting a workspace does not delete project files |
 | Localization | English default/fallback, English/Russian setting, device-local preference; user names and paths remain unchanged |
 
-The old product's `Status` represented folder placement. The new configurable folder-backed Select replaces that fixed assumption. Dragging between custom-property groups must not silently acquire filesystem or value-edit semantics; define those interactions explicitly. Full historical change tracking and transactional cascades were not guaranteed by the previous JSON runtime and must not be described as preserved implemented guarantees.
+The old product's `Status` represented folder placement. The new configurable folder-backed Select replaces that fixed assumption. The new product also adds value changes when dragging between ordinary Select groups; those changes affect metadata, while folder-backed Select changes move folders. Layout/type coverage, MultiSelect and empty destinations still need explicit interaction contracts. Full historical change tracking and transactional cascades were not guaranteed by the previous JSON runtime and must not be described as preserved implemented guarantees.
 
 ## Later collaboration and AI
 
