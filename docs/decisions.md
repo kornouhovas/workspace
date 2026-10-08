@@ -2,7 +2,7 @@
 
 This ledger records the product interview. Accepted choices are separate from proposed implementations. The roadmap remains provisional where its prerequisites are open.
 
-Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6). Foundation execution step: `workspace-ty8` in the shared Beads store.
+Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6). Foundation execution step: `workspace-ty8`; continuing local-release design step: `workspace-1n8` in the shared Beads store.
 
 ## Accepted
 
@@ -35,7 +35,10 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D25 | The local release associates project records with folders using paths and native filesystem IDs, without permanent project-ID marker files in project folders. Cross-computer identity remains a separate sharing-protocol decision. |
 | D26 | Ambiguous or missing folder matches retain the project and properties and offer manual reassociation. An unavailable root is shown as source unavailability. Neither case automatically deletes metadata. |
 | D27 | Grouped discovery requires a folder-backed category for every active project, including at creation; its value cannot be cleared. Direct discovery has no folder-backed Select. Ordinary Select properties may be empty in either mode. |
-| D28 | Dragging between ordinary Select groups changes the project's property value. This extends the previous product's behavior; folder-backed Select dragging still represents a physical move. Scope across layouts, MultiSelect/other types and empty destinations is being clarified. |
+| D28 | Board and Table support changing grouping-property values through group-to-group dragging for all property types. This extends the previous product's behavior; folder-backed Select dragging represents a physical move. Existing Number/Text/Date groups use exact values, which provide the destination assignment. Name behavior still needs an explicit contract. |
+| D29 | Dragging an ordinary Single Select into its empty-value group clears that property. Folder-backed Select has no empty destination in grouped discovery because its category is required. |
+| D30 | The local release includes automatic application-data backups, a backup before schema migrations, and manual export/restore of the new format. These cover properties, views and settings; project-file backups remain the user's separate responsibility. |
+| D31 | MultiSelect dragging replaces the source option with the destination while preserving other options: A+B dragged from A to C becomes B+C. Dropping into the empty group clears all options; dragging from empty to C sets C. |
 
 ## Open design branches
 
@@ -47,9 +50,9 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O04 | D18/D22/D27 settle bidirectional folder-backed Select, required grouped categories and discovery exclusions. Define option creation details, external renames, move collisions, empty folders and mixed-depth projects. |
 | O05 | D19/D24 settle relative archive paths, explicit restore recovery and archived editing. Define archive folder selection/default and archive-time collisions. |
 | O06 | D25/D26 settle local path/filesystem-ID matching without permanent project markers and non-destructive recovery. Define matching details for external moves, copied/replaced folders, reused IDs and case differences; portable replica identity remains in O11. |
-| O07 | D27/D28 settle required folder categories and ordinary Select changes through drag/drop. Define layout/type coverage, MultiSelect behavior, empty destinations and filtered/sorted-view interactions. |
+| O07 | D27-D29/D31 settle required folder categories, all-type drag changes in Board/Table, Single Select empty destinations and MultiSelect assignment. Define Name behavior, validation and filtered/sorted-view interactions. Range/date-bucket grouping is not in the preserved baseline. |
 | O08 | D23 settles initial native folder actions and excludes in-app project-file deletion. Define command details and keyboard/accessibility acceptance. |
-| O09 | D20 settles the separate backend process. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery policy, watcher strategy and performance targets. |
+| O09 | D20/D30 settle the separate backend process and application-data backup scope. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery mechanics, watcher strategy and performance targets. |
 | O10 | Define local ownership and storage of private views and preferences; distinguish workspace configuration from shared-source metadata. |
 | O11 | Before shared-folder implementation: choose merge protocol, device/participant identity, bootstrap/disable flows, deletion handling, snapshots/GC, offline behavior and project-file conflict boundaries. |
 | O12 | Before AI: decide chat scope and ownership, supported providers, authentication, execution machine, file-write approvals, tools and concurrent agent edits. Subscription access must be verified per provider. |

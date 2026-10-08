@@ -20,7 +20,7 @@ Depends on the core M0 ownership and topology decisions.
 - Add English/Russian localization and device settings from the start.
 - Add bb-based tokens/components and a component preview environment.
 - Establish targeted tests, type checking, builds and OS validation in CI.
-- Define development-data isolation, backup and recovery paths.
+- Define development-data isolation and application-data backup/recovery paths, including automatic backups, pre-migration backups and manual new-format export/restore.
 
 Exit: a packaged development app on each target platform can create and reopen an empty workspace with persisted settings and a verified renderer/backend boundary.
 
@@ -47,7 +47,7 @@ Depends on M1; folder-backed behavior also depends on M2.
 - Rebuild Table and Board with grouping, filtering and name search.
 - Preserve visibility/order controls, row/group ordering, widths and wrapping.
 - Reconcile fixed Status interactions with the new folder-backed Select model.
-- Add ordinary Select value changes through group-to-group dragging, with explicit type/layout coverage and destination rules.
+- Add grouping-property changes through dragging in Board/Table for all property types, with explicit assignment and destination rules; ordinary Single Select can drop into its empty group to clear the value.
 - Add empty/loading/error states, keyboard behavior and accessible interactions.
 - Validate every row of the [preservation baseline](product.md), including persistence after restart and shared-root configurations.
 
@@ -60,7 +60,7 @@ Depends on M2 and M3.
 - Complete macOS and Windows installers and the selected signing/distribution path.
 - Exercise realistic folder counts, startup and view interactions against agreed performance targets.
 - Verify language switching, fallback and user-authored text preservation.
-- Verify migration, backup/recovery and upgrade behavior for new-format data.
+- Verify migration, automatic and pre-migration backups, manual export/restore and upgrade behavior for new-format application data; do not claim project-file recovery from metadata backups.
 - Complete release notes, version consistency checks and license/provenance review.
 - Document installation, supported environments and recovery/support paths.
 
