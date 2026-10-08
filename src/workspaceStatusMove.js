@@ -143,7 +143,7 @@ function remapRules(rules, from, to) {
   return next;
 }
 
-function commitLocations(settings, journal) {
+export function commitProjectLocations(settings, journal, journalKey = "projectMove") {
   const { rootPath, from, to, sourceId, projectId } = journal;
   const workspaceSources = structuredClone(settings.workspaceSources || {});
   for (const binding of Object.values(workspaceSources)) {
@@ -154,7 +154,7 @@ function commitLocations(settings, journal) {
     ...(settings.rootPath === rootPath ? { folderRules: remapRules(settings.folderRules, from, to) } : {}),
     workspaceSources,
     projectLocators: { ...settings.projectLocators, [sourceId]: { ...settings.projectLocators?.[sourceId], [projectId]: { path: to, dev: journal.targetDev, ino: journal.targetIno } } },
-    projectMove: { ...journal, phase: 'committed' },
+    [journalKey]: { ...journal, phase: 'committed' },
   };
 }
 
@@ -290,7 +290,7 @@ export function createProjectStatusMover({ configPath, testHooks = {}, writeSett
       await ownedHoldingContainer(rootPath, journal);
       await ownedTarget(rootPath, journal);
       const settings = await readWorkspaceSettings(configPath);
-      await writeSettings(configPath, commitLocations(settings, journal));
+      await writeSettings(configPath, commitProjectLocations(settings, journal));
       journal = { ...journal, phase: 'committed' };
       await testHooks.afterMetadataCommit?.({ from, to, holding, journal });
       await recover();

@@ -1,6 +1,6 @@
 # PRD: Workspace Project Board MVP
 
-Актуальное уточнение: [ADR-006](adr/006-workspace-source-bindings.md) заменяет раннее предположение об общем источнике на независимые source bindings Workspaces. Действующий Electron использует JSON-адаптеры через preload IPC; `any-store` ниже описывает целевое хранение, а не подключение runtime. См. [карту архитектуры](development/architecture.md).
+Current product boundaries follow [ADR-006](adr/006-workspace-source-bindings.md); current persistence is described in the [runtime guide](development/architecture.md).
 
 ## Goal
 
@@ -16,7 +16,7 @@ Workspace Project Board должен дать Notion-like слой поверх 
 
 ## Product Definitions
 
-- Project source folder: общая папка проектов, выбранная пользователем в Settings.
+- Project source folder: the root bound to a specific Workspace; roots may be shared or independent.
 - Workspace: сохранённая рабочая конфигурация поверх project source folder. Workspace хранит свои views, настройки отображения, фильтры по values и рабочие настройки properties.
 - Project: папка, определённая как проект по правилам Workspace.
 - View: сохранённый способ отображения проектов внутри Workspace, например Board или Table.
@@ -71,7 +71,7 @@ MVP включает:
 ## User Stories
 
 - Как пользователь, я хочу переключать интерфейс между English и Русский в Settings, чтобы работать на предпочитаемом языке без изменения данных проектов.
-- Как пользователь, я хочу выбрать папку проектов в Settings, чтобы приложение использовало её как общий источник проектов.
+- As a user, I can select a project folder for the target Workspace while retaining the bindings and data of other Workspaces.
 - Как пользователь, я хочу создавать Workspaces поверх выбранной папки проектов, чтобы иметь разные рабочие конфигурации для одних и тех же проектов.
 - Как пользователь, я хочу назначать папкам роли `group`, `status` и `project`, чтобы приложение правильно понимало мою структуру проектов.
 - Как пользователь, я хочу видеть проекты на Board view по статусам, чтобы быстро понимать состояние работ.
@@ -92,8 +92,8 @@ MVP включает:
 ### Workspace Management
 
 - Пользователь может выбрать project source folder в Settings.
-- Каждый Workspace, созданный в Left Panel, использует выбранную project source folder.
-- Пользователь может добавить новый Workspace без выбора отдельной корневой папки для него.
+- Each Workspace has an independent source binding. New Workspaces may initially inherit the current source, and can select another root without moving files or deleting retained data.
+- A Workspace can be created before source selection. It keeps its ID and default view IDs when a source is selected later.
 - Приложение сохраняет Workspace после добавления.
 - Пользователь может переименовать Workspace.
 - Пользователь может удалить Workspace из приложения без удаления файлов на диске.
@@ -221,7 +221,7 @@ MVP включает:
 ### Local Persistence
 
 - Приложение сохраняет Workspaces, folder roles, views, properties и values локально.
-- Данные сохраняются через `any local` / локальный `any-store`.
+- Current Electron persistence uses JSON settings/views/properties adapters. Go/any-store/SQLite remains the durable target; integration and migration are separate work.
 - Перезапуск приложения не должен сбрасывать Workspaces, views, roles, properties или values.
 - История изменений properties и property values сохраняется локально как product data.
 - Локальная модель хранения должна быть пригодна для будущего `any sync`.
@@ -280,15 +280,15 @@ MVP включает:
 - Удаление Workspace из приложения не удаляет файлы на диске.
 - Приложение не показывает проекты за пределами выбранной project source folder.
 - Board drop в допустимую Status-колонку и Table drop за внутренний левый захват между явными Status-группами переносят проект через общий безопасный backend.
-- Workspaces, roles, views, properties, values и история изменений properties сохраняются локально через `any local` / `any-store`.
+- Metadata persists locally through current adapters. Full lifecycle history and cross-record atomicity remain requirements to verify; this contract does not assert target-store integration.
 
 ## Dependencies And Constraints
 
 - Продукт работает с локальной файловой системой как источником проектов.
-- Product data хранится local-first через `any local` / локальный `any-store`.
+- Product metadata remains local-first. The [current/target scope table](data-model.md#current-runtime-and-target-scope) distinguishes implemented JSON namespaces from durable-store examples.
 - Будущий `any sync` должен накладываться поверх local-first модели, а не заменять её.
 - MVP не требует авторизации и облачного backend.
-- Проект должен иметь стабильный локальный id как primary id; относительный путь внутри project source folder хранится как текущий locator.
+- Consumers use opaque project IDs and relative locators. A general durable registry is still Proposed ADR-004; current explicit-move preservation does not guarantee arbitrary external rename/move reconciliation.
 - Любые изменения, которые затрагивают публичные contracts, data model или storage model, должны быть отражены в `docs/data-model.md`, API contracts и ADR на следующих этапах spec-first процесса.
 
 ## Risks
@@ -301,8 +301,8 @@ MVP включает:
 
 ## Resolved Product Decisions
 
-- Project source folder задаётся в Settings; Workspaces в Left Panel используют эту папку и являются разными сохранёнными рабочими конфигурациями поверх неё.
-- Проекты лучше идентифицировать стабильным локальным id. Относительный путь внутри project source folder хранится как текущий locator; абсолютный путь не используется как primary id.
+- Each Workspace binds its own selected source and saved views. Same-root Workspaces retain compatible shared project/property data; bindings and role snapshots remain independent.
+- Stable durable identities remain a target decision under ADR-004. Keep current opaque IDs/verified explicit aliases and do not infer identity or lost history from an absolute path.
 - Если проект найден вне папки с ролью `status`, он получает статус `No status`.
 - MVP поддерживает один уровень status folders.
 - Board позволяет перенос карточки в допустимую колонку Status; Table переносит проект за внутренний левый захват между явными Status-группами и сохраняет ручной порядок строк внутри группы.

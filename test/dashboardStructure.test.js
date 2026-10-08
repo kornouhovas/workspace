@@ -193,7 +193,6 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /WorkspaceProjectDetailPanel/);
   assert.match(appSource, /workspaceMockProjection/);
   assert.match(appSource, /selectedProject/);
-  assert.match(appSource, /useState<WorkspaceMockProject \| null>\(\s*null\s*\)/);
   assert.match(appSource, /activeSurface/);
   assert.match(appSource, /activeSurface === "settings"/);
   assert.match(appSource, /activeViewType === "board"/);
@@ -208,7 +207,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(appSource, /workspaceClient\s*\.setActiveView/);
   assert.match(appSource, /isUnsupportedWorkspaceMethodError/);
   assert.match(appSource, /sidebarCollapsed/);
-  assert.match(appSource, /PanelLeftIcon/);
+  assert.match(appSource, /<NavigationChromeIcon kind="sidebar"/);
   assert.match(appSource, /w-0/);
   assert.doesNotMatch(leftPanelSource, /onToggleCollapsed/);
   assert.match(appSource, /data-testid="workspace-main"/);
@@ -252,7 +251,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(leftPanelSource, /dragging && "bg-sidebar-accent/);
   assert.match(leftPanelSource, /t\("sidebar\.renameWorkspace"\)/);
   assert.match(leftPanelSource, /t\("sidebar\.deleteWorkspace"\)/);
-  assert.match(leftPanelSource, /min-h-\[var\(--workspace-header-height\)\]/);
+  assert.match(leftPanelSource, /h-\[var\(--workspace-header-height\)\] shrink-0/);
   assert.match(leftPanelSource, /onChange/);
   assert.match(leftPanelSource, /t\("sidebar\.workspaces"\)/);
   assert.match(leftPanelSource, /t\("sidebar\.settings"\)/);
@@ -323,7 +322,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /onOpenChange=\{value => \{[\s\S]*?setOpen\(value\)/);
   assert.match(viewFilterMenuSource, /t\("view\.visibleProperties"\)/);
   assert.match(viewFilterMenuSource, /Columns3Icon className="size-4 text-muted-foreground"/);
-  assert.match(viewFilterMenuSource, /h-6 min-w-6 justify-center rounded-full px-2/);
+  assert.match(viewFilterMenuSource, /h-5 min-w-5 justify-center rounded-full border-0 px-1\.5 text-xs/);
   assert.match(viewFilterMenuSource, /t\("view\.visiblePropertiesDescription"\)/);
   assert.match(viewFilterMenuSource, /t\("view\.valueFilters"\)/);
   assert.match(viewFilterMenuSource, /grid gap-1\.5/);
@@ -370,7 +369,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(viewFilterMenuSource, /select-none/);
   assert.match(viewFilterMenuSource, /valueFilterGroupButtonClassName/);
   assert.match(viewFilterMenuSource, /valueFilterItemClassName/);
-  assert.match(viewFilterMenuSource, /grid h-7 min-w-0 cursor-default select-none grid-cols-\[1rem_minmax\(0,1fr\)\] items-center gap-1\.5 rounded-lg px-1\.5 text-sm transition-colors hover:bg-accent\/55/);
+  assert.match(viewFilterMenuSource, /grid h-7 min-w-0 cursor-default select-none grid-cols-\[1rem_minmax\(0,1fr\)\] items-center gap-1\.5 rounded-sm px-1\.5 text-xs transition-colors hover:bg-accent\/55/);
   assert.match(viewFilterMenuSource, /className="h-6 min-w-0"/);
   assert.match(viewFilterMenuSource, /max-h-60 gap-1/);
   assert.match(viewFilterMenuSource, /<div className="grid gap-0\.5">/);
@@ -444,17 +443,17 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(boardViewSource, /data-color=\{statusColor\}/);
   assert.match(boardViewSource, /"--workspace-board-column-width": `\$\{preferredColumnWidth\}px`/);
   assert.doesNotMatch(boardViewSource, /Math\.min\(preferredColumnWidth/);
-  assert.match(boardViewSource, /gridAutoColumns: "var\(--workspace-board-column-width\)"/);
+  assert.match(boardViewSource, /style=\{\{ width: groupWidth \}\}/);
   assert.match(boardViewSource, /resizeObserver\.observe\(viewport\)/);
   assert.match(appSource, /columnWidth=\{activeView\?\.boardLayout\?\.columnWidth\}/);
   assert.match(appSource, /boardColumnWidthMax=\{getBoardColumnWidthMax\(boardViewportWidth\)\}/);
   assert.match(appSource, /onViewportWidthChange=\{setBoardViewportWidth\}/);
   assert.match(boardViewSource, /min-h-10/);
   assert.match(boardViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
-  assert.match(boardViewSource, /px-4 pb-4 pt-3/);
+  assert.match(boardViewSource, /items-start gap-3 px-4 pb-4/);
   assert.match(boardViewSource, /workspace-board-scroll min-h-0 flex-1 overflow-auto/);
   assert.doesNotMatch(boardViewSource, /overflow-y-auto/);
-  assert.match(boardViewSource, /data-workspace-column-count/);
+  assert.match(boardViewSource, /data-workspace-board-wrap/);
   assert.match(boardViewSource, /w-full/);
   assert.doesNotMatch(boardViewSource, /py-4/);
   assert.doesNotMatch(boardViewSource, /Cards are read-only across status columns/);
@@ -465,12 +464,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /property\.id === "property:status"/);
   assert.match(tableViewSource, /backendProject\.folderStatus/);
   assert.match(tableViewSource, /renderTableStatusValue/);
-  assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors"/);
+  assert.match(tableViewSource, /className="workspace-table-cell-control flex h-7 w-full min-w-0 items-center justify-start rounded-md px-2 transition-colors"/);
   assert.match(tableViewSource, /className="workspace-table-value-chip h-6 max-w-full cursor-default select-none gap-1\.5 rounded-md border border-border\/50 bg-secondary\/70 px-2 text-xs font-normal"/);
   assert.match(tableViewSource, /border-t border-border\/45/);
   assert.match(tableViewSource, /sticky top-0 z-20 bg-background\/95/);
-  assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border\)\]";/);
-  assert.match(tableViewSource, /group\/column relative cursor-default select-none bg-background\/95 px-1/);
+  assert.match(tableViewSource, /const tableColumnDividerClassName = "shadow-\[inset_-1px_0_0_var\(--border-hairline\)\]";/);
+  assert.match(tableViewSource, /group\/column relative cursor-default select-none bg-background\/95 h-8 px-1/);
   assert.doesNotMatch(tableViewSource, /after:pointer-events-none after:absolute after:inset-y-0 after:right-0/);
   assert.match(tableViewSource, /<TableBody[^>]*className="\[\&_tr:last-child\]:!border-b \[\&_tr:last-child\]:!border-border\/45"[^>]*>/);
   assert.match(tableViewSource, /bg-muted-foreground\/70/);
@@ -634,12 +633,12 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /colgroup/);
   assert.match(tableViewSource, /table-fixed/);
   assert.match(tableViewSource, /visiblePropertyWidths/);
-  assert.match(tableViewSource, /className="min-w-full table-fixed"/);
-  assert.match(tableViewSource, /style=\{\{ minWidth: tableWidth \}\}/);
+  assert.match(tableViewSource, /className="min-w-full table-fixed border-collapse text-\[13px\]/);
+  assert.match(tableViewSource, /style=\{\{ width: tableWidth, minWidth: "100%" \}\}/);
   assert.match(tableViewSource, /<col aria-label=\{t\("table\.addPropertyFiller"\)\} \/>/);
   assert.match(tableViewSource, /t\("table\.resizeColumn", \{\s*name: property\.name,?\s*\}\)/);
   assert.match(tableViewSource, /cursor-col-resize/);
-  assert.match(tableViewSource, /clampPropertyColumnWidth/);
+  assert.match(tableViewSource, /normalizeTableColumnWidth/);
   assert.match(tableViewSource, /className="h-7 w-full min-w-0 rounded-md px-1\.5 text-sm"/);
   assert.doesNotMatch(tableViewSource, /min-w-36/);
   assert.match(tableViewSource, /hiddenViewProperties/);
@@ -647,14 +646,14 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(tableViewSource, /rowHandleColumnWidth/);
   assert.doesNotMatch(tableViewSource, /aria-label="Row reorder"/);
   assert.match(tableViewSource, /PlusIcon/);
-  assert.match(tableViewSource, /className="h-8 hover:bg-accent\/15"/);
+  assert.match(tableViewSource, /className="group\/status-row h-8 hover:bg-accent\/15"/);
   assert.doesNotMatch(tableViewSource, /cursor-pointer/);
   assert.match(tableViewSource, /function getBodyCellClassName/);
   assert.match(tableViewSource, /return `h-8 \$\{tableColumnDividerClassName\} align-top p-0\.5`;/);
   assert.match(tableViewSource, /\? `h-8 \$\{tableColumnDividerClassName\} align-top p-0\.5`/);
   assert.match(tableViewSource, /: `h-8 \$\{tableColumnDividerClassName\} align-top truncate px-3 py-0`;/);
-  assert.match(tableViewSource, /className=\{getBodyCellClassName\(property, editable, wrapContent\)\}/);
-  assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-8/);
+  assert.match(tableViewSource, /getBodyCellClassName\(property, editable, wrapContent\)/);
+  assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-7/);
   assert.match(tableViewSource, /workspace-table-cell-control/);
   assert.match(tableViewSource, /workspace-table-text-value/);
   assert.match(selectValueEditorSource, /workspace-table-value-chip/);
@@ -667,10 +666,10 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(cssSource, /\.workspace-table-empty-value:hover/);
   assert.doesNotMatch(cssSource, /\.workspace-table-text-value:hover/);
   assert.match(cssSource, /box-shadow: inset 0 0 0 1px color-mix\(in oklch, var\(--border\) 75%, var\(--foreground\) 25%\);/);
-  assert.match(tableViewSource, /className="workspace-table-cell-control flex h-8 w-full min-w-0 items-center justify-start rounded-md px-2 text-left font-normal text-foreground transition-colors focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring\/30"/);
+  assert.match(tableViewSource, /workspace-table-cell-display workspace-table-cell-control flex h-7[^"\n]*focus-visible:ring-2/);
   assert.doesNotMatch(tableViewSource, /className="flex h-10 w-full/);
   assert.match(tableViewSource, /flex h-full min-h-0 w-full flex-col overflow-hidden/);
-  assert.match(tableViewSource, /px-3 pb-0 pt-3/);
+  assert.match(tableViewSource, /pl-3 pb-0 pt-3/);
   assert.match(tableViewSource, /min-h-0 w-full flex-1 overflow-auto/);
   assert.match(tableViewSource, /w-full/);
   assert.match(tableViewSource, /border-t border-border\/45/);
@@ -717,7 +716,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.doesNotMatch(projectDetailPanelSource, /property\.id !== "property:status"/);
   assert.match(projectDetailPanelSource, /detailVisibleProperties/);
   assert.match(projectDetailPanelSource, /property\.id !== "property:name"/);
-  assert.match(projectDetailPanelSource, /detailVisibleProperties\.map/);
+  assert.match(projectDetailPanelSource, /\[\.\.\.orderedVisibleProperties, \.\.\.hiddenCardProperties\]\.map/);
   assert.match(projectDetailPanelSource, /property\.id === "property:name"/);
   assert.match(projectDetailPanelSource, /property\.id === "property:status"/);
   assert.match(projectDetailPanelSource, /function canRenameCardProperty/);
@@ -728,10 +727,8 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /isFolder && isExpanded && node\.children/);
   assert.match(projectDetailPanelSource, /projectDetailPropertiesGridTemplateColumns/);
   assert.match(projectDetailPanelSource, /getFileTreeNodeIconClassName/);
-  assert.match(projectDetailPanelSource, /rounded-md border border-border\/45 bg-background\/15/);
+  assert.match(projectDetailPanelSource, /group\/card-property grid min-h-8 items-stretch/);
   assert.match(projectDetailPanelSource, /grid-cols-\[2rem_minmax\(0,1fr\)\]/);
-  assert.match(projectDetailPanelSource, /border-r border-border\/45/);
-  assert.match(projectDetailPanelSource, /border-b border-border\/45/);
   assert.match(projectDetailPanelSource, /className="h-7 w-full justify-start px-1\.5 py-0 text-left/);
   assert.match(projectDetailPanelSource, /text-file-accent/);
   assert.doesNotMatch(projectDetailPanelSource, /text-(amber|emerald|rose|sky)-300/);
@@ -744,7 +741,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /t\("property\.properties"\)/);
   assert.match(projectDetailPanelSource, /t\("detail\.fileTree"\)/);
   assert.doesNotMatch(projectDetailPanelSource, /<header className="border-b border-border\/60/);
-  assert.match(projectDetailPanelSource, /t\("view\.hiddenProperties"\)/);
+  assert.match(projectDetailPanelSource, /"detail\.hideProperties" : "detail\.moreProperties"/);
   assert.match(projectDetailPanelSource, /hiddenCardProperties/);
   assert.match(projectDetailPanelSource, /function isProjectDetailProperty/);
   assert.match(projectDetailPanelSource, /property\.id !== "property:name"/);
@@ -756,28 +753,13 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /property\.hidden \|\| cardHiddenPropertyIds\.includes\(property\.id\)/);
   assert.match(projectDetailPanelSource, /function setCardPropertyHidden/);
   assert.match(projectDetailPanelSource, /setCardPropertyHidden\(property, visibilityAction === "hide"\)/);
-  assert.match(projectDetailPanelSource, /aria-controls="project-visible-properties"\s+aria-expanded=\{propertiesExpanded\}/);
-  assert.doesNotMatch(projectDetailPanelSource, /Properties[\s\S]*workspace-project-detail-hidden-properties-toggle[\s\S]*<\/div>[\s\S]*<dl className="overflow-hidden rounded-md border border-border\/45 bg-background\/15">\s*\{orderedVisibleProperties\.map/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-heading workspace-project-detail-heading group\/section-heading flex items-center justify-between gap-3/);
-  assert.match(projectDetailPanelSource, /workspace-project-detail-hidden-properties-toggle group\/section-toggle relative flex h-7/);
-  assert.match(projectDetailPanelSource, /t\("view\.hiddenProperties"\)[\s\S]*<dl[\s\S]*id="project-hidden-properties"[\s\S]*className="overflow-hidden rounded-md border border-border\/45 bg-background\/15"/);
-  assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*border-b border-border\/45[\s\S]*last:border-b-0/);
-  assert.match(projectDetailPanelSource, /hiddenCardProperties\.map[\s\S]*ProjectPropertyValueEditor/);
-  const hiddenPropertiesMarkup = projectDetailPanelSource.slice(
-    projectDetailPanelSource.indexOf("{hiddenPropertiesExpanded ? ("),
-    projectDetailPanelSource.indexOf("<section className=\"grid gap-2\" aria-labelledby=\"project-file-tree-heading\">"),
-  );
-  assert.match(hiddenPropertiesMarkup, /hover:bg-accent\/15/);
-  assert.doesNotMatch(hiddenPropertiesMarkup, /opacity-75/);
-  assert.match(hiddenPropertiesMarkup, /data-card-property-row-group="hidden"/);
-  assert.match(hiddenPropertiesMarkup, /PopoverAnchor asChild/);
-  assert.match(hiddenPropertiesMarkup, /startCardPropertyDrag\(event, property\.id, \{\s+group: "hidden",\s+openActionsOnClick: true,\s+\}\)/);
-  assert.match(hiddenPropertiesMarkup, /renderCardPropertyActionsMenu\(property, "show"\)/);
-  assert.doesNotMatch(hiddenPropertiesMarkup, /Open \$\{property\.name\} hidden property value menu/);
-  assert.doesNotMatch(hiddenPropertiesMarkup, /isProtectedCardProperty\(property\) && propertyMenuAvailable[\s\S]*openCardPropertyMenu\(property\.id\)/);
-  assert.doesNotMatch(hiddenPropertiesMarkup, /onClick=\{\(\) => showProperty\(property\)\}/);
-  assert.doesNotMatch(hiddenPropertiesMarkup, />\s*Show\s*<\/Button>/);
+  // The rendered list/disclosure contract is covered by projectDetailProperties.test.js.
+  // Keep action/editing ownership here without encoding the superseded two-list markup.
+  assert.match(projectDetailPanelSource, /data-card-property-row-group=\{group\}/);
+  assert.match(projectDetailPanelSource, /hidden=\{rowHidden\}/);
+  assert.match(projectDetailPanelSource, /ProjectPropertyValueEditor/);
+  assert.match(projectDetailPanelSource, /PopoverAnchor asChild/);
+  assert.match(projectDetailPanelSource, /renderCardPropertyActionsMenu\(property, group === "hidden" \? "show" : "hide"\)/);
   assert.doesNotMatch(projectDetailPanelSource, /<span className="truncate">Hidden<\/span>/);
   assert.doesNotMatch(projectDetailPanelSource, /<Separator className="my-0" \/>/);
   assert.doesNotMatch(projectDetailPanelSource, /mt-2 border-t border-border\/70 pt-2/);
@@ -809,7 +791,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /cardPropertyOrderStorageKey/);
   assert.match(projectDetailPanelSource, /orderedVisibleProperties/);
   assert.match(projectDetailPanelSource, /type CardPropertyGroup = "visible" \| "hidden";/);
-  assert.match(projectDetailPanelSource, /data-card-property-row-group="visible"/);
+  assert.match(projectDetailPanelSource, /data-card-property-row-group=\{group\}/);
   assert.match(projectDetailPanelSource, /mergeCardPropertyGroupOrder/);
   assert.match(projectDetailPanelSource, /startCardPropertyDrag/);
   assert.match(projectDetailPanelSource, /getCardPropertyDragPreviewRows/);
@@ -837,7 +819,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(projectDetailPanelSource, /data-workspace-detail-add-property-menu="true"/);
   assert.match(projectDetailPanelSource, /setPropertyActionsId\(propertyId\)/);
   assert.match(projectDetailPanelSource, /closePropertyMenuBeforeAction/);
-  assert.match(projectDetailPanelSource, /startCardPropertyDrag\(event, property\.id, \{\s*openActionsOnClick: true,?\s*\}\)/);
+  assert.match(projectDetailPanelSource, /startCardPropertyDrag\(event, property\.id, \{\s*group,\s*openActionsOnClick: true,?\s*\}\)/);
   assert.match(projectDetailPanelSource, /onClick=\{\(event\) => \{\s*event\.preventDefault\(\);[\s\S]*suppressCardPropertyClickRef[\s\S]*openCardPropertyMenu\(property\.id\);/);
   assert.match(projectDetailPanelSource, /role="menu"/);
   assert.match(projectDetailPanelSource, /role="menuitem"/);
@@ -934,7 +916,7 @@ test("renderer composes the workspace product shell", async () => {
   assert.match(tableViewSource, /readonly onColorSelectValue: \(selectValueId: string, color: string\) => void;/);
   assert.match(tableViewSource, /onColorSelectValue,\s+onDeleteSelectValue,\s+\}: WorkspaceTableViewProps/);
   assert.match(tableViewSource, /onColorSelectValue=\{onColorSelectValue\}/);
-  assert.match(appSource, /<WorkspaceTableView[\s\S]*view=\{activeView \?\? null\}/);
+  assert.match(appSource, /<WorkspaceTableView[\s\S]*view=\{activeView \? \{ \.\.\.activeView, rowOrder: serviceProjection\?\.view\.rowOrder \?\? activeView\.rowOrder \} : null\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*statusValues=\{statusValues\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*onToggleValueFilter=\{handleToggleValueFilter\}/);
   assert.match(appSource, /<WorkspaceTableView[\s\S]*onColorSelectValue=\{handleColorSelectValue\}/);
@@ -964,7 +946,7 @@ test("renderer composes the workspace product shell", async () => {
     selectValueEditorSource.indexOf("{filteredValues.map"),
   );
   assert.ok(
-    selectValueActionsMarkup.indexOf("Delete value") < selectValueActionsMarkup.indexOf("Color"),
+    selectValueActionsMarkup.indexOf('t("value.delete")') < selectValueActionsMarkup.indexOf('t("value.color")'),
     "select value actions should show rename, delete, then color controls",
   );
 

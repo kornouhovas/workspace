@@ -54,8 +54,8 @@ This is the primary daily workflow after the project source folder and folder ro
 
 1. User selects a Board view.
 2. Board defaults to Status columns; Group by selects another supported property or None.
-3. Projects inside status folders appear in their status column.
-4. Projects outside status folders appear in the `No status` column.
+3. With Status grouping, projects inside status folders appear in their corresponding column.
+4. With Status grouping, projects outside status folders appear in the `No status` column.
 5. Each card shows `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 6. Value visibility filters hide projects whose selected property values are excluded by the active view.
 7. User can adjust the shared status-column width for this Board view from `Customize Columns`.
@@ -64,7 +64,7 @@ This is the primary daily workflow after the project source folder and folder ro
 Rules:
 
 - Board columns follow the selected grouping property with independent view ordering by dragging their names; see [Board column order](#board-column-order-workspace-fns).
-- Project cards can be dragged into another available Status column, including empty columns.
+- Card drops are available only under Status grouping and use fresh eligible Status IDs, including empty eligible columns; other grouping properties and None cannot invoke a folder move.
 - Empty status columns remain visible with a compact empty state when no value filter or search query is active.
 - While filtering or searching, status columns with no matching projects are hidden and the remaining columns shift together.
 - Status columns retain their fixed width while other filtered-out columns are removed; Board uses horizontal scrolling when needed.
@@ -74,7 +74,7 @@ Rules:
 ## Table Path
 
 1. User selects a Table view.
-2. Table shows one row per project.
+2. Flat Table shows one row per project; Multi-select grouping can display several occurrences sharing one identity/rank and unique totals.
 3. Columns show `Name` and visible properties for the view. `Status` is visible by default and can be hidden in view settings.
 4. Value visibility filters hide projects whose selected property values are excluded by the active view.
 5. User clicks a row to open the Project Detail Panel.
@@ -307,7 +307,7 @@ Preferred components:
 - User can select a Workspace from the Left Panel.
 - Main Area loads the active saved view for that Workspace.
 - User can switch between Board and Table views.
-- Board view groups projects by `Status`.
+- Board defaults to Status and supports the selected property or None with the grouping/visibility rules below.
 - Board view includes `No status` for projects outside status folders.
 - Board view supports card drops into available Status columns.
 - Table view shows the same active project set as rows.
@@ -358,10 +358,9 @@ Board drag starts from card name/background and marks available/active Status co
 
 Escape, cancellation and outside drops do not save order or move folders. Board current-Status drops do not move; Table same-group drops can reorder. No status is omitted from picker/drop choices; unavailable nested destinations retain their reason. Pending blocks repeat actions and uses the common header indicator; failures are visible. Success refreshes projections, counts, tabs and file trees with the original project ID. A moved row may disappear under existing filters. No custom values/history, view grouping/filter settings, manual group order or visibility settings are written by these actions. Folder safety, no-clobber and journal/recovery are defined by the existing Status move API.
 
-
 ### Board and Table visual refinement (workspace-zlj)
 
-Board captures an inert visual snapshot of the complete rendered card at drag activation, retaining its exact border-box width/height, property content, wrapping and padding until drop or cancellation, including scrolling and different target-column widths. Each column uses `px-1` (4px from the existing spacing scale) on both sides inside its saved total width; cards therefore occupy saved width minus 8px. Existing saved widths are never rewritten. Compact content-height backgrounds and available/active background fills retain the same geometry.
+The inert Board drag snapshot and 4px inner column padding follow [visual geometry](../ui-guidelines.md#board-and-table-visual-refinement-workspace-zlj).
 
 Saved-view activation keeps the previous complete service surface, its selected tab and partial preview visible and inert until the destination projection and saved preview are ready together. The waiting surface retains its previous view identity; the requested tab is marked busy, and navigation can supersede the request. The first destination frame contains its authoritative grouping, columns and filters, without a skeleton, fabricated flat rows or empty intermediate screen. Returning to the still-ready retained view can activate it immediately. Other targets are read freshly from the service; confirmed data changes invalidate retained readiness, and superseded requests cannot activate a newer intent. First load without a previous ready surface retains announced loading. Grouping, sort/manual order, hidden/collapsed groups, hide-empty and project ranks remain per-view settings; search remains scoped to the Workspace.
 
@@ -381,7 +380,6 @@ Use the ⋯ button after the displayed-card counter to add a card or hide its co
 
 Hide column affects only the current saved Board view. View settings list every column with visibility checkboxes, including when all columns are hidden. Showing a column returns it to its saved position. Filters/search, switching Workspace/view and restart preserve explicit visibility, projects and folder roles. See [API contract](../api/workspace-views.md#board-column-actions-workspace-rei).
 
-
 ## Board property grouping (workspace-4r0)
 
 Board and Table share per-view Group by and Sort settings. Supported properties are Name, Status, Text, Number, Date, Select and Multi-select, including hidden properties. None displays all matching projects in a single Board column. Typed memberships, exact values, empty groups, unique totals, filtering and catalog/default or ascending scalar order follow Table. Multi-select may display a project in several columns. Group order never sorts cards.
@@ -391,6 +389,10 @@ Board supports Default, Ascending, Descending and Manual. A successful changed h
 Both Group menus present visible groups first, hidden groups second, preserving the selected sort within each part. No value/No status is last within its visibility part, so a visible empty group precedes hidden value groups. This presentation never writes manual ranks. Hide/show and Show all restore the underlying group order; grouping, ranks, hide-empty and collapse/visibility settings are independent per saved view and Workspace.
 
 Folder create and card-drop destinations are available only when Board is grouped by Status. For other properties and None, Add card is disabled with an unavailable-destination explanation and card dragging cannot invoke a Status move or write a property. Existing Status pickers remain available inside cards/details and use the existing validated source operation. Hide remains available for grouped columns; None cannot hide the single column. Collapse all/Expand all in Group controls content visibility while retaining group counts. A deleted property displays flat accessible projects and a recovery notice.
+
+## Project folder rename
+
+Open a project from Board or Table, then activate the pencil immediately before Maximize/Restore in the preview or expanded project header (including a split pane). Its localized tooltip appears on hover or keyboard focus; Enter/Space opens the dialog and focus returns to the pencil on close. The dialog contains the current real folder name. Cancel/Escape and unchanged confirmation leave files unchanged; a failed request keeps the draft with an associated error. Successful confirmation updates the same project's name/path on Board, Table, detail tabs and file tree; status and parent stay unchanged. View/Workspace switching and restart resolve the preserved opaque ID against the new locator, including shared sources. [The rename contract](../api/workspace-project-rename.md) defines validation, native confinement, pending, journal recovery and current platform validation gaps.
 
 ## Board Wrap content (workspace-y3m)
 

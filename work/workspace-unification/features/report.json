@@ -1,0 +1,30 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-unification-hKh0Lc",
+  "checks": [
+    "1440x960: light preview/expanded pencils, Cancel/Escape focus, single properties list and disclosure",
+    "1440x960: dark preview/expanded pencils, Cancel/Escape focus, single properties list and disclosure",
+    "1440x960: Back/Forward/Sidebar order, sidebar restore, nested property/group/sort portals and first outside click dismissal",
+    "1440x960: Real preload/backend rename: no-clobber error draft, pending guard, unchanged inode/content/identity/values/history and reload",
+    "1440x960: Split project host retains the matching rename pencil and returns focus on Cancel",
+    "1024x720: light preview/expanded pencils, Cancel/Escape focus, single properties list and disclosure",
+    "1024x720: dark preview/expanded pencils, Cancel/Escape focus, single properties list and disclosure",
+    "1024x720: Back/Forward/Sidebar order, sidebar restore, nested property/group/sort portals and first outside click dismissal",
+    "1024x720: Real preload/backend rename: no-clobber error draft, pending guard, unchanged inode/content/identity/values/history and reload",
+    "1024x720: Split project host retains the matching rename pencil and returns focus on Cancel"
+  ],
+  "windows": [
+    {
+      "x": 0,
+      "y": 39,
+      "width": 1440,
+      "height": 960
+    },
+    {
+      "x": 0,
+      "y": 39,
+      "width": 1024,
+      "height": 720
+    }
+  ],
+  "errors": []
+}

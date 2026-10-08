@@ -1,25 +1,21 @@
-# Документы разработки
+# Development documentation
 
-Начните с [AGENTS.md](../../AGENTS.md): это обязательная точка входа в правила работы. Правила этой папки обязательны при разработке. [rules.md](rules.md) задаёт рабочую политику; guides уточняют её применение. Специализированные спецификации, контракты и принятые ADR сохраняют авторитет в своих областях.
+[AGENTS.md](../../AGENTS.md) is the mandatory entry point. [rules.md](rules.md) owns operational policy; workflow and quality explain its application. Specialized product/API/UI contracts and accepted ADRs own their respective domains. Proposed decisions and target architecture are not proof of current runtime wiring.
 
-## Порядок чтения
+## Required reading
 
-1. [Обязательные правила](rules.md), [работа над задачей](workflow.md) и [проверки](quality.md) — прочитать для каждой задачи.
-2. [Продукт](product.md) — что делает Workspace и где проходят границы MVP.
-3. [Архитектура](architecture.md) — действующий runtime, слои и целевое хранение.
-4. [Дизайн](design/README.md) и [политика адаптации](design/bb-workspace-policy.md) — обязательно для UI; [полный исходник bb](DESIGN_RULES.md) — справочник.
+For each development task, including documentation, read [rules](rules.md), [workflow](workflow.md) and [quality](quality.md). Then follow the relevant branch of the source map below. Historical reports/plans are conditional context and add no current process gate.
 
-## Источник по вопросу
-
-| Вопрос | Обязательный источник |
+| Task/question | Sources |
 | --- | --- |
-| Правила работы, разрешения, ветки и коммиты | [rules.md](rules.md), точка входа [AGENTS.md](../../AGENTS.md) |
-| Продукт и границы | [PRD](../prd.md), [Vision](../vision.md), актуальные [сценарии](../flows/) |
-| Слои и решения | [Архитектура](../architecture.md), [ADR](../adr/), особенно [ADR-006](../adr/006-workspace-source-bindings.md) |
-| Данные и сервисные методы | [Модель данных](../data-model.md), [API-контракты](../api/) |
-| Экраны и визуальные правила | [Interface](../interface.md), [UI guidelines](../ui-guidelines.md), [дизайн](design/README.md) |
-| Проверки | [quality.md](quality.md), команды [package.json](../../package.json) |
+| Product scope and supported behavior | [Product guide](product.md), [PRD](../prd.md), [Vision](../vision.md), relevant [flow](../flows/) |
+| Runtime wiring, layers, target-store integration | [Runtime guide](architecture.md), [architecture](../architecture.md), relevant accepted [ADR](../adr/) |
+| Identity, storage, compatibility and migration | [Data model and scope table](../data-model.md#current-runtime-and-target-scope), relevant API/ADR |
+| Service operations | [Sources/lifecycle/filesystem](../api/workspace-session-sources.md), [views](../api/workspace-views.md), [properties](../api/workspace-properties.md), [Status moves](../api/workspace-status-move.md) |
+| UI implementation/review | [Interface](../interface.md), [UI guidelines](../ui-guidelines.md), affected flow and mandatory [bb adaptation policy](design/bb-workspace-policy.md) |
+| Checks and evidence | [Quality](quality.md); actual commands in [package.json](../../package.json) |
+| Matt task/triage work | [GitHub/Beads tracker](../agents/issue-tracker.md), [domain pointers](../agents/domain.md), [triage labels](../agents/triage-labels.md) |
 
-Для UI-задачи прочитайте Interface, UI guidelines и соответствующий flow; при вызовах сервиса — его API-контракт. Для backend/storage — архитектуру, модель данных, применимые принятые ADR и API. Для документации — затронутые источники и правила проверок документации.
+For UI, Interface owns screen composition, flows own ordered interaction/recovery, UI guidelines own visual/component/accessibility rules, and APIs own wire validation/results. Read the full imported [bb source](DESIGN_RULES.md) only for relevant source sections under the adaptation policy. Its instructions do not expand Workspace features or replace accepted geometry.
 
-Старые планы и отчёты дают контекст конкретной работы. Их исторические процессные требования заменены rules.md; они не расширяют полномочия. Статус ADR проверяйте в самом документе: предложенное решение не считается принятым.
+The first session architecture stage is recorded in the [specification](../specs/bb-architecture.md) and [issue breakdown](../specs/bb-architecture-tickets.md). Documentation reconciliation is tracked in [Issue #4](https://github.com/kornouhovas/workspace/issues/4): the [baseline audit](../specs/documentation-audit.md) preserves findings, and the [cleanup delivery](../specs/documentation-cleanup.md) records applied changes, unfinished acceptance and integration exceptions. These records are conditional task evidence, not a new mandatory checklist for unrelated work.

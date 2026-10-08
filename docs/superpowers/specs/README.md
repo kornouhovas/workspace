@@ -1,21 +1,5 @@
-# Specs Folder
+# Historical specification location
 
-> Применяйте [rules.md](../../development/rules.md). Review спецификации пользователем требуется для нового существенного решения вне имеющейся авторизации; уже согласованный объём не требует повторного approval перед каждым этапом. Рекомендации ниже не создают обязательный отдельный spec для любого запроса.
+This path is retained for historical links. Current versioned specifications live in [docs/specs](../../specs/), linked from the originating [GitHub issue](../../agents/issue-tracker.md).
 
-Use this folder for design/spec documents that are larger than a backlog item.
-
-Recommended naming:
-
-```text
-docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
-```
-
-Use a spec when:
-
-- product behavior is not obvious;
-- multiple approaches need comparison;
-- architecture has meaningful tradeoffs;
-- user approval is needed before implementation planning;
-- the task is too broad for a single backlog item.
-
-Specs should be reviewed by the human before implementation plans are written.
+[Development rules](../../development/rules.md) govern new work. Record substantial product or architecture decisions when needed; an already authorized scope does not require repeated approval or a separate specification for every small task.

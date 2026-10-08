@@ -1,0 +1,32 @@
+{
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-close-to-view-9bNS1q",
+  "checks": [
+    "Existing Electron preload security settings preserved",
+    "Fullscreen X returns to Board with no right host at 1440x960",
+    "Multiple-tab close keeps other tab; Restore retains partial preview; preview Close hides host at 1440x960",
+    "Fullscreen X returns to selected Table at 1440x960",
+    "Fullscreen X returns to Board with no right host at 1024x720",
+    "Multiple-tab close keeps other tab; Restore retains partial preview; preview Close hides host at 1024x720",
+    "Fullscreen X returns to selected Table at 1024x720",
+    "Legacy launcher/session and obsolete Cmd+J/Cmd+T cannot reopen Navigation or an empty host",
+    "Actual Electron restart restores Board/closed preview and preserves inactive project tab",
+    "Reopen restores closed project tab; Cmd+W closes active fullscreen project back to view",
+    "Split project pane survives opening and closing an independent right preview"
+  ],
+  "windows": [
+    {
+      "x": 221,
+      "y": 87,
+      "width": 1440,
+      "height": 960
+    },
+    {
+      "x": 221,
+      "y": 87,
+      "width": 1024,
+      "height": 720
+    }
+  ],
+  "errors": [],
+  "status": "passed"
+}

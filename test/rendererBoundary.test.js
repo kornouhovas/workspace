@@ -77,6 +77,23 @@ function assertRendererSourceBoundary(source, file) {
   assert.deepEqual(forbidden, [], `forbidden renderer import: ${forbidden.join(", ")}`);
 }
 
+function assertPureSessionSourceBoundary(source, file) {
+  assertRendererSourceBoundary(source, file);
+  const external = collectModuleSpecifiers(source, file).filter(specifier =>
+    !specifier.startsWith(".") && !specifier.startsWith("@/"));
+  assert.deepEqual(external, [], `platform/package import in session model: ${external.join(", ")}`);
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKindFor(file));
+  const browserGlobals = new Set(["window", "document", "navigator", "localStorage", "sessionStorage", "HTMLElement"]);
+  const references = [];
+  function visit(node) {
+    if ((ts.isIdentifier(node) || ts.isStringLiteralLike(node)) && browserGlobals.has(node.text))
+      references.push(node.text);
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+  assert.deepEqual(references, [], `browser reference in session model: ${references.join(", ")}`);
+}
+
 async function resolveRendererImport(fromFile, specifier) {
   if (!specifier.startsWith(".") && !specifier.startsWith("@/")) {
     return null;
@@ -171,5 +188,22 @@ test("renderer entry graph does not import backend storage, sidecar, or Node run
     const relativeFile = file.slice(projectRoot.length + 1);
     const source = await readFile(file, "utf8");
     assertRendererSourceBoundary(source, relativeFile);
+  }
+});
+
+test("pure session boundary detects React, browser globals and backend imports", () => {
+  for (const source of [
+    'import { useState } from "react";',
+    'document.querySelector("button");',
+    'globalThis["window"].localStorage;',
+    'import { createWorkspaceBackend } from "../electron/workspaceBackend.js";',
+  ]) assert.throws(() => assertPureSessionSourceBoundary(source, "fixture.js"));
+});
+
+test("session owner, lifecycle and their transitive modules remain independent of React, DOM and platform runtimes", async () => {
+  const files = await collectRendererGraph(resolve(projectRoot, "src/workspaceSessionLifecycle.js"));
+  for (const file of files) {
+    assert.ok(file.startsWith(resolve(projectRoot, "src") + "/"), `session imports a platform implementation: ${file}`);
+    assertPureSessionSourceBoundary(await readFile(file, "utf8"), file);
   }
 });

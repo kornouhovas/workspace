@@ -6,7 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "test": "node --test",
-    "verify": "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar",
+    "verify": "npm run build:sidecar && npm test && npm run test:go && npm run typecheck && npm run build:renderer",
     "test:go": "GOFLAGS=-buildvcs=false go test ./...",
     "typecheck": "tsc --noEmit",
     "build:renderer": "node scripts/build-renderer.mjs",

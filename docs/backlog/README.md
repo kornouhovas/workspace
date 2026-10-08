@@ -1,47 +1,7 @@
-# Backlog Folder
+# Historical backlog context
 
-> Рекомендации для задач, которым нужен отдельный backlog-файл. Текущие [rules.md](../development/rules.md) допускают ясный запрос без шаблона. Required Sections ниже относятся к выбранному шаблону; Beads/новый файл не обязательны для каждого запроса.
+[GitHub Issues](../agents/issue-tracker.md) is the primary task tracker. Existing files retain earlier scope and requirements; their status fields are historical and do not establish current completion.
 
-Backlog items describe work before implementation.
+Read an existing backlog item when the originating task references it. Resolve behavior against current product/API contracts and accepted ADRs, especially [ADR-007](../adr/007-board-table-status-moves.md) and [ADR-008](../adr/008-table-row-order.md), which supersede older primary-Status drag exclusions.
 
-Use one file per feature, bug, or technical task.
-
-Recommended naming:
-
-```text
-docs/backlog/<short-kebab-name>.md
-```
-
-Examples:
-
-```text
-docs/backlog/export-table-view-csv.md
-docs/backlog/fix-settings-sidebar-open.md
-docs/backlog/workspace-custom-properties.md
-```
-
-## Lifecycle
-
-Backlog files should move through:
-
-```text
-Backlog -> Ready -> Agent Working -> Agent Review -> Human Review -> Done
-```
-
-Use `Status:` near the top of each backlog file.
-
-## Required Sections
-
-- Status
-- Goal
-- Context
-- User Value or Bug Impact
-- Scope
-- Out Of Scope
-- Acceptance Criteria
-- Relevant Docs
-- Test Plan
-- Quality Gates
-- Risks
-
-Use `docs/templates/backlog-item.md` as the default template.
+New work follows [development rules](../development/rules.md). A clear authorized request does not require a new backlog file, lifecycle template or parallel Beads backlog. Retain unresolved requirements when reconciling an old item into GitHub.

@@ -1,10 +1,10 @@
 # Vision: Workspace Project Board
 
-Актуальное уточнение: [ADR-006](adr/006-workspace-source-bindings.md) заменяет раннее предположение об общем источнике на независимые source bindings Workspaces. Действующий Electron использует JSON-адаптеры через preload IPC; `any-store` ниже описывает целевое хранение, а не подключение runtime. См. [карту архитектуры](development/architecture.md).
+Workspace is a desktop product with independently selected project sources. Detailed supported behavior belongs in the [PRD](prd.md) and [flows](flows/).
 
 ## Product Direction
 
-Мы строим desktop-приложение для работы с проектами, которые уже существуют на диске в виде папок. Пользователь задаёт папку проектов в Settings, а Workspaces в Left Panel становятся сохранёнными рабочими конфигурациями поверх этой папки. Приложение отображает найденные проекты в разных представлениях: Kanban Board и Table.
+Workspace is a desktop application for projects that already exist as folders on disk. Each Workspace binds a selected source and saves its views; roots can be shared or independent. Board and Table project the discovered folders and their properties without replacing the filesystem or our backend.
 
 Продуктовая идея близка к Notion-like workspace, но источником истины для проектов остаётся локальная файловая структура. Приложение должно помогать видеть статусы проектов, управлять свойствами и быстро переходить к файлам и папкам проекта.
 
@@ -39,8 +39,8 @@
 
 MVP включает:
 
-- выбор общей корневой папки проектов в Settings;
-- создание Workspaces в Left Panel поверх выбранной папки проектов;
+- selecting a project source for the target Workspace in Workspace settings;
+- creating Workspaces in the Left Panel, before source selection or with a shared/independent binding;
 - отображение проектов из Workspace в виде Kanban Board;
 - отображение тех же проектов в Table view;
 - карточку проекта с базовыми и кастомными properties;
@@ -61,9 +61,9 @@ MVP включает:
 
 ## Core Workspace Model
 
-Папка проектов задаётся в Settings как общий source folder. Каждый Workspace, созданный в Left Panel, использует эту папку как источник проектов.
+Each Workspace selects its source in Workspace settings. Workspaces may share a root or bind independent roots; changing one binding preserves other Workspaces and retained data.
 
-Workspace в MVP — это сохранённая рабочая конфигурация над общей папкой проектов. Разные Workspaces могут по-разному настраивать views, видимость properties, фильтрацию по values и рабочее представление тех же проектов.
+A Workspace is a saved working configuration with its own source binding and views. Views, visibility, grouping and filters are independent; Workspaces sharing a source retain shared source-scoped project/property values under ADR-006.
 
 Дерево папок интерпретируется через роли:
 
@@ -94,12 +94,12 @@ Views не меняют сами проекты и файловую структ
 
 ## Local Data And Sync Direction
 
-Данные Workspace, views, properties и values хранятся локально через `any local` / локальный `any-store`, который присутствует в проекте.
+Electron currently stores metadata locally through JSON adapters behind preload IPC. The standalone Go/any-store store is the accepted durable target; it does not become active simply because its code exists. Current scopes and target integration are defined in the [data model](data-model.md#current-runtime-and-target-scope).
 
 Local storage отвечает за:
 
 - настройки Workspace;
-- общую папку проектов из Settings;
+- the source bound to that Workspace in Workspace settings;
 - роли папок в дереве Workspace;
 - список views и настройки отображения;
 - определения кастомных properties;
@@ -132,10 +132,10 @@ Right Panel:
 
 Settings:
 
-- выбор общей корневой папки проектов;
+- selecting the target Workspace source and recovering an unavailable root;
 - отображение дерева папок;
 - назначение ролей `group`, `status`, `project`;
-- настройка properties и values.
+- configuring folder roles and derived Status colors; custom properties/options are managed through Table, Project Detail and view/property menus.
 
 ## Non-Goals For First Version
 
@@ -175,4 +175,4 @@ Settings:
 - Локальные данные Workspace и properties должны храниться предсказуемо и мигрироваться без потери пользовательских настроек.
 - Product data хранится local-first через `any local` / `any-store`.
 - Будущий `any sync` должен быть отдельным слоем поверх локального хранения, а не заменой локальной модели.
-- Drag and drop проектов между основными статусами не поддерживается в MVP.
+- Status-folder moves are available through the explicit Board/Table operation in [ADR-007](adr/007-board-table-status-moves.md) and [ADR-008](adr/008-table-row-order.md). Destinations must be eligible Status groups; No status and custom-property group crossings are unavailable. Arbitrary filesystem rearrangement remains outside that contract.

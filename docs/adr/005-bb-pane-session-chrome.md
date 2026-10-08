@@ -3,6 +3,8 @@
 Status: Accepted for workspace-1wx implementation.
 Date: 2026-09-28.
 
+The standalone right Navigation/launcher and active-project close selection are superseded by [ADR 012](012-project-close-and-preview-only-right-host.md). Other pane/session decisions remain accepted.
+
 ## Context
 
 The requested interface is bb 0.44.0 over Workspace data and functions. The active Electron runtime uses WorkspaceServiceClient/preload IPC with transitional JSON adapters; the Go sidecar remains a separate target store. Importing bb's plugin, chat, terminal or Git backend would change the product and storage architecture.

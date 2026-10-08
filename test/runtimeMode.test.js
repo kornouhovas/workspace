@@ -31,7 +31,7 @@ test("workspace runs as an Electron-only app shell", async () => {
     "src/stories/**/*.tsx",
     ".ladle/**/*.tsx",
   ]);
-  assert.equal(packageJson.scripts.verify, "npm test && npm run test:go && npm run typecheck && npm run build:renderer && npm run build:sidecar");
+  assert.equal(packageJson.scripts.verify, "npm run build:sidecar && npm test && npm run test:go && npm run typecheck && npm run build:renderer");
   assert.equal(packageJson.scripts["test:go"], "GOFLAGS=-buildvcs=false go test ./...");
   assert.equal(packageJson.scripts["build:sidecar"], "node scripts/build-sidecar.mjs");
   assert.equal(packageJson.scripts["build:sidecar:mac"], "node scripts/build-sidecar.mjs mac");

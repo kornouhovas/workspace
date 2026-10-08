@@ -1,5 +1,7 @@
 # Feature: Board Column Width Control
 
+> Historical requirements snapshot. Current scope/status belongs to GitHub Issues; current behavior follows accepted contracts/ADRs. Old Current State, execution gates and checkboxes below are historical, not evidence of present completion. Preserve unmet criteria using the [carry-forward map](../specs/documentation-cleanup.md#legacy-acceptance-carry-forward).
+
 ## Goal
 
 Allow each Board view to persist a shared status-column width and expose it through a compact slider at the bottom of `Customize Columns`.

@@ -24,7 +24,12 @@ func main() {
 	dbPath := flag.String("db", "workspace.db", "path to any-store database")
 	addr := flag.String("addr", "127.0.0.1:0", "listen address")
 	createDirectory := flag.Bool("create-project-directory", false, "create a confined empty project directory from stdin JSON")
+	renameDirectory := flag.Bool("rename-project-directory", false, "rename a confined project directory from stdin JSON")
 	flag.Parse()
+	if *renameDirectory {
+		runRenameDirectory()
+		return
+	}
 	if *createDirectory {
 		runCreateDirectory()
 		return

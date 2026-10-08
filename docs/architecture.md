@@ -23,17 +23,19 @@ The product is a local-first desktop application with a thin UI and a testable w
 
 React components are responsible for presentation and user interaction. They must not own filesystem traversal, path validation, storage schema, folder role resolution, project discovery, property normalization, view filtering, or local persistence rules.
 
-Workspace backend modules own the product rules. The sidecar owns durable local document storage through `any-store`. Filesystem access is allowed only through backend/local runtime boundaries that validate paths against the selected project source folder.
+Workspace backend modules own the product rules. Current metadata uses JSON adapters; the standalone Go sidecar implements the target any-store durable store, without active Electron wiring. Filesystem access is allowed only through backend/local runtime boundaries that validate paths against the selected project source folder.
 
 High-level flow:
 
 ```text
 React UI
   -> WorkspaceServiceClient
-    -> workspace backend / use cases
-      -> safe filesystem access
-      -> any-store sidecar
-        -> SQLite-backed local store
+    -> renderer transport -> sandboxed preload IPC
+      -> Electron dispatcher / domain use cases
+        -> validated filesystem operations
+        -> JSON settings/views/property adapters
+
+Target, not wired: backend storage adapter -> Go sidecar -> any-store/SQLite
 ```
 
 ## Product Architecture Decisions
@@ -46,7 +48,7 @@ React UI
 - Projects outside a status folder use `No status`.
 - MVP supports one level of status folders.
 - Board/card and Table/handle Status drag use the explicit validated move operation; see [ADR-007](adr/007-board-table-status-moves.md).
-- Project primary identity must be a stable local id.
+- Consumers use opaque project identities. Current fallback IDs and bounded explicit-move preservation differ from the proposed general registry; see [current/target identity](data-model.md#current-runtime-and-target-scope).
 - The relative path inside `project source folder` is a locator, not the primary id.
 - Absolute paths must not be used as stable project ids.
 - Local product data must be structured so future `any sync` can sync documents without rewriting UI state.
@@ -84,7 +86,7 @@ Responsibilities:
 - expose stable named operations to UI;
 - normalize request payloads;
 - hide transport details from React;
-- preserve a consistent service-method vocabulary such as `workspace.scan`, `workspace.listEntries`, and `workspace.saveProperty`.
+- preserve the existing vocabulary documented in [sources/lifecycle/filesystem](api/workspace-session-sources.md), [views](api/workspace-views.md), [properties](api/workspace-properties.md) and [Status moves](api/workspace-status-move.md). New property editing uses updateProjectPropertyValue; legacy saveProperty is not a guaranteed writing alias.
 
 Rules:
 
@@ -100,7 +102,7 @@ Owned by:
 - `src/folderModel.js`
 - `src/workspaceObjects.js`
 - `src/workspaceProperties.js`
-- future modules near these files for views, workspace settings, history, and migrations.
+- existing `workspaceViews.js`, `workspaceGrouping.js`, `workspacePropertyStore.js`, `workspaceStatusMove.js`, `workspaceSession.js` and `workspaceSessionLifecycle.js`; store/registry integration remains separate.
 
 Responsibilities:
 
@@ -112,7 +114,7 @@ Responsibilities:
 - enforce one level of status folders for MVP;
 - normalize property schemas and property values;
 - compute view projections and value filters;
-- create and resolve stable local project ids;
+- resolve opaque discovered IDs and verified explicit-move aliases; the general registry remains Proposed ADR-004;
 - prepare product data for persistence;
 - keep migration behavior explicit and tested.
 
@@ -158,24 +160,22 @@ Responsibilities:
 - isolate SQLite-backed persistence from React and domain logic;
 - support future `any sync` by keeping product data document-oriented.
 
-Current sidecar capabilities:
+Current standalone sidecar capabilities:
 
-- get and set workspace root data;
-- upsert property values;
-- list property values by workspace id.
+- root settings, Workspace/View documents and their operations;
+- property definitions, select values, values and history document operations;
+- local HTTP route/client mappings and any-store collection access.
 
-Required future capabilities:
+These capabilities are implemented independently; Electron does not start the HTTP sidecar or select it as its store. The confined project-creation CLI mode does not open HTTP/storage and does not change that fact.
 
-- project source folder document;
-- Workspace documents;
-- View documents and view settings;
-- folder role documents;
-- property definition documents;
-- select value documents;
-- property value history documents;
-- migration version documents.
+Before target-store integration:
 
-Custom property work must use the contracts in `docs/api/workspace-properties.md`. React UI may render and edit custom properties, but property definition, select value, property value, and history persistence remain backend/sidecar responsibilities.
+- reconcile the source/Workspace scope in the [data model](data-model.md#current-runtime-and-target-scope), preserving existing shared-root values/history;
+- add and verify view round trips for `rowOrder`, `columnOrder`, `hiddenColumnIds`, `tableColumnWidths`, `boardGroupingVersion` and `boardLayout.wrapContent`, absent from the current Go document structs;
+- define migration/recovery, retained unavailable IDs and startup/shutdown/packaging lifecycle;
+- resolve project/source/role/migration document requirements not fully covered by the current target implementation. The general identity registry requires a decision on Proposed ADR-004.
+
+Property normalization and persistence remain backend responsibilities. Current adapter behavior and target document families are defined in the [properties API](api/workspace-properties.md).
 
 Rules:
 
@@ -223,46 +223,7 @@ Rules:
 
 ## Folder Structure Direction
 
-Current structure remains acceptable for MVP, but new work should keep backend/local concepts grouped:
-
-```text
-src/
-  App.tsx
-  components/
-  hooks/
-  styles.css
-  workspaceBackend.js
-  workspaceServiceClient.js
-  workspaceSidecarClient.js
-  folderModel.js
-  workspaceObjects.js
-  workspaceProperties.js
-  localOpen.js
-cmd/
-  workspace-sidecar/
-internal/
-  workspacestore/
-docs/
-  vision.md
-  prd.md
-  architecture.md
-```
-
-When the workspace backend grows, split by domain concept instead of creating large mixed modules:
-
-```text
-src/workspace/
-  sourceFolder.js
-  folderRoles.js
-  projectDiscovery.js
-  workspaceViews.js
-  propertyDefinitions.js
-  propertyValues.js
-  propertyHistory.js
-  pathSafety.js
-```
-
-This split should be introduced only when implementation pressure justifies it, and folder structure changes require approval.
+Keep the present module layout while it supports clear ownership. If implementation pressure requires restructuring, split by domain concept (source/roles/discovery, views/grouping, property definitions/values/history, path safety and migrations), preserving the public service boundary. A future directory illustration is not an instruction to move existing modules or establish a monorepo.
 
 ## Data Flow
 
@@ -272,7 +233,7 @@ This split should be introduced only when implementation pressure justifies it, 
 User selects folder in Settings
   -> UI calls workspace service
   -> backend validates the selected folder
-  -> storage persists project source folder document
+  -> JSON settings stores the target Workspace binding and retained role snapshots
   -> UI refreshes active Workspace scan
 ```
 
@@ -284,7 +245,7 @@ UI requests active Workspace scan
   -> backend loads project source folder and active Workspace settings
   -> backend scans visible directory tree
   -> folder roles produce project folders and statuses
-  -> workspace object projection adds stable ids and property values
+  -> workspace object projection resolves current IDs/explicit aliases and source-scoped property values
   -> UI renders Board or Table projection
 ```
 
@@ -295,7 +256,7 @@ User edits property value
   -> UI calls workspace service
   -> backend validates property schema and value
   -> backend records property value change
-  -> sidecar stores current value and history document
+  -> current JSON property adapter stores value and history records (not one cross-record transaction)
   -> UI receives updated project projection
 ```
 
@@ -311,7 +272,7 @@ User clicks file or folder in Project Detail Panel
 
 ## Local Data Model Direction
 
-Detailed fields belong in `docs/data-model.md`, but architecture requires these document families:
+The following target document families are specified in [data-model.md](data-model.md); the current scope/adapter table there distinguishes implemented compatibility behavior:
 
 - `projectSourceFolder`: selected source folder and display name.
 - `workspace`: saved configuration over the source folder.
@@ -329,7 +290,7 @@ Documents should prefer stable ids and relative locators. Absolute paths are run
 ## API And Contract Rules
 
 - API contracts must be documented before implementation when a feature crosses UI/backend or backend/sidecar boundaries.
-- Service methods should be named by use case, for example `workspace.createView`, `workspace.updateViewSettings`, `workspace.setFolderRole`, `workspace.updatePropertyValue`.
+- Service methods are named by use case; use the implemented createView, updateView, updateFolderRole and updateProjectPropertyValue contracts, not invented aliases.
 - Request payloads must carry relative paths only after a project source folder is selected.
 - Responses must include explicit error states for missing source folder, missing project, invalid path, unavailable sidecar, and validation failure.
 - Public contract changes require tests.
@@ -340,7 +301,7 @@ Documents should prefer stable ids and relative locators. Absolute paths are run
 - Prefer existing dependencies before adding new ones.
 - UI should use Tailwind CSS, shadcn/ui, Radix UI primitives, and existing icon libraries.
 - Domain/backend logic should prefer standard library and existing local helpers.
-- Storage must continue through `any-store` unless an ADR replaces that decision.
+- Preserve the active JSON adapters and accepted any-store target; adapter integration and migrations require their own agreed scope.
 
 ## Migration Rules
 
@@ -362,15 +323,7 @@ Documents should prefer stable ids and relative locators. Absolute paths are run
 
 ## Testing Strategy
 
-Full verification for cross-layer changes, migrations or release readiness (scope selection follows AGENTS.md):
-
-```bash
-npm test
-npm run typecheck
-npm run build:renderer
-go test ./...
-npm run build:sidecar
-```
+Verification is selected by the affected boundary under [quality.md](development/quality.md); package scripts own actual command definitions. Documentation-only changes need consistency, links/anchors, applicable existing docs checks and whitespace, not a full Electron/Go build.
 
 Focused test expectations:
 
@@ -390,7 +343,7 @@ Every new backend/local-storage feature should include tests at the closest pure
 - The renderer is built with Vite into `dist/renderer`.
 - Electron loads `dist/renderer/index.html` with context isolation, sandboxing, and no Node integration.
 - Direct browser/Vite dev mode is not the user-facing runtime.
-- The Go sidecar is built separately and runs locally with a SQLite-backed `any-store` database.
+- The separately runnable Go HTTP sidecar uses SQLite-backed any-store; Electron does not launch it. Only the confined directory-creation helper invokes the Go binary in the current filesystem operation.
 - Packaging and distribution details are not part of the current MVP architecture and need a future ADR before release work.
 
 ## ADR Triggers
@@ -411,16 +364,15 @@ Create an ADR before:
 ## Known Trade-offs
 
 - Keeping the UI thin adds service/domain code upfront, but it prevents storage and filesystem rules from leaking into components.
-- Using stable local project ids plus relative path locators is more complex than path-only ids, but it protects metadata when folders are renamed or moved.
+- Current explicit-move locators preserve known project metadata. A complete stable registry for arbitrary folder changes is a separate proposed decision with migration costs.
 - One level of status folders is less flexible, but it makes project discovery and user expectations clear for MVP.
 - Keeping sync out of MVP reduces scope, but document-shaped local data keeps the path open for `any sync`.
 - The accepted preload IPC bridge keeps privileged operations outside the sandboxed renderer (ADR-002).
 
 ## Open Architecture Follow-ups
 
-- Define the exact storage documents and indexes in `docs/data-model.md`.
-- Define service/API contracts for Workspaces, views, folder roles, properties, values, and history.
-- Decide how stable project ids are created and reconciled when folders move.
-- Decide how sidecar lifecycle is managed by Electron for packaged builds.
+- Complete target-store view-field parity and agree source-scope migration/lifecycle before any adapter switch.
+- Resolve Proposed ADR-004 before implementing a general identity registry or marking audit A1 complete.
+- Specify public web/server authentication/transport and packaging separately when those features are requested; existing preload contracts remain internal.
 
-Создание новой папки проекта использует узкий CLI режим существующего Go бинарника с `os.Root` и обязательной per-process macOS sandbox либо Windows NTFS ancestry reservations с no-reparse lookup для confined exclusive mkdir; он не открывает store или HTTP server. JSON adapters остаются действующим хранением. См. [контракт создания](api/workspace-views.md#confined-directory-helper).
+Project creation uses the existing Go binary in confined CLI mode, without opening its store/HTTP server or switching JSON metadata. The [creation contract](api/workspace-views.md#confined-directory-helper) and [ADR-009](adr/009-project-creation-os-guard.md) own platform enforcement and unverified limits.

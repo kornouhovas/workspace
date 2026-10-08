@@ -3,7 +3,7 @@
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 
-import { blockOutsideWorkspaceMenuPointerDown } from "@/components/workspace/menu-dismissal";
+import { blockOutsideWorkspaceDropdownPointerDown } from "@/components/workspace/menu-dismissal";
 import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronRightIcon } from "@/lib/workspace-icons"
 
@@ -59,11 +59,7 @@ function DropdownMenuContent({
   React.useEffect(() => {
     if (!workspaceMenu?.open || !className?.includes("workspace-menu-surface")) return;
     function dismissOutside(event: PointerEvent) {
-      if (event.target instanceof Element && event.target.closest('[data-slot="dropdown-menu-trigger"][aria-expanded="true"]')) return;
-      blockOutsideWorkspaceMenuPointerDown(event,
-        '.workspace-menu-surface, [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"]',
-        workspaceMenu!.dismiss,
-      );
+      blockOutsideWorkspaceDropdownPointerDown(event, workspaceMenu!.dismiss);
     }
     document.addEventListener("pointerdown", dismissOutside, true);
     return () => document.removeEventListener("pointerdown", dismissOutside, true);

@@ -81,6 +81,7 @@ export function WorkspaceSplitTree({
   send,
   primary,
   renderProject,
+  renderProjectActions,
   titleForPane,
   onClosePane,
   onPaneFocus,
@@ -89,6 +90,7 @@ export function WorkspaceSplitTree({
   send: (action: PaneAction) => void;
   primary: ReactNode;
   renderProject: (pane: WorkspacePaneNode) => ReactNode;
+  renderProjectActions?: (pane: WorkspacePaneNode) => ReactNode;
   titleForPane: (pane: WorkspacePaneNode) => string;
   onClosePane: (id: string) => void;
   onPaneFocus: (pane: WorkspacePaneNode) => void;
@@ -170,6 +172,7 @@ export function WorkspaceSplitTree({
               >
                 {titleForPane(pane)}
               </span>
+              {renderProjectActions?.(pane)}
               <ChromeAction
                 label={t(
                   layout.maximized === pane.paneId ? "chrome.restoreSplit" : "chrome.maximize",

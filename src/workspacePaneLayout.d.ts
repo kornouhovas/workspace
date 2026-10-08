@@ -11,9 +11,6 @@ export type PaneLayout = {
   splitRatio: number;
   maximized: PaneId | null;
   focused: PaneId;
-  rightTabs: string[];
-  activeRightTab: string;
-  closedRightTabs: string[];
 };
 export type PaneAction =
   | { type: "split"; tabId?: string; target?: string; paneId?: string; side?: SplitSide }
@@ -21,15 +18,10 @@ export type PaneAction =
   | { type: "closePane"; paneId: string }
   | { type: "resizeTree"; path: number[]; index: number; fraction: number }
   | { type: "replacePane"; paneId: string; tabId: string | null }
-  | { type: "selectView" | "previewProject" | "rightToggle" | "sidebarToggle" | "closeSplit" | "rightReopen" | "showWorkspace" }
+  | { type: "selectView" | "previewProject" | "sidebarToggle" | "closeSplit" | "showWorkspace" }
   | { type: "resizeRight" | "resizeSidebar"; width: number }
   | { type: "resizeSplit"; ratio: number }
-  | { type: "focus" | "maximize"; pane: PaneId }
-  | {
-      type: "rightOpen" | "rightSelect" | "rightClose" | "rightCloseOthers" | "rightCloseAfter";
-      id: string;
-    }
-  | { type: "rightReorder"; ids: string[] };
+  | { type: "focus" | "maximize"; pane: PaneId };
 export function createPaneLayout(): PaneLayout;
 export function paneLayoutReducer(state: PaneLayout, action: PaneAction): PaneLayout;
 export function readPaneLayouts(storage: Pick<Storage, "getItem">): Record<string, PaneLayout>;

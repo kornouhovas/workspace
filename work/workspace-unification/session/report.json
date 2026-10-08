@@ -1,0 +1,58 @@
+{
+  "checks": [
+    "1440x960: tab close fallback and keyboard reopen",
+    "1440x960: split drag, maximize/restore and pane close retain project tabs",
+    "1440x960: bulk close and reopen",
+    "1440x960: Settings navigation and existing session restoration after reload",
+    "1440x960: Workspace switching isolates tabs and retains its split through reload",
+    "1440x960: pending saved-view response rejects a project-tab selection command",
+    "1440x960: independent saved-view previews survive switching and reload",
+    "1440x960: reversing a pending saved-view lookup rejects its delayed preview",
+    "1440x960: unavailable saved preview closes its host and persists cleanup",
+    "1440x960: malformed session storage leaves project selection usable",
+    "1440x960: unavailable storage getter leaves preview open and close commands usable",
+    "1024x720: tab close fallback and keyboard reopen",
+    "1024x720: split drag, maximize/restore and pane close retain project tabs",
+    "1024x720: bulk close and reopen",
+    "1024x720: Settings navigation and existing session restoration after reload",
+    "1024x720: Workspace switching isolates tabs and retains its split through reload",
+    "1024x720: pending saved-view response rejects a project-tab selection command",
+    "1024x720: independent saved-view previews survive switching and reload",
+    "1024x720: reversing a pending saved-view lookup rejects its delayed preview",
+    "1024x720: unavailable saved preview closes its host and persists cleanup",
+    "1024x720: malformed session storage leaves project selection usable",
+    "1024x720: unavailable storage getter leaves preview open and close commands usable"
+  ],
+  "windows": [
+    {
+      "bounds": {
+        "x": 0,
+        "y": 39,
+        "width": 1440,
+        "height": 960
+      },
+      "contentBounds": {
+        "x": 0,
+        "y": 39,
+        "width": 1440,
+        "height": 960
+      }
+    },
+    {
+      "bounds": {
+        "x": 0,
+        "y": 39,
+        "width": 1024,
+        "height": 720
+      },
+      "contentBounds": {
+        "x": 0,
+        "y": 39,
+        "width": 1024,
+        "height": 720
+      }
+    }
+  ],
+  "errors": [],
+  "fixture": "/var/folders/9b/gg5177qd7_z9mq1g3rh0x4bc0000gn/T/workspace-session-bk1SDs"
+}

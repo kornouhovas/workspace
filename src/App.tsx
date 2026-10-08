@@ -2,7 +2,7 @@ import { createTableColumnWidthQueue, normalizeTableColumnWidths, type TableWidt
 import { createGroupingMutationQueue, type GroupingMutation } from "@/workspaceGroupingMutations.js";
 import { normalizeGrouping } from "@/workspaceGrouping.js";
 import { focusedPaneCloseCommand } from "@/workspacePaneKeyboard.js";
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { WorkspaceBoardView } from "@/components/workspace/board-view";
@@ -10,31 +10,27 @@ import { WorkspaceLeftPanel } from "@/components/workspace/left-panel";
 import { ProjectMoveIndicator } from "@/components/workspace/project-move-indicator";
 import { createProjectMoveController, type ProjectMovePending, type ProjectStatusMoveOption } from "@/workspaceProjectMoveState.js";
 import { WorkspaceProjectDetailPanel } from "@/components/workspace/project-detail-panel";
+import { ProjectRenameAction } from "@/components/workspace/project-rename-action";
 import { GlobalSettingsView, WorkspaceSettingsView } from "@/components/workspace/settings-view";
 import { WorkspaceEmptyState } from "@/components/workspace/states";
 import { WorkspaceTableView } from "@/components/workspace/table-view";
 import { WorkspaceViewTabs } from "@/components/workspace/view-tabs";
 import { WorkspaceProjectTabs } from "@/components/workspace/project-tabs";
 import { Button } from "@/components/ui/button";
-import { projectTabsReducer, projectTabCloseSelection } from "@/workspaceProjectTabs.js";
+import type { SessionCommand, SessionResult } from "@/workspaceSession.js";
+import { createWorkspaceSessionLifecycle } from "@/workspaceSessionLifecycle.js";
+import type { ProjectTabsAction } from "@/workspaceProjectTabs.js";
 import { duplicateWorkspaceView } from "@/duplicateWorkspaceView.js";
-import { viewPreviewId, rememberViewPreview, pruneViewPreviews, createPreviewRequestGuard, createPreviewRestoreTracker, createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
-import { readProjectSession, writeProjectSession } from "@/workspaceProjectSession.js";
+import { createPreviewBackgroundGesture } from "@/workspaceViewPreview.js";
 import { installMenuHoverMemory } from "@/components/ui/menu-hover";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  createPaneLayout,
-  paneLayoutReducer,
-  readPaneLayouts,
-  readSidebarWidth,
-  writeSidebarWidth,
-  writePaneLayouts,
-} from "@/workspacePaneLayout.js";
+import { createPaneLayout } from "@/workspacePaneLayout.js";
 import { WorkspaceSplitTree } from "@/components/workspace/split-tree";
 import { listWorkspacePanes, type SplitSide } from "@/workspaceSplitTree.js";
 import type { PaneAction } from "@/workspacePaneLayout";
 import {
   ChromeAction,
+  NavigationChromeIcon,
   ChromeIcon,
   PaneResize,
   WorkspaceRightPanel,
@@ -52,7 +48,6 @@ import {
 } from "@/i18n/errors.js";
 import {
   FolderIcon,
-  PanelLeftIcon,
   XIcon,
 } from "@/lib/workspace-icons";
 import {
@@ -567,6 +562,7 @@ function createClientDocumentId(prefix: string) {
 }
 
 export default function App() {
+  const [historyHost, setHistoryHost] = useState<HTMLDivElement | null>(null);
   const { t, locale } = useI18n();
   const [state, dispatch] = useReducer(
     workspaceAppStateReducer,
@@ -578,7 +574,6 @@ export default function App() {
   surfaceInteractionDisabledRef.current = surfaceState.interactionDisabled;
   const viewRequestVersionRef = useRef(state.viewRequestVersion);
   viewRequestVersionRef.current = state.viewRequestVersion;
-  const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("workspace");
   const navigationSurfaceVersion = useRef(0);
   useEffect(installMenuHoverMemory, []);
 
@@ -607,30 +602,27 @@ export default function App() {
     return () => media.removeEventListener("change", apply);
   }, [theme]);
 
-  const [selectedProject, setSelectedProject] = useState<WorkspaceMockProject | null>(null);
-  const [activeProjectTabId, setActiveProjectTabId] = useState<string | null>(null);
-  const [projectTabSelected, setProjectTabSelected] = useState(false);
-  const [savedProjectSession] = useState(() => readProjectSession(window.localStorage));
-  const [projectTabsByWorkspace, dispatchProjectTabs] = useReducer(
-    projectTabsReducer,
-    savedProjectSession.tabs,
+  const workspaceClient = useMemo(
+    () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
+    [],
   );
-  const workspaceScreenMemory = useRef(new Map(Object.entries(savedProjectSession.screens)));
-  const previewRequests = useRef(createPreviewRequestGuard());
+  const [session] = useState(() => createWorkspaceSessionLifecycle({
+    storage: {
+      getItem: (key: string) => window.localStorage.getItem(key),
+      setItem: (key: string, value: string) => window.localStorage.setItem(key, value),
+    },
+    client: workspaceClient,
+    normalizeFileTree: normalizeProjectFileTreeResponse,
+  }));
+  const sessionSnapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const {
+    selectedProject, activeProjectTabId, projectTabSelected, activeSurface,
+    tabs: projectTabsByWorkspace, layouts: paneLayouts, sidebarWidth, closedProjectTabs,
+  } = sessionSnapshot;
   const previewBackgroundGesture = useRef(createPreviewBackgroundGesture());
-  const previewRestoreTracker = useRef(createPreviewRestoreTracker());
-  const [previewSelectionRevision, setPreviewSelectionRevision] = useState(0);
-  const restoreStartupScreen = useRef(true);
-  const pendingWorkspaceScreen = useRef<string | null>(null);
-  const [paneLayouts, setPaneLayouts] = useState(() => readPaneLayouts(window.localStorage));
-  const [sidebarWidth, setSidebarWidth] = useState(() => readSidebarWidth(window.localStorage, paneLayouts));
-  useEffect(() => { writeSidebarWidth(window.localStorage, sidebarWidth); }, [sidebarWidth]);
   const workspaceSwitchVersion = useRef(0);
   const workspaceSwitchQueue = useRef(Promise.resolve());
   const viewSelectionQueue = useRef(Promise.resolve());
-  const [closedProjectTabs, setClosedProjectTabs] = useState<
-    Record<string, (typeof savedProjectSession.tabs)[string]>
-  >({});
   const [workspaceList, setWorkspaceList] = useState<WorkspaceListState>({
     activeWorkspaceId: null,
     workspaces: [],
@@ -639,33 +631,24 @@ export default function App() {
   const projectTabsWorkspaceId = state.workspaceId || workspaceList.activeWorkspaceId || "preview";
   const paneLayout = { ...(paneLayouts[projectTabsWorkspaceId] || createPaneLayout()), sidebarWidth };
   const sidebarCollapsed = paneLayout.sidebarCollapsed;
-  function sendPane(action: PaneAction) {
-    if (action.type === "rightToggle" && selectedProject && !activeProjectTabId) {
-      previewRequests.current.invalidate();
-      rememberPreview(paneLayout.rightVisible ? null : selectedProject.id);
-    }
-    if (action.type === "resizeSidebar") {
-      setSidebarWidth(Math.min(460, Math.max(240, action.width)));
-      return;
-    }
-    setPaneLayouts((current) => ({
-      ...current,
-      [projectTabsWorkspaceId]: paneLayoutReducer(
-        current[projectTabsWorkspaceId] || createPaneLayout(),
-        action,
-      ),
-    }));
+  // Product mutation adapters update the same session owner; lifecycle is
+  // coordinated by the injected storage/service adapter.
+  function setSelectedProject(value: React.SetStateAction<WorkspaceMockProject | null>) {
+    session.dispatch({ type: "selection", workspaceId: projectTabsWorkspaceId, selectedProject: value });
   }
-  useEffect(() => {
-    writePaneLayouts(window.localStorage, paneLayouts);
-  }, [paneLayouts]);
+  function setActiveProjectTabId(value: React.SetStateAction<string | null>) {
+    session.dispatch({ type: "selection", workspaceId: projectTabsWorkspaceId, activeProjectTabId: value });
+  }
+  function setActiveSurface(surface: WorkspaceSurface) {
+    session.dispatch({ type: "surface", workspaceId: projectTabsWorkspaceId, surface });
+  }
+  function dispatchProjectTabs(action: ProjectTabsAction) {
+    session.dispatch({ type: "tabs", workspaceId: action.workspaceId, action });
+  }
+  function sendPane(action: PaneAction) {
+    session.dispatch({ type: "pane", workspaceId: projectTabsWorkspaceId, action });
+  }
   const expandedProjectTabs = projectTabsByWorkspace[projectTabsWorkspaceId] || [];
-  useEffect(() => {
-    const valid = new Set(expandedProjectTabs.map((tab) => tab.tabId));
-    for (const pane of listWorkspacePanes(paneLayout.tree))
-      if (pane.tabId && !valid.has(pane.tabId))
-        sendPane({ type: "closePane", paneId: pane.paneId });
-  }, [projectTabsByWorkspace, projectTabsWorkspaceId]);
   const projectExpanded =
     selectedProject !== null &&
     expandedProjectTabs.some(
@@ -675,81 +658,21 @@ export default function App() {
   const projectFullScreen = activeSurface === "workspace" && projectExpanded && (projectTabSelected || !listWorkspacePanes(paneLayout.tree).some((pane) => pane.tabId === activeProjectTabId));
 
   useEffect(() => {
-    if (
-      state.status !== "ready" ||
-      state.workspaceSwitchPending ||
-      surfaceState.interactionDisabled ||
-      pendingWorkspaceScreen.current ||
-      restoreStartupScreen.current
-    )
-      return;
-    if (activeSurface === "workspace") {
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
-        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
-        viewId: state.activeViewId,
-        tabId: projectExpanded ? activeProjectTabId : null,
-        fullScreen: projectFullScreen,
-        previewId: !projectExpanded ? selectedProject?.id || null : null,
-      });
-    }
-    writeProjectSession(
-      window.localStorage,
-      projectTabsByWorkspace,
-      Object.fromEntries(workspaceScreenMemory.current),
-    );
-  }, [
-    projectTabsByWorkspace,
-    projectTabsWorkspaceId,
-    projectExpanded,
-    projectFullScreen,
-    activeProjectTabId,
-    selectedProject,
-    state.status,
-    state.workspaceSwitchPending,
-    surfaceState.interactionDisabled,
-    state.activeViewId,
-    activeSurface,
-  ]);
-
-  function rememberPreview(projectId: string | null, viewId = state.activeViewId, workspaceId = projectTabsWorkspaceId) {
-    if (!viewId) return;
-    workspaceScreenMemory.current.set(workspaceId,
-      rememberViewPreview(workspaceScreenMemory.current.get(workspaceId), viewId, projectId));
-    // Unavailable lookups and inactive deletion can change memory without a
-    // selected-project render. Persist those transitions immediately as well.
-    writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
-  }
-
-  // Restore by saved-view identity, including same-type views and filtered-out
-  // projects. The service lookup, rather than the projection, decides availability.
-  useEffect(() => {
-    const identity = JSON.stringify([state.workspaceId, state.activeViewId]);
-    if (!previewRestoreTracker.current.needsRestore(identity) || state.status !== "ready" ||
-      surfaceState.interactionDisabled || restoreStartupScreen.current || pendingWorkspaceScreen.current) return;
-    previewRestoreTracker.current.markRestored(identity);
-    const workspaceId = state.workspaceId;
-    const viewId = state.activeViewId;
-    if (!workspaceId || !viewId) return;
-    const token = previewRequests.current.invalidate();
-    setSelectedProject(null);
-    setActiveProjectTabId(null);
-    setProjectTabSelected(false);
-    sendPane({ type: "selectView" });
-    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
-    if (!projectId) return;
-    void workspaceClient.getProject({ workspaceId, projectId }).then(response => {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
-      const project = isRecord(response) && isRecord(response.project) ? response.project as unknown as WorkspaceMockProject : null;
-      if (!project) throw new RendererLocalizedError("error.projectUnavailable");
-      setSelectedProject(project);
-      sendPane({ type: "previewProject" });
-      void loadProjectFileTree(project, workspaceId);
-    }).catch(error => {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== workspaceId || activeViewIdRef.current !== viewId) return;
-      rememberPreview(null, viewId);
-      toast.error(t("error.projectUnavailable"), { description: getServiceErrorMessage(error, t) });
+    session.syncScreen({
+      workspaceId: projectTabsWorkspaceId,
+      viewId: state.activeViewId,
+      ready: state.status === "ready" && !state.workspaceSwitchPending && !surfaceState.interactionDisabled,
     });
-  }, [state.workspaceId, state.activeViewId, state.status, surfaceState.interactionDisabled, previewSelectionRevision]);
+  }, [sessionSnapshot, projectTabsWorkspaceId, state.activeViewId, state.status, state.workspaceSwitchPending, surfaceState.interactionDisabled]);
+
+  useEffect(() => {
+    if (state.status !== "ready" || surfaceState.interactionDisabled) return;
+    void session.restoreReadyView({ workspaceId: state.workspaceId, viewId: state.activeViewId }).then(result => {
+      if (!result.accepted) return;
+      if (result.project) void loadProjectFileTree(result.project, state.workspaceId);
+      if (result.unavailable) toast.error(t("error.projectUnavailable"));
+    });
+  }, [sessionSnapshot, state.workspaceId, state.activeViewId, state.status, surfaceState.interactionDisabled]);
 
   function invalidateActiveProjection() {
     viewRequestVersionRef.current += 1;
@@ -769,24 +692,17 @@ export default function App() {
   }
 
   function selectSavedView(activeViewId: string) {
-    if (pendingWorkspaceScreen.current) return;
-    previewRequests.current.invalidate();
+    if (session.pendingWorkspaceId) return;
     dismissWorkspaceFloatingMenus();
     activeViewIdRef.current = activeViewId;
     viewRequestVersionRef.current += 1;
     surfaceInteractionDisabledRef.current = state.projectionInvalidated || state.projection?.view.id !== activeViewId;
-    if (projectExpanded) {
-      // Explicit return from an expanded tab keeps its existing close semantics.
-      rememberPreview(null, activeViewId);
-      setSelectedProject(null);
-      setActiveProjectTabId(null);
-      setProjectTabSelected(false);
-      sendPane({ type: "selectView" });
-      setPreviewSelectionRevision(previewRestoreTracker.current.request());
-    } else if (!state.projectionInvalidated && state.projection?.view.id === activeViewId) {
-      // Reversing an unfinished switch can reactivate the still-ready snapshot.
-      previewRestoreTracker.current.markRestored(JSON.stringify([state.workspaceId, activeViewId]));
-    }
+    session.selectView({
+      workspaceId: state.workspaceId,
+      viewId: activeViewId,
+      expanded: projectExpanded,
+      ready: !state.projectionInvalidated && state.projection?.view.id === activeViewId,
+    });
     dispatch({ type: "activeViewChanged", activeViewId });
   }
 
@@ -800,22 +716,33 @@ export default function App() {
     }
   }, [selectedProject, projectTabsWorkspaceId]);
 
-  function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
-    const existing = !afterTabId && expandedProjectTabs.find((tab) => tab.id === project.id);
-    if (existing) {
-      handleProjectOpen(project, existing.tabId, true);
-      return existing.tabId;
+  function applySessionEffects(result: SessionResult) {
+    if (result.projectToLoad) {
+      if (state.status === "ready" && state.root) void loadProjectFileTree(result.projectToLoad);
     }
-    const tabId = createClientDocumentId("project-tab");
-    dispatchProjectTabs({
-      type: "expand",
-      workspaceId: projectTabsWorkspaceId,
-      project,
-      tabId,
-      afterTabId,
+    const focus = result.focus;
+    if (focus) requestAnimationFrame(() => {
+      const selector = focus.kind === "pane"
+        ? `[data-pane-id="${CSS.escape(focus.id)}"]`
+        : focus.kind === "projectTab"
+          ? `[data-project-tab-id="${CSS.escape(focus.id)}"]`
+          : '[data-view-tab-id][aria-selected="true"]';
+      document.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
     });
-    handleProjectOpen(project, tabId, true);
-    return tabId;
+  }
+
+  function dispatchSessionInteraction(command: SessionCommand): SessionResult {
+    if (surfaceInteractionDisabledRef.current) return { snapshot: session.getSnapshot() };
+    return session.dispatch(command);
+  }
+
+  function createExpandedProject(project: WorkspaceMockProject, afterTabId?: string) {
+    const result = dispatchSessionInteraction({
+      type: "expandProject", workspaceId: projectTabsWorkspaceId, project,
+      tabId: createClientDocumentId("project-tab"), afterTabId,
+    });
+    applySessionEffects(result);
+    return result.tabId;
   }
 
   function openProjectInSplit(
@@ -824,128 +751,45 @@ export default function App() {
     target?: string,
     side: SplitSide | "center" = "right",
   ) {
-    const identity = tabId || createExpandedProject(project);
-    if (tabId) handleProjectOpen(project, tabId);
-    if (side === "center" && target) {
-      const existing = listWorkspacePanes(paneLayout.tree).find((p) => p.tabId === identity);
-      if (existing) sendPane({ type: "focus", pane: existing.paneId });
-      else sendPane({ type: "replacePane", paneId: target, tabId: identity });
-    } else
-      sendPane({
-        type: "split",
-        tabId: identity,
-        target,
-        paneId: createClientDocumentId("pane"),
-        side: side === "center" ? "right" : side,
-      });
+    applySessionEffects(dispatchSessionInteraction({
+      type: "splitProject", workspaceId: projectTabsWorkspaceId, project, tabId, target, side,
+      newTabId: createClientDocumentId("project-tab"), paneId: createClientDocumentId("pane"),
+    }));
   }
+
   function closeLayoutPane(paneId: string) {
-    const panes = listWorkspacePanes(paneLayout.tree);
-    const closed = panes.find((p) => p.paneId === paneId);
-    if (panes.length < 2) return;
-    sendPane({ type: "closePane", paneId });
-    if (paneLayout.focused === paneId || (closed?.tabId && activeProjectTabId === closed.tabId)) {
-      const remaining = panes.filter((p) => p.paneId !== paneId);
-      const next =
-        remaining[
-          Math.min(
-            panes.findIndex((p) => p.paneId === paneId),
-            remaining.length - 1,
-          )
-        ];
-      requestAnimationFrame(() =>
-        document
-          .querySelector<HTMLElement>(`[data-pane-id="${CSS.escape(next.paneId)}"]`)
-          ?.focus({ preventScroll: true }),
-      );
-      const project = expandedProjectTabs.find((p) => p.tabId === next.tabId);
-      if (project) handleProjectOpen(project, project.tabId);
-      else {
-        setSelectedProject(null);
-        setActiveProjectTabId(null);
-      }
-    }
+    applySessionEffects(dispatchSessionInteraction({ type: "closePane", workspaceId: projectTabsWorkspaceId, paneId }));
+  }
+
+  function restoreProjectTab(tabId: string) {
+    const result = dispatchSessionInteraction({ type: "restoreProject", workspaceId: projectTabsWorkspaceId, tabId });
+    applySessionEffects(result);
   }
 
   function toggleProjectExpanded() {
     if (!selectedProject) return;
-    if (projectExpanded && activeProjectTabId) {
-      dispatchProjectTabs({
-        type: "remove",
-        workspaceId: projectTabsWorkspaceId,
-        tabId: activeProjectTabId,
-      });
-      setActiveProjectTabId(null);
-      rememberPreview(selectedProject.id);
-      sendPane({ type: "previewProject" });
-    } else {
-      createExpandedProject(selectedProject);
-    }
+    if (projectExpanded && activeProjectTabId) restoreProjectTab(activeProjectTabId);
+    else createExpandedProject(selectedProject);
   }
 
   function closeProjectTabs(tabIds: readonly string[]) {
-    const closed = expandedProjectTabs.filter((tab) => tabIds.includes(tab.tabId));
-    if (!closed.length) return;
-    const fallback = projectTabCloseSelection(expandedProjectTabs, activeProjectTabId, tabIds);
-    setClosedProjectTabs((current) => ({
-      ...current,
-      [projectTabsWorkspaceId]: [...(current[projectTabsWorkspaceId] || []), ...closed].slice(-20),
-    }));
-    for (const pane of listWorkspacePanes(paneLayout.tree))
-      if (pane.tabId && tabIds.includes(pane.tabId))
-        sendPane({ type: "closePane", paneId: pane.paneId });
-    for (const tab of closed)
-      dispatchProjectTabs({
-        type: "remove",
-        workspaceId: projectTabsWorkspaceId,
-        tabId: tab.tabId,
-      });
-    if (!activeProjectTabId || !tabIds.includes(activeProjectTabId)) return;
-    if (fallback) handleProjectOpen(fallback, fallback.tabId);
-    else {
-      setActiveProjectTabId(null);
-      setSelectedProject(null);
-      sendPane({ type: "closeSplit" });
-    }
-    requestAnimationFrame(() => {
-      const target = fallback
-        ? document.querySelector<HTMLButtonElement>(
-            `[data-project-tab-id="${CSS.escape(fallback.tabId)}"]`,
-          )
-        : document.querySelector<HTMLButtonElement>('[data-view-tab-id][aria-selected="true"]');
-      target?.focus({ preventScroll: true });
-    });
+    applySessionEffects(dispatchSessionInteraction({ type: "closeTabs", workspaceId: projectTabsWorkspaceId, tabIds }));
   }
+
   function closeProjectTab(tabId: string) {
     closeProjectTabs([tabId]);
   }
 
   function reopenProjectTab() {
-    const closed = closedProjectTabs[projectTabsWorkspaceId] || [];
-    const project = closed.at(-1);
-    if (!project) return;
-    setClosedProjectTabs((current) => ({
-      ...current,
-      [projectTabsWorkspaceId]: closed.slice(0, -1),
-    }));
-    dispatchProjectTabs({
-      type: "expand",
-      workspaceId: projectTabsWorkspaceId,
-      project,
-      tabId: project.tabId,
-    });
-    handleProjectOpen(project, project.tabId);
+    applySessionEffects(dispatchSessionInteraction({ type: "reopenProject", workspaceId: projectTabsWorkspaceId }));
   }
+
   function closeSelectedProject() {
     if (projectExpanded && activeProjectTabId) {
       closeProjectTab(activeProjectTabId);
       return;
     }
-    previewRequests.current.invalidate();
-    rememberPreview(null);
-    setActiveProjectTabId(null);
-    setSelectedProject(null);
-    sendPane({ type: "selectView" });
+    session.dispatch({ type: "closePreview", workspaceId: projectTabsWorkspaceId });
   }
   const [workspaceFloatingDismissToken, setWorkspaceFloatingDismissToken] = useState(0);
   const [boardViewportWidth, setBoardViewportWidth] = useState(0);
@@ -957,27 +801,18 @@ export default function App() {
         event.target.closest("input,textarea,select,[contenteditable=true],[role=menu]");
       if (editing || surfaceState.interactionDisabled) return;
       const key = event.key.toLowerCase();
-      if (key === "j") {
-        event.preventDefault();
-        sendPane({ type: "rightToggle" });
-      }
       if (key === "\\") {
         event.preventDefault();
         sendPane({ type: "sidebarToggle" });
       }
-      if (key === "t" && !event.shiftKey) {
-        event.preventDefault();
-        sendPane({ type: "rightOpen", id: "launcher" });
-      }
       if (key === "t" && event.shiftKey) {
         event.preventDefault();
-        if (paneLayout.focused === "right") sendPane({ type: "rightReopen" });
-        else reopenProjectTab();
+        reopenProjectTab();
       }
       if (key === "w") {
         event.preventDefault();
         const command = focusedPaneCloseCommand(paneLayout, activeProjectTabId, projectExpanded);
-        if (command?.kind === "rightTab") sendPane({ type: "rightClose", id: command.id });
+        if (command?.kind === "preview") closeSelectedProject();
         else if (command?.kind === "pane") closeLayoutPane(command.id);
         else if (command?.kind === "projectTab") closeProjectTab(command.id);
       }
@@ -1005,10 +840,6 @@ export default function App() {
   const workspaceIdRef = useRef<string | null>(null);
   const propertySaveRequestVersionsRef = useRef(new Map<string, number>());
   const folderSelectionPendingRef = useRef(false);
-  const workspaceClient = useMemo(
-    () => new WorkspaceServiceClient(createWorkspaceRendererTransport()),
-    [],
-  );
 
   const [projectMovePending, setProjectMovePending] = useState<ProjectMovePending | null>(null);
   const projectMoveController = useMemo(() => createProjectMoveController(workspaceClient, setProjectMovePending), [workspaceClient]);
@@ -1046,7 +877,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     const loadRequestId = loadRequestIdRef.current + 1;
-    const loadViewRequestVersion = state.status === "ready" && !pendingWorkspaceScreen.current ? viewRequestVersionRef.current : null;
+    const loadViewRequestVersion = state.status === "ready" && !session.pendingWorkspaceId ? viewRequestVersionRef.current : null;
     loadRequestIdRef.current = loadRequestId;
 
     function isCurrentLoad() {
@@ -1058,7 +889,7 @@ export default function App() {
       dispatch({ type: "loadStarted" });
 
       try {
-        const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }));
+        const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: session.pendingWorkspaceId || undefined }));
         if (!isCurrentLoad()) {
           return;
         }
@@ -1069,7 +900,7 @@ export default function App() {
           setWorkspaceList(workspaces);
           dispatch({ type: "sourceFolderMissing", root });
           workspaceIdRef.current = root?.workspaceId || null;
-          pendingWorkspaceScreen.current = null;
+          session.cancelWorkspace();
           return;
         }
 
@@ -1088,9 +919,8 @@ export default function App() {
           root.workspaceId,
         );
         const requestedActiveViewId =
-          restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId
-            ? workspaceScreenMemory.current.get(root.workspaceId)?.viewId ||
-              viewsResponse.activeViewId
+          session.needsWorkspaceRestore(root.workspaceId)
+            ? session.preferredView(root.workspaceId) || viewsResponse.activeViewId
             : workspaceIdRef.current === root.workspaceId ||
                 previousWorkspaceId === root.workspaceId
               ? activeViewIdRef.current
@@ -1113,14 +943,14 @@ export default function App() {
           }),
         );
 
-        const savedScreen = workspaceScreenMemory.current.get(root.workspaceId);
+        if (!isCurrentLoad()) return;
         const restorePendingView = state.workspaceId === root.workspaceId && surfaceState.interactionDisabled;
-        const restoreScreen = restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView;
-        const savedPreviewId = viewPreviewId(savedScreen, activeViewId);
-        const previewResponse = restoreScreen && !savedScreen?.tabId && savedPreviewId
-          ? await workspaceClient.getProject({ workspaceId: root.workspaceId, projectId: savedPreviewId }).catch(() => null)
+        const projects = projectionResponse.projection.type === "board"
+          ? projectionResponse.projection.columns.flatMap(column => column.projects)
+          : projectionResponse.projection.rows;
+        const restoration = session.needsWorkspaceRestore(root.workspaceId, restorePendingView)
+          ? await session.prepareWorkspace({ workspaceId: root.workspaceId, viewId: activeViewId, viewIds: viewsResponse.views.map(view => view.id), projects })
           : null;
-        const restoredPreview = isRecord(previewResponse) && isRecord(previewResponse.project) ? previewResponse.project : null;
         if (isCurrentLoad()) {
           setWorkspaceList(workspacesResponse);
           workspaceIdRef.current = root.workspaceId;
@@ -1136,36 +966,10 @@ export default function App() {
             type: "propertiesLoaded",
             propertiesResponse,
           });
-          if (restoreStartupScreen.current || pendingWorkspaceScreen.current === root.workspaceId || restorePendingView) {
-            previewRestoreTracker.current.markRestored(JSON.stringify([root.workspaceId, activeViewId]));
-            workspaceScreenMemory.current.set(root.workspaceId, pruneViewPreviews(savedScreen, viewsResponse.views.map(view => view.id)));
-            restoreStartupScreen.current = false;
-            pendingWorkspaceScreen.current = null;
-            const tabId = workspaceScreenMemory.current.get(root.workspaceId)?.tabId;
-            const cachedProject = projectTabsByWorkspace[root.workspaceId]?.find(
-              (item) => item.tabId === tabId,
-            );
-            const projectId = cachedProject?.id || savedPreviewId;
-            const projects =
-              projectionResponse.projection.type === "board"
-                ? projectionResponse.projection.columns.flatMap((column) => column.projects)
-                : projectionResponse.projection.rows;
-            const freshProject = restoredPreview || projects.find((item) => isRecord(item) && item.id === projectId);
-            const project = isRecord(freshProject)
-              ? ({ ...cachedProject, ...freshProject } as WorkspaceMockProject)
-              : cachedProject;
-            // A removed preview cannot leave a visible empty shell. Expanded
-            // tabs retain their existing cached behavior and identities.
-            if (!project && projectId) {
-              rememberPreview(null, activeViewId, root.workspaceId);
-              setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: "selectView" }) }));
-              toast.error(t("error.projectUnavailable"));
-            }
-            setActiveProjectTabId(project ? tabId || null : null);
-            setSelectedProject(project || null);
-            setProjectTabSelected(workspaceScreenMemory.current.get(root.workspaceId)?.fullScreen === true);
-            if (!cachedProject) setPaneLayouts(current => ({ ...current, [root.workspaceId]: paneLayoutReducer(current[root.workspaceId] || createPaneLayout(), { type: project ? "previewProject" : "selectView" }) }));
-            if (project) void loadProjectFileTree(project, root.workspaceId);
+          if (restoration) {
+            const result = session.acceptWorkspace(restoration);
+            if (result.project) void loadProjectFileTree(result.project, root.workspaceId);
+            if (result.unavailable) toast.error(t("error.projectUnavailable"));
           }
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -1178,7 +982,7 @@ export default function App() {
         const message = resolveRendererErrorState(errorState, t);
         if (isCurrentLoad()) {
           // Keep navigation and the stored path available for source recovery.
-          const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: pendingWorkspaceScreen.current || undefined }).catch(() => null));
+          const root = normalizeRootResponse(await workspaceClient.getRoot({ workspaceId: session.pendingWorkspaceId || undefined }).catch(() => null));
           const recoveredWorkspaces = root ? await loadWorkspaceList(workspaceClient, root).catch(() => workspaceList) : null;
           if (!isCurrentLoad()) return;
           if (root && recoveredWorkspaces) {
@@ -1188,8 +992,7 @@ export default function App() {
             setWorkspaceList(recoveredWorkspaces);
             setSelectedProject(null);
           }
-          pendingWorkspaceScreen.current = null;
-          restoreStartupScreen.current = false;
+          session.cancelWorkspace(true);
           dispatch({ type: "serviceError", error: errorState });
           if (folderSelectionPendingRef.current) {
             folderSelectionPendingRef.current = false;
@@ -1234,8 +1037,6 @@ export default function App() {
     const loadRequestId = loadRequestIdRef.current;
     const workspaceId = state.workspaceId;
     const viewId = state.activeViewId;
-    const previewToken = previewRequests.current.current();
-    const projectId = viewPreviewId(workspaceScreenMemory.current.get(workspaceId), viewId);
     const isCurrent = () => !cancelled && loadRequestIdRef.current === loadRequestId &&
       viewRequestVersionRef.current === viewRequestVersion &&
       workspaceIdRef.current === workspaceId && activeViewIdRef.current === viewId;
@@ -1244,29 +1045,18 @@ export default function App() {
       try {
         const [rawProjection, rawPreview] = await Promise.all([
           workspaceClient.getViewProjection({ workspaceId, viewId, locale }),
-          projectId ? workspaceClient.getProject({ workspaceId, projectId }).catch(() => null) : null,
+          session.preparePreview({ workspaceId, viewId }),
         ]);
         const projectionResponse = normalizeProjectionResponse(rawProjection);
         if (!isCurrent()) return;
         if (projectionResponse.workspaceId !== workspaceId || projectionResponse.view.id !== viewId) {
           throw new RendererLocalizedError("error.activeViewUnavailable");
         }
-        const project = isRecord(rawPreview) && isRecord(rawPreview.project)
-          ? rawPreview.project as unknown as WorkspaceMockProject : null;
         // Projection and destination preview activate in the same React batch.
-        previewRestoreTracker.current.markRestored(JSON.stringify([workspaceId, viewId]));
         dispatch({ type: "projectionUpdated", projectionResponse, viewRequestVersion });
-        if (previewRequests.current.accepts(previewToken)) {
-          setSelectedProject(project);
-          setActiveProjectTabId(null);
-          setProjectTabSelected(false);
-          sendPane({ type: project ? "previewProject" : "selectView" });
-          if (project) void loadProjectFileTree(project, workspaceId);
-          else if (projectId) {
-            rememberPreview(null, viewId, workspaceId);
-            toast.error(t("error.projectUnavailable"));
-          }
-        }
+        const result = session.acceptPreview(rawPreview);
+        if (result.project) void loadProjectFileTree(result.project, workspaceId);
+        if (result.unavailable) toast.error(t("error.projectUnavailable"));
       } catch (error) {
         if (isCurrent()) {
           toast.error(t("toast.viewLoadFailed"), { description: getServiceErrorMessage(error, t) });
@@ -1302,7 +1092,7 @@ export default function App() {
       const root = normalizeRootResponse(await workspaceClient.setRoot({ workspaceId: requestWorkspaceId }));
       if (!root) return; // Native picker cancellation leaves the session intact.
       if (workspaceSwitchVersion.current !== version || workspaceIdRef.current !== (requestWorkspaceId || null)) return;
-      pendingWorkspaceScreen.current = root.workspaceId;
+      session.beginWorkspace(root.workspaceId);
       folderSelectionPendingRef.current = true;
       loadRequestIdRef.current += 1;
       setReloadToken(value => value + 1);
@@ -1358,24 +1148,14 @@ export default function App() {
   async function handleWorkspaceOpen(workspaceId: string, surface: WorkspaceSurface = "workspace") {
     const surfaceVersion = ++navigationSurfaceVersion.current;
     const activeWorkspaceId = workspaceList.activeWorkspaceId || state.workspaceId;
-    if (workspaceId === activeWorkspaceId && !pendingWorkspaceScreen.current) {
-      sendPane({ type: "showWorkspace" });
-      setActiveSurface(surface);
+    if (workspaceId === activeWorkspaceId && !session.pendingWorkspaceId) {
+      session.dispatch({ type: "showSurface", workspaceId: projectTabsWorkspaceId, surface });
       return;
     }
-    if (!pendingWorkspaceScreen.current && activeSurface === "workspace") {
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId, {
-        ...workspaceScreenMemory.current.get(projectTabsWorkspaceId),
-        viewId: state.activeViewId,
-        tabId: projectExpanded ? activeProjectTabId : null,
-        fullScreen: projectFullScreen,
-        previewId: !projectExpanded ? selectedProject?.id || null : null,
-      });
-    }
-    previewRequests.current.invalidate();
+    session.syncScreen({ workspaceId: projectTabsWorkspaceId, viewId: state.activeViewId, ready: state.status === "ready" && !surfaceState.interactionDisabled && !session.pendingWorkspaceId });
     const version = ++workspaceSwitchVersion.current;
     loadRequestIdRef.current += 1;
-    pendingWorkspaceScreen.current = workspaceId;
+    session.beginWorkspace(workspaceId);
     surfaceInteractionDisabledRef.current = true;
     viewRequestVersionRef.current += 1;
     dispatch({ type: "workspaceSwitchStarted" });
@@ -1391,7 +1171,7 @@ export default function App() {
       setReloadToken(value => value + 1);
     } catch (error) {
       if (version !== workspaceSwitchVersion.current) return;
-      pendingWorkspaceScreen.current = null;
+      session.cancelWorkspace();
       dispatch({ type: "workspaceSwitchCancelled" });
       toast.error(t("toast.workspaceOpenFailed"), { description: getServiceErrorMessage(error, t) });
     }
@@ -1627,13 +1407,10 @@ export default function App() {
       });
       const deletedView = normalizeDeletedViewResponse(response);
       if (!await acceptViewMutationResult(mutationRequest, true)) return;
-      const screen = workspaceScreenMemory.current.get(projectTabsWorkspaceId);
-      workspaceScreenMemory.current.set(projectTabsWorkspaceId,
-        pruneViewPreviews(screen, Object.keys(screen?.previewByView || {}).filter(id => id !== viewId)));
-      writeProjectSession(window.localStorage, projectTabsByWorkspace, Object.fromEntries(workspaceScreenMemory.current));
+      session.removeView(projectTabsWorkspaceId, viewId);
       if (workspaceIdRef.current !== state.workspaceId) return;
       const currentViewId = activeViewIdRef.current;
-      if (viewId === currentViewId) previewRequests.current.invalidate();
+      if (viewId === currentViewId) session.invalidatePreview();
       dispatch({
         type: "viewDeleted",
         viewId,
@@ -2486,13 +2263,17 @@ export default function App() {
     return response.options as ProjectStatusMoveOption[];
   }
 
-  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption) {
+  async function handleProjectStatusChange(project: WorkspaceMockProject, option: ProjectStatusMoveOption, renameName?: string) {
     if (surfaceInteractionDisabledRef.current) return;
     const requestWorkspaceId = state.workspaceId;
     const operationLoadRequestId = loadRequestIdRef.current;
     if (!requestWorkspaceId || !option.to || option.current || option.disabledReason) return false;
     try {
-      const result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
+      let result: unknown;
+      if (renameName !== undefined) {
+        result = await projectMoveController.rename({ workspaceId: requestWorkspaceId, projectId: project.id,
+          projectName: project.name, statusValueId: option.id, from: option.from, to: option.to }, renameName);
+      } else result = await projectMoveController.move({ workspaceId: requestWorkspaceId, projectId: project.id,
         projectName: project.name, statusValueId: option.id, from: option.from, to: option.to });
       if (!result) return false;
       if (loadRequestIdRef.current !== operationLoadRequestId || workspaceIdRef.current !== requestWorkspaceId) return true;
@@ -2503,10 +2284,15 @@ export default function App() {
             dispatchProjectTabs({ type: "update", workspaceId, project: recovered });
           if (workspaceIdRef.current === requestWorkspaceId) setSelectedProject(current => current?.id === project.id ? recovered : current);
         }
-        toast.error(t("move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
+        toast.error(t(renameName !== undefined ? "rename.recoveryRequired" : "move.recoveryRequired"), { description: isRecord(result.error) ? getString(result.error.message) : undefined, duration: 12000 });
         return false;
       }
     } catch (error) {
+      if (renameName !== undefined) {
+        const code = isRecord(error) ? getString(error.code) : "";
+        const key = code === "INVALID_PROJECT_NAME" ? "rename.invalidName" : code === "PROJECT_NAME_CONFLICT" ? "rename.conflict" : code === "PROJECT_RENAME_GUARD_UNAVAILABLE" ? "rename.guardUnavailable" : code === "RENAME_RECOVERY_REQUIRED" ? "rename.recoveryRequired" : "";
+        throw new Error(key ? t(key) : getServiceErrorMessage(error, t));
+      }
       toast.error(t("move.failed"), { description: getServiceErrorMessage(error, t) });
       return false;
     }
@@ -2537,8 +2323,9 @@ export default function App() {
             projectionResponse: normalizeProjectionResponse(projection), folderRoleTree: normalizeFolderRoleTree(scan) });
         }
       }
-      toast.success(t("move.completed"));
+      toast.success(t(renameName !== undefined ? "rename.completed" : "move.completed"));
     } catch (error) {
+      if (renameName !== undefined) throw error;
       toast.error(t("move.refreshFailed"), { description: getServiceErrorMessage(error, t) });
     }
     return true;
@@ -2622,39 +2409,19 @@ export default function App() {
     project: WorkspaceMockProject,
     requestWorkspaceId = state.workspaceId,
   ) {
-    const token = previewRequests.current.current();
-    try {
-      const fileTree = normalizeProjectFileTreeResponse(
-        await workspaceClient.listProjectFileTree({ workspaceId: requestWorkspaceId, path: project.currentRelativePath }),
-      );
-      setSelectedProject((currentProject) =>
-        previewRequests.current.accepts(token) && workspaceIdRef.current === requestWorkspaceId && currentProject?.id === project.id && currentProject.currentRelativePath === project.currentRelativePath
-          ? { ...currentProject, fileTree }
-          : currentProject,
-      );
-    } catch (error) {
-      if (!previewRequests.current.accepts(token) || workspaceIdRef.current !== requestWorkspaceId) return;
-      toast.error(t("toast.fileTreeLoadFailed"), {
-        description: getServiceErrorMessage(error, t),
-      });
-    }
+    const result = await session.loadProjectFileTree(project, requestWorkspaceId);
+    if (result.error) toast.error(t("toast.fileTreeLoadFailed"), {
+      description: getServiceErrorMessage(result.error, t),
+    });
   }
 
   function handleProjectOpen(project: WorkspaceMockProject, tabId: string | null = null, fullScreen = false) {
     if (surfaceInteractionDisabledRef.current) return;
-    if (!tabId && !projectExpanded && paneLayout.rightVisible && paneLayout.activeRightTab === "navigation" && selectedProject?.id === project.id) {
+    if (!tabId && !projectExpanded && paneLayout.rightVisible && selectedProject?.id === project.id) {
       closeSelectedProject();
       return;
     }
-    previewRequests.current.invalidate();
-    if (!tabId) rememberPreview(project.id);
-    setProjectTabSelected(fullScreen);
-    setActiveProjectTabId(tabId);
-    setSelectedProject(project);
-    if (!tabId) sendPane({ type: "previewProject" });
-    if (state.status === "ready" && state.root) {
-      void loadProjectFileTree(project);
-    }
+    applySessionEffects(session.dispatch({ type: "openProject", workspaceId: projectTabsWorkspaceId, project, tabId, fullScreen }));
   }
 
   function dismissWorkspaceFloatingMenus() {
@@ -2663,20 +2430,17 @@ export default function App() {
 
   function openWorkspaceSurface() {
     navigationSurfaceVersion.current += 1;
-    sendPane({ type: "showWorkspace" });
-    setActiveSurface("workspace");
+    session.dispatch({ type: "showSurface", workspaceId: projectTabsWorkspaceId, surface: "workspace" });
   }
 
   function openCurrentWorkspaceSettings() {
     navigationSurfaceVersion.current += 1;
-    sendPane({ type: "showWorkspace" });
-    setActiveSurface("workspace-settings");
+    session.dispatch({ type: "showSurface", workspaceId: projectTabsWorkspaceId, surface: "workspace-settings" });
   }
 
   function openSettingsSurface() {
     navigationSurfaceVersion.current += 1;
-    sendPane({ type: "showWorkspace" });
-    setActiveSurface("settings");
+    session.dispatch({ type: "showSurface", workspaceId: projectTabsWorkspaceId, surface: "settings" });
   }
 
   const shouldUseMockViews = !state.root && !state.workspaceId;
@@ -2778,6 +2542,22 @@ export default function App() {
         ("totalProjectCount" in boardProjection ? boardProjection.totalProjectCount === 0 : boardProjection.columns.every((column) => column.projects.length === 0))
       : tableProjection.type === "table" && tableProjection.rows.length === 0 && !tableProjection.groupOptions && !tableProjection.groupingNotice);
 
+  const renderProjectRenameAction = (project: WorkspaceMockProject | null) => project ? (
+    <ProjectRenameAction
+      key={project.id}
+      name={project.name}
+      relativePath={project.currentRelativePath}
+      disabled={projectMovePending !== null || surfaceState.interactionDisabled}
+      onRename={async (name) => {
+        if (projectMovePending) throw new Error(t("rename.pending"));
+        const from = project.currentRelativePath;
+        const to = [...from.split("/").slice(0, -1), name].join("/");
+        const completed = await handleProjectStatusChange(project, { id: project.status.id, name: project.status.name, source: "folderRole", relativePath: null, current: false, from, to }, name);
+        if (!completed) throw new Error(t("rename.failed"));
+      }}
+    />
+  ) : null;
+
   const renderDetailPanel = (
     project = selectedProject,
     onClose = closeSelectedProject,
@@ -2822,35 +2602,6 @@ export default function App() {
     />
   );
   const detailPanel = renderDetailPanel();
-  const navigationPanel = (
-    <nav className="bb-navigation" aria-label={t("chrome.navigation")}>
-      <p className="bb-navigation-heading">
-        {listWorkspacePanes(paneLayout.tree).some(
-          (p) => p.paneId === paneLayout.focused && p.tabId,
-        ) && selectedProject
-          ? selectedProject.name
-          : currentWorkspaceName}
-      </p>
-      {viewState.views.map((view) => (
-        <button
-          type="button"
-          key={view.id}
-          className="bb-navigation-row"
-          onClick={() => {
-            selectSavedView(view.id);
-            openWorkspaceSurface();
-          }}
-        >
-          <FolderIcon className="size-4" aria-hidden="true" />
-          {view.name}
-        </button>
-      ))}
-      <button type="button" className="bb-navigation-row" onClick={openSettingsSurface}>
-        {t("sidebar.settings")}
-      </button>
-    </nav>
-  );
-
   const primaryPane = (
     <main
       onFocusCapture={() => sendPane({ type: "focus", pane: "workspace" })}
@@ -2874,6 +2625,7 @@ export default function App() {
               projectActions={
                 projectFullScreen ? (
                   <>
+                    {renderProjectRenameAction(selectedProject)}
                     <Button
                       type="button"
                       variant="ghost"
@@ -2905,11 +2657,7 @@ export default function App() {
               }
               onShowView={() => {
                 if (!projectExpanded) return;
-                previewRequests.current.invalidate();
-                rememberPreview(null);
-                setSelectedProject(null);
-                setActiveProjectTabId(null);
-                sendPane({ type: "selectView" });
+                session.dispatch({ type: "closePreview", workspaceId: projectTabsWorkspaceId });
               }}
               groupOptions={serviceProjection?.projection.groupOptions}
               onGroupingChange={handleGroupingChange}
@@ -2931,15 +2679,7 @@ export default function App() {
                     const project = expandedProjectTabs.find((item) => item.tabId === id);
                     if (project) createExpandedProject(project, id);
                   }}
-                  onRestore={(id) => {
-                    const project = expandedProjectTabs.find((item) => item.tabId === id);
-                    dispatchProjectTabs({
-                      type: "remove",
-                      workspaceId: projectTabsWorkspaceId,
-                      tabId: id,
-                    });
-                    if (project) handleProjectOpen(project);
-                  }}
+                  onRestore={restoreProjectTab}
                   onClose={closeProjectTab}
                   onSplit={(id, target, side) => {
                     const project = expandedProjectTabs.find((p) => p.tabId === id);
@@ -2977,7 +2717,7 @@ export default function App() {
               activeViewId={viewState.activeViewId}
               views={viewState.views}
               onActiveViewChange={(activeViewId) => {
-                if (pendingWorkspaceScreen.current) return;
+                if (session.pendingWorkspaceId) return;
                 selectSavedView(activeViewId);
                 if (state.workspaceId) {
                   void persistSavedView(state.workspaceId, activeViewId)
@@ -3043,7 +2783,7 @@ export default function App() {
         detailPanel
       ) : activeSurface !== "workspace" ? (
         <div className="electron-window-no-drag min-h-0 flex-1 overflow-auto">
-          {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || pendingWorkspaceScreen.current ? (
+          {activeSurface === "settings" ? <GlobalSettingsView theme={theme} onThemeChange={setTheme} /> : state.status === "loading" || state.status === "idle" || session.pendingWorkspaceId ? (
             <WorkspaceLoadingState />
           ) : (
             <>
@@ -3202,6 +2942,7 @@ export default function App() {
           ].join(" ")}
         >
           <WorkspaceLeftPanel
+            historyHost={historyHost}
             collapsed={sidebarCollapsed}
             activeSurface={activeSurface}
             activeWorkspaceId={workspaceList.activeWorkspaceId || state.workspaceId}
@@ -3233,7 +2974,7 @@ export default function App() {
         )}
         <div
           className="bb-center flex min-h-0 min-w-0 flex-1"
-          style={{ display: !projectFullScreen && paneLayout.maximized === "right" ? "none" : undefined }}
+          style={{ display: !projectFullScreen && !projectExpanded && selectedProject && activeSurface === "workspace" && state.status !== "error" && paneLayout.rightVisible && paneLayout.maximized === "right" ? "none" : undefined }}
           data-maximized={paneLayout.maximized || undefined}
         >
           {projectFullScreen ? primaryPane : <WorkspaceSplitTree
@@ -3258,6 +2999,9 @@ export default function App() {
                 paneLayout.focused === pane.paneId,
               )
             }
+            renderProjectActions={(pane) => renderProjectRenameAction(
+              expandedProjectTabs.find((tab) => tab.tabId === pane.tabId) || null,
+            )}
             onClosePane={closeLayoutPane}
           />}
         </div>
@@ -3269,7 +3013,6 @@ export default function App() {
             suppressed={activeSurface !== "workspace" || state.status === "error" || projectFullScreen || (!!paneLayout.maximized && paneLayout.maximized !== "right")}
             layout={paneLayout}
             send={sendPane}
-            navigation={navigationPanel}
             project={
               !projectExpanded &&
               activeSurface === "workspace" &&
@@ -3278,6 +3021,7 @@ export default function App() {
                 : undefined
             }
             projectName={selectedProject?.name}
+            projectActions={renderProjectRenameAction(selectedProject)}
             onCloseProject={closeSelectedProject}
             onMaximizeProject={() => {
               if (selectedProject) createExpandedProject(selectedProject);
@@ -3285,20 +3029,18 @@ export default function App() {
           />
         )}
         {/* Native no-drag exclusion must follow pane drag regions in DOM order. */}
-        <button
-          type="button"
-          data-sidebar-toggle
-          className={[
-            "electron-window-no-drag workspace-top-action bb-chrome-action absolute top-[10px] z-40",
-            "left-[84px]",
-          ].join(" ")}
-          aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
-          onClick={() => sendPane({ type: "sidebarToggle" })}
-        >
-          <PanelLeftIcon className="size-4" aria-hidden="true" />
-        </button>
-        <div className="electron-window-no-drag absolute left-[116px] top-[10px] z-40">
+        <div className="workspace-navigation-chrome electron-window-no-drag absolute left-[84px] top-[10px] z-40 flex items-center gap-1">
+          <div ref={setHistoryHost} />
+          <button
+            type="button"
+            data-sidebar-toggle
+            className="electron-window-no-drag workspace-top-action bb-chrome-action"
+            aria-label={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+            title={t(sidebarCollapsed ? "sidebar.show" : "sidebar.hide")}
+            onClick={() => sendPane({ type: "sidebarToggle" })}
+          >
+            <NavigationChromeIcon kind="sidebar" />
+          </button>
           <ProjectMoveIndicator pending={projectMovePending} />
         </div>
       </div>

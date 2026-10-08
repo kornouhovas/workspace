@@ -27,7 +27,7 @@ Install with `npm ci`. The new packages are dev dependencies. Comparing the lock
 
 Each checkout owns `.workspace-dev/settings.json`, `views.json`, `properties.json` and `electron/` userData. The directory is gitignored. The helper refuses paths containing `.workspace` or `.folder-kanban`; development never performs legacy production metadata migration. `WORKSPACE_DEV_DATA=/absolute/isolated/path npm run dev` selects a separate fixture profile. `.workspace-dev` starts empty: selecting a source folder remains an explicit action. Use temporary source folders when exercising file operations; isolated metadata does not make edits to a deliberately selected source folder harmless.
 
-Renderer changes use HMR. Electron, preload and backend changes require restarting `npm run dev`. Ctrl-C and closing the Electron child stop the Vite server. Electron retains `contextIsolation=true`, `nodeIntegration=false`, `sandbox=true`. The development launcher does not replace `WorkspaceServiceClient`, the filesystem validation rules, folder roles, project IDs or the restriction on moving projects between primary statuses.
+Renderer changes use HMR. Electron, preload and backend changes require restarting `npm run dev`. Ctrl-C and closing the Electron child stop the Vite server. Electron retains `contextIsolation=true`, `nodeIntegration=false`, `sandbox=true`. The development launcher does not replace `WorkspaceServiceClient`, the filesystem validation rules, folder roles, project IDs or the accepted [Status move safeguards](../api/workspace-status-move.md).
 
 ## Visual adaptation
 

@@ -2,8 +2,6 @@
 
 ## Purpose and precedence
 
-Project instructions for Codex, tuned for GPT-6 Astra. Model selection belongs in Codex settings, not this file. These rules also apply to other capable coding models.
-
 This repository uses a spec-first, agent-ready workflow: the user owns product direction and major tradeoffs; the agent owns implementation, verification and handoff within the requested scope.
 
 - Follow system/developer instructions and the user's current request. Earlier authorization remains valid unless revoked.
@@ -26,7 +24,7 @@ Start with the actual checkout, `git status --short --branch`, and affected code
 
 Read the [development index](README.md), this guide, [workflow](workflow.md) and [quality](quality.md) for every development task; then read only domain documents relevant to the task:
 
-- product behavior: `docs/prd.md` and the relevant `docs/backlog/*` or `docs/superpowers/plans/*`;
+- product behavior: `docs/prd.md`, relevant `docs/flows/*`, and the originating GitHub issue or versioned specification; read legacy backlog items/plans only when the task explicitly references them;
 - architectural boundaries: `docs/architecture.md` and relevant accepted `docs/adr/*`;
 - storage and identity: `docs/data-model.md`;
 - service/API behavior: relevant `docs/api/*`;
@@ -47,7 +45,7 @@ The target durable local store is the Go sidecar using `any-store` on SQLite. Th
 - Validate filesystem operations against the selected source folder. Change user project files only when the request explicitly covers those operations.
 - Treat project IDs as opaque identities and paths as locators. Preserve references, values and history during migrations.
 - Keep sidecar routes internal and preserve service contracts unless changing them is in scope.
-- Preserve folder role semantics and the restriction on dragging projects between primary status groups unless the requested change covers them.
+- Preserve folder roles and the explicit Status actions accepted in [ADR-007](../adr/007-board-table-status-moves.md) and [ADR-008](../adr/008-table-row-order.md). Board Status-column drops and Table row crossings into visible explicit Status groups use the existing safe [Status move API](../api/workspace-status-move.md). Custom-property crossings and `No status` destinations remain unavailable; arbitrary filesystem rearrangement is outside this contract.
 
 If a dependency, identity/storage redesign, security change, public API, cloud sync, authentication, integration or release change is necessary but not already authorized, explain the concrete decision and ask before that part. Routine fixes within approved boundaries need no additional approval.
 

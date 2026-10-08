@@ -11,11 +11,11 @@ test("Escape closes exactly the focused leaf among multiple details and respects
   assert.equal(shouldClosePaneOnEscape({ ...event, active: true, defaultPrevented: true }), false);
   assert.equal(shouldClosePaneOnEscape({ ...event, key: "Enter", active: true }), false);
 });
-test("CmdW belongs to fixedNavigation/primary/detail focus and never closes a different selected project", async () => {
+test("CmdW closes the focused preview or project and respects split leaf identity", async () => {
   const { focusedPaneCloseCommand } = await import("../src/workspacePaneKeyboard.js");
   const layout = {
     focused: "right",
-    activeRightTab: "navigation",
+    rightVisible: true,
     tree: {
       type: "split",
       dir: "row",
@@ -26,7 +26,9 @@ test("CmdW belongs to fixedNavigation/primary/detail focus and never closes a di
       ],
     },
   };
-  assert.equal(focusedPaneCloseCommand(layout, "tab:a", true), null);
+  assert.deepEqual(focusedPaneCloseCommand(layout, "tab:a", true), { kind: "projectTab", id: "tab:a" });
+  assert.deepEqual(focusedPaneCloseCommand(layout, null, false), { kind: "preview" });
+  assert.equal(focusedPaneCloseCommand({ ...layout, rightVisible: false }, null, false), null);
   assert.deepEqual(focusedPaneCloseCommand({ ...layout, focused: "workspace" }, "tab:a", true), {
     kind: "pane",
     id: "workspace",
@@ -36,10 +38,6 @@ test("CmdW belongs to fixedNavigation/primary/detail focus and never closes a di
     id: "tab:a",
   });
   assert.equal(focusedPaneCloseCommand({ ...layout, focused: "missing" }, "tab:a", true), null);
-  assert.deepEqual(
-    focusedPaneCloseCommand({ ...layout, activeRightTab: "launcher" }, "tab:a", true),
-    { kind: "rightTab", id: "launcher" },
-  );
 });
 
 test('Escape cancels an active drag without closing preview even when preview listener registered first', () => {

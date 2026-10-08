@@ -14,6 +14,8 @@ Related specs:
 - `docs/flows/board-table-views.md`
 - `docs/api/workspace-properties.md`
 
+Current persistence is the Electron JSON view adapter. Target Go documents do not yet round-trip every additive preference; see the [integration gap list](../architecture.md#storage--sidecar-layer). The source/Workspace scope table in [data model](../data-model.md#current-runtime-and-target-scope) distinguishes view ownership from shared-root project/property data.
+
 ## Authentication / Authorization
 
 MVP has no authentication or authorization.
@@ -662,16 +664,9 @@ Development uses `build/sidecar/local/workspace-sidecar` (`.exe` on Windows); np
 
 Sidecar build scripts use a Node launcher for platform-neutral directory creation and environment setup. `build:sidecar:linux` produces a Linux binary whose project creation remains safely unavailable. Cross-building macOS with cgo disabled compiles a fail-closed helper and does not establish macOS support.
 
-
 ## Board property grouping (workspace-4r0)
 
-Board and Table share per-view Group by and Sort settings. Supported properties are Name, Status, Text, Number, Date, Select and Multi-select, including hidden properties. None displays all matching projects in a single Board column. Typed memberships, exact values, empty groups, unique totals, filtering and catalog/default or ascending scalar order follow Table. Multi-select may display a project in several columns. Group order never sorts cards.
-
-Board supports Default, Ascending, Descending and Manual. A successful changed horizontal header move (or Alt+Left/Right) persists Manual and the resulting order; click, unchanged drop, cancellation and failed saves retain the confirmed sort. No value/No status is pinned after value groups and cannot be dragged. Hidden and unavailable IDs retain saved manual ranks. Legacy Board documents with null/missing grouping restore Status, existing column order and visibility; `boardGroupingVersion: 1` distinguishes explicit None. The current JSON adapter normalizes this compatibly without changing project data or status catalogs.
-
-Both Group menus present visible groups first, hidden groups second, preserving the selected sort within each part. No value/No status is last within its visibility part, so a visible empty group precedes hidden value groups. This presentation never writes manual ranks. Hide/show and Show all restore the underlying group order; grouping, ranks, hide-empty and collapse/visibility settings are independent per saved view and Workspace.
-
-Folder create and card-drop destinations are available only when Board is grouped by Status. For other properties and None, Add card is disabled with an unavailable-destination explanation and card dragging cannot invoke a Status move or write a property. Existing Status pickers remain available inside cards/details and use the existing validated source operation. Hide remains available for grouped columns; None cannot hide the single column. Collapse all/Expand all in Group controls content visibility while retaining group counts. A deleted property displays flat accessible projects and a recovery notice.
+Board uses the existing per-view grouping document and complete typed group projection. Legacy missing/null Board grouping restores Status; `boardGroupingVersion: 1` distinguishes explicit None. Hidden/unavailable ranks survive. Only Status grouping enables folder creation and card-drop move destinations; grouping by other properties never writes project values. UI behavior is owned by the [grouping flow](../flows/board-table-views.md#board-property-grouping-workspace-4r0).
 
 ## Board Wrap content (workspace-y3m)
 

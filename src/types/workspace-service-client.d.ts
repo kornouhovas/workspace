@@ -9,6 +9,7 @@ declare module "@/workspaceServiceClient.js" {
     getProject(payload: Record<string, unknown>): Promise<unknown>;
     getProjectStatusOptions(payload: Record<string, unknown>): Promise<unknown>;
     createProject(payload: Record<string, unknown>): Promise<unknown>;
+    renameProject(payload: Record<string, unknown>): Promise<unknown>;
     moveProjectStatus(payload: Record<string, unknown>): Promise<unknown>;
     setRoot(payload: Record<string, unknown>): Promise<unknown>;
     scan(payload: Record<string, unknown>): Promise<unknown>;

@@ -38,10 +38,10 @@ Rules:
 - `property:name` and `property:status` are system properties.
 - System properties are returned by property list methods. Their display labels can be renamed, but their ids, types, order, derived values, delete behavior, and stored-value behavior remain locked.
 - `property:status` may persist color metadata for derived status values through `workspace.updateStatusValueColor`; the status values themselves remain derived from folder roles.
-- Custom property definitions are Workspace-scoped.
-- Custom property values are project-scoped and Workspace-scoped.
+- Requests identify the target Workspace; its source binding resolves the current property storage scope.
+- Current JSON definitions, select values, project values and history are source-scoped and shared by Workspaces bound to the same root. Per-Workspace views remain independent. The [scope/compatibility table](../data-model.md#current-runtime-and-target-scope) owns this distinction.
 - `Select` and `Multi-select` options are stored as `selectValue` documents.
-- All durable documents are stored through the local `any-store` sidecar.
+- The active Electron dispatcher persists properties through the JSON adapter. Go/any-store is the target durable store; it is not wired into this runtime (ADR-006).
 - Service responses use `type` for compatibility with current renderer/view code. Storage documents may persist the same concept as `propertyType`; backend must normalize both names.
 
 ## Common Error Codes
@@ -51,13 +51,16 @@ Rules:
 - `PROJECT_NOT_FOUND`: project id does not resolve to an active project.
 - `PROPERTY_NOT_FOUND`: property id does not resolve to an active property in the Workspace.
 - `PROPERTY_SYSTEM_LOCKED`: attempted to mutate a system property in a forbidden way.
-- `PROPERTY_TYPE_INVALID`: property type is not supported.
+- `INVALID_PROPERTY_TYPE`: a select-option operation targets a nonselect property; creation/type normalization can instead reject with `VALIDATION_FAILED`.
 - `SELECT_VALUE_NOT_FOUND`: select value id does not resolve to an active value for the property.
 - `STATUS_VALUE_NOT_FOUND`: status value id does not resolve to a derived status value in the current Workspace projection.
 - `SELECT_VALUE_IN_USE`: delete requires confirmation because the value is used by at least one project.
-- `PROPERTY_VALUE_INVALID`: value does not match property type.
+- `SYSTEM_PROPERTY_READONLY`: a custom-value/definition operation targets a protected system property.
+- Invalid value normalization currently rejects with `VALIDATION_FAILED`, field `value`; do not rely on a separate `PROPERTY_VALUE_INVALID` code.
 - `VALIDATION_FAILED`: request payload is structurally invalid.
 - `STORAGE_UNAVAILABLE`: local `any-store` sidecar or storage backend is unavailable.
+
+Current code also emits duplicate/in-use codes such as PROPERTY_ALREADY_EXISTS, PROPERTY_IN_USE and SELECT_VALUE_ALREADY_EXISTS. Storage exceptions need not be normalized to STORAGE_UNAVAILABLE today. The operation sections specify expected service behavior; the current JSON path does not guarantee full definition/option lifecycle history, transactional cascades, or one atomic value-plus-history commit. Preserve those target requirements and verify remediation separately rather than declaring them implemented from these examples.
 
 ## Data Types
 
@@ -131,7 +134,7 @@ Value rules:
 
 - `text`: string; empty value is `""`.
 - `number`: finite number, `null`, or a number expression object such as `{ "expression": "=2+2", "value": 4 }`.
-  Expressions must start with `=`, preserve the user-entered expression, and support simple arithmetic `+`, `-`, `*`, `/`, parentheses, decimals, and unary signs. Invalid expressions and division by zero are rejected as `PROPERTY_VALUE_INVALID` / `VALIDATION_FAILED`.
+  Expressions must start with `=`, preserve the user-entered expression, and support simple arithmetic `+`, `-`, `*`, `/`, parentheses, decimals, and unary signs. Invalid expressions and division by zero are rejected by the current dispatcher as `VALIDATION_FAILED` (field `value`).
 - `date`: valid `YYYY-MM-DD` string or `null`.
 - `select`: one active select value id for the same property, or `null`.
 - `multi-select`: ordered array of unique active select value ids for the same property.
@@ -503,7 +506,7 @@ Validation:
 
 Backward compatibility:
 
-- Existing `workspace.saveProperty` may remain as an alias during migration, but new UI work should call `workspace.updateProjectPropertyValue`.
+- New UI calls `workspace.updateProjectPropertyValue`; current legacy saveProperty returns its old folder-property envelope and is not a working write alias. See [compatibility behavior](workspace-session-sources.md#filesystem-reads-and-local-opening).
 - Existing `workspace.listPropertyValues` may remain for storage migration tests, but UI should call `workspace.listProperties` and consume view projection responses.
 
 ## Projection Requirements
@@ -521,25 +524,18 @@ Board, Table, and Project Detail Panel must render the same saved property value
 
 ## Storage Requirements
 
-The backend must persist these document families through the local `any-store` sidecar:
+The active backend uses the file property adapter behind preload IPC. The target Go/any-store implementation defines these document families:
 
 - `property_definitions`
 - `select_values`
 - `property_values`
 - `property_history`
 
-Transitional `.workspace/properties.json` may be read only for migration. It must not be the final write path for Notion-like custom properties.
+The transitional `.workspace/properties.json` is the current read/write path. It will become a migration input only when a separately reviewed Go-store integration switches adapters. Preserve source-scoped namespaces, values and history; target Workspace-scoped examples do not authorize a scope migration.
 
 ## Quality Requirements
 
-Every implementation slice must include:
-
-- failing tests before implementation;
-- focused Node tests for domain/service behavior;
-- Go tests for `any-store` sidecar persistence;
-- renderer typecheck and build after frontend changes;
-- Electron app launch and visual verification after frontend changes;
-- screenshots or equivalent visual evidence for Board, Table, Project Detail Panel, and Settings property management before marking frontend work complete.
+Select checks by the affected boundary under [quality.md](../development/quality.md). Property normalization and service changes need meaningful behavior/regression checks; Go checks apply when its store/contract changes. Renderer/native checks apply to actual UI changes. Documentation reconciliation does not require rerunning every historical implementation gate.
 
 ## Explicit system Status selection
 

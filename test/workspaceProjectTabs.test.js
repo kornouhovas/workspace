@@ -68,11 +68,21 @@ test("a save completing after switching projects refreshes the original tab only
   assert.deepEqual(state.one.map(p => p.id), ["b"]);
 });
 
-test("bulk close never selects a tab also being closed and preserves inactive selection", async()=>{
+test("active bulk close returns to the saved view and inactive close preserves selection", async()=>{
  const {projectTabCloseSelection}=await import("../src/workspaceProjectTabs.js");
  const tabs=[{tabId:"a"},{tabId:"b"},{tabId:"c"},{tabId:"d"}];
- assert.equal(projectTabCloseSelection(tabs,"d",["c","d"]).tabId,"b");
+ assert.equal(projectTabCloseSelection(tabs,"d",["c","d"]),null);
  assert.equal(projectTabCloseSelection(tabs,"b",["a","c","d"]).tabId,"b");
- assert.equal(projectTabCloseSelection(tabs,"a",["a","b"]).tabId,"c");
+ assert.equal(projectTabCloseSelection(tabs,"a",["a","b"]),null);
  assert.equal(projectTabCloseSelection(tabs,"b",["a","b","c","d"]),null);
+});
+
+
+test("closing the active expanded tab returns to the saved view without discarding other tabs", async () => {
+  const { projectTabCloseSelection } = await import("../src/workspaceProjectTabs.js");
+  const tabs = [{ tabId: "left", id: "p" }, { tabId: "active", id: "q" }, { tabId: "right", id: "r" }];
+  assert.equal(projectTabCloseSelection(tabs, "active", ["active"]), null);
+  const remaining = reduce({ workspace: tabs }, { type: "remove", workspaceId: "workspace", tabId: "active" });
+  assert.deepEqual(remaining.workspace.map(tab => tab.tabId), ["left", "right"]);
+  assert.equal(projectTabCloseSelection(tabs, "active", ["left"]), tabs[1]);
 });

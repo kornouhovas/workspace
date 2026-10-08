@@ -3,6 +3,8 @@
 Status: Accepted for workspace-9s1.
 Date: 2026-09-28.
 
+Current implementation qualification: the [source/lifecycle contract](../api/workspace-session-sources.md#queue-and-renderer-adoption) records the later dispatcher barrier, including serialized filesystem reads and picker waits outside the queue. The original scheduling instruction below is not proof of nonblocking reads in the current runtime. Scheduling changes must retain Status recovery, coherent publication and captured Workspace targeting; this annotation changes no source-binding decision or runtime behavior.
+
 ## Decision
 
 Settings edits the selected Workspace’s source and folder roles. Workspaces can share a source or choose independent roots. This supersedes the single shared source product assumption in ADR-001; it does not change the target any-store architecture or the running transport.
