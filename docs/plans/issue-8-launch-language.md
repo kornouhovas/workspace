@@ -33,11 +33,11 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 - Create: `docs/adr/0005-local-settings-runtime.md`.
 - Update: `.gitignore` and `docs/architecture.md`.
 
-- [ ] Check official Electron, Drizzle, SQLite-driver, Vite, React, and packaging documentation for compatible current versions; pin a reproducible dependency set.
-- [ ] Record the selected process transport, driver, migration method, development/test/user data locations, and packaging implications before implementing dependent storage and IPC code.
-- [ ] Add scripts for tests, lint, type checks, renderer/backend builds, and a development launch. Define one canonical product version and a check that package/build versions agree.
-- [ ] Add a build smoke test that confirms the separate desktop, renderer, and backend entry points are emitted and that the version check fails on a mismatch.
-- [ ] Run the new test, lint, type, and build scripts successfully.
+- [x] Check official Electron, Drizzle, SQLite-driver, Vite, React, and packaging documentation for compatible current versions; pin a reproducible dependency set.
+- [x] Record the selected process transport, driver, migration method, development/test/user data locations, and packaging implications before implementing dependent storage and IPC code.
+- [x] Add scripts for tests, lint, type checks, renderer/backend builds, and a development launch. Define one canonical product version and a check that package/build versions agree.
+- [x] Add a build smoke test that confirms the separate desktop, renderer, and backend entry points are emitted and that the version check fails on a mismatch.
+- [x] Run the new test, lint, type, and build scripts successfully.
 
 ### Task 2: Implement durable settings through the typed service
 

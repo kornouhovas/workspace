@@ -2,11 +2,13 @@
 
 ## Status and accepted foundation
 
-This is a design baseline, not a description of a running system. The branch currently contains documentation and development-tool configuration. SQLite with Drizzle is accepted for structured data; no database driver, schema or application packages have been installed yet.
+This branch contains the documentation foundation and the initial application scaffold. The settings service, database schema, migrations and IPC behavior are still to be implemented. SQLite with Drizzle is accepted for structured data.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
 Desktop starts a separate local TypeScript backend process that owns SQLite and product policy. The first release exposes this service locally; authenticated access from other devices is a separate future capability. See [ADR-0003](adr/0003-separate-local-backend.md).
+
+The initial runtime uses Electron `utilityProcess` with message ports, React with Vite, and a narrow typed preload boundary. The renderer has no direct Node.js or database access. SQLite uses Drizzle with `better-sqlite3`; ordered SQL migrations ship with the app. The database belongs beneath Electron's machine-local `userData` directory; development uses a distinct subdirectory and tests use temporary directories. See [ADR 0005](adr/0005-local-settings-runtime.md). Process supervision, settings contracts and storage behavior are implemented by subsequent tasks.
 
 ## Intended responsibilities
 
@@ -14,9 +16,9 @@ Desktop starts a separate local TypeScript backend process that owns SQLite and 
 | --- | --- | --- |
 | Desktop renderer | Views, interaction, localization and presentation state | Exact routing/state package versions and component extraction |
 | Typed service client | Commands, queries and normalized errors | Transport contracts and event subscriptions |
-| Local application service | Workspace/source identity, discovery policy, properties, views and transactions in a separate TypeScript process | Process supervision, local transport and protocol negotiation |
+| Local application service | Workspace/source identity, discovery policy, properties, views and transactions in a separate TypeScript process | Process supervision and protocol negotiation |
 | Machine filesystem adapter | Validated discovery, moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
-| Persistence | SQLite schema, Drizzle migrations and repositories | Driver, database partitioning and backup strategy |
+| Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
 | Hosted access, later | Owner-device access to the host service, including responsive mobile browser | Transport, device authentication, client feature scope and host lifecycle |
 | Agent execution, later | Personal project chats, local Codex/API-key execution, permission modes and parallel runs | Working-file isolation, result integration and exact runtime policy |
