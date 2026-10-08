@@ -29,4 +29,17 @@ When implementation code is actually adapted, extend this with an accurate state
 
 Check nested notices too: bb's browser-automation plugin, for example, has a separate [DevBrowser notice](https://github.com/get-bb/bb/blob/f135a001e72942cee9118d2693208ec0725e2f18/plugins/browser-automation/DEVBROWSER-LICENSE). This is not a full audit of future selected dependencies.
 
-No bb implementation code has been imported in this foundation. When code is added, create a provenance entry with upstream URL/revision, source paths, destination paths, local adaptations and license/notice location. Verify the actual distributed contents before each release. Reuse does not imply endorsement by bb or its authors.
+## Adapted UI foundation
+
+The language control and status/empty-state primitives in `src/renderer/components/bb-foundation.tsx` and `bb-foundation.css` are adapted from the following source patterns:
+
+| Upstream source | Destination | Adaptation |
+| --- | --- | --- |
+| `packages/shared-ui/src/components/ui/label.tsx` | `src/renderer/components/bb-foundation.tsx` | Retained the associated visible label and compact medium-weight label styling. |
+| `packages/shared-ui/src/components/ui/select.tsx` | `src/renderer/components/bb-foundation.tsx`, `bb-foundation.css` | Used a native HTML select for the two language choices, preserving browser keyboard behavior without importing the Radix/responsive overlay stack. |
+| `packages/shared-ui/src/components/ui/alert.tsx` | `src/renderer/components/bb-foundation.tsx`, `bb-foundation.css` | Kept the bordered status panel, title/description hierarchy and alert role for errors; limited variants to informational and error states. |
+| `packages/shared-ui/src/components/ui/empty-state.tsx` | `src/renderer/components/bb-foundation.tsx`, `bb-foundation.css` | Adapted the bordered, centered empty-state panel without the upstream icon dependency. |
+
+Upstream repository: [get-bb/bb](https://github.com/get-bb/bb), revision `f135a001e72942cee9118d2693208ec0725e2f18`. Complete upstream root MIT license notice: `src/renderer/components/bb/LICENSE`. No unrelated chat, session, table or mobile modules were copied. Ladle previews and component checks cover both languages and status states. This entry records UI-pattern adaptation; it does not claim line-for-line component copying.
+
+Verify the actual distributed contents before each release. Reuse does not imply endorsement by bb or its authors.

@@ -70,11 +70,11 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 - Create: selected controls/styles under `src/renderer/components/`, Ladle configuration and stories, and applicable license/provenance files.
 - Update: `docs/reuse.md`.
 
-- [ ] Inspect the pinned bb source paths and copy or adapt only the controls and styling needed for a labeled language selector and status/error presentation.
-- [ ] Record upstream URL, revision, source and destination paths, adaptations, and complete applicable notices. Exclude unrelated chat, session, table, and mobile modules.
-- [ ] Add Ladle previews for the selected controls and relevant states in both languages.
-- [ ] Add focused component interaction and keyboard tests, plus a test or check that required provenance and notices remain present.
-- [ ] Run all current tests, lint, type checks, application builds, and the Ladle build before continuing.
+- [x] Inspect the pinned bb source paths and copy or adapt only the controls and styling needed for a labeled language selector and status/error presentation.
+- [x] Record upstream URL, revision, source and destination paths, adaptations, and complete applicable notices. Exclude unrelated chat, session, table, and mobile modules.
+- [x] Add Ladle previews for the selected controls and relevant states in both languages.
+- [x] Add focused component interaction and keyboard tests, plus a test or check that required provenance and notices remain present.
+- [x] Run all current tests, lint, type checks, application builds, and the Ladle build before continuing.
 
 ### Task 5: Build the localized settings screen
 

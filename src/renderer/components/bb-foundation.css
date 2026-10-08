@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #202124;
+  background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f3f4f6;
+    background: #17181a;
+  }
+}
+
+.bb-foundation-preview {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+  padding: 1.5rem;
+}
+
+.bb-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bb-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.bb-select {
+  min-height: 2.5rem;
+  width: 100%;
+  border: 1px solid #c7c9cc;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.bb-select:focus-visible {
+  outline: 2px solid #4966cf;
+  outline-offset: 2px;
+}
+
+.bb-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.bb-status,
+.bb-empty-state {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c7c9cc;
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+}
+
+.bb-status--error {
+  border-color: #c43b45;
+  color: #a3212b;
+}
+
+.bb-status__title {
+  margin: 0 0 0.25rem;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.bb-status__description,
+.bb-empty-state {
+  line-height: 1.5;
+}
+
+.bb-empty-state {
+  border-style: dashed;
+  color: #62666d;
+  text-align: center;
+}
