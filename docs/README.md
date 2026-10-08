@@ -10,6 +10,7 @@ These documents are written for the new implementation. The previous documentati
 | [Architecture](architecture.md) | Boundaries, stack and implementation status |
 | [Roadmap](roadmap.md) | Outcomes, dependencies and completion criteria |
 | [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
+| [Workspace 0.1.0 ticket proposal](specs/workspace-0.1.0-tickets/README.md) | Draft vertical slices and blocking edges, awaiting owner approval |
 | [Development](development.md) | GitHub, Beads, Ralphex and verification |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
