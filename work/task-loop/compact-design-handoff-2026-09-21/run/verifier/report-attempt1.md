@@ -1,9 +1,0 @@
-# Independent verifier, attempt 1
-Observer /root/edge_inventory, 2026-09-21. Reviewed full handoff + 56-row matrix, source inventory, task check IDs, UI observation/AX and test outputs; source spot checks App close tab and toolbar, projectTabs tests, fixture harness. Raw commands/results: raw-checks-attempt1.json. Final artifact hashes contained there.
-
-- coverage: FAIL. E35 claims tested selection fallback by reducer; active-selection fallback lives App.tsx:542 and supplied projectTabs tests cover removal/data, not first/middle/last active selection. Relabel selection as code-inspected/runtime unverified, retain tested removal subclaim.
-- safety: PASS within available repository/fixture evidence. git diff from baseline 2f7cb00 for src/electron/test/outputs empty, status only new docs/run. Harness binds config/view/property stores to /tmp/workspace-design-review and allows read/select methods. Does not establish universal external-filesystem audit.
-- handoff: FAIL. Target composition calls 'existing view menu …' in toolbar although view-tabs.tsx renders Customize+Add and separate tab context menu. Remove requirement for new ellipsis or explicitly propose relocation; current spec misdescribes existing control.
-- delivery: PASS. All 16 local Markdown links resolve. 56 sequential IDs. Ready-to-use Russian prompt, tokens, scope, plan, action map, fixture/test strategy and limitations present. Actual versus proposed tags explicit. No-hover retains keyboard focus and accessible names. Three cropped captures disclosed, native/zoom/contrast/editors unverified not claimed passing.
-
-Both defects reported to executor before final verdict. Current overall verdict: needs revision, not done. This is document verification, not approval of implemented redesign. All 26 inventory groups represented. Existing 100-test output reports 100 pass/0 fail; not rerun because source unchanged. No product edits or implementation acceptance performed.

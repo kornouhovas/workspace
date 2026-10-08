@@ -1,4 +1,0 @@
-{
-  "type": "click",
-  "expression": "[...document.querySelectorAll('button')].find((el) => el.textContent?.trim() === 'Table')"
-}

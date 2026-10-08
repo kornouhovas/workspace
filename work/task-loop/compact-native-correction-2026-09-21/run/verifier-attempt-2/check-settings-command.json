@@ -1,1 +1,0 @@
-{"type": "eval", "expression": "({settingsCurrent:document.querySelector('button[title=\"Settings\"]')?.getAttribute(\"aria-current\"),headings:[...document.querySelectorAll(\"h1,h2\")].map(e=>e.textContent.trim()).slice(0,8)})"}

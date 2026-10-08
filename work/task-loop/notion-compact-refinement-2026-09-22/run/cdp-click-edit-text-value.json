@@ -1,4 +1,0 @@
-{
-  "type": "click",
-  "expression": "document.querySelector('.workspace-project-detail-expanded button[aria-label=\"Изменить значение свойства Text\"]')"
-}

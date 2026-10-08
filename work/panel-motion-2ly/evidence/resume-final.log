@@ -1,6 +1,0 @@
-{
-  "checks": 0,
-  "failed": [],
-  "error": "ReferenceError: b is not defined\n    at click (file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify-resume.mjs:17:135)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify-resume.mjs:35:150",
-  "events": 0
-}

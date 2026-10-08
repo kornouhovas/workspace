@@ -1,3 +1,0 @@
-{
-  "expression": "(async () => { const { app, BrowserWindow } = require('electron'); const w = BrowserWindow.getAllWindows().find(item => item.getTitle() === 'Workspace') || BrowserWindow.getAllWindows()[0]; if (!w) throw new Error('Workspace BrowserWindow missing'); w.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); w.setAlwaysOnTop(true, 'screen-saver', 1); w.showInactive(); w.moveTop(); app.focus({ steal: true }); w.focus(); await new Promise(resolve => setTimeout(resolve, 800)); return { title: w.getTitle(), visible: w.isVisible(), focused: w.isFocused(), alwaysOnTop: w.isAlwaysOnTop(), bounds: w.getBounds(), contentBounds: w.getContentBounds(), appFocused: BrowserWindow.getFocusedWindow()?.id === w.id }; })()"
-}

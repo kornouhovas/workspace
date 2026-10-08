@@ -1,3 +1,0 @@
-{
-  "expression": "(() => { const { BrowserWindow } = require('electron'); const windows = BrowserWindow.getAllWindows(); const w = windows.find(item => item.getTitle() === 'Workspace') || windows[0]; if (!w) throw new Error('Workspace BrowserWindow missing'); if (w.isMinimized()) w.restore(); w.show(); w.setBounds({ x: 36, y: 22, width: 1440, height: 960 }, false); w.moveTop(); w.focus(); return { id: w.id, title: w.getTitle(), visible: w.isVisible(), focused: w.isFocused(), minimized: w.isMinimized(), bounds: w.getBounds(), contentBounds: w.getContentBounds() }; })()"
-}

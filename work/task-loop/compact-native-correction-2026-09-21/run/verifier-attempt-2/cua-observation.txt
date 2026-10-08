@@ -1,2 +1,0 @@
-2026-09-21 approximately 21:06–21:08 UTC: mcp__cua_repl.js exact Electron.app getApp call timed out after 121.0075 seconds. No AX state or screenshot bytes returned.
-2026-09-21 approximately 21:08 UTC: independent Swift CGWindowListCreateImage on id 2792 produced 394x304 PNG, but subsequent window list showed live bounds only 197x152 at x=-271,y=518; this is not a comparable final viewport and is excluded from visual verdict.

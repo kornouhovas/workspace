@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => { const rect=(el)=>el?((r)=>({x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}))(el.getBoundingClientRect()):null; const controls=[...document.querySelectorAll('button,input')].filter(el=>el.getBoundingClientRect().width>0).slice(0,30); return {viewport:{width:innerWidth,height:innerHeight},heading:rect([...document.querySelectorAll('h1')].find(el=>el.textContent?.trim()==='Настройки')),controls:controls.map(el=>({tag:el.tagName,text:el.textContent?.trim(),aria:el.getAttribute('aria-label'),rect:rect(el)})),settingsButton:rect([...document.querySelectorAll('button')].find(el=>el.textContent?.trim()==='Настройки'))}; })()"
-}

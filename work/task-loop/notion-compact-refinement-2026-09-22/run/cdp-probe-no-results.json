@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => ({query:[...document.querySelectorAll('input')].find(el=>(el.getAttribute('placeholder')||'').includes('Название проекта'))?.value,statuses:[...document.querySelectorAll('[role=status]')].map(el=>({text:el.textContent,html:el.outerHTML.slice(0,600),rect:(r=>({x:r.x,y:r.y,width:r.width,height:r.height}))(el.getBoundingClientRect())})),bodyText:document.body.innerText.slice(-500)}))()"
-}

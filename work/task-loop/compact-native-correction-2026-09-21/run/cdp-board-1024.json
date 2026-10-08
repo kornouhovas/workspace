@@ -1,1 +1,0 @@
-{"type":"screenshot","viewport":[1024,720],"waitFor":"document.querySelector('button[aria-label=Board]')?.getAttribute('aria-selected') === 'true'","path":"/Users/aleksandersk/Documents/programming/Projects/project_folder/work/task-loop/compact-native-correction-2026-09-21/run/native-final-board-1024x720.png"}

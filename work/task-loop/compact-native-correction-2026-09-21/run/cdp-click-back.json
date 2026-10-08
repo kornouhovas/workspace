@@ -1,1 +1,0 @@
-{"type":"click","expression":"[...document.querySelectorAll('button')].find(e=>e.textContent.trim()==='Back to workspace')"}

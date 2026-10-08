@@ -1,1 +1,0 @@
-{"type": "eval", "expression": "[...document.querySelectorAll('[role=\"tab\"][aria-selected=\"true\"]')].map(e=>e.textContent.trim())"}

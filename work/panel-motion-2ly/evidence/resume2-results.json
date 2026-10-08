@@ -1,8 +1,0 @@
-{
-  "phase": "resume2",
-  "checks": [],
-  "frames": [],
-  "drags": [],
-  "events": [],
-  "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'New Board View', exact: true })\u001b[22m\n\n    at /Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify-resume.mjs:34:300"
-}

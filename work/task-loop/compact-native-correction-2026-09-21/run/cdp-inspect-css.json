@@ -1,1 +1,0 @@
-{"type":"eval","expression":"({links:[...document.querySelectorAll('link[rel=stylesheet]')].map(e=>e.href),rules:[...document.styleSheets].flatMap(s=>{try{return [...s.cssRules].filter(r=>r.cssText.includes('workspace-top-action')).map(r=>r.cssText.slice(0,500))}catch{return []}}).slice(0,10)})"}

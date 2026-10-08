@@ -1,0 +1,5 @@
+# Repository execution defaults. Model choices remain machine configuration.
+executor = codex
+plans_dir = docs/plans
+default_branch = new-workspace
+finalize_enabled = false

@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => { const el=document.activeElement; const s=getComputedStyle(el); const r=el.getBoundingClientRect(); return {tag:el.tagName,text:el.textContent?.trim(),aria:el.getAttribute('aria-label'),focusVisible:el.matches(':focus-visible'),rect:{x:r.x,y:r.y,width:r.width,height:r.height},outlineStyle:s.outlineStyle,outlineWidth:s.outlineWidth,boxShadow:s.boxShadow}; })()"
-}

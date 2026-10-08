@@ -1,3 +1,0 @@
-{
-  "expression": "(() => { const { BrowserWindow } = require('electron'); const w = BrowserWindow.getAllWindows().find(item => item.getTitle() === 'Workspace') || BrowserWindow.getAllWindows()[0]; if (!w) return { restored: false }; w.setAlwaysOnTop(false); w.setVisibleOnAllWorkspaces(false); return { restored: true, alwaysOnTop: w.isAlwaysOnTop(), bounds: w.getBounds() }; })()"
-}

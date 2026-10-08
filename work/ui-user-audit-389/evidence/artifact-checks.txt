@@ -1,6 +1,0 @@
-Node syntax checks: fixture.mjs and browser-fixture-server.mjs passed.
-Python AST parse: prepare-native.py and launch-native.py passed.
-Markdown relative links: all targets exist.
-Image signatures: JPEG; dimensions recorded in image-formats.txt.
-Native screenshot rejected as250x290 perspective thumbnail. Browser screenshots reviewed full-frame.
-Final additional browser scenario links checked; git diff --check passed.

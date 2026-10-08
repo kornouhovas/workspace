@@ -1,1 +1,0 @@
-{"type":"click","expression":"document.querySelector('button[aria-label=\"Развернуть проект\"]') || document.querySelector('button[aria-label=\"Expand project\"]')"}

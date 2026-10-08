@@ -1,6 +1,0 @@
-{
-  "checks": 0,
-  "failed": [],
-  "error": "locator.waitFor: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog', { name: 'Project Alpha', exact: true }) to be visible\u001b[22m\n\n    at open (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify-resume.mjs:18:160)\n    at async file:///Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify-resume.mjs:33:432",
-  "events": 4
-}

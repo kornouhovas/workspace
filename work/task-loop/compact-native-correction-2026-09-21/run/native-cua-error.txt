@@ -1,6 +1,0 @@
-2026-09-21 final exact-app attempt via mcp__cua_repl.js:
-let electronApp = await cua.getApp('/Users/aleksandersk/Documents/programming/Projects/project_folder/node_modules/electron/dist/Electron.app');
-
-Computer Use server error -10005: Error Domain=com.apple.ScreenCaptureKit.SCStreamErrorDomain Code=-3811 "Failed to start stream due to audio/video capture failure" UserInfo={NSLocalizedDescription=Failed to start stream due to audio/video capture failure}
-
-No app screenshot or accessibility state was returned. Earlier attempts on the same exact app path produced the same error. Generic Electron resolves to a different worktree and is not applicable evidence.

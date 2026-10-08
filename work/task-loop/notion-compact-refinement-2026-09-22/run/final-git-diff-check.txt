@@ -1,4 +1,0 @@
-command: git diff --check
-result: no output
-exit_code: 0
-observed_after_final_documentation_updates: true

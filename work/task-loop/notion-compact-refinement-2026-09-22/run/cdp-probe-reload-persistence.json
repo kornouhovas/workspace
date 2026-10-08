@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => ({ready:document.readyState,workspace:document.querySelector('.workspace-current-name')?.textContent?.trim(),view:[...document.querySelectorAll('button')].find(el=>el.getAttribute('aria-selected')==='true'&&['Board','Table'].includes(el.textContent?.trim()||''))?.textContent?.trim(),tabs:[...document.querySelectorAll('[data-project-tab-id]')].map(el=>({id:el.dataset.projectTabId,title:el.getAttribute('title'),selected:el.getAttribute('aria-selected')})),search:[...document.querySelectorAll('input')].find(el=>(el.getAttribute('placeholder')||'').includes('Название проекта'))?.value}))()"
-}

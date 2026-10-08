@@ -1,6 +1,0 @@
-pid=10313 id=6371 layer=0 visible=1 title=Workspace bounds={
-    Height = 151;
-    Width = 148;
-    X = "-271";
-    Y = 519;
-}

@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => ({ready:document.readyState,activeTab:[...document.querySelectorAll('[data-project-tab-id]')].find(el=>el.getAttribute('aria-selected')==='true')?.getAttribute('title'),expanded:Boolean(document.querySelector('.workspace-project-detail-expanded')),heading:document.querySelector('.workspace-project-detail-heading')?.textContent?.trim(),values:[...document.querySelectorAll('.workspace-project-detail-expanded button')].filter(el=>el.getAttribute('aria-label')?.includes('Изменить значение свойства Text')).map(el=>({aria:el.getAttribute('aria-label'),text:el.textContent?.trim()})),persistedText:document.querySelector('.workspace-project-detail-expanded')?.textContent?.includes('Compact persistence proof')}))()"
-}

@@ -1,4 +1,0 @@
-{
-  "type": "click",
-  "expression": "[...document.querySelectorAll('.workspace-project-detail-expanded button')].find((el) => el.textContent?.includes('Добавить свойство'))"
-}

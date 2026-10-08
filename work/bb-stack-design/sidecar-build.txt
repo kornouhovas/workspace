@@ -1,3 +1,0 @@
-
-> workspace@0.1.0 build:sidecar
-> mkdir -p build/sidecar/local && GOFLAGS=-buildvcs=false go build -o build/sidecar/local/workspace-sidecar ./cmd/workspace-sidecar

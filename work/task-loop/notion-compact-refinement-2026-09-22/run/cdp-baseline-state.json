@@ -1,1 +1,0 @@
-{"type":"eval","expression":"({url:location.href,title:document.title,body:document.body.innerText.slice(0,5000),buttons:[...document.querySelectorAll('button')].map(b=>({text:b.textContent?.trim(),aria:b.getAttribute('aria-label'),title:b.getAttribute('title')})).filter(x=>x.text||x.aria||x.title),viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio}})"}

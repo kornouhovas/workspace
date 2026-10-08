@@ -1,4 +1,0 @@
-{
-  "type": "click",
-  "expression": "[...document.querySelectorAll('[role=menuitem]')].find((el) => el.textContent?.trim().startsWith('Текст'))"
-}

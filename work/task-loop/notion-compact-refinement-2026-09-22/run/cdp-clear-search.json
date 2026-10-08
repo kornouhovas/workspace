@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(async()=>{const pause=(ms)=>new Promise(r=>setTimeout(r,ms));const search=[...document.querySelectorAll('input')].find(el=>(el.getAttribute('placeholder')||'').includes('Название проекта'));const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(search,'');search.dispatchEvent(new Event('input',{bubbles:true}));await pause(400);return {query:search.value,board:Boolean(document.querySelector('.workspace-board-scroll'))};})()"
-}

@@ -1,1 +1,0 @@
-{"type": "eval", "expression": "({selected:[...document.querySelectorAll('[role=\"tab\"][aria-selected=\"true\"]')].map(e=>e.textContent.trim()),settingsCurrent:document.querySelector('button[title=\"Settings\"]')?.getAttribute(\"aria-current\")})"}

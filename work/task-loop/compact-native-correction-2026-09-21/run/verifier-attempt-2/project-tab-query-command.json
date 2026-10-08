@@ -1,1 +1,0 @@
-{"type": "eval", "expression": "[...document.querySelectorAll('[role=\"tab\"]')].map(e=>({text:e.textContent.trim(),label:e.getAttribute(\"aria-label\"),selected:e.getAttribute(\"aria-selected\")}))"}

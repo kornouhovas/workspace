@@ -1,6 +1,0 @@
-{
-  "checks": 257,
-  "failed": [],
-  "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'New Board', exact: true })\u001b[22m\n\n    at /Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:56:147",
-  "events": 336
-}

@@ -1,4 +1,0 @@
-74e4215651b138c02dc7ef9100735996a803f410e9a7c7496e64f9c38adbc3f6  work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1024x720.png
-667788da4d2b636d02f06f75b4e09660d3c82a8e895394529a60805fcce8ee11  work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-board-window-1440x960.png
-c0532c25811246622379c4f93d57c759410957edef597dbfc76fc7f8a1084af1  work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1024x720.png
-b9e93af2ae434ee3cda763ad7d0f4b8c9383b358be7f558f702e3ceec3a19538  work/task-loop/notion-compact-refinement-2026-09-22/run/native-before-expanded-window-1440x960.png

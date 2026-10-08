@@ -1,2 +1,0 @@
-{"command": ["ps", "-p", "58040", "-o", "pid=,ppid=,command="], "exit": 0, "observed_utc": "2026-09-21T21:08:26.043588+00:00"}
-58040 58031 /Users/aleksandersk/Documents/programming/Projects/project_folder/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron --remote-debugging-port=9229 /Users/aleksandersk/Documents/programming/Projects/project_folder/electron/main.js

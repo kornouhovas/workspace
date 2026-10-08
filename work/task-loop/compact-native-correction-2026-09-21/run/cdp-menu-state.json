@@ -1,1 +1,0 @@
-{"type":"eval","expression":"({menus:[...document.querySelectorAll('[role=menu],[role=dialog]')].map(e=>({role:e.getAttribute('role'),text:e.innerText.slice(0,700)})),buttons:[...document.querySelectorAll('button')].map(e=>({label:e.getAttribute('aria-label'),title:e.getAttribute('title')})).filter(e=>e.label&&/Add Board|Customize/.test(e.label))})"}

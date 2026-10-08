@@ -1,6 +1,0 @@
-{
-  "checks": 53,
-  "failed": [],
-  "error": "locator.boundingBox: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('workspace-right-panel').getByRole('button', { name: 'Maximize pane', exact: true })\u001b[22m\n\n    at click (/Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:16:62)\n    at /Users/aleksandersk/Documents/programming/Projects/project_folder/work/panel-motion-2ly/verify.mjs:46:21",
-  "events": 68
-}

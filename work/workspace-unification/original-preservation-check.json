@@ -1,9 +1,0 @@
-{
-  "originalHead": "eece995944dd2c6e7d4ce6655240b36779ba6436",
-  "manifestEntries": 7913,
-  "regularFilesHashChecked": 7896,
-  "missingPathsRetained": 7,
-  "directorySymlinksPreservedSeparately": 10,
-  "changedRecordedRegularFiles": [],
-  "supplement": "directory-symlinks.json and directory-symlinks.tar.gz alongside the original immutable archive"
-}

@@ -1,1 +1,0 @@
-{"type": "eval", "expression": "[...document.querySelectorAll(\"button\")].map(e=>({text:e.textContent.trim(),title:e.title,label:e.getAttribute(\"aria-label\")})).filter(x=>/Operations|Board/.test(JSON.stringify(x)))"}

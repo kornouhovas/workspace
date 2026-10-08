@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => ({panelText:document.querySelector('.workspace-project-detail-expanded')?.textContent?.trim()?.slice(0,800),inputs:[...document.querySelectorAll('.workspace-project-detail-expanded input, .workspace-project-detail-expanded textarea')].map(el=>({tag:el.tagName,value:el.value,placeholder:el.getAttribute('placeholder'),aria:el.getAttribute('aria-label')})),buttons:[...document.querySelectorAll('.workspace-project-detail-expanded button')].map(el=>({text:el.textContent?.trim(),aria:el.getAttribute('aria-label'),title:el.getAttribute('title')})).filter(x=>x.text||x.aria).slice(0,40)}))()"
-}

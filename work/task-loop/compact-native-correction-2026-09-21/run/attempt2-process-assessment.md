@@ -1,7 +1,0 @@
-# Process assessment after attempt 2
-
-The project journal at `/Users/aleksandersk/.codex/skills/task-loop/journal/projects/workspace-project-board` contains the initial negative `native-visual-acceptance` observation and incidents `compact-user-rejected-native-visual-result`, `compact-native-1440-captured-during-panel-exit`, `compact-native-active-tab-and-surface-gap`, `compact-native-full-window-capture-unavailable` and `compact-native-test-hardcoded-old-header`. This linked correction is the same exposure unit; its second attempt does not create a second first-observation denominator.
-
-Attempt 2 addressed the observable causes within this task: a no-dialog wait prevents a transition frame being presented as stable Board, a named-region visual map includes active tab and surface cues, and a distinct CoreGraphics path provides exact full native window bytes. The independent verifier confirmed those artifacts and quality checks. The former user process exited, so we cannot establish what it would have shown after the correction.
-
-There are no registered process improvement proposals in the shared journal, so `learning.py assess` has no improvement ID to evaluate. One linked exposure and no later comparable task are insufficient to claim a measured process effect. No global skill/process rule was changed; the task's capture and comparison protocol is retained in this run for future reference.

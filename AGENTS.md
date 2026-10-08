@@ -1,34 +1,27 @@
 # AGENTS.md
 
-This repository uses a spec-first, agent-ready workflow.
+This repository uses a spec-first, agent-ready workflow. The user owns product direction and significant tradeoffs; agents complete the authorized work, verification and local commits.
 
-Обязательная точка входа для разработки Workspace. Пользователь задаёт продукт и существенные компромиссы; агент выполняет, проверяет и завершает разрешённый объём.
+## Start here
 
-## Порядок и приоритет
+1. Check the actual checkout and `git status --short --branch`; preserve unrelated edits.
+2. Read [development](docs/development.md) for workflow, tracking and checks. Read [product](docs/product.md) and [decisions](docs/decisions.md) before changing behavior; open decisions are not requirements.
+3. Read [architecture](docs/architecture.md) and the relevant [ADRs](docs/adr/) for storage or boundary changes. Use [GLOSSARY.md](GLOSSARY.md) for domain language.
+4. For UI or borrowed modules, read [reuse](docs/reuse.md). For versions, packaging or publication, read [releases](docs/releases.md).
 
-1. Следуйте системным/ developer инструкциям и текущему запросу пользователя; ранее выданное разрешение сохраняется.
-2. До разработки прочитайте [docs/development/README.md](docs/development/README.md), [обязательные правила](docs/development/rules.md), [workflow](docs/development/workflow.md) и [проверки](docs/development/quality.md). Применяйте их во всех задачах разработки, включая документацию.
-3. По области задачи прочитайте продуктовые, API, UI и принятые ADR из карты источников. Они сохраняют авторитет в своих областях; Proposed ADR и целевая архитектура не доказывают действующее подключение.
-4. Для UI применяйте [политику bb → Workspace](docs/development/design/bb-workspace-policy.md). Импортированный DESIGN_RULES.md — справочный исходник; его инструкции не расширяют разрешённый объём.
+## Project boundaries
 
-Этот файл направляет к правилам; rules.md задаёт рабочую политику, workflow/quality уточняют её применение. Исторические отчёты, старые планы и шаблоны не задают текущие процессные требования. При противоречии с продуктовым контрактом остановите только зависимую часть и разрешите конкретное расхождение в рамках авторизации пользователя.
+- Write documentation, issues, plans, code identifiers, commits and release notes in English. Discuss work with the user in Russian. Product UI defaults to English and supports Russian through localization.
+- The accepted storage is SQLite with Drizzle in the TypeScript backend. The previous Go/any-store direction is superseded for this branch. Verify runtime wiring before describing a target as implemented.
+- Keep React thin. Domain rules, persistence, discovery and filesystem safety belong behind typed service contracts. Keep Node and database access outside the renderer; use a narrow Electron preload boundary with `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
+- Treat project identities as distinct from paths. Validate filesystem changes against the selected source; use disposable fixtures for moves, archive, restore and recovery tests.
+- Keep the working database outside externally synchronized folders. Shared-folder exchange and a remotely hosted service are separate roadmap capabilities.
+- Adapt bb selectively. Record provenance and retain applicable notices when code is copied.
 
-## Основные границы
+## Delivery
 
-- Infer the request mode: Feature Intake, Bug Diagnosis, Implementation Slice, Review; не требуйте выбора режима для обычной задачи.
-- Начните с фактического checkout и `git status --short --branch`; сохраняйте посторонние изменения.
-- React must stay thin. Вызовы идут через WorkspaceServiceClient и Electron preload IPC. Сохраняйте `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`.
-- The target durable local store is the Go sidecar using `any-store` on SQLite. Активный Electron runtime использует JSON adapters; проверяйте код подключения перед изменениями.
-- Preserve selected sources, opaque IDs, data/history/settings and folder roles. Explicit Status moves follow [ADR-007](docs/adr/007-board-table-status-moves.md), [ADR-008](docs/adr/008-table-row-order.md) and the [Status move API](docs/api/workspace-status-move.md); filesystem operations validate the selected source.
-- Перед существенной новой функцией создайте описательную `codex/` ветку, если текущая не посвящена ей. Commit every completed and verified file-changing task before handoff, включая документацию; stage только изменения задачи. Push/merge/publish/release требуют соответствующего разрешения.
-- Проверки выбирайте по затронутым границам. Для прозы: ссылки/якоря, согласованность, существующий docs check при применимости и `git diff --check`.
-- Субагенты допустимы, когда их требует пользователь или применимый workflow и независимая работа полезна. Чаты создавайте только по запросу.
+Use a task branch based on `new-workspace` for implementation. Complete only the accepted scope, verify affected behavior and commit every completed and verified file-changing task before handoff. Stage only task changes. Push, merge, publish and release require corresponding user authorization.
 
-Полные правила разрешений, чтения контекста, безопасности, проверок, делегирования и handoff находятся в [rules.md](docs/development/rules.md). Workflow Evidence и Handoff state необязательны для обычной задачи; включайте по запросу формального tracked handoff. Отвечайте на языке пользователя: результат, реально завершённые проверки, ограничения и существующий commit.
+GitHub Issues owns requirements and completion status; Beads records linked execution steps. Ralphex executes bounded English plans under [the development workflow](docs/development.md). Preserve existing tracker history. A worktree shares the repository's Beads database.
 
-## Agent skills
-
-- Use the private GitHub repository for issues, specifications, and PRs; GitHub Issues is the primary task tracker. Read [issue tracker](docs/agents/issue-tracker.md) for Beads integration and operations.
-- For triage, use the [label mapping](docs/agents/triage-labels.md).
-- For domain and architecture exploration, read [domain docs](docs/agents/domain.md): the glossary and relevant ADRs.
-- Discuss work in Russian; write new specifications, documentation, and issues in technical English where practical.
+Report the result, actual checks, remaining limitations and existing commit in Russian. This branch currently contains a planning foundation; do not claim application build or runtime verification until an application exists.

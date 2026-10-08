@@ -1,4 +1,0 @@
-{
-  "type": "eval",
-  "expression": "(() => ({menus:[...document.querySelectorAll('[role=menu]')].map(menu=>({text:menu.textContent?.trim(),items:[...menu.querySelectorAll('[role=menuitem]')].map(el=>el.textContent?.trim())})),dialogs:[...document.querySelectorAll('[role=dialog]')].map(el=>el.textContent?.trim()?.slice(0,300))}))()"
-}

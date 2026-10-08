@@ -1,7 +1,0 @@
-{
-  "id": "compact-implementation-first-review",
-  "definition": "First independent review of implemented Compact renderer against approved handoff and 56 edge cases",
-  "inclusion": "Workspace Compact implementation tasks with renderer changes and independent review",
-  "opportunity": "First frozen implementation package sent to independent verifier",
-  "guardrail": "Existing actions, data identities and persistence preserved"
-}
