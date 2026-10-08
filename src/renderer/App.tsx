@@ -13,9 +13,10 @@ export function App() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
 
-  const loadSettings = useCallback(async () => {
+  const loadSettings = useCallback(async (isCurrent: () => boolean) => {
     try {
       const result = await window.workspace.settings({ type: "settings.load" });
+      if (!isCurrent()) return;
       if (!result.ok) {
         setViewState("load-error");
         return;
@@ -23,7 +24,7 @@ export function App() {
       setLanguage(result.value.language);
       setViewState("ready");
     } catch {
-      setViewState("load-error");
+      if (isCurrent()) setViewState("load-error");
     }
   }, []);
 
@@ -36,13 +37,15 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     if (backend.state === "unavailable") {
       setViewState("unavailable");
     } else if (backend.state === "ready") {
-      void loadSettings();
+      void loadSettings(() => active);
     } else {
       setViewState("loading");
     }
+    return () => { active = false; };
   }, [backend.state, loadSettings]);
 
   const changeLanguage = async (nextLanguage: Language) => {

@@ -41,19 +41,21 @@ export function openSettingsService(
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
-  sqlite.pragma("journal_mode = WAL");
-  const db = drizzle(sqlite);
-
-  try {
-    migrate(db, { migrationsFolder: migrationFolder });
-    const existing = db.select().from(settings).where(eq(settings.key, "language")).get();
-    if (!existing) {
-      db.insert(settings).values({ key: "language", value: "en" }).run();
+  const db = (() => {
+    try {
+      sqlite.pragma("journal_mode = WAL");
+      const database = drizzle(sqlite);
+      migrate(database, { migrationsFolder: migrationFolder });
+      const existing = database.select().from(settings).where(eq(settings.key, "language")).get();
+      if (!existing) {
+        database.insert(settings).values({ key: "language", value: "en" }).run();
+      }
+      return database;
+    } catch (error) {
+      sqlite.close();
+      throw error;
     }
-  } catch (error) {
-    sqlite.close();
-    throw error;
-  }
+  })();
 
   return {
     handleQuery(input) {

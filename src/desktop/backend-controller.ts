@@ -1,5 +1,5 @@
 import type { BackendStatus } from "../contracts/desktop-api.js";
-import type { ServicePort, ServiceResponse } from "../contracts/service-protocol.js";
+import { isServiceResponse, type ServicePort } from "../contracts/service-protocol.js";
 import type { ServiceResult, Settings } from "../contracts/settings.js";
 
 type ChildProcess = {
@@ -101,11 +101,10 @@ export class BackendController {
   private onChildMessage(message: unknown): void {
     if (!isRecord(message)) return;
     if (message.type === "ready") {
-      if (this.readiness) {
-        clearTimeout(this.readiness.timer);
-        this.readiness.resolve(true);
-        this.readiness = undefined;
-      }
+      if (!this.readiness || this.status.state !== "starting") return;
+      clearTimeout(this.readiness.timer);
+      this.readiness.resolve(true);
+      this.readiness = undefined;
       this.setStatus({ state: "ready" });
     } else if (message.type === "startup-error") {
       this.failStartup(this.readiness?.resolve);
@@ -161,8 +160,4 @@ export class BackendController {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function isServiceResponse(value: unknown): value is ServiceResponse {
-  return isRecord(value) && typeof value.id === "number" && isRecord(value.result) && typeof value.result.ok === "boolean";
 }

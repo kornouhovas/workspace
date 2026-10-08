@@ -26,5 +26,7 @@ export function isServiceRequest(value: unknown): value is ServiceRequest {
 export function isServiceResponse(value: unknown): value is ServiceResponse {
   return typeof value === "object" && value !== null &&
     typeof (value as { id?: unknown }).id === "number" &&
-    Object.hasOwn(value, "result");
+    typeof (value as { result?: unknown }).result === "object" &&
+    (value as { result?: unknown }).result !== null &&
+    typeof ((value as { result: { ok?: unknown } }).result.ok) === "boolean";
 }

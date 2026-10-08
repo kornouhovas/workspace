@@ -20,4 +20,4 @@ The standard application database lives at `userData/workspace.sqlite`; developm
 
 The first target release is **0.1.0**, a local desktop application for macOS and Windows with English and Russian interfaces. Shared-folder collaboration, AI agents and remote access follow in later stages.
 
-Workspace is inspired by the architecture and ideas of [bb](https://github.com/get-bb/bb). Selected code may be adapted under its applicable licenses, with attribution recorded in [the reuse policy](docs/reuse.md). This foundation introduces no copied bb implementation code.
+Workspace is inspired by the architecture and ideas of [bb](https://github.com/get-bb/bb). The settings UI adapts selected bb controls and styling; provenance and the applicable license notice are recorded in [the reuse policy](docs/reuse.md).

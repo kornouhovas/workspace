@@ -12,6 +12,7 @@ const requiredFiles = [
   "dist/service/entry.cjs",
   "dist/renderer/index.html",
   "dist/service/db/migrations/0000_settings.sql",
+  "dist/service/db/migrations/meta/_journal.json",
 ];
 
 export async function checkArtifact(root, { platform = process.platform, arch = process.arch } = {}) {

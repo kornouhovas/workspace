@@ -13,14 +13,16 @@ const packagedFiles = [
   "dist/renderer/index.html",
   "dist/version.json",
   "dist/service/db/migrations/0000_settings.sql",
+  "dist/service/db/migrations/meta/_journal.json",
 ];
 
-async function makeArtifact(root, buildVersion = "0.1.0") {
+async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = []) {
   const appDirectory = join(root, "app");
   const resourcesDirectory = join(root, "bundle", "resources");
   await mkdir(appDirectory, { recursive: true });
   await mkdir(join(resourcesDirectory, "licenses"), { recursive: true });
   for (const file of packagedFiles) {
+    if (omittedFiles.includes(file)) continue;
     const path = join(appDirectory, file);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, file === "dist/version.json" ? JSON.stringify({ version: buildVersion }) : "present");
@@ -51,6 +53,19 @@ test("artifact check rejects a package/build version mismatch", async () => {
   try {
     await makeArtifact(root, "9.9.9");
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /versions differ/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("artifact check rejects a package missing Drizzle's migration journal", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-journal-"));
+  try {
+    await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/meta/_journal.json"]);
+    await assert.rejects(
+      checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
+      /missing dist\/service\/db\/migrations\/meta\/_journal\.json/,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

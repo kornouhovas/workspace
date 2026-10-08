@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
-import type { WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
+import type { BackendStatus, WorkspaceDesktopApi } from "../src/contracts/desktop-api.js";
 import type { ServiceResult, Settings } from "../src/contracts/settings.js";
 import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
@@ -17,7 +17,7 @@ Object.assign(globalThis, {
 });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 
-const { cleanup, render, screen, waitFor } = await import("@testing-library/react");
+const { act, cleanup, render, screen, waitFor } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 
 const success = (language: "en" | "ru"): ServiceResult<Settings> => ({
@@ -29,19 +29,26 @@ function mockApi(
   settings: WorkspaceDesktopApi["settings"],
   state: "ready" | "unavailable" = "ready",
 ) {
+  let statusListener: ((status: BackendStatus) => void) | undefined;
   window.workspace = {
     getBackendStatus: async () => ({ state }),
-    onBackendStatus: () => () => undefined,
+    onBackendStatus: (listener) => {
+      statusListener = listener;
+      return () => { statusListener = undefined; };
+    },
     settings,
   };
+  return { emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
 }
 
 test("initially loads English and switches language only after a successful save", async () => {
   const calls: string[] = [];
+  let finishSave: ((result: ServiceResult<Settings>) => void) | undefined;
+  const pendingSave = new Promise<ServiceResult<Settings>>((resolve) => { finishSave = resolve; });
   mockApi(async (input) => {
     calls.push(input.type);
     if (input.type === "settings.load") return success("en");
-    return success(input.language);
+    return pendingSave;
   });
 
   render(<App />);
@@ -50,6 +57,9 @@ test("initially loads English and switches language only after a successful save
   await userEvent.tab();
   assert.equal(document.activeElement, selector);
   await userEvent.selectOptions(selector, "ru");
+  assert.equal((selector as HTMLSelectElement).value, "en");
+  assert.equal((selector as HTMLSelectElement).disabled, true);
+  await act(async () => { finishSave?.(success("ru")); await pendingSave; });
   await waitFor(() => assert.equal((selector as HTMLSelectElement).value, "ru"));
   assert.deepEqual(calls, ["settings.load", "settings.setLanguage"]);
   assert.ok(screen.getByText("Настройки"));
@@ -71,6 +81,21 @@ test("shows startup failure instead of loading forever", async () => {
   const heading = await screen.findByRole("heading", { name: "Local service unavailable" });
   assert.equal(heading.parentElement?.getAttribute("role"), "alert");
   assert.equal(screen.queryByText("Loading settings…"), null);
+  cleanup();
+});
+
+test("an in-flight settings load cannot hide a backend failure", async () => {
+  let finishLoad: ((result: ServiceResult<Settings>) => void) | undefined;
+  let loadStarted = false;
+  const pendingLoad = new Promise<ServiceResult<Settings>>((resolve) => { finishLoad = resolve; });
+  const api = mockApi(() => { loadStarted = true; return pendingLoad; });
+  render(<App />);
+  await waitFor(() => assert.equal(loadStarted, true));
+  act(() => api.emitStatus("unavailable"));
+  await screen.findByRole("heading", { name: "Local service unavailable" });
+  await act(async () => { finishLoad?.(success("en")); await pendingLoad; });
+  assert.equal(screen.queryByRole("combobox"), null);
+  assert.ok(screen.getByRole("heading", { name: "Local service unavailable" }));
   cleanup();
 });
 

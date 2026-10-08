@@ -83,6 +83,8 @@ test("startup errors and timeout resolve into a bounded unavailable state", asyn
     assert.equal(await ready, false);
     assert.equal(controller.currentStatus.state, "unavailable");
     assert.match(controller.currentStatus.message, /could not start/);
+    child.send({ type: "ready" });
+    assert.equal(controller.currentStatus.state, "unavailable");
   }
 });
 
