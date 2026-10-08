@@ -45,11 +45,11 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 
 - Create: `src/contracts/settings.ts`, `src/service/settings.ts`, `src/service/db/` schema and versioned migrations, and related tests.
 
-- [ ] Define the minimal typed query and command contract: load settings and set language to `en` or `ru`, with normalized validation and storage errors.
-- [ ] Implement a device-local settings record with English as the default. Run Drizzle migrations when the backend opens its database.
-- [ ] Reject malformed commands and unsupported language values at the service boundary. Return an error when a save fails; do not report an unsaved language as persisted.
-- [ ] Test first launch, English default, Russian save, service close and reopen, migration on a fresh database, malformed input, and an injected read/write failure using temporary real SQLite databases.
-- [ ] Run all current tests, lint, type checks, and builds before continuing.
+- [x] Define the minimal typed query and command contract: load settings and set language to `en` or `ru`, with normalized validation and storage errors.
+- [x] Implement a device-local settings record with English as the default. Run Drizzle migrations when the backend opens its database.
+- [x] Reject malformed commands and unsupported language values at the service boundary. Return an error when a save fails; do not report an unsaved language as persisted.
+- [x] Test first launch, English default, Russian save, service close and reopen, migration on a fresh database, malformed input, and an injected read/write failure using temporary real SQLite databases.
+- [x] Run all current tests, lint, type checks, and builds before continuing.
 
 ### Task 3: Own and supervise the backend process
 
