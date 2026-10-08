@@ -6,7 +6,7 @@ This roadmap derives from the product interview. It describes intended outcomes,
 
 Deliver a fresh branch with preserved Git history, English docs, concise agent instructions, retained Beads configuration, repository Ralphex defaults and release policy. Preserve the previous implementation as a reference, without importing its documentation into the new tree.
 
-Workspace/source ownership is settled: shared source data and separate workspace presentation. Resolve folder-mode transitions, folder-backed Select behavior, archive recovery and the scope of required filesystem actions. Convert accepted milestones into GitHub issues with measurable acceptance criteria; create linked Beads execution steps where needed. Record source provenance for every bb module selected.
+Workspace/source ownership, previewed discovery-mode changes, initial folder commands and archived editing are settled. Resolve durable folder identity, remaining folder-backed Select edge cases and archive collision behavior. Convert accepted milestones into GitHub issues with measurable acceptance criteria; create linked Beads execution steps where needed. Record source provenance for every bb module selected.
 
 Exit: foundational docs are consistent, remaining questions are explicit, and the first implementation slice has an agreed contract and checks. Documentation scaffolding alone does not complete the design interview.
 
@@ -29,10 +29,10 @@ Exit: a packaged development app on each target platform can create and reopen a
 Depends on M1 and accepted folder/identity contracts.
 
 - Select roots; create multiple workspace configurations, including configurations over the same root.
-- Support direct-project and grouped-project discovery with a preview of interpreted folders.
+- Support direct-project and grouped-project discovery, previews, exclusions and mode changes that retain metadata without moving files.
 - Maintain project identities and reconcile external folder changes.
-- Implement folder-backed Select, explicit moves and agreed native folder actions.
-- Implement archive, archived-project discovery and restore with preserved properties.
+- Implement folder-backed Select, explicit moves and create/rename/reveal commands; workspace removal leaves project files intact.
+- Implement archive, Active / Archived switching and restore with preserved properties; ordinary archived properties remain editable and folder-backed category stays fixed until restore.
 - Handle unavailable roots, permission errors, collisions and interrupted operations.
 - Validate Windows/macOS path behavior using isolated fixtures and actual platform runs.
 

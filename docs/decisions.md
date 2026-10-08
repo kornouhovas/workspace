@@ -28,6 +28,10 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D18 | Folder-backed Select changes explicitly move projects; renaming an option renames its folder after showing the effect. Deleting an occupied option requires a project destination and never implicitly deletes the projects. Ordinary Select edits metadata only. |
 | D19 | Archive preserves the original relative path and restores to the former location. Occupied paths or missing parents require an explicit recovery choice; restoration never overwrites silently. |
 | D20 | A separate local TypeScript backend process owns SQLite and product policy. Desktop starts it and presents the React UI. Remote exposure is a later opt-in authenticated capability. |
+| D21 | Source discovery mode can change after a preview of affected folders. Changing mode does not move files; metadata for projects no longer discovered is retained until explicit removal or reassociation. |
+| D22 | Discovery includes a preview and manual folder exclusions. The archive, hidden service folders and symbolic links are excluded from normal discovery; scanning stops at a discovered project rather than discovering nested projects. |
+| D23 | Initial filesystem commands are create project folder, rename, reveal in the system file manager, move through folder-backed Select, archive and restore. Removing a workspace removes its configuration only. Project-file deletion remains a system file manager operation initially. |
+| D24 | An Active / Archived switch exposes archived projects. Ordinary properties remain editable there; the folder-backed category retains its pre-archive value and becomes editable after restoration. |
 
 ## Open design branches
 
@@ -35,12 +39,12 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | --- | --- |
 | O01 | Resolved by D16: source owns shared data/discovery/archive; workspace owns views and presentation. Detailed shared-view membership remains in O10. |
 | O02 | Resolved by D17: one source per workspace initially. |
-| O03 | Can a source switch discovery mode after projects have properties? Define preview, reassociation and unavailable folders without silently losing identities. |
-| O04 | D18 settles bidirectional folder-backed Select semantics. Define option creation/clearing, external renames, move collisions, empty folders, mixed-depth projects and exclusions. |
-| O05 | D19 settles archive relative paths and explicit recovery. Define archive folder selection/default, archive-time collisions, archived-project views and category edits while archived. |
-| O06 | Define durable project/source identity across external moves, copied roots, disconnected volumes, symlinks, case differences and replaced folders. |
+| O03 | D21 settles previewed mode changes without automatic file moves or metadata deletion. Detailed reassociation behavior depends on O06. |
+| O04 | D18/D22 settle bidirectional folder-backed Select and discovery exclusions. Define option creation/clearing, external renames, move collisions, empty folders and mixed-depth projects. |
+| O05 | D19/D24 settle relative archive paths, explicit restore recovery and archived editing. Define archive folder selection/default and archive-time collisions. |
+| O06 | Q26 remains open: native filesystem IDs have limited scope; decide portable project identity and whether project-folder marker files are allowed. Cover external moves, copied roots, disconnected volumes, case differences and replaced folders. The proposed missing-folder/reassociation policy has not yet been accepted. |
 | O07 | Reconcile fixed Status behavior with folder-backed Select: explicit moves, drag/drop, direct-mode values and custom-property group transitions. |
-| O08 | Define required native folder actions, project creation/rename/deletion semantics and keyboard/accessibility acceptance. |
+| O08 | D23 settles initial native folder actions and excludes in-app project-file deletion. Define command details and keyboard/accessibility acceptance. |
 | O09 | D20 settles the separate backend process. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery policy, watcher strategy and performance targets. |
 | O10 | Define local ownership and storage of private views and preferences; distinguish workspace configuration from shared-source metadata. |
 | O11 | Before shared-folder implementation: choose merge protocol, device/participant identity, bootstrap/disable flows, deletion handling, snapshots/GC, offline behavior and project-file conflict boundaries. |

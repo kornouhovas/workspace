@@ -11,11 +11,15 @@ The first target, 0.1.0, is a complete local desktop release for macOS and Windo
 - Users can create multiple saved workspaces, including different workspaces over the same selected root.
 - Each workspace selects one root initially; multi-root aggregation follows later. Workspaces over the same root share projects, property definitions/values, discovery mode and archive location; their view sets and presentation settings are independent.
 - Initially, folder interpretation has two modes: `Root/Project` and `Root/Select value/Project`. Additional modes may be introduced later.
+- Users can change the source's discovery mode after reviewing which folders become or cease to be projects. The change does not move files; metadata for no-longer-discovered projects remains until explicit removal or reassociation.
+- Discovery shows a preview, supports manual exclusions, and excludes the archive, hidden service folders and symbolic links from normal discovery. Scanning stops at a discovered project; nested projects are not discovered initially.
 - In grouped mode, the intermediate folder supplies a folder-backed Select value. The property itself can be renamed independently of folders.
 - Editing the folder-backed Select explicitly moves a project; renaming an option renames its corresponding folder after showing the effect. Deleting an occupied option requires choosing where its projects go and never deletes them implicitly. Ordinary Select properties only change metadata.
 - Archive is a separate project state. Archiving moves the folder into a designated archive folder inside its source; properties survive and restoration is supported.
 - Archive preserves the original relative path: `Client/Project` becomes `Archive/Client/Project`. Restore returns to the previous location. An occupied path or missing parent requires a user decision; no silent overwrite occurs.
-- Remaining discovery, collision and archived-edit behavior is tracked in [decisions](decisions.md).
+- An `Active / Archived` switch exposes archived projects. Ordinary properties remain editable in the archive; the folder-backed category retains its pre-archive value until restoration.
+- Initial filesystem commands create a project folder, rename it, reveal it in the system file manager, move it through the folder-backed Select, archive it and restore it. Removing a workspace removes only its configuration; project-file deletion remains in the system file manager initially.
+- Remaining identity, discovery edge cases and collision behavior is tracked in [decisions](decisions.md).
 
 ## Capability preservation baseline
 
@@ -32,7 +36,7 @@ The following is a feature checklist derived from the previous product, not a co
 | Grouping | Board/Table grouping by supported properties or no grouping; default, ascending, descending and manual group order; hide/collapse/hide-empty; membership in multiple MultiSelect groups |
 | Table layout | Manual row order, visible property order, column widths and text wrapping |
 | Board layout | Column order, visibility and width; content wrapping |
-| Filesystem actions | Explicit folder-backed category moves with source-bound safety; project folder naming and native folder access need a reconciled contract |
+| Filesystem actions | Create/rename/reveal a project folder, explicit folder-backed category moves, archive/restore and source-bound safety; deleting a workspace does not delete project files |
 | Localization | English default/fallback, English/Russian setting, device-local preference; user names and paths remain unchanged |
 
 The old product's `Status` represented folder placement. The new configurable folder-backed Select replaces that fixed assumption. Dragging between custom-property groups must not silently acquire filesystem or value-edit semantics; define those interactions explicitly. Full historical change tracking and transactional cascades were not guaranteed by the previous JSON runtime and must not be described as preserved implemented guarantees.

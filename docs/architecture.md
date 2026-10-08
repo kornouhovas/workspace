@@ -41,3 +41,11 @@ Paths locate folders; they are not sufficient durable project identities. A proj
 The first implementation is local. Shared metadata remains a later module: the local working database stays outside synchronized folders, and enabling sharing publishes logical exchange data. See [ADR-0001](adr/0001-sqlite-and-drizzle.md) and [ADR-0002](adr/0002-local-database-and-folder-exchange.md).
 
 New application data starts clean; this removes legacy import work, not the need for versioned migrations between future releases. File-operation recovery and database transactions must account for their different failure boundaries.
+
+## Project identity: unresolved storage choice
+
+Filesystem identity and logical project identity have different scopes. Windows documents file identifiers in combination with a volume serial number and permits reuse over time; Node exposes filesystem evidence such as `dev` and `ino`. These identifiers can assist local reconciliation but do not establish one portable project identity across synchronized computers. Sources: [Microsoft file identifiers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information), [Node filesystem statistics](https://nodejs.org/api/fs.html#statsino).
+
+The previous implementation derived ordinary project IDs from source/path information and retained `{path, dev, ino}` locators after explicit application moves. It did not put a permanent project-ID marker in every folder. This observation comes from `src/workspaceObjects.js`, `src/workspaceBackend.js` and `src/workspaceStatusMove.js` in the preserved pre-rebuild history; it is not the new design contract.
+
+The proposal under discussion is an application-issued UUID plus a small project-local marker so identity can travel with the folder. Properties would remain in SQLite. Marker creation has not been accepted: local-only identification and markers enabled only for sharing are alternatives. Copying a folder can duplicate its marker, so a marker alone cannot distinguish a move, an independent copy and a replica. Missing/read-only markers, duplicate detection and source identity require explicit rules before implementation. Q26's proposed missing-folder recovery policy also remains unconfirmed.
