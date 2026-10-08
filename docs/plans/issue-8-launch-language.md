@@ -102,10 +102,10 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 
 ### Task 7: Verify Issue #8 acceptance
 
-- [ ] Run the full test suite, linter, type checks, builds, Ladle build, and artifact checks. Confirm the tests cover the Issue #8 behaviors: default and persisted language, failed loads and saves, malformed commands, locale fallback, backend startup and shutdown, renderer isolation, and packaged resources.
-- [ ] On this macOS host, run an actual Electron lifecycle check with temporary application data: launch, verify renderer isolation, switch to Russian, close, confirm backend exit, relaunch, and confirm the saved language.
-- [ ] Exercise an actual backend startup failure and confirm the app presents an error instead of loading indefinitely.
-- [ ] Inspect the complete diff from `55bbbc9eb4e3b6f92623c63341ac56fc428016bc`, verify `git diff --check`, and report evidence and any unmet Windows acceptance condition accurately.
+- [x] Run the full test suite, linter, type checks, builds, Ladle build, and artifact checks. Confirm the tests cover the Issue #8 behaviors: default and persisted language, failed loads and saves, malformed commands, locale fallback, backend startup and shutdown, renderer isolation, and packaged resources.
+- [x] On this macOS host, run an actual Electron lifecycle check with temporary application data: launch, verify renderer isolation, switch to Russian, close, confirm backend exit, relaunch, and confirm the saved language.
+- [x] Exercise an actual backend startup failure and confirm the app presents an error instead of loading indefinitely.
+- [x] Inspect the complete diff from `55bbbc9eb4e3b6f92623c63341ac56fc428016bc`, verify `git diff --check`, and report evidence and any unmet Windows acceptance condition accurately. Windows artifact and launch acceptance remain unverified because Windows infrastructure is unavailable in this run.
 
 ### Task 8: Update user and developer documentation
 

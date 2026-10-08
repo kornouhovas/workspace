@@ -28,6 +28,10 @@ export class BackendController {
 
   get currentStatus(): BackendStatus { return this.status; }
 
+  markStartupFailure(): void {
+    this.failStartup();
+  }
+
   start(
     child: ChildProcess,
     port: ServicePort,

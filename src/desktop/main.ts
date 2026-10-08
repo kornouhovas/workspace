@@ -42,18 +42,25 @@ app.on("before-quit", (event) => {
 app.on("window-all-closed", () => app.quit());
 
 void app.whenReady().then(async () => {
+  if (process.env.WORKSPACE_USER_DATA_DIR) {
+    app.setPath("userData", process.env.WORKSPACE_USER_DATA_DIR);
+  }
   const appDataDirectory = app.isPackaged
     ? app.getPath("userData")
     : join(app.getPath("userData"), "development");
   const backendPath = join(__dirname, "../service/entry.cjs");
   const workingDirectory = app.isPackaged ? dirname(app.getAppPath()) : app.getAppPath();
-  const child = utilityProcess.fork(backendPath, [], { cwd: workingDirectory, stdio: "ignore" });
-  const { port1, port2 } = new MessageChannelMain();
-  await controller.start(
-    child,
-    port1,
-    join(appDataDirectory, "workspace.sqlite"),
-    port2,
-  );
+  try {
+    const child = utilityProcess.fork(backendPath, [], { cwd: workingDirectory, stdio: "ignore" });
+    const { port1, port2 } = new MessageChannelMain();
+    await controller.start(
+      child,
+      port1,
+      join(appDataDirectory, "workspace.sqlite"),
+      port2,
+    );
+  } catch {
+    controller.markStartupFailure();
+  }
   await createWindow();
 });

@@ -86,6 +86,13 @@ test("startup errors and timeout resolve into a bounded unavailable state", asyn
   }
 });
 
+test("synchronous backend launch failures produce a visible unavailable state", () => {
+  const controller = new BackendController();
+  controller.markStartupFailure();
+  assert.equal(controller.currentStatus.state, "unavailable");
+  assert.match(controller.currentStatus.message, /could not start/);
+});
+
 test("malformed service payloads are rejected by the settings boundary", () => {
   const parent = new EventEmitter();
   parent.sent = [];

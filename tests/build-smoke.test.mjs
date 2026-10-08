@@ -16,6 +16,10 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     await assert.doesNotReject(readFile(artifact));
   }
 
+  const rendererHtml = await readFile("dist/renderer/index.html", "utf8");
+  assert.match(rendererHtml, /(?:src|href)="\.\/assets\//);
+  assert.doesNotMatch(rendererHtml, /(?:src|href)="\/assets\//);
+
   assert.equal(spawnSync("node", ["scripts/check-version.mjs"]).status, 0);
 
   const tempDirectory = await mkdtemp(join(tmpdir(), "workspace-version-smoke-"));
