@@ -82,11 +82,11 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 
 - Create: `src/renderer/` screen, localization dictionaries, typed service client usage, and UI tests.
 
-- [ ] Render a minimal useful empty state, settings control, loading state, backend-unavailable state, and save-error state. Provide English and Russian text for every new UI string.
-- [ ] Load the saved preference through the typed client and apply it to the UI. Switch language through the service command and reflect success only after persistence succeeds.
-- [ ] Fall back to English for missing Russian translation keys. Leave user-authored names and paths untouched.
-- [ ] Test keyboard operation, initial English state, language switch, saved preference reload, missing-key fallback, startup failure, and failed save without false success.
-- [ ] Run all current tests, lint, type checks, application builds, and Ladle build before continuing.
+- [x] Render a minimal useful empty state, settings control, loading state, backend-unavailable state, and save-error state. Provide English and Russian text for every new UI string.
+- [x] Load the saved preference through the typed client and apply it to the UI. Switch language through the service command and reflect success only after persistence succeeds.
+- [x] Fall back to English for missing Russian translation keys. Leave user-authored names and paths untouched.
+- [x] Test keyboard operation, initial English state, language switch, saved preference reload, missing-key fallback, startup failure, and failed save without false success.
+- [x] Run all current tests, lint, type checks, application builds, and Ladle build before continuing.
 
 ### Task 6: Prepare development artifacts and targeted CI
 

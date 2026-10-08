@@ -1,0 +1,30 @@
+@import "./components/bb-foundation.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 20rem;
+  min-height: 100vh;
+}
+
+.workspace-screen {
+  display: grid;
+  gap: 1.5rem;
+  width: min(100%, 52rem);
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.workspace-header h1,
+.workspace-settings h2 {
+  margin: 0;
+}
+
+.workspace-settings {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+}
