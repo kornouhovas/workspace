@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } from "electron";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { BackendController } from "./backend-controller.js";
 
@@ -46,7 +46,8 @@ void app.whenReady().then(async () => {
     ? app.getPath("userData")
     : join(app.getPath("userData"), "development");
   const backendPath = join(__dirname, "../service/entry.cjs");
-  const child = utilityProcess.fork(backendPath, [], { cwd: app.getAppPath(), stdio: "ignore" });
+  const workingDirectory = app.isPackaged ? dirname(app.getAppPath()) : app.getAppPath();
+  const child = utilityProcess.fork(backendPath, [], { cwd: workingDirectory, stdio: "ignore" });
   const { port1, port2 } = new MessageChannelMain();
   await controller.start(
     child,

@@ -1,0 +1,36 @@
+name: Desktop development artifacts
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: macos
+          - os: windows-latest
+            artifact: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run build:ladle
+      - run: npm run package:dir
+      - run: npm run check:artifact -- release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: workspace-${{ matrix.artifact }}-development
+          path: release/
+          if-no-files-found: error

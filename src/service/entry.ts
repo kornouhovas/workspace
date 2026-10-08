@@ -1,5 +1,6 @@
 import { openSettingsService, type SettingsService } from "./settings.js";
 import { isServiceRequest, type ServicePort } from "../contracts/service-protocol.js";
+import { join } from "node:path";
 
 type ParentPort = {
   on(event: "message", listener: (event: { data: unknown; ports: ServicePort[] }) => void): void;
@@ -8,7 +9,7 @@ type ParentPort = {
 
 export function startServiceProcess(
   parentPort: ParentPort,
-  openService: (databasePath: string) => SettingsService = openSettingsService,
+  openService: (databasePath: string, migrationFolder?: string) => SettingsService = openSettingsService,
   exitProcess: (code: number) => void = () => undefined,
 ): void {
   let service: SettingsService | undefined;
@@ -36,7 +37,7 @@ export function startServiceProcess(
     if (data.type !== "connect" || service || typeof data.databasePath !== "string") return;
 
     try {
-      service = openService(data.databasePath);
+      service = openService(data.databasePath, join(__dirname, "db/migrations"));
       requestPort = event.ports[0];
       if (!requestPort) throw new Error("Missing service message port");
       requestPort.on("message", ({ data: request }) => {

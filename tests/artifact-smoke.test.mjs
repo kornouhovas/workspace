@@ -1,0 +1,57 @@
+import assert from "node:assert/strict";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { createPackage } from "@electron/asar";
+import test from "node:test";
+import { checkArtifact } from "../scripts/check-artifact.mjs";
+
+const packagedFiles = [
+  "dist/desktop/main.cjs",
+  "dist/desktop/preload.cjs",
+  "dist/service/entry.cjs",
+  "dist/renderer/index.html",
+  "dist/version.json",
+  "dist/service/db/migrations/0000_settings.sql",
+];
+
+async function makeArtifact(root, buildVersion = "0.1.0") {
+  const appDirectory = join(root, "app");
+  const resourcesDirectory = join(root, "bundle", "resources");
+  await mkdir(appDirectory, { recursive: true });
+  await mkdir(join(resourcesDirectory, "licenses"), { recursive: true });
+  for (const file of packagedFiles) {
+    const path = join(appDirectory, file);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, file === "dist/version.json" ? JSON.stringify({ version: buildVersion }) : "present");
+  }
+  await writeFile(join(appDirectory, "package.json"), JSON.stringify({ version: "0.1.0" }));
+  await writeFile(join(resourcesDirectory, "licenses/bb-MIT.txt"), "MIT License\nCopyright (c) 2026 Michael Yong");
+  const asarPath = join(resourcesDirectory, "app.asar");
+  await createPackage(appDirectory, asarPath);
+  const nativeModule = join(`${asarPath}.unpacked`, "node_modules/better-sqlite3/prebuilds/darwin-arm64.node");
+  await mkdir(dirname(nativeModule), { recursive: true });
+  await writeFile(nativeModule, "native module placeholder");
+  return root;
+}
+
+test("artifact check verifies launch resources, migration, native SQLite, license, and version", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-"));
+  try {
+    await makeArtifact(root);
+    const result = await checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" });
+    assert.equal(result.version, "0.1.0");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("artifact check rejects a package/build version mismatch", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-version-"));
+  try {
+    await makeArtifact(root, "9.9.9");
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /versions differ/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

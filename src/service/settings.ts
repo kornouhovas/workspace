@@ -13,8 +13,6 @@ import {
 } from "../contracts/settings.js";
 import { settings } from "./db/schema.js";
 
-const migrationFolder = resolve(process.cwd(), "src/service/db/migrations");
-
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<Settings>;
   handleCommand(input: unknown): ServiceResult<Settings>;
@@ -37,7 +35,10 @@ function isLanguage(value: unknown): value is Language {
   return typeof value === "string" && supportedLanguages.some((language) => language === value);
 }
 
-export function openSettingsService(databasePath: string): SettingsService {
+export function openSettingsService(
+  databasePath: string,
+  migrationFolder = resolve(process.cwd(), "src/service/db/migrations"),
+): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
   sqlite.pragma("journal_mode = WAL");

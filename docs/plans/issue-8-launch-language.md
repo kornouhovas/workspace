@@ -95,10 +95,10 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 - Create: platform development packaging configuration and `.github/workflows/` CI.
 - Update: package scripts and artifact smoke tests.
 
-- [ ] Configure launchable development artifacts for macOS and Windows, including the compiled backend, migrations, renderer assets, native SQLite dependency, and full bb notices.
-- [ ] Add a macOS/Windows CI matrix for install, tests, lint, type checks, builds, Ladle build, artifact creation, and artifact-content checks. Do not push merely to activate CI.
-- [ ] Add artifact checks for required files, version consistency, and startup resources; keep installer signing, stable release publication, and update delivery outside this task.
-- [ ] Run all available local checks and create and launch the macOS development artifact. Record any Windows artifact or runtime condition that cannot be verified locally.
+- [x] Configure launchable development artifacts for macOS and Windows, including the compiled backend, migrations, renderer assets, native SQLite dependency, and full bb notices.
+- [x] Add a macOS/Windows CI matrix for install, tests, lint, type checks, builds, Ladle build, artifact creation, and artifact-content checks. Do not push merely to activate CI.
+- [x] Add artifact checks for required files, version consistency, and startup resources; keep installer signing, stable release publication, and update delivery outside this task.
+- [x] Run all available local checks and create and launch the macOS development artifact. Record any Windows artifact or runtime condition that cannot be verified locally (Windows artifact creation is defined in CI, but cannot be built or launched on this macOS host).
 
 ### Task 7: Verify Issue #8 acceptance
 
