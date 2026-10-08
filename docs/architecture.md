@@ -42,10 +42,14 @@ The first implementation is local. Shared metadata remains a later module: the l
 
 New application data starts clean; this removes legacy import work, not the need for versioned migrations between future releases. File-operation recovery and database transactions must account for their different failure boundaries.
 
-## Project identity: unresolved storage choice
+## Local project identity
 
 Filesystem identity and logical project identity have different scopes. Windows documents file identifiers in combination with a volume serial number and permits reuse over time; Node exposes filesystem evidence such as `dev` and `ino`. These identifiers can assist local reconciliation but do not establish one portable project identity across synchronized computers. Sources: [Microsoft file identifiers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information), [Node filesystem statistics](https://nodejs.org/api/fs.html#statsino).
 
 The previous implementation derived ordinary project IDs from source/path information and retained `{path, dev, ino}` locators after explicit application moves. It did not put a permanent project-ID marker in every folder. This observation comes from `src/workspaceObjects.js`, `src/workspaceBackend.js` and `src/workspaceStatusMove.js` in the preserved pre-rebuild history; it is not the new design contract.
 
-The proposal under discussion is an application-issued UUID plus a small project-local marker so identity can travel with the folder. Properties would remain in SQLite. Marker creation has not been accepted: local-only identification and markers enabled only for sharing are alternatives. Copying a folder can duplicate its marker, so a marker alone cannot distinguish a move, an independent copy and a replica. Missing/read-only markers, duplicate detection and source identity require explicit rules before implementation. Q26's proposed missing-folder recovery policy also remains unconfirmed.
+For the local release, project records remain in the application database and are associated with folders using paths and native filesystem identity. No permanent project-ID marker is written inside project folders. Filesystem evidence helps reconcile a folder with its logical project record; neither a path nor a raw filesystem ID becomes the portable identity of the project. See [ADR-0004](adr/0004-local-folder-identity-without-markers.md).
+
+When a folder cannot be matched unambiguously, retain its project and properties, show that its folder is missing and offer manual reassociation. When the whole root is unavailable, represent source unavailability rather than treating every project as individually deleted. No automatic metadata deletion follows either case.
+
+Matching synchronized replicas across computers is still an open part of the later sharing protocol. The local decision does not claim that filesystem IDs persist across volumes or devices; copied/replaced folders and reused identifiers require conservative matching rules.

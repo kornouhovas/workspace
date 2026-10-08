@@ -14,11 +14,13 @@ The first target, 0.1.0, is a complete local desktop release for macOS and Windo
 - Users can change the source's discovery mode after reviewing which folders become or cease to be projects. The change does not move files; metadata for no-longer-discovered projects remains until explicit removal or reassociation.
 - Discovery shows a preview, supports manual exclusions, and excludes the archive, hidden service folders and symbolic links from normal discovery. Scanning stops at a discovered project; nested projects are not discovered initially.
 - In grouped mode, the intermediate folder supplies a folder-backed Select value. The property itself can be renamed independently of folders.
+- Every active project in grouped mode has a folder-backed category: creation requires one and its value cannot be cleared. Direct mode has no folder-backed Select. Ordinary Select properties may be created and left empty in either mode.
 - Editing the folder-backed Select explicitly moves a project; renaming an option renames its corresponding folder after showing the effect. Deleting an occupied option requires choosing where its projects go and never deletes them implicitly. Ordinary Select properties only change metadata.
 - Archive is a separate project state. Archiving moves the folder into a designated archive folder inside its source; properties survive and restoration is supported.
 - Archive preserves the original relative path: `Client/Project` becomes `Archive/Client/Project`. Restore returns to the previous location. An occupied path or missing parent requires a user decision; no silent overwrite occurs.
 - An `Active / Archived` switch exposes archived projects. Ordinary properties remain editable in the archive; the folder-backed category retains its pre-archive value until restoration.
 - Initial filesystem commands create a project folder, rename it, reveal it in the system file manager, move it through the folder-backed Select, archive it and restore it. Removing a workspace removes only its configuration; project-file deletion remains in the system file manager initially.
+- Local folder tracking uses paths and system identifiers without adding permanent project-ID files inside project folders. If matching is ambiguous or a folder is missing, retain project metadata and offer to locate the folder. If the entire root is unavailable, show source unavailability without deleting project metadata.
 - Remaining identity, discovery edge cases and collision behavior is tracked in [decisions](decisions.md).
 
 ## Capability preservation baseline

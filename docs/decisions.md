@@ -32,6 +32,9 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D22 | Discovery includes a preview and manual folder exclusions. The archive, hidden service folders and symbolic links are excluded from normal discovery; scanning stops at a discovered project rather than discovering nested projects. |
 | D23 | Initial filesystem commands are create project folder, rename, reveal in the system file manager, move through folder-backed Select, archive and restore. Removing a workspace removes its configuration only. Project-file deletion remains a system file manager operation initially. |
 | D24 | An Active / Archived switch exposes archived projects. Ordinary properties remain editable there; the folder-backed category retains its pre-archive value and becomes editable after restoration. |
+| D25 | The local release associates project records with folders using paths and native filesystem IDs, without permanent project-ID marker files in project folders. Cross-computer identity remains a separate sharing-protocol decision. |
+| D26 | Ambiguous or missing folder matches retain the project and properties and offer manual reassociation. An unavailable root is shown as source unavailability. Neither case automatically deletes metadata. |
+| D27 | Grouped discovery requires a folder-backed category for every active project, including at creation; its value cannot be cleared. Direct discovery has no folder-backed Select. Ordinary Select properties may be empty in either mode. |
 
 ## Open design branches
 
@@ -40,9 +43,9 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O01 | Resolved by D16: source owns shared data/discovery/archive; workspace owns views and presentation. Detailed shared-view membership remains in O10. |
 | O02 | Resolved by D17: one source per workspace initially. |
 | O03 | D21 settles previewed mode changes without automatic file moves or metadata deletion. Detailed reassociation behavior depends on O06. |
-| O04 | D18/D22 settle bidirectional folder-backed Select and discovery exclusions. Define option creation/clearing, external renames, move collisions, empty folders and mixed-depth projects. |
+| O04 | D18/D22/D27 settle bidirectional folder-backed Select, required grouped categories and discovery exclusions. Define option creation details, external renames, move collisions, empty folders and mixed-depth projects. |
 | O05 | D19/D24 settle relative archive paths, explicit restore recovery and archived editing. Define archive folder selection/default and archive-time collisions. |
-| O06 | Q26 remains open: native filesystem IDs have limited scope; decide portable project identity and whether project-folder marker files are allowed. Cover external moves, copied roots, disconnected volumes, case differences and replaced folders. The proposed missing-folder/reassociation policy has not yet been accepted. |
+| O06 | D25/D26 settle local path/filesystem-ID matching without permanent project markers and non-destructive recovery. Define matching details for external moves, copied/replaced folders, reused IDs and case differences; portable replica identity remains in O11. |
 | O07 | Reconcile fixed Status behavior with folder-backed Select: explicit moves, drag/drop, direct-mode values and custom-property group transitions. |
 | O08 | D23 settles initial native folder actions and excludes in-app project-file deletion. Define command details and keyboard/accessibility acceptance. |
 | O09 | D20 settles the separate backend process. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery policy, watcher strategy and performance targets. |
