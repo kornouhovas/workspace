@@ -57,11 +57,11 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 
 - Create: `src/service/entry.ts`, `src/desktop/main.ts`, `src/desktop/preload.ts`, typed client/IPC modules, and lifecycle/security tests.
 
-- [ ] Start the compiled TypeScript backend as a desktop-owned local process with IPC and no listening network socket. Pass only the selected machine-local data directory and required startup configuration.
-- [ ] Add startup readiness, timeout, process-exit, request-error, and shutdown handling. Show a bounded startup error state when the backend cannot start.
-- [ ] Expose only settings queries and commands through the preload. Set `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`; keep renderer imports free of Node, filesystem, and database modules.
-- [ ] Test request routing, malformed payload rejection, readiness and startup failure, backend exit, shutdown cleanup, security configuration, and absence of a network listener.
-- [ ] Run all current tests, lint, type checks, and builds before continuing.
+- [x] Start the compiled TypeScript backend as a desktop-owned local process with IPC and no listening network socket. Pass only the selected machine-local data directory and required startup configuration.
+- [x] Add startup readiness, timeout, process-exit, request-error, and shutdown handling. Show a bounded startup error state when the backend cannot start.
+- [x] Expose only settings queries and commands through the preload. Set `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`; keep renderer imports free of Node, filesystem, and database modules.
+- [x] Test request routing, malformed payload rejection, readiness and startup failure, backend exit, shutdown cleanup, security configuration, and absence of a network listener.
+- [x] Run all current tests, lint, type checks, and builds before continuing.
 
 ### Task 4: Extract the needed bb UI foundation and add Ladle
 

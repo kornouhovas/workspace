@@ -12,7 +12,7 @@ export type SettingsCommand = {
   language: Language;
 };
 
-export type ServiceErrorCode = "invalid_input" | "storage";
+export type ServiceErrorCode = "invalid_input" | "storage" | "service_unavailable";
 
 export interface ServiceError {
   code: ServiceErrorCode;
