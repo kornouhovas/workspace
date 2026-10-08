@@ -9,6 +9,7 @@ These documents are written for the new implementation. The previous documentati
 | [Decisions](decisions.md) | Accepted choices and unresolved design branches |
 | [Architecture](architecture.md) | Boundaries, stack and implementation status |
 | [Roadmap](roadmap.md) | Outcomes, dependencies and completion criteria |
+| [Workspace 0.1.0 specification](specs/workspace-0.1.0.md) | Local-release requirements and acceptance for M1–M4 |
 | [Development](development.md) | GitHub, Beads, Ralphex and verification |
 | [Releases](releases.md) | Versions, changelog and future distribution |
 | [Reuse](reuse.md) | bb reference, attribution and adaptation rules |
