@@ -6,7 +6,7 @@ Accepted for the initial desktop settings slice.
 
 ## Decision
 
-- Run the UI in an Electron main process and a React renderer built with Vite. Keep privileged APIs behind a narrow typed preload boundary.
+- Let Electron's main process own the desktop window and run the UI in a React renderer built with Vite. Keep privileged APIs behind a narrow preload boundary.
 - Run the TypeScript application backend in an Electron `utilityProcess`, communicating over Electron message ports. The backend owns domain rules and SQLite; it does not bind a network socket.
 - Use Drizzle ORM with the `better-sqlite3` driver. Store ordered SQL migrations with the application and apply them when opening the backend database.
 - Store normal application data below Electron's machine-local `userData` directory. Use a separate development subdirectory and disposable OS temporary directories for tests.

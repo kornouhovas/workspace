@@ -31,6 +31,8 @@ Check nested notices too: bb's browser-automation plugin, for example, has a sep
 
 ## Adapted UI foundation
 
+The initial settings screen uses these adapted controls and styles; the application has no general-purpose bb package dependency. The provenance and notice test in `tests/components.test.tsx` guards the local source record and full notice. The artifact check verifies that the notice is included in packaged resources.
+
 The language control and status/empty-state primitives in `src/renderer/components/bb-foundation.tsx` and `bb-foundation.css` are adapted from the following source patterns:
 
 | Upstream source | Destination | Adaptation |

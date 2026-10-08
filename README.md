@@ -1,14 +1,21 @@
 # Workspace
 
-Workspace organizes real project folders through configurable views and properties. This branch establishes a new implementation using SQLite, Drizzle and selected bb architecture and UI foundations.
+Workspace organizes real project folders through configurable views and properties. The current application slice is an Electron desktop settings screen backed by a separate TypeScript service and SQLite.
 
-**Current state:** product discovery and development foundation. There is no runnable application on this branch yet. The previous implementation remains in Git history and on `codex/architecture-reference-docs`. New development starts with clean application data; importing the previous application's data is out of scope.
+**Current state:** a runnable local desktop settings slice with English and Russian interface languages. The language preference is stored in a device-local SQLite database. Project discovery, workspaces, properties, Board and Table views, archive/restore, collaboration and AI are not implemented in this slice. The previous implementation remains in Git history and on `codex/architecture-reference-docs`; importing its data is out of scope.
+
+## Development
+
+Use Node.js 22.12 or newer and npm. From a clean checkout, run `npm ci`, then `npm run dev` to build and launch the desktop app. The main checks are `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build:ladle`. See [docs/development.md](docs/development.md) for artifact commands, data locations and implementation boundaries.
+
+The standard application database lives at `userData/workspace.sqlite`; development uses `userData/development/workspace.sqlite`. Tests use temporary databases. Electron `utilityProcess` runs the local backend over message ports; it does not open a network listener. English is the default language, and the settings screen can save English or Russian for the next launch.
 
 - [Product and preserved capabilities](docs/product.md)
 - [Roadmap](docs/roadmap.md)
 - [Architecture](docs/architecture.md)
 - [Decisions and open questions](docs/decisions.md)
-- [Development instructions](AGENTS.md)
+- [Development workflow and commands](docs/development.md)
+- [Agent instructions](AGENTS.md)
 - [Changelog](CHANGELOG.md)
 
 The first target release is **0.1.0**, a local desktop application for macOS and Windows with English and Russian interfaces. Shared-folder collaboration, AI agents and remote access follow in later stages.

@@ -113,10 +113,10 @@ Build the first runnable local Workspace slice: an Electron desktop app with a R
 
 - Update: `README.md`, `docs/development.md`, `docs/architecture.md`, `docs/reuse.md`, `docs/releases.md`, and `CHANGELOG.md` as applicable.
 
-- [ ] Document the actual development launch, checks, data directories, backend transport and lifecycle, database driver and migrations, language behavior, and development artifact workflow.
-- [ ] Move the verified language and desktop additions into an appropriate `Unreleased` changelog entry without presenting them as a published release.
-- [ ] Add or update documentation/link and notice checks where they provide useful regression coverage; rerun the affected tests, type/build checks, and `git diff --check`.
-- [ ] Commit verified task changes locally with explicit paths and report the resulting commit.
+- [x] Document the actual development launch, checks, data directories, backend transport and lifecycle, database driver and migrations, language behavior, and development artifact workflow.
+- [x] Move the verified language and desktop additions into an appropriate `Unreleased` changelog entry without presenting them as a published release.
+- [x] Add or update documentation/link and notice checks where they provide useful regression coverage; rerun the affected tests, type/build checks, and `git diff --check`.
+- [x] Commit verified task changes locally with explicit paths and report the resulting commit.
 
 ## Post-Completion
 

@@ -15,6 +15,10 @@ The future product site and application consume the same versioned changelog sou
 - Distribution: add platform packaging, signing, artifact checks, immutable tagging and a documented publish workflow. Select the update mechanism and supported OS versions before release readiness.
 - Website: render the same notes and connect each release to its actual downloadable artifacts.
 
+## Development artifacts
+
+The current application slice has a canonical `0.1.0` package version and can produce launchable development directory artifacts; this does not mean a stable release has been published. Run `npm run package:dev:mac` on macOS or `npm run package:dev:win` on Windows. Each command builds the app, creates a platform directory under `release/`, and checks the packaged version, desktop/backend/renderer entries, SQL migration, unpacked native `better-sqlite3` module and bb license notice. `npm run check:artifact -- release` can be run separately against an existing artifact directory. CI performs artifact creation and content checks on both macOS and Windows. Installer signing, stable release publication, update delivery and actual Windows launch/restart acceptance remain separate release work.
+
 The first implementation must keep version bumps and changelog edits reviewable and fail mismatched version checks. Publishing or creating a release tag requires release authorization; this policy does not grant it.
 
 ## bb reference

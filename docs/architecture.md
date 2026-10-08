@@ -2,28 +2,28 @@
 
 ## Status and accepted foundation
 
-This branch contains the documentation foundation and the initial application scaffold. The settings service, database schema, migrations and IPC behavior are still to be implemented. SQLite with Drizzle is accepted for structured data.
+This branch contains a runnable initial settings application. The settings service, database schema and migration, desktop IPC, renderer, and macOS/Windows development packaging configuration are implemented. The wider Workspace domain—project discovery, workspaces, properties, views and filesystem operations—remains unimplemented. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
 Desktop starts a separate local TypeScript backend process that owns SQLite and product policy. The first release exposes this service locally; authenticated access from other devices is a separate future capability. See [ADR-0003](adr/0003-separate-local-backend.md).
 
-The initial runtime uses Electron `utilityProcess` with message ports, React with Vite, and a narrow typed preload boundary. The renderer has no direct Node.js or database access. SQLite uses Drizzle with `better-sqlite3`; ordered SQL migrations ship with the app. The database belongs beneath Electron's machine-local `userData` directory; development uses a distinct subdirectory and tests use temporary directories. See [ADR 0005](adr/0005-local-settings-runtime.md). Process supervision, settings contracts and storage behavior are implemented by subsequent tasks.
+The runtime uses Electron `utilityProcess` with message ports, React with Vite, and a narrow preload boundary. The renderer has no direct Node.js or database access. SQLite uses Drizzle with `better-sqlite3`; ordered SQL migrations ship with the app. The database belongs beneath Electron's machine-local `userData` directory as `workspace.sqlite`; development uses a distinct `development` subdirectory, and tests use temporary directories. The preference defaults to English and supports English and Russian. See [ADR 0005](adr/0005-local-settings-runtime.md) for build and runtime details.
 
 ## Intended responsibilities
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | Views, interaction, localization and presentation state | Exact routing/state package versions and component extraction |
-| Typed service client | Commands, queries and normalized errors | Transport contracts and event subscriptions |
-| Local application service | Workspace/source identity, discovery policy, properties, views and transactions in a separate TypeScript process | Process supervision and protocol negotiation |
+| Desktop renderer | React settings screen, interaction, localization and presentation state | Future routing and state needs as features are added |
+| Typed service boundary | Settings query/command contracts and normalized errors, exposed through preload and IPC | Additional contracts and event subscriptions as features are added |
+| Local application service | Settings persistence in a separate TypeScript process; future workspace/source identity, discovery policy, properties, views and transactions | Future domain capabilities and protocol negotiation |
 | Machine filesystem adapter | Validated discovery, moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
 | Hosted access, later | Owner-device access to the host service, including responsive mobile browser | Transport, device authentication, client feature scope and host lifecycle |
 | Agent execution, later | Personal project chats, local Codex/API-key execution, permission modes and parallel runs | Working-file isolation, result integration and exact runtime policy |
 
-The renderer uses a narrow preload/service boundary. It cannot directly read SQLite, call Node filesystem APIs or hold host credentials. Electron uses context isolation, disabled renderer Node integration and sandboxing. Every filesystem mutation checks the selected source and current destination state.
+The renderer uses a narrow preload/service boundary. It cannot directly read SQLite, call Node filesystem APIs or hold host credentials. Electron uses context isolation, disabled renderer Node integration and sandboxing. Future filesystem mutations must check the selected source and current destination state.
 
 ## bb UI reference
 
