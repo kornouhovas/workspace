@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
+import { packagedExecutablePath } from "./runtime-executable.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -13,9 +14,7 @@ assert.ok(mode === "dev" || mode === "release", "Expected dev or release mode");
 const require = createRequire(import.meta.url);
 const executablePath = mode === "dev"
   ? require("electron")
-  : process.platform === "darwin"
-    ? join(root, "release", `mac-${process.arch}`, "Workspace.app", "Contents", "MacOS", "Workspace")
-    : join(root, "release", "win-unpacked", "Workspace.exe");
+  : packagedExecutablePath(root, process.platform, process.arch);
 
 await stat(executablePath);
 const fixture = await mkdtemp(join(tmpdir(), "workspace-runtime-"));
