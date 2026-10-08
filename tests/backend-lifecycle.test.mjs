@@ -83,6 +83,8 @@ test("startup errors and timeout resolve into a bounded unavailable state", asyn
     assert.equal(await ready, false);
     assert.equal(controller.currentStatus.state, "unavailable");
     assert.match(controller.currentStatus.message, /could not start/);
+    child.exit(1);
+    assert.match(controller.currentStatus.message, /could not start/);
     child.send({ type: "ready" });
     assert.equal(controller.currentStatus.state, "unavailable");
   }
@@ -100,14 +102,20 @@ test("malformed service payloads are rejected by the settings boundary", () => {
   parent.sent = [];
   parent.postMessage = (message) => parent.sent.push(message);
   const port = new FakePort();
+  const routed = [];
   startServiceProcess(parent, () => ({
-    handleQuery: () => ({ ok: false, error: { code: "invalid_input", message: "Bad query" } }),
-    handleCommand: () => ({ ok: false, error: { code: "invalid_input", message: "Bad command" } }),
+    handleQuery: (input) => { routed.push(["query", input]); return { ok: false, error: { code: "invalid_input", message: "Bad query" } }; },
+    handleCommand: (input) => { routed.push(["command", input]); return { ok: false, error: { code: "invalid_input", message: "Bad command" } }; },
     close() {},
   }));
   parent.emit("message", { data: { type: "connect", databasePath: "/tmp/settings.sqlite" }, ports: [port] });
   port.receive({ id: 1, input: null });
   port.receive({ id: 2, input: { type: "settings.setLanguage", language: "fr" } });
+  port.receive({ id: "invalid", input: { type: "settings.load" } });
+  assert.deepEqual(routed, [
+    ["command", null],
+    ["command", { type: "settings.setLanguage", language: "fr" }],
+  ]);
   assert.deepEqual(port.sent.map(({ result }) => result), [
     { ok: false, error: { code: "invalid_input", message: "Bad command" } },
     { ok: false, error: { code: "invalid_input", message: "Bad command" } },

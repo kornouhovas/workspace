@@ -124,10 +124,13 @@ export class BackendController {
     if (this.readiness) this.failStartup(this.readiness.resolve);
     this.rejectPending("The local service exited.");
     if (this.child) {
+      const startupFailed = this.status.state === "unavailable";
       this.child = undefined;
       this.port?.close();
       this.port = undefined;
-      this.setStatus({ state: "unavailable", message: "The local service stopped unexpectedly." });
+      if (!startupFailed) {
+        this.setStatus({ state: "unavailable", message: "The local service stopped unexpectedly." });
+      }
     }
   }
 

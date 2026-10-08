@@ -22,6 +22,7 @@
     "dev": "npm run build && electron .",
     "start": "electron .",
     "test": "npm run build && tsx --test tests/*.test.mjs tests/*.test.tsx",
+    "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "package:dir": "npm run build && electron-builder --dir",
@@ -38,7 +39,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@electron/asar": "^3.4.1",
+    "@electron/asar": "3.4.1",
     "@eslint/js": "9.39.5",
     "@ladle/react": "5.1.1",
     "@testing-library/react": "16.3.3",
@@ -56,6 +57,7 @@
     "eslint": "9.39.5",
     "globals": "17.13.0",
     "happy-dom": "20.14.5",
+    "playwright-core": "1.64.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vite": "8.3.4"

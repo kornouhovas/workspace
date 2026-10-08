@@ -3,10 +3,12 @@ import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { Language } from "../contracts/settings.js";
 import { EmptyStatePanel, LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
+import { WorkspaceServiceClient } from "./workspace-service-client.js";
 
 type ViewState = "loading" | "ready" | "unavailable" | "load-error";
 
 export function App() {
+  const [client] = useState(() => new WorkspaceServiceClient());
   const [backend, setBackend] = useState<BackendStatus>({ state: "starting" });
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [language, setLanguage] = useState<Language>("en");
@@ -15,7 +17,7 @@ export function App() {
 
   const loadSettings = useCallback(async (isCurrent: () => boolean) => {
     try {
-      const result = await window.workspace.settings({ type: "settings.load" });
+      const result = await client.loadSettings();
       if (!isCurrent()) return;
       if (!result.ok) {
         setViewState("load-error");
@@ -26,15 +28,26 @@ export function App() {
     } catch {
       if (isCurrent()) setViewState("load-error");
     }
-  }, []);
+  }, [client]);
 
   useEffect(() => {
-    const unsubscribe = window.workspace.onBackendStatus(setBackend);
-    void window.workspace.getBackendStatus().then(setBackend).catch(() => {
-      setBackend({ state: "unavailable" });
+    let active = true;
+    let receivedEvent = false;
+    const unsubscribe = client.onBackendStatus((status) => {
+      receivedEvent = true;
+      setBackend(status);
     });
-    return unsubscribe;
-  }, []);
+    void client.getBackendStatus().then((status) => {
+      if (active && !receivedEvent) setBackend(status);
+    }).catch(() => {
+      if (active && !receivedEvent) setBackend({ state: "unavailable" });
+    });
+    return () => { active = false; unsubscribe(); };
+  }, [client]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     let active = true;
@@ -53,7 +66,7 @@ export function App() {
     setSaving(true);
     setSaveError(false);
     try {
-      const result = await window.workspace.settings({ type: "settings.setLanguage", language: nextLanguage });
+      const result = await client.setLanguage(nextLanguage);
       if (result.ok) {
         setLanguage(result.value.language);
       } else {

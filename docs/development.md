@@ -64,14 +64,16 @@ The repository currently builds and runs an initial Electron settings applicatio
 | `npm run build` | Produce desktop, renderer and backend outputs, copy migrations, and verify the product version. |
 | `npm run ladle` | Start the component preview server. |
 | `npm run build:ladle` | Build the component previews. |
+| `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; check isolation, language persistence through restart, backend shutdown and startup failure. |
 | `npm run package:dev:mac` | Build and verify a macOS development directory artifact on macOS. |
 | `npm run package:dev:win` | Build and verify a Windows development directory artifact on Windows. |
 | `npm run check:artifact -- release` | Check packaged resources, version, native SQLite binary and bb license notice. |
+| `npm run smoke:runtime -- release` | Run the same Electron lifecycle checks against the platform development artifact. |
 
-The app uses `package.json` version `0.1.0` as its product version. The build writes it to `dist/version.json`; `npm run check:version` checks consistency. The app stores `workspace.sqlite` below Electron's machine-local `userData` directory. Development uses the `development` child directory so it does not share production settings. Tests use disposable temporary directories. For isolated manual runs, `WORKSPACE_USER_DATA_DIR` can override Electron's `userData` root.
+The app uses `package.json` version `0.1.0` as its product version. The build writes it to `dist/version.json`; `npm run check:version` checks consistency. The app stores `workspace.sqlite` below Electron's machine-local `userData` directory. Development uses the `development` child directory for both SQLite and Chromium session data so it does not share production settings. Tests use disposable temporary directories. For isolated manual runs, `WORKSPACE_USER_DATA_DIR` sets the entire data root before Electron becomes ready; SQLite and Chromium session data both use that directory directly.
 
 Electron main owns the window and starts the TypeScript service in a `utilityProcess`. The service communicates through Electron message ports and does not open a listening network socket. It owns SQLite through Drizzle and `better-sqlite3`, and applies the versioned SQL migrations shipped under `dist/service/db/migrations` when it opens the database. The renderer calls only the narrow preload API; it has no direct Node.js, filesystem or database access. Closing the app stops the service process.
 
 The current UI exposes the saved interface language, with English as the first-launch default and Russian as the other supported value. Loads and saves go through the service; a failed save does not change the active language. The broader project organization features remain future work. The adapted UI controls retain their upstream MIT notice at `src/renderer/components/bb/LICENSE`; packaging places the notice in the artifact's `licenses` directory.
 
-The desktop CI workflow runs install, tests, lint, type checks, build, Ladle build, artifact creation and artifact-content checks on macOS and Windows. Local verification on macOS does not establish Windows launch or restart behavior; those require the Windows runner or a Windows host.
+The desktop CI workflow runs install, tests, lint, type checks, build, Ladle build, Electron runtime smoke checks for the development app and packaged artifact, artifact creation and artifact-content checks on macOS and Windows. The smoke script requires a graphical desktop session. Local verification on macOS does not establish Windows launch or restart behavior; those require an observed Windows runner or a Windows host.

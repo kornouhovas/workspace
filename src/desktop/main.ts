@@ -1,7 +1,14 @@
 import { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } from "electron";
+import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { BackendController } from "./backend-controller.js";
+
+const appDataDirectory = process.env.WORKSPACE_USER_DATA_DIR ??
+  (app.isPackaged ? app.getPath("userData") : join(app.getPath("userData"), "development"));
+mkdirSync(appDataDirectory, { recursive: true });
+app.setPath("userData", appDataDirectory);
+app.setPath("sessionData", appDataDirectory);
 
 const controller = new BackendController((status) => {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -42,12 +49,6 @@ app.on("before-quit", (event) => {
 app.on("window-all-closed", () => app.quit());
 
 void app.whenReady().then(async () => {
-  if (process.env.WORKSPACE_USER_DATA_DIR) {
-    app.setPath("userData", process.env.WORKSPACE_USER_DATA_DIR);
-  }
-  const appDataDirectory = app.isPackaged
-    ? app.getPath("userData")
-    : join(app.getPath("userData"), "development");
   const backendPath = join(__dirname, "../service/entry.cjs");
   const workingDirectory = app.isPackaged ? dirname(app.getAppPath()) : app.getAppPath();
   try {

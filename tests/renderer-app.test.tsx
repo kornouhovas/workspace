@@ -6,6 +6,7 @@ import type { BackendStatus, WorkspaceDesktopApi } from "../src/contracts/deskto
 import type { ServiceResult, Settings } from "../src/contracts/settings.js";
 import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
+import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, {
@@ -54,6 +55,7 @@ test("initially loads English and switches language only after a successful save
   render(<App />);
   const selector = await screen.findByRole("combobox", { name: "Interface language" });
   assert.equal((selector as HTMLSelectElement).value, "en");
+  assert.equal(document.documentElement.lang, "en");
   await userEvent.tab();
   assert.equal(document.activeElement, selector);
   await userEvent.selectOptions(selector, "ru");
@@ -61,6 +63,7 @@ test("initially loads English and switches language only after a successful save
   assert.equal((selector as HTMLSelectElement).disabled, true);
   await act(async () => { finishSave?.(success("ru")); await pendingSave; });
   await waitFor(() => assert.equal((selector as HTMLSelectElement).value, "ru"));
+  assert.equal(document.documentElement.lang, "ru");
   assert.deepEqual(calls, ["settings.load", "settings.setLanguage"]);
   assert.ok(screen.getByText("Настройки"));
   cleanup();
@@ -71,6 +74,7 @@ test("loads and displays a previously saved Russian preference", async () => {
   render(<App />);
   const selector = await screen.findByRole("combobox", { name: "Язык интерфейса" });
   assert.equal((selector as HTMLSelectElement).value, "ru");
+  assert.equal(document.documentElement.lang, "ru");
   assert.ok(screen.getByText("Рабочее пространство готово. Поиск проектов появится в одном из следующих обновлений."));
   cleanup();
 });
@@ -109,8 +113,37 @@ test("failed save keeps the current language and reports that it was not saved",
   const heading = await screen.findByRole("heading", { name: "Language not saved" });
   assert.equal(heading.parentElement?.getAttribute("role"), "alert");
   assert.equal((selector as HTMLSelectElement).value, "en");
+  assert.equal(document.documentElement.lang, "en");
   assert.equal(screen.queryByText("ignored service detail"), null);
   cleanup();
+});
+
+test("newer backend status events win over a delayed initial snapshot", async () => {
+  let finishSnapshot: ((status: BackendStatus) => void) | undefined;
+  const snapshot = new Promise<BackendStatus>((resolve) => { finishSnapshot = resolve; });
+  const api = mockApi(async () => success("en"));
+  window.workspace.getBackendStatus = () => snapshot;
+  render(<App />);
+  act(() => api.emitStatus("ready"));
+  await screen.findByRole("combobox", { name: "Interface language" });
+  await act(async () => { finishSnapshot?.({ state: "starting" }); await snapshot; });
+  assert.ok(screen.getByRole("combobox", { name: "Interface language" }));
+  cleanup();
+});
+
+test("typed client keeps settings envelopes outside the component", async () => {
+  const calls: unknown[] = [];
+  const api = mockApi(async (input) => { calls.push(input); return success("ru"); });
+  const client = new WorkspaceServiceClient(window.workspace);
+  assert.deepEqual(await client.loadSettings(), success("ru"));
+  assert.deepEqual(await client.setLanguage("ru"), success("ru"));
+  assert.deepEqual(await client.getBackendStatus(), { state: "ready" });
+  const states: BackendStatus[] = [];
+  const unsubscribe = client.onBackendStatus((status) => states.push(status));
+  api.emitStatus("unavailable");
+  unsubscribe();
+  assert.deepEqual(states, [{ state: "unavailable" }]);
+  assert.deepEqual(calls, [{ type: "settings.load" }, { type: "settings.setLanguage", language: "ru" }]);
 });
 
 test("falls back to English when a Russian translation is missing", () => {
