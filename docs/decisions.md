@@ -22,7 +22,7 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D12 | First-release platforms are macOS and Windows; Linux follows later. |
 | D13 | Collaboration uses shared properties plus private/shared views; a shared view is not an Internet-public link. |
 | D14 | Keep a local working database; exchange logical changes/snapshots through an opt-in hidden folder delivered externally. Support independent writers, merge compatible edits and retain conflict alternatives. |
-| D15 | Remote hosting is a separate later mode in which a user's computer serves other devices. Agent/chat ownership and execution placement remain open. |
+| D15 | Remote hosting is a separate later mode in which a user's computer serves other devices. Its initial ownership/client scope follows D35/D38; the first AI stage follows D33-D37. |
 | D16 | Workspaces over the same root share projects, property definitions/values, discovery mode and archive location. Each workspace owns its view set and presentation settings. |
 | D17 | Initially each workspace selects one root. Aggregating multiple roots in one workspace follows later. |
 | D18 | Folder-backed Select changes explicitly move projects; renaming an option renames its folder after showing the effect. Deleting an occupied option requires a project destination and never implicitly deletes the projects. Ordinary Select edits metadata only. |
@@ -40,6 +40,15 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | D30 | The local release includes automatic application-data backups, a backup before schema migrations, and manual export/restore of the new format. These cover properties, views and settings; project-file backups remain the user's separate responsibility. |
 | D31 | MultiSelect dragging replaces the source option with the destination while preserving other options: A+B dragged from A to C becomes B+C. Dropping into the empty group clears all options; dragging from empty to C sets C. |
 | D32 | Name-group dragging renames the project folder to the destination group's name. Invalid names and occupied destinations in the same parent are rejected with an explanation; an empty-name destination is unavailable. |
+| D33 | The first AI stage provides personal project-scoped chats with agent execution on the user's own computer. Shared chats and remote-host execution are separate later capabilities. |
+| D34 | Initially integrate Codex with API-key authentication. Other providers and subscription-based login are outside the initial AI scope. |
+| D35 | Initial phone access uses a responsive browser client connected to the host computer; a native mobile application follows only if needed. |
+| D36 | AI offers Discussion without file changes and Work on project with project-scoped reading, editing and commands. Routine edits in the latter do not require per-file confirmation; expanded access and operations requiring additional permissions are confirmed separately. |
+| D37 | Multiple personal chats and concurrent editing agents in the same project are required in the first AI stage. A one-editing-run-per-project queue is not sufficient. Working-file isolation and result integration remain open. |
+| D38 | Initial remote access is for the owner using their other devices. Multi-user invitations and separate user rights follow later; external shared-folder collaboration remains a separate mode. |
+| D39 | The first mobile browser client supports views/properties, chats with agent execution on the connected host, and project-file viewing/downloading. A full mobile file editor follows later. |
+| D40 | Remote operation requires a connected host. When disconnected, show connection loss and do not accumulate changes or commands for automatic replay. Reconnect and reload current state when the host returns. |
+| D41 | The user explicitly deferred Q46's parallel-agent working-file policy until AI implementation design. Shared directories, Git worktrees and non-Git copies remain alternatives; none is the selected default. Resolve this before implementing concurrent editing, without blocking the earlier local release. |
 
 ## Open design branches
 
@@ -56,8 +65,8 @@ Design tracking: [GitHub #6](https://github.com/kornouhovas/workspace/issues/6).
 | O09 | D20/D30 settle the separate backend process and application-data backup scope. Choose transport/lifecycle, database partitioning/driver, migration/backup/recovery mechanics, watcher strategy and performance targets. |
 | O10 | Define local ownership and storage of private views and preferences; distinguish workspace configuration from shared-source metadata. |
 | O11 | Before shared-folder implementation: choose merge protocol, device/participant identity, bootstrap/disable flows, deletion handling, snapshots/GC, offline behavior and project-file conflict boundaries. |
-| O12 | Before AI: decide chat scope and ownership, supported providers, authentication, execution machine, file-write approvals, tools and concurrent agent edits. Subscription access must be verified per provider. |
-| O13 | Before remote mode: define authentication, encryption, access grants, host offline behavior, remote files and mobile/browser client scope. |
+| O12 | D33/D34/D36/D37 settle personal project chats, local Codex/API-key execution, two permission modes and parallel agents. Per D41, defer working-file isolation/result integration to M6 implementation design. Also define exact tool/network permissions, cancellation/recovery and credential lifecycle before their implementation. |
+| O13 | D35/D38-D40 settle owner-only remote access, initial browser features and connected-only operation without an offline mutation queue. Define device authentication, encryption, revocation and reconciliation of runs/commands already accepted before a disconnect. |
 | O14 | Before distribution: choose supported OS versions/architectures, signing, installer/update strategy, privacy/support policy and release automation. |
 | O15 | Before website: settle product name/domain, downloads, changelog rendering/localization and publication workflow. Repository visibility remains private unless explicitly changed. |
 | O16 | Decide when to turn roadmap milestones into GitHub issues and linked Beads steps; reconcile existing tasks without silently importing the legacy backlog. |

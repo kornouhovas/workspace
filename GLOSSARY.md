@@ -37,3 +37,12 @@ _Avoid_: Status when the property represents another category
 **Archived project**:
 A project moved to the source's designated archive folder while retaining its properties and the ability to restore it.
 _Avoid_: Deleted project, Select option
+
+**Project chat**:
+A personal conversation with an agent in the context of a particular project. A project can have multiple chats.
+
+**Agent run**:
+An execution of an agent task within a project chat. Multiple runs can work on the same project concurrently.
+
+**Host**:
+The owner's computer that provides access to its workspaces from the owner's other devices.

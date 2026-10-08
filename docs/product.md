@@ -59,4 +59,12 @@ Properties are shared within the collaborative dataset; views can be private or 
 
 External providers deliver the shared folder while Workspace merges logical metadata changes. A fresh computer must be able to reconstruct shared properties and shared views. Concurrent same-field conflicts retain alternatives and offer nonblocking review. Project-file conflicts need a separate contract; metadata merging alone does not resolve file contents.
 
-A later mode lets a computer host the application service for other computers and mobile clients. AI work uses workspace/project file context; chat ownership, execution location, providers, credentials and write permissions are still open product choices.
+A later mode lets a computer host the application service for its owner's other devices. Phone access starts with a responsive browser interface for views/properties, chats with host-side agent execution, and viewing/downloading project files. A full mobile file editor, a native mobile client and invitations for other users come later.
+
+Remote operations require a connected host. When disconnected, the client shows connection loss and does not accumulate changes or commands for automatic replay. It reconnects and reloads current state when the host returns. Recovery of commands already accepted by the host must distinguish their actual state from unsent commands.
+
+The first AI stage provides personal project-scoped chats using Codex with an API key. Agent processes and project commands run on the user's own computer; model processing uses the provider API. Shared chats, other providers, subscription login and execution on a separate remote host are later capabilities.
+
+AI offers two modes: Discussion does not change files; Work on project can read/edit project files and run commands. Routine edits in Work on project do not require approval for each file. Expanded access and operations needing additional permissions require separate confirmation; exact enforcement/tool/network policies must be specified before implementation.
+
+Multiple personal chats and parallel editing agents within the same project are required. Their working-file isolation, conflict handling and result-application workflow remain open; neither serialized runs nor unrestricted concurrent writes should be silently assumed.

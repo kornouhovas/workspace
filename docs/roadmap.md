@@ -6,7 +6,7 @@ This roadmap derives from the product interview. It describes intended outcomes,
 
 Deliver a fresh branch with preserved Git history, English docs, concise agent instructions, retained Beads configuration, repository Ralphex defaults and release policy. Preserve the previous implementation as a reference, without importing its documentation into the new tree.
 
-Workspace/source ownership, previewed discovery-mode changes, initial folder commands and archived editing are settled. Resolve durable folder identity, remaining folder-backed Select edge cases and archive collision behavior. Convert accepted milestones into GitHub issues with measurable acceptance criteria; create linked Beads execution steps where needed. Record source provenance for every bb module selected.
+Workspace/source ownership, previewed discovery-mode changes, local folder identity/recovery, typed group dragging, initial folder commands, archived editing and application-data backup scope are settled. Specify remaining folder-backed Select edge cases and archive collision behavior before their implementation slices. Convert accepted milestones into GitHub issues with measurable acceptance criteria; create linked Beads execution steps where needed. Record source provenance for every bb module selected.
 
 Exit: foundational docs are consistent, remaining questions are explicit, and the first implementation slice has an agreed contract and checks. Documentation scaffolding alone does not complete the design interview.
 
@@ -83,11 +83,13 @@ Exit: multi-device scenarios reconstruct the same accepted state without losing 
 
 Depends on accepted AI product/security contracts and the local service boundary; exact ordering relative to M5 remains open.
 
-- Define workspace/project context selection and chat ownership.
-- Select provider integrations and supported credential/subscription flows from verified APIs.
-- Implement session persistence, observable execution and authorized file tools.
-- Define human review, cancellation, errors and concurrent filesystem edit behavior.
-- Decide personal versus shared agents/chats and optional host execution.
+The user deferred the parallel-agent working-file policy to this stage's implementation design. Decide shared directories versus isolated versions, non-Git behavior, result application and cleanup before implementing concurrent editing; none is an accepted default yet.
+
+- Implement personal project-scoped chats with local Codex execution and API-key authentication.
+- Validate the Codex App Server adapter and keep provider credentials on the executing host.
+- Implement Discussion and Work on project modes, session persistence, observable execution and enforced tool permissions.
+- Support parallel editing agents within a project with an explicitly selected working-file isolation and result-application workflow.
+- Define human review, cancellation, errors and recovery. Shared chats, other providers/subscription login and remote-host execution are later additions.
 
 Exit: an end-to-end authorized task operates on the intended project context, preserves session ownership and exposes changes/errors clearly. Provider access is tested rather than inferred from a consumer subscription name.
 
@@ -95,10 +97,10 @@ Exit: an end-to-end authorized task operates on the intended project context, pr
 
 Depends on authenticated remote-service and filesystem-access contracts.
 
-- Let a desktop host expose the service through explicit settings.
-- Add device enrollment, authentication, transport protection and access revocation.
-- Define remote browsing/editing and agent execution on the correct machine.
-- Build the selected mobile/browser client scope and host-offline experience.
+- Let a desktop host expose the service to its owner's other devices through explicit settings.
+- Add owner-device enrollment, authentication, transport protection and access revocation; multi-user invitations/roles follow later.
+- Provide remote views/property editing, chats with execution on the host, and project-file viewing/downloading. Full mobile file editing is a later capability.
+- Build a responsive mobile browser client with connected-only operation, clear disconnect state and state reload on reconnect; do not replay an offline queue of changes/commands. Native mobile applications follow only if needed.
 - Validate remote access independently of shared-folder exchange.
 
 Exit: an authorized second device can use the intended workspace safely, with observable host availability and tested revocation. This is not implied by merely starting a local HTTP listener.
