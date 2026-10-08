@@ -2,7 +2,7 @@
 
 Part of [product and architecture issue #6](https://github.com/kornouhovas/workspace/issues/6). Scope: roadmap milestones M1–M4. This is a specification for planned behavior, not a report of implemented features.
 
-Publication status: prepared locally; GitHub specification issue pending publication.
+Published specification: [GitHub #7](https://github.com/kornouhovas/workspace/issues/7), labeled `ready-for-agent`.
 
 ## Problem Statement
 
@@ -269,6 +269,6 @@ No quantitative performance target, backup retention period, package version or 
 
 - Derived from the accepted product interview, Product preservation baseline, decision ledger D01–D32, roadmap M1–M4, architecture and glossary. Later decisions D33–D41 inform exclusions rather than local-release requirements.
 - Respects accepted ADRs: SQLite and Drizzle; separation of local database from future folder exchange; separate local backend; local folder identity without permanent markers.
-- Once published, the GitHub specification issue owns tracked release requirements/status. This document is its versioned source snapshot; requirement revisions must update both deliberately rather than creating an independent backlog.
+- The GitHub specification issue owns tracked release requirements/status. This document is its versioned source snapshot; requirement revisions must update both deliberately rather than creating an independent backlog.
 - Keep documentation, issues, plans, commits and release notes in English. Product discussion with the owner remains in Russian.
 - Issue #6 remains the parent product/architecture context. Publication of this specification does not mean either the release or the first implementation slice is complete.
