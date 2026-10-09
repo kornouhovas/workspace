@@ -14,10 +14,11 @@ import {
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
 import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<Settings>;
-  handleCommand(input: unknown): ServiceResult<Settings>;
+  handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad>;
+  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -66,6 +67,7 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.load") return workspaces.load();
       if (!isRecord(input) || input.type !== "settings.load") {
         return { ok: false, error: invalidInput("Expected a settings.load query.") };
       }
@@ -80,6 +82,8 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.create") return workspaces.create(input);
+      if (isRecord(input) && input.type === "workspace.activate") return workspaces.activate(input);
       if (!isRecord(input) || input.type !== "settings.setLanguage" || !isLanguage(input.language)) {
         return { ok: false, error: invalidInput("Expected a supported language: en or ru.") };
       }

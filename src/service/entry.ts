@@ -57,7 +57,8 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return typeof input === "object" && input !== null && (input as { type?: unknown }).type === "settings.load";
+  return typeof input === "object" && input !== null &&
+    ["settings.load", "workspace.load"].includes(String((input as { type?: unknown }).type));
 }
 
 const parentPort = process.parentPort as unknown as ParentPort | null;

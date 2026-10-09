@@ -95,25 +95,25 @@ commit the verified task changes.
 `src/service/entry.ts`,
 `tests/workspaces-service.test.mjs`.
   - Create or modify: `src/contracts/workspaces.ts`.
-  - [ ] Define typed `workspace.create`, `workspace.load`,
+  - [x] Define typed `workspace.create`, `workspace.load`,
 and `workspace.activate` operations. The load result
 includes saved workspace summaries, the active
 workspace’s source ID and canonical root, its active
 Table view ID, and source availability.
-  - [ ] Persist activation without changing view
+  - [x] Persist activation without changing view
 ownership. On reopen, load the saved active workspace and
 view; if its root has become unavailable, retain all
 metadata and return an actionable source-unavailable
 state.
-  - [ ] Reject malformed IDs and activation of a
+  - [x] Reject malformed IDs and activation of a
 nonexistent workspace. Keep service errors normalized
 without exposing raw filesystem or database exception text
 to the renderer.
-  - [ ] Test service close/reopen with a real SQLite file,
+  - [x] Test service close/reopen with a real SQLite file,
 activation across two workspaces sharing one source,
 independent view IDs, missing roots, malformed commands,
 and read failures.
-  - [ ] Run affected tests, the full test suite, lint,
+  - [x] Run affected tests, the full test suite, lint,
 typecheck, and build with the required Node 22 `PATH`;
 commit the verified task changes.
 ### Task 3: Add the native picker and typed desktop

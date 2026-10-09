@@ -4,6 +4,7 @@ import { isAbsolute, relative, sep } from "node:path";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contracts/workspaces.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
 
@@ -17,19 +18,15 @@ const nativeFilesystem: WorkspaceFilesystem = {
   isDirectory: (path) => statSync(path).isDirectory(),
 };
 
-export interface WorkspaceCreated {
-  sourceId: string;
-  workspaceId: string;
-  viewId: string;
-  name: string;
-  canonicalRoot: string;
-}
-
 export interface WorkspaceService {
   create(input: unknown):
     | { ok: true; value: WorkspaceCreated }
     | { ok: false; error: { code: "invalid_input" | "filesystem" | "storage"; message: string } };
   assertContained(sourceRoot: string, targetPath: string): boolean;
+  load(): { ok: true; value: WorkspaceLoad } | { ok: false; error: { code: "storage"; message: string } };
+  activate(input: unknown):
+    | { ok: true; value: ActiveWorkspace }
+    | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
 export function createWorkspaceService(db: Database, filesystem = nativeFilesystem): WorkspaceService {
@@ -87,7 +84,84 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         return false;
       }
     },
+    load() {
+      try {
+        const workspaces = db.select({
+          workspaceId: schema.workspaces.id,
+          name: schema.workspaces.name,
+          sourceId: schema.sources.id,
+          canonicalRoot: schema.sources.canonicalRoot,
+        }).from(schema.workspaces)
+          .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id)).all();
+        const active = db.select({
+          workspaceId: schema.activeWorkspace.workspaceId,
+          viewId: schema.activeWorkspace.viewId,
+        }).from(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).get();
+        const summaries = workspaces.map(({ workspaceId, name }) => ({ workspaceId, name }));
+        if (!active) return { ok: true, value: { workspaces: summaries, activeWorkspace: null } };
+
+        const current = workspaces.find((workspace) => workspace.workspaceId === active.workspaceId);
+        const view = db.select().from(schema.views).where(eq(schema.views.id, active.viewId)).get();
+        if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
+          return storageFailure();
+        }
+        const activeWorkspace = toActiveWorkspace(current, active.viewId, isRootAvailable(current.canonicalRoot));
+        return { ok: true, value: { workspaces: summaries, activeWorkspace } };
+      } catch {
+        return storageFailure();
+      }
+    },
+    activate(input) {
+      if (!isRecord(input) || input.type !== "workspace.activate" || !isUuid(input.workspaceId)) {
+        return invalid("Choose a saved workspace.");
+      }
+      try {
+        const workspace = db.select({
+          workspaceId: schema.workspaces.id,
+          name: schema.workspaces.name,
+          sourceId: schema.sources.id,
+          canonicalRoot: schema.sources.canonicalRoot,
+        }).from(schema.workspaces)
+          .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
+          .where(eq(schema.workspaces.id, input.workspaceId)).get();
+        if (!workspace) return invalid("Choose a saved workspace.");
+        const view = db.select().from(schema.views)
+          .where(eq(schema.views.workspaceId, workspace.workspaceId)).get();
+        if (!view || view.kind !== "table") return storageFailure();
+        db.transaction((tx) => {
+          tx.insert(schema.activeWorkspace).values({
+            key: "active", workspaceId: workspace.workspaceId, viewId: view.id,
+          }).onConflictDoUpdate({
+            target: schema.activeWorkspace.key,
+            set: { workspaceId: workspace.workspaceId, viewId: view.id },
+          }).run();
+        });
+        return { ok: true, value: toActiveWorkspace(workspace, view.id, isRootAvailable(workspace.canonicalRoot)) };
+      } catch {
+        return storageFailure();
+      }
+    },
   };
+}
+
+function isRootAvailable(canonicalRoot: string): boolean {
+  try {
+    return realpathSync(canonicalRoot) === canonicalRoot && statSync(canonicalRoot).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function toActiveWorkspace(
+  workspace: { workspaceId: string; name: string; sourceId: string; canonicalRoot: string },
+  viewId: string,
+  sourceAvailable: boolean,
+): ActiveWorkspace {
+  return { ...workspace, viewId, sourceAvailable };
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -100,4 +174,8 @@ function invalid(message: string) {
 
 function filesystemError() {
   return { ok: false as const, error: { code: "filesystem" as const, message: "Choose an accessible folder." } };
+}
+
+function storageFailure() {
+  return { ok: false as const, error: { code: "storage" as const, message: "Workspace data could not be read or saved." } };
 }
