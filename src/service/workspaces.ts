@@ -10,12 +10,14 @@ type Database = BetterSQLite3Database<typeof schema>;
 
 export interface WorkspaceFilesystem {
   realpath(path: string): string;
+  legacyRealpath?(path: string): string;
   isDirectory(path: string): boolean;
   assertAccessible(path: string): void;
 }
 
 const nativeFilesystem: WorkspaceFilesystem = {
   realpath: (path) => realpathSync.native(path),
+  legacyRealpath: (path) => realpathSync(path),
   isDirectory: (path) => statSync(path).isDirectory(),
   assertAccessible(path) {
     accessSync(path, constants.R_OK | constants.X_OK);
@@ -62,6 +64,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const created = db.transaction((tx) => {
           let source = tx.select().from(schema.sources)
             .where(eq(schema.sources.canonicalRoot, canonicalRoot)).get();
+          if (!source) {
+            source = tx.select().from(schema.sources).all().find((candidate) =>
+              availableRoot(candidate.canonicalRoot, filesystem) === canonicalRoot);
+            if (source) {
+              tx.update(schema.sources).set({ canonicalRoot }).where(eq(schema.sources.id, source.id)).run();
+            }
+          }
           if (!source) {
             source = { id: randomUUID(), canonicalRoot };
             tx.insert(schema.sources).values(source).run();
@@ -113,7 +122,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
           return storageFailure();
         }
-        const activeWorkspace = toActiveWorkspace(current, active.viewId, isRootAvailable(current.canonicalRoot, filesystem));
+        const sourceState = db.transaction((tx) => normalizeSource(tx, current.sourceId, current.canonicalRoot, filesystem));
+        const activeWorkspace = { ...toActiveWorkspace(current, active.viewId, sourceState.sourceAvailable), ...sourceState };
         return { ok: true, value: { workspaces: summaries, activeWorkspace } };
       } catch {
         return storageFailure();
@@ -136,13 +146,17 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const view = db.select().from(schema.views)
           .where(eq(schema.views.workspaceId, workspace.workspaceId)).get();
         if (!view || view.kind !== "table") return storageFailure();
-        db.insert(schema.activeWorkspace).values({
-          key: "active", workspaceId: workspace.workspaceId, viewId: view.id,
-        }).onConflictDoUpdate({
-          target: schema.activeWorkspace.key,
-          set: { workspaceId: workspace.workspaceId, viewId: view.id },
-        }).run();
-        return { ok: true, value: toActiveWorkspace(workspace, view.id, isRootAvailable(workspace.canonicalRoot, filesystem)) };
+        const value = db.transaction((tx) => {
+          const sourceState = normalizeSource(tx, workspace.sourceId, workspace.canonicalRoot, filesystem);
+          tx.insert(schema.activeWorkspace).values({
+            key: "active", workspaceId: workspace.workspaceId, viewId: view.id,
+          }).onConflictDoUpdate({
+            target: schema.activeWorkspace.key,
+            set: { workspaceId: workspace.workspaceId, viewId: view.id },
+          }).run();
+          return { ...toActiveWorkspace(workspace, view.id, sourceState.sourceAvailable), ...sourceState };
+        });
+        return { ok: true, value };
       } catch {
         return storageFailure();
       }
@@ -150,14 +164,33 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   };
 }
 
-function isRootAvailable(canonicalRoot: string, filesystem: WorkspaceFilesystem): boolean {
+function availableRoot(storedRoot: string, filesystem: WorkspaceFilesystem): string | undefined {
   try {
-    if (filesystem.realpath(canonicalRoot) !== canonicalRoot || !filesystem.isDirectory(canonicalRoot)) return false;
+    const canonicalRoot = filesystem.realpath(storedRoot);
+    // Accept the previous canonical spelling, but never a root retargeted by a symlink.
+    if (canonicalRoot !== storedRoot && filesystem.legacyRealpath?.(storedRoot) !== storedRoot) return undefined;
+    if (!filesystem.isDirectory(canonicalRoot)) return undefined;
     filesystem.assertAccessible(canonicalRoot);
-    return true;
+    return canonicalRoot;
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+function normalizeSource(
+  db: Pick<Database, "select" | "update">,
+  sourceId: string,
+  storedRoot: string,
+  filesystem: WorkspaceFilesystem,
+): { canonicalRoot: string; sourceAvailable: boolean } {
+  const canonicalRoot = availableRoot(storedRoot, filesystem);
+  if (canonicalRoot === undefined) return { canonicalRoot: storedRoot, sourceAvailable: false };
+  if (canonicalRoot !== storedRoot) {
+    const existing = db.select().from(schema.sources).where(eq(schema.sources.canonicalRoot, canonicalRoot)).get();
+    // Older alias duplicates keep their logical IDs and associations. Do not merge or delete them.
+    if (!existing) db.update(schema.sources).set({ canonicalRoot }).where(eq(schema.sources.id, sourceId)).run();
+  }
+  return { canonicalRoot, sourceAvailable: true };
 }
 
 function toActiveWorkspace(

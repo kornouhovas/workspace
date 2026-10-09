@@ -12,6 +12,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - A localized empty Table screen and saved-workspace selector; project discovery remains future work.
 - Development packaging configuration and macOS/Windows CI artifact checks for the desktop application.
 
+### Fixed
+
+- Saved workspace folder aliases retain source, workspace and view identities when their canonical path spelling changes.
+
 ### Planned
 
 - Project discovery, project properties, editable Table and Board views.

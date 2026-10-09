@@ -108,6 +108,118 @@ test("picker spelling and native canonical spelling reuse one real source after 
   });
 });
 
+function aliasPolicies(root, directory) {
+  const canonicalRoot = realpathSync.native(root);
+  const alias = join(directory, "SHORT~1");
+  const current = {
+    realpath: (path) => realpathSync.native(path === alias ? root : path),
+    legacyRealpath: (path) => path === alias ? alias : realpathSync(path),
+    isDirectory: (path) => statSync(path === alias ? root : path).isDirectory(),
+    assertAccessible: (path) => { fs.accessSync(path === alias ? root : path); },
+  };
+  return { alias, canonicalRoot, current, previous: { ...current, realpath: current.legacyRealpath } };
+}
+
+for (const operation of ["load", "activate", "create"]) {
+  test(`${operation} converges a saved legacy alias without changing workspace identities`, () => {
+    withFixture(({ root, directory, databasePath }) => {
+      const { alias, canonicalRoot, previous, current } = aliasPolicies(root, directory);
+      const oldService = openSettingsService(databasePath, undefined, previous);
+      const saved = oldService.workspaces.create({ type: "workspace.create", name: "Saved", rootPath: alias });
+      assert.equal(saved.ok, true);
+      assert.equal(saved.value.canonicalRoot, alias);
+      oldService.close();
+
+      const reopened = openSettingsService(databasePath, undefined, current);
+      try {
+        if (operation === "load") assert.equal(reopened.workspaces.load().value.activeWorkspace.sourceAvailable, true);
+        if (operation === "activate") {
+          assert.equal(reopened.workspaces.activate({ type: "workspace.activate", workspaceId: saved.value.workspaceId }).value.sourceAvailable, true);
+        }
+        const added = reopened.workspaces.create({ type: "workspace.create", name: "New", rootPath: canonicalRoot });
+        assert.equal(added.ok, true);
+        assert.equal(added.value.sourceId, saved.value.sourceId);
+        const activated = reopened.workspaces.activate({ type: "workspace.activate", workspaceId: saved.value.workspaceId });
+        assert.deepEqual(activated, { ok: true, value: { ...saved.value, canonicalRoot, sourceAvailable: true } });
+        assert.deepEqual(records(databasePath).sources, [{ id: saved.value.sourceId, canonical_root: canonicalRoot }]);
+      } finally { reopened.close(); }
+
+      const again = openSettingsService(databasePath, undefined, current);
+      try {
+        assert.deepEqual(again.workspaces.load().value.activeWorkspace, { ...saved.value, canonicalRoot, sourceAvailable: true });
+      } finally { again.close(); }
+    });
+  });
+}
+
+test("alias convergence retains both existing source identities when canonical locators collide", () => {
+  withFixture(({ root, directory, databasePath }) => {
+    const { alias, canonicalRoot, previous, current } = aliasPolicies(root, directory);
+    const oldService = openSettingsService(databasePath, undefined, previous);
+    const aliased = oldService.workspaces.create({ type: "workspace.create", name: "Alias", rootPath: alias });
+    const canonical = oldService.workspaces.create({ type: "workspace.create", name: "Canonical", rootPath: canonicalRoot });
+    assert.equal(aliased.ok && canonical.ok, true);
+    assert.notEqual(aliased.value.sourceId, canonical.value.sourceId);
+    const before = records(databasePath);
+    oldService.close();
+
+    const reopened = openSettingsService(databasePath, undefined, current);
+    try {
+      const activated = reopened.workspaces.activate({ type: "workspace.activate", workspaceId: aliased.value.workspaceId });
+      assert.deepEqual(activated, { ok: true, value: { ...aliased.value, canonicalRoot, sourceAvailable: true } });
+      const added = reopened.workspaces.create({ type: "workspace.create", name: "Third", rootPath: canonicalRoot });
+      assert.equal(added.ok, true);
+      assert.equal(added.value.sourceId, canonical.value.sourceId);
+      assert.deepEqual(records(databasePath).sources, before.sources);
+      for (const workspace of before.workspaces) assert.ok(records(databasePath).workspaces.some((row) => row.id === workspace.id && row.source_id === workspace.source_id));
+      assert.deepEqual(records(databasePath).views.slice(0, 2), before.views);
+    } finally { reopened.close(); }
+  });
+});
+
+test("failed creation rolls back legacy locator normalization along with new records", () => {
+  withFixture(({ root, directory, databasePath }) => {
+    const { alias, canonicalRoot, previous, current } = aliasPolicies(root, directory);
+    const oldService = openSettingsService(databasePath, undefined, previous);
+    assert.equal(oldService.workspaces.create({ type: "workspace.create", name: "Saved", rootPath: alias }).ok, true);
+    oldService.close();
+    const sqlite = new Database(databasePath);
+    sqlite.exec("CREATE TRIGGER fail_view BEFORE INSERT ON views BEGIN SELECT RAISE(ABORT, 'injected failure'); END;");
+    sqlite.close();
+    const before = records(databasePath);
+    const reopened = openSettingsService(databasePath, undefined, current);
+    try {
+      const result = reopened.workspaces.create({ type: "workspace.create", name: "Failed", rootPath: canonicalRoot });
+      assert.equal(result.ok, false);
+      assert.equal(result.error.code, "storage");
+      assert.deepEqual(records(databasePath), before);
+    } finally { reopened.close(); }
+  });
+});
+
+test("a saved canonical root replaced by a symlink remains unavailable and is not reused", () => {
+  withFixture(({ root, directory, databasePath }) => {
+    const first = openSettingsService(databasePath);
+    const saved = first.workspaces.create({ type: "workspace.create", name: "Saved", rootPath: root });
+    assert.equal(saved.ok, true);
+    first.close();
+    rmSync(root, { recursive: true });
+    const replacement = join(directory, "replacement");
+    mkdirSync(replacement);
+    symlinkSync(replacement, root, process.platform === "win32" ? "junction" : "dir");
+
+    const reopened = openSettingsService(databasePath);
+    try {
+      const loaded = reopened.workspaces.load().value.activeWorkspace;
+      assert.deepEqual(loaded, { ...saved.value, sourceAvailable: false });
+      const added = reopened.workspaces.create({ type: "workspace.create", name: "Replacement", rootPath: replacement });
+      assert.equal(added.ok, true);
+      assert.notEqual(added.value.sourceId, saved.value.sourceId);
+      assert.equal(records(databasePath).sources.find((source) => source.id === saved.value.sourceId).canonical_root, saved.value.canonicalRoot);
+    } finally { reopened.close(); }
+  });
+});
+
 test("directory-open denial rejects creation and marks saved sources unavailable", (context) => {
   withFixture(({ root, databasePath }) => {
     const service = openSettingsService(databasePath);
