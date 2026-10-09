@@ -19,7 +19,10 @@ body {
 }
 
 .workspace-header h1,
-.workspace-settings h2 {
+.workspace-settings h2,
+.workspace-create h2,
+.workspace-content h2,
+.table-view h3 {
   margin: 0;
 }
 
@@ -27,4 +30,148 @@ body {
   display: grid;
   gap: 1rem;
   max-width: 28rem;
+}
+
+.workspace-create,
+.workspace-content {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  border: 1px solid #d7d9dc;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.workspace-create {
+  width: min(100%, 38rem);
+}
+
+.workspace-intro,
+.table-view__heading p {
+  margin: 0.35rem 0 0;
+  color: #62666d;
+  line-height: 1.5;
+}
+
+.bb-input {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid #c7c9cc;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+}
+
+.bb-input:focus-visible,
+.workspace-button:focus-visible {
+  outline: 2px solid #4966cf;
+  outline-offset: 2px;
+}
+
+.root-picker-row,
+.workspace-toolbar,
+.table-view__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.selected-root {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.selected-root__path,
+.workspace-root {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #62666d;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.workspace-button {
+  min-height: 2.5rem;
+  width: fit-content;
+  border: 1px solid #354caa;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  color: #fff;
+  background: #354caa;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workspace-button--secondary {
+  flex: none;
+  color: #293b83;
+  background: transparent;
+}
+
+.workspace-button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.workspace-toolbar {
+  align-items: flex-start;
+}
+
+.workspace-switcher {
+  width: min(100%, 18rem);
+  flex: none;
+}
+
+.table-view {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  border-top: 1px solid #e0e1e3;
+  padding-top: 1.25rem;
+}
+
+.view-badge {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: #293b83;
+  background: #edf0fb;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 36rem) {
+  .workspace-screen {
+    gap: 1.1rem;
+    padding: 1rem;
+  }
+
+  .workspace-create,
+  .workspace-content {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .root-picker-row,
+  .workspace-toolbar,
+  .table-view__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace-button,
+  .workspace-switcher {
+    width: 100%;
+  }
+
+  .selected-root {
+    padding-top: 0.25rem;
+  }
 }

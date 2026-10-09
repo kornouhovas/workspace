@@ -153,26 +153,26 @@ screens
 `src/renderer/workspace-service-client.ts`,
 `tests/renderer-app.test.tsx`, and relevant component
 stories.
-  - [ ] Show a keyboard-operable name field, root picker,
+  - [x] Show a keyboard-operable name field, root picker,
 selected-path display, and create action when no workspace
 is active. Preserve user-entered names and displayed paths
 verbatim.
-  - [ ] Show loading, picker cancellation, validation,
+  - [x] Show loading, picker cancellation, validation,
 permission, storage, and source-unavailable states with
 useful EN/RU text and a next action. A failed create
 leaves the form usable and does not display a workspace as
 saved.
-  - [ ] On success and after restart, show the workspace
+  - [x] On success and after restart, show the workspace
 name, root association, active default Table view, and
 guidance explaining that project discovery is a later
 feature. Provide a minimal saved-workspace selector so
 separately created workspaces can be activated without
 adding rename, reorder, removal, or view editing.
-  - [ ] Test English and Russian text, keyboard flow,
+  - [x] Test English and Russian text, keyboard flow,
 cancellation, failures, two-workspace selection, persisted
 session rendering, and narrow-layout behavior. Keep
 existing language settings working.
-  - [ ] Run affected tests, the full test suite, lint,
+  - [x] Run affected tests, the full test suite, lint,
 typecheck, application build, and Ladle build with the
 required Node 22 `PATH`; commit the verified task changes.
 ### Task 5: Verify runtime, packaging, documentation, and
