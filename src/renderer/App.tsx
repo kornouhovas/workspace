@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
 import type { ActiveWorkspace, WorkspaceLoad } from "../contracts/workspaces.js";
@@ -29,7 +29,18 @@ export function App() {
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
-  const [busy, setBusy] = useState<"picker" | "create" | "activate" | null>(null);
+  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | null>(null);
+  const [renameDraft, setRenameDraft] = useState<{ workspaceId: string; name: string } | null>(null);
+  const [renameError, setRenameError] = useState<"blank" | "stale" | "save" | null>(null);
+  const renameButton = useRef<HTMLButtonElement>(null);
+  const returnRenameFocus = useRef(false);
+
+  useEffect(() => {
+    if (!renameDraft && returnRenameFocus.current) {
+      renameButton.current?.focus();
+      returnRenameFocus.current = false;
+    }
+  }, [renameDraft]);
 
   const loadInitialData = useCallback(async (isCurrent: () => boolean) => {
     try {
@@ -158,6 +169,35 @@ export function App() {
     }
   };
 
+  const cancelRename = () => {
+    if (busy) return;
+    setRenameDraft(null);
+    setRenameError(null);
+  };
+
+  const renameWorkspace = async () => {
+    if (busy || !renameDraft) return;
+    if (!renameDraft.name.trim()) {
+      setRenameError("blank");
+      return;
+    }
+    setBusy("rename");
+    setRenameError(null);
+    try {
+      const result = await client.renameWorkspace(renameDraft.workspaceId, renameDraft.name);
+      if (result.ok) {
+        setWorkspaceData(result.value);
+        setRenameDraft(null);
+      } else {
+        setRenameError(result.error.code === "invalid_input" ? "stale" : "save");
+      }
+    } catch {
+      setRenameError("save");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const t = (key: TranslationKey) => translate(language, key);
   const messageTitle: Record<NonNullable<FormMessage>, TranslationKey> = {
     cancelled: "pickerCancelledTitle",
@@ -221,7 +261,7 @@ export function App() {
                     className="bb-select"
                     id="workspace-switcher"
                     value={activeWorkspace.workspaceId}
-                    disabled={busy === "activate"}
+                    disabled={busy !== null || renameDraft !== null}
                     onChange={(event) => void activateWorkspace(event.currentTarget.value)}
                   >
                     {workspaceData?.workspaces.map((workspace) => (
@@ -230,6 +270,59 @@ export function App() {
                   </select>
                 </div>
               </div>
+              <button
+                ref={renameButton}
+                type="button"
+                className="workspace-button workspace-button--secondary"
+                disabled={busy !== null || renameDraft !== null}
+                onClick={() => {
+                  setRenameDraft({ workspaceId: activeWorkspace.workspaceId, name: activeWorkspace.name });
+                  setRenameError(null);
+                  returnRenameFocus.current = true;
+                }}
+              >
+                {t("renameWorkspaceAction")}
+              </button>
+              {renameDraft && (
+                <form
+                  className="workspace-rename"
+                  aria-label={t("renameWorkspaceAction")}
+                  aria-busy={busy === "rename"}
+                  onSubmit={(event) => { event.preventDefault(); void renameWorkspace(); }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") { event.preventDefault(); cancelRename(); }
+                  }}
+                >
+                  <label className="bb-field">
+                    <span className="bb-label">{t("workspaceNameLabel")}</span>
+                    <input
+                      className="bb-input"
+                      autoFocus
+                      autoComplete="off"
+                      value={renameDraft.name}
+                      disabled={busy !== null}
+                      aria-invalid={renameError === "blank"}
+                      aria-describedby={renameError ? "rename-error" : undefined}
+                      onChange={(event) => setRenameDraft({ ...renameDraft, name: event.currentTarget.value })}
+                    />
+                  </label>
+                  <div className="workspace-form-actions">
+                    <button type="submit" className="workspace-button" disabled={busy !== null}>
+                      {busy === "rename" ? t("savingWorkspaceName") : t("saveWorkspaceName")}
+                    </button>
+                    <button type="button" className="workspace-button workspace-button--secondary" disabled={busy !== null} onClick={cancelRename}>
+                      {t("cancelRenameWorkspace")}
+                    </button>
+                  </div>
+                  {renameError && (
+                    <div id="rename-error">
+                      <StatusMessage kind="error" title={t("renameErrorTitle")}>
+                        {t(renameError === "blank" ? "renameValidation" : renameError === "stale" ? "renameStaleDescription" : "renameErrorDescription")}
+                      </StatusMessage>
+                    </div>
+                  )}
+                </form>
+              )}
               {formMessage === "activation" && (
                 <StatusMessage kind="error" title={t(messageTitle.activation)}>
                   {t(messageDescription.activation)}
@@ -253,6 +346,7 @@ export function App() {
               <button
                 type="button"
                 className="workspace-button workspace-button--secondary"
+                disabled={busy !== null || renameDraft !== null}
                 onClick={() => { setFormMessage(null); setAddingWorkspace(true); }}
               >
                 {t("addWorkspaceAction")}

@@ -31,6 +31,9 @@ export interface WorkspaceService {
   create(input: unknown):
     | { ok: true; value: WorkspaceCreated }
     | { ok: false; error: { code: "invalid_input" | "filesystem" | "storage"; message: string } };
+  rename(input: unknown):
+    | { ok: true; value: WorkspaceLoad }
+    | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
   assertContained(sourceRoot: string, targetPath: string): boolean;
   load(): { ok: true; value: WorkspaceLoad } | { ok: false; error: { code: "storage"; message: string } };
   activate(input: unknown):
@@ -91,6 +94,25 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         return { ok: false, error: { code: "storage", message: "Workspace could not be created." } };
       }
     },
+    rename(input) {
+      if (!isRecord(input) || input.type !== "workspace.rename" ||
+        Object.keys(input).length !== 3 || !["type", "workspaceId", "name"].every((key) => Object.hasOwn(input, key)) ||
+        !isUuid(input.workspaceId) || typeof input.name !== "string" ||
+        !input.name.trim()) {
+        return invalid("Choose a saved workspace and enter a nonblank name.");
+      }
+      const { workspaceId, name } = input;
+      try {
+        return db.transaction((tx) => {
+          const workspace = tx.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
+          if (!workspace) return invalid("Choose a saved workspace and enter a nonblank name.");
+          tx.update(schema.workspaces).set({ name }).where(eq(schema.workspaces.id, workspaceId)).run();
+          return { ok: true as const, value: readWorkspaceLoad(tx, filesystem) };
+        });
+      } catch {
+        return storageFailure();
+      }
+    },
     assertContained(sourceRoot, targetPath) {
       try {
         const canonicalSource = filesystem.realpath(sourceRoot);
@@ -103,28 +125,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     },
     load() {
       try {
-        const workspaces = db.select({
-          workspaceId: schema.workspaces.id,
-          name: schema.workspaces.name,
-          sourceId: schema.sources.id,
-          canonicalRoot: schema.sources.canonicalRoot,
-        }).from(schema.workspaces)
-          .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id)).all();
-        const active = db.select({
-          workspaceId: schema.activeWorkspace.workspaceId,
-          viewId: schema.activeWorkspace.viewId,
-        }).from(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).get();
-        const summaries = workspaces.map(({ workspaceId, name }) => ({ workspaceId, name }));
-        if (!active) return { ok: true, value: { workspaces: summaries, activeWorkspace: null } };
-
-        const current = workspaces.find((workspace) => workspace.workspaceId === active.workspaceId);
-        const view = db.select().from(schema.views).where(eq(schema.views.id, active.viewId)).get();
-        if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
-          return storageFailure();
-        }
-        const sourceState = db.transaction((tx) => normalizeSource(tx, current.sourceId, current.canonicalRoot, filesystem));
-        const activeWorkspace = { ...toActiveWorkspace(current, active.viewId, sourceState.sourceAvailable), ...sourceState };
-        return { ok: true, value: { workspaces: summaries, activeWorkspace } };
+        return { ok: true, value: db.transaction((tx) => readWorkspaceLoad(tx, filesystem)) };
       } catch {
         return storageFailure();
       }
@@ -162,6 +163,31 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       }
     },
   };
+}
+
+function readWorkspaceLoad(db: Pick<Database, "select" | "update">, filesystem: WorkspaceFilesystem): WorkspaceLoad {
+  const workspaces = db.select({
+    workspaceId: schema.workspaces.id,
+    name: schema.workspaces.name,
+    sourceId: schema.sources.id,
+    canonicalRoot: schema.sources.canonicalRoot,
+  }).from(schema.workspaces)
+    .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id)).all();
+  const active = db.select({
+    workspaceId: schema.activeWorkspace.workspaceId,
+    viewId: schema.activeWorkspace.viewId,
+  }).from(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).get();
+  const summaries = workspaces.map(({ workspaceId, name }) => ({ workspaceId, name }));
+  if (!active) return { workspaces: summaries, activeWorkspace: null };
+
+  const current = workspaces.find((workspace) => workspace.workspaceId === active.workspaceId);
+  const view = db.select().from(schema.views).where(eq(schema.views.id, active.viewId)).get();
+  if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
+    throw new Error("Invalid active workspace or view.");
+  }
+  const sourceState = normalizeSource(db, current.sourceId, current.canonicalRoot, filesystem);
+  const activeWorkspace = { ...toActiveWorkspace(current, active.viewId, sourceState.sourceAvailable), ...sourceState };
+  return { workspaces: summaries, activeWorkspace };
 }
 
 function availableRoot(storedRoot: string, filesystem: WorkspaceFilesystem): string | undefined {

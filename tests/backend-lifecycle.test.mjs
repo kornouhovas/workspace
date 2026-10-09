@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -251,4 +251,54 @@ test("renderer security settings are strict and service has no network server de
   assert.match(preload, /workspace:pick-root/);
   assert.doesNotMatch(renderer, /node:|better-sqlite3|from ["']electron["']/);
   assert.doesNotMatch(backend, /node:http|node:net|createServer|listen\(/);
+});
+
+
+test("real service IPC renames shared and separate roots and rejects malformed or stale requests", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-rename-ipc-"));
+  const root = join(directory, "root");
+  const otherRoot = join(directory, "other");
+  await mkdir(root);
+  await mkdir(otherRoot);
+  const parent = new EventEmitter();
+  parent.postMessage = () => {};
+  const port = new FakePort();
+  startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "data", "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => {
+      port.receive({ id: ++id, input });
+      assert.equal(port.sent.at(-1).id, id);
+      return port.sent.at(-1).result;
+    };
+    const one = request({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const sibling = request({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+    const other = request({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+    assert.equal(one.sourceId, sibling.sourceId);
+    assert.notEqual(one.sourceId, other.sourceId);
+    assert.equal(request({ type: "workspace.rename", workspaceId: one.workspaceId, name: "  Inactive  " }).ok, true);
+    const renamed = request({ type: "workspace.rename", workspaceId: other.workspaceId, name: "Active" });
+    assert.equal(renamed.ok, true);
+    assert.equal(renamed.value.activeWorkspace.name, "Active");
+    assert.equal(renamed.value.activeWorkspace.viewId, other.viewId);
+    assert.deepEqual(renamed.value.workspaces.map(({ name }) => name), ["  Inactive  ", "Sibling", "Active"]);
+    for (const input of [
+      { type: "workspace.rename", workspaceId: one.workspaceId, name: "Wrong", extra: true },
+      { type: "workspace.rename", workspaceId: one.workspaceId },
+      { type: "workspace.rename", workspaceId: 42, name: "Wrong" },
+      { type: "workspace.rename", workspaceId: one.workspaceId, name: null },
+      { type: "workspace.rename", workspaceId: "bad-id", name: "Wrong" },
+      { type: "workspace.rename", workspaceId: "00000000-0000-4000-8000-000000000000", name: "Wrong" },
+      { type: "workspace.rename", workspaceId: one.workspaceId, name: "   " },
+    ]) {
+      const result = request(input);
+      assert.equal(result.ok, false);
+      assert.equal(result.error.code, "invalid_input");
+      assert.deepEqual(request({ type: "workspace.load" }), renamed);
+    }
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
 });

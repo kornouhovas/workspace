@@ -69,6 +69,10 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "name", "rootPath"]) ||
       typeof input.name !== "string" || typeof input.rootPath !== "string";
   }
+  if (input.type === "workspace.rename") {
+    return !hasExactKeys(input, ["type", "workspaceId", "name"]) ||
+      typeof input.workspaceId !== "string" || typeof input.name !== "string";
+  }
   if (input.type === "workspace.activate") {
     return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   }

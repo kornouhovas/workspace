@@ -325,6 +325,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
       calls.push(input);
       if (input.type === "workspace.load") return ok(emptyLoad());
       if (input.type === "workspace.activate") return ok(active);
+      if (input.type === "workspace.rename") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: input.name }], activeWorkspace: { ...active, name: input.name } });
       return ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot });
     },
   });
@@ -333,12 +334,14 @@ test("typed client forwards settings, workspace, activation and picker requests"
   assert.deepEqual(await client.loadWorkspaces(), ok(emptyLoad()));
   assert.deepEqual(await client.activateWorkspace("id"), ok(active));
   assert.deepEqual(await client.createWorkspace("Name", "/tmp/root"), ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot }));
+  assert.deepEqual(await client.renameWorkspace("id", "New name"), ok({ workspaces: [{ workspaceId: "id", name: "New name" }], activeWorkspace: { ...active, name: "New name" } }));
   assert.deepEqual(await client.pickRoot(), { outcome: "selected", path: "/tmp/root" });
   assert.deepEqual(calls, [
     { type: "settings.load" },
     { type: "workspace.load" },
     { type: "workspace.activate", workspaceId: "id" },
     { type: "workspace.create", name: "Name", rootPath: "/tmp/root" },
+    { type: "workspace.rename", workspaceId: "id", name: "New name" },
   ]);
 });
 
@@ -353,4 +356,120 @@ test("narrow layout stacks the picker and workspace controls", async () => {
   assert.match(css, /@media \(max-width: 36rem\)/);
   assert.match(css, /\.root-picker-row,[\s\S]*?flex-direction: column/);
   assert.match(css, /overflow-wrap: anywhere/);
+});
+
+test("renames through the typed client and applies the committed snapshot using keyboard submission", async () => {
+  const active = makeActive("one", "Original");
+  const sibling = { ...makeActive("two", "Sibling"), sourceId: active.sourceId };
+  const unrelated = makeActive("three", "Different", "/Projects/Other");
+  const workspaces = [active, sibling, unrelated].map(({ workspaceId, name }) => ({ workspaceId, name }));
+  const calls: WorkspaceRequest[] = [];
+  mockApi({ onWorkspace: async (input) => {
+    calls.push(input);
+    if (input.type === "workspace.load") return ok({ workspaces, activeWorkspace: active });
+    if (input.type === "workspace.rename") return ok({
+      workspaces: workspaces.map((item) => item.workspaceId === input.workspaceId ? { ...item, name: input.name } : item),
+      activeWorkspace: { ...active, name: input.name },
+    });
+    return fail("invalid_input");
+  } });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
+  const input = screen.getByRole("textbox", { name: "Workspace name" });
+  assert.equal(document.activeElement, input);
+  await userEvent.clear(input);
+  await userEvent.type(input, "  Authored имя  ");
+  await userEvent.keyboard("{Enter}");
+  await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "  Authored имя  "));
+  const selector = screen.getByRole("combobox", { name: "Saved workspaces" }) as HTMLSelectElement;
+  assert.deepEqual(Array.from(selector.options, (option) => option.textContent), ["  Authored имя  ", "Sibling", "Different"]);
+  assert.equal(selector.value, active.workspaceId);
+  assert.deepEqual(calls, [{ type: "workspace.load" }, { type: "workspace.rename", workspaceId: active.workspaceId, name: "  Authored имя  " }]);
+  assert.equal(screen.queryByRole("textbox"), null);
+  cleanup();
+});
+
+test("Russian rename supports cancel and blank validation without sending a command", async () => {
+  const active = makeActive("one", "Original");
+  let renameCalls = 0;
+  mockApi({ language: "ru", onWorkspace: async (input) => {
+    if (input.type === "workspace.rename") renameCalls++;
+    return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+  } });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Переименовать рабочее пространство" }));
+  const input = screen.getByRole("textbox", { name: "Название рабочего пространства" });
+  await userEvent.clear(input);
+  await userEvent.type(input, "   ");
+  await userEvent.keyboard("{Enter}");
+  assert.ok(await screen.findByText("Введите непустое название рабочего пространства."));
+  assert.equal(renameCalls, 0);
+  await userEvent.keyboard("{Escape}");
+  assert.equal(screen.queryByRole("textbox"), null);
+  assert.equal(document.activeElement, screen.getByRole("button", { name: "Переименовать рабочее пространство" }));
+  await userEvent.click(screen.getByRole("button", { name: "Переименовать рабочее пространство" }));
+  await userEvent.type(screen.getByRole("textbox"), " changed");
+  await userEvent.click(screen.getByRole("button", { name: "Отмена" }));
+  assert.ok(screen.getByRole("heading", { name: "Original" }));
+  assert.equal(renameCalls, 0);
+  cleanup();
+});
+
+test("pending and failed rename preserve the actual name and entered draft and allow retry", async () => {
+  const active = makeActive("one", "Actual");
+  const snapshot = { workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active };
+  let finish: ((result: ServiceResult<WorkspaceLoad>) => void) | undefined;
+  const pending = new Promise<ServiceResult<WorkspaceLoad>>((resolve) => { finish = resolve; });
+  let renameCalls = 0;
+  mockApi({ onWorkspace: async (input) => {
+    if (input.type === "workspace.load") return ok(snapshot);
+    if (input.type === "workspace.rename") {
+      renameCalls++;
+      return renameCalls === 1 ? pending : ok({ workspaces: [{ workspaceId: active.workspaceId, name: input.name }], activeWorkspace: { ...active, name: input.name } });
+    }
+    return fail("invalid_input");
+  } });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Rename workspace" }));
+  const input = screen.getByRole("textbox");
+  await userEvent.clear(input);
+  await userEvent.type(input, "Draft");
+  await userEvent.click(screen.getByRole("button", { name: "Save name" }));
+  assert.equal((screen.getByRole("button", { name: "Saving name…" }) as HTMLButtonElement).disabled, true);
+  assert.equal((screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled, true);
+  assert.equal((screen.getByRole("combobox", { name: "Saved workspaces" }) as HTMLSelectElement).disabled, true);
+  assert.equal((input as HTMLInputElement).disabled, true);
+  assert.ok(screen.getByRole("heading", { name: "Actual" }));
+  await act(async () => { finish?.(fail("storage")); await pending; });
+  assert.ok(await screen.findByRole("heading", { name: "Name not saved" }));
+  assert.equal((input as HTMLInputElement).value, "Draft");
+  assert.ok(screen.getByRole("heading", { name: "Actual" }));
+  assert.equal(screen.queryByText("private service detail"), null);
+  await userEvent.click(screen.getByRole("button", { name: "Save name" }));
+  assert.ok(await screen.findByRole("heading", { name: "Draft" }));
+  assert.equal(renameCalls, 2);
+  cleanup();
+});
+
+test("rename reports unavailable transport and stale targets in both languages", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const failure of ["invalid_input", "service_unavailable", "throw"] as const) {
+      const active = makeActive("one", "Actual");
+      mockApi({ language, onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (failure === "throw") throw new Error("channel closed");
+        return fail(failure);
+      } });
+      render(<App />);
+      await userEvent.click(await screen.findByRole("button", { name: translate(language, "renameWorkspaceAction") }));
+      const input = screen.getByRole("textbox");
+      await userEvent.clear(input);
+      await userEvent.type(input, "Draft");
+      await userEvent.keyboard("{Enter}");
+      assert.ok(await screen.findByRole("heading", { name: translate(language, "renameErrorTitle") }));
+      assert.ok(screen.getByRole("heading", { name: "Actual" }));
+      assert.equal((input as HTMLInputElement).value, "Draft");
+      cleanup();
+    }
+  }
 });

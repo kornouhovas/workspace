@@ -18,7 +18,7 @@ import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contra
 
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad>;
-  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace>;
+  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -84,6 +84,7 @@ export function openSettingsService(
     handleCommand(input) {
       if (isRecord(input) && input.type === "workspace.create") return workspaces.create(input);
       if (isRecord(input) && input.type === "workspace.activate") return workspaces.activate(input);
+      if (isRecord(input) && input.type === "workspace.rename") return workspaces.rename(input);
       if (!isRecord(input) || input.type !== "settings.setLanguage" || !isLanguage(input.language)) {
         return { ok: false, error: invalidInput("Expected a supported language: en or ru.") };
       }

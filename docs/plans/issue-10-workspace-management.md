@@ -68,12 +68,12 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Add failing tests for active/inactive rename, duplicate names, verbatim authored text, restart persistence and unchanged source/view identities.
-- [ ] Add workspace.rename with workspaceId and name, returning ServiceResult<WorkspaceLoad>; validate exact payload keys and UUID/entity existence at the backend boundary.
-- [ ] Implement the rename and resulting snapshot transactionally. Blank names, malformed/unknown commands and removed IDs leave all records unchanged; injected storage failure rolls back.
-- [ ] Expose rename through the typed desktop API/client and add an EN/RU rename form with save/cancel, keyboard submission, pending state and actionable errors. Failed saves retain the actual name and entered draft.
-- [ ] Extend IPC/client/UI tests, including sibling workspaces over the same source, different roots and failures without false success.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
+- [x] Add failing tests for active/inactive rename, duplicate names, verbatim authored text, restart persistence and unchanged source/view identities.
+- [x] Add workspace.rename with workspaceId and name, returning ServiceResult<WorkspaceLoad>; validate exact payload keys and UUID/entity existence at the backend boundary.
+- [x] Implement the rename and resulting snapshot transactionally. Blank names, malformed/unknown commands and removed IDs leave all records unchanged; injected storage failure rolls back.
+- [x] Expose rename through the typed desktop API/client and add an EN/RU rename form with save/cancel, keyboard submission, pending state and actionable errors. Failed saves retain the actual name and entered draft.
+- [x] Extend IPC/client/UI tests, including sibling workspaces over the same source, different roots and failures without false success.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
 
 ### Task 2: Persist workspace ordering and expose accessible reorder controls
 

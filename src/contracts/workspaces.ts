@@ -11,8 +11,14 @@ export type WorkspaceActivateCommand = {
   workspaceId: string;
 };
 
+export type WorkspaceRenameCommand = {
+  type: "workspace.rename";
+  workspaceId: string;
+  name: string;
+};
+
 export type WorkspaceQuery = WorkspaceLoadQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand;
+export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;

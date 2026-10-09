@@ -414,3 +414,86 @@ test("normalizes database read failures for workspace load and activation", () =
     service.close();
   });
 });
+
+test("renames active and inactive configurations durably without changing source, view or selection ownership", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const otherRoot = join(directory, "other");
+    mkdirSync(otherRoot);
+    writeFileSync(join(root, "keep.txt"), "source bytes");
+    const service = openSettingsService(databasePath);
+    const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+    const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+    const sqlite = new Database(databasePath);
+    sqlite.prepare("UPDATE views SET name = ? WHERE id = ?").run("Independent table", one.viewId);
+    sqlite.close();
+    const before = records(databasePath);
+    const authoredName = "  Общий & workspace  ";
+    for (const workspace of [one, two, other]) {
+      const renamed = service.handleCommand({ type: "workspace.rename", workspaceId: workspace.workspaceId, name: authoredName });
+      assert.equal(renamed.ok, true);
+      assert.equal(renamed.value.workspaces.find((item) => item.workspaceId === workspace.workspaceId).name, authoredName);
+      assert.equal(renamed.value.activeWorkspace.workspaceId, other.workspaceId);
+    }
+    const after = records(databasePath);
+    assert.deepEqual(after.sources, before.sources);
+    assert.deepEqual(after.views, before.views);
+    assert.deepEqual(after.active, before.active);
+    assert.deepEqual(after.workspaces, before.workspaces.map((workspace) => ({ ...workspace, name: authoredName })));
+    assert.equal(readFileSync(join(root, "keep.txt"), "utf8"), "source bytes");
+    const snapshot = service.workspaces.load();
+    assert.equal(snapshot.value.activeWorkspace.name, authoredName);
+    service.close();
+    const reopened = openSettingsService(databasePath);
+    assert.deepEqual(reopened.workspaces.load(), snapshot);
+    assert.equal(reopened.workspaces.activate({ type: "workspace.activate", workspaceId: one.workspaceId }).value.name, authoredName);
+    reopened.close();
+  });
+});
+
+test("invalid, unknown and removed rename targets preserve every remaining record", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const removed = service.workspaces.create({ type: "workspace.create", name: "Removed", rootPath: root }).value;
+    const current = service.workspaces.create({ type: "workspace.create", name: "Current", rootPath: root }).value;
+    const sqlite = new Database(databasePath);
+    sqlite.prepare("DELETE FROM views WHERE workspace_id = ?").run(removed.workspaceId);
+    sqlite.prepare("DELETE FROM workspaces WHERE id = ?").run(removed.workspaceId);
+    sqlite.close();
+    const before = records(databasePath);
+    const valid = { type: "workspace.rename", workspaceId: current.workspaceId, name: "New" };
+    for (const input of [null, [], {}, { ...valid, type: "workspace.unknown" },
+      { ...valid, workspaceId: "bad-id" }, { ...valid, workspaceId: 42 },
+      { ...valid, workspaceId: "00000000-0000-4000-8000-000000000000" },
+      { ...valid, workspaceId: removed.workspaceId }, { ...valid, name: " \t\n " },
+      { ...valid, name: null }, { ...valid, sourceId: current.sourceId },
+      { type: "workspace.rename", workspaceId: current.workspaceId },
+    ]) {
+      const result = service.workspaces.rename(input);
+      assert.equal(result.ok, false);
+      assert.equal(result.error.code, "invalid_input");
+      assert.deepEqual(records(databasePath), before);
+    }
+    service.close();
+  });
+});
+
+test("rename rolls back both write failures and failures reading the resulting snapshot", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const created = service.workspaces.create({ type: "workspace.create", name: "Original", rootPath: root }).value;
+    const before = records(databasePath);
+    const sqlite = new Database(databasePath);
+    for (const body of ["SELECT RAISE(ABORT, 'injected failure');", "UPDATE views SET kind = 'unsupported';"]) {
+      sqlite.exec(`CREATE TRIGGER fail_rename AFTER UPDATE OF name ON workspaces BEGIN ${body} END;`);
+      const result = service.handleCommand({ type: "workspace.rename", workspaceId: created.workspaceId, name: "Failed" });
+      assert.equal(result.ok, false);
+      assert.equal(result.error.code, "storage");
+      assert.deepEqual(records(databasePath), before);
+      sqlite.exec("DROP TRIGGER fail_rename;");
+    }
+    sqlite.close();
+    assert.equal(service.workspaces.load().value.activeWorkspace.name, "Original");
+    service.close();
+  });
+});

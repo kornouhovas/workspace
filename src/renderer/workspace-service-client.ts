@@ -34,6 +34,10 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.activate", workspaceId });
   }
 
+  renameWorkspace(workspaceId: string, name: string): Promise<ServiceResult<WorkspaceLoad>> {
+    return this.api.workspace({ type: "workspace.rename", workspaceId, name });
+  }
+
   pickRoot(): Promise<RootPickerResult> {
     return this.api.pickRoot();
   }
