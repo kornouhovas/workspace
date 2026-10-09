@@ -1,8 +1,9 @@
+import type { TextPropertySnapshot, TextPropertyMutation } from "./text-properties.js";
 import type { ServiceResult } from "./settings.js";
 import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -42,7 +43,7 @@ export type ServiceEvent = { type: "workspace.change"; change: WorkspaceChangeEv
 
 export function isWorkspaceChangeEvent(value: unknown): value is WorkspaceChangeEvent {
   if (!record(value)) return false;
-  if (value.type === "workspace.projectsChanged") {
+  if (value.type === "workspace.projectsChanged" || value.type === "workspace.propertiesChanged") {
     return exact(value, ["type", "sourceId", "workspaceIds", "revision"]) &&
       uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0 &&
       typeof value.revision === "number" && Number.isSafeInteger(value.revision) && value.revision >= 0;

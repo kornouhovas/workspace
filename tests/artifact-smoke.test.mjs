@@ -17,6 +17,7 @@ const packagedFiles = [
   "dist/service/db/migrations/0002_workspace_order.sql",
   "dist/service/db/migrations/0003_source_discovery.sql",
   "dist/service/db/migrations/0004_direct_projects.sql",
+    "dist/service/db/migrations/0005_text_properties.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -114,5 +115,14 @@ test("artifact check rejects a package missing the project migration", async () 
     await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/0004_direct_projects.sql"]);
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
       /missing dist\/service\/db\/migrations\/0004_direct_projects\.sql/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("artifact check rejects a package missing the Text-property migration", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-projects-"));
+  try {
+    await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/0005_text_properties.sql"]);
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
+      /missing dist\/service\/db\/migrations\/0005_text_properties\.sql/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

@@ -1,3 +1,4 @@
+import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
@@ -17,8 +18,8 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -67,6 +68,7 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listTextProperties") return workspaces.listTextProperties(input);
       if (isRecord(input) && input.type === "workspace.listProjects") return workspaces.listProjects(input);
       if (isRecord(input) && input.type === "workspace.previewDiscovery") return workspaces.previewDiscovery(input);
       if (isRecord(input) && input.type === "workspace.load") return workspaces.load();
@@ -84,6 +86,8 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
+      if (isRecord(input) && input.type === "workspace.renameProperty") return workspaces.renameProperty(input);
       if (isRecord(input) && input.type === "workspace.applyDiscovery") return workspaces.applyDiscovery(input);
       if (isRecord(input) && input.type === "workspace.create") return workspaces.create(input);
       if (isRecord(input) && input.type === "workspace.activate") return workspaces.activate(input);

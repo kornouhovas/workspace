@@ -83,6 +83,7 @@ Files:
 - Modify: src/renderer/components/DiscoveryPanel.tsx
 - Modify: src/renderer/localization.ts
 - Modify: src/renderer/app.css
+- Modify: tests/settings-service.test.mjs
 - Modify: tests/workspaces-service.test.mjs
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
@@ -90,13 +91,21 @@ Files:
 - Modify: tests/artifact-smoke.test.mjs
 - Modify: scripts/check-artifact.mjs
 
-- [ ] Add failing typed-service tests for create/rename, authored Unicode and whitespace, duplicate names, stable IDs, sibling-source visibility, unrelated-source isolation, malformed/unknown IDs and attempted type changes. Inject SQLite transaction failures and assert unchanged data, revision and notifications.
-- [ ] Add the ordered migration for source propertyRevision, property definitions and Text values. Use logical-ID foreign keys, a unique project/property value key and ownership constraints preventing cross-source values. Preserve all existing settings, sources, projects, workspaces, views and selection.
-- [ ] Build an upgrade fixture from the actual baseline migrations 0000–0004, populated with settings, discovery configuration, project identities and independent views. Upgrade and reopen repeatedly; assert unchanged baseline data and usable property commands. Extend build/artifact checks to require migration 0005 and reject its omission.
-- [ ] Implement list/create/rename in the focused Text-property service and expose them through WorkspaceService, settings routing, entry request validation, typed desktop overloads and WorkspaceServiceClient. Publish propertiesChanged only after changed transactions commit, using the existing notification queue and production transport.
-- [ ] Integrate TextPropertiesTable into DiscoveryWorkspace. Show Name and stable property headers, an EN/RU create form and accessible rename controls. Support Enter submission, Escape cancellation, pending prevention, focus restoration, blank-name validation and recoverable save errors. Keep a useful property-creation surface when no projects exist.
-- [ ] Guard property lists and definition saves by workspace/source identity, observed revision and request lifetime. Preserve own successful feedback when its event precedes the response. Compare discovery-preview source state using discovery-relevant fields so property edits do not invalidate an otherwise unchanged preview; test this regression.
-- [ ] Run the task checkpoint and commit the verified slice as feat: create and rename shared Text properties.
+- [x] Add failing typed-service tests for create/rename, authored Unicode and whitespace, duplicate names, stable IDs, sibling-source visibility, unrelated-source isolation, malformed/unknown IDs and attempted type changes. Inject SQLite transaction failures and assert unchanged data, revision and notifications.
+- [x] Add the ordered migration for source propertyRevision, property definitions and Text values. Use logical-ID foreign keys, a unique project/property value key and ownership constraints preventing cross-source values. Preserve all existing settings, sources, projects, workspaces, views and selection.
+- [x] Build an upgrade fixture from the actual baseline migrations 0000–0004, populated with settings, discovery configuration, project identities and independent views. Upgrade and reopen repeatedly; assert unchanged baseline data and usable property commands. Extend build/artifact checks to require migration 0005 and reject its omission.
+- [x] Implement list/create/rename in the focused Text-property service and expose them through WorkspaceService, settings routing, entry request validation, typed desktop overloads and WorkspaceServiceClient. Publish propertiesChanged only after changed transactions commit, using the existing notification queue and production transport.
+- [x] Integrate TextPropertiesTable into DiscoveryWorkspace. Show Name and stable property headers, an EN/RU create form and accessible rename controls. Support Enter submission, Escape cancellation, pending prevention, focus restoration, blank-name validation and recoverable save errors. Keep a useful property-creation surface when no projects exist.
+- [x] Guard property lists and definition saves by workspace/source identity, observed revision and request lifetime. Preserve own successful feedback when its event precedes the response. Compare discovery-preview source state using discovery-relevant fields so property edits do not invalidate an otherwise unchanged preview; test this regression.
+- [x] Run the task checkpoint and commit the verified slice as feat: create and rename shared Text properties.
+
+Task 1 checkpoint:
+
+- Implemented source-owned Text definition list/create/rename, migration 0005, production property notifications, and localized Table controls. Value editing remains Task 2.
+- Verified with 161 passing tests through real temporary SQLite/filesystem fixtures, upgrade/reopen fixtures, service entry IPC, typed client and EN/RU React interactions. npm test also completed the production build and build/artifact regression checks; npm run lint, npm run typecheck and git diff --check passed.
+- Baseline migrations 0000–0004 are unchanged from 2856e7aeff972d8f97b5825987e7051a459e1d84. Existing migration-count and legacy fixture tests were updated for migration 0005.
+- Logs, including earlier failed attempts, are retained under work/ralphex/issue-12/task-1-evidence. One failed test process was stopped after its assertion attempted to print a large DOM object; the project-list error-state regression was fixed and subsequent full runs passed.
+- Native Electron feature/screenshots/restart/package evidence belongs to Task 4 and has not been run in this iteration. Windows evidence remains coordinator-owned; physical macOS27 shutdown #44 remains unresolved.
 
 ### Task 2: Edit and clear authored Text values with durable project references
 

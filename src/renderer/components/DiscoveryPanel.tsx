@@ -1,3 +1,4 @@
+import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { useEffect, useRef, useState } from "react";
 import type { DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
@@ -205,7 +206,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, di
   };
   useEffect(() => {
     const unsubscribe = client.onWorkspaceChange((event) => {
-      if (event.type === "workspace.listChanged") return;
+      if (event.type === "workspace.listChanged" || event.type === "workspace.propertiesChanged") return;
       const affectedSource = event.type === "workspace.projectsChanged" ? event.sourceId : event.source.sourceId;
       const references = event.type === "workspace.projectsChanged" ? event.workspaceIds : event.source.workspaceIds;
       if (affectedSource !== sourceId || !references.includes(workspaceId)) return;
@@ -234,10 +235,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, di
       {!loading && !error && projects && <>
         {projects.state !== "ready" && projects.state !== "empty" && <StatusMessage kind="error" title={t(stateLabels[projects.state])} />}
         {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
-        {projects.projects.length > 0 ? <table className="project-table"><thead><tr><th scope="col">{t("projectName")}</th></tr></thead>
-          <tbody>{projects.projects.map((row) => <tr key={row.projectId}><td>{row.name}</td></tr>)}</tbody></table>
-          : <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
+        {projects.projects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
+      <TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId}
+        projects={!loading && !error ? projects?.projects ?? [] : []} language={language} disabled={disabled} />
     </section>
   </>;
 }

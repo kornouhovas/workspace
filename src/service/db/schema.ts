@@ -1,4 +1,4 @@
-import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
+import { integer, text, sqliteTable, primaryKey, unique, foreignKey } from "drizzle-orm/sqlite-core";
 
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
@@ -9,6 +9,7 @@ export const sources = sqliteTable("sources", {
   id: text("id").primaryKey(),
   canonicalRoot: text("canonical_root").notNull().unique(),
   discoveryMode: text("discovery_mode"),
+  propertyRevision: integer("property_revision").notNull().default(0),
   discoveryRevision: integer("discovery_revision").notNull().default(0),
   excludedRelativePaths: text("excluded_relative_paths").notNull().default("[]"),
   archiveRelativePath: text("archive_relative_path"),
@@ -41,4 +42,23 @@ export const projects = sqliteTable("projects", {
   relativePath: text("relative_path").notNull(),
   nativeIdentity: text("native_identity").notNull(),
   associationState: text("association_state", { enum: ["active", "excluded", "missing", "unresolved", "replaced"] }).notNull(),
-});
+}, (table) => [unique("projects_id_source").on(table.id, table.sourceId)]);
+
+export const propertyDefinitions = sqliteTable("property_definitions", {
+  id: text("id").primaryKey(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  name: text("name").notNull(),
+  propertyType: text("property_type", { enum: ["text"] }).notNull(),
+  position: integer("position").notNull(),
+}, (table) => [unique().on(table.sourceId, table.position), unique().on(table.id, table.sourceId)]);
+
+export const textPropertyValues = sqliteTable("text_property_values", {
+  projectId: text("project_id").notNull(),
+  propertyId: text("property_id").notNull(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  value: text("value").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.projectId, table.propertyId] }),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.propertyId, table.sourceId], foreignColumns: [propertyDefinitions.id, propertyDefinitions.sourceId] }),
+]);

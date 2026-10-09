@@ -1,3 +1,4 @@
+import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
 import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
@@ -22,6 +23,16 @@ export class WorkspaceServiceClient {
       if (active && isWorkspaceChangeEvent(event)) listener(event);
     });
     return () => { active = false; unsubscribe(); };
+  }
+
+  listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {
+    return this.api.workspace({ type: "workspace.listTextProperties", workspaceId });
+  }
+  createProperty(workspaceId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
+    return this.api.workspace({ type: "workspace.createProperty", workspaceId, name, propertyType: "text" });
+  }
+  renameProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
+    return this.api.workspace({ type: "workspace.renameProperty", workspaceId, propertyId, name });
   }
 
   previewDiscovery(workspaceId: string, excludedRelativePaths?: string[]): Promise<ServiceResult<DiscoveryPreview>> {

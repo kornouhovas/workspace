@@ -1,6 +1,21 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  createTextProperty: "Create Text property",
+  propertyName: "Property name",
+  renameProperty: "Rename property",
+  savePropertyName: "Save property name",
+  propertySaving: "Saving property…",
+  propertyValidation: "Choose an existing Text property and enter a nonblank name.",
+  propertySaveError: "Property could not be saved. Your draft is retained; try saving again.",
+  propertySaved: "Property saved.",
+  propertyNewerChange: "Property saved. A newer change was observed in this source.",
+  propertiesLoading: "Loading Text properties…",
+  propertiesLoadError: "Text properties could not be loaded.",
+  propertiesRetry: "Reload Text properties",
+  propertiesEmpty: "No Text properties yet. Create one to add a column.",
+  textValueAbsent: "No value",
+
   discoveryApply: "Apply reviewed projects",
   discoveryApplying: "Saving reviewed projects…",
   discoveryApplyError: "Projects could not be saved. Your saved configuration is unchanged. Try Apply again.",
@@ -104,6 +119,21 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  createTextProperty: "Создать Text-свойство",
+  propertyName: "Название свойства",
+  renameProperty: "Переименовать свойство",
+  savePropertyName: "Сохранить название свойства",
+  propertySaving: "Сохранение свойства…",
+  propertyValidation: "Выберите существующее Text-свойство и укажите непустое название.",
+  propertySaveError: "Не удалось сохранить свойство. Черновик сохранён; повторите попытку.",
+  propertySaved: "Свойство сохранено.",
+  propertyNewerChange: "Свойство сохранено. В источнике появилось более новое изменение.",
+  propertiesLoading: "Загрузка Text-свойств…",
+  propertiesLoadError: "Не удалось загрузить Text-свойства.",
+  propertiesRetry: "Перезагрузить Text-свойства",
+  propertiesEmpty: "Text-свойств пока нет. Создайте свойство, чтобы добавить столбец.",
+  textValueAbsent: "Нет значения",
+
   discoveryApply: "Применить проверенные проекты",
   discoveryApplying: "Сохранение проверенных проектов…",
   discoveryApplyError: "Не удалось сохранить проекты. Сохранённая конфигурация не изменилась. Повторите применение.",

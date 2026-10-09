@@ -64,11 +64,20 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.listProjects");
+  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if (input.type === "workspace.createProperty") {
+    return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
+      typeof input.workspaceId !== "string" || typeof input.name !== "string" || input.propertyType !== "text";
+  }
+  if (input.type === "workspace.renameProperty") {
+    return !hasExactKeys(input, ["type", "workspaceId", "propertyId", "name"]) ||
+      typeof input.workspaceId !== "string" || typeof input.propertyId !== "string" || typeof input.name !== "string";
+  }
+  if (input.type === "workspace.listTextProperties") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.previewDiscovery") {
     const keys = Object.hasOwn(input, "excludedRelativePaths")
       ? ["type", "workspaceId", "excludedRelativePaths"] : ["type", "workspaceId"];

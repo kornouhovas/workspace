@@ -21,7 +21,7 @@ function withFixture(run) {
 }
 
 const unconfiguredDiscovery = {
-  discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
+  property_revision: 0, discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
   archive_relative_path: null, applied_root_identity: null,
 };
 
@@ -1545,17 +1545,22 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     for (const entry of journal.entries) writeFileSync(join(legacy, `${entry.tag}.sql`), readFileSync(join(migrations, `${entry.tag}.sql`)));
     writeFileSync(join(legacy, "meta", "_journal.json"), JSON.stringify(journal));
     mkdirSync(join(root, "Kept")); mkdirSync(join(root, "Excluded"));
-    let service = openSettingsService(databasePath, legacy);
-    const workspace = service.handleCommand({ type: "workspace.create", name: "Original", rootPath: root }).value;
-    service.handleCommand({ type: "settings.setLanguage", language: "ru" }); service.close();
+    mkdirSync(join(directory, "data"));
     const sqlite = new Database(databasePath);
+    migrate(drizzle(sqlite), { migrationsFolder: legacy });
+    const workspace = { sourceId: randomUUID(), workspaceId: randomUUID(), viewId: randomUUID() };
+    sqlite.prepare("INSERT INTO settings VALUES ('language', 'ru')").run();
+    sqlite.prepare("INSERT INTO sources (id, canonical_root) VALUES (?, ?)").run(workspace.sourceId, realpathSync.native(root));
+    sqlite.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, 'Original', ?, 0)").run(workspace.workspaceId, workspace.sourceId);
+    sqlite.prepare("INSERT INTO views VALUES (?, ?, 'Table', 'table')").run(workspace.viewId, workspace.workspaceId);
+    sqlite.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(workspace.workspaceId, workspace.viewId);
     sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Excluded\"]', archive_relative_path = 'Archive', discovery_revision = 7").run();
     sqlite.close();
     const before = records(databasePath);
-    service = openSettingsService(databasePath);
+    let service = openSettingsService(databasePath);
     let projects;
     try {
-      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0 })) });
       assert.deepEqual(projectRecords(databasePath), []);
       projects = applyDiscovery(service, workspace.workspaceId).value;
       assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);

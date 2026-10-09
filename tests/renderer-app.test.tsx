@@ -12,6 +12,9 @@ import type { ActiveWorkspace, WorkspaceLoad, WorkspaceChangeEvent } from "../sr
 import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
+import { TextPropertiesTable } from "../src/renderer/components/TextPropertiesTable.js";
+import type { TextPropertySnapshot, TextPropertyMutation } from "../src/contracts/text-properties.js";
+import { randomUUID } from "node:crypto";
 import { DiscoveryPanel } from "../src/renderer/components/DiscoveryPanel.js";
 import { openSettingsService } from "../src/service/settings.js";
 
@@ -88,6 +91,7 @@ interface MockOptions {
   picker?: WorkspaceDesktopApi["pickRoot"];
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
   onProjects?: MockOptions["onWorkspace"];
+  onProperties?: MockOptions["onWorkspace"];
   onSettings?: WorkspaceDesktopApi["settings"];
   backend?: "ready" | "unavailable";
 }
@@ -113,7 +117,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjects"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listTextProperties"
+      ? options.onProperties?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: `source-${input.workspaceId}`, revision: 0, definitions: [], values: [] }))
+      : input.type === "workspace.listProjects"
       ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
         sourceId: `source-${input.workspaceId}`, revision: 0, configured: false, state: "empty" as const,
         projects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
@@ -1340,5 +1346,129 @@ test("EN/RU notification reload failures and below-revision replies recover thro
     await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
     await screen.findByRole("cell", { name: "Recovered" });
     cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU Text definition creation and rename preserve failed drafts, keyboard cancellation, pending prevention and focus", async () => {
+  for (const language of ["en", "ru"] as const) {
+    cleanup();
+    const workspaceId = randomUUID(), sourceId = randomUUID(), propertyId = randomUUID();
+    let snapshot: TextPropertySnapshot = { workspaceId, sourceId, revision: 0, definitions: [], values: [] };
+    let finish: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+    let saves = 0;
+    const api = mockApi({ onProperties: async () => ok(snapshot), onWorkspace: async (request) => {
+      if (request.type === "workspace.createProperty" || request.type === "workspace.renameProperty") {
+        saves++; return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; });
+      }
+      return fail("invalid_input");
+    } });
+    const client = new WorkspaceServiceClient(window.workspace);
+    render(<TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId} projects={[]} language={language} disabled={false} />);
+    const create = await screen.findByRole("button", { name: translate(language, "createTextProperty") });
+    await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
+    create.focus(); await userEvent.keyboard("{Enter}");
+    let name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
+    assert.equal(document.activeElement, name);
+    await userEvent.type(name, "   "); await userEvent.keyboard("{Enter}");
+    assert.ok(screen.getByRole("alert")); assert.equal(saves, 0);
+    await userEvent.clear(name); await userEvent.type(name, "  Заметка 📝  "); await userEvent.keyboard("{Enter}{Enter}");
+    assert.equal(saves, 1);
+    assert.equal((name as HTMLInputElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    await act(async () => { finish?.(fail("storage")); });
+    assert.equal((name as HTMLInputElement).value, "  Заметка 📝  ");
+    assert.ok(screen.getByText(translate(language, "propertySaveError")));
+    name.focus(); await userEvent.keyboard("{Enter}");
+    snapshot = { ...snapshot, revision: 1, definitions: [{ propertyId, sourceId, propertyType: "text", name: "  Заметка 📝  " }] };
+    await act(async () => {
+      api.emitChange({ type: "workspace.propertiesChanged", sourceId, workspaceIds: [workspaceId], revision: 1 });
+      finish?.(ok({ snapshot, propertyId, projectId: null }));
+    });
+    assert.ok(await screen.findByText(translate(language, "propertySaved")));
+    assert.equal(document.activeElement, create);
+    const renameButton = screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` });
+    assert.equal(screen.getByText("Заметка 📝").textContent, "  Заметка 📝  ");
+    renameButton.focus(); await userEvent.keyboard("{Enter}");
+    name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
+    await userEvent.clear(name); await userEvent.type(name, "Cancelled"); await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement, renameButton); assert.equal(saves, 2);
+    await userEvent.click(renameButton); name = screen.getByRole("textbox", { name: translate(language, "propertyName") });
+    await userEvent.clear(name); await userEvent.type(name, "  新しい имя  "); await userEvent.keyboard("{Enter}");
+    await act(async () => { finish?.(fail("service_unavailable")); });
+    assert.equal((name as HTMLInputElement).value, "  新しい имя  ");
+    name.focus(); await userEvent.keyboard("{Enter}");
+    snapshot = { ...snapshot, revision: 2, definitions: [{ ...snapshot.definitions[0], name: "  新しい имя  " }] };
+    await act(async () => { finish?.(ok({ snapshot, propertyId, projectId: null })); });
+    assert.equal(screen.getByText("新しい имя").textContent, "  新しい имя  ");
+    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameProperty")}: ${snapshot.definitions[0].name.trim()}` }));
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("Text property lists and saves reject older revisions and responses after workspace/source replacement", async () => {
+  const workspaceId = randomUUID(), sourceId = randomUUID(), propertyId = randomUUID();
+  const snapshot = (revision: number, name: string): TextPropertySnapshot => ({ workspaceId, sourceId, revision, definitions: [{ sourceId, propertyId, name, propertyType: "text" }], values: [] });
+  const lists: ((result: ServiceResult<TextPropertySnapshot>) => void)[] = [];
+  let finishSave: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+  const api = mockApi({ onProperties: async () => new Promise<ServiceResult<TextPropertySnapshot>>((resolve) => lists.push(resolve)),
+    onWorkspace: async () => new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finishSave = resolve; }) });
+  const client = new WorkspaceServiceClient(window.workspace);
+  const props = { client, workspaceId, sourceId, projects: [], language: "en" as const, disabled: false };
+  const rendered = render(<TextPropertiesTable {...props} />);
+  await act(async () => { lists[0](ok(snapshot(1, "Original"))); });
+  await userEvent.click(screen.getByRole("button", { name: "Rename property: Original" }));
+  await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "Own"); await userEvent.keyboard("{Enter}");
+  await act(async () => {
+    api.emitChange({ type: "workspace.propertiesChanged", sourceId, workspaceIds: [workspaceId], revision: 2 });
+    api.emitChange({ type: "workspace.propertiesChanged", sourceId, workspaceIds: [workspaceId], revision: 3 });
+  });
+  await act(async () => { lists[2](ok(snapshot(3, "Sibling"))); lists[1](ok(snapshot(2, "Own"))); finishSave?.(ok({ snapshot: snapshot(2, "Own"), propertyId, projectId: null })); });
+  assert.ok(screen.getByRole("button", { name: "Rename property: Sibling" }));
+  assert.equal(screen.queryByRole("button", { name: "Rename property: Own" }), null);
+  await userEvent.click(screen.getByRole("button", { name: "Rename property: Sibling" }));
+  await userEvent.keyboard("{Enter}");
+  const next = { ...props, workspaceId: randomUUID(), sourceId: randomUUID() };
+  rendered.rerender(<TextPropertiesTable {...next} />);
+  await act(async () => { finishSave?.(ok({ snapshot: snapshot(4, "Old workspace"), propertyId, projectId: null })); lists[3](ok({ ...snapshot(0, "New workspace"), workspaceId: next.workspaceId, sourceId: next.sourceId })); });
+  assert.equal(screen.queryByText("Old workspace"), null);
+  assert.ok(screen.getByText("New workspace"));
+  cleanup(); assert.equal(api.changeListenerCount(), 0);
+});
+
+test("EN/RU default Table creates and renames source-owned Text definitions through real SQLite and the typed client", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "text-table-ui-")), root = join(directory, "root");
+    mkdirSync(root); mkdirSync(join(root, "Project"));
+    const service = openSettingsService(join(directory, "workspace.sqlite"));
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", rootPath: root, name: "Real workspace" });
+      assert.equal(created.ok, true); if (!created.ok) throw new Error("Fixture failed");
+      const sibling = service.workspaces.create({ type: "workspace.create", rootPath: root, name: "Sibling" });
+      assert.equal(sibling.ok, true); if (!sibling.ok) throw new Error("Fixture failed");
+      service.workspaces.activate({ type: "workspace.activate", workspaceId: created.value.workspaceId });
+      const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: created.value.workspaceId });
+      assert.equal(preview.ok, true); if (!preview.ok) throw new Error("Fixture failed");
+      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: created.value.workspaceId, previewToken: preview.value.previewToken }).ok, true);
+      const api = mockApi({ language,
+        onProperties: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+        onProjects: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+        onWorkspace: async (input) => (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>,
+      });
+      const unsubscribe = service.workspaces.subscribe(api.emitChange);
+      render(<App />);
+      const create = await screen.findByRole("button", { name: translate(language, "createTextProperty") });
+      await waitFor(() => assert.equal((create as HTMLButtonElement).disabled, false));
+      await userEvent.click(create); await userEvent.type(screen.getByRole("textbox", { name: translate(language, "propertyName") }), "  Real Text  "); await userEvent.keyboard("{Enter}");
+      const rename = await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Real Text` });
+      assert.ok(screen.getByRole("cell", { name: "Project" }));
+      await userEvent.click(rename); await userEvent.clear(screen.getByRole("textbox", { name: translate(language, "propertyName") }));
+      await userEvent.type(screen.getByRole("textbox", { name: translate(language, "propertyName") }), "  Общее имя  "); await userEvent.keyboard("{Enter}");
+      await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Общее имя` });
+      const shared = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.value.workspaceId });
+      assert.equal(shared.ok, true); if (!shared.ok) throw new Error("Fixture failed");
+      assert.equal(shared.value.definitions[0].name, "  Общее имя  "); assert.equal(shared.value.revision, 2);
+      assert.ok(screen.getByText(translate(language, "propertySaved")));
+      cleanup(); unsubscribe();
+    } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });

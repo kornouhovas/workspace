@@ -1,3 +1,5 @@
+import type { WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand } from "./text-properties.js";
+
 export type WorkspaceCreateCommand = {
   type: "workspace.create";
   name: string;
@@ -42,10 +44,11 @@ export interface WorkspaceSourceState {
 export type WorkspaceChangeEvent =
   | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
   | { type: "workspace.sourceChanged"; source: WorkspaceSourceState }
+  | { type: "workspace.propertiesChanged"; sourceId: string; workspaceIds: string[]; revision: number }
   | { type: "workspace.projectsChanged"; sourceId: string; workspaceIds: string[]; revision: number };
 
-export type WorkspaceQuery = WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
+export type WorkspaceQuery = WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceCommand = WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;

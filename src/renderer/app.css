@@ -277,3 +277,10 @@ body {
 
 .project-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .project-table th, .project-table td { padding: 0.75rem; text-align: start; border-bottom: 1px solid #d7d9dc; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.text-properties, .property-form { display: grid; gap: 0.75rem; min-width: 0; }
+.property-form .workspace-form-actions { flex-wrap: wrap; }
+.property-authored { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+.property-rename { margin-top: 0.5rem; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.project-table-scroll { min-width: 0; overflow-x: auto; }
+.project-table-scroll .project-table { min-width: 16rem; }

@@ -1,3 +1,5 @@
+import { createTextPropertyService } from "./text-properties.js";
+import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import { interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
 import type { DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
@@ -31,6 +33,9 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  listTextProperties(input: unknown): ServiceResult<TextPropertySnapshot>;
+  createProperty(input: unknown): ServiceResult<TextPropertyMutation>;
+  renameProperty(input: unknown): ServiceResult<TextPropertyMutation>;
   applyDiscovery(input: unknown): ServiceResult<ProjectList>;
   listProjects(input: unknown): ServiceResult<ProjectList>;
   previewDiscovery(input: unknown): ServiceResult<DiscoveryPreview>;
@@ -70,6 +75,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   let pending = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
   const service: WorkspaceService = {
+    ...createTextPropertyService(db, publish),
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };
@@ -140,7 +146,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!source) return invalid("Choose a saved workspace.");
         const token = previewTokens.get(workspaceId);
         if (!token || token.preview.previewToken !== input.previewToken ||
-          JSON.stringify(token.source) !== JSON.stringify(source) ||
+          discoverySourceState(token.source) !== discoverySourceState(source) ||
           JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id))) return stale();
         const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
@@ -156,7 +162,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
           revision: source.discoveryRevision + (changed ? 1 : 0) };
         const result = db.transaction((tx) => {
-          if (JSON.stringify(workspaceSource(workspaceId)) !== JSON.stringify(source) ||
+          if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(source) ||
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects)) throw new StalePreview();
           if (changed) tx.update(schema.sources).set({ discoveryMode: "direct", discoveryRevision: source.discoveryRevision + (changed ? 1 : 0),
             excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths),
@@ -585,4 +591,10 @@ class StalePreview extends Error {}
 function workspacePayload(input: unknown, type: string, keys: string[]): input is Record<string, unknown> {
   return isRecord(input) && input.type === type && Object.keys(input).length === keys.length &&
     keys.every((key) => Object.hasOwn(input, key)) && isUuid(input.workspaceId);
+}
+
+function discoverySourceState(source: typeof schema.sources.$inferSelect | undefined): string {
+  if (!source) return "missing";
+  const { id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity } = source;
+  return JSON.stringify({ id, canonicalRoot, discoveryMode, discoveryRevision, excludedRelativePaths, archiveRelativePath, appliedRootIdentity });
 }

@@ -749,3 +749,44 @@ test("two typed clients receive committed project revisions through real ports/c
     assert.equal(servicePort.sent.length, before);
   } finally { offOne(); offTwo(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("Text definitions traverse typed client and real service entry with committed events before responses", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "text-property-ipc-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(root); await mkdir(otherRoot);
+  const parent = new EventEmitter(); parent.postMessage = () => {};
+  const port = new FakePort(); startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const workspace = async (input) => { port.receive({ id: ++id, input }); return port.sent.at(-1).result; };
+    const client = new WorkspaceServiceClient({ workspace });
+    const one = (await client.createWorkspace("One", root)).value;
+    const sibling = (await client.createWorkspace("Sibling", root)).value;
+    const other = (await client.createWorkspace("Other", otherRoot)).value;
+    port.sent.length = 0;
+    const created = await client.createProperty(one.workspaceId, "  日本語 Text  ");
+    assert.equal(created.ok, true);
+    assert.equal(port.sent[0].type, "workspace.change");
+    assert.deepEqual(port.sent[0].change, { type: "workspace.propertiesChanged", sourceId: one.sourceId, workspaceIds: [one.workspaceId, sibling.workspaceId], revision: 1 });
+    assert.equal(port.sent[1].id, id);
+    assert.deepEqual((await client.listTextProperties(sibling.workspaceId)).value.definitions, created.value.snapshot.definitions);
+    assert.deepEqual((await client.listTextProperties(other.workspaceId)).value.definitions, []);
+    const renamed = await client.renameProperty(sibling.workspaceId, created.value.propertyId, "Renamed");
+    assert.equal(renamed.value.snapshot.revision, 2);
+    for (const input of [
+      { type: "workspace.renameProperty", workspaceId: one.workspaceId, propertyId: created.value.propertyId, name: "Bad", propertyType: "number" },
+      { type: "workspace.createProperty", workspaceId: one.workspaceId, name: "Bad", propertyType: "number" },
+      { type: "workspace.listTextProperties", workspaceId: one.workspaceId, extra: true },
+    ]) {
+      port.sent.length = 0; assert.equal((await workspace(input)).error.code, "invalid_input");
+      assert.equal(port.sent.length, 1);
+    }
+    port.sent.length = 0;
+    assert.equal((await client.renameProperty(other.workspaceId, created.value.propertyId, "Foreign")).error.code, "invalid_input");
+    assert.equal(port.sent.length, 1);
+    port.sent.length = 0;
+    assert.equal((await client.renameProperty(one.workspaceId, created.value.propertyId, "Renamed")).ok, true);
+    assert.equal(port.sent.length, 1);
+  } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});
