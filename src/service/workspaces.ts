@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { accessSync, constants, realpathSync, statSync } from "node:fs";
+import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -15,9 +15,14 @@ export interface WorkspaceFilesystem {
 }
 
 const nativeFilesystem: WorkspaceFilesystem = {
-  realpath: (path) => realpathSync(path),
+  realpath: (path) => realpathSync.native(path),
   isDirectory: (path) => statSync(path).isDirectory(),
-  assertAccessible: (path) => accessSync(path, constants.R_OK | constants.X_OK),
+  assertAccessible(path) {
+    accessSync(path, constants.R_OK | constants.X_OK);
+    // Windows access() does not check directory ACLs. Open without reading entries.
+    const directory = opendirSync(path);
+    directory.closeSync();
+  },
 };
 
 export interface WorkspaceService {

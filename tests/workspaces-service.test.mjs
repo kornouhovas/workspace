@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -35,7 +37,7 @@ test("creates a canonical source, workspace, Table view and active selection wit
     const created = service.workspaces.create({ type: "workspace.create", name: "  My Space  ", rootPath: root });
     assert.equal(created.ok, true);
     assert.equal(created.value.name, "  My Space  ");
-    assert.equal(created.value.canonicalRoot, realpathSync(root));
+    assert.equal(created.value.canonicalRoot, realpathSync.native(root));
     assert.equal(new Set([created.value.sourceId, created.value.workspaceId, created.value.viewId]).size, 3);
     assert.deepEqual(records(databasePath).views.map(({ name, kind }) => ({ name, kind })), [{ name: "Table", kind: "table" }]);
     assert.equal(records(databasePath).active[0].view_id, created.value.viewId);
@@ -57,6 +59,75 @@ test("reuses the canonical source while creating a separate view per workspace",
     assert.equal(records(databasePath).views.length, 2);
     assert.equal(records(databasePath).active[0].workspace_id, two.value.workspaceId);
     service.close();
+  });
+});
+
+test("native canonicalization converges locator aliases for source reuse and containment", (context) => {
+  withFixture(({ root, directory, databasePath }) => {
+    const canonicalRoot = realpathSync.native(root);
+    const alias = join(directory, "SHORT~1");
+    const nativeRealpath = realpathSync.native;
+    // Model a Windows 8.3 alias at the native filesystem boundary.
+    context.mock.method(realpathSync, "native", (path) => nativeRealpath(path === alias ? root : path));
+    const service = openSettingsService(databasePath);
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "Alias", rootPath: alias });
+      const two = service.workspaces.create({ type: "workspace.create", name: "Canonical", rootPath: canonicalRoot });
+      assert.equal(one.ok, true);
+      assert.equal(two.ok, true);
+      assert.equal(one.value.canonicalRoot, canonicalRoot);
+      assert.equal(one.value.sourceId, two.value.sourceId);
+      assert.equal(service.workspaces.assertContained(alias, canonicalRoot), true);
+      assert.equal(service.workspaces.load().value.activeWorkspace.sourceAvailable, true);
+      assert.equal(records(databasePath).sources.length, 1);
+    } finally { service.close(); }
+  });
+});
+
+test("picker spelling and native canonical spelling reuse one real source after restart", () => {
+  withFixture(({ root, databasePath }) => {
+    const canonicalRoot = realpathSync.native(root);
+    const service = openSettingsService(databasePath);
+    const one = service.workspaces.create({ type: "workspace.create", name: "Picker", rootPath: root });
+    const two = service.workspaces.create({ type: "workspace.create", name: "Canonical", rootPath: canonicalRoot });
+    assert.equal(one.ok && two.ok, true);
+    assert.equal(one.value.canonicalRoot, canonicalRoot);
+    assert.equal(one.value.sourceId, two.value.sourceId);
+    assert.equal(service.workspaces.assertContained(root, canonicalRoot), true);
+    service.close();
+
+    const reopened = openSettingsService(databasePath);
+    try {
+      const loaded = reopened.workspaces.load();
+      assert.equal(loaded.ok, true);
+      assert.equal(loaded.value.activeWorkspace.canonicalRoot, canonicalRoot);
+      assert.equal(loaded.value.activeWorkspace.sourceAvailable, true);
+      assert.equal(loaded.value.activeWorkspace.sourceId, one.value.sourceId);
+      assert.equal(loaded.value.activeWorkspace.viewId, two.value.viewId);
+    } finally { reopened.close(); }
+  });
+});
+
+test("directory-open denial rejects creation and marks saved sources unavailable", (context) => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "Saved", rootPath: root });
+      assert.equal(created.ok, true);
+      const before = records(databasePath);
+      context.mock.method(fs, "opendirSync", () => { throw Object.assign(new Error("denied"), { code: "EACCES" }); });
+      syncBuiltinESMExports();
+      const denied = service.workspaces.create({ type: "workspace.create", name: "Denied", rootPath: root });
+      assert.equal(denied.ok, false);
+      assert.equal(denied.error.code, "filesystem");
+      assert.equal(service.workspaces.load().value.activeWorkspace.sourceAvailable, false);
+      assert.equal(service.workspaces.activate({ type: "workspace.activate", workspaceId: created.value.workspaceId }).value.sourceAvailable, false);
+      assert.deepEqual(records(databasePath), before);
+    } finally {
+      context.mock.restoreAll();
+      syncBuiltinESMExports();
+      service.close();
+    }
   });
 });
 
@@ -126,7 +197,7 @@ test("loads the saved active workspace and view after closing and reopening the 
         activeWorkspace: {
           workspaceId: created.value.workspaceId,
           sourceId: created.value.sourceId,
-          canonicalRoot: realpathSync(root),
+          canonicalRoot: realpathSync.native(root),
           viewId: created.value.viewId,
           name: "Reopen",
           sourceAvailable: true,
@@ -161,7 +232,7 @@ test("retains workspace metadata and reports an unavailable source after its roo
     const service = openSettingsService(databasePath);
     const created = service.handleCommand({ type: "workspace.create", name: "Offline", rootPath: root });
     assert.equal(created.ok, true);
-    const canonicalRoot = realpathSync(root);
+    const canonicalRoot = realpathSync.native(root);
     service.close();
     rmSync(root, { recursive: true, force: true });
 

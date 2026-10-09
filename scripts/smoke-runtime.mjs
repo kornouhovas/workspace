@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -34,22 +35,30 @@ async function launch(dataDirectory, rootPickerPath) {
     },
     timeout: 30000,
   });
-  console.info("Electron launched; waiting for the first window");
-  const page = await electron.firstWindow({ timeout: 30000 });
-  page.on("console", (message) => { if (message.type() === "error") console.error(`Renderer: ${message.text()}`); });
-  page.on("pageerror", (error) => console.error(`Renderer error: ${error.message}`));
-  const paths = await electron.evaluate(({ app }) => ({
-    userData: app.getPath("userData"),
-    sessionData: app.getPath("sessionData"),
-  }));
-  assert.deepEqual(paths, { userData: dataDirectory, sessionData: dataDirectory });
-  return { electron, page };
+  try {
+    console.info("Electron launched; waiting for the first window");
+    const page = await electron.firstWindow({ timeout: 30000 });
+    page.setDefaultTimeout(30000);
+    page.setDefaultNavigationTimeout(30000);
+    page.on("console", (message) => { if (message.type() === "error") console.error(`Renderer: ${message.text()}`); });
+    page.on("pageerror", (error) => console.error(`Renderer error: ${error.message}`));
+    const paths = await withDeadline(electron.evaluate(({ app }) => ({
+      userData: app.getPath("userData"),
+      sessionData: app.getPath("sessionData"),
+    })), 10000, "Electron data paths");
+    assert.deepEqual(paths, { userData: dataDirectory, sessionData: dataDirectory });
+    return { electron, page };
+  } catch (error) {
+    try { await closeElectron(electron); }
+    catch (cleanupError) { throw new AggregateError([error, cleanupError], "Electron launch and cleanup failed"); }
+    throw error;
+  }
 }
 
 async function backendPids(electron) {
-  return electron.evaluate(({ app }) => app.getAppMetrics()
+  return withDeadline(electron.evaluate(({ app }) => app.getAppMetrics()
     .filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node"))
-    .map((metric) => metric.pid));
+    .map((metric) => metric.pid)), 10000, "Electron backend metrics");
 }
 
 async function assertStopped(pids) {
@@ -123,8 +132,7 @@ try {
   assert.equal(savedSettings.ok && savedSettings.value.language, "ru");
   console.info("Russian copy and wide layout verified");
   console.info("Closing the app for restart verification");
-  void current.electron.evaluate(({ app }) => app.quit()).catch(() => undefined);
-  await current.electron.close();
+  await closeElectron(current.electron);
   current = undefined;
   console.info("App closed; checking backend exit");
   await assertStopped(firstPids);
@@ -148,7 +156,7 @@ try {
   }, persistedIdentity);
   const secondPids = await backendPids(current.electron);
   assert.ok(secondPids.length > 0, "No owned Node utility process is running after restart");
-  await current.electron.close();
+  await closeElectron(current.electron);
   current = undefined;
   await assertStopped(secondPids);
 
@@ -160,10 +168,10 @@ try {
     state: "unavailable",
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
   });
-  await current.electron.close();
+  await closeElectron(current.electron);
   current = undefined;
   console.info(`Electron ${mode} runtime verified: isolation, language restart, backend exit, startup failure`);
 } finally {
-  if (current) await current.electron.close();
-  await rm(fixture, { recursive: true, force: true });
+  try { if (current) await closeElectron(current.electron); }
+  finally { await rm(fixture, { recursive: true, force: true }); }
 }
