@@ -1022,10 +1022,47 @@ test("category labels traverse entry/controller/preload/clients with validated o
     ]) assert.equal((await controller.request(input)).error.code, "invalid_input");
     assert.equal((await siblingSurface.client.renameCategoryProperty(sibling.workspaceId, propertyId, "  Label 日本語  ")).value.revision, 1);
     assert.equal(events.length, 1);
+    const initialText = (await oneSurface.client.listTextProperties(one.workspaceId)).value;
+    const reviewDirect = await siblingSurface.client.previewDiscovery(sibling.workspaceId, undefined, "direct");
+    assert.equal(reviewDirect.ok, true);
+    assert.deepEqual(reviewDirect.value.categoryAvailability, { current: true, target: false, propertyId, name: "  Label 日本語  " });
+    assert.equal(reviewDirect.value.projectEffects.noLongerRecognized[0].projectId, applied.projects[0].projectId);
+    assert.deepEqual((await oneSurface.client.listProjects(one.workspaceId)).value.categoryProperty, applied.categoryProperty && { ...applied.categoryProperty, name: "  Label 日本語  " });
+    for (const input of [
+      { type: "workspace.previewDiscovery", workspaceId: one.workspaceId, mode: "recursive" },
+      { type: "workspace.previewDiscovery", workspaceId: one.workspaceId, mode: "direct", associations: [] },
+      { type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: reviewDirect.value.previewToken, mode: "direct" },
+      { type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: reviewDirect.value.previewToken, projectIds: [] },
+    ]) assert.equal((await controller.request(input)).error.code, "invalid_input");
+    assert.equal((await oneSurface.client.applyDiscovery(one.workspaceId, reviewDirect.value.previewToken)).error.code, "stale_preview");
+    servicePort.sent.length = 0;
+    const direct = await siblingSurface.client.applyDiscovery(sibling.workspaceId, reviewDirect.value.previewToken);
+    assert.equal(direct.ok, true); assert.equal(direct.value.mode, "direct");
+    assert.equal(direct.value.categoryProperty, null); assert.deepEqual(direct.value.categories, []);
+    assert.equal(direct.value.retainedProjects[0].retentionReason, "mode_change");
+    assert.equal(direct.value.retainedProjects[0].projectId, applied.projects[0].projectId);
+    assert.equal(servicePort.sent[0].change.type, "workspace.projectsChanged");
+    assert.equal(servicePort.sent.at(-1).result.value.mode, "direct");
+    assert.deepEqual(events, siblingEvents);
+    assert.deepEqual(events.at(-1).workspaceIds, [one.workspaceId, sibling.workspaceId]);
+    assert.equal((await oneSurface.client.listProjects(one.workspaceId)).value.categoryProperty, null);
+    assert.equal((await oneSurface.client.renameCategoryProperty(one.workspaceId, propertyId, "Forbidden while hidden")).error.code, "invalid_input");
+    const backReview = (await oneSurface.client.previewDiscovery(one.workspaceId, undefined, "grouped")).value;
+    assert.equal(backReview.categoryAvailability.current, false); assert.equal(backReview.categoryAvailability.target, true);
+    assert.equal(backReview.projectEffects.alreadyRetained[0].projectId, applied.projects[0].projectId);
+    const returned = await oneSurface.client.applyDiscovery(one.workspaceId, backReview.previewToken);
+    assert.equal(returned.ok, true);
+    assert.deepEqual(returned.value.categoryProperty, { ...applied.categoryProperty, name: "  Label 日本語  " });
+    assert.deepEqual(returned.value.categories, applied.categories);
+    assert.equal(returned.value.projects.length, 0);
+    assert.ok(returned.value.retainedProjects.some((row) => row.projectId === applied.projects[0].projectId));
+    assert.deepEqual((await oneSurface.client.listTextProperties(one.workspaceId)).value, initialText);
+    assert.equal((await oneSurface.client.listProjects(other.workspaceId)).value.mode, null);
+    const eventsBeforeCleanup = events.length;
     off(); siblingSurface.unload.dispatchEvent(new Event("unload"));
     assert.equal(ipc.listenerCount("workspace:change"), 0);
     assert.equal((await oneSurface.client.renameCategoryProperty(one.workspaceId, propertyId, "Next")).value.revision, 2);
-    assert.equal(events.length, 1); assert.equal(siblingEvents.length, 1);
+    assert.equal(events.length, eventsBeforeCleanup); assert.equal(siblingEvents.length, eventsBeforeCleanup);
     assert.equal((await oneSurface.client.listProjects(other.workspaceId)).value.categoryProperty, null);
     await controller.stop(100);
     const sent = servicePort.sent.length;

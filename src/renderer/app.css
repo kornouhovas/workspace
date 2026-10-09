@@ -328,3 +328,8 @@ body {
 }
 .source-refresh > button { justify-self: start; }
 .source-refresh .bb-status { overflow-wrap: anywhere; }
+
+.discovery-effects { min-width: 0; display: grid; gap: 0.5rem; margin-block: 1rem; }
+.discovery-effects h4, .discovery-effects p { margin-block: 0.25rem; overflow-wrap: anywhere; }
+.discovery-effects ul { padding-inline-start: 1.5rem; margin-block: 0.25rem; }
+.discovery-effects li { overflow-wrap: anywhere; white-space: pre-wrap; }

@@ -4,7 +4,7 @@ import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, Categ
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
-import { CategoryPropertyHeader } from "./CategoryPropertyHeader.js";
+import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
@@ -22,6 +22,8 @@ interface Props {
   onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
+  discoveryRevision?: number;
+  minimumDiscoveryRevision?: { current: number };
   categoryPropertyRevision?: number;
   minimumCategoryPropertyRevision?: { current: number };
   onCategoryPropertyCommitted?(snapshot: CategoryPropertySnapshot): void;
@@ -31,7 +33,8 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+  const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,8 +149,11 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
       <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 1 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
         {categoryProperty && <th key={categoryProperty.propertyId} scope="col" aria-label={categoryProperty.name ?? t("discoveryCategory")}>
           {onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
-            revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
-            onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled} /> : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>}
+            discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
+            preservedDraft={categoryDrafts.current.get(categoryProperty.propertyId)} onDraftChange={(draft) => {
+              if (draft) categoryDrafts.current.set(categoryProperty.propertyId, draft);
+              else categoryDrafts.current.delete(categoryProperty.propertyId);
+            }} onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled || (minimumDiscoveryRevision !== undefined && minimumDiscoveryRevision.current > discoveryRevision)} /> : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>}
         </th>}
         {snapshot?.definitions.map((property) => <th scope="col" key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
@@ -158,11 +164,12 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
       </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" ? "excluded" : retained?.resolution ?? retained?.associationState;
-        const label = reason && reason !== "active" ? resolutionLabels[reason] : null;
+        const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
         return <tr key={project.projectId}><td key="project-name"><span>{project.name}</span>
           {label && <span className="project-resolution">{t(label)}</span>}
+          {retained?.retentionReason === "mode_change" && reason === "excluded" && <span className="project-resolution">{t("projectExcluded")}</span>}
           {retained && <span className="project-previous-path">{retained.relativePath}</span>}
-          {onLocate && retained && reason && ["missing", "unresolved", "replaced"].includes(reason) &&
+          {onLocate && retained && reason && (["missing", "unresolved", "replaced"].includes(reason) || (retained.retentionReason === "mode_change" && reason !== "excluded")) &&
             <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
               aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </td>

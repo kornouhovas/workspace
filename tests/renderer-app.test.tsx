@@ -28,7 +28,7 @@ Object.assign(globalThis, {
 });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 
-const { act, cleanup, render, screen, waitFor } = await import("@testing-library/react");
+const { act, cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 
 const ok = <T,>(value: T): ServiceResult<T> => ({ ok: true, value });
@@ -1052,7 +1052,7 @@ test("EN/RU grouped review uses the real service and keyboard mode/exclusion con
       await screen.findByRole("cell", { name: "Category" });
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: Category` });
-      assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+      assert.ok(screen.getByRole("combobox", { name: translate(language, "discoveryMode") }));
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });
@@ -2115,7 +2115,7 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       mkdirSync(join(root, "AnotherEmpty"));
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryCategory")}: AnotherEmpty` });
-      assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+      assert.ok(screen.getByRole("combobox", { name: translate(language, "discoveryMode") }));
       // Deliver the folder hint after Preview, proving that a stale review
       // prevents submission before explicitly requesting a fresh review.
       await act(async () => { deliverNotifications(created.value.canonicalRoot); });
@@ -2965,5 +2965,272 @@ test("a delayed current-observation read cannot override newer events or a backe
     await act(async () => { finish?.(ok({ observation })); });
     assert.equal(screen.queryByRole("heading", { name: translate("en", "automaticUpdatesDegraded") }), null);
     cleanup();
+  }
+});
+
+test("EN/RU configured mode review cancels safely and preserves exact Text and hidden category drafts across a round trip", async () => {
+  const unwrap = <T,>(result: ServiceResult<T>): T => { if (!result.ok) throw new Error(result.error.code); return result.value; };
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "mode-review-ui-")), root = join(directory, "root"), otherRoot = join(directory, "other");
+    mkdirSync(join(root, "Category/Project"), { recursive: true }); mkdirSync(join(root, "Category/Excluded")); mkdirSync(otherRoot);
+    const service = openSettingsService(join(directory, "data.sqlite"));
+    let off: (() => void) | undefined;
+    try {
+      const one = unwrap(service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }));
+      const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
+      const other = unwrap(service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }));
+      const workspaceId = one.workspaceId;
+      unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
+      const switchMode = (mode: "direct" | "grouped") => {
+        const review = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode, excludedRelativePaths: ["Category/Excluded"] }));
+        return unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.previewToken! }));
+      };
+      const grouped = switchMode("grouped"), projectId = grouped.projects[0].projectId;
+      const labelId = grouped.categoryProperty!.propertyId;
+      unwrap(service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId, propertyId: labelId, name: "  Authored label  " }));
+      const propertyId = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" })).propertyId;
+      unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId, projectId, value: "  Exact\nТекст  " }));
+      const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      const beforeText = unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId }));
+      const requests: WorkspaceRequest[] = [];
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
+        requests.push(input); return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+      } });
+      off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
+      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      const textEditor = screen.getByRole("textbox", { name: textLabel }) as HTMLTextAreaElement;
+      await userEvent.clear(textEditor); await userEvent.type(textEditor, "  Unsaved exact Text 📝  ");
+      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Authored label` }));
+      await userEvent.clear(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }));
+      await userEvent.type(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), "  Unsaved label  ");
+      const trigger = screen.getByRole("button", { name: translate(language, "discoveryAction") });
+      await userEvent.click(trigger);
+      await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "direct");
+      await waitFor(() => assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).disabled, false));
+      const reviewRegion = screen.getByRole("region", { name: translate(language, "discoveryTitle") });
+      assert.ok(within(reviewRegion).getByText(translate(language, "discoverySharedScope")));
+      assert.ok(within(reviewRegion).getByText(translate(language, "discoveryCategoryHidden")));
+      assert.ok(within(reviewRegion).getByRole("heading", { name: `${translate(language, "discoveryAdded")} (1)` }));
+      assert.ok(within(reviewRegion).getByRole("heading", { name: `${translate(language, "discoveryNoLongerRecognized")} (1)` }));
+      assert.ok(within(reviewRegion).getByText("Category/Project"));
+      assert.ok(within(reviewRegion).getByText("Category/Excluded"));
+      assert.ok(within(reviewRegion).getByText(translate(language, "discoveryDirectExclusionScope")));
+      assert.ok(within(reviewRegion).getByRole("heading", { name: translate(language, "discoveryInactiveExclusions") }));
+      within(reviewRegion).getByRole("button", { name: translate(language, "cancelRenameWorkspace") }).focus(); await userEvent.keyboard("{Enter}");
+      assert.equal(document.activeElement, trigger);
+      assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })), before);
+      assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);
+      await userEvent.click(trigger);
+      await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "direct");
+      await waitFor(() => assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false));
+      screen.getByRole("button", { name: translate(language, "discoveryApply") }).focus(); await userEvent.keyboard("{Enter}");
+      await waitFor(() => assert.equal(screen.queryByRole("columnheader", { name: "  Authored label  " }), null));
+      assert.equal(screen.queryByRole("textbox", { name: translate(language, "categoryPropertyName") }), null);
+      assert.equal(screen.getByRole("textbox", { name: textLabel }), textEditor);
+      assert.equal(textEditor.value, "  Unsaved exact Text 📝  ");
+      assert.ok(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Project` }));
+      assert.equal(document.activeElement, trigger);
+      assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).mode, "direct");
+      assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: other.workspaceId })).mode, null);
+      textEditor.focus();
+      await act(async () => { switchMode("grouped"); });
+      const restored = await screen.findByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+      assert.equal(restored.value, "  Unsaved label  "); assert.equal(textEditor.value, "  Unsaved exact Text 📝  ");
+      assert.equal(document.activeElement, textEditor);
+      assert.equal(screen.getAllByText(translate(language, "projectModeRetained")).length, 2);
+      const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      assert.equal(after.categoryProperty!.propertyId, labelId); assert.ok(after.retainedProjects.some((project) => project.projectId === projectId));
+      assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);
+      assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 1);
+      assert.equal(requests.some((request) => request.type === "workspace.setTextValue" || request.type === "workspace.renameCategoryProperty"), false);
+    } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU newer label revision from an older grouped list cannot resurrect the category column in direct mode", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
+    const grouped = f.list("Old label");
+    const direct = { ...projectList(active, ["Direct"], 2), configured: true };
+    let listed = grouped as import("../src/contracts/workspaces.js").ProjectList;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let delayed = false;
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => delayed
+      ? new Promise((resolve) => { finish = resolve; }) : ok(listed) });
+    render(<App />); await screen.findByRole("columnheader", { name: "Old label" });
+    listed = direct;
+    await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }));
+    await screen.findByRole("cell", { name: "Direct" });
+    assert.equal(screen.queryByRole("columnheader", { name: "Old label" }), null);
+    delayed = true;
+    await act(async () => api.emitChange(f.event(1)));
+    await act(async () => finish?.(ok({ ...grouped, categoryProperty: { ...grouped.categoryProperty!, name: "Late label" }, categoryPropertyRevision: 1 })));
+    assert.equal(screen.queryByRole("columnheader", { name: "Late label" }), null);
+    assert.ok(screen.getByRole("cell", { name: "Direct" }));
+    listed = { ...grouped, revision: 3 }; delayed = false;
+    await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 3 }));
+    await screen.findByRole("columnheader", { name: "Late label" });
+    cleanup();
+  }
+});
+
+test("EN/RU delayed category save after sibling mode changes preserves the hidden draft without restoring a direct column or replaying", async () => {
+  for (const language of ["en", "ru"] as const) for (const delivery of ["beforeList", "afterList"] as const) {
+    const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
+    let listed = f.list("Original") as import("../src/contracts/workspaces.js").ProjectList;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let saves = 0;
+    let holdList = false, finishList: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => holdList ? new Promise((resolve) => { finishList = resolve; }) : ok(listed), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.renameCategoryProperty") { saves++; return new Promise((resolve) => { finish = resolve; }); }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Original` }));
+    const editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
+    await userEvent.clear(editor); await userEvent.type(editor, "  Pending draft  "); await userEvent.keyboard("{Enter}");
+    assert.equal((editor as HTMLInputElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    listed = { ...projectList(active, ["Direct"], 2), configured: true, categoryPropertyRevision: 1 };
+    holdList = delivery === "beforeList";
+    await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }));
+    if (delivery === "afterList") await screen.findByRole("cell", { name: "Direct" });
+    await act(async () => finish?.(f.saved("  Pending draft  ")));
+    if (delivery === "beforeList") {
+      assert.equal((editor as HTMLInputElement).value, "  Pending draft  ");
+      assert.equal(screen.queryByText(translate(language, "categoryPropertySaved")), null);
+      holdList = false; await act(async () => finishList?.(ok(listed)));
+    }
+    await screen.findByRole("cell", { name: "Direct" });
+    assert.equal(screen.queryByRole("columnheader", { name: "Pending draft" }), null);
+    assert.equal(screen.queryByText(translate(language, "categoryPropertySaved")), null);
+    listed = f.list("Committed sibling label", 2, 3);
+    await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 3 }));
+    const restored = await screen.findByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+    assert.equal(restored.value, "  Pending draft  "); assert.equal(restored.disabled, false);
+    assert.ok(screen.getByText(translate(language, "categoryPropertyExternalChange"))); assert.equal(saves, 1);
+    await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Committed sibling label` }));
+    assert.equal(saves, 1); cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU configured mode validation and storage failures retain a review; stale Apply refreshes but needs explicit confirmation", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let applies = 0, previews = 0, finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok({ ...projectList(active, ["Category"], 1), configured: true }), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.previewDiscovery") {
+        previews++;
+        const mode = input.mode ?? "direct";
+        return ok({ ...previewResult(active, `review-${previews}`), configured: true, currentMode: "direct", mode,
+          categoryAvailability: { current: false, target: mode === "grouped", propertyId: null, name: null }, entries: [] });
+      }
+      if (input.type === "workspace.applyDiscovery") {
+        applies++;
+        if (applies === 1) return new Promise((resolve) => { finish = resolve; });
+        return fail(applies === 2 ? "storage" : "stale_preview");
+      }
+      return fail("invalid_input");
+    } });
+    render(<App />); await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
+    const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+    await userEvent.click(apply);
+    assert.equal(apply.disabled, true);
+    assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    await userEvent.click(apply); assert.equal(applies, 1);
+    await act(async () => finish?.(fail("invalid_input")));
+    await screen.findByRole("heading", { name: translate(language, "discoveryValidation") });
+    await userEvent.click(apply);
+    await screen.findByRole("heading", { name: translate(language, "discoveryApplyError") });
+    await userEvent.click(apply);
+    await screen.findByRole("heading", { name: translate(language, "discoveryStale") });
+    assert.equal(applies, 3); assert.equal(previews, 3); assert.equal(apply.disabled, false);
+    assert.equal((screen.getByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement).value, "grouped");
+    screen.getByRole("heading", { name: translate(language, "discoveryGroupedTitle") }).focus(); await userEvent.keyboard("{Escape}");
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
+    assert.equal(applies, 3); assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    cleanup();
+  }
+});
+
+test("EN/RU configured mode selection discards delayed previews after cancellation, selection/removal, source loss, sibling Apply or backend restart", async () => {
+  for (const language of ["en", "ru"] as const) for (const transition of ["cancel", "switch", "remove", "sourceLoss", "sibling", "restart"] as const) {
+    const active = sharedEventWorkspace(), other = eventWorkspace("Other");
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let previews = 0;
+    const api = mockApi({ language, load: ok(snapshotOf(active, [active, other])), onProjects: async (input) => input.type === "workspace.listProjects" ? ok({ ...projectList(input.workspaceId === active.workspaceId ? active : other, ["Current"], 1), configured: true }) : fail("invalid_input"), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
+      if (input.type === "workspace.previewDiscovery") {
+        previews++;
+        return input.mode === "grouped" ? new Promise((resolve) => { finish = resolve; }) : ok({ ...previewResult(active), currentMode: "direct", configured: true });
+      }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    await userEvent.click(trigger);
+    const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
+    await userEvent.selectOptions(mode, "grouped");
+    assert.equal((mode as HTMLSelectElement).disabled, true);
+    if (transition === "cancel") {
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+      assert.equal(document.activeElement, trigger); await userEvent.click(trigger); await screen.findByRole("checkbox");
+    } else if (transition === "restart") {
+      await act(async () => api.emitStatus("starting")); await act(async () => api.emitStatus("ready"));
+    } else if (transition === "sourceLoss") {
+      await act(async () => api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 1, state: "unavailable", automaticUpdates: "degraded" }));
+    } else if (transition === "sibling") {
+      mode.focus();
+      await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }));
+      assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    } else {
+      await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, transition === "remove" ? [other] : [active, other]) }));
+    }
+    await act(async () => finish?.(ok({ ...previewResult(active), configured: true, currentMode: "direct", mode: "grouped",
+      entries: [{ kind: "category", empty: true, name: "Obsolete category", relativePath: "Obsolete category", reason: null }] })));
+    assert.equal(screen.queryByText("Obsolete category"), null);
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
+    assert.equal(previews, transition === "cancel" ? 3 : 2); cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU configured mode Apply keeps confirmed delayed success and never overwrites a newer sibling mode or replays", async () => {
+  for (const language of ["en", "ru"] as const) for (const newerSibling of [false, true]) {
+    const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
+    let listed = { ...projectList(active, ["Direct"], 1), configured: true } as import("../src/contracts/workspaces.js").ProjectList;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let applies = 0;
+    const applied = f.list("Label", 0, 2, "Grouped child");
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok(listed), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.previewDiscovery") return ok({ ...previewResult(active), configured: true, currentMode: "direct", mode: input.mode ?? "direct" });
+      if (input.type === "workspace.applyDiscovery") { applies++; return new Promise((resolve) => { finish = resolve; }); }
+      return fail("invalid_input");
+    } });
+    render(<App />); const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    await userEvent.click(trigger); await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+    listed = newerSibling ? { ...projectList(active, ["Latest direct"], 3), configured: true } : applied;
+    await act(async () => api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: listed.revision }));
+    await screen.findByRole("cell", { name: newerSibling ? "Latest direct" : "Grouped child" });
+    await act(async () => finish?.(ok(applied)));
+    if (newerSibling) {
+      assert.ok(screen.getByRole("cell", { name: "Latest direct" }));
+      assert.equal(screen.queryByRole("columnheader", { name: "Label" }), null);
+      assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
+      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    } else {
+      assert.ok(screen.getByRole("columnheader", { name: "Label" }));
+      assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
+      assert.equal(document.activeElement, trigger);
+    }
+    assert.equal(applies, 1); cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });

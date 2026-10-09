@@ -477,3 +477,41 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(client.saves, 0); cleanup();
   });
 }
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: mode-retained projects remain editable and a sibling mode change invalidates recovery before target-depth rereview`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const client = new RecoveryClient();
+    client.projects = { ...initial, retainedProjects: [{ ...retained, retentionReason: "mode_change", resolution: "active" }], retainedCount: 1 };
+    const delayed = deferred<ServiceResult<ProjectRecoveryPreview>>(); client.previewHandler = () => delayed.promise;
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));
+    const editor = screen.getByRole("textbox", { name: `${t("editTextValue")}: ${retained.name} / Notes` }) as HTMLTextAreaElement;
+    await userEvent.clear(editor); await userEvent.type(editor, "  Retained draft  ");
+    await userEvent.click(screen.getByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    client.projects = { ...client.projects, mode: "grouped", revision: 2, categoryProperty: { propertyId: "category", sourceId: "source", name: "Category label" } };
+    await act(async () => client.emit(projectEvent(2)));
+    await screen.findByText(t("recoveryStale"));
+    await act(async () => delayed.resolve({ ok: true, value: preview }));
+    assert.equal(screen.queryByRole("radio"), null); assert.equal(client.saves, 0);
+    assert.equal(editor.value, "  Retained draft  "); assert.ok(screen.getByText(t("projectModeRetained")));
+    client.previewHandler = null;
+    client.recoveryPreview = { ...preview, revision: 2, mode: "grouped", entries: [
+      { relativePath: "Category/Target", name: "Target", categoryPath: "Category", status: "selectable" },
+    ] };
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    const target = await screen.findByRole("radio", { name: /Category\/Target/ });
+    assert.equal((target as HTMLInputElement).checked, false);
+    assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+    target.focus(); await userEvent.keyboard(" ");
+    client.handler = async () => {
+      const value: ProjectList = { ...client.projects, revision: 3, projects: [{ ...retained, retentionReason: null, resolution: "active", name: "Target", relativePath: "Category/Target", categoryId: "category" }], retainedProjects: [], retainedCount: 0 };
+      client.projects = value; client.emit(projectEvent(3)); return { ok: true, value };
+    };
+    screen.getByRole("button", { name: t("recoveryConfirm") }).focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByText(t("recoverySaved"));
+    assert.equal(document.querySelector("textarea"), editor); assert.equal(editor.value, "  Retained draft  ");
+    assert.equal(client.saves, 1); assert.equal(client.previews, 2); assert.equal(screen.queryByText(t("projectModeRetained")), null);
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+}

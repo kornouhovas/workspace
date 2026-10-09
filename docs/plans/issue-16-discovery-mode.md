@@ -156,13 +156,13 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 
 **Steps:**
 
-- [ ] Add production entry/controller/port/preload/client tests for configured-mode preview, Apply and category disappearance/return. Verify event-before-response ordering, malformed payload rejection and listener cleanup.
-- [ ] Enable the configured-source mode selector and show project effects, shared-source scope, category availability and effective/inactive exclusions before Apply.
-- [ ] Provide EN/RU loading, empty, unavailable, stale, validation and storage-error states. Cancel abandons the draft without persisted mutation; stale refresh requires another explicit Apply.
-- [ ] Keep retained projects visible with Text editing, previous-path/mode-change feedback and valid recovery controls. Direct mode renders no category property.
-- [ ] Preserve Text and category-label drafts by logical source/project/property identity across switching. Keep discovery/category-label revision merging independent so delayed lists cannot resurrect the category column in direct mode.
-- [ ] Test keyboard selection, Apply/Cancel, focus restoration and pending prevention in both languages. Cover delayed preview/Apply/recovery/label responses after sibling changes, cancellation, selection/removal, source loss and backend restart, including confirmed delayed success without replay.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified UI/transport slice.
+- [x] Add production entry/controller/port/preload/client tests for configured-mode preview, Apply and category disappearance/return. Verify event-before-response ordering, malformed payload rejection and listener cleanup.
+- [x] Enable the configured-source mode selector and show project effects, shared-source scope, category availability and effective/inactive exclusions before Apply.
+- [x] Provide EN/RU loading, empty, unavailable, stale, validation and storage-error states. Cancel abandons the draft without persisted mutation; stale refresh requires another explicit Apply.
+- [x] Keep retained projects visible with Text editing, previous-path/mode-change feedback and valid recovery controls. Direct mode renders no category property.
+- [x] Preserve Text and category-label drafts by logical source/project/property identity across switching. Keep discovery/category-label revision merging independent so delayed lists cannot resurrect the category column in direct mode.
+- [x] Test keyboard selection, Apply/Cancel, focus restoration and pending prevention in both languages. Cover delayed preview/Apply/recovery/label responses after sibling changes, cancellation, selection/removal, source loss and backend restart, including confirmed delayed success without replay.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified UI/transport slice.
 
 ### Task 5: Extend permanent graphical and Electron scenarios
 
