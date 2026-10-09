@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -23,6 +23,61 @@ class FakeChild extends EventEmitter {
   send(message) { this.emit("message", message); }
   exit(code = 0) { this.emit("exit", code); }
 }
+
+test("real service IPC removes only configurations and rejects malformed and stale removal without false success", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-remove-ipc-"));
+  const root = join(directory, "root");
+  const otherRoot = join(directory, "other");
+  await mkdir(root);
+  await mkdir(otherRoot);
+  await writeFile(join(root, "keep.txt"), "shared bytes");
+  await writeFile(join(otherRoot, "keep.txt"), "other bytes");
+  const parent = new EventEmitter();
+  parent.postMessage = () => {};
+  const port = new FakePort();
+  startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => {
+      port.receive({ id: ++id, input });
+      assert.equal(port.sent.at(-1).id, id);
+      return port.sent.at(-1).result;
+    };
+    const one = request({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const sibling = request({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+    const other = request({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+    const before = request({ type: "workspace.load" });
+    for (const input of [{ type: "workspace.remove" },
+      { type: "workspace.remove", workspaceId: one.workspaceId, extra: true },
+      { type: "workspace.remove", workspaceId: 42 },
+      { type: "workspace.remove", workspaceId: "bad-id" },
+      { type: "workspace.remove", workspaceId: "00000000-0000-4000-8000-000000000000" },
+    ]) {
+      assert.equal(request(input).error.code, "invalid_input");
+      assert.deepEqual(request({ type: "workspace.load" }), before);
+    }
+    const inactive = request({ type: "workspace.remove", workspaceId: one.workspaceId });
+    assert.equal(inactive.ok, true);
+    assert.equal(inactive.value.activeWorkspace.workspaceId, other.workspaceId);
+    assert.deepEqual(inactive.value.workspaces.map((row) => row.workspaceId), [sibling.workspaceId, other.workspaceId]);
+    assert.equal(request({ type: "workspace.remove", workspaceId: one.workspaceId }).error.code, "invalid_input");
+    assert.deepEqual(request({ type: "workspace.load" }), inactive);
+    const active = request({ type: "workspace.remove", workspaceId: other.workspaceId });
+    assert.equal(active.ok, true);
+    assert.equal(active.value.activeWorkspace.workspaceId, sibling.workspaceId);
+    assert.equal(active.value.activeWorkspace.viewId, sibling.viewId);
+    assert.deepEqual(request({ type: "workspace.remove", workspaceId: sibling.workspaceId }), { ok: true, value: { workspaces: [], activeWorkspace: null } });
+    const recreated = request({ type: "workspace.create", name: "Recreated", rootPath: root }).value;
+    assert.equal(recreated.sourceId, one.sourceId);
+    assert.notEqual(recreated.viewId, one.viewId);
+    assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "shared bytes");
+    assert.equal(await readFile(join(otherRoot, "keep.txt"), "utf8"), "other bytes");
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 test("service connects over its transferred port, routes settings requests, and closes cleanly", async () => {
   const parent = new EventEmitter();

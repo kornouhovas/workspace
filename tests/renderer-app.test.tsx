@@ -327,6 +327,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
       if (input.type === "workspace.load") return ok(emptyLoad());
       if (input.type === "workspace.activate") return ok(active);
       if (input.type === "workspace.rename") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: input.name }], activeWorkspace: { ...active, name: input.name } });
+      if (input.type === "workspace.remove") return ok(emptyLoad());
       return ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot });
     },
   });
@@ -336,6 +337,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
   assert.deepEqual(await client.activateWorkspace("id"), ok(active));
   assert.deepEqual(await client.createWorkspace("Name", "/tmp/root"), ok({ sourceId: active.sourceId, workspaceId: active.workspaceId, viewId: active.viewId, name: active.name, canonicalRoot: active.canonicalRoot }));
   assert.deepEqual(await client.renameWorkspace("id", "New name"), ok({ workspaces: [{ workspaceId: "id", name: "New name" }], activeWorkspace: { ...active, name: "New name" } }));
+  assert.deepEqual(await client.removeWorkspace("id"), ok(emptyLoad()));
   assert.deepEqual(await client.pickRoot(), { outcome: "selected", path: "/tmp/root" });
   assert.deepEqual(calls, [
     { type: "settings.load" },
@@ -343,6 +345,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
     { type: "workspace.activate", workspaceId: "id" },
     { type: "workspace.create", name: "Name", rootPath: "/tmp/root" },
     { type: "workspace.rename", workspaceId: "id", name: "New name" },
+    { type: "workspace.remove", workspaceId: "id" },
   ]);
 });
 
@@ -540,6 +543,114 @@ test("reorder disables conflicting controls while pending and failures preserve 
       assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options).map((option) => option.value), ["one", "two"]);
       assert.equal(document.activeElement, up);
       assert.equal(calls, 1);
+      cleanup();
+    }
+  }
+});
+
+test("removal confirmation names the configuration, explains retention and restores focus on cancel in EN/RU", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("one", "  Authored имя  ");
+    let commands = 0;
+    mockApi({ language, onWorkspace: async (input) => {
+      if (input.type !== "workspace.load") commands++;
+      return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+    } });
+    render(<App />);
+    const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
+    await userEvent.click(remove);
+    assert.ok(screen.getByRole("form", { name: `${translate(language, "removeWorkspaceTitle")}: ${active.name.trim()}` }));
+    assert.ok(screen.getByText(translate(language, "removeWorkspaceDescription")));
+    assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "cancelRemoveWorkspace") }));
+    await userEvent.keyboard("{Escape}");
+    assert.equal(screen.queryByRole("form"), null);
+    assert.equal(document.activeElement, remove);
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
+    assert.equal(screen.queryByRole("form"), null);
+    assert.equal(document.activeElement, remove);
+    assert.equal(commands, 0);
+    cleanup();
+  }
+});
+
+test("keyboard removal applies committed inactive, active and final snapshots and recovers focus", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const one = makeActive("one", "One");
+    const sibling = { ...makeActive("two", "Sibling"), sourceId: one.sourceId };
+    const other = makeActive("three", "Other", "/Projects/Other");
+    let data: WorkspaceLoad = { workspaces: [one, sibling, other].map(({ workspaceId, name }) => ({ workspaceId, name })), activeWorkspace: other };
+    const calls: WorkspaceRequest[] = [];
+    mockApi({ language, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(data);
+      calls.push(input);
+      if (input.type !== "workspace.remove") return fail("invalid_input");
+      const workspaces = data.workspaces.filter((workspace) => workspace.workspaceId !== input.workspaceId);
+      data = { workspaces, activeWorkspace: input.workspaceId === data.activeWorkspace?.workspaceId ? (workspaces.length ? sibling : null) : data.activeWorkspace };
+      return ok(data);
+    } });
+    render(<App />);
+    for (const target of [one, other, sibling]) {
+      const remove = await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` });
+      remove.focus();
+      await userEvent.keyboard("{Enter}");
+      assert.ok(screen.getByRole("button", { name: translate(language, "cancelRemoveWorkspace") }));
+      await userEvent.tab();
+      assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+      await userEvent.keyboard("{Enter}");
+      await waitFor(() => assert.equal(screen.queryByRole("form"), null));
+      assert.equal(screen.queryByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${target.name}` }), null);
+      if (data.activeWorkspace) {
+        assert.equal(document.querySelector("#workspace-title")?.textContent, data.activeWorkspace.name);
+        assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, data.activeWorkspace.workspaceId);
+        assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Sibling` }));
+      } else {
+        assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
+        assert.equal(document.activeElement, screen.getByRole("textbox", { name: translate(language, "workspaceNameLabel") }));
+        assert.equal(screen.queryByRole("combobox", { name: translate(language, "workspaceSelectLabel") }), null);
+      }
+    }
+    assert.deepEqual(calls, [one, other, sibling].map(({ workspaceId }) => ({ type: "workspace.remove", workspaceId })));
+    cleanup();
+  }
+});
+
+test("pending and failed removal retain selection, confirmation and list and permit retry in both languages", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const failure of ["storage", "invalid_input", "service_unavailable", "throw"] as const) {
+      const active = makeActive("one", "Actual");
+      const data: WorkspaceLoad = { workspaces: [{ workspaceId: "one", name: "Actual" }, { workspaceId: "two", name: "Sibling" }], activeWorkspace: active };
+      let finish: ((result: ServiceResult<WorkspaceLoad>) => void) | undefined;
+      const pending = new Promise<ServiceResult<WorkspaceLoad>>((resolve) => { finish = resolve; });
+      let calls = 0;
+      mockApi({ language, onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(data);
+        calls++;
+        if (calls > 1) return ok({ workspaces: [{ workspaceId: "two", name: "Sibling" }], activeWorkspace: makeActive("two", "Sibling") });
+        const result = await pending;
+        if (failure === "throw") throw new Error("closed");
+        return result;
+      } });
+      render(<App />);
+      await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: Actual` }));
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+      assert.equal((screen.getByRole("button", { name: translate(language, "removingWorkspace") }) as HTMLButtonElement).disabled, true);
+      for (const label of ["cancelRemoveWorkspace", "renameWorkspaceAction", "addWorkspaceAction"] as const) {
+        assert.equal((screen.getByRole("button", { name: translate(language, label) }) as HTMLButtonElement).disabled, true);
+      }
+      assert.equal((screen.getByRole("button", { name: `${translate(language, "moveWorkspaceDown")}: Actual` }) as HTMLButtonElement).disabled, true);
+      assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).disabled, true);
+      await userEvent.keyboard("{Escape}");
+      assert.ok(screen.getByRole("form"));
+      await act(async () => { finish?.(fail(failure === "throw" ? "storage" : failure)); await pending; });
+      assert.ok(await screen.findByRole("heading", { name: translate(language, "removeErrorTitle") }));
+      assert.ok(screen.getByText(translate(language, failure === "invalid_input" ? "removeStaleDescription" : "removeErrorDescription")));
+      assert.equal(document.querySelector("#workspace-title")?.textContent, "Actual");
+      assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options, (option) => option.value), ["one", "two"]);
+      assert.equal(screen.queryByText("private service detail"), null);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "confirmRemoveWorkspace") }));
+      await waitFor(() => assert.equal(document.querySelector("#workspace-title")?.textContent, "Sibling"));
+      assert.equal(calls, 2);
       cleanup();
     }
   }

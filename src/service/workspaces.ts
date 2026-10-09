@@ -37,6 +37,9 @@ export interface WorkspaceService {
   reorder(input: unknown):
     | { ok: true; value: WorkspaceLoad }
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
+  remove(input: unknown):
+    | { ok: true; value: WorkspaceLoad }
+    | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
   assertContained(sourceRoot: string, targetPath: string): boolean;
   load(): { ok: true; value: WorkspaceLoad } | { ok: false; error: { code: "storage"; message: string } };
   activate(input: unknown):
@@ -134,6 +137,42 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           }
           workspaceIds.forEach((id, position) => {
             tx.update(schema.workspaces).set({ position }).where(eq(schema.workspaces.id, id)).run();
+          });
+          return { ok: true as const, value: readWorkspaceLoad(tx, filesystem) };
+        });
+      } catch {
+        return storageFailure();
+      }
+    },
+    remove(input) {
+      if (!isRecord(input) || input.type !== "workspace.remove" ||
+        Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId") || !isUuid(input.workspaceId)) {
+        return invalid("Choose a saved workspace to remove.");
+      }
+      const { workspaceId } = input;
+      try {
+        return db.transaction((tx) => {
+          const current = tx.select().from(schema.workspaces)
+            .orderBy(asc(schema.workspaces.position), asc(schema.workspaces.id)).all();
+          if (!current.some((workspace) => workspace.id === workspaceId)) return invalid("Choose a saved workspace to remove.");
+          const remaining = current.filter((workspace) => workspace.id !== workspaceId);
+          const active = tx.select().from(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).get();
+          if (active?.workspaceId === workspaceId) {
+            const fallback = remaining[0];
+            if (fallback) {
+              const view = tx.select().from(schema.views).where(eq(schema.views.workspaceId, fallback.id))
+                .orderBy(asc(schema.views.id)).all().find((candidate) => candidate.kind === "table");
+              if (!view) throw new Error("Missing fallback Table view.");
+              tx.update(schema.activeWorkspace).set({ workspaceId: fallback.id, viewId: view.id })
+                .where(eq(schema.activeWorkspace.key, "active")).run();
+            } else {
+              tx.delete(schema.activeWorkspace).where(eq(schema.activeWorkspace.key, "active")).run();
+            }
+          }
+          tx.delete(schema.views).where(eq(schema.views.workspaceId, workspaceId)).run();
+          tx.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).run();
+          remaining.forEach((workspace, position) => {
+            tx.update(schema.workspaces).set({ position }).where(eq(schema.workspaces.id, workspace.id)).run();
           });
           return { ok: true as const, value: readWorkspaceLoad(tx, filesystem) };
         });

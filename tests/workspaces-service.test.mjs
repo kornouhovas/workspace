@@ -32,6 +32,143 @@ function records(databasePath) {
   } finally { sqlite.close(); }
 }
 
+test("removal retains sources and file bytes, preserves surviving presentation and reuses orphan sources after restart", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const otherRoot = join(directory, "other");
+    mkdirSync(otherRoot);
+    const bytes = Buffer.from([0, 255, 42, 10]);
+    for (const folder of [root, otherRoot]) writeFileSync(join(folder, "keep.bin"), bytes);
+    let service = openSettingsService(databasePath);
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+      const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+      const sqlite = new Database(databasePath);
+      sqlite.prepare("UPDATE views SET name = ? WHERE id = ?").run("Independent presentation", sibling.viewId);
+      sqlite.close();
+      service.handleCommand({ type: "workspace.reorder", workspaceIds: [sibling.workspaceId, other.workspaceId, one.workspaceId] });
+      const before = records(databasePath);
+      const inactive = service.handleCommand({ type: "workspace.remove", workspaceId: one.workspaceId });
+      assert.equal(inactive.ok, true);
+      assert.equal(inactive.value.activeWorkspace.workspaceId, other.workspaceId);
+      assert.deepEqual(records(databasePath).active, before.active);
+      assert.deepEqual(records(databasePath).views, before.views.filter((view) => view.workspace_id !== one.workspaceId));
+      const active = service.handleCommand({ type: "workspace.remove", workspaceId: other.workspaceId });
+      assert.equal(active.ok, true);
+      assert.equal(active.value.activeWorkspace.workspaceId, sibling.workspaceId);
+      assert.equal(active.value.activeWorkspace.viewId, sibling.viewId);
+      assert.deepEqual(records(databasePath).workspaces.map((row) => row.position), [0]);
+      const final = service.handleCommand({ type: "workspace.remove", workspaceId: sibling.workspaceId });
+      assert.deepEqual(final, { ok: true, value: { workspaces: [], activeWorkspace: null } });
+      assert.deepEqual(records(databasePath), { sources: before.sources, workspaces: [], views: [], active: [] });
+      for (const folder of [root, otherRoot]) assert.deepEqual(readFileSync(join(folder, "keep.bin")), bytes);
+      service.close();
+      service = openSettingsService(databasePath);
+      assert.deepEqual(service.workspaces.load(), final);
+      for (const [folder, original] of [[root, one], [otherRoot, other]]) {
+        const recreated = service.workspaces.create({ type: "workspace.create", name: "Recreated", rootPath: folder }).value;
+        assert.equal(recreated.sourceId, original.sourceId);
+        assert.notEqual(recreated.workspaceId, original.workspaceId);
+        assert.notEqual(recreated.viewId, original.viewId);
+        assert.deepEqual(readFileSync(join(folder, "keep.bin")), bytes);
+      }
+      assert.deepEqual(records(databasePath).sources, before.sources);
+      const snapshot = service.workspaces.load();
+      service.close();
+      service = openSettingsService(databasePath);
+      assert.deepEqual(service.workspaces.load(), snapshot);
+    } finally { service.close(); }
+  });
+});
+
+test("active removal falls back to saved order and existing Table even when its source is unavailable", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const otherRoot = join(directory, "other");
+    mkdirSync(otherRoot);
+    const service = openSettingsService(databasePath);
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+      service.handleCommand({ type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId, other.workspaceId] });
+      const before = records(databasePath);
+      rmSync(root, { recursive: true });
+      const removed = service.handleCommand({ type: "workspace.remove", workspaceId: other.workspaceId });
+      assert.equal(removed.ok, true);
+      assert.equal(removed.value.activeWorkspace.workspaceId, two.workspaceId);
+      assert.equal(removed.value.activeWorkspace.viewId, two.viewId);
+      assert.equal(removed.value.activeWorkspace.sourceAvailable, false);
+      assert.deepEqual(records(databasePath).sources, before.sources);
+      assert.deepEqual(records(databasePath).views, before.views.filter((view) => view.workspace_id !== other.workspaceId));
+      const reopened = openSettingsService(databasePath);
+      try { assert.deepEqual(reopened.workspaces.load(), removed); }
+      finally { reopened.close(); }
+    } finally { service.close(); }
+  });
+});
+
+test("malformed, unknown and repeated removal leave every unrelated record and selection unchanged", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      assert.equal(service.handleCommand({ type: "workspace.remove", workspaceId: one.workspaceId }).ok, true);
+      const before = records(databasePath);
+      const valid = { type: "workspace.remove", workspaceId: two.workspaceId };
+      for (const input of [null, [], {}, { type: valid.type }, { ...valid, extra: true },
+        { ...valid, type: "workspace.unknown" }, { ...valid, workspaceId: 42 }, { ...valid, workspaceId: "bad-id" },
+        { ...valid, workspaceId: randomUUID() }, { ...valid, workspaceId: one.workspaceId },
+      ]) {
+        assert.equal(service.workspaces.remove(input).error.code, "invalid_input");
+        assert.deepEqual(records(databasePath), before);
+      }
+      assert.equal(service.handleCommand({ type: "workspace.reorder", workspaceIds: [one.workspaceId, two.workspaceId] }).error.code, "invalid_input");
+      assert.equal(service.handleCommand({ type: "workspace.rename", workspaceId: one.workspaceId, name: "Stale" }).error.code, "invalid_input");
+      assert.equal(service.handleCommand({ type: "workspace.activate", workspaceId: one.workspaceId }).error.code, "invalid_input");
+      assert.deepEqual(records(databasePath), before);
+    } finally { service.close(); }
+  });
+});
+
+test("removal rolls back selection, owned views and positions on write or resulting snapshot failures", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const sqlite = new Database(databasePath);
+    try {
+      service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
+      const active = service.workspaces.create({ type: "workspace.create", name: "Active", rootPath: root }).value;
+      const before = records(databasePath);
+      for (const [operation, body] of [
+        ["DELETE ON views", "SELECT RAISE(ABORT, 'view deletion failure');"],
+        ["DELETE ON workspaces", "SELECT RAISE(ABORT, 'workspace deletion failure');"],
+        ["UPDATE OF position ON workspaces", "SELECT RAISE(ABORT, 'ordering failure');"],
+        ["DELETE ON workspaces", "UPDATE views SET kind = 'unsupported';"],
+      ]) {
+        sqlite.exec(`CREATE TRIGGER fail_remove AFTER ${operation} BEGIN ${body} END;`);
+        assert.equal(service.handleCommand({ type: "workspace.remove", workspaceId: active.workspaceId }).error.code, "storage");
+        assert.deepEqual(records(databasePath), before);
+        sqlite.exec("DROP TRIGGER fail_remove;");
+      }
+    } finally { sqlite.close(); service.close(); }
+  });
+});
+
+test("failed final removal restores the cleared selection and all configuration records", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const sqlite = new Database(databasePath);
+    try {
+      const final = service.workspaces.create({ type: "workspace.create", name: "Final", rootPath: root }).value;
+      const before = records(databasePath);
+      sqlite.exec("CREATE TRIGGER fail_final AFTER DELETE ON workspaces BEGIN SELECT RAISE(ABORT, 'injected final deletion failure'); END;");
+      assert.equal(service.handleCommand({ type: "workspace.remove", workspaceId: final.workspaceId }).error.code, "storage");
+      assert.deepEqual(records(databasePath), before);
+      assert.equal(service.workspaces.load().value.activeWorkspace.viewId, final.viewId);
+    } finally { sqlite.close(); service.close(); }
+  });
+});
+
 test("creates a canonical source, workspace, Table view and active selection with distinct IDs", () => {
   withFixture(({ root, databasePath }) => {
     const contents = join(root, "keep.txt");

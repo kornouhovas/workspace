@@ -174,10 +174,24 @@ body {
   flex: none;
 }
 
-.workspace-rename {
+.workspace-rename,
+.workspace-removal {
   display: grid;
   gap: 1rem;
   min-width: 0;
+}
+
+.workspace-removal {
+  border: 1px solid #d7d9dc;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.workspace-removal h3,
+.workspace-removal p {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .workspace-form-actions {
@@ -234,11 +248,11 @@ body {
   }
 
   .workspace-management__row .workspace-form-actions {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .workspace-management__row .workspace-button {
-    flex: 1;
+    flex: 1 1 7rem;
   }
 
   .selected-root {

@@ -42,6 +42,10 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.reorder", workspaceIds });
   }
 
+  removeWorkspace(workspaceId: string): Promise<ServiceResult<WorkspaceLoad>> {
+    return this.api.workspace({ type: "workspace.remove", workspaceId });
+  }
+
   pickRoot(): Promise<RootPickerResult> {
     return this.api.pickRoot();
   }

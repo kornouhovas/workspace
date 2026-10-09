@@ -22,8 +22,13 @@ export type WorkspaceReorderCommand = {
   workspaceIds: string[];
 };
 
+export type WorkspaceRemoveCommand = {
+  type: "workspace.remove";
+  workspaceId: string;
+};
+
 export type WorkspaceQuery = WorkspaceLoadQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand;
+export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;

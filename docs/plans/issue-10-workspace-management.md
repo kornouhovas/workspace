@@ -125,12 +125,12 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Add failing tests for inactive, active, last-reference and final-workspace removal across shared and different roots. Snapshot source records, surviving view records and sentinel file bytes.
-- [ ] Add workspace.remove with workspaceId, returning ServiceResult<WorkspaceLoad>. Validate existence before mutation; update/clear selection, delete only owned views and the workspace, and maintain ordering in one transaction.
-- [ ] Implement deterministic fallback to the first remaining saved configuration and its existing Table view, including an unavailable source. Invalid/stale removal and injected transaction failures preserve the previous selection and all unrelated data.
-- [ ] Prove retained-source reuse after last-reference removal and restart: creating a workspace over that root reuses sourceId while receiving new workspace/view IDs. Preserve any existing source-owned metadata; add no project schema solely for this test.
-- [ ] Add EN/RU removal confirmation naming the configuration and explicitly explaining that project files and source metadata are retained. Support cancel, keyboard operation, pending/error states, focus recovery and the useful final-workspace creation state.
-- [ ] Extend service/IPC/UI regressions for repeated removal, surviving presentation records and file retention; run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit.
+- [x] Add failing tests for inactive, active, last-reference and final-workspace removal across shared and different roots. Snapshot source records, surviving view records and sentinel file bytes.
+- [x] Add workspace.remove with workspaceId, returning ServiceResult<WorkspaceLoad>. Validate existence before mutation; update/clear selection, delete only owned views and the workspace, and maintain ordering in one transaction.
+- [x] Implement deterministic fallback to the first remaining saved configuration and its existing Table view, including an unavailable source. Invalid/stale removal and injected transaction failures preserve the previous selection and all unrelated data.
+- [x] Prove retained-source reuse after last-reference removal and restart: creating a workspace over that root reuses sourceId while receiving new workspace/view IDs. Preserve any existing source-owned metadata; add no project schema solely for this test.
+- [x] Add EN/RU removal confirmation naming the configuration and explicitly explaining that project files and source metadata are retained. Support cancel, keyboard operation, pending/error states, focus recovery and the useful final-workspace creation state.
+- [x] Extend service/IPC/UI regressions for repeated removal, surviving presentation records and file retention; run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit.
 
 ### Task 4: Deliver source-scoped notifications through the real backend and client
 

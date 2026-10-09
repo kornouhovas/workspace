@@ -29,12 +29,24 @@ export function App() {
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
-  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | null>(null);
+  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | "remove" | null>(null);
   const [renameDraft, setRenameDraft] = useState<{ workspaceId: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<"blank" | "stale" | "save" | null>(null);
   const [reorderError, setReorderError] = useState<"stale" | "save" | null>(null);
+  const [removalTarget, setRemovalTarget] = useState<{ workspaceId: string; name: string } | null>(null);
+  const [removalError, setRemovalError] = useState<"stale" | "save" | null>(null);
+  const removalFocus = useRef<string | null>(null);
+  const createNameInput = useRef<HTMLInputElement>(null);
   const managementList = useRef<HTMLOListElement>(null);
   const reorderFocus = useRef<{ workspaceId: string; direction: "up" | "down" } | null>(null);
+
+  useEffect(() => {
+    if (busy || removalTarget || !removalFocus.current) return;
+    const buttons = Array.from(managementList.current?.querySelectorAll<HTMLButtonElement>("button[data-action='remove']") ?? []);
+    const target = buttons.find((button) => button.dataset.workspaceId === removalFocus.current) ?? buttons[0];
+    (target ?? createNameInput.current)?.focus();
+    removalFocus.current = null;
+  }, [busy, removalTarget, workspaceData]);
 
   useEffect(() => {
     if (busy || !reorderFocus.current) return;
@@ -212,7 +224,7 @@ export function App() {
   };
 
   const moveWorkspace = async (workspaceId: string, direction: "up" | "down") => {
-    if (busy || renameDraft || !workspaceData) return;
+    if (busy || renameDraft || removalTarget || !workspaceData) return;
     const workspaceIds = workspaceData.workspaces.map((workspace) => workspace.workspaceId);
     const index = workspaceIds.indexOf(workspaceId);
     const target = index + (direction === "up" ? -1 : 1);
@@ -227,6 +239,35 @@ export function App() {
       else setReorderError(result.error.code === "invalid_input" ? "stale" : "save");
     } catch {
       setReorderError("save");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cancelRemoval = () => {
+    if (busy || !removalTarget) return;
+    removalFocus.current = removalTarget.workspaceId;
+    setRemovalTarget(null);
+    setRemovalError(null);
+  };
+
+  const removeWorkspace = async () => {
+    if (busy || !removalTarget) return;
+    setBusy("remove");
+    setRemovalError(null);
+    try {
+      const result = await client.removeWorkspace(removalTarget.workspaceId);
+      if (result.ok) {
+        removalFocus.current = removalTarget.workspaceId;
+        setWorkspaceData(result.value);
+        setRemovalTarget(null);
+        setFormMessage(null);
+        setReorderError(null);
+      } else {
+        setRemovalError(result.error.code === "invalid_input" ? "stale" : "save");
+      }
+    } catch {
+      setRemovalError("save");
     } finally {
       setBusy(null);
     }
@@ -295,7 +336,7 @@ export function App() {
                     className="bb-select"
                     id="workspace-switcher"
                     value={activeWorkspace.workspaceId}
-                    disabled={busy !== null || renameDraft !== null}
+                    disabled={busy !== null || renameDraft !== null || removalTarget !== null}
                     onChange={(event) => void activateWorkspace(event.currentTarget.value)}
                   >
                     {workspaceData?.workspaces.map((workspace) => (
@@ -319,12 +360,23 @@ export function App() {
                             data-workspace-id={workspace.workspaceId}
                             data-direction={direction}
                             aria-label={`${t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}: ${workspace.name}`}
-                            disabled={busy !== null || renameDraft !== null || (direction === "up" ? index === 0 : index === all.length - 1)}
+                            disabled={busy !== null || renameDraft !== null || removalTarget !== null || (direction === "up" ? index === 0 : index === all.length - 1)}
                             onClick={() => void moveWorkspace(workspace.workspaceId, direction)}
                           >
                             {t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          className="workspace-button workspace-button--secondary"
+                          data-workspace-id={workspace.workspaceId}
+                          data-action="remove"
+                          aria-label={`${t("removeWorkspaceAction")}: ${workspace.name}`}
+                          disabled={busy !== null || renameDraft !== null || removalTarget !== null}
+                          onClick={() => { setRemovalTarget(workspace); setRemovalError(null); }}
+                        >
+                          {t("removeWorkspaceAction")}
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -336,11 +388,39 @@ export function App() {
                   </StatusMessage>
                 )}
               </section>
+              {removalTarget && (
+                <form
+                  className="workspace-removal"
+                  aria-labelledby="remove-title"
+                  aria-describedby="remove-description"
+                  aria-busy={busy === "remove"}
+                  onSubmit={(event) => { event.preventDefault(); void removeWorkspace(); }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") { event.preventDefault(); cancelRemoval(); }
+                  }}
+                >
+                  <h3 id="remove-title">{t("removeWorkspaceTitle")}: <span>{removalTarget.name}</span></h3>
+                  <p id="remove-description">{t("removeWorkspaceDescription")}</p>
+                  <div className="workspace-form-actions">
+                    <button type="button" autoFocus className="workspace-button workspace-button--secondary" disabled={busy !== null} onClick={cancelRemoval}>
+                      {t("cancelRemoveWorkspace")}
+                    </button>
+                    <button type="submit" className="workspace-button" disabled={busy !== null}>
+                      {busy === "remove" ? t("removingWorkspace") : t("confirmRemoveWorkspace")}
+                    </button>
+                  </div>
+                  {removalError && (
+                    <StatusMessage kind="error" title={t("removeErrorTitle")}>
+                      {t(removalError === "stale" ? "removeStaleDescription" : "removeErrorDescription")}
+                    </StatusMessage>
+                  )}
+                </form>
+              )}
               <button
                 ref={renameButton}
                 type="button"
                 className="workspace-button workspace-button--secondary"
-                disabled={busy !== null || renameDraft !== null}
+                disabled={busy !== null || renameDraft !== null || removalTarget !== null}
                 onClick={() => {
                   setRenameDraft({ workspaceId: activeWorkspace.workspaceId, name: activeWorkspace.name });
                   setRenameError(null);
@@ -412,7 +492,7 @@ export function App() {
               <button
                 type="button"
                 className="workspace-button workspace-button--secondary"
-                disabled={busy !== null || renameDraft !== null}
+                disabled={busy !== null || renameDraft !== null || removalTarget !== null}
                 onClick={() => { setFormMessage(null); setAddingWorkspace(true); }}
               >
                 {t("addWorkspaceAction")}
@@ -425,6 +505,7 @@ export function App() {
               <label className="bb-field">
                 <span className="bb-label">{t("workspaceNameLabel")}</span>
                 <input
+                  ref={createNameInput}
                   className="bb-input"
                   value={name}
                   onChange={(event) => setName(event.currentTarget.value)}

@@ -86,6 +86,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.activate") return workspaces.activate(input);
       if (isRecord(input) && input.type === "workspace.rename") return workspaces.rename(input);
       if (isRecord(input) && input.type === "workspace.reorder") return workspaces.reorder(input);
+      if (isRecord(input) && input.type === "workspace.remove") return workspaces.remove(input);
       if (!isRecord(input) || input.type !== "settings.setLanguage" || !isLanguage(input.language)) {
         return { ok: false, error: invalidInput("Expected a supported language: en or ru.") };
       }

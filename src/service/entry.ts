@@ -77,7 +77,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "workspaceIds"]) ||
       !Array.isArray(input.workspaceIds) || !input.workspaceIds.every((id) => typeof id === "string");
   }
-  if (input.type === "workspace.activate") {
+  if (input.type === "workspace.activate" || input.type === "workspace.remove") {
     return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   }
   return true;
