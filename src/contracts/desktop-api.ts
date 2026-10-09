@@ -1,12 +1,24 @@
 import type { ServiceResult, Settings, SettingsCommand, SettingsQuery } from "./settings.js";
+import type { ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery } from "./workspaces.js";
 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
+export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
+export type WorkspaceResponse = WorkspaceLoad | WorkspaceCreated | ActiveWorkspace;
+export type RootPickerResult =
+  | { outcome: "selected"; path: string }
+  | { outcome: "cancelled" }
+  | { outcome: "failed" };
 
 export interface WorkspaceDesktopApi {
   getBackendStatus(): Promise<BackendStatus>;
   onBackendStatus(listener: (status: BackendStatus) => void): () => void;
   settings(input: SettingsRequest): Promise<ServiceResult<Settings>>;
+  workspace(input: WorkspaceLoadQuery): Promise<ServiceResult<WorkspaceLoad>>;
+  workspace(input: WorkspaceCreateCommand): Promise<ServiceResult<WorkspaceCreated>>;
+  workspace(input: WorkspaceActivateCommand): Promise<ServiceResult<ActiveWorkspace>>;
+  workspace(input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>>;
+  pickRoot(): Promise<RootPickerResult>;
 }
 
 declare global {

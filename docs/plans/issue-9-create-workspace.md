@@ -128,21 +128,21 @@ boundary
 `src/service/entry.ts`,
 `src/renderer/workspace-service-client.ts`,
 `tests/backend-lifecycle.test.mjs`.
-  - [ ] Add a narrow Electron directory-picker method
+  - [x] Add a narrow Electron directory-picker method
 using the native dialog. Return selected, cancelled, and
 failed outcomes distinctly; cancellation sends no create
 command.
-  - [ ] Carry typed workspace requests and results across
+  - [x] Carry typed workspace requests and results across
 preload, IPC, controller, and backend ports. Validate
 untrusted request shapes in the backend. Preserve settings
 behavior and the existing readiness, timeout, shutdown,
 and unavailable states.
-  - [ ] Test picker options and cancellation with a dialog
+  - [x] Test picker options and cancellation with a dialog
 boundary seam, request routing and rejection, backend
 failure, and renderer isolation. Do not treat an automated
 picker seam as proof that a human exercised an OS-native
 dialog.
-  - [ ] Run affected tests, the full test suite, lint,
+  - [x] Run affected tests, the full test suite, lint,
 typecheck, and build with the required Node 22 `PATH`;
 commit the verified task changes.
 ### Task 4: Build the localized create and empty Table

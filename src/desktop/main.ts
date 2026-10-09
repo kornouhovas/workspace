@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, MessageChannelMain, utilityProcess } from "electron";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { BackendController } from "./backend-controller.js";
+import { createRootPicker } from "./root-picker.js";
 
 const appDataDirectory = process.env.WORKSPACE_USER_DATA_DIR ??
   (app.isPackaged ? app.getPath("userData") : join(app.getPath("userData"), "development"));
@@ -38,6 +39,8 @@ async function createWindow(): Promise<void> {
 
 ipcMain.handle("workspace:backend-status", () => controller.currentStatus);
 ipcMain.handle("workspace:settings", (_event, input: unknown) => controller.request(input));
+ipcMain.handle("workspace:command", (_event, input: unknown) => controller.request(input));
+ipcMain.handle("workspace:pick-root", () => createRootPicker(dialog)());
 
 let quitInProgress = false;
 app.on("before-quit", (event) => {

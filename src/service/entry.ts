@@ -42,9 +42,11 @@ export function startServiceProcess(
       if (!requestPort) throw new Error("Missing service message port");
       requestPort.on("message", ({ data: request }) => {
         if (!service || !isServiceRequest(request)) return;
-        const result = isLoadQuery(request.input)
-          ? service.handleQuery(request.input)
-          : service.handleCommand(request.input);
+        const result = isMalformedWorkspaceRequest(request.input)
+          ? { ok: false, error: { code: "invalid_input", message: "The workspace request is invalid." } }
+          : isLoadQuery(request.input)
+            ? service.handleQuery(request.input)
+            : service.handleCommand(request.input);
         requestPort?.postMessage({ id: request.id, result });
       });
       requestPort.start?.();
@@ -59,6 +61,28 @@ export function startServiceProcess(
 function isLoadQuery(input: unknown): boolean {
   return typeof input === "object" && input !== null &&
     ["settings.load", "workspace.load"].includes(String((input as { type?: unknown }).type));
+}
+
+function isMalformedWorkspaceRequest(input: unknown): boolean {
+  if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if (input.type === "workspace.load") return !hasExactKeys(input, ["type"]);
+  if (input.type === "workspace.create") {
+    return !hasExactKeys(input, ["type", "name", "rootPath"]) ||
+      typeof input.name !== "string" || typeof input.rootPath !== "string";
+  }
+  if (input.type === "workspace.activate") {
+    return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
+  }
+  return true;
+}
+
+function hasExactKeys(value: Record<string, unknown>, expected: string[]): boolean {
+  const keys = Object.keys(value);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 const parentPort = process.parentPort as unknown as ParentPort | null;

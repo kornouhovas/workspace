@@ -1,4 +1,8 @@
-import type { ServiceResult, Settings } from "./settings.js";
+import type { ServiceResult } from "./settings.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "./workspaces.js";
+import type { Settings } from "./settings.js";
+
+export type ServicePayload = Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace;
 
 export type ServiceRequest = {
   id: number;
@@ -7,7 +11,7 @@ export type ServiceRequest = {
 
 export type ServiceResponse = {
   id: number;
-  result: ServiceResult<Settings>;
+  result: ServiceResult<ServicePayload>;
 };
 
 export type ServicePort = {

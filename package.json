@@ -13,7 +13,7 @@
     "check:version": "node scripts/check-version.mjs",
     "check:docs": "node scripts/check-doc-links.mjs",
     "build:renderer": "vite build",
-    "build:desktop": "esbuild src/desktop/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/main.cjs && esbuild src/desktop/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/preload.cjs && esbuild src/desktop/backend-controller.ts --bundle --platform=node --format=esm --outfile=dist/desktop/backend-controller.mjs",
+    "build:desktop": "esbuild src/desktop/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/main.cjs && esbuild src/desktop/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/preload.cjs && esbuild src/desktop/backend-controller.ts --bundle --platform=node --format=esm --outfile=dist/desktop/backend-controller.mjs && esbuild src/desktop/root-picker.ts --bundle --platform=node --format=esm --outfile=dist/desktop/root-picker.mjs",
     "build:service-test-lib": "esbuild src/service/settings.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist/service/settings.mjs",
     "build:backend": "esbuild src/service/entry.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/service/entry.cjs",
     "ladle": "ladle serve",

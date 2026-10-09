@@ -38,6 +38,8 @@ function mockApi(
       return () => { statusListener = undefined; };
     },
     settings,
+    workspace: async () => ({ ok: false, error: { code: "invalid_input", message: "Not used in settings tests." } }),
+    pickRoot: async () => ({ outcome: "cancelled" }),
   };
   return { emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
 }

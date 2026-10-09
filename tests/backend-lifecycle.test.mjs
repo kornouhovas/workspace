@@ -56,6 +56,42 @@ test("service connects over its transferred port, routes settings requests, and 
   assert.equal(port.closed, true);
 });
 
+test("service routes typed workspace requests and rejects malformed workspace payloads", () => {
+  const parent = new EventEmitter();
+  parent.sent = [];
+  parent.postMessage = (message) => parent.sent.push(message);
+  const port = new FakePort();
+  const routed = [];
+  startServiceProcess(parent, () => ({
+    handleQuery: (input) => {
+      routed.push(["query", input]);
+      return { ok: true, value: { workspaces: [], activeWorkspace: null } };
+    },
+    handleCommand: (input) => {
+      routed.push(["command", input]);
+      return { ok: true, value: { workspaceId: "workspace-id" } };
+    },
+    close() {},
+  }));
+  parent.emit("message", { data: { type: "connect", databasePath: "/tmp/settings.sqlite" }, ports: [port] });
+  port.receive({ id: 1, input: { type: "workspace.load" } });
+  port.receive({ id: 2, input: { type: "workspace.create", name: "A", rootPath: "/tmp/a" } });
+  port.receive({ id: 3, input: { type: "workspace.activate", workspaceId: 42 } });
+  port.receive({ id: 4, input: { type: "workspace.unknown" } });
+  assert.deepEqual(routed, [
+    ["query", { type: "workspace.load" }],
+    ["command", { type: "workspace.create", name: "A", rootPath: "/tmp/a" }],
+  ]);
+  assert.deepEqual(port.sent[2].result, {
+    ok: false,
+    error: { code: "invalid_input", message: "The workspace request is invalid." },
+  });
+  assert.deepEqual(port.sent[3].result, {
+    ok: false,
+    error: { code: "invalid_input", message: "The workspace request is invalid." },
+  });
+});
+
 test("desktop controller waits for readiness and routes request responses", async () => {
   const statuses = [];
   const controller = new BackendController((status) => statuses.push(status));
@@ -183,6 +219,8 @@ test("renderer security settings are strict and service has no network server de
   assert.match(preload, /exposeInMainWorld\("workspace", api\)/);
   assert.doesNotMatch(preload, /require\(|process\.|node:fs|better-sqlite3/);
   assert.match(preload, /WorkspaceDesktopApi/);
+  assert.match(preload, /workspace:command/);
+  assert.match(preload, /workspace:pick-root/);
   assert.doesNotMatch(renderer, /node:|better-sqlite3|from ["']electron["']/);
   assert.doesNotMatch(backend, /node:http|node:net|createServer|listen\(/);
 });

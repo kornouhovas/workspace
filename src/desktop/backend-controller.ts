@@ -1,6 +1,6 @@
 import type { BackendStatus } from "../contracts/desktop-api.js";
-import { isServiceResponse, type ServicePort } from "../contracts/service-protocol.js";
-import type { ServiceResult, Settings } from "../contracts/settings.js";
+import { isServiceResponse, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
+import type { ServiceResult } from "../contracts/settings.js";
 
 type ChildProcess = {
   postMessage(message: unknown, transfer?: unknown[]): void;
@@ -18,7 +18,7 @@ export class BackendController {
   private port?: ServicePort;
   private status: BackendStatus = { state: "starting" };
   private nextId = 1;
-  private pending = new Map<number, { resolve: (value: ServiceResult<Settings>) => void; timer: Timer }>();
+  private pending = new Map<number, { resolve: (value: ServiceResult<ServicePayload>) => void; timer: Timer }>();
   private readiness?: { resolve: (ready: boolean) => void; timer: Timer };
   private onStatus: (status: BackendStatus) => void;
 
@@ -57,7 +57,7 @@ export class BackendController {
     return ready;
   }
 
-  request(input: unknown, timeoutMs = 10000): Promise<ServiceResult<Settings>> {
+  request(input: unknown, timeoutMs = 10000): Promise<ServiceResult<ServicePayload>> {
     if (this.status.state !== "ready" || !this.port) {
       return Promise.resolve({ ok: false, error: { code: "service_unavailable", message: "The local service is unavailable." } });
     }
