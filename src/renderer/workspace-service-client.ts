@@ -1,6 +1,6 @@
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
+import type { DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
 
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
@@ -22,6 +22,11 @@ export class WorkspaceServiceClient {
       if (active && isWorkspaceChangeEvent(event)) listener(event);
     });
     return () => { active = false; unsubscribe(); };
+  }
+
+  previewDiscovery(workspaceId: string, excludedRelativePaths?: string[]): Promise<ServiceResult<DiscoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId,
+      ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });
   }
 
   refreshSource(workspaceId: string): Promise<ServiceResult<WorkspaceSourceState>> {

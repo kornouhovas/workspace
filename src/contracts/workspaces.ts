@@ -43,7 +43,7 @@ export type WorkspaceChangeEvent =
   | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
   | { type: "workspace.sourceChanged"; source: WorkspaceSourceState };
 
-export type WorkspaceQuery = WorkspaceLoadQuery;
+export type WorkspaceQuery = WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery;
 export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand;
 
 export interface WorkspaceSummary {
@@ -72,3 +72,25 @@ export interface WorkspaceCreated {
   name: string;
   canonicalRoot: string;
 }
+
+export type DiscoveryExclusionReason = "manual" | "link" | "hidden" | "service" | "archive";
+export interface DiscoveryEntry {
+  relativePath: string;
+  name: string;
+  reason: DiscoveryExclusionReason | null;
+}
+export interface DiscoveryPreview {
+  workspaceId: string;
+  sourceId: string;
+  revision: number;
+  canonicalRoot: string;
+  excludedRelativePaths: string[];
+  entries: DiscoveryEntry[];
+  state: "ready" | "empty" | "unavailable" | "unreadable" | "root_identity_conflict" | "changed";
+  previewToken: string | null;
+}
+export type WorkspacePreviewDiscoveryQuery = {
+  type: "workspace.previewDiscovery";
+  workspaceId: string;
+  excludedRelativePaths?: string[];
+};

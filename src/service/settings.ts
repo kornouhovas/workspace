@@ -14,10 +14,10 @@ import {
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
 import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
-import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
+import type { DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad>;
+  handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad | DiscoveryPreview>;
   handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState>;
   workspaces: WorkspaceService;
   close(): void;
@@ -67,6 +67,7 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.previewDiscovery") return workspaces.previewDiscovery(input);
       if (isRecord(input) && input.type === "workspace.load") return workspaces.load();
       if (!isRecord(input) || input.type !== "settings.load") {
         return { ok: false, error: invalidInput("Expected a settings.load query.") };

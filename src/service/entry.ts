@@ -64,11 +64,18 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load");
+  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if (input.type === "workspace.previewDiscovery") {
+    const keys = Object.hasOwn(input, "excludedRelativePaths")
+      ? ["type", "workspaceId", "excludedRelativePaths"] : ["type", "workspaceId"];
+    return !hasExactKeys(input, keys) || typeof input.workspaceId !== "string" ||
+      (Object.hasOwn(input, "excludedRelativePaths") &&
+        (!Array.isArray(input.excludedRelativePaths) || !input.excludedRelativePaths.every((path) => typeof path === "string")));
+  }
   if (input.type === "workspace.load") return !hasExactKeys(input, ["type"]);
   if (input.type === "workspace.create") {
     return !hasExactKeys(input, ["type", "name", "rootPath"]) ||

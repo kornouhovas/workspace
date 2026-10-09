@@ -8,6 +8,11 @@ export const settings = sqliteTable("settings", {
 export const sources = sqliteTable("sources", {
   id: text("id").primaryKey(),
   canonicalRoot: text("canonical_root").notNull().unique(),
+  discoveryMode: text("discovery_mode"),
+  discoveryRevision: integer("discovery_revision").notNull().default(0),
+  excludedRelativePaths: text("excluded_relative_paths").notNull().default("[]"),
+  archiveRelativePath: text("archive_relative_path"),
+  appliedRootIdentity: text("applied_root_identity"),
 });
 
 export const workspaces = sqliteTable("workspaces", {

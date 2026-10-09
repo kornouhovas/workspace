@@ -524,3 +524,41 @@ test("compiled preload validates source/list events, exposes no IPC objects and 
   unload.dispatchEvent(new Event("unload"));
   assert.equal(ipc.listenerCount("workspace:change"), 0);
 });
+
+test("real service IPC routes read-only discovery previews and rejects unsafe/foreign payloads", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-preview-ipc-"));
+  const root = join(directory, "root");
+  await mkdir(join(root, "Project", "Nested"), { recursive: true });
+  await writeFile(join(root, "Project", "keep.txt"), "unchanged");
+  const parent = new EventEmitter();
+  parent.postMessage = () => {};
+  const port = new FakePort();
+  startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => {
+      port.receive({ id: ++id, input });
+      assert.equal(port.sent.at(-1).id, id);
+      return port.sent.at(-1).result;
+    };
+    const workspace = request({ type: "workspace.create", name: "Test", rootPath: root }).value;
+    const query = { type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId };
+    const before = request({ type: "workspace.load" });
+    const eventsBefore = port.sent.filter((message) => message.type === "workspace.change").length;
+    const preview = request(query);
+    assert.equal(preview.ok, true);
+    assert.deepEqual(preview.value.entries, [{ relativePath: "Project", name: "Project", reason: null }]);
+    assert.equal(request({ ...query, excludedRelativePaths: ["Project"] }).value.entries[0].reason, "manual");
+    for (const input of [{ ...query, extra: true }, { type: query.type }, { ...query, workspaceId: "bad" },
+      { ...query, workspaceId: "00000000-0000-4000-8000-000000000000" },
+      { ...query, excludedRelativePaths: null }, { ...query, excludedRelativePaths: ["../escape"] },
+      { ...query, excludedRelativePaths: ["invented"] }]) assert.equal(request(input).error.code, "invalid_input");
+    assert.deepEqual(request({ type: "workspace.load" }), before);
+    assert.equal(port.sent.filter((message) => message.type === "workspace.change").length, eventsBefore);
+    assert.equal(await readFile(join(root, "Project", "keep.txt"), "utf8"), "unchanged");
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});

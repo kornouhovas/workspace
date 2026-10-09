@@ -22,6 +22,13 @@
       "when": 1791504002000,
       "tag": "0002_workspace_order",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791504003000,
+      "tag": "0003_source_discovery",
+      "breakpoints": true
     }
   ]
 }

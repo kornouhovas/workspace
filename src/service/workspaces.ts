@@ -1,3 +1,6 @@
+import { scanDirectSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
+import type { DiscoveryPreview } from "../contracts/workspaces.js";
+import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
@@ -28,6 +31,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  previewDiscovery(input: unknown): ServiceResult<DiscoveryPreview>;
   subscribe(listener: (event: WorkspaceChangeEvent) => void): () => void;
   close(): void;
   refreshSource(input: unknown):
@@ -53,6 +57,11 @@ export interface WorkspaceService {
 }
 
 export function createWorkspaceService(db: Database, filesystem = nativeFilesystem): WorkspaceService {
+  const previewTokens = new Map<string, {
+    preview: DiscoveryPreview;
+    snapshot: DiscoverySnapshot;
+    source: typeof schema.sources.$inferSelect;
+  }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   let pending = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
@@ -62,7 +71,48 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       listeners.add(listener);
       return () => { listeners.delete(listener); };
     },
-    close() { listeners.clear(); observed.clear(); },
+    close() { listeners.clear(); observed.clear(); previewTokens.clear(); },
+    previewDiscovery(input) {
+      if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
+        !["type", "workspaceId"].every((key) => Object.hasOwn(input, key)) ||
+        !Object.keys(input).every((key) => ["type", "workspaceId", "excludedRelativePaths"].includes(key)) ||
+        (Object.hasOwn(input, "excludedRelativePaths") && !validExclusions(input.excludedRelativePaths))) {
+        return invalid("Choose a saved workspace and valid direct-folder exclusions.");
+      }
+      const workspaceId = input.workspaceId;
+      previewTokens.delete(workspaceId);
+      try {
+        const source = db.select().from(schema.workspaces)
+          .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
+          .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
+        if (!source) return invalid("Choose a saved workspace.");
+        const saved: unknown = JSON.parse(source.excludedRelativePaths);
+        if (!validExclusions(saved) || !validArchive(source.archiveRelativePath) ||
+          !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
+          (source.discoveryMode !== null && source.discoveryMode !== "direct")) return storageFailure();
+        const exclusions = Object.hasOwn(input, "excludedRelativePaths") ? input.excludedRelativePaths as string[] : saved;
+        const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, exclusions);
+        if (scan.snapshot && exclusions.some((name) => !saved.includes(name) &&
+          !scan.entries.some((entry) => entry.relativePath === name && (entry.reason === null || entry.reason === "manual")))) {
+          return invalid("Exclude only selectable folders in the current preview.");
+        }
+        let snapshot = scan.snapshot;
+        let state = scan.state;
+        if (source.appliedRootIdentity !== null && snapshot &&
+          JSON.stringify(JSON.parse(source.appliedRootIdentity)) !== JSON.stringify(snapshot.root.identity)) {
+          snapshot = null;
+          state = "root_identity_conflict";
+        }
+        const preview: DiscoveryPreview = {
+          workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
+          excludedRelativePaths: [...exclusions].sort(), entries: snapshot ? scan.entries : [], state,
+          previewToken: snapshot ? randomUUID() : null,
+        };
+        // Keep the reviewed draft/configuration independent of the caller's response object.
+        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source });
+        return { ok: true, value: preview };
+      } catch { return storageFailure(); }
+    },
     refreshSource(input) {
       if (!isRecord(input) || input.type !== "workspace.refreshSource" ||
         Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId") || !isUuid(input.workspaceId)) {
@@ -107,8 +157,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             }
           }
           if (!source) {
-            source = { id: randomUUID(), canonicalRoot };
-            tx.insert(schema.sources).values(source).run();
+            source = tx.insert(schema.sources).values({ id: randomUUID(), canonicalRoot }).returning().get();
           }
           const lastPosition = tx.select({ value: max(schema.workspaces.position) }).from(schema.workspaces).get()?.value;
           tx.insert(schema.workspaces).values({ id: workspaceId, name, sourceId: source.id, position: (lastPosition ?? -1) + 1 }).run();

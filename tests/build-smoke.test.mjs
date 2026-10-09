@@ -13,6 +13,7 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/renderer/index.html",
     "dist/version.json",
     "dist/service/db/migrations/0002_workspace_order.sql",
+    "dist/service/db/migrations/0003_source_discovery.sql",
   ]) {
     await assert.doesNotReject(readFile(artifact));
   }

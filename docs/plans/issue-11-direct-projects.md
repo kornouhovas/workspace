@@ -108,13 +108,15 @@ Interfaces:
 - WorkspaceServiceClient.previewDiscovery(workspaceId, excludedRelativePaths?) forwards the typed request.
 - DiscoveryPanel presents backend decisions and receives callbacks; it performs no filesystem or domain interpretation.
 
-- [ ] Add failing real-fixture tests for immediate directories, ordinary files, nested project content, dot-prefixed/service directories, symlinks/junctions, empty roots, unavailable roots, and directory-open failures.
-- [ ] Add the source configuration migration with unconfigured defaults, revision, saved exclusions, nullable archiveRelativePath, and nullable applied-root evidence; preserve existing IDs, settings, selection, ordering, and views.
-- [ ] Implement the shared scanner and read-only preview/token policy with strict selected-source containment and root/entry rechecks. Do not enumerate project contents or external link targets.
-- [ ] Wire preview requests through the real service entry, typed desktop API, existing IPC route, and renderer client. Reject malformed requests and foreign workspace ownership.
-- [ ] Add an EN/RU preview panel with manual exclusion controls, automatic-exclusion explanations, Cancel, keyboard focus recovery, and loading/empty/unreadable/unavailable states. Exclusion changes request a new authoritative preview.
-- [ ] Seed a real persisted nullable archive designation in a disposable database and verify it through the production preview service; include an ordinary undesignated Archive folder. Extend upgrade/build/artifact fixtures and assert previews/cancellation leave saved records and folder bytes unchanged.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm run typecheck; commit the verified preview slice.
+- [x] Add failing real-fixture tests for immediate directories, ordinary files, nested project content, dot-prefixed/service directories, symlinks/junctions, empty roots, unavailable roots, and directory-open failures.
+- [x] Add the source configuration migration with unconfigured defaults, revision, saved exclusions, nullable archiveRelativePath, and nullable applied-root evidence; preserve existing IDs, settings, selection, ordering, and views.
+- [x] Implement the shared scanner and read-only preview/token policy with strict selected-source containment and root/entry rechecks. Do not enumerate project contents or external link targets.
+- [x] Wire preview requests through the real service entry, typed desktop API, existing IPC route, and renderer client. Reject malformed requests and foreign workspace ownership.
+- [x] Add an EN/RU preview panel with manual exclusion controls, automatic-exclusion explanations, Cancel, keyboard focus recovery, and loading/empty/unreadable/unavailable states. Exclusion changes request a new authoritative preview.
+- [x] Seed a real persisted nullable archive designation in a disposable database and verify it through the production preview service; include an ordinary undesignated Archive folder. Extend upgrade/build/artifact fixtures and assert previews/cancellation leave saved records and folder bytes unchanged.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm run typecheck; commit the verified preview slice.
+
+Task 1 verification: 115 tests passed with `npm test` (including the application build); `npm run typecheck`, `npm run lint`, `npm run check:docs`, and `git diff --check` passed. A disposable actual-Electron preview run exercised EN/RU at 1440x960, 1024x720, and 420x800, authoritative exclusions, keyboard focus recovery, cancellation, unchanged configuration, sentinel bytes, and ordinary shutdown. Screenshots and command logs are retained under ignored `work/ralphex/issue-11/task1-preview*`. The native picker used the existing test seam; Windows was not exercised. The external macOS host shutdown prerequisite #44 remains open. Apply/project persistence and the integrated runtime scenarios remain Tasks 2–4.
 
 ### Task 2: Apply reviewed discovery and display persistent projects
 

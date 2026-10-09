@@ -20,6 +20,11 @@ function withFixture(run) {
   finally { rmSync(directory, { recursive: true, force: true }); }
 }
 
+const unconfiguredDiscovery = {
+  discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
+  archive_relative_path: null, applied_root_identity: null,
+};
+
 function records(databasePath) {
   const sqlite = new Database(databasePath);
   try {
@@ -329,7 +334,7 @@ for (const operation of ["load", "activate", "create"]) {
         assert.equal(added.value.sourceId, saved.value.sourceId);
         const activated = reopened.workspaces.activate({ type: "workspace.activate", workspaceId: saved.value.workspaceId });
         assert.deepEqual(activated, { ok: true, value: { ...saved.value, canonicalRoot, sourceAvailable: true } });
-        assert.deepEqual(records(databasePath).sources, [{ id: saved.value.sourceId, canonical_root: canonicalRoot }]);
+        assert.deepEqual(records(databasePath).sources, [{ id: saved.value.sourceId, canonical_root: canonicalRoot, ...unconfiguredDiscovery }]);
       } finally { reopened.close(); }
 
       const again = openSettingsService(databasePath, undefined, current);
@@ -719,7 +724,14 @@ test("upgrades populated two-migration databases in insertion order without chan
       try {
         assert.deepEqual(service.workspaces.load().value.workspaces.map((row) => row.workspaceId), ids);
         const after = records(databasePath);
-        assert.deepEqual(after, { ...before, workspaces: before.workspaces.map((row, position) => ({ ...row, position })) });
+        assert.deepEqual(after, { ...before,
+          sources: before.sources.map((row) => ({ ...row, ...unconfiguredDiscovery })),
+          workspaces: before.workspaces.map((row, position) => ({ ...row, position })) });
+        const preview = discoveryPreview(service, ids[1]);
+        assert.equal(preview.ok, true);
+        assert.equal(preview.value.state, "empty");
+        assert.equal(preview.value.revision, 0);
+        assert.deepEqual(records(databasePath), after);
         assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
       } finally { service.close(); }
     }
@@ -966,5 +978,175 @@ test("subscription-triggered reads do not duplicate observations or reorder comm
       assert.equal(events[0].snapshot.activeWorkspace.name, "One");
       assert.equal(events[2].snapshot.activeWorkspace.name, "Renamed");
     } finally { service.close(); }
+  });
+});
+
+function discoveryPreview(service, workspaceId, excludedRelativePaths) {
+  return service.handleQuery({ type: "workspace.previewDiscovery", workspaceId,
+    ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });
+}
+
+test("direct preview is read-only, stops at projects, and excludes links/service folders without reading targets", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    for (const name of ["Project", "Archive", ".service", "$RECYCLE.BIN", "system volume information"])
+      mkdirSync(join(root, name));
+    mkdirSync(join(root, "Project", "Nested"));
+    writeFileSync(join(root, "Project", "sentinel.bin"), Buffer.from([0, 255, 42]));
+    writeFileSync(join(root, "ordinary.txt"), "ordinary");
+    const external = join(directory, "external");
+    mkdirSync(external);
+    writeFileSync(join(external, "sentinel.txt"), "untouched");
+    symlinkSync(external, join(root, "Linked"), process.platform === "win32" ? "junction" : "dir");
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const before = records(databasePath);
+      const events = [];
+      service.workspaces.subscribe((event) => events.push(event));
+      const result = discoveryPreview(service, workspace.workspaceId);
+      assert.equal(result.ok, true);
+      assert.equal(result.value.state, "ready");
+      assert.ok(result.value.previewToken);
+      assert.deepEqual(result.value.entries.map((entry) => [entry.relativePath, entry.reason]), [
+        ["$RECYCLE.BIN", "service"], [".service", "hidden"], ["Archive", null], ["Linked", "link"],
+        ["Project", null], ["system volume information", "service"],
+      ]);
+      const excluded = discoveryPreview(service, workspace.workspaceId, ["Project"]);
+      assert.equal(excluded.value.entries.find((entry) => entry.relativePath === "Project").reason, "manual");
+      assert.notEqual(excluded.value.previewToken, result.value.previewToken);
+      assert.deepEqual(discoveryPreview(service, workspace.workspaceId).value.excludedRelativePaths, []);
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(events, []);
+      assert.deepEqual(readFileSync(join(root, "Project", "sentinel.bin")), Buffer.from([0, 255, 42]));
+      assert.equal(readFileSync(join(external, "sentinel.txt"), "utf8"), "untouched");
+      assert.deepEqual(fs.readdirSync(join(root, "Project")).sort(), ["Nested", "sentinel.bin"]);
+    } finally { service.close(); }
+  });
+});
+
+test("preview honors a persisted archive designation and absent saved exclusions without guessing Archive", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Storage", "archive"), { recursive: true });
+    mkdirSync(join(root, "Archive"));
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const sqlite = new Database(databasePath);
+      try {
+        sqlite.prepare("UPDATE sources SET archive_relative_path = ?, excluded_relative_paths = ? WHERE id = ?")
+          .run("Storage/archive", JSON.stringify(["Absent"]), workspace.sourceId);
+        const before = records(databasePath);
+        const preview = discoveryPreview(service, workspace.workspaceId).value;
+        assert.deepEqual(preview.entries.map((entry) => [entry.relativePath, entry.reason]), [["Archive", null], ["Storage", "archive"]]);
+        assert.deepEqual(preview.excludedRelativePaths, ["Absent"]);
+        assert.deepEqual(records(databasePath), before);
+        sqlite.prepare("UPDATE sources SET archive_relative_path = '../escape' WHERE id = ?").run(workspace.sourceId);
+        const unsafe = discoveryPreview(service, workspace.workspaceId);
+        assert.equal(unsafe.ok, false);
+        assert.equal(unsafe.error.code, "storage");
+      } finally { sqlite.close(); }
+    } finally { service.close(); }
+  });
+});
+
+test("preview distinguishes empty, unavailable, unreadable and retargeted sources without changing saved state", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const originalOpen = fs.opendirSync;
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const before = records(databasePath);
+      assert.equal(discoveryPreview(service, workspace.workspaceId).value.state, "empty");
+      fs.opendirSync = () => { throw Object.assign(new Error("denied"), { code: "EACCES" }); };
+      syncBuiltinESMExports();
+      const unreadable = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(unreadable.state, "unreadable");
+      assert.equal(unreadable.previewToken, null);
+      fs.opendirSync = originalOpen;
+      syncBuiltinESMExports();
+      fs.renameSync(root, join(directory, "disconnected"));
+      assert.equal(discoveryPreview(service, workspace.workspaceId).value.state, "unavailable");
+      symlinkSync(join(directory, "disconnected"), root, process.platform === "win32" ? "junction" : "dir");
+      const conflict = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(conflict.state, "root_identity_conflict");
+      assert.equal(conflict.previewToken, null);
+      assert.deepEqual(records(databasePath), before);
+    } finally {
+      fs.opendirSync = originalOpen;
+      syncBuiltinESMExports();
+      service.close();
+    }
+  });
+});
+
+test("preview rejects malformed, foreign and unsafe exclusion requests", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    mkdirSync(join(root, ".hidden"));
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      for (const input of [
+        { type: "workspace.previewDiscovery" },
+        Object.create({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId }),
+        { type: "workspace.previewDiscovery", workspaceId: randomUUID() },
+        { type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, extra: true },
+        ...[null, "Project", ["Project", "Project"], ["invented"], ["../escape"], ["/absolute"], ["a\\b"], [".hidden"]]
+          .map((excludedRelativePaths) => ({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, excludedRelativePaths })),
+      ]) assert.equal(service.handleQuery(input).error.code, "invalid_input");
+    } finally { service.close(); }
+  });
+});
+
+test("preview rejects filesystem changes during enumeration and never resolves or opens link targets", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const external = join(directory, "external");
+    mkdirSync(external);
+    mkdirSync(join(root, "Project"));
+    symlinkSync(external, join(root, "Linked"), process.platform === "win32" ? "junction" : "dir");
+    const service = openSettingsService(databasePath);
+    const originalOpen = fs.opendirSync;
+    const originalRealpath = fs.realpathSync.native;
+    const originalLstat = fs.lstatSync;
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const canonical = workspace.canonicalRoot;
+      const touched = [];
+      fs.realpathSync.native = (path, ...args) => {
+        touched.push(path);
+        assert.notEqual(path, join(canonical, "Linked"));
+        assert.notEqual(path, external);
+        return originalRealpath(path, ...args);
+      };
+      fs.lstatSync = (path, ...args) => {
+        assert.notEqual(path, external);
+        return originalLstat(path, ...args);
+      };
+      fs.opendirSync = (path, ...args) => {
+        touched.push(path);
+        assert.equal(path, canonical);
+        return originalOpen(path, ...args);
+      };
+      syncBuiltinESMExports();
+      assert.equal(discoveryPreview(service, workspace.workspaceId).value.state, "ready");
+      assert.ok(touched.length > 0);
+      const before = records(databasePath);
+      let opens = 0;
+      fs.opendirSync = (path, ...args) => {
+        if (++opens === 2) mkdirSync(join(root, "Added-during-scan"));
+        return originalOpen(path, ...args);
+      };
+      syncBuiltinESMExports();
+      const changed = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(changed.state, "changed");
+      assert.equal(changed.previewToken, null);
+      assert.deepEqual(records(databasePath), before);
+    } finally {
+      fs.opendirSync = originalOpen;
+      fs.realpathSync.native = originalRealpath;
+      fs.lstatSync = originalLstat;
+      syncBuiltinESMExports();
+      service.close();
+    }
   });
 });
