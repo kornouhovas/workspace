@@ -12,11 +12,13 @@ function inventory(path) {
   return fs.readdirSync(path, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
     entry.isSymbolicLink() ? fs.readlinkSync(join(path, entry.name)) : entry.isDirectory() ? inventory(join(path, entry.name)) : fs.readFileSync(join(path, entry.name)).toString("hex")]);
 }
-function fixture(run) {
+function fixture(run, { grouped = false, paths = [] } = {}) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "external-reconciliation-")));
   const root = join(directory, "root");
-  fs.mkdirSync(join(root, "Project/nested"), { recursive: true });
-  fs.writeFileSync(join(root, "Project/nested/sentinel"), Buffer.from([0, 255, 42, 10]));
+  const initialPath = grouped ? "Category/Project" : "Project";
+  fs.mkdirSync(join(root, initialPath, "nested"), { recursive: true });
+  for (const path of paths) fs.mkdirSync(join(root, path), { recursive: true });
+  fs.writeFileSync(join(root, initialPath, "nested/sentinel"), Buffer.from([0, 255, 42, 10]));
   const databasePath = join(directory, "workspace.sqlite");
   const service = openSettingsService(databasePath), sqlite = new Database(databasePath);
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Primary", rootPath: root }).value;
@@ -24,10 +26,12 @@ function fixture(run) {
   const query = (type, extra = {}) => service.handleQuery({ type, workspaceId: workspace.workspaceId, ...extra });
   const command = (type, extra = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...extra });
   const apply = (extra = {}) => {
-    const preview = query("workspace.previewDiscovery", extra); assert.equal(preview.ok, true);
+    const preview = query("workspace.previewDiscovery", { ...(grouped ? { mode: "grouped" } : {}), ...extra }); assert.equal(preview.ok, true);
     const result = command("workspace.applyDiscovery", { previewToken: preview.value.previewToken }); assert.equal(result.ok, true); return result.value;
   };
-  const project = apply().projects[0];
+  const initial = apply();
+  const project = initial.projects.find((row) => row.relativePath === initialPath);
+  if (grouped) assert.equal(command("workspace.renameCategoryProperty", { propertyId: initial.categoryProperty.propertyId, name: "  Authored категория 📝  " }).ok, true);
   const propertyId = command("workspace.createProperty", { name: "  Notes 📝  ", propertyType: "text" }).value.propertyId;
   const value = "  Exact\nТекст 📝  ";
   assert.equal(command("workspace.setTextValue", { projectId: project.projectId, propertyId, value }).ok, true);
@@ -35,7 +39,7 @@ function fixture(run) {
     .map((table) => [table, sqlite.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
   const events = []; service.workspaces.subscribe((event) => events.push(event));
   const refresh = () => command("workspace.refreshSource");
-  try { run({ directory, root, databasePath, service, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, refresh }); }
+  try { run({ initial, directory, root, databasePath, service, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, refresh }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 function patchFs(methods, run) {
@@ -371,4 +375,420 @@ test("healthy no-op scans ignore timestamp changes and unrelated new folders", (
   assert.equal(f.refresh().ok, true);
   assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []); assert.deepEqual(inventory(f.root), files);
   assert.equal(f.query("workspace.previewDiscovery").value.entries.find((entry) => entry.relativePath === "Unrelated").reason, null);
+}));
+
+function groupedFixture(run, paths = []) { return fixture(run, { grouped: true, paths }); }
+function groupedMetadata(f, before, { projects, categories, addedCategories = 0 }) {
+  const after = f.records();
+  for (const table of Object.keys(before).filter((name) => !["sources", "projects", "categories"].includes(name))) assert.deepEqual(after[table], before[table], table);
+  assert.deepEqual(after.sources, before.sources.map((row) => row.id === f.workspace.sourceId ? { ...row, discovery_revision: row.discovery_revision + 1 } : row));
+  assert.deepEqual(after.projects, before.projects.map((row) => ({ ...row, ...projects(row, after) })));
+  assert.equal(after.categories.length, before.categories.length + addedCategories);
+  for (const row of before.categories) assert.deepEqual(after.categories.find((current) => current.id === row.id), { ...row, ...categories(row) });
+  assert.equal(f.query("workspace.listTextProperties").value.values.find((row) => row.projectId === f.project.projectId).value, f.value);
+  assert.deepEqual(f.events.map((event) => [event.type, event.revision, event.workspaceIds]), [["workspace.projectsChanged", before.sources[0].discovery_revision + 1, [f.workspace.workspaceId, f.sibling.workspaceId]]]);
+  f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.events, []); assert.deepEqual(f.records(), after);
+  return after;
+}
+
+for (const change of ["category rename", "case spelling", "empty rename", "project rename", "tracked move", "simultaneous", "category swap", "project swap", "category replacement"]) {
+  test(`grouped ${change} preserves IDs, exact values and independent revisions in one batch`, () => groupedFixture((f) => {
+    const before = f.records(), firstCategory = before.categories.find((row) => row.relative_path === "Category");
+    const secondCategory = before.categories.find((row) => row.relative_path === "Second");
+    let expectedCategories = () => ({}), expectedProjects = () => ({});
+    if (["category rename", "case spelling", "simultaneous", "category replacement"].includes(change)) {
+      const name = change === "case spelling" ? "category" : "Renamed";
+      fs.renameSync(join(f.root, "Category"), join(f.root, name));
+      expectedCategories = (row) => row.id === firstCategory.id ? { relative_path: name } : {};
+      expectedProjects = (row) => row.category_id === firstCategory.id ? { relative_path: `${name}/${row.relative_path.split("/")[1]}` } : {};
+      if (change === "simultaneous") {
+        fs.renameSync(join(f.root, name, "Project"), join(f.root, "Second", "Moved"));
+        expectedProjects = (row) => row.id === f.project.projectId ? { relative_path: "Second/Moved", category_id: secondCategory.id } : {};
+      }
+      if (change === "category replacement") fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+    } else if (change === "empty rename") {
+      fs.renameSync(join(f.root, "Empty"), join(f.root, "EmptyRenamed"));
+      expectedCategories = (row) => row.relative_path === "Empty" ? { relative_path: "EmptyRenamed" } : {};
+    } else if (change === "category swap") {
+      fs.renameSync(join(f.root, "Category"), join(f.root, "Temporary"));
+      fs.renameSync(join(f.root, "Second"), join(f.root, "Category"));
+      fs.renameSync(join(f.root, "Temporary"), join(f.root, "Second"));
+      expectedCategories = (row) => row.relative_path === "Category" ? { relative_path: "Second" } : row.relative_path === "Second" ? { relative_path: "Category" } : {};
+      expectedProjects = (row) => ({ relative_path: `${row.category_id === firstCategory.id ? "Second" : "Category"}/${row.relative_path.split("/")[1]}` });
+    } else if (change === "project swap") {
+      fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Temporary"));
+      fs.renameSync(join(f.root, "Second/Other"), join(f.root, "Category/Project"));
+      fs.renameSync(join(f.root, "Temporary"), join(f.root, "Second/Other"));
+      expectedProjects = (row) => row.id === f.project.projectId ? { relative_path: "Second/Other", category_id: secondCategory.id } : { relative_path: "Category/Project", category_id: firstCategory.id };
+    } else {
+      const target = change === "tracked move" ? "Second/Moved" : "Category/Renamed";
+      fs.renameSync(join(f.root, "Category/Project"), join(f.root, target));
+      fs.mkdirSync(join(f.root, "Category/Project"));
+      expectedProjects = (row) => row.id === f.project.projectId ? { relative_path: target, category_id: change === "tracked move" ? secondCategory.id : firstCategory.id } : {};
+    }
+    const files = inventory(f.root);
+    const discovery = f.query("workspace.previewDiscovery").value;
+    // Projection and previews alone cannot persist these changes.
+    f.query("workspace.listProjects"); assert.deepEqual(f.records(), before); f.events.length = 0;
+    assert.equal(f.refresh().ok, true);
+    groupedMetadata(f, before, { projects: expectedProjects, categories: expectedCategories });
+    const list = f.query("workspace.listProjects").value;
+    assert.equal(list.projects.length, before.projects.length); assert.ok(list.projects.every((row) => row.resolution === "active"));
+    assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).error.code, "stale_preview");
+    assert.deepEqual(inventory(f.root), files);
+  }, ["Second/Other", "Empty"]));
+}
+
+for (const multiple of [false, true]) test(`grouped moves create only one needed category for ${multiple ? "multiple known projects" : "a known project"} without unrelated enrollment`, () => groupedFixture((f) => {
+  const before = f.records();
+  for (const path of ["Needed/Unrelated/nested", "UnrelatedCategory/Child", "NewEmpty"]) fs.mkdirSync(join(f.root, path), { recursive: true });
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
+  if (multiple) fs.renameSync(join(f.root, "Category/Second"), join(f.root, "Needed/Second"));
+  const discovery = f.query("workspace.previewDiscovery").value;
+  const recovery = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
+  const files = inventory(f.root); f.events.length = 0;
+  let eventList;
+  f.service.workspaces.subscribe((event) => { if (event.type === "workspace.projectsChanged") eventList = f.query("workspace.listProjects").value; });
+  assert.equal(f.refresh().ok, true);
+  const after = groupedMetadata(f, before, { addedCategories: 1, categories: () => ({}), projects: (row, after) => ({
+    relative_path: row.id === f.project.projectId ? "Needed/Moved" : "Needed/Second", category_id: after.categories.find((category) => category.relative_path === "Needed").id,
+  }) });
+  assert.equal(eventList.projects.length, before.projects.length);
+  const needed = after.categories.find((row) => row.relative_path === "Needed");
+  assert.equal(needed.association_state, "active"); assert.match(needed.id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(after.projects.map((row) => row.category_id), before.projects.map(() => needed.id));
+  assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).error.code, "stale_preview");
+  assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: recovery.previewToken, relativePath: "Needed/Moved" }).error.code, "stale_preview");
+  const reopened = openSettingsService(f.databasePath);
+  try {
+    assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value, f.query("workspace.listProjects").value);
+    assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.sibling.workspaceId }).value.values[0].value, f.value);
+  } finally { reopened.close(); }
+  const applied = f.apply();
+  const unrelated = applied.projects.find((row) => row.relativePath === "Needed/Unrelated");
+  assert.ok(unrelated); assert.notEqual(unrelated.projectId, f.project.projectId);
+  assert.equal(applied.categories.find((row) => row.relativePath === "Needed").categoryId, needed.id);
+  assert.ok(applied.categories.some((row) => row.relativePath === "NewEmpty"));
+  assert.ok(!f.query("workspace.listTextProperties").value.values.some((row) => row.projectId === unrelated.projectId));
+  assert.deepEqual(inventory(f.root), files);
+}, multiple ? ["Category/Second"] : []));
+
+for (const state of ["missing", "unresolved", "excluded", "replaced"]) test(`existing ${state} destination category stays a recovery case even with matching child evidence`, () => groupedFixture((f) => {
+  const target = f.records().categories.find((row) => row.relative_path === "Target");
+  f.sqlite.prepare("UPDATE categories SET association_state = ? WHERE id = ?").run(state, target.id);
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Target/Moved"));
+  const before = f.records(); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
+  assert.equal(preview.entries.find((row) => row.relativePath === "Target/Moved").status, "category_unavailable");
+}, ["Target"]));
+
+for (const conflict of ["category historical path", "category reserved path", "category historical native", "category current native", "project historical native", "project reserved path", "category observed alias", "project observed alias", "cross-depth alias", "category birthtime", "category insufficient", "project birthtime", "project volume", "project insufficient"]) {
+  test(`grouped refresh rejects ${conflict} without creating categories or transferring metadata`, () => groupedFixture((f) => {
+    fs.mkdirSync(join(f.root, "Target"));
+    fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Target/Moved"));
+    const identityAt = (path) => {
+      const stat = fs.lstatSync(join(f.root, path), { bigint: true });
+      return { dev: stat.dev.toString(), ino: stat.ino.toString(), birthtimeNs: stat.birthtimeNs.toString() };
+    };
+    const categoryEvidence = identityAt("Target"), projectEvidence = identityAt("Target/Moved");
+    const retired = (table, path, evidence, state = "replaced") => {
+      if (table === "categories") f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, ?)")
+        .run(randomUUID(), f.workspace.sourceId, path, JSON.stringify(evidence), state);
+      else f.sqlite.prepare("INSERT INTO projects (id, source_id, category_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(randomUUID(), f.workspace.sourceId, f.records().categories[0].id, path, JSON.stringify(evidence), state);
+    };
+    if (conflict === "category historical path") retired("categories", "Target", { dev: "999", ino: "999", birthtimeNs: "1" });
+    if (conflict === "category reserved path") retired("categories", "Target", categoryEvidence, "missing");
+    if (conflict === "category historical native" || conflict === "category current native") retired("categories", "Historical", categoryEvidence, conflict === "category current native" ? "missing" : "replaced");
+    if (conflict === "project historical native") retired("projects", "Category/Historical", projectEvidence);
+    if (conflict === "project reserved path") retired("projects", "Target/Moved", { dev: "999", ino: "999", birthtimeNs: "1" }, "missing");
+    if (conflict === "category observed alias") fs.mkdirSync(join(f.root, "Alias"));
+    if (conflict === "project observed alias") fs.mkdirSync(join(f.root, "Target/Alias"));
+    if (conflict === "cross-depth alias") fs.mkdirSync(join(f.root, "Alias"));
+    // For birthtime/insufficient categories, poison both stored and observed
+    // evidence, independently of project identity. Never repair that parent.
+    if (conflict === "category birthtime") retired("categories", "Historical", { ...categoryEvidence, birthtimeNs: (BigInt(categoryEvidence.birthtimeNs) - 1n).toString() });
+    const before = f.records(), files = inventory(f.root); f.events.length = 0;
+    patchFs({ lstatSync: (original) => (path, ...args) => {
+      const stat = original(path, ...args);
+      const override = path === join(f.root, "Alias") && conflict === "category observed alias" ? categoryEvidence
+        : path === join(f.root, "Target/Alias") && conflict === "project observed alias" || path === join(f.root, "Alias") && conflict === "cross-depth alias" ? projectEvidence : null;
+      if (override) { stat.dev = BigInt(override.dev); stat.ino = BigInt(override.ino); stat.birthtimeNs = BigInt(override.birthtimeNs); }
+      if (path === join(f.root, "Target") && conflict === "category insufficient") stat.birthtimeNs = 0n;
+      if (path === join(f.root, "Target/Moved")) {
+        if (conflict === "project birthtime") ++stat.birthtimeNs;
+        if (conflict === "project volume") ++stat.dev;
+        if (conflict === "project insufficient") stat.birthtimeNs = 0n;
+      }
+      return stat;
+    } }, () => assert.equal(f.refresh().ok, true));
+    assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []); assert.deepEqual(inventory(f.root), files);
+  }));
+}
+
+for (const state of ["missing child", "excluded child", "persisted missing", "persisted excluded", "replaced child"]) {
+  test(`category rename with ${state} retains uncertain metadata and required-category invariants`, () => groupedFixture((f) => {
+    const child = f.records().projects.find((row) => row.relative_path === "Category/Second");
+    if (state === "missing child") fs.renameSync(join(f.root, "Category/Second"), join(f.directory, "away"));
+    if (state === "excluded child") f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Category/Second\"]'").run();
+    if (state.startsWith("persisted")) f.sqlite.prepare("UPDATE projects SET association_state = ? WHERE id = ?").run(state.split(" ")[1], child.id);
+    if (state === "replaced child") {
+      fs.renameSync(join(f.root, "Category/Second"), join(f.directory, "away"));
+      fs.mkdirSync(join(f.root, "Category/Second"));
+    }
+    fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+    const before = f.records(); f.events.length = 0;
+    assert.equal(f.refresh().ok, true);
+    if (state.startsWith("persisted")) {
+      groupedMetadata(f, before, { projects: (row) => row.id === f.project.projectId ? { relative_path: "Renamed/Project" } : {}, categories: () => ({ relative_path: "Renamed" }) });
+      assert.deepEqual(f.records().projects.find((row) => row.id === child.id), before.projects.find((row) => row.id === child.id));
+      assert.ok(f.query("workspace.listProjects").value.retainedProjects.some((row) => row.projectId === child.id));
+    } else {
+      assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+      assert.ok(f.query("workspace.listProjects").value.retainedProjects.some((row) => row.projectId === f.project.projectId));
+    }
+    assert.deepEqual(f.sqlite.prepare("PRAGMA foreign_key_check").all(), []);
+  }, ["Category/Second"]));
+}
+
+for (const suppression of ["manual category", "manual project", "hidden category", "hidden project", "service category", "service project", "archive category", "archive project", "category link", "project link", "outside", "depth"]) {
+  test(`grouped refresh respects ${suppression} and never reads project contents or suppressed targets`, () => groupedFixture((f) => {
+    let target = "Category/Moved", destination;
+    if (suppression === "manual category") target = "Target/Moved";
+    if (suppression === "hidden category") target = ".hidden/Moved";
+    if (suppression === "hidden project") target = "Category/.hidden";
+    if (suppression === "service category") target = "$RECYCLE.BIN/Moved";
+    if (suppression === "service project") target = "Category/System Volume Information";
+    if (suppression === "archive category") target = "Archive/Moved";
+    if (suppression === "archive project") target = "Category/Archive";
+    if (suppression === "depth") target = "Category/Container/Deep";
+    const parent = target.split("/").slice(0, -1).join("/");
+    fs.mkdirSync(join(f.root, parent), { recursive: true });
+    destination = ["outside", "category link", "project link"].includes(suppression) ? join(f.directory, "away") : join(f.root, target);
+    if (suppression === "category link") {
+      fs.mkdirSync(destination); fs.renameSync(join(f.root, "Category/Project"), join(destination, "Moved"));
+      target = "Linked"; fs.symlinkSync(destination, join(f.root, target), process.platform === "win32" ? "junction" : "dir");
+    } else {
+      fs.renameSync(join(f.root, "Category/Project"), destination);
+      if (suppression === "project link") fs.symlinkSync(destination, join(f.root, target), process.platform === "win32" ? "junction" : "dir");
+    }
+    if (suppression.startsWith("manual")) f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = ?").run(JSON.stringify([suppression === "manual category" ? "Target" : target]));
+    if (suppression.startsWith("archive")) f.sqlite.prepare("UPDATE sources SET archive_relative_path = ?").run(suppression === "archive category" ? "Archive" : "Category/Archive/nested");
+    const blocked = [destination, join(f.root, target), ...(suppression.endsWith("category") ? [join(f.root, target.split("/")[0])] : [])];
+    const before = f.records(), files = inventory(f.root); f.events.length = 0;
+    patchFs({
+      lstatSync: (original) => (path, ...args) => { assert.ok(!blocked.includes(path), `suppressed target accessed: ${path}`); return original(path, ...args); },
+      opendirSync: (original) => (path, ...args) => {
+        assert.ok(path === f.root || ["Category", "Target"].some((name) => path === join(f.root, name)), `project contents opened: ${path}`);
+        return original(path, ...args);
+      },
+    }, () => { assert.equal(f.refresh().ok, true); });
+    assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []); assert.deepEqual(inventory(f.root), files);
+  }));
+}
+
+for (const parent of ["missing", "replaced", "unresolved", "unavailable", "insufficient"]) {
+  test(`matching grouped project evidence cannot repair an ${parent} original parent`, () => groupedFixture((f) => {
+    fs.mkdirSync(join(f.root, "Target")); fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Target/Moved"));
+    if (["missing", "replaced", "unresolved"].includes(parent)) {
+      f.sqlite.prepare("UPDATE projects SET association_state = 'missing'").run();
+      f.sqlite.prepare("UPDATE categories SET association_state = ?").run(parent);
+    }
+    if (parent === "unavailable") fs.renameSync(join(f.root, "Category"), join(f.directory, "away"));
+    const before = f.records(); f.events.length = 0;
+    patchFs({ lstatSync: (original) => (path, ...args) => { const stat = original(path, ...args); if (parent === "insufficient" && path === join(f.root, "Category")) stat.birthtimeNs = 0n; return stat; } }, () => assert.equal(f.refresh().ok, true));
+    assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  }));
+}
+
+test("archive inside an otherwise verified category does not block other known project moves", () => groupedFixture((f) => {
+  f.sqlite.prepare("UPDATE sources SET archive_relative_path = 'Category/Storage/nested'").run();
+  fs.mkdirSync(join(f.root, "Category/Storage"));
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Category/Renamed"));
+  const before = f.records(); f.events.length = 0;
+  assert.equal(f.refresh().ok, true);
+  groupedMetadata(f, before, { projects: () => ({ relative_path: "Category/Renamed" }), categories: () => ({}) });
+}));
+
+for (const failure of ["category release", "partial categories", "category insertion", "partial projects", "revision", "stored categories", "stored projects", "category label", "source configuration", "pre-write swap", "post-write swap", "post-write category link"]) {
+  test(`grouped transaction rolls back ${failure}, including needed categories/revision, without events`, () => groupedFixture((f) => {
+    fs.mkdirSync(join(f.root, "Needed/Unrelated"), { recursive: true });
+    fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
+    fs.renameSync(join(f.root, "Second/Other"), join(f.root, "Needed/Other"));
+    fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+    fs.renameSync(join(f.root, "Second"), join(f.root, "SecondRenamed"));
+    const before = f.records(), files = inventory(f.root); f.events.length = 0;
+    const triggers = {
+      "category release": "BEFORE UPDATE OF association_state ON categories WHEN NEW.association_state = 'replaced' BEGIN SELECT RAISE(ABORT, 'injected'); END",
+      "partial categories": "BEFORE UPDATE OF relative_path ON categories WHEN (SELECT COUNT(*) FROM categories WHERE relative_path IN ('Renamed', 'SecondRenamed')) = 1 BEGIN SELECT RAISE(ABORT, 'injected'); END",
+      "category insertion": "AFTER INSERT ON categories WHEN NEW.relative_path = 'Needed' BEGIN SELECT RAISE(ABORT, 'injected'); END",
+      "partial projects": "BEFORE UPDATE OF relative_path ON projects WHEN (SELECT COUNT(*) FROM projects WHERE relative_path LIKE 'Needed/%') = 1 BEGIN SELECT RAISE(ABORT, 'injected'); END",
+      revision: "BEFORE UPDATE OF discovery_revision ON sources BEGIN SELECT RAISE(ABORT, 'injected'); END",
+      "stored categories": "AFTER INSERT ON categories WHEN NEW.relative_path = 'Needed' BEGIN UPDATE categories SET native_identity = '{\"dev\":\"999\",\"ino\":\"999\",\"birthtimeNs\":\"1\"}' WHERE id = NEW.id; END",
+      "stored projects": "AFTER UPDATE OF relative_path ON projects BEGIN UPDATE projects SET native_identity = '{\"dev\":\"999\",\"ino\":\"999\",\"birthtimeNs\":\"1\"}' WHERE id = NEW.id; END",
+      "category label": "AFTER INSERT ON categories BEGIN UPDATE category_properties SET name = 'Unexpected label'; END",
+      "source configuration": "AFTER INSERT ON categories BEGIN UPDATE sources SET excluded_relative_paths = '[\"Needed\"]'; END",
+    };
+    if (triggers[failure]) f.sqlite.exec(`CREATE TRIGGER injected ${triggers[failure]}`);
+    let rootOpens = 0, raced = false;
+    patchFs({ opendirSync: (original) => (path, ...args) => {
+      // normalizeSource opens the root once; each complete scan then opens it
+      // twice. Race at the first pre-write or post-write scan, respectively.
+      if (path === f.root) {
+        ++rootOpens;
+        const shouldRace = failure === "pre-write swap" && rootOpens === 4 || failure.startsWith("post-write") && rootOpens === 6;
+        if (shouldRace) {
+          fs.renameSync(join(f.root, "Needed"), join(f.directory, "raced"));
+          if (failure === "post-write category link") fs.symlinkSync(join(f.directory, "raced"), join(f.root, "Needed"), process.platform === "win32" ? "junction" : "dir");
+          else fs.mkdirSync(join(f.root, "Needed"));
+          raced = true;
+        }
+      }
+      assert.notEqual(path, join(f.directory, "raced"), "Never traverse a replacement link");
+      assert.ok(path === f.root || !path.slice(f.root.length + 1).includes("/"), "Never enumerate projects");
+      return original(path, ...args);
+    } }, () => assert.equal(f.refresh().error.code, "storage"));
+    assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+    if (failure.includes("swap") || failure.includes("link")) assert.equal(raced, true);
+    f.sqlite.exec("DROP TRIGGER IF EXISTS injected");
+    if (raced) { fs.rmSync(join(f.root, "Needed"), { recursive: true, force: true }); fs.renameSync(join(f.directory, "raced"), join(f.root, "Needed")); }
+    assert.deepEqual(inventory(f.root), files);
+    assert.equal(f.refresh().ok, true);
+    assert.equal(f.records().categories.length, before.categories.length + 1);
+    assert.deepEqual(f.records().projects.map((row) => row.id), before.projects.map((row) => row.id));
+    assert.equal(f.query("workspace.listProjects").value.projects.length, 2);
+    assert.deepEqual(f.query("workspace.listTextProperties").value.values.map((row) => row.value), [f.value]);
+    assert.deepEqual(inventory(f.root), files);
+  }, ["Second/Other"]));
+}
+
+for (const state of ["unavailable", "unreadable", "changed", "root_identity_conflict"]) {
+  test(`incomplete grouped ${state} source never commits category/project changes`, () => groupedFixture((f) => {
+    fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+    if (["unavailable", "root_identity_conflict"].includes(state)) fs.renameSync(f.root, join(f.directory, "away"));
+    if (state === "root_identity_conflict") fs.mkdirSync(f.root);
+    const before = f.records(); let reads = 0; f.events.length = 0;
+    patchFs({
+      opendirSync: (original) => (path, ...args) => { if (state === "unreadable" && path === join(f.root, "Renamed")) throw Object.assign(new Error("Denied"), { code: "EACCES" }); return original(path, ...args); },
+      lstatSync: (original) => (path, ...args) => { const stat = original(path, ...args); if (state === "changed" && path === join(f.root, "Renamed")) stat.ctimeNs += BigInt(++reads); return stat; },
+    }, () => {
+      assert.equal(f.refresh().ok, true);
+      const result = f.query("workspace.listProjects"); assert.equal(result.ok, true); assert.equal(result.value.state, state);
+      assert.equal(result.value.projects[0].resolution, null);
+    });
+    assert.deepEqual(f.records(), before); assert.ok(f.events.every((event) => event.type !== "workspace.projectsChanged"));
+  }));
+}
+
+test("grouped category permutations block an unmatched reservation and its dependent projects", () => groupedFixture((f) => {
+  f.sqlite.prepare("UPDATE categories SET association_state = 'missing' WHERE relative_path = 'Empty'").run();
+  fs.renameSync(join(f.root, "Empty"), join(f.directory, "away"));
+  fs.renameSync(join(f.root, "Second"), join(f.root, "Empty"));
+  fs.renameSync(join(f.root, "Category"), join(f.root, "Second"));
+  const before = f.records(); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+}, ["Second/Other", "Empty"]));
+
+test("renamed tracked category is reused for an incoming project instead of a new category UUID", () => groupedFixture((f) => {
+  const before = f.records(), second = before.categories.find((row) => row.relative_path === "Second");
+  fs.renameSync(join(f.root, "Second"), join(f.root, "Renamed"));
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Renamed/Moved"));
+  f.events.length = 0; assert.equal(f.refresh().ok, true);
+  groupedMetadata(f, before, { categories: (row) => row.id === second.id ? { relative_path: "Renamed" } : {}, projects: () => ({ relative_path: "Renamed/Moved", category_id: second.id }) });
+}, ["Second"]));
+
+test("replacement at a mapped-out category path cannot qualify as a genuinely new destination", () => groupedFixture((f) => {
+  fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+  fs.mkdirSync(join(f.root, "Category"));
+  fs.renameSync(join(f.root, "Second/Other"), join(f.root, "Category/Moved"));
+  const before = f.records(), secondProject = before.projects.find((row) => row.relative_path === "Second/Other");
+  f.events.length = 0; assert.equal(f.refresh().ok, true);
+  const after = f.records();
+  assert.equal(after.categories.length, before.categories.length);
+  assert.deepEqual(after.categories, before.categories.map((row) => row.relative_path === "Category" ? { ...row, relative_path: "Renamed" } : row));
+  assert.deepEqual(after.projects, before.projects.map((row) => row.id === f.project.projectId ? { ...row, relative_path: "Renamed/Project" } : row));
+  assert.equal(after.sources[0].discovery_revision, before.sources[0].discovery_revision + 1);
+  assert.deepEqual(after.text_property_values, before.text_property_values);
+  assert.deepEqual(after.category_properties, before.category_properties);
+  assert.deepEqual(f.records().projects.find((row) => row.id === secondProject.id), secondProject);
+  assert.ok(f.query("workspace.listProjects").value.retainedProjects.some((row) => row.projectId === secondProject.id));
+}, ["Second/Other"]));
+
+for (const change of ["category record", "category property", "configuration"]) test(`concurrent grouped ${change} change rejects a stale mapping`, () => groupedFixture((f) => {
+  fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+  const before = f.records(); let injected = false; f.events.length = 0;
+  patchFs({ opendirSync: (original) => (path, ...args) => {
+    if (!injected && path === f.root) {
+      injected = true;
+      if (change === "category record") f.sqlite.prepare("UPDATE categories SET native_identity = '{\"dev\":\"999\",\"ino\":\"999\",\"birthtimeNs\":\"1\"}'").run();
+      if (change === "category property") f.sqlite.prepare("UPDATE category_properties SET name = 'Concurrent label'").run();
+      if (change === "configuration") f.sqlite.prepare("UPDATE sources SET archive_relative_path = 'Renamed'").run();
+    }
+    return original(path, ...args);
+  } }, () => {
+    assert.equal(f.refresh().error.code, "storage");
+  });
+  assert.equal(injected, true);
+  const expected = structuredClone(before);
+  if (change === "category record") expected.categories[0].native_identity = '{"dev":"999","ino":"999","birthtimeNs":"1"}';
+  if (change === "category property") expected.category_properties[0].name = "Concurrent label";
+  if (change === "configuration") expected.sources[0].archive_relative_path = "Renamed";
+  assert.deepEqual(f.records(), expected); assert.deepEqual(f.events, []);
+}));
+
+for (const evidence of ["copy", "birthtime", "volume", "alias", "historical"]) test(`category rename rejects ${evidence} evidence even when a child still uniquely matches`, () => groupedFixture((f) => {
+  const category = f.records().categories[0], stored = JSON.parse(category.native_identity);
+  fs.renameSync(join(f.root, "Category"), join(f.directory, "away"));
+  fs.mkdirSync(join(f.root, "Target"));
+  fs.renameSync(join(f.directory, "away/Project"), join(f.root, "Target/Project"));
+  if (evidence === "alias") fs.mkdirSync(join(f.root, "Alias"));
+  if (evidence === "historical") f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Historical', ?, 'replaced')")
+    .run(randomUUID(), f.workspace.sourceId, category.native_identity);
+  const before = f.records(); f.events.length = 0;
+  patchFs({ lstatSync: (original) => (path, ...args) => {
+    const stat = original(path, ...args);
+    if (["Target", "Alias"].some((name) => path === join(f.root, name)) && evidence !== "copy") {
+      stat.dev = BigInt(stored.dev) + (evidence === "volume" ? 1n : 0n); stat.ino = BigInt(stored.ino);
+      stat.birthtimeNs = BigInt(stored.birthtimeNs) + (evidence === "birthtime" ? 1n : 0n);
+    }
+    return stat;
+  } }, () => assert.equal(f.refresh().ok, true));
+  assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
+}));
+
+test("grouped persisted missing project can still use explicit T07 recovery into one new category after refresh declines it", () => groupedFixture((f) => {
+  f.sqlite.prepare("UPDATE projects SET association_state = 'missing' WHERE id = ?").run(f.project.projectId);
+  fs.mkdirSync(join(f.root, "Needed/Unrelated"), { recursive: true });
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
+  const before = f.records(); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  const preview = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId }).value;
+  assert.equal(preview.entries.find((row) => row.relativePath === "Needed/Moved").status, "selectable");
+  const recovered = f.command("workspace.reassociateProject", { projectId: f.project.projectId, relativePath: "Needed/Moved", previewToken: preview.previewToken });
+  assert.equal(recovered.ok, true); assert.equal(recovered.value.projects.length, 1);
+  assert.equal(recovered.value.projects[0].projectId, f.project.projectId);
+  assert.equal(f.records().categories.length, before.categories.length + 1);
+  assert.equal(f.records().projects.length, before.projects.length);
+  assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
+  const after = f.records(); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), after); assert.deepEqual(f.events, []);
+}));
+
+test("populated migrations 0000–0006 reopen with reconciled grouped locators and all metadata intact", () => groupedFixture((f) => {
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 7);
+  fs.mkdirSync(join(f.root, "Needed"));
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
+  f.events.length = 0; assert.equal(f.refresh().ok, true);
+  const before = f.records(), migrations = f.sqlite.prepare("SELECT * FROM __drizzle_migrations ORDER BY id").all(), files = inventory(f.root);
+  const reopened = openSettingsService(f.databasePath);
+  try {
+    assert.equal(reopened.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).ok, true);
+    assert.equal(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.sibling.workspaceId }).value.projects[0].projectId, f.project.projectId);
+    assert.deepEqual(f.records(), before); assert.deepEqual(f.sqlite.prepare("SELECT * FROM __drizzle_migrations ORDER BY id").all(), migrations);
+    assert.deepEqual(f.sqlite.prepare("PRAGMA foreign_key_check").all(), []);
+    assert.deepEqual(inventory(f.root), files);
+  } finally { reopened.close(); }
 }));

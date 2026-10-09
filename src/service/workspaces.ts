@@ -1,4 +1,4 @@
-import { reconcileDirectSource } from "./external-reconciliation.js";
+import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
@@ -263,7 +263,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       if (!source) return invalid("Choose a saved workspace.");
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
       const configured = workspaceSource(input.workspaceId)!;
-      const reconciled = state.sourceAvailable ? reconcileDirectSource(db, configured) : { changed: false, scan: null };
+      const reconciled = state.sourceAvailable ? reconcileSource(db, configured) : { changed: false, scan: null };
       if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
       if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
         revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
