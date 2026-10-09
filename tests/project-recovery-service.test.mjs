@@ -702,7 +702,10 @@ test("recovery/discovery commits invalidate same-source reviews and preserve unr
 }));
 
 test("review tokens are ephemeral across workspace removal and service restart", () => fixture((f) => {
-  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  // Persisted missing records remain explicit recovery cases across startup rescans.
+  fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+  f.apply();
+  fs.renameSync(join(f.directory, "away"), join(f.root, "Target"));
   const old = review(f).value;
   const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
   f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.workspace.workspaceId });

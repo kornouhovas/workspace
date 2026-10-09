@@ -37,9 +37,11 @@ function fixture(run, { grouped = false, paths = [] } = {}) {
   assert.equal(command("workspace.setTextValue", { projectId: project.projectId, propertyId, value }).ok, true);
   const records = () => Object.fromEntries(["sources", "projects", "categories", "category_properties", "property_definitions", "text_property_values", "workspaces", "views", "active_workspace", "settings"]
     .map((table) => [table, sqlite.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
-  const events = []; service.workspaces.subscribe((event) => events.push(event));
+  // Keep locator-commit assertions independent from runtime observation events.
+  const events = [], observations = [];
+  service.workspaces.subscribe((event) => (event.type === "workspace.sourceObserved" ? observations : events).push(event));
   const refresh = () => command("workspace.refreshSource");
-  try { run({ initial, directory, root, databasePath, service, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, refresh }); }
+  try { run({ initial, directory, root, databasePath, service, sqlite, workspace, sibling, project, propertyId, value, query, command, apply, records, events, observations, refresh }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 function patchFs(methods, run) {
@@ -81,6 +83,8 @@ test("explicit direct refresh preserves identities, exact Text, source configura
   assert.deepEqual(f.refresh(), { ok: true, value: { sourceId: f.workspace.sourceId, workspaceIds: [f.workspace.workspaceId, f.sibling.workspaceId], canonicalRoot: f.root, sourceAvailable: true } });
   assert.equal(delivered, true); assert.equal(committedPath, "Renamed");
   assert.deepEqual(f.events.map((event) => event.type), ["workspace.projectsChanged"]);
+  assert.deepEqual(f.observations, [{ type: "workspace.sourceObserved", sourceId: f.workspace.sourceId,
+    workspaceIds: [f.workspace.workspaceId, f.sibling.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "active" }]);
   assert.deepEqual(f.events[0].workspaceIds, [f.workspace.workspaceId, f.sibling.workspaceId]);
   assert.ok(!f.events[0].workspaceIds.includes(unrelated.workspaceId));
   const after = assertMetadata(f, before);
@@ -367,13 +371,16 @@ test("retargeted root or ancestor links cannot reconcile an identical folder ben
   });
 });
 
-test("healthy no-op scans ignore timestamp changes and unrelated new folders", () => fixture((f) => {
+test("healthy scans ignore timestamp noise and observe unrelated topology without enrollment", () => fixture((f) => {
   const before = f.records();
   fs.writeFileSync(join(f.root, "Project/new-file"), "authored outside Workspace");
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.observations, []);
   fs.mkdirSync(join(f.root, "Unrelated"));
   const files = inventory(f.root);
   assert.equal(f.refresh().ok, true);
   assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []); assert.deepEqual(inventory(f.root), files);
+  assert.equal(f.observations.length, 1); assert.equal(f.observations[0].automaticUpdates, "active");
+  assert.equal(f.refresh().ok, true); assert.equal(f.observations.length, 1);
   assert.equal(f.query("workspace.previewDiscovery").value.entries.find((entry) => entry.relativePath === "Unrelated").reason, null);
 }));
 

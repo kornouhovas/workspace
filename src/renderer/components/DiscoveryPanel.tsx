@@ -224,6 +224,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   const version = useRef(0);
   const minimumRevision = useRef(0);
   const minimumCategoryPropertyRevision = useRef(0);
+  const minimumObservationRevision = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
   const [observation, setObservation] = useState(0);
   const lastScanState = useRef<ProjectList["state"] | null>(null);
@@ -288,13 +289,19 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         minimumCategoryPropertyRevision.current = event.revision;
         void load(); return;
       }
-      const affectedSource = event.type === "workspace.projectsChanged" ? event.sourceId : event.source.sourceId;
-      const references = event.type === "workspace.projectsChanged" ? event.workspaceIds : event.source.workspaceIds;
+      const affectedSource = event.type === "workspace.sourceChanged" ? event.source.sourceId : event.sourceId;
+      const references = event.type === "workspace.sourceChanged" ? event.source.workspaceIds : event.workspaceIds;
       if (affectedSource !== sourceId || !references.includes(workspaceId)) return;
       if (event.type === "workspace.projectsChanged") {
         if (event.revision <= minimumRevision.current) return;
         minimumRevision.current = event.revision;
-      } else setObservation((value) => value + 1);
+      } else {
+        if (event.type === "workspace.sourceObserved") {
+          if (event.observationRevision <= minimumObservationRevision.current) return;
+          minimumObservationRevision.current = event.observationRevision;
+        }
+        setObservation((value) => value + 1);
+      }
       setInvalidation((value) => value + 1);
       void load();
     });

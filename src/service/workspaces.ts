@@ -1,3 +1,4 @@
+import { createSourceObserver, nativeObserverDependencies, type ObserverDependencies, type SourceObservation } from "./source-observer.js";
 import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
@@ -9,8 +10,8 @@ import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "..
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, relative, sep } from "node:path";
-import { asc, eq, max } from "drizzle-orm";
+import { isAbsolute, join, relative, sep } from "node:path";
+import { asc, eq, max, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
 import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
@@ -71,7 +72,7 @@ export interface WorkspaceService {
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
-export function createWorkspaceService(db: Database, filesystem = nativeFilesystem): WorkspaceService {
+export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies): WorkspaceService {
   const previewTokens = new Map<string, {
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
@@ -80,7 +81,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     categories: typeof schema.categories.$inferSelect[];
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+  const observationEvents = new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>();
+  const subscriptionTimers = new Set<{ cancel(): void }>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
+  const observationCache = new Map<string, SourceObservation>();
+  const observationVersions = new Map<string, number>();
+  type PendingObservation = { version: number; value: SourceObservation };
+  let pendingObservations = new Map<string, PendingObservation>();
   let pendingProjectEvents: WorkspaceChangeEvent[] = [];
   let pending = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
@@ -90,6 +97,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     committed(sourceId, revision, workspaceIds) {
       for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
     },
   });
   function invalidateSourceReviews(sourceId: string) {
@@ -102,10 +110,34 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     ...createTextPropertyService(db, publish),
     ...createCategoryPropertyService(db, publish),
     subscribe(listener) {
-      listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      let active = true;
+      const delivered = new Set<string>();
+      const receive = (event: WorkspaceChangeEvent) => {
+        if (!active) return;
+        if (event.type === "workspace.sourceObserved") delivered.add(event.sourceId);
+        listener(event);
+      };
+      listeners.add(receive);
+      // Startup runs before the IPC subscriber exists. Deliver its current
+      // runtime status after connection readiness, without a new revision.
+      const timer = (observerDependencies ?? nativeObserverDependencies).schedule(() => {
+        subscriptionTimers.delete(timer);
+        if (!active) return;
+        for (const [sourceId, event] of observationEvents) {
+          const workspaceIds = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds;
+          if (delivered.has(sourceId) || !workspaceIds.length) continue;
+          try { receive({ ...event, workspaceIds }); } catch { /* Isolate the subscriber. */ }
+        }
+      }, 0);
+      subscriptionTimers.add(timer);
+      return () => { active = false; timer.cancel(); subscriptionTimers.delete(timer); listeners.delete(receive); };
     },
-    close() { listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); },
+    close() {
+      observer.close();
+      for (const timer of subscriptionTimers) timer.cancel();
+      subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close();
+    },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
         !["type", "workspaceId"].every((key) => Object.hasOwn(input, key)) ||
@@ -249,6 +281,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           for (const [id, saved] of previewTokens) if (saved.preview.sourceId === source.id) previewTokens.delete(id);
           publish([committedEvent]);
         }
+        syncObserverReferences();
+        observer.request(source.id);
         return { ok: true, value: result };
       } catch (error) { return error instanceof StalePreview ? stale() : storageFailure(); }
     },
@@ -261,12 +295,31 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         .from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
         .where(eq(schema.workspaces.id, input.workspaceId)).get();
       if (!source) return invalid("Choose a saved workspace.");
+      const observationVersion = (observationVersions.get(source.sourceId) ?? 0) + 1;
+      observationVersions.set(source.sourceId, observationVersion);
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
       const configured = workspaceSource(input.workspaceId)!;
       const reconciled = state.sourceAvailable ? reconcileSource(db, configured) : { changed: false, scan: null };
       if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
       if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
         revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
+      if (configured.discoveryMode !== null) {
+        const scan = reconciled.scan ?? { state: "unavailable" as const, entries: [], snapshot: null };
+        const current = workspaceSource(input.workspaceId)!;
+        const projection = projectList(input.workspaceId, current, scan);
+        const targets = scan.snapshot ? [scan.snapshot.root, ...scan.snapshot.children.filter((child) =>
+          scan.snapshot!.mode === "grouped" && child.kind === "directory" && !child.relativePath.includes("/"))]
+          .filter((child) => child.kind === "directory" && reliableIdentity(child.identity))
+          .map((child) => {
+            if (child.kind !== "directory") throw new Error("Invalid watch target");
+            return { path: join(current.canonicalRoot, child.relativePath), identity: child.identity, stamp: `${child.mtimeNs}:${child.ctimeNs}` };
+          }) : [];
+        // Timestamp changes help validate scans, but have no semantic observation revision.
+        const topology = scan.snapshot?.children.map((child) => child.kind === "excluded" ? child :
+          { relativePath: child.relativePath, kind: child.kind, identity: child.identity });
+        pendingObservations.set(current.id, { version: observationVersion, value: { state: projection.state, targets,
+          signature: JSON.stringify([topology, projection.projects, projection.retainedProjects, projection.categories]) } });
+      }
       return { ok: true, value: sourceState(source.sourceId, state) };
     },
     create(input) {
@@ -537,9 +590,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     return result.ok ? readWorkspaceLoad(db, filesystem, observe, result.value) : undefined;
   }
 
-  function run<R extends { ok: boolean }>(operation: () => R, listSnapshot?: (result: R) => WorkspaceLoad | undefined): R | ReturnType<typeof storageFailure> {
+  function run<R extends { ok: boolean }>(operation: () => R, listSnapshot?: (result: R) => WorkspaceLoad | undefined, acceptObservation = true): R | ReturnType<typeof storageFailure> {
     pending = new Map();
     pendingProjectEvents = [];
+    pendingObservations = new Map();
+    let observations = new Map<string, PendingObservation>();
     let snapshot: WorkspaceLoad | undefined;
     let sources: WorkspaceSourceState[] = [];
     try {
@@ -547,6 +602,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const result = operation();
         if (result.ok) {
           snapshot = listSnapshot?.(result);
+          observations = pendingObservations;
           sources = [...pending].map(([sourceId, state]) => sourceState(sourceId, state));
         }
         return result;
@@ -567,11 +623,43 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           }
         }
         publish(events);
+        syncObserverReferences();
+        for (const [sourceId, observation] of observations) {
+          // A reentrant subscriber may already have refreshed a newer snapshot.
+          if (observation.version !== observationVersions.get(sourceId)) continue;
+          observationCache.set(sourceId, observation.value);
+          if (acceptObservation) observer.accept(sourceId, observation.value);
+        }
       }
       return result;
     } catch { return storageFailure(); }
   }
 
+  const observer = createSourceObserver((sourceId) => {
+    const workspaceId = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds[0];
+    if (!workspaceId) throw new Error("Source no longer referenced");
+    const result = run(() => service.refreshSource({ type: "workspace.refreshSource", workspaceId }), undefined, false);
+    const observation = observationCache.get(sourceId);
+    if (!result.ok || !observation) throw new Error("Source observation failed");
+    return observation;
+  }, (sourceId, observation, observationRevision, automaticUpdates) => {
+    const workspaceIds = sourceState(sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds;
+    if (!workspaceIds.length) return;
+    invalidateSourceReviews(sourceId);
+    const event: Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }> = {
+      type: "workspace.sourceObserved", sourceId, workspaceIds, observationRevision, state: observation.state, automaticUpdates,
+    };
+    observationEvents.set(sourceId, event);
+    publish([event]);
+  }, observerDependencies);
+  function syncObserverReferences() {
+    const references = new Set(db.select({ sourceId: schema.workspaces.sourceId }).from(schema.workspaces).all().map((row) => row.sourceId));
+    observer.sync(db.select().from(schema.sources).all().filter((source) => references.has(source.id) && source.discoveryMode !== null)
+      .map((source) => ({ sourceId: source.id, root: source.canonicalRoot })));
+  }
+  // Reconcile persisted configured sources before clients can query after restart.
+  // Historical settings-only migration fixtures have no configured sources yet.
+  if (db.all<{ name: string }>(sql`PRAGMA table_info(projects)`).some((column) => column.name === "category_id")) syncObserverReferences();
   return {
     ...service,
     create: (input) => run(() => service.create(input), currentSnapshot),

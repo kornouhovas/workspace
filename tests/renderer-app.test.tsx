@@ -2543,3 +2543,48 @@ test("EN/RU delayed recovery previews and accepted responses cannot revive switc
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
+
+test("EN/RU observer-only changes reject delayed same-revision lists/previews and ignore duplicate, older and foreign observations", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let lists = 0, previews = 0;
+    let finishList: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let finishPreview: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language,
+      load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+      onProjects: async () => {
+        if (++lists === 2) return new Promise((resolve) => { finishList = resolve; });
+        return ok(projectList(active, [lists === 1 ? "Saved" : "Current observation"], 1));
+      }, onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type === "workspace.previewDiscovery") {
+          if (++previews === 1) return new Promise((resolve) => { finishPreview = resolve; });
+          return ok({ ...previewResult(active, "current-review"), revision: 1 });
+        }
+        return fail("invalid_input");
+      },
+    });
+    render(<App />); await screen.findByRole("cell", { name: "Saved" });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    const event: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId],
+      observationRevision: 2, state: "ready", automaticUpdates: "active" };
+    await act(async () => { api.emitChange({ ...event, sourceId: "00000000-0000-4000-8000-000000000099" }); api.emitChange({ ...event, workspaceIds: [] }); });
+    assert.equal(lists, 1);
+    await act(async () => { api.emitChange(event); });
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
+    await act(async () => { api.emitChange({ ...event, observationRevision: 3, automaticUpdates: "degraded" }); });
+    await screen.findByRole("cell", { name: "Current observation" });
+    await act(async () => {
+      finishList?.(ok(projectList(active, ["Delayed same revision"], 1)));
+      finishPreview?.(ok({ ...previewResult(active, "old-review"), revision: 1 }));
+      api.emitChange(event); api.emitChange({ ...event, observationRevision: 3 });
+    });
+    assert.equal(lists, 3); assert.equal(screen.queryByRole("cell", { name: "Delayed same revision" }), null);
+    assert.equal(screen.queryByRole("checkbox"), null);
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    await screen.findByRole("checkbox", { name: /Authored project/ });
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});

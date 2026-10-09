@@ -1,3 +1,4 @@
+import type { ObserverDependencies } from "./source-observer.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import Database from "better-sqlite3";
@@ -45,6 +46,7 @@ export function openSettingsService(
   databasePath: string,
   migrationFolder = resolve(process.cwd(), "src/service/db/migrations"),
   workspaceFilesystem?: WorkspaceFilesystem,
+  observerDependencies?: ObserverDependencies,
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
@@ -65,7 +67,7 @@ export function openSettingsService(
     }
   })();
 
-  const workspaces = createWorkspaceService(db, workspaceFilesystem);
+  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies);
   return {
     workspaces,
     handleQuery(input) {

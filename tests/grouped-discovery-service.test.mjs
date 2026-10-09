@@ -252,10 +252,12 @@ test("grouped Apply persists empty categories, required same-source values and i
   assert.deepEqual(result.categories.map((row) => row.name), ["Category", "DirectLooking", "Empty"]);
   assert.deepEqual(result.projects.map((row) => [row.name, row.relativePath]), [["Project", "Category/Project"], ["src", "DirectLooking/src"]]);
   for (const project of result.projects) assert.equal(result.categories.find((row) => row.categoryId === project.categoryId).relativePath, project.relativePath.split("/")[0]);
-  assert.equal(events.length, 1); assert.equal(events[0].type, "workspace.projectsChanged");
+  assert.deepEqual(events[1], { type: "workspace.sourceObserved", sourceId: f.workspace.sourceId,
+    workspaceIds: events[0].workspaceIds, observationRevision: 1, state: "ready", automaticUpdates: "active" });
+  assert.equal(events.length, 2); assert.equal(events[0].type, "workspace.projectsChanged");
   assert.deepEqual(new Set(events[0].workspaceIds), new Set([f.workspace.workspaceId, sibling.workspaceId]));
   assert.equal(events[0].workspaceIds.includes(other.workspaceId), false);
-  assert.deepEqual(applied(f), result); assert.equal(events.length, 1);
+  assert.deepEqual(applied(f), result); assert.equal(events.length, 2);
   const fromSibling = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }).value;
   assert.deepEqual({ ...fromSibling, workspaceId: result.workspaceId }, result);
   assert.equal(f.preview({ mode: "direct" }).error.code, "invalid_input");
@@ -319,7 +321,9 @@ test("grouped Apply rejects stale reviewed categories/projects and rolls back wr
   review = f.preview().value;
   f.sqlite.prepare("UPDATE categories SET native_identity = ? WHERE id = ?").run(JSON.stringify({ dev: "1", ino: "2", birthtimeNs: "3" }), initial.categories[0].categoryId);
   assert.equal(command(review.previewToken).error.code, "stale_preview");
-  assert.equal(events.length, 1);
+  assert.deepEqual(events[1], { type: "workspace.sourceObserved", sourceId: f.workspace.sourceId,
+    workspaceIds: events[0].workspaceIds, observationRevision: 1, state: "ready", automaticUpdates: "active" });
+  assert.equal(events.length, 2);
 }));
 
 test("actual populated migrations 0000–0005 upgrade without changing settings, identities, Text or views", () => {

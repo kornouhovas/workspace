@@ -1707,7 +1707,9 @@ test("committed projects fan out to actual source references, invalidate sibling
       const unrelatedPreview = discoveryPreview(service, other.workspaceId).value;
       const applied = applyDiscovery(service, one.workspaceId).value;
       assert.deepEqual(events, [{ type: "workspace.projectsChanged", sourceId: one.sourceId,
-        workspaceIds: [one.workspaceId, two.workspaceId], revision: applied.revision }]);
+        workspaceIds: [one.workspaceId, two.workspaceId], revision: applied.revision },
+        { type: "workspace.sourceObserved", sourceId: one.sourceId, workspaceIds: [one.workspaceId, two.workspaceId],
+          observationRevision: 1, state: "ready", automaticUpdates: "active" }]);
       assert.deepEqual(secondClient, events);
       assert.equal(applyDiscovery(service, two.workspaceId, siblingPreview.previewToken).error.code, "stale_preview");
       assert.deepEqual(listProjects(service, two.workspaceId).value.projects, applied.projects);
@@ -1715,10 +1717,10 @@ test("committed projects fan out to actual source references, invalidate sibling
       const unchangedSibling = discoveryPreview(service, two.workspaceId).value;
       assert.equal(applyDiscovery(service, one.workspaceId).value.revision, applied.revision);
       assert.equal(applyDiscovery(service, two.workspaceId, unchangedSibling.previewToken).value.revision, applied.revision);
-      assert.equal(events.length, 1);
+      assert.equal(events.length, 2);
       off();
       assert.equal(applyDiscovery(service, other.workspaceId, unrelatedPreview.previewToken).ok, true);
-      assert.equal(events.length, 1);
+      assert.equal(events.length, 2);
       assert.equal(secondClient.at(-1).sourceId, other.sourceId);
       const remove = (id) => service.handleCommand({ type: "workspace.remove", workspaceId: id });
       remove(one.workspaceId); remove(two.workspaceId);
@@ -1760,10 +1762,10 @@ test("configured source Refresh preserves command validation and blocks reconcil
       unavailable = true;
       assert.equal(service.handleCommand(input).value.sourceAvailable, false);
       assert.deepEqual(sqlite.prepare("SELECT * FROM projects").all(), before);
-      assert.deepEqual(events.map((event) => event.type), ["workspace.sourceChanged"]);
+      assert.deepEqual(events.map((event) => event.type), ["workspace.sourceChanged", "workspace.sourceObserved"]);
       unavailable = false; events.length = 0;
       assert.equal(service.handleCommand(input).value.sourceAvailable, true);
-      assert.deepEqual(events.map((event) => event.type), ["workspace.projectsChanged", "workspace.sourceChanged"]);
+      assert.deepEqual(events.map((event) => event.type), ["workspace.projectsChanged", "workspace.sourceChanged", "workspace.sourceObserved"]);
       assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value.projects[0].projectId, project.projectId);
       assert.equal(sqlite.prepare("SELECT relative_path FROM projects").get().relative_path, "Renamed");
     } finally { sqlite.close(); service.close(); }

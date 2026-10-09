@@ -44,6 +44,13 @@ export type ServiceEvent = { type: "workspace.change"; change: WorkspaceChangeEv
 
 export function isWorkspaceChangeEvent(value: unknown): value is WorkspaceChangeEvent {
   if (!record(value)) return false;
+  if (value.type === "workspace.sourceObserved") {
+    return exact(value, ["type", "sourceId", "workspaceIds", "observationRevision", "state", "automaticUpdates"]) &&
+      uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0 &&
+      typeof value.observationRevision === "number" && Number.isSafeInteger(value.observationRevision) && value.observationRevision > 0 &&
+      ["ready", "empty", "unavailable", "unreadable", "root_identity_conflict", "changed"].includes(typeof value.state === "string" ? value.state : "") &&
+      (value.automaticUpdates === "active" || value.automaticUpdates === "degraded");
+  }
   if (value.type === "workspace.projectsChanged" || value.type === "workspace.propertiesChanged" || value.type === "workspace.categoryPropertyChanged") {
     return exact(value, ["type", "sourceId", "workspaceIds", "revision"]) &&
       uuid(value.sourceId) && ids(value.workspaceIds) && value.workspaceIds.length > 0 &&

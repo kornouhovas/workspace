@@ -738,7 +738,9 @@ test("two typed clients receive committed project revisions through real ports/c
     const applied = await oneClient.applyDiscovery(one.workspaceId, reviewed.previewToken);
     const event = { type: "workspace.projectsChanged", sourceId: one.sourceId,
       workspaceIds: [one.workspaceId, two.workspaceId], revision: applied.value.revision };
-    assert.deepEqual(oneEvents, [event]); assert.deepEqual(twoEvents, [event]);
+    const observation = { type: "workspace.sourceObserved", sourceId: one.sourceId, workspaceIds: event.workspaceIds,
+      observationRevision: 1, state: "ready", automaticUpdates: "active" };
+    assert.deepEqual(oneEvents, [event, observation]); assert.deepEqual(twoEvents, oneEvents);
     assert.equal(servicePort.sent.at(-2).type, "workspace.change");
     assert.equal((await twoClient.applyDiscovery(two.workspaceId, sibling.previewToken)).error.code, "stale_preview");
     assert.deepEqual((await twoClient.listProjects(two.workspaceId)).value.projects, applied.value.projects);
@@ -747,11 +749,11 @@ test("two typed clients receive committed project revisions through real ports/c
     desktopPort.receive({ type: "workspace.change", id: 777, change: event });
     desktopPort.receive({ type: "workspace.change", change: { ...event, revision: "3" } });
     assert.deepEqual((await pending).value.projects, applied.value.projects);
-    assert.equal(oneEvents.length, 1);
+    assert.equal(oneEvents.length, 2);
     offTwo();
     const excluded = (await oneClient.previewDiscovery(one.workspaceId, ["Project"])).value;
     await oneClient.applyDiscovery(one.workspaceId, excluded.previewToken);
-    assert.equal(oneEvents.length, 2); assert.equal(twoEvents.length, 1);
+    assert.equal(oneEvents.length, 3); assert.equal(twoEvents.length, 2);
     offOne(); await controller.stop(100);
     const before = servicePort.sent.length;
     servicePort.receive({ id: 999, input: { type: "workspace.listProjects", workspaceId: one.workspaceId } });
@@ -948,14 +950,16 @@ test("grouped Apply uses production ports and typed clients with categories, no-
     assert.equal(applied.value.mode, "grouped"); assert.equal(applied.value.projects[0].name, "Project");
     assert.equal(applied.value.projects[0].categoryId, applied.value.categories.find((category) => category.name === "Category").categoryId);
     assert.ok(applied.value.categories.some((category) => category.name === "Empty"));
-    assert.equal(events.length, 1); assert.deepEqual(events[0].workspaceIds, [one.workspaceId, sibling.workspaceId]);
+    assert.deepEqual(events[1], { type: "workspace.sourceObserved", sourceId: one.sourceId, workspaceIds: [one.workspaceId, sibling.workspaceId],
+      observationRevision: 1, state: "ready", automaticUpdates: "active" });
+    assert.equal(events.length, 2); assert.deepEqual(events[0].workspaceIds, [one.workspaceId, sibling.workspaceId]);
     assert.equal(servicePort.sent.at(-2).type, "workspace.change");
     assert.equal((await siblingClient.applyDiscovery(sibling.workspaceId, staleReview.previewToken)).error.code, "stale_preview");
     assert.deepEqual((await siblingClient.listProjects(sibling.workspaceId)).value, { ...applied.value, workspaceId: sibling.workspaceId });
     assert.equal((await oneClient.listProjects(other.workspaceId)).value.categoryProperty, null);
     const unchanged = (await oneClient.previewDiscovery(one.workspaceId)).value;
     assert.equal(unchanged.mode, "grouped"); assert.equal((await oneClient.applyDiscovery(one.workspaceId, unchanged.previewToken)).ok, true);
-    assert.equal(events.length, 1);
+    assert.equal(events.length, 2);
     assert.equal((await siblingClient.previewDiscovery(sibling.workspaceId, undefined, "direct")).error.code, "invalid_input");
     unsubscribe(); await controller.stop(100);
   } finally { unsubscribe(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
@@ -1135,4 +1139,81 @@ test("recovery fanout traverses production preload clients in commit order and c
     parent.emit("message", { data: { type: "shutdown" }, ports: [] });
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("source observation traverses production entry/controller/preload/clients before Refresh responses and rejects malformed envelopes", async () => {
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const directory = await mkdtemp(join(tmpdir(), "source-observed-transport-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(join(root, "Project"), { recursive: true }); await mkdir(otherRoot);
+  const timers = new Set(), watchers = [];
+  const dependencies = { ...nativeObserverDependencies,
+    schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
+    watch(path, hint, failed) { const watcher = { path, hint, failed, closed: false }; watchers.push(watcher); return { close: () => { watcher.closed = true; } }; },
+  };
+  const flush = () => {
+    for (const timer of [...timers].filter((timer) => timer.delay === 100)) { timers.delete(timer); timer.callback(); }
+  };
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, dependencies), () => child.exit());
+  const controller = new BackendController(), ipc = new EventEmitter();
+  ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
+  const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+  const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+  function surface() {
+    const unload = new EventTarget(); let api;
+    runInNewContext(preload, { window: unload, require: () => ({ ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_key, value) => { api = value; } } }) });
+    return { client: new WorkspaceServiceClient(api), unload };
+  }
+  const oneSurface = surface(), twoSurface = surface(), otherSurface = surface();
+  const events = [], siblingEvents = [], unrelatedEvents = [];
+  const off = oneSurface.client.onWorkspaceChange((event) => events.push(event));
+  const offTwo = twoSurface.client.onWorkspaceChange((event) => siblingEvents.push(event));
+  let other;
+  const offOther = otherSurface.client.onWorkspaceChange((event) => { if (event.workspaceIds?.includes(other?.workspaceId)) unrelatedEvents.push(event); });
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "data.sqlite"), {}, 100), true);
+    const one = (await oneSurface.client.createWorkspace("One", root)).value;
+    const two = (await twoSurface.client.createWorkspace("Two", root)).value;
+    other = (await otherSurface.client.createWorkspace("Other", otherRoot)).value;
+    const preview = (await oneSurface.client.previewDiscovery(one.workspaceId)).value;
+    const applied = (await oneSurface.client.applyDiscovery(one.workspaceId, preview.previewToken)).value;
+    flush(); events.length = siblingEvents.length = servicePort.sent.length = 0;
+    assert.equal(watchers.filter((watcher) => !watcher.closed).length, 1);
+    await rename(join(root, "Project"), join(directory, "away"));
+    const result = await oneSurface.client.refreshSource(one.workspaceId);
+    assert.equal(result.ok, true);
+    const observation = { type: "workspace.sourceObserved", sourceId: one.sourceId, workspaceIds: [one.workspaceId, two.workspaceId],
+      observationRevision: 2, state: "empty", automaticUpdates: "active" };
+    assert.deepEqual(events, [observation]); assert.deepEqual(siblingEvents, events); assert.deepEqual(unrelatedEvents, []);
+    assert.deepEqual(servicePort.sent[0].change, observation); assert.deepEqual(servicePort.sent[1].result, result);
+    const list = (await twoSurface.client.listProjects(two.workspaceId)).value;
+    assert.equal(list.revision, applied.revision); assert.equal(list.retainedProjects[0].resolution, "missing");
+    for (const malformed of [{ ...observation, extra: true }, { ...observation, revision: 2 }, { ...observation, observationRevision: 0 },
+      { ...observation, observationRevision: -1 }, { ...observation, observationRevision: 0.5 },
+      { ...observation, observationRevision: Number.MAX_SAFE_INTEGER + 1 }, { ...observation, observationRevision: "3" },
+      { ...observation, automaticUpdates: "unknown" }, { ...observation, state: "unknown" }, { ...observation, sourceId: "bad" },
+      { ...observation, workspaceIds: [] }, { ...observation, workspaceIds: [one.workspaceId, one.workspaceId] }]) {
+      desktopPort.receive({ type: "workspace.change", change: malformed });
+      ipc.emit("workspace:change", {}, malformed);
+    }
+    assert.deepEqual(events, [observation]);
+    events.length = siblingEvents.length = 0;
+    await rename(join(directory, "away"), join(root, "Renamed"));
+    watchers[0].hint("rename", null); flush();
+    assert.deepEqual(events.map((event) => event.type), ["workspace.projectsChanged", "workspace.sourceObserved"]);
+    assert.equal(events[0].revision, applied.revision + 1); assert.equal(events[1].observationRevision, 3);
+    assert.deepEqual(siblingEvents, events); assert.deepEqual(unrelatedEvents, []);
+    offTwo(); twoSurface.unload.dispatchEvent(new Event("unload"));
+    const count = siblingEvents.length;
+    watchers[0].failed(); assert.equal(events.at(-1).automaticUpdates, "degraded"); assert.equal(siblingEvents.length, count);
+    off(); offOther(); relay(); await controller.stop(100);
+    assert.equal(timers.size, 0); assert.ok(watchers.every((watcher) => watcher.closed));
+    const sent = servicePort.sent.length; watchers[0].hint(); watchers[0].failed(); flush(); assert.equal(servicePort.sent.length, sent);
+  } finally { off(); offTwo(); offOther(); relay(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
