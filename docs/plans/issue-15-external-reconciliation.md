@@ -214,6 +214,12 @@ Task 5 verification: 439 tests passed with no skips; build, lint, typecheck, doc
 
 Graphical commands require distinct WORKSPACE_SMOKE_EVIDENCE_DIR values. Reuse prior evidence only when the exercised code/fixture is unchanged and label it accurately. A newly changed scenario requires new evidence. If #44 blocks normal shutdown, preserve the failed run and report dependent stages as unreached; do not weaken assertions or blindly rerun.
 
+## First implementation review repairs
+
+All five prescribed perspectives were collected against the fixed base. Verified findings were a repeated watcher-error reattachment loop, a delayed Apply response overwriting a newer same-revision observation, stale development watcher/layout descriptions and an undocumented Chromium executable setting. The loop now waits for health retry or explicit Refresh; Apply confirms success but reloads an overtaken projection. New synchronous/asynchronous/setup-error and EN/RU Apply-race regressions reproduced the defects before repair and pass afterward.
+
+Repair verification: 443 tests passed without skips; lint, typecheck, documentation links, production/Ladle builds and diff checks passed. A fresh unsigned macOS artifact/resource check, development and packaged runtime runs passed, including all stages and three normal shutdowns each. Chromium Ladle passed 306 viewport captures/74 interactions; native Ladle's existing #44 failure was not repeated. Evidence is retained under work/ralphex/issue-15/review-0-*. The fix commit is a reviewed-work checkpoint, not a zero-findings iteration or coordinator acceptance; follow-up review and platform gates remain pending.
+
 ## Post-Completion
 
 - Coordinator independently reviews the final fixed-base diff, acceptance matrix, screenshots and check evidence.

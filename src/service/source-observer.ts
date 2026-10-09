@@ -44,6 +44,7 @@ type Handle = { target: WatchTarget; active: boolean; close?: () => void };
 type Entry = {
   sourceId: string; root: string; active: boolean; running: boolean; again: boolean;
   handles: Map<string, Handle>; scheduled?: { cancel(): void }; health?: { cancel(): void };
+  failedTargets: Map<string, string>;
   observation?: SourceObservation; published?: string; degraded: boolean;
 };
 
@@ -89,6 +90,10 @@ export function createSourceObserver(
     if (!entry.active || closed) return;
     entry.observation = observation;
     const targets = new Map(observation.targets.map((target) => [target.path, target]));
+    for (const [path, evidence] of entry.failedTargets) {
+      const target = targets.get(path);
+      if (!target || identity(target) !== evidence) entry.failedTargets.delete(path);
+    }
     // Close all obsolete targets before installing any replacement.
     for (const [path, handle] of entry.handles) {
       const target = targets.get(path);
@@ -98,6 +103,9 @@ export function createSourceObserver(
     let installed = false;
     for (const [path, target] of targets) {
       if (entry.handles.has(path)) { entry.handles.get(path)!.target = target; continue; }
+      // Notification and installation-window passes still validate the source,
+      // but a failed target waits for health retry or explicit Refresh.
+      if (entry.failedTargets.has(path)) { entry.degraded = true; continue; }
       const handle: Handle = { target, active: true };
       try {
         if (identity(dependencies.probe(path)) !== identity(target)) throw new Error("Watch installation raced");
@@ -106,13 +114,14 @@ export function createSourceObserver(
           if (handle.active) hint(entry); // Event names/filenames never authorize a path.
         }, () => {
           if (!handle.active || !entry.active || closed) return;
+          entry.failedTargets.set(path, identity(target));
           drop(entry, path); entry.degraded = true; emit(entry); hint(entry);
         });
         handle.close = () => watcher.close();
         if (!handle.active) { watcher.close(); throw new Error("Watch installation failed"); }
         if (identity(dependencies.probe(path)) !== identity(target)) throw new Error("Watch installation raced");
         installed = true;
-      } catch { drop(entry, path); entry.degraded = true; }
+      } catch { entry.failedTargets.set(path, identity(target)); drop(entry, path); entry.degraded = true; }
     }
     emit(entry);
     if (installed) hint(entry); // Cover the validated-scan/watch-installation window.
@@ -141,7 +150,7 @@ export function createSourceObserver(
         const previous = entry.handles.get(entry.root)?.target;
         if (!previous || identity(root) !== identity(previous) || root.stamp !== previous.stamp) scan = true;
       } catch { scan = true; }
-      if (scan) hint(entry);
+      if (scan) { entry.failedTargets.clear(); hint(entry); }
       health(entry);
     }, 5000);
   }
@@ -156,14 +165,14 @@ export function createSourceObserver(
       const desired = new Map(sources.map((source) => [source.sourceId, source.root]));
       for (const [id, entry] of entries) if (desired.get(id) !== entry.root) { stop(entry); entries.delete(id); }
       for (const [sourceId, root] of desired) if (!entries.has(sourceId)) {
-        const entry: Entry = { sourceId, root, active: true, running: false, again: false, handles: new Map(), degraded: false };
+        const entry: Entry = { sourceId, root, active: true, running: false, again: false, handles: new Map(), failedTargets: new Map(), degraded: false };
         entries.set(sourceId, entry);
         health(entry); run(entry);
       }
     },
     accept(sourceId: string, observation: SourceObservation) {
       const entry = entries.get(sourceId);
-      if (entry) accept(entry, observation);
+      if (entry) { entry.failedTargets.clear(); accept(entry, observation); }
     },
     request(sourceId: string) { const entry = entries.get(sourceId); if (entry) hint(entry); },
     close() { closed = true; for (const entry of entries.values()) stop(entry); entries.clear(); revisions.clear(); },

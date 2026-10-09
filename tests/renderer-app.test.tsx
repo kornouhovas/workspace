@@ -1401,6 +1401,40 @@ test("Apply accepts its preceding commit event but rejects a delayed result olde
   }
 });
 
+test("EN/RU delayed Apply success preserves a newer same-revision missing-folder observation", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let revision = 1, missing = false, applies = 0;
+    let finishApply: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const applied = projectList(active, ["Saved"], 2);
+    const currentList = () => missing ? { ...applied, state: "empty" as const, projects: [], retainedCount: 1,
+      retainedProjects: applied.projects.map((row) => ({ ...row, resolution: "missing" as const })) }
+      : projectList(active, ["Saved"], revision);
+    const api = mockApi({ language, load: ok(snapshotOf(active, [active])), onProjects: async () => ok(currentList()),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active, [active]));
+        if (input.type === "workspace.previewDiscovery") return ok({ ...previewResult(active), revision });
+        if (input.type === "workspace.applyDiscovery") { applies++; return new Promise((resolve) => { finishApply = resolve; }); }
+        return fail("invalid_input");
+      } });
+    render(<App />); await screen.findByRole("cell", { name: "Saved" });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryApply") }));
+    await act(async () => { revision = 2; api.emitChange(projectEvent(active, revision)); });
+    await act(async () => {
+      missing = true;
+      api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId],
+        observationRevision: 2, state: "empty", automaticUpdates: "active" });
+    });
+    await screen.findByRole("button", { name: `${translate(language, "recoveryLocate")}: Saved` });
+    await act(async () => { finishApply?.(ok(applied)); });
+    assert.ok(await screen.findByRole("button", { name: `${translate(language, "recoveryLocate")}: Saved` }));
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
+    assert.equal(applies, 1, "confirmed success must not replay Apply");
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
 test("backend restart discards old project and preview responses and reloads the shared projection", async () => {
   const active = sharedEventWorkspace();
   let listCalls = 0;

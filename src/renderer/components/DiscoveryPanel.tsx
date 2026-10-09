@@ -98,8 +98,8 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
   </section>;
 }
 
-export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, invalidation, language, disabled, onApplied }: {
-  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; minimumRevision: { current: number }; invalidation: number; language: Language; disabled: boolean; onApplied?(projects: ProjectList): void;
+export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, observationVersion, invalidation, language, disabled, onApplied }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; minimumRevision: { current: number }; observationVersion: { current: number }; invalidation: number; language: Language; disabled: boolean; onApplied?(projects: ProjectList, observedVersion: number): void;
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<DiscoveryPreview | null>(null);
@@ -161,13 +161,14 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
   const apply = async () => {
     if (pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
+    const observedVersion = observationVersion.current;
     applyingRef.current = true;
     setApplying(true); setPending(true); setApplyError(false); setStale(false);
     try {
       const result = await client.applyDiscovery(workspaceId, preview.previewToken);
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision >= minimumRevision.current) {
-        onApplied?.(result.value);
+        onApplied?.(result.value, observedVersion);
         returnFocus.current = true; setOpen(false); setPreview(null);
       } else if (!result.ok && result.error.code === "stale_preview") {
         setStale(true);
@@ -225,6 +226,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   const minimumRevision = useRef(0);
   const minimumCategoryPropertyRevision = useRef(0);
   const minimumObservationRevision = useRef(0);
+  const observationVersion = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
   const [observation, setObservation] = useState(0);
   const lastScanState = useRef<ProjectList["state"] | null>(null);
@@ -252,6 +254,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         if (discoveryCurrent && value.state !== lastScanState.current) {
           const available = (state: ProjectList["state"] | null) => state === "ready" || state === "empty";
           if (lastScanState.current !== null && (!available(value.state) || !available(lastScanState.current))) {
+            observationVersion.current++;
             setObservation((value) => value + 1); setInvalidation((value) => value + 1);
           }
           lastScanState.current = value.state;
@@ -300,6 +303,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
           if (event.observationRevision <= minimumObservationRevision.current) return;
           minimumObservationRevision.current = event.observationRevision;
         }
+        observationVersion.current++;
         setObservation((value) => value + 1);
       }
       setInvalidation((value) => value + 1);
@@ -311,15 +315,19 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   useEffect(() => {
     if (lastRefreshVersion.current === refreshVersion) return;
     lastRefreshVersion.current = refreshVersion;
+    observationVersion.current++;
     setInvalidation((value) => value + 1); setObservation((value) => value + 1);
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
   return <>
     <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
+      observationVersion={observationVersion}
       invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null}
-      onApplied={(value) => {
-        if (value.revision < minimumRevision.current) { void load(); return; }
+      onApplied={(value, observedVersion) => {
+        // The command can succeed while a newer runtime observation changes
+        // resolution without a persisted revision. Keep success, reload placement.
+        if (value.revision < minimumRevision.current || observedVersion !== observationVersion.current) { void load(); return; }
         version.current++; minimumRevision.current = value.revision;
         if (value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
           minimumCategoryPropertyRevision.current = value.categoryPropertyRevision; committedProjects.current = value; setProjects(value);

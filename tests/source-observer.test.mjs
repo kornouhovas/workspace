@@ -106,6 +106,37 @@ test("installation target races degrade safely and health retries; failed passes
   failPass = false; h.advance(5100); assert.equal(events.at(-1)[3], "active"); observer.close();
 });
 
+for (const failure of ["setup", "synchronous", "asynchronous"]) test(`repeated ${failure} watcher failures wait for health retry or explicit Refresh`, () => {
+  const h = harness((path) => target(path)), events = [];
+  const watch = h.dependencies.watch;
+  let failing = true, passes = 0;
+  h.dependencies.watch = (path, hint, failed) => {
+    if (failure === "setup") h.reject(failing ? [path] : []);
+    const handle = watch(path, hint, failed);
+    if (failing && failure === "synchronous") failed();
+    if (failing && failure === "asynchronous") h.dependencies.schedule(failed, 0);
+    return handle;
+  };
+  const observation = { state: "ready", signature: "same", targets: [target("/root")] };
+  const observer = createSourceObserver(() => { passes++; return observation; }, (...args) => events.push(args), h.dependencies);
+  observer.sync([{ sourceId: "one", root: "/root" }]);
+  h.advance(4900);
+  assert.equal(h.attempts.length, 1, "failed targets must not be reinstalled by notification/window passes");
+  assert.ok(passes <= 2, "one immediate observation pass may follow a watch error");
+  assert.equal(events.at(-1)[3], "degraded");
+  h.advance(300);
+  assert.equal(h.attempts.length, 2, "health timer permits one retry");
+  assert.ok(passes <= 4); assert.equal(events.at(-1)[3], "degraded");
+  failing = false;
+  observer.accept("one", observation); // Explicit Refresh can recover before the next health tick.
+  h.advance(100);
+  assert.equal(h.attempts.length, 3); assert.equal(h.live().length, 1); assert.equal(events.at(-1)[3], "active");
+  const count = passes, stale = [...h.watches]; observer.close();
+  for (const handle of stale) { handle.hint(); handle.failed(); }
+  h.advance(20000);
+  assert.equal(passes, count); assert.equal(h.live().length, 0); assert.equal(h.timers.size, 0);
+});
+
 function fixture(grouped, run) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "source-observer-")));
   const root = join(directory, "root"), path = grouped ? "Category/Project" : "Project";
