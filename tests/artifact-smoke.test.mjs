@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { createPackage } from "@electron/asar";
@@ -19,10 +19,11 @@ const packagedFiles = [
   "dist/service/db/migrations/0004_direct_projects.sql",
   "dist/service/db/migrations/0005_text_properties.sql",
   "dist/service/db/migrations/0006_grouped_discovery.sql",
+  "dist/service/db/migrations/0007_discovery_mode_changes.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
-async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = []) {
+async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omitModeJournalEntry = false) {
   const appDirectory = join(root, "app");
   const resourcesDirectory = join(root, "bundle", "resources");
   await mkdir(appDirectory, { recursive: true });
@@ -31,7 +32,14 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = []) {
     if (omittedFiles.includes(file)) continue;
     const path = join(appDirectory, file);
     await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, file === "dist/version.json" ? JSON.stringify({ version: buildVersion }) : "present");
+    let contents = "present";
+    if (file === "dist/version.json") contents = JSON.stringify({ version: buildVersion });
+    if (file === "dist/service/db/migrations/meta/_journal.json") {
+      const journal = JSON.parse(await readFile("src/service/db/migrations/meta/_journal.json", "utf8"));
+      if (omitModeJournalEntry) journal.entries = journal.entries.filter((entry) => entry.idx !== 7);
+      contents = JSON.stringify(journal);
+    }
+    await writeFile(path, contents);
   }
   await writeFile(join(appDirectory, "package.json"), JSON.stringify({ version: "0.1.0" }));
   await writeFile(join(resourcesDirectory, "licenses/bb-MIT.txt"), "MIT License\nCopyright (c) 2026 Michael Yong");
@@ -133,5 +141,24 @@ test("artifact check rejects a package missing the grouped-discovery migration",
   try {
     await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/0006_grouped_discovery.sql"]);
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /missing dist\/service\/db\/migrations\/0006_grouped_discovery\.sql/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+test("artifact check rejects a package missing the discovery-mode migration", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-mode-"));
+  try {
+    await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/0007_discovery_mode_changes.sql"]);
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
+      /missing dist\/service\/db\/migrations\/0007_discovery_mode_changes\.sql/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("artifact check rejects a package whose journal cannot apply the discovery-mode migration", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-mode-journal-"));
+  try {
+    await makeArtifact(root, "0.1.0", [], true);
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
+      /journal is missing 0007_discovery_mode_changes/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

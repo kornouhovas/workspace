@@ -212,13 +212,23 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 
 **Steps:**
 
-- [ ] Add build/artifact regressions requiring migration 0007 and its journal entry, including rejection of an artifact missing the migration.
-- [ ] Document implemented mode-change, history, exclusion and round-trip behavior; replace obsolete configured-mode prohibitions. Add an accurate Unreleased entry without changing version 0.1.0.
-- [ ] Run each command separately with PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH prepended: npm test; npm run lint; npm run typecheck; npm run check:docs; npm run build; npm run build:ladle.
-- [ ] Run affected graphical checks sequentially. Create a fresh local Mac artifact with PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac, then run the packaged scenario with a separate evidence directory.
-- [ ] Inspect git diff --check and the entire diff from 59d4407bf5364020428b9a736dc3844824c177a5. Check scope, renderer isolation, migration packaging and absence of unintended filesystem writes.
-- [ ] Write criterion-mapped evidence with actual commands, SHA/platform, passed/failed/unreached stages and remaining limitations. Label reused unchanged historical evidence with its original milestone.
-- [ ] Commit the verified artifact/documentation slice with explicit staging. Hand off the existing commits and evidence in Russian; leave platform acceptance, trackers and integration to the coordinator.
+- [x] Add build/artifact regressions requiring migration 0007 and its journal entry, including rejection of an artifact missing the migration.
+- [x] Document implemented mode-change, history, exclusion and round-trip behavior; replace obsolete configured-mode prohibitions. Add an accurate Unreleased entry without changing version 0.1.0.
+- [x] Run each command separately with PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH prepended: npm test; npm run lint; npm run typecheck; npm run check:docs; npm run build; npm run build:ladle.
+- [x] Run affected graphical checks sequentially. Create a fresh local Mac artifact with PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac, then run the packaged scenario with a separate evidence directory.
+- [x] Inspect git diff --check and the entire diff from 59d4407bf5364020428b9a736dc3844824c177a5. Check scope, renderer isolation, migration packaging and absence of unintended filesystem writes.
+- [x] Write criterion-mapped evidence with actual commands, SHA/platform, passed/failed/unreached stages and remaining limitations. Label reused unchanged historical evidence with its original milestone.
+- [x] Commit the verified artifact/documentation slice with explicit staging. Hand off the existing commits and evidence in Russian; leave platform acceptance, trackers and integration to the coordinator.
+
+**Task 6 execution evidence (2026-10-10, macOS 27.0 / arm64):**
+
+- `npm test`: 530 passed, zero failures/skips (`work/ralphex/issue-16/task6-tests-01.log`). Lint, typecheck, documentation links, separate production build and Ladle build passed. Every Node/npm invocation prepended Node 22.21.1 to PATH. No dependency/version changes.
+- Artifact regressions failed as expected before repair (`task6-artifact-red.log`): missing migration 0007 and missing journal entry were accepted. After repair all 11 artifact checks passed (`task6-artifact-green.log`); full tests cover copied SQL/journal equality.
+- Sequential affected Chromium layouts passed 18 EN/RU stories at 1440×960, 1024×720 and 420×800: 54 screenshots and 18 interactions (`task6-layouts-01`). Wrapping, reachable controls, keyboard/focus and document overflow checks passed; representative narrow/wide captures were visually inspected. Chromium closed; Electron shutdown is not claimed for this run. Unchanged non-mode stories reuse Task 5's successful full 120-story milestone.
+- Fresh unsigned local macOS arm64 artifact passed `CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac` (`task6-package-mac-01.log`). Resources include migration 0007 and its journal entry, native SQLite, version 0.1.0 and bb notice. Packaged app.asar SHA-256: `72ed11af02f475d3c2f5da17a9424fa390a44f452eaea1ac634c4f3e5f08947f`.
+- Packaged Electron scenario passed all mode Cancel/Apply/recovery, native reconciliation, Refresh, pre-quit features, normal quit/backend exit, shutdown-missed reconciliation, restart persistence, final removal/source reuse and startup-failure stages (`task6-runtime-package-01`, 135 screenshots, 17 observations). All three recorded normal shutdowns passed; no failed/unreached stage in this run. No build/clean overlapped a graphical fixture. Development runtime remains reused Task 5 evidence at `de2302a1a3bcded57d51fe103aadcd0f2b8c447c`, whose production/fixture files are unchanged in Task 6.
+- Inspected the full diff from fixed base `59d4407bf5364020428b9a736dc3844824c177a5`, renderer isolation, migration packaging and metadata-only command boundaries; both working/fixed-base whitespace checks passed. [Criterion-mapped report](../verification/issue-16-discovery-mode.md) records command/platform/snapshot evidence and reused milestones. Final documentation/whitespace checks cover the completed report and plan.
+- Physical macOS 27/Electron 44.7.0 #44 remains independent and unresolved; an individual local normal quit does not close it. Exact-SHA macOS/Windows CI acceptance, trackers and integration remain coordinator-owned. No executor push, merge, signing, release, tags, publication or global configuration changes.
 
 ## Post-Completion
 

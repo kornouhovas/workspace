@@ -18,6 +18,7 @@ const requiredFiles = [
   "dist/service/db/migrations/0004_direct_projects.sql",
   "dist/service/db/migrations/0005_text_properties.sql",
   "dist/service/db/migrations/0006_grouped_discovery.sql",
+  "dist/service/db/migrations/0007_discovery_mode_changes.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -33,6 +34,10 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
   for (const file of requiredFiles) {
     assert.ok(files.has(file), `Packaged app is missing ${file}`);
   }
+
+  const journal = JSON.parse((await extractFile(asarPath, "dist/service/db/migrations/meta/_journal.json")).toString());
+  assert.ok(journal.entries?.some((entry) => entry.idx === 7 && entry.tag === "0007_discovery_mode_changes"),
+    "Packaged migration journal is missing 0007_discovery_mode_changes");
 
   const packaged = JSON.parse((await extractFile(asarPath, "package.json")).toString());
   const buildVersion = JSON.parse((await extractFile(asarPath, "dist/version.json")).toString()).version;

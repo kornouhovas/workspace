@@ -38,6 +38,10 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - English/Russian keyboard Refresh with pending/error/degraded guidance, current startup observation delivery and preserved Text/category-label drafts across external changes.
 - Conservative unique native-evidence matching, bounded watcher cleanup and service/runtime regressions for notification-driven and shutdown-missed changes without folder markers or project-content scanning.
 
+- Reviewed configured-source switching between Root/Project and Root/Category/Project, with EN/RU project effects, category availability, effective/inactive exclusions and explicit Apply/Cancel.
+- Retained mode-change project history with editable exact Text and explicit target-depth reassociation; previous-mode return preserves reservations without silently reactivating projects or transferring values between folder roles.
+- Preserved dormant category/property IDs, authored labels, hidden drafts, settings, archive designation and independent views through mode changes, restart and source reuse; populated migration 0007 and delivery-artifact regressions.
+
 ### Fixed
 
 - Healthy source observations preserve pending folder-reassociation confirmations while refreshing newer placement; source disconnects still reject obsolete responses.
@@ -47,10 +51,12 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Same-source availability and locator notifications preserve Text drafts while resetting discovery review for the changed folder state.
 - Backend restart discards obsolete source availability observations while preserving newer current-generation events over delayed reloads.
 
+- Active category/child external renames remain reconcilable after a reviewed project-to-category role change while dormant direct-project identity and values stay retained.
+
 ### Planned
 
 - Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
-- Configured-source mode switching, physical category editing, archive and restore.
+- Physical category editing, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).
