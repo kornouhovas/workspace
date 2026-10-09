@@ -10,8 +10,8 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
 
-function inventory(path) {
-  return fs.readdirSync(path, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
+function inventory(path, include = () => true) {
+  return fs.readdirSync(path, { withFileTypes: true }).filter((entry) => include(entry.name)).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
     entry.isSymbolicLink() ? fs.readlinkSync(join(path, entry.name)) : entry.isDirectory() ? inventory(join(path, entry.name)) : fs.readFileSync(join(path, entry.name)).toString("hex")]);
 }
 
@@ -535,6 +535,7 @@ test("grouped category/root/link swaps and category-insert/project-update failur
   for (const failure of ["category", "root", "category_link", "project_link", "category_insert", "project_update", "revision_update", "after_insert", "after_update", "after_write_category", "after_write_root"]) fixture((f) => {
     fs.mkdirSync(join(f.root, "New")); fs.renameSync(join(f.root, "Category/Project"), join(f.root, "New/Target"));
     fs.writeFileSync(join(f.root, "New/Target/sentinel"), "untouched");
+    fs.writeFileSync(join(f.root, "New/Target/workspace.sqlite"), "external project file, not the application database");
     const preview = review(f);
     assert.equal(preview.ok, true);
     if (failure === "category") { fs.renameSync(join(f.root, "New"), join(f.directory, "oldNew")); fs.mkdirSync(join(f.root, "New/Target"), { recursive: true }); }
@@ -545,28 +546,46 @@ test("grouped category/root/link swaps and category-insert/project-update failur
     if (failure === "after_insert") f.sqlite.exec("CREATE TRIGGER corrupt_category AFTER INSERT ON categories BEGIN UPDATE categories SET native_identity = '{}' WHERE id = NEW.id; END;");
     if (failure === "after_update") f.sqlite.exec("CREATE TRIGGER corrupt_project AFTER UPDATE ON projects BEGIN UPDATE projects SET native_identity = '{}' WHERE id = NEW.id; END;");
     const before = f.records(), events = []; f.service.workspaces.subscribe((event) => events.push(event));
-    const open = fs.opendirSync; let opens = 0;
-    const externalFiles = () => inventory(f.directory).filter(([name]) => name !== "workspace.sqlite" && !name.startsWith("workspace.sqlite-"));
+    const open = fs.opendirSync, read = fs.readFileSync; let opens = 0;
+    let swapCompleted = false, snapshotPrepared = false;
+    const externalFiles = () => inventory(f.directory, (name) => name !== "workspace.sqlite" && !name.startsWith("workspace.sqlite-"));
     let preparedFiles = externalFiles();
+    fs.readFileSync = (path, ...args) => {
+      // Windows may deny database-file reads while recovery holds its write transaction.
+      const databasePath = join(f.directory, "workspace.sqlite");
+      if (swapCompleted && ["after_write_category", "after_write_root"].includes(failure) &&
+        typeof path === "string" && (path === databasePath || path.startsWith(`${databasePath}-`))) {
+        throw Object.assign(new Error("injected active-transaction database lock"), { code: "EBUSY" });
+      }
+      return read(path, ...args);
+    };
     fs.opendirSync = (path, ...args) => {
       if (path === f.root) opens++;
       if (["category_link", "project_link"].includes(failure) && path === f.root && opens === 3) {
         const relativePath = failure === "category_link" ? "New" : "New/Target";
         fs.renameSync(join(f.root, relativePath), join(f.directory, "swapped"));
         fs.symlinkSync(join(f.directory, "swapped"), join(f.root, relativePath), process.platform === "win32" ? "junction" : "dir");
+        swapCompleted = true;
         preparedFiles = externalFiles();
+        snapshotPrepared = true;
       }
       if (["after_write_category", "after_write_root"].includes(failure) && path === f.root && opens === 5) {
         const swapped = failure === "after_write_root" ? f.root : join(f.root, "New");
         fs.renameSync(swapped, join(f.directory, "swapped"));
         fs.mkdirSync(join(f.root, "New/Target"), { recursive: true });
+        swapCompleted = true;
         preparedFiles = externalFiles();
+        snapshotPrepared = true;
       }
       return open(path, ...args);
     };
     syncBuiltinESMExports(); let result;
     try { result = recover(f, preview.value, "New/Target"); }
-    finally { fs.opendirSync = open; syncBuiltinESMExports(); }
+    finally { fs.opendirSync = open; fs.readFileSync = read; syncBuiltinESMExports(); }
+    if (["category_link", "project_link", "after_write_category", "after_write_root"].includes(failure)) {
+      assert.equal(swapCompleted, true, `${failure}: external swap must execute`);
+      assert.equal(snapshotPrepared, true, `${failure}: expected inventory must reflect the completed swap`);
+    }
     assert.equal(result.ok, false, failure);
     assert.equal(result.error.code, ["category_insert", "project_update", "revision_update"].includes(failure) ? "storage" : "stale_preview", failure);
     assert.deepEqual(f.records(), before, failure); assert.deepEqual(events, [], failure);

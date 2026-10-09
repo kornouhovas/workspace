@@ -56,6 +56,24 @@ class RecoveryClient extends WorkspaceServiceClient {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 
 for (const language of ["en", "ru"] as const) {
+  test(`${language}: manually excluded projects keep reinclusion guidance and editable Text when folder observations change`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    for (const resolution of ["missing", "unresolved", "replaced", null] as const) {
+      const client = new RecoveryClient();
+      client.projects = { ...initial, retainedProjects: [{ ...retained, associationState: "excluded", resolution }], retainedCount: 1 };
+      render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+      const edit = await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
+      assert.equal(Boolean(screen.queryByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` })), false, String(resolution));
+      assert.ok(screen.getByText(t("projectExcluded")), String(resolution));
+      edit.focus(); await userEvent.keyboard("{Enter}");
+      const input = await screen.findByRole("textbox", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
+      assert.equal((input as HTMLTextAreaElement).value, "Exact authored Text");
+      await userEvent.keyboard("{Escape}");
+      assert.equal(document.activeElement, edit);
+      assert.equal(client.previews, 0);
+      cleanup();
+    }
+  });
   test(`${language}: production workspace supports keyboard selection/review, read-only cancellation and explicit recovery`, async () => {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     const client = new RecoveryClient();

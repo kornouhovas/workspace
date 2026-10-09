@@ -157,7 +157,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
         </th>)}
       </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
-        const reason = retained?.resolution ?? retained?.associationState;
+        const reason = retained?.associationState === "excluded" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = reason && reason !== "active" ? resolutionLabels[reason] : null;
         return <tr key={project.projectId}><td key="project-name"><span>{project.name}</span>
           {label && <span className="project-resolution">{t(label)}</span>}
