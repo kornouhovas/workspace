@@ -98,15 +98,32 @@ export type DiscoveryEntry = DiscoveryEntryBase & (
 );
 export interface DiscoveryPreview {
   mode: DiscoveryMode;
+  currentMode: DiscoveryMode | null;
+  projectEffects: DiscoveryProjectEffects;
+  categoryAvailability: {
+    current: boolean;
+    target: boolean;
+    propertyId: string | null;
+    name: string | null;
+  };
   configured: boolean;
   workspaceId: string;
   sourceId: string;
   revision: number;
   canonicalRoot: string;
   excludedRelativePaths: string[];
+  effectiveExcludedRelativePaths: string[];
+  inactiveExcludedRelativePaths: string[];
   entries: DiscoveryEntry[];
   state: "ready" | "empty" | "unavailable" | "unreadable" | "root_identity_conflict" | "changed";
   previewToken: string | null;
+}
+export interface DiscoveryProjectEffects {
+  // A new target has no logical identity until Apply commits it.
+  added: { relativePath: string; name: string; categoryPath: string | null }[];
+  retained: ProjectSummary[];
+  noLongerRecognized: ProjectSummary[];
+  alreadyRetained: ProjectSummary[];
 }
 export type WorkspacePreviewDiscoveryQuery = {
   type: "workspace.previewDiscovery";

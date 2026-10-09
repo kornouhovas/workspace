@@ -1,6 +1,6 @@
 import { lstatSync, opendirSync, realpathSync, type BigIntStats } from "node:fs";
 import { basename, isAbsolute, join, relative } from "node:path";
-import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryExclusionReason, ProjectAssociationState } from "../contracts/workspaces.js";
+import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryProjectEffects, DiscoveryExclusionReason, ProjectAssociationState } from "../contracts/workspaces.js";
 
 // Native evidence is lossless and local to this machine. It is never a logical ID.
 export interface NativeIdentity {
@@ -40,6 +40,12 @@ export function validExclusions(value: unknown, mode: DiscoveryMode = "direct"):
   return Array.isArray(value) && Array.from(value).every((path: unknown) => typeof path === "string" &&
     path.split("/").length <= (mode === "grouped" ? 2 : 1) && path.split("/").every(isChildName)) &&
     new Set(value).size === value.length;
+}
+export function projectExclusions(paths: string[], mode: DiscoveryMode) {
+  return {
+    effective: paths.filter((path) => mode === "grouped" || !path.includes("/")).sort(),
+    inactive: paths.filter((path) => mode === "direct" && path.includes("/")).sort(),
+  };
 }
 export function validArchive(value: unknown): value is string | null {
   return value === null || (typeof value === "string" && value.split("/").every(isChildName));
@@ -271,7 +277,7 @@ function storedIdentity(row: ProjectAssociation): NativeIdentity {
 
 // Matching is deliberately path-local. Missing/ambiguous records never automatically reattach.
 // Retired records remain evidence of native identifier reuse; no user metadata is deleted.
-export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociation[]): {
+export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociation[], reservations: ProjectAssociation[] = []): {
   entries: DiscoveryEntry[];
   retained: ProjectAssociation[];
   additions: { relativePath: string; nativeIdentity: string }[];
@@ -302,7 +308,9 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     const entry = entries.find((entry) => entry.relativePath === child.relativePath)!;
     const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
     const reliable = reliableIdentity(child.identity);
-    const collision = records.some((row, index) => row.id !== current?.id &&
+    const collision = reservations.some((row) => row.relativePath === child.relativePath ||
+      (storedIdentity(row).dev === child.identity.dev && storedIdentity(row).ino === child.identity.ino)) ||
+      records.some((row, index) => row.id !== current?.id &&
       // Retired evidence alone cannot invalidate a continuously matching active
       // or excluded association established by recovery. New discovery stays conservative.
       !(row.associationState === "replaced" && (current?.associationState === "active" || current?.associationState === "excluded") &&
@@ -340,7 +348,7 @@ export interface GroupedProjectAssociation extends ProjectAssociation {
 
 // A project's evidence is meaningful only beneath its continuously matching category.
 // Category retirement/exclusion therefore precedes project identity matching.
-export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[]) {
+export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: ProjectAssociation[] = []) {
   if (!scan.snapshot || scan.snapshot.mode !== "grouped") throw new Error("Cannot interpret an incomplete grouped scan");
   const categoryScan: DiscoveryScan = { ...scan,
     entries: scan.entries.filter((entry) => entry.kind === "category"),
@@ -370,9 +378,39 @@ export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssocia
     const parent = categoryInterpretation.entries.find((category) => category.relativePath === entry.categoryPath);
     if (parent?.reason !== null && entry.reason === null) entry.reason = "unresolved";
   }
-  const projectInterpretation = interpretProjects(projectScan, projectRecords);
+  const projectInterpretation = interpretProjects(projectScan, projectRecords, reservations);
   return { entries: scan.entries.map((entry) =>
     (entry.kind === "category" ? categoryInterpretation.entries : projectInterpretation.entries)
       .find((interpreted) => interpreted.relativePath === entry.relativePath)!),
     categories: categoryInterpretation, projects: projectInterpretation };
+}
+
+// Interpret each folder in its target role. Historical project evidence reserves
+// project enrollment, but does not turn that same folder into a project category
+// identity or transfer its metadata to a newly discovered child.
+export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[]) {
+  if (!scan.snapshot) throw new Error("Cannot plan an incomplete scan");
+  const mode = scan.snapshot.mode;
+  const compatible = projects.filter((row) => mode === "grouped"
+    ? row.categoryId !== null && row.relativePath.split("/").length === 2
+    : row.categoryId === null && !row.relativePath.includes("/"));
+  const historical = projects.filter((row) => !compatible.includes(row));
+  const grouped = mode === "grouped" ? interpretGrouped(scan, categories, compatible, historical) : null;
+  const interpreted = grouped?.projects ?? interpretProjects(scan, compatible, historical);
+  const retained = projects.map((row) => interpreted.retained.find((target) => target.id === row.id) ?? { ...row });
+  const effects: DiscoveryProjectEffects = { added: interpreted.additions.map((row) => ({
+    relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!,
+    categoryPath: mode === "grouped" ? row.relativePath.split("/")[0] : null,
+  })), retained: [], noLongerRecognized: [], alreadyRetained: [] };
+  for (const row of projects) {
+    const summary = { projectId: row.id, name: row.relativePath.split("/").at(-1)!, relativePath: row.relativePath, categoryId: row.categoryId };
+    if (row.associationState !== "active") effects.alreadyRetained.push(summary);
+    else if (compatible.includes(row) && retained.find((target) => target.id === row.id)?.associationState === "active") effects.retained.push(summary);
+    else effects.noLongerRecognized.push(summary);
+  }
+  for (const rows of [effects.added, effects.retained, effects.noLongerRecognized, effects.alreadyRetained]) {
+    rows.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
+  }
+  return { entries: grouped?.entries ?? interpreted.entries,
+    projects: { ...interpreted, retained }, categories: grouped?.categories ?? null, projectEffects: effects };
 }

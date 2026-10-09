@@ -69,12 +69,12 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 
 **Steps:**
 
-- [ ] Add service-boundary tests for configured direct-to-grouped and grouped-to-direct previews, empty/mixed roots, retained metadata and exact SQLite/filesystem equality before and after preview.
-- [ ] Add target-role interpretation and depth-aware exclusion projection. Preserve historical project reservations without treating direct projects as grouped children or classifying them as replacements solely because they lack a category.
-- [ ] Produce effects from the same planned interpretation later used by Apply. Distinguish additions without UUIDs, retained existing IDs, no-longer-recognized IDs and already-retained metadata.
-- [ ] Bind the preview token to current source configuration, target mode, complete target snapshot and stored project/category state. Keep returned objects independent of token state; label/Text edits retain their existing independent revision behavior.
-- [ ] Test invalid modes, foreign IDs, traversal/depth errors, links, archive containment, unavailable/unreadable/changed roots and identity conflicts. Unsafe reviews have no applicable token.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test and the affected type/lint checks. Commit the verified read-only preview slice.
+- [x] Add service-boundary tests for configured direct-to-grouped and grouped-to-direct previews, empty/mixed roots, retained metadata and exact SQLite/filesystem equality before and after preview.
+- [x] Add target-role interpretation and depth-aware exclusion projection. Preserve historical project reservations without treating direct projects as grouped children or classifying them as replacements solely because they lack a category.
+- [x] Produce effects from the same planned interpretation later used by Apply. Distinguish additions without UUIDs, retained existing IDs, no-longer-recognized IDs and already-retained metadata.
+- [x] Bind the preview token to current source configuration, target mode, complete target snapshot and stored project/category state. Keep returned objects independent of token state; label/Text edits retain their existing independent revision behavior.
+- [x] Test invalid modes, foreign IDs, traversal/depth errors, links, archive containment, unavailable/unreadable/changed roots and identity conflicts. Unsafe reviews have no applicable token.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test and the affected type/lint checks. Commit the verified read-only preview slice.
 
 ### Task 2: Apply mode changes atomically while retaining history
 

@@ -960,7 +960,14 @@ test("grouped Apply uses production ports and typed clients with categories, no-
     const unchanged = (await oneClient.previewDiscovery(one.workspaceId)).value;
     assert.equal(unchanged.mode, "grouped"); assert.equal((await oneClient.applyDiscovery(one.workspaceId, unchanged.previewToken)).ok, true);
     assert.equal(events.length, 2);
-    assert.equal((await siblingClient.previewDiscovery(sibling.workspaceId, undefined, "direct")).error.code, "invalid_input");
+    const modeReview = await siblingClient.previewDiscovery(sibling.workspaceId, undefined, "direct");
+    assert.equal(modeReview.ok, true);
+    assert.equal(modeReview.value.currentMode, "grouped");
+    assert.equal(modeReview.value.mode, "direct");
+    assert.deepEqual(modeReview.value.projectEffects.added.map((row) => row.relativePath), ["Category", "Empty"]);
+    assert.equal(modeReview.value.projectEffects.noLongerRecognized[0].projectId, applied.value.projects[0].projectId);
+    assert.deepEqual((await siblingClient.listProjects(sibling.workspaceId)).value, { ...applied.value, workspaceId: sibling.workspaceId });
+    assert.equal(events.length, 2);
     unsubscribe(); await controller.stop(100);
   } finally { unsubscribe(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });

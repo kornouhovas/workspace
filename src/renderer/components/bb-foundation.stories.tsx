@@ -143,6 +143,9 @@ export const UnavailableSource: Story = () => <WorkspacePreview language="ru" st
 type DiscoveryStoryState = "preview" | "empty" | "pending" | "applying" | "error" | "stale";
 function DiscoveryState({ language, state, grouped = false }: { language: Language; state: DiscoveryStoryState; grouped?: boolean }) {
   const preview: DiscoveryPreview = {
+    currentMode: null, projectEffects: { added: [], retained: [], noLongerRecognized: [], alreadyRetained: [] },
+    categoryAvailability: { current: false, target: grouped, propertyId: null, name: null },
+    effectiveExcludedRelativePaths: ["Excluded"], inactiveExcludedRelativePaths: [],
     mode: "direct", configured: false,
     workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
     revision: 1, canonicalRoot: "/Projects/" + "long-authored-folder-path-".repeat(8), excludedRelativePaths: ["Excluded"],

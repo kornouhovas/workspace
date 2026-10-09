@@ -5,7 +5,7 @@ import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
-import { interpretGrouped, interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoveryScan, type DiscoverySnapshot } from "./discovery.js";
+import { interpretGrouped, interpretProjects, planDiscovery, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoveryScan, type DiscoverySnapshot } from "./discovery.js";
 import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
@@ -80,6 +80,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     source: typeof schema.sources.$inferSelect;
     projects: typeof schema.projects.$inferSelect[];
     categories: typeof schema.categories.$inferSelect[];
+    interpretation: ReturnType<typeof planDiscovery>;
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observationEvents = new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>();
@@ -165,15 +166,16 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
         if (!source) return invalid("Choose a saved workspace.");
         const mode = input.mode ?? source.discoveryMode ?? "direct";
-        if (source.discoveryMode !== null && mode !== source.discoveryMode) return invalid("Configured source mode cannot be changed.");
         if (mode !== "direct" && mode !== "grouped") return storageFailure();
-        if (Object.hasOwn(input, "excludedRelativePaths") && !validExclusions(input.excludedRelativePaths, mode)) return invalid("Choose valid source-relative exclusions.");
         const saved: unknown = JSON.parse(source.excludedRelativePaths);
-        if (!validExclusions(saved, mode) || !validArchive(source.archiveRelativePath) ||
+        if (!validExclusions(saved, source.discoveryMode === "grouped" ? "grouped" : "direct") || !validArchive(source.archiveRelativePath) ||
           !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
           (source.discoveryMode !== null && source.discoveryMode !== "direct" && source.discoveryMode !== "grouped")) return storageFailure();
+        if (Object.hasOwn(input, "excludedRelativePaths") && (!validExclusions(input.excludedRelativePaths, "grouped") ||
+          input.excludedRelativePaths.some((path) => !saved.includes(path) && !validExclusions([path], mode)))) return invalid("Choose valid source-relative exclusions.");
         const exclusions = Object.hasOwn(input, "excludedRelativePaths") ? input.excludedRelativePaths as string[] : saved;
-        const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
+        const exclusionProjection = projectExclusions(exclusions, mode);
+        const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusionProjection.effective);
         if (scan.snapshot && exclusions.some((name) => !saved.includes(name) &&
           !scan.entries.some((entry) => entry.relativePath === name && (entry.reason === null || entry.reason === "manual")))) {
           return invalid("Exclude only selectable folders in the current preview.");
@@ -188,15 +190,21 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
-        const interpreted = snapshot ? mode === "grouped" ? interpretGrouped(scan, categories, projects).entries : interpretProjects(scan, projects).entries : [];
+        const interpretation = snapshot ? planDiscovery(scan, categories, projects) : null;
+        const interpreted = interpretation?.entries ?? [];
+        const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
         const preview: DiscoveryPreview = {
+          currentMode: source.discoveryMode as DiscoveryPreview["currentMode"],
+          projectEffects: interpretation?.projectEffects ?? { added: [], retained: [], noLongerRecognized: [], alreadyRetained: [] },
+          categoryAvailability: { current: source.discoveryMode === "grouped", target: mode === "grouped", propertyId: property?.id ?? null, name: property?.name ?? null },
           mode, configured: source.discoveryMode !== null, workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
           excludedRelativePaths: [...exclusions].sort(), entries: interpreted, state,
+          effectiveExcludedRelativePaths: exclusionProjection.effective, inactiveExcludedRelativePaths: exclusionProjection.inactive,
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories });
+        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation) });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
     },
@@ -227,12 +235,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const mode = token.preview.mode;
         if (source.discoveryMode !== null && source.discoveryMode !== mode) return stale();
         const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
-        const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+        const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
-        const grouped = mode === "grouped" ? interpretGrouped(scan, token.categories, token.projects) : null;
-        const interpretation = grouped?.projects ?? interpretProjects(scan, token.projects);
-        if (JSON.stringify(grouped?.entries ?? interpretation.entries) !== JSON.stringify(token.preview.entries)) return stale();
+        const planned = planDiscovery(scan, token.categories, token.projects);
+        const grouped = planned.categories ? { categories: planned.categories } : null;
+        const interpretation = planned.projects;
+        if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
           source.excludedRelativePaths !== JSON.stringify(token.preview.excludedRelativePaths) ||
           source.appliedRootIdentity !== JSON.stringify(scan.snapshot.root.identity) ||
@@ -248,7 +257,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
             JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories)) throw new StalePreview();
           // Revalidate again inside the transaction, before making any persistent change.
-          const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
           if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
           if (changed) tx.update(schema.sources).set({ discoveryMode: mode, discoveryRevision: source.discoveryRevision + 1,
             excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths),
@@ -282,7 +291,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             }).run();
           }
           // Observed changes during persistence roll back all DB writes. This is not a filesystem lock.
-          const recheck = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          const recheck = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
           if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
           return projectList(workspaceId, committed, recheck);

@@ -913,7 +913,7 @@ test("EN/RU preview requests authoritative exclusion drafts, uses keyboard contr
         if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
         assert.equal(input.type, "workspace.previewDiscovery");
         if (input.type !== "workspace.previewDiscovery") return fail("invalid_input");
-        return ok({ workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0,
+        return ok({ ...previewResult(active), workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0,
           canonicalRoot: active.canonicalRoot, excludedRelativePaths: input.excludedRelativePaths ?? [], state: "ready" as const,
           mode: "direct" as const, configured: false, previewToken: "opaque-preview", entries: [
             { kind: "project" as const, categoryPath: null, relativePath: "  Authored project  ", name: "  Authored project  ", reason: input.excludedRelativePaths?.length ? "manual" as const : null },
@@ -970,7 +970,7 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
       mockApi({ language, onWorkspace: async (input) => {
         if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
         if (++attempts === 1) return fail("storage");
-        return ok({ workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0, canonicalRoot: active.canonicalRoot,
+        return ok({ ...previewResult(active), workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0, canonicalRoot: active.canonicalRoot,
           excludedRelativePaths: [], entries: [], state, mode: "direct" as const, configured: false, previewToken: state === "empty" ? "token" : null });
       } });
       render(<App />);
@@ -989,6 +989,9 @@ const projectList = (active: ActiveWorkspace, projects: string[] = [], revision 
   projects: projects.map((name) => ({ projectId: `project-${name}`, categoryId: null, name, relativePath: name, associationState: "active" as const, resolution: "active" as const, categoryName: null })),
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
+  currentMode: null, projectEffects: { added: [], retained: [], noLongerRecognized: [], alreadyRetained: [] },
+  categoryAvailability: { current: false, target: false, propertyId: null, name: null },
+  effectiveExcludedRelativePaths: excludedRelativePaths, inactiveExcludedRelativePaths: [],
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, canonicalRoot: active.canonicalRoot,
   state: "ready" as const, mode: "direct" as const, configured: false, previewToken: token, excludedRelativePaths,
   entries: [{ kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: null }],

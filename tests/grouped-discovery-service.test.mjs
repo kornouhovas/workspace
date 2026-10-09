@@ -111,7 +111,7 @@ test("grouped preview rejects unsafe depths, unselectable exclusions and modes w
   assert.deepEqual(sqlite.prepare("SELECT * FROM sources").all(), before);
   const direct = preview({ mode: "direct" }).value;
   assert.equal(service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: direct.previewToken }).ok, true);
-  assert.equal(preview().error.code, "invalid_input");
+  assert.equal(preview().value.currentMode, "direct");
   assert.equal(preview({ mode: undefined }).error.code, "invalid_input");
   assert.equal(service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId }).value.mode, "direct");
 }));
@@ -260,7 +260,7 @@ test("grouped Apply persists empty categories, required same-source values and i
   assert.deepEqual(applied(f), result); assert.equal(events.length, 2);
   const fromSibling = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }).value;
   assert.deepEqual({ ...fromSibling, workspaceId: result.workspaceId }, result);
-  assert.equal(f.preview({ mode: "direct" }).error.code, "invalid_input");
+  assert.equal(f.preview({ mode: "direct" }).value.currentMode, "grouped");
   const reopened = openSettingsService(f.databasePath);
   try { assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value, result); }
   finally { reopened.close(); }
@@ -367,7 +367,7 @@ test("actual populated migrations 0000–0005 upgrade without changing settings,
       assert.equal(listed.mode, "direct"); assert.equal(listed.categoryProperty, null); assert.equal(listed.projects[0].categoryId, null);
       const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId }).value;
       assert.deepEqual(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.previewToken }).value, listed);
-      assert.equal(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }).error.code, "invalid_input");
+      assert.equal(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }).value.currentMode, "direct");
       service.close(); service = undefined;
     }
   } finally { if (sql.open) sql.close(); service?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
