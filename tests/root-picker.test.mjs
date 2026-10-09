@@ -11,7 +11,16 @@ test("native root picker requests directories and returns the selected path", as
     },
   });
   assert.deepEqual(await pickRoot(), { outcome: "selected", path: "/tmp/Workspace Root" });
-  assert.deepEqual(calls, [{ properties: ["openDirectory"], title: "Choose workspace folder" }]);
+  assert.deepEqual(calls, [{ properties: ["openDirectory"] }]);
+});
+
+test("runtime picker seam returns a fixture root without opening a native dialog", async () => {
+  let called = false;
+  const pickRoot = createRootPicker({
+    showOpenDialog: async () => { called = true; return { canceled: true, filePaths: [] }; },
+  }, "/tmp/workspace-fixture");
+  assert.deepEqual(await pickRoot(), { outcome: "selected", path: "/tmp/workspace-fixture" });
+  assert.equal(called, false);
 });
 
 test("native root picker distinguishes cancellation and failures without leaking exception text", async () => {

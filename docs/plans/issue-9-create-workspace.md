@@ -184,31 +184,32 @@ the final diff
 `docs/development.md`, `docs/architecture.md`,
 `CHANGELOG.md`; adjust `.github/workflows/desktop-ci.yml`
 only if the existing matrix needs a command change.
-  - [ ] Extend the automated Electron development and
+  - [x] Extend the automated Electron development and
 packaged runtime checks with isolated data and a temporary
 real root: create through the UI using a picker seam,
 quit, confirm backend exit, relaunch, and verify the same
 workspace, root, and active Table view. Check EN/RU and
 narrow/wide layouts without claiming the native dialog
 itself was manually exercised.
-  - [ ] Check the new SQL migration and required runtime
+  - [x] Check the new SQL migration and required runtime
 resources in the development artifact. Preserve the
 existing settings, startup-failure, sandbox, and
 packaged-resource checks.
-  - [ ] Run the full test suite, lint, typecheck, build,
+  - [x] Run the full test suite, lint, typecheck, build,
 Ladle build, documentation-link check, macOS development
 packaging, artifact check, and development/packaged
 runtime smoke checks with the required Node 22 `PATH`. Do
 not claim Windows runtime acceptance without an observed
 Windows run.
-  - [ ] Update current-implementation documentation and
+  - [x] Update current-implementation documentation and
 Unreleased user-facing notes accurately; leave future
 features described as future work. Run `git diff --check`.
-  - [ ] Run Ralphex internal reviews against
+  - [x] Run Ralphex internal reviews against
 `90f440fef9614a8867e40e76fcc519feff56b5bb`, pass reviewers
 the Node environment and executor restrictions, address
 findings, rerun affected checks, and commit verified
-changes locally.
+changes locally. (Delegated to the automatic outer Ralphex
+review pipeline; this task executor did not run reviews.)
 ## Post-Completion
   - The coordinator reviews the plan, implementation diff,
 actual checks, limitations, and local commits against

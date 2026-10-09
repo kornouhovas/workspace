@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { realpathSync, statSync } from "node:fs";
+import { accessSync, constants, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
@@ -11,11 +11,13 @@ type Database = BetterSQLite3Database<typeof schema>;
 export interface WorkspaceFilesystem {
   realpath(path: string): string;
   isDirectory(path: string): boolean;
+  assertAccessible(path: string): void;
 }
 
 const nativeFilesystem: WorkspaceFilesystem = {
   realpath: (path) => realpathSync(path),
   isDirectory: (path) => statSync(path).isDirectory(),
+  assertAccessible: (path) => accessSync(path, constants.R_OK | constants.X_OK),
 };
 
 export interface WorkspaceService {
@@ -44,6 +46,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       try {
         canonicalRoot = filesystem.realpath(rootPath);
         if (!filesystem.isDirectory(canonicalRoot)) return filesystemError();
+        filesystem.assertAccessible(canonicalRoot);
       } catch {
         return filesystemError();
       }
@@ -105,7 +108,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
           return storageFailure();
         }
-        const activeWorkspace = toActiveWorkspace(current, active.viewId, isRootAvailable(current.canonicalRoot));
+        const activeWorkspace = toActiveWorkspace(current, active.viewId, isRootAvailable(current.canonicalRoot, filesystem));
         return { ok: true, value: { workspaces: summaries, activeWorkspace } };
       } catch {
         return storageFailure();
@@ -136,7 +139,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             set: { workspaceId: workspace.workspaceId, viewId: view.id },
           }).run();
         });
-        return { ok: true, value: toActiveWorkspace(workspace, view.id, isRootAvailable(workspace.canonicalRoot)) };
+        return { ok: true, value: toActiveWorkspace(workspace, view.id, isRootAvailable(workspace.canonicalRoot, filesystem)) };
       } catch {
         return storageFailure();
       }
@@ -144,9 +147,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   };
 }
 
-function isRootAvailable(canonicalRoot: string): boolean {
+function isRootAvailable(canonicalRoot: string, filesystem: WorkspaceFilesystem): boolean {
   try {
-    return realpathSync(canonicalRoot) === canonicalRoot && statSync(canonicalRoot).isDirectory();
+    if (filesystem.realpath(canonicalRoot) !== canonicalRoot || !filesystem.isDirectory(canonicalRoot)) return false;
+    filesystem.assertAccessible(canonicalRoot);
+    return true;
   } catch {
     return false;
   }

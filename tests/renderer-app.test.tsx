@@ -276,6 +276,31 @@ test("activates another saved workspace from the selector", async () => {
   cleanup();
 });
 
+test("reports failed workspace activation and keeps the current workspace selected", async () => {
+  const first = makeActive("one", "First", "/Projects/A");
+  const second = makeActive("two", "Second", "/Projects/B");
+  mockApi({
+    language: "ru",
+    load: ok({
+      workspaces: [{ workspaceId: first.workspaceId, name: first.name }, { workspaceId: second.workspaceId, name: second.name }],
+      activeWorkspace: first,
+    }),
+    onWorkspace: async (input) => input.type === "workspace.activate" ? fail("storage") : ok({
+      workspaces: [{ workspaceId: first.workspaceId, name: first.name }, { workspaceId: second.workspaceId, name: second.name }],
+      activeWorkspace: first,
+    }),
+  });
+  render(<App />);
+  const selector = await screen.findByRole("combobox", { name: "Сохранённые рабочие пространства" });
+  await userEvent.selectOptions(selector, "two");
+  assert.ok(await screen.findByRole("heading", { name: "Не удалось открыть рабочее пространство" }));
+  assert.ok(screen.getByText(/Выберите его снова или перезапустите приложение/));
+  assert.equal(screen.getByRole("heading", { name: "First" }).textContent, "First");
+  assert.equal((selector as HTMLSelectElement).value, "one");
+  assert.equal(screen.queryByText("private service detail"), null);
+  cleanup();
+});
+
 test("shows startup and load errors instead of leaving the screen in loading", async () => {
   mockApi({ backend: "unavailable" });
   render(<App />);

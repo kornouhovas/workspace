@@ -2,7 +2,7 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable initial settings application. The settings service, database schema and migration, desktop IPC, renderer, and macOS/Windows development packaging configuration are implemented. The wider Workspace domain—project discovery, workspaces, properties, views and filesystem operations—remains unimplemented. SQLite with Drizzle is the selected persistence foundation.
+This branch contains a runnable local desktop application with settings and the initial workspace lifecycle. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite. The desktop includes a native directory picker and a localized empty Table screen. Project discovery and editing, properties, Board views, archive/restore and other filesystem operations remain future work. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -14,9 +14,9 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | React settings screen, interaction, localization and presentation state | Future routing and state needs as features are added |
-| Typed service boundary | Settings query/command contracts and normalized errors, exposed through preload and IPC | Additional contracts and event subscriptions as features are added |
-| Local application service | Settings persistence in a separate TypeScript process; future workspace/source identity, discovery policy, properties, views and transactions | Future domain capabilities and protocol negotiation |
+| Desktop renderer | React settings, workspace creation and empty Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
+| Typed service boundary | Settings and workspace query/command contracts and normalized errors, exposed through preload and IPC | Additional contracts and event subscriptions as features are added |
+| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, atomic workspace creation, active Table view selection | Discovery policy, properties and future domain capabilities |
 | Machine filesystem adapter | Validated discovery, moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
@@ -40,7 +40,7 @@ These are the reference foundations, not an installed dependency manifest. `@bb/
 
 Paths locate folders; they are not sufficient durable project identities. A project source owns projects, property definitions/values, discovery mode and archive location. Each workspace references one source and owns its view set and presentation settings; multiple workspaces may reference the same source. Schema design must preserve those scopes, and private views must not accidentally enter shared exchange.
 
-The first implementation is local. Shared metadata remains a later module: the local working database stays outside synchronized folders, and enabling sharing publishes logical exchange data. See [ADR-0001](adr/0001-sqlite-and-drizzle.md) and [ADR-0002](adr/0002-local-database-and-folder-exchange.md).
+The current workspace lifecycle is local. Shared metadata remains a later module: the local working database stays outside synchronized folders, and enabling sharing publishes logical exchange data. See [ADR-0001](adr/0001-sqlite-and-drizzle.md) and [ADR-0002](adr/0002-local-database-and-folder-exchange.md).
 
 New application data starts clean; this removes legacy import work, not the need for versioned migrations between future releases. File-operation recovery and database transactions must account for their different failure boundaries.
 

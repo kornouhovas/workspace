@@ -124,6 +124,15 @@ body {
   align-items: flex-start;
 }
 
+.workspace-toolbar > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-toolbar h2 {
+  overflow-wrap: anywhere;
+}
+
 .workspace-switcher {
   width: min(100%, 18rem);
   flex: none;

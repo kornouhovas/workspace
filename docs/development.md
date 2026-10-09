@@ -53,7 +53,7 @@ Use temporary data for destructive and recovery checks. Never use live user proj
 
 ## Current desktop slice
 
-The repository currently builds and runs an initial Electron settings application. Use Node.js 22.12 or newer (the CI matrix pins 22.21.1) and install the committed dependency resolution with `npm ci`.
+The repository currently builds and runs an Electron application with settings and the initial workspace lifecycle. Use Node.js 22.12 or newer (the CI matrix pins 22.21.1) and install the committed dependency resolution with `npm ci`.
 
 | Command | Purpose |
 | --- | --- |
@@ -64,16 +64,16 @@ The repository currently builds and runs an initial Electron settings applicatio
 | `npm run build` | Produce desktop, renderer and backend outputs, copy migrations, and verify the product version. |
 | `npm run ladle` | Start the component preview server. |
 | `npm run build:ladle` | Build the component previews. |
-| `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; check isolation, language persistence through restart, backend shutdown and startup failure. |
+| `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; create a workspace through the UI with a root-picker test seam, check EN/RU and narrow/wide layouts, reopen the saved workspace and Table view, and check isolation, backend shutdown and startup failure. |
 | `npm run package:dev:mac` | Build and verify a macOS development directory artifact on macOS. |
 | `npm run package:dev:win` | Build and verify a Windows development directory artifact on Windows. |
-| `npm run check:artifact -- release` | Check packaged resources, version, native SQLite binary and bb license notice. |
-| `npm run smoke:runtime -- release` | Run the same Electron lifecycle checks against the platform development artifact. |
+| `npm run check:artifact -- release` | Check packaged desktop/backend/renderer resources, SQL migrations, version, native SQLite binary and bb license notice. |
+| `npm run smoke:runtime -- release` | Run the same Electron workspace lifecycle checks against the platform development artifact. |
 
-The app uses `package.json` version `0.1.0` as its product version. The build writes it to `dist/version.json`; `npm run check:version` checks consistency. The app stores `workspace.sqlite` below Electron's machine-local `userData` directory. Development uses the `development` child directory for both SQLite and Chromium session data so it does not share production settings. Tests use disposable temporary directories. For isolated manual runs, `WORKSPACE_USER_DATA_DIR` sets the entire data root before Electron becomes ready; SQLite and Chromium session data both use that directory directly.
+The app uses `package.json` version `0.1.0` as its product version. The build writes it to `dist/version.json`; `npm run check:version` checks consistency. The app stores `workspace.sqlite` below Electron's machine-local `userData` directory. Development uses the `development` child directory for both SQLite and Chromium session data so it does not share production settings. Tests use disposable temporary directories. For isolated manual runs, `WORKSPACE_USER_DATA_DIR` sets the entire data root before Electron becomes ready; SQLite and Chromium session data both use that directory directly. The runtime smoke script sets `WORKSPACE_TEST_ROOT_PICKER_PATH` to a temporary fixture path so UI checks can bypass the native dialog; do not set it for normal app use.
 
 Electron main owns the window and starts the TypeScript service in a `utilityProcess`. The service communicates through Electron message ports and does not open a listening network socket. It owns SQLite through Drizzle and `better-sqlite3`, and applies the versioned SQL migrations shipped under `dist/service/db/migrations` when it opens the database. The renderer calls only the narrow preload API; it has no direct Node.js, filesystem or database access. Closing the app stops the service process.
 
-The current UI exposes the saved interface language, with English as the first-launch default and Russian as the other supported value. Loads and saves go through the service; a failed save does not change the active language. The broader project organization features remain future work. The adapted UI controls retain their upstream MIT notice at `src/renderer/components/bb/LICENSE`; packaging places the notice in the artifact's `licenses` directory.
+The UI exposes the saved interface language, with English as the first-launch default and Russian as the other supported value. Loads and saves go through the service; a failed save does not change the active language. Users can create named workspaces over accessible real directories, activate saved workspaces and reopen the active workspace and default Table view after restart. Each workspace has a distinct view even when workspaces share one canonical source. The Table stays honestly empty until project discovery is implemented. The automated runtime picker seam validates the UI and persistence route; it does not exercise the OS-native dialog by hand. The adapted UI controls retain their upstream MIT notice at `src/renderer/components/bb/LICENSE`; packaging places the notice in the artifact's `licenses` directory.
 
 The desktop CI workflow runs install, tests, lint, type checks, build, Ladle build, Electron runtime smoke checks for the development app and packaged artifact, artifact creation and artifact-content checks on macOS and Windows. The smoke script requires a graphical desktop session. Local verification on macOS does not establish Windows launch or restart behavior; those require an observed Windows runner or a Windows host.

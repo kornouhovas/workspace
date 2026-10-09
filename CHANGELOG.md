@@ -8,11 +8,13 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 - A launchable local desktop settings screen with English and Russian interface languages.
 - A separate local TypeScript backend and SQLite persistence for the selected interface language, including English as the first-launch default.
+- Named workspaces rooted at accessible folders, each with a persisted default Table view and active selection that restores after restart.
+- A localized empty Table screen and saved-workspace selector; project discovery remains future work.
 - Development packaging configuration and macOS/Windows CI artifact checks for the desktop application.
 
 ### Planned
 
-- Multiple workspaces, project properties, Board and Table views.
+- Project discovery, project properties, editable Table and Board views.
 - Configurable folder discovery, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 

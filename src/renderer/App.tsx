@@ -149,7 +149,7 @@ export function App() {
       if (result.ok) {
         setWorkspaceData((current) => current ? { ...current, activeWorkspace: result.value } : current);
       } else {
-        setFormMessage(errorMessage(result.error.code));
+        setFormMessage("activation");
       }
     } catch {
       setFormMessage("activation");
@@ -159,7 +159,7 @@ export function App() {
   };
 
   const t = (key: TranslationKey) => translate(language, key);
-  const messageTitle: Partial<Record<NonNullable<FormMessage>, TranslationKey>> = {
+  const messageTitle: Record<NonNullable<FormMessage>, TranslationKey> = {
     cancelled: "pickerCancelledTitle",
     "picker-failed": "pickerFailedTitle",
     validation: "workspaceValidationTitle",
@@ -167,7 +167,7 @@ export function App() {
     storage: "workspaceStorageTitle",
     activation: "workspaceActivationTitle",
   };
-  const messageDescription: Partial<Record<NonNullable<FormMessage>, TranslationKey>> = {
+  const messageDescription: Record<NonNullable<FormMessage>, TranslationKey> = {
     cancelled: "pickerCancelledDescription",
     "picker-failed": "pickerFailedDescription",
     validation: "workspaceValidationDescription",
@@ -230,6 +230,11 @@ export function App() {
                   </select>
                 </div>
               </div>
+              {formMessage === "activation" && (
+                <StatusMessage kind="error" title={t(messageTitle.activation)}>
+                  {t(messageDescription.activation)}
+                </StatusMessage>
+              )}
               {!activeWorkspace.sourceAvailable && (
                 <StatusMessage kind="error" title={t("sourceUnavailableTitle")}>
                   {t("sourceUnavailableDescription")}
@@ -289,8 +294,8 @@ export function App() {
                 </button>
               )}
               {formMessage && (
-                <StatusMessage kind={formMessage === "cancelled" ? "info" : "error"} title={t(messageTitle[formMessage] ?? "workspaceStorageTitle")}>
-                  {t(messageDescription[formMessage] ?? "workspaceStorageDescription")}
+                <StatusMessage kind={formMessage === "cancelled" ? "info" : "error"} title={t(messageTitle[formMessage])}>
+                  {t(messageDescription[formMessage])}
                 </StatusMessage>
               )}
             </section>

@@ -1,5 +1,3 @@
-import type { ServiceError, ServiceResult } from "./settings.js";
-
 export type WorkspaceCreateCommand = {
   type: "workspace.create";
   name: string;
@@ -42,7 +40,3 @@ export interface WorkspaceCreated {
   name: string;
   canonicalRoot: string;
 }
-
-export type WorkspaceResult<T> = ServiceResult<T>;
-
-export type WorkspaceOperationError = ServiceError;

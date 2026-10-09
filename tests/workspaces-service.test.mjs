@@ -67,12 +67,14 @@ test("rejects malformed requests, blank names, files and inaccessible roots with
     const deniedFilesystem = {
       realpath(path) { if (path === "denied") throw new Error("permission denied"); return path; },
       isDirectory(path) { return statSync(path).isDirectory(); },
+      assertAccessible(path) { if (path === root) throw new Error("permission denied"); },
     };
     const service = openSettingsService(databasePath, undefined, deniedFilesystem);
     assert.equal(service.workspaces.create(null).error.code, "invalid_input");
     assert.equal(service.workspaces.create({ type: "workspace.create", name: " \t ", rootPath: root }).error.code, "invalid_input");
     assert.equal(service.workspaces.create({ type: "workspace.create", name: "File", rootPath: file }).error.code, "filesystem");
     assert.equal(service.workspaces.create({ type: "workspace.create", name: "Denied", rootPath: "denied" }).error.code, "filesystem");
+    assert.equal(service.workspaces.create({ type: "workspace.create", name: "Denied after stat", rootPath: root }).error.code, "filesystem");
     assert.deepEqual(records(databasePath), { sources: [], workspaces: [], views: [], active: [] });
     service.close();
   });
@@ -99,7 +101,7 @@ test("source containment rejects sibling prefixes, parent traversal and symlink 
     mkdirSync(join(root, "inside"));
     const outsideFile = join(outside, "secret.txt");
     writeFileSync(outsideFile, "secret");
-    symlinkSync(outside, join(root, "escape"), "dir");
+    symlinkSync(outside, join(root, "escape"), process.platform === "win32" ? "junction" : "dir");
     const service = openSettingsService(databasePath);
     assert.equal(service.workspaces.assertContained(root, join(root, "inside")), true);
     assert.equal(service.workspaces.assertContained(root, outsideFile), false);
@@ -172,6 +174,32 @@ test("retains workspace metadata and reports an unavailable source after its roo
     assert.equal(loaded.value.activeWorkspace.viewId, created.value.viewId);
     assert.equal(loaded.value.activeWorkspace.sourceAvailable, false);
     reopened.close();
+  });
+});
+
+test("retains a saved workspace when its existing root becomes inaccessible", () => {
+  withFixture(({ root, databasePath }) => {
+    let denied = false;
+    const filesystem = {
+      realpath: realpathSync,
+      isDirectory: (path) => statSync(path).isDirectory(),
+      assertAccessible: () => { if (denied) throw new Error("permission denied"); },
+    };
+    const service = openSettingsService(databasePath, undefined, filesystem);
+    const created = service.workspaces.create({ type: "workspace.create", name: "Restricted", rootPath: root });
+    assert.equal(created.ok, true);
+    denied = true;
+
+    const loaded = service.workspaces.load();
+    assert.equal(loaded.ok, true);
+    assert.equal(loaded.value.activeWorkspace.sourceAvailable, false);
+    assert.equal(loaded.value.activeWorkspace.workspaceId, created.value.workspaceId);
+    assert.equal(loaded.value.activeWorkspace.viewId, created.value.viewId);
+    const activated = service.workspaces.activate({ type: "workspace.activate", workspaceId: created.value.workspaceId });
+    assert.equal(activated.ok, true);
+    assert.equal(activated.value.sourceAvailable, false);
+    assert.deepEqual(records(databasePath).workspaces.map(({ id }) => id), [created.value.workspaceId]);
+    service.close();
   });
 });
 

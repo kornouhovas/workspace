@@ -40,7 +40,10 @@ async function createWindow(): Promise<void> {
 ipcMain.handle("workspace:backend-status", () => controller.currentStatus);
 ipcMain.handle("workspace:settings", (_event, input: unknown) => controller.request(input));
 ipcMain.handle("workspace:command", (_event, input: unknown) => controller.request(input));
-ipcMain.handle("workspace:pick-root", () => createRootPicker(dialog)());
+ipcMain.handle("workspace:pick-root", () => createRootPicker(
+  dialog,
+  process.env.WORKSPACE_TEST_ROOT_PICKER_PATH,
+)());
 
 let quitInProgress = false;
 app.on("before-quit", (event) => {

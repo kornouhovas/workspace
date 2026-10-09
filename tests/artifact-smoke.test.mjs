@@ -13,6 +13,7 @@ const packagedFiles = [
   "dist/renderer/index.html",
   "dist/version.json",
   "dist/service/db/migrations/0000_settings.sql",
+  "dist/service/db/migrations/0001_workspaces.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
