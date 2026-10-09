@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,7 +10,7 @@ function withDatabase(run) {
   const directory = mkdtempSync(join(tmpdir(), "workspace-settings-"));
   const databasePath = join(directory, "data", "settings.sqlite");
   try {
-    run(databasePath);
+    run(databasePath, directory);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -46,6 +46,36 @@ test("Russian preference survives service close and reopen", () => {
       value: { language: "ru" },
     });
     second.close();
+  });
+});
+
+test("existing settings database upgrades to workspaces without losing its language", () => {
+  withDatabase((databasePath, directory) => {
+    const migrationSource = join(process.cwd(), "src", "service", "db", "migrations");
+    const oldMigrations = join(directory, "old-migrations");
+    mkdirSync(join(oldMigrations, "meta"), { recursive: true });
+    copyFileSync(join(migrationSource, "0000_settings.sql"), join(oldMigrations, "0000_settings.sql"));
+    const journal = JSON.parse(readFileSync(join(migrationSource, "meta", "_journal.json"), "utf8"));
+    writeFileSync(join(oldMigrations, "meta", "_journal.json"), JSON.stringify({ ...journal, entries: journal.entries.slice(0, 1) }));
+
+    const previous = openSettingsService(databasePath, oldMigrations);
+    assert.equal(previous.handleCommand({ type: "settings.setLanguage", language: "ru" }).ok, true);
+    previous.close();
+
+    const root = join(directory, "selected-root");
+    mkdirSync(root);
+    const upgraded = openSettingsService(databasePath);
+    assert.deepEqual(upgraded.handleQuery({ type: "settings.load" }), {
+      ok: true, value: { language: "ru" },
+    });
+    const created = upgraded.handleCommand({ type: "workspace.create", name: "Upgraded", rootPath: root });
+    assert.equal(created.ok, true);
+    upgraded.close();
+
+    const sqlite = new Database(databasePath);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 2);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM workspaces").get().count, 1);
+    sqlite.close();
   });
 });
 

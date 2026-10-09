@@ -6,8 +6,8 @@ its default Table view, and reopen the same workspace and
 active view after a full application restart. Keep project
 discovery and broader workspace management outside T02.
 ## Context
-  - Plan destination after acceptance:
-`docs/plans/issue-9-create-workspace.md`.
+  - Completed plan location:
+`docs/plans/completed/issue-9-create-workspace.md`.
   - Source of truth: `work/ralphex/issue-9/task.md`;
 GitHub #9; Beads step `workspace-31i.2`.
   - Checkout: `codex/issue-9-create-workspace` at fixed
