@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
@@ -90,6 +92,32 @@ test("service routes typed workspace requests and rejects malformed workspace pa
     ok: false,
     error: { code: "invalid_input", message: "The workspace request is invalid." },
   });
+});
+
+test("malformed request discriminators leave the service connection usable", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-ipc-"));
+  const parent = new EventEmitter();
+  parent.postMessage = () => {};
+  const port = new FakePort();
+  startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    const malformed = structuredClone({ id: 1, input: { type: { toString: null, valueOf: null } } });
+    assert.doesNotThrow(() => port.receive(malformed));
+    assert.equal(port.sent[0].id, 1);
+    assert.equal(port.sent[0].result.ok, false);
+    assert.equal(port.sent[0].result.error.code, "invalid_input");
+
+    port.receive({ id: 2, input: { type: "workspace.load" } });
+    assert.deepEqual(port.sent[1], {
+      id: 2, result: { ok: true, value: { workspaces: [], activeWorkspace: null } },
+    });
+    port.receive({ id: 3, input: { type: "settings.load" } });
+    assert.deepEqual(port.sent[2], { id: 3, result: { ok: true, value: { language: "en" } } });
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test("desktop controller waits for readiness and routes request responses", async () => {

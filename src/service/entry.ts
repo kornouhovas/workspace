@@ -59,8 +59,7 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return typeof input === "object" && input !== null &&
-    ["settings.load", "workspace.load"].includes(String((input as { type?: unknown }).type));
+  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {

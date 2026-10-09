@@ -14,6 +14,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Fixed
 
+- Malformed desktop requests are rejected without stopping the local workspace service.
 - Saved workspace folder aliases retain source, workspace and view identities when their canonical path spelling changes.
 
 ### Planned
