@@ -113,12 +113,26 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     setError(false);
     setPreview((current) => current ? { ...current, previewToken: null } : null);
     try {
-      const result = await client.previewDiscovery(workspaceId, draft);
+      let result = await client.previewDiscovery(workspaceId, draft);
+      if (current !== version.current) return;
+      if (!result.ok && result.error.code === "invalid_input" && draft) {
+        // A vanished or automatically excluded unsaved choice can invalidate a draft.
+        // Rebuild it from an authoritative preview, preserving the remaining choices.
+        const saved = await client.previewDiscovery(workspaceId);
+        if (current !== version.current) return;
+        result = saved;
+        if (saved.ok && saved.value.workspaceId === workspaceId && saved.value.sourceId === sourceId &&
+          saved.value.revision >= minimumRevision.current && saved.value.previewToken) {
+          const available = new Set([...saved.value.excludedRelativePaths, ...saved.value.entries
+            .filter((entry) => entry.reason === null || entry.reason === "manual").map((entry) => entry.relativePath)]);
+          result = await client.previewDiscovery(workspaceId, draft.filter((name) => available.has(name)));
+        }
+      }
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
         result.value.revision >= minimumRevision.current) {
         setPreview(result.value);
-        exclusions.current = result.value.excludedRelativePaths;
+        exclusions.current = result.value.previewToken ? result.value.excludedRelativePaths : draft ?? result.value.excludedRelativePaths;
       } else { setPreview(null); setError(true); }
     } catch { if (current === version.current) { setPreview(null); setError(true); } }
     finally { if (current === version.current) setPending(false); }

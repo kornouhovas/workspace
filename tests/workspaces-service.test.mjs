@@ -1079,6 +1079,79 @@ test("preview distinguishes empty, unavailable, unreadable and retargeted source
   });
 });
 
+test("inaccessible automatic exclusions do not block preview/apply or discard retained project evidence", () => {
+  for (const [name, reason] of [[".service", "hidden"], ["$RECYCLE.BIN", "service"],
+    ["System Volume Information", "service"], ["Storage", "archive"]]) {
+    withFixture(({ root, databasePath }) => {
+      mkdirSync(join(root, "Project")); mkdirSync(join(root, name));
+      writeFileSync(join(root, name, "keep"), "excluded bytes");
+      const service = openSettingsService(databasePath);
+      const originalLstat = fs.lstatSync;
+      const originalRealpath = fs.realpathSync.native;
+      try {
+        const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+        const initial = applyDiscovery(service, workspace.workspaceId).value;
+        const saved = projectRecords(databasePath);
+        if (reason === "archive") {
+          const sql = new Database(databasePath);
+          sql.prepare("UPDATE sources SET archive_relative_path = 'Storage/nested'").run(); sql.close();
+        }
+        fs.lstatSync = (path, ...args) => {
+          if (path === join(workspace.canonicalRoot, name)) throw Object.assign(new Error("denied"), { code: "EACCES" });
+          return originalLstat(path, ...args);
+        };
+        fs.realpathSync.native = (path, ...args) => {
+          assert.notEqual(path, join(workspace.canonicalRoot, name));
+          return originalRealpath(path, ...args);
+        };
+        syncBuiltinESMExports();
+        const preview = discoveryPreview(service, workspace.workspaceId).value;
+        assert.equal(preview.state, "ready");
+        assert.ok(preview.previewToken);
+        assert.equal(preview.entries.find((entry) => entry.name === name).reason, reason);
+        assert.deepEqual(projectRecords(databasePath), saved);
+        const applied = applyDiscovery(service, workspace.workspaceId, preview.previewToken).value;
+        assert.deepEqual(applied.projects, initial.projects.filter((project) => project.name === "Project"));
+        for (const row of saved) {
+          const retained = projectRecords(databasePath).find((project) => project.id === row.id);
+          assert.equal(retained.native_identity, row.native_identity);
+          assert.equal(retained.association_state, row.relative_path === name ? "excluded" : "active");
+        }
+        assert.equal(readFileSync(join(root, name, "keep"), "utf8"), "excluded bytes");
+        const committed = projectRecords(databasePath);
+        fs.lstatSync = (path, ...args) => {
+          if (path === join(workspace.canonicalRoot, "Project")) throw Object.assign(new Error("denied"), { code: "EACCES" });
+          return originalLstat(path, ...args);
+        };
+        syncBuiltinESMExports();
+        const unsafe = discoveryPreview(service, workspace.workspaceId).value;
+        assert.equal(unsafe.state, "unreadable");
+        assert.equal(unsafe.previewToken, null);
+        assert.deepEqual(projectRecords(databasePath), committed);
+      } finally {
+        fs.lstatSync = originalLstat; fs.realpathSync.native = originalRealpath; syncBuiltinESMExports(); service.close();
+      }
+    });
+  }
+});
+
+test("ordinary platform-valid files cannot prevent discovery of real project directories", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const file = process.platform === "win32" ? "ordinary.txt" : "a:notes.txt";
+    writeFileSync(join(root, file), "ordinary bytes");
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const preview = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(preview.state, "ready");
+      assert.deepEqual(preview.entries.map((entry) => entry.name), ["Project"]);
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId, preview.previewToken).value.projects.map((project) => project.name), ["Project"]);
+      assert.equal(readFileSync(join(root, file), "utf8"), "ordinary bytes");
+    } finally { service.close(); }
+  });
+});
+
 test("preview rejects malformed, foreign and unsafe exclusion requests", () => {
   withFixture(({ root, databasePath }) => {
     mkdirSync(join(root, "Project"));

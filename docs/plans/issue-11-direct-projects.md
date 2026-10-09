@@ -39,6 +39,7 @@ Plan destination: docs/plans/issue-11-direct-projects.md.
 ### Discovery and exclusions
 
 - Scan immediate children only. Files are not projects; recognized project contents are never traversed.
+- Ignore ordinary files before portable child-name validation. Classify known automatic exclusions from directory entries without accessing their metadata; archive casing aliases still require verified filesystem evidence. Preserve excluded project evidence without asserting a fresh match or reattaching missing/unresolved records.
 - Automatically exclude symbolic links and junctions before resolving their targets, directories whose names start with ".", and the Windows service directories "$RECYCLE.BIN" and "System Volume Information" using case-insensitive comparison.
 - Honor a nullable, source-owned archiveRelativePath. If an archive lies below an immediate child, exclude that child from direct discovery so the designated archive cannot become project content through direct interpretation.
 - Validate archive designation as a relative location within the source. Invalid persisted designation blocks discovery safely.
@@ -57,6 +58,7 @@ Plan destination: docs/plans/issue-11-direct-projects.md.
 - Add workspace.applyDiscovery with workspaceId and previewToken. The backend obtains exclusions and reviewed candidates from its token, never from a submitted project list.
 - Revalidate ownership, current configuration, root identity, entry kinds, candidate identities, exclusions, and containment using the same scanner before persistence.
 - Changed filesystem/configuration state returns stale_preview and requires a refreshed preview and another explicit Apply. Never silently apply a different interpretation.
+- If an unsaved exclusion becomes absent or no longer selectable, rebuild the draft from an authoritative saved preview, drop obsolete unsaved choices, and preserve the remaining entered exclusions. This recovery is read-only and still requires explicit Apply; delayed recovery responses obey the same cancellation/revision guards.
 - Commit source configuration and project associations atomically. Failed validation or transactions preserve saved state and emit no committed discovery event.
 - Filesystem observations are not a filesystem lock. Reject changes observed during validation and document the remaining race boundary without claiming atomic filesystem/database coordination.
 
@@ -225,6 +227,12 @@ Task 4 verification: 145 tests passed with npm test (including the application b
 Canonical macOS arm64 development packaging and artifact verification passed. The fresh packaged runtime passed all pre-quit feature assertions and recorded JSON/screenshots before its first normal quit FAILED after 10000ms with the known external macOS27/Electron44.7.0 #44 symptom. Packaged restart/removal/recreation/startup-failure checks after that quit were skipped because this external prerequisite prevents continuation; they are not marked as verified. No blind retry, production shutdown change, tracker update, push, integration or release was performed. #44, actual Windows evidence and hand-operated native picker remain coordinator/release prerequisites.
 
 Commands, passed/failed observations, screenshots, initial diagnostic failures and fixed-base diff evidence are retained under ignored work/ralphex/issue-11/task4-*. The first Ladle line-height measurement error and incomplete copied-doc fixture were corrected without weakening application assertions; their failed evidence remains retained. The coordinator owns outer review and final acceptance; this section records completed implementation/check execution with the explicit external verification limits above.
+
+## Review follow-up
+
+The first outer review confirmed three defects: inaccessible metadata in automatic exclusions blocked readable roots, vanished unsaved exclusions prevented draft recovery, and an ordinary macOS-valid filename was incorrectly treated as a changed project entry. Automatic exclusions now use directory-entry evidence while preserving retained associations; invalid drafts are rebuilt from an authoritative preview without applying them; ordinary files bypass project-name validation. New real-service/UI regressions cover these cases and cancellation of delayed recovery.
+
+Review verification passed: 149 tests (including the application build), lint, typecheck, Markdown links, Ladle build, and the complete Electron dev runtime with ordinary shutdowns. Logs and runtime observations are under ignored work/ralphex/issue-11/review-fixes-*. The packaged artifact was not rebuilt in this review; the Task 4 packaged shutdown failure, Windows/native-picker limitations and external #44 prerequisite remain unchanged.
 
 ## Acceptance Mapping
 

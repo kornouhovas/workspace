@@ -15,9 +15,14 @@ export interface DirectoryObservation {
   mtimeNs: string;
   ctimeNs: string;
 }
+interface ExcludedObservation {
+  relativePath: string;
+  kind: "excluded";
+  reason: "link" | "hidden" | "service" | "archive";
+}
 export interface DiscoverySnapshot {
   root: DirectoryObservation;
-  children: DirectoryObservation[];
+  children: (DirectoryObservation | ExcludedObservation)[];
   archiveChild: string | null;
 }
 export interface DirectScan {
@@ -51,16 +56,33 @@ function changed(before: DirectoryObservation, after: DirectoryObservation): boo
 class ScanChanged extends Error {}
 class RootConflict extends Error {}
 
+function automaticDirectoryReason(name: string, archiveChild: string | null): ExcludedObservation["reason"] | null {
+  return name.startsWith(".") ? "hidden"
+    : ["$recycle.bin", "system volume information"].includes(name.toLowerCase()) ? "service"
+    : name === archiveChild ? "archive" : null;
+}
+
 function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): DiscoverySnapshot {
   const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
   // Do not open a retargeted root or a link, including a link in an ancestor.
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot) throw new RootConflict();
-  const children: DirectoryObservation[] = [];
+  if (!validArchive(archiveRelativePath)) throw new RootConflict();
+  let archiveChild: string | null = archiveRelativePath?.split("/")[0] ?? null;
+  const children: DiscoverySnapshot["children"] = [];
   const directory = opendirSync(canonicalRoot);
   try {
     let entry;
     while ((entry = directory.readSync()) !== null) {
+      // Ordinary files have no discovery interpretation, including platform-valid nonportable names.
+      if (entry.isFile()) continue;
       if (!isChildName(entry.name)) throw new ScanChanged();
+      const reason = entry.isSymbolicLink() ? "link"
+        : entry.isDirectory() ? automaticDirectoryReason(entry.name, archiveChild) : null;
+      if (reason) {
+        // The root's directory entry is sufficient to exclude these locations. Do not access their metadata.
+        children.push({ relativePath: entry.name, kind: "excluded", reason });
+        continue;
+      }
       const path = join(canonicalRoot, entry.name);
       const child = observation(entry.name, lstatSync(path, { bigint: true }));
       // Links/junctions are never resolved, opened or enumerated. Project contents are never read.
@@ -74,10 +96,9 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
   } finally { directory.closeSync(); }
   if (realpathSync.native(canonicalRoot) !== canonicalRoot ||
     changed(root, observation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
-  // Archive is validated even when currently absent; it is never followed or read.
-  if (!validArchive(archiveRelativePath)) throw new RootConflict();
-  let archiveChild: string | null = archiveRelativePath?.split("/")[0] ?? null;
-  if (archiveChild && !children.some((child) => child.relativePath === archiveChild)) {
+  // Resolve non-exact archive casing only with verified identity evidence, never by guessing names.
+  if (archiveChild && !automaticDirectoryReason(archiveChild, null) &&
+    !children.some((child) => child.relativePath === archiveChild)) {
     try {
       // Resolve casing using only the designated immediate child's own evidence. Do not open it.
       const archive = observation(archiveChild, lstatSync(join(canonicalRoot, archiveChild), { bigint: true }));
@@ -89,7 +110,9 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
       if (!(typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")) throw error;
     }
   }
-  return { root, archiveChild, children: children.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
+  return { root, archiveChild, children: children.map((child) => child.kind === "directory" && child.relativePath === archiveChild
+    ? { relativePath: child.relativePath, kind: "excluded" as const, reason: "archive" as const } : child)
+    .sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
 }
 
 export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DirectScan {
@@ -100,11 +123,8 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
     const archiveChild = snapshot.archiveChild;
     const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
       const name = child.relativePath;
-      const reason = child.kind === "link" ? "link"
-        : name.startsWith(".") ? "hidden"
-        : ["$recycle.bin", "system volume information"].includes(name.toLowerCase()) ? "service"
-        : name === archiveChild ? "archive"
-        : exclusions.includes(name) ? "manual" : null;
+      const reason = child.kind === "excluded" ? child.reason : child.kind === "link" ? "link"
+        : automaticDirectoryReason(name, archiveChild) ?? (exclusions.includes(name) ? "manual" : null);
       return { name, relativePath: name, reason };
     });
     return { state: entries.some((entry) => entry.reason === null) ? "ready" : "empty", entries, snapshot };
@@ -152,11 +172,16 @@ export function interpretProjects(scan: DirectScan, records: ProjectAssociation[
   const identities = records.map((row) => storedIdentity(row));
   for (const row of retained.filter((row) => row.associationState !== "replaced")) {
     const child = scan.snapshot.children.find((child) => child.relativePath === row.relativePath);
+    if (child?.kind === "excluded" && child.reason !== "link") {
+      // Exclusion retains existing evidence without claiming a new association or reattaching missing metadata.
+      if (row.associationState === "active" || row.associationState === "excluded") row.associationState = "excluded";
+      continue;
+    }
     if (!child || child.kind !== "directory") {
       if (row.associationState !== "unresolved") row.associationState = "missing";
     }
   }
-  for (const child of scan.snapshot.children.filter((child) => child.kind === "directory")) {
+  for (const child of scan.snapshot.children.filter((child): child is DirectoryObservation => child.kind === "directory")) {
     const entry = entries.find((entry) => entry.relativePath === child.relativePath)!;
     const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
     const reliable = reliableIdentity(child.identity);

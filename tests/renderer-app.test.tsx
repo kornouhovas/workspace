@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { mkdtempSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import React from "react";
 import { Window } from "happy-dom";
@@ -10,6 +13,7 @@ import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { DiscoveryPanel } from "../src/renderer/components/DiscoveryPanel.js";
+import { openSettingsService } from "../src/service/settings.js";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, {
@@ -1070,6 +1074,80 @@ test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply 
   assert.equal(document.activeElement, checkbox);
   assert.equal((checkbox as HTMLInputElement).checked, true);
   assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, false);
+  cleanup();
+});
+
+test("EN/RU stale draft recovery drops vanished unsaved exclusions and preserves remaining exclusions through the real service", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "workspace-draft-recovery-"));
+    const root = join(directory, "root"); mkdirSync(root);
+    for (const name of ["A", "B", "C"]) mkdirSync(join(root, name));
+    const service = openSettingsService(join(directory, "data", "workspace.sqlite"));
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root });
+      assert.equal(created.ok, true);
+      if (!created.ok) throw new Error("Fixture workspace was not created");
+      const workspaceId = created.value.workspaceId;
+      mockApi({ language,
+        onProjects: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+        onWorkspace: async (input) => (input.type === "workspace.load" || input.type === "workspace.previewDiscovery"
+          ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
+      render(<App />);
+      await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+      const checkbox = (name: string) => screen.getByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${name}` });
+      await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: A` });
+      await userEvent.click(checkbox("A"));
+      await waitFor(() => assert.equal((checkbox("A") as HTMLInputElement).disabled, false));
+      await userEvent.click(checkbox("B"));
+      await waitFor(() => assert.equal((checkbox("B") as HTMLInputElement).disabled, false));
+      renameSync(join(root, "A"), join(directory, "removed-A"));
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await waitFor(() => {
+        assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: A` }), null);
+        assert.equal((checkbox("B") as HTMLInputElement).disabled, false);
+      });
+      assert.equal((checkbox("B") as HTMLInputElement).checked, true);
+      assert.equal((checkbox("C") as HTMLInputElement).checked, false);
+      assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
+      const unapplied = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
+      assert.equal(unapplied.ok, true);
+      if (!unapplied.ok) throw new Error("Fixture projection could not be read");
+      assert.equal(unapplied.value.configured, false);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await waitFor(() => assert.equal((checkbox("B") as HTMLInputElement).disabled, false));
+      assert.equal((checkbox("B") as HTMLInputElement).checked, true);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      assert.ok(await screen.findByRole("cell", { name: "C" }));
+      const saved = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId });
+      assert.equal(saved.ok, true);
+      if (!saved.ok) throw new Error("Fixture preview could not be read");
+      assert.deepEqual(saved.value.excludedRelativePaths, ["B"]);
+    } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("Cancel during authoritative draft recovery discards its delayed response and follow-up request", async () => {
+  const active = sharedEventWorkspace();
+  let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  let baseCalls = 0, draftCalls = 0;
+  mockApi({ load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+    onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+      if (input.type === "workspace.previewDiscovery") {
+        if (input.excludedRelativePaths) { draftCalls++; return fail("invalid_input"); }
+        return ++baseCalls === 1 ? ok(previewResult(active)) : new Promise((resolve) => { finish = resolve; });
+      }
+      return fail("invalid_input");
+    } });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await userEvent.click(await screen.findByRole("checkbox"));
+  await waitFor(() => assert.equal(baseCalls, 2));
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await act(async () => { finish?.(ok(previewResult(active, "late-recovery"))); });
+  assert.equal(draftCalls, 1);
+  assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
+  assert.equal(screen.queryByRole("checkbox"), null);
   cleanup();
 });
 
