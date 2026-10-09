@@ -1,7 +1,7 @@
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
-import type { ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
 
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
@@ -33,6 +33,10 @@ export class WorkspaceServiceClient {
   }
   renameProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<TextPropertyMutation>> {
     return this.api.workspace({ type: "workspace.renameProperty", workspaceId, propertyId, name });
+  }
+
+  renameCategoryProperty(workspaceId: string, propertyId: string, name: string): Promise<ServiceResult<CategoryPropertySnapshot>> {
+    return this.api.workspace({ type: "workspace.renameCategoryProperty", workspaceId, propertyId, name });
   }
 
   setTextValue(workspaceId: string, projectId: string, propertyId: string, value: string | null): Promise<ServiceResult<TextPropertyMutation>> {

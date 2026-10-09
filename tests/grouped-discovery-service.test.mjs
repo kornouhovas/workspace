@@ -485,3 +485,96 @@ test("grouped persistence respects native POSIX basenames rather than SQL patter
   assert.deepEqual(applied(f).projects, first.projects);
   assert.throws(() => f.sqlite.prepare("UPDATE projects SET relative_path = 'Category-XX:one/Project' WHERE id = ?").run(first.projects[0].projectId));
 }));
+
+function applyGrouped({ service, workspace, preview }) {
+  const review = preview(); assert.equal(review.ok, true);
+  const result = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: review.value.previewToken });
+  assert.equal(result.ok, true); return result.value;
+}
+
+test("category label rename is shared metadata, preserves authored text and valid reviews across reopen", () => fixture((f) => {
+  const { root, service, workspace, sqlite, databasePath } = f;
+  fs.mkdirSync(join(root, "Category", "Project"), { recursive: true });
+  fs.writeFileSync(join(root, "Category", "Project", "bytes"), Buffer.from([0, 255, 36]));
+  const applied = applyGrouped(f), propertyId = applied.categoryProperty.propertyId;
+  const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+  const text = service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: workspace.workspaceId, name: "Duplicate", propertyType: "text" }).value;
+  service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: workspace.workspaceId, propertyId: text.propertyId, projectId: applied.projects[0].projectId, value: "  authored\nText  " });
+  const before = inventory(root), sources = sqlite.prepare("SELECT * FROM sources").all(), projects = sqlite.prepare("SELECT * FROM projects").all();
+  const categories = sqlite.prepare("SELECT * FROM categories").all(), views = sqlite.prepare("SELECT * FROM views").all();
+  const textBefore = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.workspaceId }).value;
+  const review = f.preview().value;
+  const events = []; service.workspaces.subscribe((event) => events.push(event));
+  let revision = 0;
+  for (const name of ["Duplicate", "  Категория 日本語  ", "Long ".repeat(600)]) {
+    const saved = service.handleCommand({ type: "workspace.renameCategoryProperty", workspaceId: workspace.workspaceId, propertyId, name });
+    assert.equal(saved.ok, true);
+    assert.deepEqual(saved.value, { workspaceId: workspace.workspaceId, sourceId: workspace.sourceId, propertyId, name, revision: ++revision });
+    assert.deepEqual(events.at(-1), { type: "workspace.categoryPropertyChanged", sourceId: workspace.sourceId, workspaceIds: [workspace.workspaceId, sibling.workspaceId], revision });
+    assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }).value.categoryProperty.name, name);
+    assert.deepEqual(service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: sibling.workspaceId, propertyId, name }).value, { ...saved.value, workspaceId: sibling.workspaceId });
+    assert.equal(events.length, revision);
+  }
+  assert.deepEqual(sqlite.prepare("SELECT * FROM sources").all(), sources.map((row) => ({ ...row, category_property_revision: revision })));
+  assert.deepEqual(sqlite.prepare("SELECT * FROM projects").all(), projects);
+  assert.deepEqual(sqlite.prepare("SELECT * FROM categories").all(), categories);
+  assert.deepEqual(sqlite.prepare("SELECT * FROM views").all(), views);
+  assert.deepEqual(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.workspaceId }).value, textBefore);
+  assert.deepEqual(inventory(root), before);
+  assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: review.previewToken }).ok, true);
+  assert.equal(events.length, revision);
+  service.close();
+  const reopened = openSettingsService(databasePath);
+  try {
+    const projection = reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value;
+    assert.equal(projection.categoryPropertyRevision, revision); assert.equal(projection.categoryProperty.name, "Long ".repeat(600));
+    assert.equal(projection.categoryProperty.propertyId, propertyId); assert.deepEqual(projection.projects, applied.projects);
+  } finally { reopened.close(); }
+}));
+
+test("category label rejects malformed, foreign, missing and direct inputs and rolls back failed metadata writes", () => fixture((f) => {
+  const { root, directory, service, workspace, sqlite } = f;
+  fs.mkdirSync(join(root, "Category", "Project"), { recursive: true });
+  const propertyId = applyGrouped(f).categoryProperty.propertyId;
+  const directRoot = join(directory, "direct"), otherRoot = join(directory, "other"); fs.mkdirSync(directRoot); fs.mkdirSync(join(otherRoot, "Category"), { recursive: true });
+  const direct = service.workspaces.create({ type: "workspace.create", name: "Direct", rootPath: directRoot }).value;
+  const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+  const otherPreview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: other.workspaceId, mode: "grouped" }).value;
+  const foreign = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: other.workspaceId, previewToken: otherPreview.previewToken }).value.categoryProperty.propertyId;
+  const directPreview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: direct.workspaceId }).value;
+  service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: direct.workspaceId, previewToken: directPreview.previewToken });
+  const command = { type: "workspace.renameCategoryProperty", workspaceId: workspace.workspaceId, propertyId, name: "Saved" };
+  const before = sqlite.prepare("SELECT * FROM sources").all(), properties = sqlite.prepare("SELECT * FROM category_properties").all();
+  const events = []; service.workspaces.subscribe((event) => events.push(event));
+  for (const input of [null, [], { ...command, extra: true }, { ...command, type: "workspace.renameProperty" },
+    { ...command, workspaceId: "bad" }, { ...command, workspaceId: randomUUID() }, { ...command, propertyId: "bad" },
+    { ...command, propertyId: randomUUID() }, { ...command, propertyId: foreign }, { ...command, workspaceId: direct.workspaceId },
+    { ...command, name: null }, { ...command, name: "" }, { ...command, name: " \n\t " },
+    { type: command.type, workspaceId: workspace.workspaceId, propertyId }]) {
+    assert.equal(service.workspaces.renameCategoryProperty(input).error.code, "invalid_input");
+  }
+  // Failure after the label write must roll it and the revision back together.
+  sqlite.exec("CREATE TRIGGER fail_category_revision BEFORE UPDATE OF category_property_revision ON sources BEGIN SELECT RAISE(ABORT, 'injected'); END");
+  assert.equal(service.handleCommand(command).error.code, "storage");
+  assert.deepEqual(sqlite.prepare("SELECT * FROM sources").all(), before);
+  assert.deepEqual(sqlite.prepare("SELECT * FROM category_properties").all(), properties);
+  assert.deepEqual(events, []);
+  sqlite.exec("DROP TRIGGER fail_category_revision");
+  assert.equal(service.handleCommand(command).ok, true);
+  assert.deepEqual(events[0].workspaceIds, [workspace.workspaceId]);
+  assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: other.workspaceId }).value.categoryProperty.name, null);
+}));
+
+test("category label notification queue preserves committed snapshots with throwing and reentrant subscribers", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category"));
+  const propertyId = applyGrouped(f).categoryProperty.propertyId;
+  const command = (name) => ({ type: "workspace.renameCategoryProperty", workspaceId: f.workspace.workspaceId, propertyId, name });
+  const observed = [];
+  f.service.workspaces.subscribe(() => { throw new Error("subscriber failure"); });
+  f.service.workspaces.subscribe((event) => { if (event.type === "workspace.categoryPropertyChanged" && event.revision === 1) assert.equal(f.service.handleCommand(command("Second")).value.revision, 2); });
+  f.service.workspaces.subscribe((event) => observed.push(event.revision));
+  const first = f.service.handleCommand(command("First"));
+  assert.equal(first.ok, true); assert.equal(first.value.name, "First"); assert.equal(first.value.revision, 1);
+  assert.deepEqual(observed, [1, 2]);
+  assert.equal(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.categoryProperty.name, "Second");
+}));

@@ -1,7 +1,8 @@
+import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import { interpretGrouped, interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
-import type { DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
@@ -33,6 +34,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  renameCategoryProperty(input: unknown): ServiceResult<CategoryPropertySnapshot>;
   listTextProperties(input: unknown): ServiceResult<TextPropertySnapshot>;
   createProperty(input: unknown): ServiceResult<TextPropertyMutation>;
   setTextValue(input: unknown): ServiceResult<TextPropertyMutation>;
@@ -78,6 +80,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
   const service: WorkspaceService = {
     ...createTextPropertyService(db, publish),
+    ...createCategoryPropertyService(db, publish),
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };

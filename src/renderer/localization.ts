@@ -1,6 +1,17 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  renameCategoryProperty: "Rename category property",
+  categoryPropertyName: "Category property name",
+  saveCategoryPropertyName: "Save category property name",
+  categoryPropertyHint: "Only the column name changes. Category folders and project values stay the same.",
+  categoryPropertySaving: "Saving category property name…",
+  categoryPropertyValidation: "Choose the category property and enter a nonblank name.",
+  categoryPropertySaveError: "Category property name could not be saved. Your draft is retained; try saving again.",
+  categoryPropertySaved: "Category property name saved.",
+  categoryPropertyNewerChange: "Category property name saved. A newer label change was observed in this source.",
+  categoryPropertyExternalChange: "The category property name changed in another workspace. Your draft is retained; Save submits it explicitly and Cancel shows the current name.",
+
   createTextProperty: "Create Text property",
   propertyName: "Property name",
   renameProperty: "Rename property",
@@ -142,6 +153,16 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  renameCategoryProperty: "Переименовать свойство категории",
+  categoryPropertyName: "Название свойства категории",
+  saveCategoryPropertyName: "Сохранить название свойства категории",
+  categoryPropertyHint: "Меняется только название столбца. Папки категорий и значения проектов сохраняются.",
+  categoryPropertySaving: "Сохранение названия свойства категории…",
+  categoryPropertyValidation: "Выберите свойство категории и введите непустое название.",
+  categoryPropertySaveError: "Не удалось сохранить название свойства категории. Черновик сохранён; повторите попытку.",
+  categoryPropertySaved: "Название свойства категории сохранено.",
+  categoryPropertyNewerChange: "Название свойства категории сохранено. В источнике появилось более новое название.",
+  categoryPropertyExternalChange: "Название свойства категории изменилось в другом рабочем пространстве. Черновик сохранён; сохранение отправит его явно, а отмена покажет текущее название.",
   createTextProperty: "Создать Text-свойство",
   propertyName: "Название свойства",
   renameProperty: "Переименовать свойство",

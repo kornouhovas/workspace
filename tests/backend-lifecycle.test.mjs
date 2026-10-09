@@ -960,3 +960,65 @@ test("grouped Apply uses production ports and typed clients with categories, no-
     unsubscribe(); await controller.stop(100);
   } finally { unsubscribe(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("category labels traverse entry/controller/preload/clients with validated ordered events and listener cleanup", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "category-label-transport-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(join(root, "Category/Project"), { recursive: true }); await mkdir(otherRoot);
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController(), ipc = new EventEmitter();
+  ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
+  const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+  const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+  function surface() {
+    const unload = new EventTarget(); let api;
+    runInNewContext(preload, { window: unload, require: () => ({ ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_key, value) => { api = value; } } }) });
+    return { client: new WorkspaceServiceClient(api), unload };
+  }
+  const oneSurface = surface(), siblingSurface = surface();
+  const events = [], siblingEvents = [];
+  const off = oneSurface.client.onWorkspaceChange((event) => events.push(event));
+  const offSibling = siblingSurface.client.onWorkspaceChange((event) => siblingEvents.push(event));
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "data.sqlite"), {}, 100), true);
+    const one = (await oneSurface.client.createWorkspace("One", root)).value, sibling = (await siblingSurface.client.createWorkspace("Sibling", root)).value;
+    const other = (await oneSurface.client.createWorkspace("Other", otherRoot)).value;
+    const review = (await oneSurface.client.previewDiscovery(one.workspaceId, undefined, "grouped")).value;
+    const applied = (await oneSurface.client.applyDiscovery(one.workspaceId, review.previewToken)).value, propertyId = applied.categoryProperty.propertyId;
+    events.length = siblingEvents.length = servicePort.sent.length = 0;
+    const rename = await oneSurface.client.renameCategoryProperty(one.workspaceId, propertyId, "  Label 日本語  ");
+    assert.equal(rename.ok, true); assert.equal(rename.value.revision, 1);
+    const expected = { type: "workspace.categoryPropertyChanged", sourceId: one.sourceId, workspaceIds: [one.workspaceId, sibling.workspaceId], revision: 1 };
+    assert.deepEqual(events, [expected]); assert.deepEqual(siblingEvents, events);
+    assert.deepEqual(servicePort.sent[0].change, expected); assert.deepEqual(servicePort.sent[1].result, rename);
+    assert.equal((await siblingSurface.client.listProjects(sibling.workspaceId)).value.categoryProperty.name, "  Label 日本語  ");
+    for (const change of [{ ...expected, revision: -1 }, { ...expected, revision: 0.5 }, { ...expected, sourceId: "bad" },
+      { ...expected, workspaceIds: [] }, { ...expected, workspaceIds: [one.workspaceId, one.workspaceId] }, { ...expected, propertyId },
+      { ...expected, workspaceIds: ["bad"] }]) {
+      desktopPort.receive({ type: "workspace.change", change }); ipc.emit("workspace:change", {}, change);
+    }
+    assert.equal(events.length, 1); assert.equal(siblingEvents.length, 1);
+    for (const input of [
+      { type: "workspace.renameCategoryProperty", workspaceId: one.workspaceId, propertyId, name: "bad", sourceId: one.sourceId },
+      { type: "workspace.renameCategoryProperty", workspaceId: one.workspaceId, propertyId },
+      { type: "workspace.renameCategoryProperty", workspaceId: one.workspaceId, propertyId, name: 4 },
+      { type: "workspace.renameCategoryProperty", workspaceId: other.workspaceId, propertyId, name: "Foreign" },
+    ]) assert.equal((await controller.request(input)).error.code, "invalid_input");
+    assert.equal((await siblingSurface.client.renameCategoryProperty(sibling.workspaceId, propertyId, "  Label 日本語  ")).value.revision, 1);
+    assert.equal(events.length, 1);
+    off(); siblingSurface.unload.dispatchEvent(new Event("unload"));
+    assert.equal(ipc.listenerCount("workspace:change"), 0);
+    assert.equal((await oneSurface.client.renameCategoryProperty(one.workspaceId, propertyId, "Next")).value.revision, 2);
+    assert.equal(events.length, 1); assert.equal(siblingEvents.length, 1);
+    assert.equal((await oneSurface.client.listProjects(other.workspaceId)).value.categoryProperty, null);
+    await controller.stop(100);
+    const sent = servicePort.sent.length;
+    servicePort.receive({ id: 1000, input: { type: "workspace.renameCategoryProperty", workspaceId: one.workspaceId, propertyId, name: "After shutdown" } });
+    assert.equal(servicePort.sent.length, sent);
+  } finally { off(); offSibling(); relay(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});

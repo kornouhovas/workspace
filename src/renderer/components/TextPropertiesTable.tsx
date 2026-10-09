@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
-import type { ProjectSummary, CategoryProperty, CategorySummary } from "../../contracts/workspaces.js";
+import type { ProjectSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
+import { CategoryPropertyHeader } from "./CategoryPropertyHeader.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
@@ -14,13 +15,16 @@ interface Props {
   projects: ProjectSummary[];
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
+  categoryPropertyRevision?: number;
+  minimumCategoryPropertyRevision?: { current: number };
+  onCategoryPropertyCommitted?(snapshot: CategoryPropertySnapshot): void;
   language: Language;
   disabled: boolean;
 }
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, categoryProperty, categories = [], language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +137,11 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, catego
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     <div className="project-table-scroll">
       <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 1 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
-        {categoryProperty && <th key={categoryProperty.propertyId} scope="col">{categoryProperty.name ?? t("discoveryCategory")}</th>}
+        {categoryProperty && <th key={categoryProperty.propertyId} scope="col" aria-label={categoryProperty.name ?? t("discoveryCategory")}>
+          {onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
+            revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
+            onCommitted={onCategoryPropertyCommitted} language={language} disabled={disabled} /> : <span className="property-authored">{categoryProperty.name ?? t("discoveryCategory")}</span>}
+        </th>}
         {snapshot?.definitions.map((property) => <th scope="col" key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}

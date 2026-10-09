@@ -78,7 +78,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
       typeof input.workspaceId !== "string" || typeof input.projectId !== "string" || typeof input.propertyId !== "string" ||
       (input.value !== null && typeof input.value !== "string");
   }
-  if (input.type === "workspace.renameProperty") {
+  if (input.type === "workspace.renameProperty" || input.type === "workspace.renameCategoryProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "propertyId", "name"]) ||
       typeof input.workspaceId !== "string" || typeof input.propertyId !== "string" || typeof input.name !== "string";
   }

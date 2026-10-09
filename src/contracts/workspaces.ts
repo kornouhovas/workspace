@@ -45,10 +45,11 @@ export type WorkspaceChangeEvent =
   | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
   | { type: "workspace.sourceChanged"; source: WorkspaceSourceState }
   | { type: "workspace.propertiesChanged"; sourceId: string; workspaceIds: string[]; revision: number }
+  | { type: "workspace.categoryPropertyChanged"; sourceId: string; workspaceIds: string[]; revision: number }
   | { type: "workspace.projectsChanged"; sourceId: string; workspaceIds: string[]; revision: number };
 
 export type WorkspaceQuery = WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
-export type WorkspaceCommand = WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
+export type WorkspaceCommand = WorkspaceRenameCategoryPropertyCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;
@@ -141,4 +142,18 @@ export interface ProjectList {
   state: DiscoveryPreview["state"];
   projects: ProjectSummary[];
   retainedCount: number;
+}
+
+export type WorkspaceRenameCategoryPropertyCommand = {
+  type: "workspace.renameCategoryProperty";
+  workspaceId: string;
+  propertyId: string;
+  name: string;
+};
+export interface CategoryPropertySnapshot {
+  workspaceId: string;
+  sourceId: string;
+  propertyId: string;
+  name: string;
+  revision: number;
 }

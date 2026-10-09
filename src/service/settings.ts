@@ -15,11 +15,11 @@ import {
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
 import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
-import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -86,6 +86,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
       if (isRecord(input) && input.type === "workspace.setTextValue") return workspaces.setTextValue(input);
       if (isRecord(input) && input.type === "workspace.renameProperty") return workspaces.renameProperty(input);

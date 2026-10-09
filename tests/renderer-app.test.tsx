@@ -2037,7 +2037,8 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       await screen.findByRole("cell", { name: "Project" });
       assert.equal(document.activeElement, trigger);
       const header = screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") });
-      assert.equal(header.querySelector("button, input, select"), null);
+      assert.equal(header.querySelectorAll("button").length, 1);
+      assert.equal(header.querySelector("input, select"), null);
       const categoryCell = screen.getByRole("cell", { name: "Category" }); assert.equal(categoryCell.querySelector("button, input, select"), null);
       assert.ok(screen.getByText("Empty")); assert.ok(screen.getByText(translate(language, "discoveryGroupedMode")));
       const loadedView = service.workspaces.load(); assert.equal(loadedView.ok && loadedView.value.activeWorkspace?.viewId, viewId);
@@ -2131,6 +2132,199 @@ test("EN/RU delayed grouped Apply respects newer discovery and independent categ
       if (outcome === "newerLabel") assert.ok(screen.getByRole("columnheader", { name: "Current label" }));
       else assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
     }
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU category label keyboard editor retains drafts and changes only shared metadata through production client", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "category-label-ui-")), root = join(directory, "root");
+    mkdirSync(join(root, "Category/Project"), { recursive: true });
+    const service = openSettingsService(join(directory, "data.sqlite")); let off: (() => void) | undefined;
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
+      const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root });
+      if (!one.ok || !sibling.ok) throw new Error("Fixture creation failed");
+      const workspaceId = one.value.workspaceId;
+      service.workspaces.activate({ type: "workspace.activate", workspaceId });
+      const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" });
+      if (!review.ok) throw new Error("Fixture preview failed");
+      const applied = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.value.previewToken });
+      if (!applied.ok || !applied.value.categoryProperty) throw new Error("Fixture Apply failed");
+      const propertyId = applied.value.categoryProperty.propertyId;
+      service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" });
+      const requests: WorkspaceRequest[] = []; let failSave = false;
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProperties: query, onProjects: query, onWorkspace: async (input) => {
+        requests.push(input);
+        if (input.type === "workspace.renameCategoryProperty" && failSave) return fail("storage");
+        return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+      } });
+      off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      const trigger = await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` });
+      trigger.focus(); await userEvent.keyboard("{Enter}");
+      let editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+      assert.equal(document.activeElement, editor);
+      await userEvent.clear(editor); await userEvent.type(editor, "   "); await userEvent.keyboard("{Enter}");
+      assert.ok(screen.getByText(translate(language, "categoryPropertyValidation"))); assert.equal(requests.some((r) => r.type === "workspace.renameCategoryProperty"), false);
+      await userEvent.keyboard("{Escape}"); assert.equal(document.activeElement, trigger);
+      const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
+      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      const textEditor = screen.getByRole("textbox", { name: textLabel }); await userEvent.type(textEditor, "Keep Text draft");
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+      const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+      await userEvent.click(trigger); editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+      await userEvent.clear(editor); await userEvent.type(editor, "  Draft label 日本語  ");
+      await act(async () => { assert.equal(service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: sibling.value.workspaceId, propertyId, name: "Sibling label" }).ok, true); });
+      await screen.findByText(translate(language, "categoryPropertyExternalChange"));
+      assert.equal(editor.value, "  Draft label 日本語  ");
+      assert.ok(screen.getByRole("columnheader", { name: "Sibling label" }));
+      assert.equal((apply as HTMLButtonElement).disabled, false);
+      failSave = true; await userEvent.keyboard("{Enter}");
+      await screen.findByText(translate(language, "categoryPropertySaveError")); assert.equal(editor.value, "  Draft label 日本語  ");
+      failSave = false; await userEvent.keyboard("{Enter}");
+      await screen.findByText(translate(language, "categoryPropertySaved"));
+      assert.equal(document.activeElement, trigger);
+      assert.ok(screen.getByRole("columnheader", { name: "Draft label 日本語" }));
+      assert.equal(screen.getByRole("textbox", { name: textLabel }), textEditor); assert.equal((textEditor as HTMLTextAreaElement).value, "Keep Text draft");
+      const categoryCell = screen.getByRole("cell", { name: "Category" }); assert.equal(categoryCell.querySelector("button, input, select"), null);
+      const siblingList = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.value.workspaceId });
+      assert.equal(siblingList.ok && siblingList.value.categoryProperty?.name, "  Draft label 日本語  ");
+      assert.equal(applied.value.revision, siblingList.ok && siblingList.value.revision);
+      await userEvent.click(apply); await waitFor(() => assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null));
+      assert.equal(requests.filter((r) => r.type === "workspace.renameCategoryProperty").length, 2);
+    } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+function categoryLabelFixture(active: ActiveWorkspace) {
+  const propertyId = randomUUID(), categoryId = randomUUID();
+  const list = (label: string | null, labelRevision = 0, discoveryRevision = 1, projectName = "Project") => ({
+    ...projectList(active, [], discoveryRevision), mode: "grouped" as const,
+    projects: [{ projectId: randomUUID(), name: projectName, relativePath: `Category/${projectName}`, categoryId }],
+    categories: [{ categoryId, name: "Category", relativePath: "Category" }],
+    categoryProperty: { propertyId, sourceId: active.sourceId, name: label }, categoryPropertyRevision: labelRevision,
+  });
+  const event = (revision: number): Extract<WorkspaceChangeEvent, { type: "workspace.categoryPropertyChanged" }> => ({ type: "workspace.categoryPropertyChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision });
+  const saved = (name: string, revision = 1) => ok({ workspaceId: active.workspaceId, sourceId: active.sourceId, propertyId, name, revision });
+  return { propertyId, list, event, saved };
+}
+
+test("EN/RU category label races accept own events but preserve newer labels and independently refreshed projects", async () => {
+  for (const language of ["en", "ru"] as const) for (const outcome of ["own", "newer", "oldList"] as const) {
+    const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
+    let currentList = f.list(null), finishSave: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let finishList: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined, delayList = false;
+    const api = mockApi({ language,
+      onProjects: async () => delayList ? new Promise((resolve) => { finishList = resolve; }) : ok(currentList),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type === "workspace.renameCategoryProperty") return new Promise((resolve) => { finishSave = resolve; });
+        return fail("invalid_input");
+      } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+    const editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
+    await userEvent.clear(editor); await userEvent.type(editor, "Own label"); await userEvent.keyboard("{Enter}");
+    assert.equal((editor as HTMLInputElement).disabled, true);
+    assert.ok(screen.getByRole("button", { name: translate(language, "categoryPropertySaving") }));
+    await act(async () => {
+      currentList = f.list(outcome === "newer" ? "Newer label" : "Own label", outcome === "newer" ? 2 : 1);
+      if (outcome === "oldList") delayList = true;
+      api.emitChange(f.event(outcome === "newer" ? 2 : 1));
+    });
+    if (outcome !== "oldList") await screen.findByRole("columnheader", { name: outcome === "newer" ? "Newer label" : "Own label" });
+    await act(async () => { finishSave?.(f.saved("Own label")); });
+    await screen.findByText(translate(language, outcome === "newer" ? "categoryPropertyNewerChange" : "categoryPropertySaved"));
+    if (outcome === "oldList") {
+      await act(async () => { finishList?.(ok(f.list(null, 0, 2, "New project"))); });
+      await screen.findByRole("cell", { name: "New project" });
+    }
+    assert.ok(screen.getByRole("columnheader", { name: outcome === "newer" ? "Newer label" : "Own label" }));
+    assert.equal(screen.queryByRole("textbox", { name: translate(language, "categoryPropertyName") }), null);
+    assert.equal(screen.queryByText(translate(language, "projectsError")), null);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU category saves and lists cannot revive switched, removed, restarted or unmounted workspaces", async () => {
+  for (const language of ["en", "ru"] as const) for (const reason of ["switch", "remove", "restart", "cleanup", "list"] as const) {
+    const active = sharedEventWorkspace(), other = { ...sharedEventWorkspace(), workspaceId: randomUUID(), sourceId: randomUUID(), viewId: randomUUID(), name: "Other" }, f = categoryLabelFixture(active), next = categoryLabelFixture(other);
+    let current = active, restarted = false, finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, onProjects: async (input) => {
+      if (input.type !== "workspace.listProjects") return fail("invalid_input");
+      if (input.workspaceId === other.workspaceId) return ok(next.list("Other label"));
+      if (reason === "list" && !restarted) return new Promise((resolve) => { finish = resolve; });
+      return ok(f.list(restarted ? "Restart label" : null));
+    }, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: current.workspaceId, name: current.name }], activeWorkspace: current });
+      if (input.type === "workspace.renameCategoryProperty") return new Promise((resolve) => { finish = resolve; });
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    if (reason !== "list") {
+      await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+      const input = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") });
+      await userEvent.clear(input); await userEvent.type(input, "Late label"); await userEvent.keyboard("{Enter}");
+    } else await screen.findByRole("heading", { name: active.name });
+    if (reason === "switch") {
+      current = other;
+      await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: { workspaces: [{ workspaceId: other.workspaceId, name: other.name }], activeWorkspace: other } }));
+      await screen.findByRole("columnheader", { name: "Other label" });
+    } else if (reason === "remove") {
+      await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: emptyLoad() }));
+    } else if (reason === "cleanup") cleanup();
+    else {
+      await act(async () => api.emitStatus("unavailable")); restarted = true;
+      await act(async () => api.emitStatus("ready"));
+      await screen.findByRole("columnheader", { name: "Restart label" });
+    }
+    await act(async () => { finish?.(reason === "list" ? ok(f.list("Late list")) : f.saved("Late label")); });
+    assert.equal(screen.queryByRole("columnheader", { name: "Late label" }), null);
+    assert.equal(screen.queryByRole("columnheader", { name: "Late list" }), null);
+    assert.equal(screen.queryByText(translate(language, "categoryPropertySaved")), null);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU same-source refresh preserves category drafts and newer label snapshots without accepting old project rows", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
+    let listed = f.list(null), lists = 0;
+    const api = mockApi({ language, onProjects: async () => { lists++; return ok(listed); }, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+      if (input.type === "workspace.renameCategoryProperty") return fail("invalid_input");
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: ${translate(language, "discoveryCategory")}` }));
+    const input = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+    await userEvent.clear(input); await userEvent.type(input, "Recoverable draft");
+    const originalLists = lists;
+    await act(async () => {
+      api.emitChange({ ...f.event(2), sourceId: randomUUID() });
+      api.emitChange({ ...f.event(2), workspaceIds: [randomUUID()] });
+    });
+    assert.equal(lists, originalLists);
+    await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Refreshed root", sourceAvailable: true } }));
+    await waitFor(() => assert.ok(lists > originalLists));
+    assert.equal(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), input);
+    assert.equal(input.value, "Recoverable draft");
+    await act(async () => {
+      listed = f.list(null, 0, 2, "Current project"); api.emitChange(projectEvent(active, 2));
+    });
+    await screen.findByRole("cell", { name: "Current project" });
+    await act(async () => {
+      listed = f.list("Current label", 1, 1, "Old project"); api.emitChange(f.event(1));
+    });
+    await screen.findByRole("columnheader", { name: "Current label" });
+    assert.ok(screen.getByRole("cell", { name: "Current project" })); assert.equal(screen.queryByRole("cell", { name: "Old project" }), null);
+    assert.ok(screen.getByText(translate(language, "categoryPropertyExternalChange")));
+    input.focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByText(translate(language, "categoryPropertyValidation")); assert.equal(input.value, "Recoverable draft");
+    await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement, screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Current label` }));
+    assert.equal(screen.queryByText(translate(language, "projectsError")), null);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });

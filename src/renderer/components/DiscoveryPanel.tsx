@@ -1,6 +1,6 @@
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { useEffect, useRef, useState } from "react";
-import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -204,6 +204,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; language: Language; disabled: boolean;
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
+  const committedProjects = useRef<ProjectList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const version = useRef(0);
@@ -211,28 +212,58 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   const minimumCategoryPropertyRevision = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
   const t = (key: TranslationKey) => translate(language, key);
+  const commitLabel = (value: CategoryPropertySnapshot) => {
+    const current = committedProjects.current;
+    if (!current || value.workspaceId !== workspaceId || value.sourceId !== sourceId ||
+      value.propertyId !== current.categoryProperty?.propertyId || value.revision < minimumCategoryPropertyRevision.current) return;
+    minimumCategoryPropertyRevision.current = value.revision;
+    const updated = { ...current, categoryProperty: { propertyId: value.propertyId, sourceId, name: value.name }, categoryPropertyRevision: value.revision };
+    committedProjects.current = updated; setProjects(updated);
+  };
   const load = async () => {
     const current = ++version.current;
     setLoading(true); setError(false);
     try {
       const result = await client.listProjects(workspaceId);
       if (current !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
-        result.value.revision >= minimumRevision.current && result.value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
-        minimumCategoryPropertyRevision.current = result.value.categoryPropertyRevision;
-        if (result.value.revision > minimumRevision.current) {
-          minimumRevision.current = result.value.revision;
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId) {
+        const currentProjects = committedProjects.current;
+        const value = result.value;
+        const discoveryCurrent = value.revision >= minimumRevision.current;
+        const labelCurrent = value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current;
+        // The two revisions describe independent data. Preserve a newer committed
+        // label when a delayed project list was captured before its save.
+        if ((!discoveryCurrent && !currentProjects) || (!labelCurrent &&
+          (!currentProjects || currentProjects.categoryPropertyRevision < minimumCategoryPropertyRevision.current))) {
+          setError(true); return;
+        }
+        const updated = discoveryCurrent ? { ...value } : { ...currentProjects! };
+        if (labelCurrent) {
+          updated.categoryProperty = value.categoryProperty;
+          updated.categoryPropertyRevision = value.categoryPropertyRevision;
+          minimumCategoryPropertyRevision.current = value.categoryPropertyRevision;
+        } else {
+          updated.categoryProperty = currentProjects!.categoryProperty;
+          updated.categoryPropertyRevision = currentProjects!.categoryPropertyRevision;
+        }
+        if (discoveryCurrent && value.revision > minimumRevision.current) {
+          minimumRevision.current = value.revision;
           setInvalidation((value) => value + 1);
         }
-        setProjects(result.value);
-      }
-      else setError(true);
+        committedProjects.current = updated; setProjects(updated);
+        setError(updated.revision < minimumRevision.current);
+      } else setError(true);
     } catch { if (current === version.current) setError(true); }
     finally { if (current === version.current) setLoading(false); }
   };
   useEffect(() => {
     const unsubscribe = client.onWorkspaceChange((event) => {
       if (event.type === "workspace.listChanged" || event.type === "workspace.propertiesChanged") return;
+      if (event.type === "workspace.categoryPropertyChanged") {
+        if (event.sourceId !== sourceId || !event.workspaceIds.includes(workspaceId) || event.revision <= minimumCategoryPropertyRevision.current) return;
+        minimumCategoryPropertyRevision.current = event.revision;
+        void load(); return;
+      }
       const affectedSource = event.type === "workspace.projectsChanged" ? event.sourceId : event.source.sourceId;
       const references = event.type === "workspace.projectsChanged" ? event.workspaceIds : event.source.workspaceIds;
       if (affectedSource !== sourceId || !references.includes(workspaceId)) return;
@@ -252,7 +283,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       onApplied={(value) => {
         version.current++; minimumRevision.current = value.revision;
         if (value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
-          minimumCategoryPropertyRevision.current = value.categoryPropertyRevision; setProjects(value);
+          minimumCategoryPropertyRevision.current = value.categoryPropertyRevision; committedProjects.current = value; setProjects(value);
         } else { void load(); return; }
         setError(false); setLoading(false);
       }} />
@@ -275,7 +306,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         {projects.categories.length > 0 ? <ul>{projects.categories.map((category) => <li key={category.categoryId}>{category.name}</li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </div>}
-      <TextPropertiesTable categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
+      <TextPropertiesTable categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+        onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         projects={projects?.projects ?? []} language={language} disabled={disabled} />
     </section>
   </>;

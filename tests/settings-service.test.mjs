@@ -120,3 +120,21 @@ test("read and write failures return storage errors without claiming a save", ()
     service.close();
   });
 });
+
+test("settings routing delegates category labels without confusing Text or settings commands", () => {
+  withDatabase((databasePath, directory) => {
+    const root = join(directory, "root"); mkdirSync(join(root, "Category"), { recursive: true });
+    const service = openSettingsService(databasePath);
+    const workspaceId = service.handleCommand({ type: "workspace.create", name: "Grouped", rootPath: root }).value.workspaceId;
+    const review = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }).value;
+    const propertyId = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.previewToken }).value.categoryProperty.propertyId;
+    const command = { type: "workspace.renameCategoryProperty", workspaceId, propertyId, name: "  Label  " };
+    assert.equal(service.handleQuery(command).error.code, "invalid_input");
+    assert.equal(service.handleCommand({ ...command, extra: true }).error.code, "invalid_input");
+    assert.equal(service.handleCommand(command).value.name, "  Label  ");
+    assert.deepEqual(service.handleQuery({ type: "settings.load" }).value, { language: "en" });
+    assert.deepEqual(service.handleQuery({ type: "workspace.listTextProperties", workspaceId }).value.definitions, []);
+    service.close();
+    assert.equal(service.handleCommand(command).error.code, "storage");
+  });
+});
