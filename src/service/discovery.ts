@@ -1,5 +1,5 @@
 import { lstatSync, opendirSync, realpathSync, type BigIntStats } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import { basename, isAbsolute, join, relative } from "node:path";
 import type { DiscoveryEntry, DiscoveryPreview } from "../contracts/workspaces.js";
 
 // Native evidence is lossless and local to this machine. It is never a logical ID.
@@ -33,8 +33,7 @@ export interface DirectScan {
 
 export function isChildName(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value !== "." && value !== ".." &&
-    !value.includes("/") && !value.includes("\\") && !value.includes("\0") && !isAbsolute(value) &&
-    !/^[a-z]:/i.test(value);
+    !value.includes("\0") && !isAbsolute(value) && basename(value) === value;
 }
 export function validExclusions(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isChildName) && new Set(value).size === value.length;

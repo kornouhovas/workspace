@@ -1152,6 +1152,69 @@ test("ordinary platform-valid files cannot prevent discovery of real project dir
   });
 });
 
+test("native POSIX project names support preview/apply, exclusions and stable IDs after restart", { skip: process.platform === "win32" }, () => {
+  withFixture(({ root, databasePath }) => {
+    const names = ["Back\\slash", "C:local", "Project"];
+    for (const name of names) {
+      mkdirSync(join(root, name, "Nested"), { recursive: true });
+      writeFileSync(join(root, name, "keep"), name);
+    }
+    let service = openSettingsService(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const preview = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(preview.state, "ready");
+      assert.ok(preview.previewToken);
+      assert.deepEqual(preview.entries.map((entry) => entry.name), names);
+      const applied = applyDiscovery(service, workspace.workspaceId, preview.previewToken).value;
+      assert.deepEqual(applied.projects.map((project) => project.name), names);
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId).value.projects, applied.projects);
+      const excluded = discoveryPreview(service, workspace.workspaceId, ["Back\\slash", "C:local"]).value;
+      assert.deepEqual(excluded.entries.map((entry) => [entry.name, entry.reason]),
+        [["Back\\slash", "manual"], ["C:local", "manual"], ["Project", null]]);
+      const filtered = applyDiscovery(service, workspace.workspaceId, excluded.previewToken).value;
+      assert.deepEqual(filtered.projects, applied.projects.filter((project) => project.name === "Project"));
+      assert.equal(filtered.retainedCount, 2);
+      service.close(); service = openSettingsService(databasePath);
+      assert.deepEqual(listProjects(service, workspace.workspaceId).value.projects, filtered.projects);
+      assert.deepEqual(discoveryPreview(service, workspace.workspaceId).value.excludedRelativePaths, ["Back\\slash", "C:local"]);
+      const included = discoveryPreview(service, workspace.workspaceId, []).value;
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId, included.previewToken).value.projects, applied.projects);
+      for (const name of names) {
+        assert.deepEqual(fs.readdirSync(join(root, name)).sort(), ["Nested", "keep"]);
+        assert.equal(readFileSync(join(root, name, "keep"), "utf8"), name);
+      }
+      assert.deepEqual(fs.readdirSync(root).sort(), names);
+      assert.equal(service.workspaces.load().value.activeWorkspace.viewId, workspace.viewId);
+    } finally { service.close(); }
+  });
+});
+
+test("persisted archives honor native POSIX child names without guessing ordinary Archive folders", { skip: process.platform === "win32" }, () => {
+  for (const archiveChild of ["C:local", "Back\\slash"]) {
+    withFixture(({ root, databasePath }) => {
+      mkdirSync(join(root, archiveChild, "nested"), { recursive: true });
+      mkdirSync(join(root, "Archive"));
+      writeFileSync(join(root, archiveChild, "nested", "keep"), "archive bytes");
+      const service = openSettingsService(databasePath);
+      try {
+        const workspace = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root }).value;
+        const sql = new Database(databasePath);
+        try { sql.prepare("UPDATE sources SET archive_relative_path = ? WHERE id = ?").run(`${archiveChild}/nested`, workspace.sourceId); }
+        finally { sql.close(); }
+        const result = discoveryPreview(service, workspace.workspaceId);
+        assert.equal(result.ok, true);
+        const preview = result.value;
+        assert.equal(preview.state, "ready");
+        assert.ok(preview.previewToken);
+        assert.deepEqual(preview.entries.map((entry) => [entry.name, entry.reason]), [["Archive", null], [archiveChild, "archive"]]);
+        assert.deepEqual(applyDiscovery(service, workspace.workspaceId, preview.previewToken).value.projects.map((project) => project.name), ["Archive"]);
+        assert.equal(readFileSync(join(root, archiveChild, "nested", "keep"), "utf8"), "archive bytes");
+      } finally { service.close(); }
+    });
+  }
+});
+
 test("preview rejects malformed, foreign and unsafe exclusion requests", () => {
   withFixture(({ root, databasePath }) => {
     mkdirSync(join(root, "Project"));
@@ -1164,7 +1227,8 @@ test("preview rejects malformed, foreign and unsafe exclusion requests", () => {
         Object.create({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId }),
         { type: "workspace.previewDiscovery", workspaceId: randomUUID() },
         { type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, extra: true },
-        ...[null, "Project", ["Project", "Project"], ["invented"], ["../escape"], ["/absolute"], ["a\\b"], [".hidden"]]
+        ...[null, "Project", ["Project", "Project"], ["invented"], ["../escape"], ["/absolute"], ["a\\b"], [".hidden"],
+          ["..\\escape"], ["C:local"], ["C:\\outside"], ["\\\\server\\share"], ["Project\0suffix"]]
           .map((excludedRelativePaths) => ({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, excludedRelativePaths })),
       ]) assert.equal(service.handleQuery(input).error.code, "invalid_input");
     } finally { service.close(); }
