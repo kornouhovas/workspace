@@ -800,6 +800,73 @@ test("populated migrations 0000–0006 reopen with reconciled grouped locators a
   } finally { reopened.close(); }
 }));
 
+for (const mode of ["production", "category polling"]) test(`live native ${mode} observation permits grouped root disconnect/reconnect, category rename and same-category project rename`, async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-grouped-moves-")));
+  const root = join(directory, "root"), away = join(directory, "disconnected"), databasePath = join(directory, "data.sqlite");
+  fs.mkdirSync(join(root, "Category/Project/nested"), { recursive: true });
+  fs.writeFileSync(join(root, "Category/Project/nested/sentinel"), "  Exact bytes\nТекст  ");
+  const live = new Set();
+  const dependencies = { ...nativeObserverDependencies, pollCategories: mode === "category polling" || nativeObserverDependencies.pollCategories,
+    watch(path, hint, failed) {
+      const handle = nativeObserverDependencies.watch(path, hint, failed);
+      live.add(path);
+      return { close() { live.delete(path); handle.close(); } };
+    },
+  };
+  let service, sqlite;
+  try {
+    service = openSettingsService(databasePath, undefined, undefined, dependencies);
+    sqlite = new Database(databasePath);
+    const workspace = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const sibling = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+    const query = (type) => service.handleQuery({ type, workspaceId: workspace.workspaceId }).value;
+    const command = (type, extra = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...extra });
+    const review = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode: "grouped" }).value;
+    const initial = command("workspace.applyDiscovery", { previewToken: review.previewToken }).value;
+    const project = initial.projects[0], category = initial.categories[0];
+    const property = command("workspace.createProperty", { name: "Notes", propertyType: "text" }).value;
+    assert.equal(command("workspace.setTextValue", { propertyId: property.propertyId, projectId: project.projectId, value: "  Exact\nТекст  " }).ok, true);
+    assert.equal(command("workspace.renameCategoryProperty", { propertyId: initial.categoryProperty.propertyId, name: "  Authored label  " }).ok, true);
+    const text = query("workspace.listTextProperties"), before = query("workspace.listProjects");
+    const stable = () => ["workspaces", "views", "property_definitions", "text_property_values", "category_properties"].map((table) =>
+      sqlite.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all());
+    const metadata = stable();
+    if (dependencies.pollCategories) assert.deepEqual([...live], [root], "no descendant watch handle may pin the root");
+    else assert.ok(live.has(join(root, "Category")));
+    const waitForEvent = async (action, predicate) => {
+      let off;
+      const event = new Promise((resolve) => { off = service.workspaces.subscribe((value) => { if (predicate(value)) resolve(value); }); });
+      try {
+        action();
+        // Includes one five-second category polling/reconnection tick and debounce.
+        return await withDeadline(event, 7500, "Live grouped native observation");
+      } finally { off(); }
+    };
+    await waitForEvent(() => fs.renameSync(root, away), (event) => event.type === "workspace.sourceObserved" && event.state === "unavailable");
+    assert.equal(query("workspace.listProjects").state, "unavailable");
+    assert.deepEqual(stable(), metadata); assert.equal(live.size, 0);
+    await waitForEvent(() => fs.renameSync(away, root), (event) => event.type === "workspace.sourceObserved" && event.state === "ready");
+    assert.equal(query("workspace.listProjects").revision, before.revision);
+    const renamed = await waitForEvent(() => fs.renameSync(join(root, "Category"), join(root, "Renamed category")),
+      (event) => event.type === "workspace.projectsChanged");
+    assert.deepEqual(renamed.workspaceIds, [workspace.workspaceId, sibling.workspaceId]);
+    const moved = await waitForEvent(() => fs.renameSync(join(root, "Renamed category/Project"), join(root, "Renamed category/Renamed project")),
+      (event) => event.type === "workspace.projectsChanged");
+    assert.equal(moved.revision, before.revision + 2);
+    const after = query("workspace.listProjects");
+    assert.deepEqual(after.projects.map((row) => [row.projectId, row.categoryId, row.relativePath]),
+      [[project.projectId, category.categoryId, "Renamed category/Renamed project"]]);
+    assert.deepEqual(after.categories.map((row) => [row.categoryId, row.name]), [[category.categoryId, "Renamed category"]]);
+    assert.deepEqual(after.categoryProperty, before.categoryProperty);
+    assert.equal(after.categoryPropertyRevision, before.categoryPropertyRevision);
+    assert.deepEqual(query("workspace.listTextProperties"), text); assert.deepEqual(stable(), metadata);
+    assert.equal(fs.readFileSync(join(root, "Renamed category/Renamed project/nested/sentinel"), "utf8"), "  Exact bytes\nТекст  ");
+    service.close(); service = undefined; assert.equal(live.size, 0);
+  } finally { service?.close(); sqlite?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 for (const grouped of [false, true]) test(`real native notifications and shutdown-missed ${grouped ? "grouped needed-category" : "direct"} changes preserve metadata before Refresh`, async () => {
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");

@@ -13,12 +13,16 @@ export interface SourceObservation {
   targets: WatchTarget[];
 }
 export interface ObserverDependencies {
+  // Windows nested directory watch handles can prevent moving their parent.
+  // Keep root notifications and use bounded complete scans for category changes.
+  pollCategories?: boolean;
   watch(path: string, hint: () => void, failed: () => void): { close(): void };
   schedule(callback: () => void, delay: number): { cancel(): void };
   probe(path: string): WatchTarget;
 }
 
 export const nativeObserverDependencies: ObserverDependencies = {
+  pollCategories: process.platform === "win32",
   watch(path, hint, failed) {
     const watcher = watch(path, { recursive: false, persistent: false }, hint);
     watcher.on("error", failed);
@@ -89,7 +93,9 @@ export function createSourceObserver(
   function accept(entry: Entry, observation: SourceObservation) {
     if (!entry.active || closed) return;
     entry.observation = observation;
-    const targets = new Map(observation.targets.map((target) => [target.path, target]));
+    const targets = new Map(observation.targets
+      .filter((target) => !dependencies.pollCategories || target.path === entry.root)
+      .map((target) => [target.path, target]));
     for (const [path, evidence] of entry.failedTargets) {
       const target = targets.get(path);
       if (!target || identity(target) !== evidence) entry.failedTargets.delete(path);
@@ -144,7 +150,9 @@ export function createSourceObserver(
     entry.health = dependencies.schedule(() => {
       entry.health = undefined;
       if (!entry.active || closed) return;
-      let scan = entry.degraded;
+      // Category stamps are not a reliable change journal. Polling performs the
+      // same complete validated scan even when directory timestamps stay equal.
+      let scan = entry.degraded || Boolean(dependencies.pollCategories && entry.observation && entry.observation.targets.length > 1);
       try {
         const root = dependencies.probe(entry.root);
         const previous = entry.handles.get(entry.root)?.target;

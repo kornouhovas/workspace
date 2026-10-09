@@ -48,6 +48,29 @@ function harness(probe = nativeObserverDependencies.probe) {
 const identity = { dev: "1", ino: "2", birthtimeNs: "3" };
 const target = (path, ino = "2", stamp = "1:1") => ({ path, identity: { ...identity, ino }, stamp });
 
+test("native rename diagnostic compares root-only and root-plus-category directory handles", (t) => {
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "watch-rename-diagnostic-")));
+  try {
+    for (const nested of [false, true]) {
+      const root = join(directory, nested ? "nested" : "root-only"), category = join(root, "Category");
+      fs.mkdirSync(join(category, "Project"), { recursive: true });
+      const handles = [];
+      let outcome = "renamed";
+      try {
+        handles.push(fs.watch(root, { persistent: false, recursive: false }, () => {}));
+        if (nested) handles.push(fs.watch(category, { persistent: false, recursive: false }, () => {}));
+        try { fs.renameSync(root, `${root}-moved`); }
+        catch (error) { outcome = error.code; }
+      }
+      finally { for (const handle of handles) handle.close(); }
+      t.diagnostic(`${process.platform} ${nested ? "root-plus-category" : "root-only"}: ${outcome}`);
+      // The comparison documents native platform behavior; production Windows
+      // requires the root-only topology to allow the external operation.
+      if (!nested) assert.equal(outcome, "renamed");
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("source scheduler coalesces filename hints without postponing, bounds in-pass hints and probes healthy roots only", () => {
   const h = harness((path) => target(path));
   const events = [];
@@ -90,6 +113,53 @@ test("watch replacement closes old handles, rejects stale callbacks and retries 
   h.reject([]); h.advance(5100); assert.equal(h.live().length, 2); assert.equal(events.at(-1)[3], "active");
   root = target("/root", "6"); h.advance(5000); assert.equal(h.live().find((watch) => watch.path === root.path).closed, false);
   observer.close(); assert.equal(h.timers.size, 0); assert.equal(h.live().length, 0);
+});
+
+test("category polling keeps root notifications, scans unchanged stamps and cleans up without revision noise", () => {
+  const root = target("/root"), category = target("/root/C", "4"), h = harness((path) => path === root.path ? root : category);
+  h.dependencies.pollCategories = true;
+  const events = [];
+  let passes = 0, signature = "C/Project";
+  const observer = createSourceObserver(() => {
+    passes++;
+    return { state: "ready", signature, targets: [root, category] };
+  }, (...args) => events.push(args), h.dependencies);
+  observer.sync([{ sourceId: "one", root: root.path }, { sourceId: "one", root: root.path }]);
+  h.advance(100);
+  assert.deepEqual(h.live().map((watch) => watch.path), [root.path]);
+  assert.equal(passes, 2); assert.equal(events.at(-1)[3], "active");
+  signature = "C/Renamed"; // Root/category timestamps deliberately remain unchanged.
+  h.advance(4899); assert.equal(passes, 2);
+  h.advance(101); assert.equal(passes, 3); assert.equal(events.length, 2);
+  h.advance(5000); assert.equal(passes, 4); assert.equal(events.length, 2);
+  signature = "RenamedCategory/Renamed";
+  h.hint(root.path, "rename", null); h.advance(100);
+  assert.equal(passes, 5); assert.equal(events.length, 3);
+  assert.deepEqual(h.attempts, [root.path]);
+  assert.ok(h.probes.every((path) => path === root.path));
+  const stale = h.live()[0]; observer.sync([]);
+  assert.equal(h.live().length, 0); assert.equal(h.timers.size, 0);
+  stale.hint(); stale.failed(); h.advance(10000); assert.equal(passes, 5);
+  observer.close();
+});
+
+test("category polling retains unavailable sources and retries failed root notifications on the bounded health tick", () => {
+  const root = target("/root"), category = target("/root/C", "4"), h = harness((path) => path === root.path ? root : category);
+  h.dependencies.pollCategories = true; h.reject([root.path]);
+  const events = [];
+  let unavailable = false, passes = 0;
+  const observer = createSourceObserver(() => {
+    passes++;
+    return { state: unavailable ? "unavailable" : "ready", signature: "saved", targets: unavailable ? [] : [root, category] };
+  }, (...args) => events.push(args), h.dependencies);
+  observer.sync([{ sourceId: "one", root: root.path }]);
+  h.advance(4999); assert.equal(h.attempts.length, 1); assert.equal(passes, 1);
+  unavailable = true; h.advance(101); assert.equal(events.at(-1)[1].state, "unavailable");
+  assert.equal(events.at(-1)[3], "degraded"); assert.equal(h.live().length, 0);
+  unavailable = false; h.reject([]); h.advance(5100);
+  assert.equal(events.at(-1)[1].state, "ready"); assert.equal(events.at(-1)[3], "active");
+  assert.deepEqual(h.live().map((watch) => watch.path), [root.path]);
+  observer.close(); assert.equal(h.timers.size, 0);
 });
 
 test("installation target races degrade safely and health retries; failed passes never fabricate healthy status", () => {

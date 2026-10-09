@@ -220,6 +220,14 @@ All five prescribed perspectives were collected against the fixed base. Verified
 
 Repair verification: 443 tests passed without skips; lint, typecheck, documentation links, production/Ladle builds and diff checks passed. A fresh unsigned macOS artifact/resource check, development and packaged runtime runs passed, including all stages and three normal shutdowns each. Chromium Ladle passed 306 viewport captures/74 interactions; native Ladle's existing #44 failure was not repeated. Evidence is retained under work/ralphex/issue-15/review-0-*. The fix commit is a reviewed-work checkpoint, not a zero-findings iteration or coordinator acceptance; follow-up review and platform gates remain pending.
 
+## Bounded CI continuation review repair
+
+Completed CI37980084005 at d3e90d0 passed macOS and failed Windows npm test (436 passed, five failed, four POSIX-only skips). Four grouped-root external renames failed with EPERM while production observers were live; the fifth fixture read a new saved category before its asynchronous Apply projection reload finished. Later Windows gates were not reached. These results remain preserved rather than classified as fixture-only watcher errors or platform acceptance.
+
+All five prescribed review perspectives were collected in batches of three plus two before repair. Confirmed findings were live Windows observation obstructing grouped-root moves, premature grouped Apply test synchronization and the missing completed-CI result in the verification report. Windows observation now keeps root native notifications and performs complete validated eligible grouped-source scans on the existing five-second timer, without holding category watch handles or relying solely on timestamps. macOS retains its category notifications. Real native fixtures require root disconnect/reconnect and category/project rename with observers live; a root-only/root-plus-category diagnostic records platform handle behavior. Deterministic EN/RU Apply/list delay assertions preserve exclusions, draft/editor identity, trigger focus and exactly two explicit commands.
+
+Local macOS npm test passed all 450 tests with no failures/skips, including the production build; lint/typecheck, documentation links, Ladle build and git diff --check passed. Forced category-polling and production native fixtures both passed with real SQLite/folders. Critical/major quality and implementation follow-ups found no further issue. Evidence is retained under work/ralphex/issue-15/ci-repair-*. Windows handle mechanism and exact-SHA repair acceptance still require coordinator-owned Windows CI; the existing macOS graphical/package evidence remains historical. No observers were disabled in the failed fixtures, timeouts/skips were changed, #44 was retried, or push/integration/tracker/release action was performed.
+
 ## Post-Completion
 
 - Coordinator independently reviews the final fixed-base diff, acceptance matrix, screenshots and check evidence.

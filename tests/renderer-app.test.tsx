@@ -2049,9 +2049,19 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       assert.equal(property.ok, true);
       const requests: WorkspaceRequest[] = [];
       const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
-      const surface = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
+      let holdReload = false;
+      let finishApply: (() => void) | undefined;
+      const pendingLists: (() => void)[] = [];
+      const surface = mockApi({ language, onProjects: async (input) => {
+        const result = await query(input);
+        return holdReload ? new Promise((resolve) => { pendingLists.push(() => resolve(result)); }) : result;
+      }, onProperties: query, onWorkspace: async (input) => {
         requests.push(input);
-        return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+        const result = (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+        if (input.type === "workspace.applyDiscovery" && holdReload) {
+          return new Promise((resolve) => { finishApply = () => resolve(result); });
+        }
+        return result;
       } });
       unsubscribe = service.workspaces.subscribe(surface.emitChange);
       render(<App />);
@@ -2091,11 +2101,26 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryCategory")}: AnotherEmpty` });
       assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+      holdReload = true;
       await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
-      await waitFor(() => assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null));
+      await waitFor(() => assert.ok(finishApply));
+      // Deliver the real post-commit observation before the held successful
+      // response; this must close the review while reloading current placement.
+      await act(async () => { assert.equal(service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId }).ok, true); });
+      await act(async () => { finishApply?.(); });
+      assert.equal(Boolean(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") })), false);
+      assert.ok(pendingLists.length > 0, "confirmed Apply reload must still be pending after the panel closes");
+      assert.equal(screen.queryByText("AnotherEmpty"), null);
+      assert.equal(document.activeElement, trigger);
       assert.equal(screen.getByRole("textbox", { name: valueLabel }), editor);
       assert.equal((editor as HTMLTextAreaElement).value, "Retained draft");
-      assert.ok(screen.getByText("AnotherEmpty"));
+      assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 2);
+      holdReload = false;
+      await act(async () => { for (const finish of pendingLists.splice(0)) finish(); });
+      assert.ok(await screen.findByText("AnotherEmpty"));
+      assert.equal(screen.getByRole("textbox", { name: valueLabel }), editor);
+      assert.equal((editor as HTMLTextAreaElement).value, "Retained draft");
+      assert.equal(document.activeElement, trigger);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 2);
       const rescannedView = service.workspaces.load(); assert.equal(rescannedView.ok && rescannedView.value.activeWorkspace?.viewId, viewId);
     } finally { unsubscribe?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
