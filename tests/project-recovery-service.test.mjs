@@ -595,3 +595,103 @@ test("grouped recovery rejects native aliases at both levels and insufficient ca
     assert.deepEqual(inventory(f.root), files);
   }, "grouped");
 });
+
+test("source observations invalidate both review kinds even after the same root reconnects", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  const recovery = review(f).value;
+  const discovery = f.query("workspace.previewDiscovery").value;
+  const before = f.records(), files = inventory(f.root);
+  // Simulate an access outage without changing native evidence or directory times.
+  const originalAccess = fs.accessSync;
+  fs.accessSync = (path, ...args) => { if (path === f.root) throw Object.assign(new Error("denied"), { code: "EACCES" }); return originalAccess(path, ...args); };
+  syncBuiltinESMExports();
+  try { assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).value.sourceAvailable, false); }
+  finally { fs.accessSync = originalAccess; syncBuiltinESMExports(); }
+  assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).value.sourceAvailable, true);
+  assert.equal(recover(f, recovery, "Target").error.code, "stale_preview");
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
+  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+}));
+
+test("recovery/discovery commits invalidate same-source reviews and preserve unrelated reviews and independent revisions", () => fixture((f) => {
+  const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+  const otherRoot = join(f.directory, "other"); fs.mkdirSync(join(otherRoot, "Project"), { recursive: true });
+  const other = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+  const otherPreview = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: other.workspaceId }).value;
+  f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: other.workspaceId, previewToken: otherPreview.previewToken });
+  const otherProject = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: other.workspaceId }).value.projects[0];
+  fs.renameSync(join(otherRoot, "Project"), join(otherRoot, "Other target"));
+  const otherReview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: other.workspaceId, projectId: otherProject.projectId }).value;
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  const siblingReview = review(f, { workspaceId: sibling.workspaceId }).value;
+  const discovery = f.query("workspace.previewDiscovery").value;
+  const beforeText = f.query("workspace.listTextProperties").value;
+  const events = []; const unsubscribe = f.service.workspaces.subscribe((event) => events.push(event));
+  const result = recover(f, review(f).value, "Target"); assert.equal(result.ok, true);
+  assert.deepEqual(events, [{ type: "workspace.projectsChanged", sourceId: f.workspace.sourceId, revision: result.value.revision,
+    workspaceIds: [f.workspace.workspaceId, sibling.workspaceId] }]);
+  assert.equal(recover(f, siblingReview, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
+  assert.deepEqual(f.query("workspace.listTextProperties").value, beforeText);
+  unsubscribe();
+  assert.equal(f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: other.workspaceId,
+    projectId: otherProject.projectId, previewToken: otherReview.previewToken, relativePath: "Other target" }).ok, true);
+  assert.equal(events.length, 1);
+  fs.renameSync(join(f.root, "Target"), join(f.root, "Next"));
+  const staleRecovery = review(f).value;
+  f.apply({ excludedRelativePaths: ["Next"] });
+  assert.equal(recover(f, staleRecovery, "Next").error.code, "stale_preview");
+}));
+
+test("review tokens are ephemeral across workspace removal and service restart", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  const old = review(f).value;
+  const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+  f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.workspace.workspaceId });
+  assert.equal(recover(f, old, "Target").error.code, "invalid_input");
+  assert.equal(recover(f, old, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
+  const current = review(f, { workspaceId: sibling.workspaceId }).value;
+  const before = f.records();
+  f.service.close();
+  const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+  try {
+    assert.equal(reopened.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: sibling.workspaceId,
+      projectId: f.project.projectId, previewToken: current.previewToken, relativePath: "Target" }).error.code, "stale_preview");
+    assert.deepEqual(f.records(), before);
+    assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.workspaceId }).value.values[0].value, f.value);
+  } finally { reopened.close(); }
+}));
+
+test("an incomplete project observation revokes reviews without metadata writes even after access returns", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  const recovery = review(f).value, discovery = f.query("workspace.previewDiscovery").value;
+  const before = f.records(), files = inventory(f.root), originalOpen = fs.opendirSync;
+  fs.opendirSync = (path, ...args) => { if (path === f.root) throw Object.assign(new Error("denied"), { code: "EACCES" }); return originalOpen(path, ...args); };
+  syncBuiltinESMExports();
+  try { assert.equal(f.query("workspace.listProjects").value.state, "unreadable"); }
+  finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+  assert.equal(recover(f, recovery, "Target").error.code, "stale_preview");
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
+  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+}));
+
+test("failed discovery and recovery scans invalidate sibling reviews before reporting source feedback", () => {
+  for (const type of ["workspace.previewDiscovery", "workspace.previewProjectRecovery"]) for (const persisted of [false, true]) fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.directory, "away")); if (persisted) f.apply();
+    fs.renameSync(join(f.directory, "away"), join(f.root, "Target"));
+    const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+    const recovery = review(f, { workspaceId: sibling.workspaceId }).value;
+    const discovery = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: sibling.workspaceId }).value;
+    const before = f.records(), files = inventory(f.root), originalOpen = fs.opendirSync;
+    fs.opendirSync = (path, ...args) => { if (path === f.root) throw Object.assign(new Error("denied"), { code: "EACCES" }); return originalOpen(path, ...args); };
+    syncBuiltinESMExports();
+    try {
+      const response = f.service.handleQuery({ type, workspaceId: f.workspace.workspaceId, ...(type === "workspace.previewProjectRecovery" ? { projectId: f.project.projectId } : {}) });
+      if (type === "workspace.previewProjectRecovery" && !persisted) assert.equal(response.error.code, "invalid_input");
+      else { assert.equal(response.ok, true); assert.equal(response.value.state, "unreadable"); }
+    } finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+    assert.equal(recover(f, recovery, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
+    assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
+    assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+  });
+});

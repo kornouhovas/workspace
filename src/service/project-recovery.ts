@@ -23,6 +23,7 @@ interface Review {
 export function createProjectRecoveryService(db: Database, integration: {
   projectList(workspaceId: string, source: Source, scan: DiscoveryScan): ProjectList;
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
+  invalidateSourceReviews(sourceId: string): void;
 }) {
   const reviews = new Map<string, Review>();
   const key = (workspaceId: string, projectId: string) => `${workspaceId}:${projectId}`;
@@ -39,8 +40,10 @@ export function createProjectRecoveryService(db: Database, integration: {
     const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
     if (scan.snapshot && (!reliableIdentity(scan.snapshot.root.identity) ||
       !sameIdentity(JSON.parse(source.appliedRootIdentity), scan.snapshot.root.identity))) {
+      integration.invalidateSourceReviews(source.id);
       return { state: "root_identity_conflict" as const, entries: [], snapshot: null };
     }
+    if (!scan.snapshot) integration.invalidateSourceReviews(source.id);
     return scan;
   }
   function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[]) {

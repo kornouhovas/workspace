@@ -201,9 +201,10 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, refreshVersion = 0, onSourceState, language, disabled }: {
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
+  onRecoveryPending?(pending: boolean): void;
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
@@ -224,6 +225,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   const minimumRevision = useRef(0);
   const minimumCategoryPropertyRevision = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
+  const [observation, setObservation] = useState(0);
+  const lastScanState = useRef<ProjectList["state"] | null>(null);
   const lastRefreshVersion = useRef(refreshVersion);
   const t = (key: TranslationKey) => translate(language, key);
   const commitLabel = (value: CategoryPropertySnapshot) => {
@@ -245,6 +248,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         const value = result.value;
         const discoveryCurrent = value.revision >= minimumRevision.current;
         const labelCurrent = value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current;
+        if (discoveryCurrent && value.state !== lastScanState.current) {
+          const available = (state: ProjectList["state"] | null) => state === "ready" || state === "empty";
+          if (lastScanState.current !== null && (!available(value.state) || !available(lastScanState.current))) {
+            setObservation((value) => value + 1); setInvalidation((value) => value + 1);
+          }
+          lastScanState.current = value.state;
+        }
         // The two revisions describe independent data. Preserve a newer committed
         // label when a delayed project list was captured before its save.
         if ((!discoveryCurrent && !currentProjects) || (!labelCurrent &&
@@ -284,7 +294,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       if (event.type === "workspace.projectsChanged") {
         if (event.revision <= minimumRevision.current) return;
         minimumRevision.current = event.revision;
-      }
+      } else setObservation((value) => value + 1);
       setInvalidation((value) => value + 1);
       void load();
     });
@@ -294,6 +304,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   useEffect(() => {
     if (lastRefreshVersion.current === refreshVersion) return;
     lastRefreshVersion.current = refreshVersion;
+    setInvalidation((value) => value + 1); setObservation((value) => value + 1);
     void load();
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
@@ -301,6 +312,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
     <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null}
       onApplied={(value) => {
+        if (value.revision < minimumRevision.current) { void load(); return; }
         version.current++; minimumRevision.current = value.revision;
         if (value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
           minimumCategoryPropertyRevision.current = value.categoryPropertyRevision; committedProjects.current = value; setProjects(value);
@@ -308,14 +320,20 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         setError(false); setLoading(false);
       }} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
-      project={recoveryProject} minimumRevision={minimumRevision} invalidation={invalidation} language={language} disabled={disabled}
+      project={recoveryProject} minimumRevision={minimumRevision} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
+      onPendingChange={onRecoveryPending}
       onReload={() => void load()} onClose={() => { restoreRecoveryFocus.current = true; setRecoveryProject(null); }}
       onCommitted={(value) => {
+        setRecoverySaved(true);
+        // A confirmed own commit can be older than a sibling commit. Report the
+        // success without replacing its newer projection or pending reload.
+        if (value.revision < minimumRevision.current) { void load(); return; }
         version.current++; minimumRevision.current = value.revision;
         const current = committedProjects.current;
         const updated = value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current || !current ? value
           : { ...value, categoryProperty: current.categoryProperty, categoryPropertyRevision: current.categoryPropertyRevision };
-        committedProjects.current = updated; setProjects(updated); setLoading(false); setError(false); setRecoverySaved(true);
+        committedProjects.current = updated; setProjects(updated); setLoading(false); setError(false);
+        if (updated.categoryPropertyRevision < minimumCategoryPropertyRevision.current) void load();
       }} />}
     {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
     <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>

@@ -84,11 +84,16 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
   const recovery = createProjectRecoveryService(db, {
     projectList,
+    invalidateSourceReviews,
     committed(sourceId, revision, workspaceIds) {
       for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
       publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
     },
   });
+  function invalidateSourceReviews(sourceId: string) {
+    recovery.invalidateSource(sourceId);
+    for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
+  }
   const service: WorkspaceService = {
     previewProjectRecovery: recovery.previewProjectRecovery,
     reassociateProject: recovery.reassociateProject,
@@ -134,6 +139,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           snapshot = null;
           state = "root_identity_conflict";
         }
+        if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
         const interpreted = snapshot ? mode === "grouped" ? interpretGrouped(scan, categories, projects).entries : interpretProjects(scan, projects).entries : [];
@@ -463,6 +469,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     if (currentScan.snapshot && (!reliableIdentity(currentScan.snapshot.root.identity) || source.appliedRootIdentity &&
       !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity))) state = "root_identity_conflict";
     const verified = currentScan.snapshot && state !== "root_identity_conflict";
+    if (!verified) invalidateSourceReviews(source.id);
     const grouped = verified && mode === "grouped" ? interpretGrouped(currentScan, categories, projects) : null;
     const interpretation = grouped?.projects ?? (verified ? interpretProjects(currentScan, projects) : null);
     const projection = projects.map((row) => {
@@ -542,6 +549,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           const previous = observed.get(source.sourceId);
           observed.set(source.sourceId, { canonicalRoot: source.canonicalRoot, sourceAvailable: source.sourceAvailable });
           if (!previous || previous.canonicalRoot !== source.canonicalRoot || previous.sourceAvailable !== source.sourceAvailable) {
+            invalidateSourceReviews(source.sourceId);
             events.push({ type: "workspace.sourceChanged", source });
           }
         }

@@ -2482,3 +2482,64 @@ test("EN/RU unavailable, unreadable and conflicting sources show feedback once a
     }
   }
 });
+
+test("EN/RU delayed recovery previews and accepted responses cannot revive switched, removed or restarted workspaces", async () => {
+  for (const language of ["en", "ru"] as const) for (const phase of ["preview", "commit"] as const) for (const reason of ["switch", "remove", "restart", "batchedRestart", "cleanup"] as const) {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const active = { ...sharedEventWorkspace(), viewId: randomUUID() }, other = { ...sharedEventWorkspace(), workspaceId: randomUUID(), sourceId: randomUUID(), viewId: randomUUID(), name: "Other workspace" };
+    const projectId = randomUUID();
+    const retained = { projectId, name: "Missing project", relativePath: "Missing project", categoryId: null, categoryName: null, associationState: "active" as const, resolution: "missing" as const };
+    const initial = { workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, configured: true, mode: "direct" as const,
+      state: "ready" as const, projects: [], retainedProjects: [retained], retainedCount: 1, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
+    const preview = { workspaceId: active.workspaceId, sourceId: active.sourceId, projectId, revision: 1, mode: "direct" as const, state: "ready" as const,
+      previewToken: randomUUID(), entries: [{ name: "Target", relativePath: "Target", categoryPath: null, status: "selectable" as const }] };
+    const committed = { ...initial, revision: 2, projects: [{ ...retained, name: "Target", relativePath: "Target", resolution: "active" as const }], retainedProjects: [], retainedCount: 0 };
+    let current = active, restarted = false, saves = 0, previews = 0;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, onProjects: async (input) => {
+      if (input.type !== "workspace.listProjects") return fail("invalid_input");
+      if (input.workspaceId === other.workspaceId) return ok({ ...initial, workspaceId: other.workspaceId, sourceId: other.sourceId, retainedProjects: [], retainedCount: 0 });
+      return ok(restarted && phase === "commit" ? committed : initial);
+    }, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: current.workspaceId, name: current.name }], activeWorkspace: current });
+      if (input.type === "workspace.previewProjectRecovery") {
+        previews++; return phase === "preview" ? new Promise((resolve) => { finish = resolve; }) : ok(preview);
+      }
+      if (input.type === "workspace.reassociateProject") { saves++; return new Promise((resolve) => { finish = resolve; }); }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: Missing project` }));
+    if (phase === "commit") {
+      await userEvent.click(await screen.findByRole("radio", { name: "Target" }));
+      await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    }
+    if (reason === "switch") {
+      current = other;
+      await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: { workspaces: [{ workspaceId: other.workspaceId, name: other.name }], activeWorkspace: other } }));
+      await screen.findByRole("heading", { name: other.name });
+    } else if (reason === "remove") {
+      await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: emptyLoad() }));
+      await screen.findByRole("heading", { name: t("createWorkspaceTitle") });
+    } else if (reason === "cleanup") cleanup();
+    else {
+      restarted = true;
+      if (reason === "batchedRestart") await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+      else {
+        await act(async () => api.emitStatus("unavailable"));
+        if (phase === "commit") assert.ok(screen.getByText(t("recoveryUncertain")));
+        await act(async () => api.emitStatus("ready"));
+      }
+      await screen.findByRole("heading", { name: active.name });
+      if (phase === "commit") {
+        await screen.findByRole("cell", { name: "Target" });
+        assert.ok(screen.getByText(t("recoveryUncertain")));
+      }
+    }
+    await act(async () => finish?.(ok(phase === "preview" ? preview : committed)));
+    assert.equal(screen.queryByRole("heading", { name: t("recoveryTitle") }), null);
+    assert.equal(screen.queryByText(t("recoverySaved")), null);
+    assert.equal(previews, 1); assert.equal(saves, phase === "commit" ? 1 : 0);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});

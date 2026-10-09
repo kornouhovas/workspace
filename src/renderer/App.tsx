@@ -35,6 +35,8 @@ export function App() {
   const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | "remove" | "refresh" | null>(null);
   const [sourceFeedback, setSourceFeedback] = useState<{ workspaceId: string; state: ProjectList["state"] } | null>(null);
   const [sourceRefreshVersion, setSourceRefreshVersion] = useState(0);
+  const recoveryPending = useRef<string | null>(null);
+  const [uncertainRecovery, setUncertainRecovery] = useState<string | null>(null);
   const observeSourceScan = useCallback((workspaceId: string, state: ProjectList["state"]) => {
     setSourceFeedback((current) => current?.workspaceId === workspaceId && current.state === state ? current : { workspaceId, state });
   }, []);
@@ -138,6 +140,10 @@ export function App() {
     const observe = (status: BackendStatus) => {
       if (!active) return;
       if (status.state !== backendState.current) {
+        if (recoveryPending.current) {
+          setUncertainRecovery(recoveryPending.current);
+          recoveryPending.current = null;
+        }
         backendState.current = status.state;
         dataVersion.current++;
         // Source observations belong to the backend that produced them.
@@ -390,6 +396,8 @@ export function App() {
   return (
     <main className="workspace-screen" aria-label={t("appTitle")}>
       <header className="workspace-header"><h1>{t("appTitle")}</h1></header>
+      {uncertainRecovery && (!activeWorkspace || activeWorkspace.workspaceId === uncertainRecovery) &&
+        <StatusMessage kind="error" title={t("recoveryUncertain")} />}
       {viewState === "loading" && <StatusMessage kind="info" title={t("loading")} />}
       {viewState === "unavailable" && (
         <StatusMessage kind="error" title={t("unavailableTitle")}>
@@ -587,6 +595,10 @@ export function App() {
               )}
               <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
                 refreshVersion={sourceRefreshVersion} onSourceState={observeSourceScan}
+                onRecoveryPending={(pending) => {
+                  recoveryPending.current = pending ? activeWorkspace.workspaceId : null;
+                  if (pending) setUncertainRecovery(null);
+                }}
                 sourceState={`${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />

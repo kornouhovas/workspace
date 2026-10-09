@@ -62,10 +62,11 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
   </section>;
 }
 
-export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, invalidation, language, disabled, onCommitted, onReload, onClose }: {
+export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, invalidation, observation, language, disabled, onCommitted, onReload, onClose, onPendingChange }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; project: ProjectAssociationSummary;
-  minimumRevision: { current: number }; invalidation: number; language: Language; disabled: boolean;
+  minimumRevision: { current: number }; invalidation: number; observation: number; language: Language; disabled: boolean;
   onCommitted(value: ProjectList): void; onReload(): void; onClose(): void;
+  onPendingChange?(pending: boolean): void;
 }) {
   const [preview, setPreview] = useState<ProjectRecoveryPreview | null>(null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
   const version = useRef(0);
   const saving = useRef(false);
   const lastInvalidation = useRef(invalidation);
+  const lastObservation = useRef(observation);
   const request = async () => {
     const current = ++version.current;
     setLoading(true); setPreview(null); setSelectedPath(null); setError(false); setStale(false); setUncertain(false);
@@ -89,7 +91,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
     } catch { if (current === version.current) setError(true); }
     finally { if (current === version.current) setLoading(false); }
   };
-  useEffect(() => { void request(); return () => { version.current++; }; }, [client, workspaceId, sourceId, project.projectId]);
+  useEffect(() => { void request(); return () => { version.current++; onPendingChange?.(false); }; }, [client, workspaceId, sourceId, project.projectId]);
   useEffect(() => {
     if (lastInvalidation.current === invalidation) return;
     lastInvalidation.current = invalidation;
@@ -97,16 +99,24 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
     if (!saving.current) { version.current++; setLoading(false); setSelectedPath(null); setPreview(null); setStale(true); }
   }, [invalidation]);
   useEffect(() => {
+    if (lastObservation.current === observation) return;
+    lastObservation.current = observation;
+    version.current++; setLoading(false); setPreview(null); setSelectedPath(null);
+    if (saving.current) {
+      saving.current = false; setPending(false); setUncertain(true); onPendingChange?.(false); onReload();
+    } else setStale(true);
+  }, [observation]);
+  useEffect(() => {
     if (disabled && !saving.current) { version.current++; setLoading(false); setPreview(null); setSelectedPath(null); setStale(true); }
   }, [disabled]);
   const confirm = async () => {
-    if (disabled || saving.current || loading || !preview?.previewToken || !selectedPath || preview.revision < minimumRevision.current) return;
+    if (disabled || saving.current || loading || stale || uncertain || !preview?.previewToken || !selectedPath || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
-    saving.current = true; setPending(true); setError(false);
+    saving.current = true; setPending(true); setError(false); onPendingChange?.(true);
     try {
       const result = await client.reassociateProject(workspaceId, project.projectId, preview.previewToken, selectedPath);
       if (current !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision >= minimumRevision.current &&
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision > preview.revision &&
         result.value.projects.some((row) => row.projectId === project.projectId && row.relativePath === selectedPath && row.resolution === "active")) {
         onCommitted(result.value); onClose();
       } else if (!result.ok && result.error.code === "stale_preview") {
@@ -115,7 +125,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
       else { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
     } catch {
       if (current === version.current) { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
-    } finally { saving.current = false; if (current === version.current) setPending(false); }
+    } finally { if (current === version.current) { saving.current = false; setPending(false); onPendingChange?.(false); } }
   };
   return <ProjectRecoveryPanel language={language} project={project} preview={preview} selectedPath={selectedPath} loading={loading} pending={pending}
     error={error} stale={stale || disabled} uncertain={uncertain} onSelect={setSelectedPath} onConfirm={() => void confirm()}

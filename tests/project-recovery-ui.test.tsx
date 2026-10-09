@@ -7,7 +7,7 @@ import { ProjectRecoveryPanel } from "../src/renderer/components/ProjectRecovery
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
 import { translate } from "../src/renderer/localization.js";
 import type { ServiceResult } from "../src/contracts/settings.js";
-import type { ProjectAssociationSummary, ProjectList } from "../src/contracts/workspaces.js";
+import type { ProjectAssociationSummary, ProjectList, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
 import type { ProjectRecoveryPreview } from "../src/contracts/project-recovery.js";
 
 const browser = new Window({ url: "http://localhost" });
@@ -16,6 +16,7 @@ Object.assign(globalThis, { window: browser, document: browser.document, HTMLEle
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 const { render, screen, cleanup, waitFor, act } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
+test.afterEach(() => cleanup());
 const retained: ProjectAssociationSummary = { projectId: "project", name: "Original authored name", relativePath: "Original authored name", categoryId: null, categoryName: null,
   associationState: "active", resolution: "missing" };
 const preview: ProjectRecoveryPreview = { workspaceId: "workspace", sourceId: "source", projectId: retained.projectId, revision: 1, mode: "direct", state: "ready",
@@ -32,14 +33,20 @@ class RecoveryClient extends WorkspaceServiceClient {
   previews = 0;
   saves = 0;
   handler: () => Promise<ServiceResult<ProjectList>> = async () => { this.projects = committed; return { ok: true, value: committed }; };
-  override onWorkspaceChange() { return () => {}; }
-  override async listProjects() { return { ok: true as const, value: this.projects }; }
+  listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+  emit(event: WorkspaceChangeEvent) { for (const listener of this.listeners) listener(event); }
+  override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) {
+    this.listeners.add(listener); return () => { this.listeners.delete(listener); };
+  }
+  listHandler: (() => Promise<ServiceResult<ProjectList>>) | null = null;
+  override async listProjects() { return this.listHandler ? this.listHandler() : { ok: true as const, value: this.projects }; }
   override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 1,
     definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }],
     values: [{ projectId: "project", propertyId: "notes", value: "Exact authored Text" }] } }; }
+  previewHandler: (() => Promise<ServiceResult<ProjectRecoveryPreview>>) | null = null;
   override async previewProjectRecovery(workspaceId: string, projectId: string) {
     assert.equal(workspaceId, "workspace"); assert.equal(projectId, "project"); this.previews++;
-    return { ok: true as const, value: this.recoveryPreview };
+    return this.previewHandler ? this.previewHandler() : { ok: true as const, value: this.recoveryPreview };
   }
   override async reassociateProject(workspaceId: string, projectId: string, token: string, path: string) {
     assert.deepEqual([workspaceId, projectId, token, path], ["workspace", "project", this.recoveryPreview.previewToken, this.recoveryPreview.entries[0].relativePath]);
@@ -190,5 +197,165 @@ for (const language of ["en", "ru"] as const) {
     assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
     assert.equal((screen.getByRole("button", { name: t("cancelRenameWorkspace") }) as HTMLButtonElement).disabled, false);
     cleanup();
+  });
+}
+
+const projectEvent = (revision: number): Extract<WorkspaceChangeEvent, { type: "workspace.projectsChanged" }> => ({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace", "sibling"], revision });
+const sourceEvent = (sourceAvailable: boolean): WorkspaceChangeEvent => ({ type: "workspace.sourceChanged", source: {
+  sourceId: "source", canonicalRoot: "/fixture", sourceAvailable, workspaceIds: ["workspace", "sibling"],
+} });
+for (const language of ["en", "ru"] as const) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  const openTarget = async () => {
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Target authored name" }));
+  };
+  test(`${language}: event before recovery response preserves drafts and newer independent category labels`, async () => {
+    const client = new RecoveryClient();
+    const category = { propertyId: "category", sourceId: "source", name: "Initial category label" };
+    client.projects = { ...initial, mode: "grouped", categoryProperty: category, categoryPropertyRevision: 1 };
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));
+    const editor = screen.getByRole("textbox", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
+    await userEvent.clear(editor); await userEvent.type(editor, "Unsaved independent Text");
+    await userEvent.click(screen.getByRole("button", { name: `${t("renameCategoryProperty")}: Initial category label` }));
+    const labelEditor = screen.getByRole("textbox", { name: t("categoryPropertyName") });
+    await userEvent.clear(labelEditor); await userEvent.type(labelEditor, "Unsaved category label");
+    const response = deferred<ServiceResult<ProjectList>>(); client.handler = () => response.promise;
+    await openTarget(); await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    const own = { ...committed, mode: "grouped" as const, categoryProperty: category, categoryPropertyRevision: 1 };
+    client.projects = { ...own, categoryProperty: { ...category, name: "Newer committed label" }, categoryPropertyRevision: 2 };
+    await act(async () => {
+      client.emit(projectEvent(2));
+      client.emit({ type: "workspace.categoryPropertyChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 });
+    });
+    await act(async () => response.resolve({ ok: true, value: own }));
+    await screen.findByText(t("recoverySaved"));
+    assert.equal(document.querySelector("textarea"), editor);
+    assert.equal((editor as HTMLTextAreaElement).value, "Unsaved independent Text");
+    assert.equal((labelEditor as HTMLInputElement).value, "Unsaved category label");
+    assert.ok(screen.getByRole("columnheader", { name: "Newer committed label" }));
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+  test(`${language}: newer sibling snapshot wins over a delayed successful recovery and older list`, async () => {
+    const client = new RecoveryClient();
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    const response = deferred<ServiceResult<ProjectList>>(); client.handler = () => response.promise;
+    await openTarget(); await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    const oldList = deferred<ServiceResult<ProjectList>>(); client.listHandler = () => oldList.promise;
+    await act(async () => client.emit(projectEvent(2)));
+    client.listHandler = null;
+    const newer = { ...committed, revision: 3, projects: [{ ...committed.projects[0], name: "Newest sibling project", relativePath: "Newest sibling project" }] };
+    client.projects = newer;
+    await act(async () => client.emit(projectEvent(3)));
+    await screen.findByRole("button", { name: `${t("editTextValue")}: Newest sibling project / Notes` });
+    await act(async () => { response.resolve({ ok: true, value: committed }); oldList.resolve({ ok: true, value: committed }); });
+    await screen.findByText(t("recoverySaved"));
+    assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Newest sibling project / Notes` }));
+    assert.equal(screen.queryByText(t("recoveryUncertain")), null);
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+  test(`${language}: cancellation rejects delayed preview and unrelated events preserve target selection`, async () => {
+    const client = new RecoveryClient(); const delayed = deferred<ServiceResult<ProjectRecoveryPreview>>();
+    client.previewHandler = () => delayed.promise;
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    await userEvent.keyboard("{Escape}");
+    await act(async () => delayed.resolve({ ok: true, value: preview }));
+    assert.equal(screen.queryByRole("radio"), null);
+    client.previewHandler = null; await openTarget();
+    await act(async () => {
+      client.emit({ ...projectEvent(9), sourceId: "unrelated" });
+      client.emit({ ...projectEvent(9), workspaceIds: ["foreign"] });
+    });
+    assert.equal((screen.getByRole("radio", { name: "Target authored name" }) as HTMLInputElement).checked, true);
+    await act(async () => client.emit(sourceEvent(false)));
+    await screen.findByText(t("recoveryStale"));
+    assert.equal(screen.queryByRole("radio"), null);
+    assert.equal(client.saves, 0); cleanup(); assert.equal(client.listeners.size, 0);
+  });
+  test(`${language}: lost committed response reloads actual state without replay or fabricated success`, async () => {
+    const client = new RecoveryClient();
+    client.handler = async () => { client.projects = committed; client.emit(projectEvent(2)); return { ok: false, error: { code: "service_unavailable", message: "lost" } }; };
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await openTarget(); await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    await screen.findByText(t("recoveryUncertain"));
+    assert.ok(await screen.findByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }));
+    assert.equal(screen.queryByText(t("recoverySaved")), null); assert.equal(client.saves, 1);
+    assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+  test(`${language}: source disconnect during an accepted mutation discards its delayed response`, async () => {
+    const client = new RecoveryClient(); const response = deferred<ServiceResult<ProjectList>>(); client.handler = () => response.promise;
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await openTarget(); await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    await act(async () => client.emit(sourceEvent(false)));
+    await screen.findByText(t("recoveryUncertain"));
+    await act(async () => response.resolve({ ok: true, value: committed }));
+    assert.equal(screen.queryByText(t("recoverySaved")), null);
+    assert.equal(client.saves, 1);
+    assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+}
+
+for (const language of ["en", "ru"] as const) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  test(`${language}: recovery cannot cancel a delayed newer category-label reload`, async () => {
+    const client = new RecoveryClient(), category = { propertyId: "category", sourceId: "source", name: "Initial label" };
+    client.projects = { ...initial, mode: "grouped", categoryProperty: category, categoryPropertyRevision: 1 };
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Target authored name" }));
+    const response = deferred<ServiceResult<ProjectList>>(); client.handler = () => response.promise;
+    await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    const own = { ...committed, mode: "grouped" as const, categoryProperty: category, categoryPropertyRevision: 1 };
+    const labelLoad = deferred<ServiceResult<ProjectList>>(); client.listHandler = () => labelLoad.promise;
+    await act(async () => client.emit({ type: "workspace.categoryPropertyChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 }));
+    await act(async () => response.resolve({ ok: true, value: own }));
+    await screen.findByText(t("recoverySaved"));
+    await act(async () => labelLoad.resolve({ ok: true, value: { ...own, categoryProperty: { ...category, name: "Newest label" }, categoryPropertyRevision: 2 } }));
+    await screen.findByRole("columnheader", { name: "Newest label" });
+    assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }));
+    cleanup();
+  });
+  test(`${language}: retry and failed/incomplete observations preserve editors but revoke target selection`, async () => {
+    const client = new RecoveryClient();
+    const view = render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" refreshVersion={0} language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));
+    const editor = screen.getByRole("textbox", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
+    await userEvent.clear(editor); await userEvent.type(editor, "Unsaved across failure and retry");
+    await userEvent.click(screen.getByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Target authored name" }));
+    client.listHandler = async () => ({ ok: false, error: { code: "storage", message: "failed" } });
+    view.rerender(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" refreshVersion={1} language={language} disabled={false} />);
+    await screen.findByText(t("projectsError")); await screen.findByText(t("recoveryStale"));
+    assert.equal(screen.queryByRole("radio"), null); assert.equal(document.querySelector("textarea"), editor);
+    assert.equal((editor as HTMLTextAreaElement).value, "Unsaved across failure and retry");
+    client.listHandler = null;
+    await userEvent.click(screen.getByRole("button", { name: t("projectsRetry") }));
+    await waitFor(() => assert.equal(screen.queryByText(t("projectsError")) === null, true));
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Target authored name" }));
+    client.projects = { ...initial, state: "unreadable" };
+    view.rerender(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" refreshVersion={2} language={language} disabled={false} />);
+    await screen.findByText(t("discoveryUnreadable"));
+    assert.equal(screen.queryByRole("radio"), null); assert.equal(document.querySelector("textarea"), editor);
+    assert.equal(client.saves, 0); cleanup();
+  });
+  test(`${language}: invalidated in-flight previews cannot restore targets or submit a stale selection`, async () => {
+    const client = new RecoveryClient(), delayed = deferred<ServiceResult<ProjectRecoveryPreview>>(); client.previewHandler = () => delayed.promise;
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    client.projects = { ...initial, revision: 2 };
+    await act(async () => client.emit(projectEvent(2)));
+    await screen.findByText(t("recoveryStale"));
+    await act(async () => delayed.resolve({ ok: true, value: preview }));
+    assert.equal(screen.queryByRole("radio"), null);
+    assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+    client.previewHandler = null; client.recoveryPreview = { ...preview, revision: 2 };
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    assert.equal((await screen.findByRole("radio", { name: "Target authored name" }) as HTMLInputElement).checked, false);
+    assert.equal(client.saves, 0); cleanup();
   });
 }

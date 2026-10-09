@@ -1063,3 +1063,76 @@ test("direct recovery traverses production service ports/controller/client and r
     await controller.stop(100);
   } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("recovery fanout traverses production preload clients in commit order and clears listeners", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "recovery-events-transport-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(join(root, "Original"), { recursive: true }); await mkdir(otherRoot);
+  await writeFile(join(root, "Original/keep"), "unchanged event bytes");
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController(), ipc = new EventEmitter();
+  ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
+  const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+  const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+  const surface = () => {
+    const unload = new EventTarget(); let api;
+    runInNewContext(preload, { window: unload, require: () => ({ ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_name, value) => { api = value; } } }) });
+    return { unload, client: new WorkspaceServiceClient(api) };
+  };
+  const one = surface(), sibling = surface(), unrelated = surface();
+  const events = [], siblingEvents = [], otherEvents = [];
+  let otherWorkspace;
+  const offOne = one.client.onWorkspaceChange((event) => events.push(event));
+  const offSibling = sibling.client.onWorkspaceChange((event) => siblingEvents.push(event));
+  const offOther = unrelated.client.onWorkspaceChange((event) => {
+    if (event.type === "workspace.projectsChanged" && event.workspaceIds.includes(otherWorkspace?.workspaceId)) otherEvents.push(event);
+  });
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "data.sqlite"), {}, 100), true);
+    const workspace = (await one.client.createWorkspace("One", root)).value;
+    const siblingWorkspace = (await sibling.client.createWorkspace("Sibling", root)).value;
+    otherWorkspace = (await unrelated.client.createWorkspace("Other", otherRoot)).value;
+    const discovery = (await one.client.previewDiscovery(workspace.workspaceId)).value;
+    const original = (await one.client.applyDiscovery(workspace.workspaceId, discovery.previewToken)).value.projects[0];
+    await rename(join(root, "Original"), join(root, "Target"));
+    const review = (await one.client.previewProjectRecovery(workspace.workspaceId, original.projectId)).value;
+    const siblingReview = (await sibling.client.previewProjectRecovery(siblingWorkspace.workspaceId, original.projectId)).value;
+    events.length = siblingEvents.length = servicePort.sent.length = 0;
+    const saved = await one.client.reassociateProject(workspace.workspaceId, original.projectId, review.previewToken, "Target");
+    assert.equal(saved.ok, true);
+    const expected = { type: "workspace.projectsChanged", sourceId: workspace.sourceId, revision: saved.value.revision,
+      workspaceIds: [workspace.workspaceId, siblingWorkspace.workspaceId] };
+    assert.deepEqual(events, [expected]); assert.deepEqual(siblingEvents, events); assert.deepEqual(otherEvents, []);
+    assert.equal(servicePort.sent[0].type, "workspace.change"); assert.equal(servicePort.sent[1].result.ok, true);
+    assert.equal((await sibling.client.reassociateProject(siblingWorkspace.workspaceId, original.projectId, siblingReview.previewToken, "Target")).error.code, "stale_preview");
+    assert.equal((await sibling.client.listProjects(siblingWorkspace.workspaceId)).value.projects[0].projectId, original.projectId);
+    await rename(join(root, "Target"), join(root, "Next"));
+    const nextReview = (await sibling.client.previewProjectRecovery(siblingWorkspace.workspaceId, original.projectId)).value;
+    const next = await sibling.client.reassociateProject(siblingWorkspace.workspaceId, original.projectId, nextReview.previewToken, "Next");
+    assert.equal(next.ok, true); assert.equal(next.value.revision, saved.value.revision + 1);
+    await mkdir(join(root, "Additional"));
+    const newerDiscovery = (await sibling.client.previewDiscovery(siblingWorkspace.workspaceId)).value;
+    const discovered = await sibling.client.applyDiscovery(siblingWorkspace.workspaceId, newerDiscovery.previewToken);
+    assert.equal(discovered.ok, true); assert.equal(discovered.value.revision, next.value.revision + 1);
+    assert.deepEqual(events.map((event) => event.revision), [saved.value.revision, next.value.revision, discovered.value.revision]);
+    assert.deepEqual(siblingEvents, events); assert.deepEqual(otherEvents, []);
+    offOne(); sibling.unload.dispatchEvent(new Event("unload"));
+    assert.equal(ipc.listenerCount("workspace:change"), 1);
+    await mkdir(join(root, "After cleanup"));
+    const finalReview = (await unrelated.client.previewDiscovery(workspace.workspaceId)).value;
+    assert.equal((await unrelated.client.applyDiscovery(workspace.workspaceId, finalReview.previewToken)).ok, true);
+    assert.equal(events.length, 3); assert.equal(siblingEvents.length, 3); assert.deepEqual(otherEvents, []);
+    assert.equal(await readFile(join(root, "Next/keep"), "utf8"), "unchanged event bytes");
+    await controller.stop(100);
+  } finally {
+    offOne(); offSibling(); offOther(); relay();
+    one.unload.dispatchEvent(new Event("unload")); sibling.unload.dispatchEvent(new Event("unload")); unrelated.unload.dispatchEvent(new Event("unload"));
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
