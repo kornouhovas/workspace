@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { DiscoveryPreview } from "../../contracts/workspaces.js";
+import type { DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -10,6 +10,10 @@ interface PanelProps {
   preview: DiscoveryPreview | null;
   pending: boolean;
   error: boolean;
+  applying?: boolean;
+  applyError?: boolean;
+  stale?: boolean;
+  onApply?(): void;
   onExclude(relativePath: string, excluded: boolean): void;
   onRetry(): void;
   onCancel(): void;
@@ -20,10 +24,10 @@ const stateLabels: Record<DiscoveryPreview["state"], TranslationKey> = {
 };
 const reasonLabels = {
   manual: "discoveryManual", link: "discoveryLink", hidden: "discoveryHidden",
-  service: "discoveryService", archive: "discoveryArchive",
+  service: "discoveryService", archive: "discoveryArchive", unresolved: "discoveryUnresolved",
 } as const;
 
-export function DiscoveryPanel({ language, preview, pending, error, onExclude, onRetry, onCancel }: PanelProps) {
+export function DiscoveryPanel({ language, preview, pending, error, applying, applyError, stale, onApply, onExclude, onRetry, onCancel }: PanelProps) {
   const t = (key: TranslationKey) => translate(language, key);
   const heading = useRef<HTMLHeadingElement>(null);
   const requestedFocus = useRef<string | null>(null);
@@ -39,11 +43,13 @@ export function DiscoveryPanel({ language, preview, pending, error, onExclude, o
   return <section className="discovery-panel" aria-labelledby="discovery-title" aria-busy={pending}>
     <h3 id="discovery-title" ref={heading} tabIndex={-1}>{t("discoveryTitle")}</h3>
     <p>{t("discoveryDescription")}</p>
-    {pending && <StatusMessage kind="info" title={t("discoveryLoading")} />}
+    {pending && <StatusMessage kind="info" title={t(applying ? "discoveryApplying" : "discoveryLoading")} />}
+    {applyError && <StatusMessage kind="error" title={t("discoveryApplyError")} />}
+    {stale && <StatusMessage kind="info" title={t("discoveryStale")} />}
     {error && <StatusMessage kind="error" title={t("discoveryError")} />}
     {preview && <>
       <p className="workspace-root">{preview.canonicalRoot}</p>
-      <StatusMessage kind={preview.previewToken ? "info" : "error"} title={t(stateLabels[preview.state])} />
+      <StatusMessage kind={pending || preview.previewToken ? "info" : "error"} title={t(stateLabels[preview.state])} />
       {preview.entries.length > 0 ? <ul className="discovery-entries">
         {preview.entries.map((entry) => {
           const automatic = entry.reason !== null && entry.reason !== "manual";
@@ -61,19 +67,24 @@ export function DiscoveryPanel({ language, preview, pending, error, onExclude, o
       </ul> : preview.previewToken && <EmptyStatePanel>{t("discoveryEmptyDescription")}</EmptyStatePanel>}
     </>}
     <div className="workspace-form-actions">
+      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken} onClick={onApply}>{t("discoveryApply")}</button>}
       <button ref={retry} type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={onRetry}>{t("discoveryRefresh")}</button>
-      <button type="button" className="workspace-button workspace-button--secondary" onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
+      <button type="button" className="workspace-button workspace-button--secondary" disabled={applying} onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
     </div>
   </section>;
 }
 
-export function DiscoveryController({ client, workspaceId, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean;
+export function DiscoveryController({ client, workspaceId, language, disabled, onApplied }: {
+  client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; onApplied?(projects: ProjectList): void;
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<DiscoveryPreview | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState(false);
+  const [stale, setStale] = useState(false);
+  const applyingRef = useRef(false);
   const version = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
@@ -87,27 +98,96 @@ export function DiscoveryController({ client, workspaceId, language, disabled }:
     exclusions.current = draft;
     setPending(true);
     setError(false);
-    setPreview(null);
+    setPreview((current) => current ? { ...current, previewToken: null } : null);
     try {
       const result = await client.previewDiscovery(workspaceId, draft);
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId) {
         setPreview(result.value);
         exclusions.current = result.value.excludedRelativePaths;
-      } else setError(true);
-    } catch { if (current === version.current) setError(true); }
+      } else { setPreview(null); setError(true); }
+    } catch { if (current === version.current) { setPreview(null); setError(true); } }
     finally { if (current === version.current) setPending(false); }
+  };
+  const apply = async () => {
+    if (pending || applyingRef.current || !preview?.previewToken) return;
+    const current = ++version.current;
+    applyingRef.current = true;
+    setApplying(true); setPending(true); setApplyError(false); setStale(false);
+    try {
+      const result = await client.applyDiscovery(workspaceId, preview.previewToken);
+      if (current !== version.current) return;
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === preview.sourceId) {
+        onApplied?.(result.value);
+        returnFocus.current = true; setOpen(false); setPreview(null);
+      } else if (!result.ok && result.error.code === "stale_preview") {
+        setStale(true);
+        await request(exclusions.current);
+      } else setApplyError(true);
+    } catch { if (current === version.current) setApplyError(true); }
+    finally {
+      applyingRef.current = false;
+      setApplying(false);
+      if (current === version.current) setPending(false);
+    }
   };
   return <>
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
-      onClick={() => { setOpen(true); void request(); }}>{translate(language, "discoveryAction")}</button>
-    {open && <DiscoveryPanel language={language} preview={preview} pending={pending} error={error}
-      onRetry={() => void request(exclusions.current)}
+      onClick={() => { setOpen(true); setApplyError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
+    {open && <DiscoveryPanel language={language} preview={preview} pending={pending} error={error} applying={applying} applyError={applyError} stale={stale} onApply={() => void apply()}
+      onRetry={() => { setApplyError(false); void request(exclusions.current); }}
       onExclude={(name, excluded) => {
         const draft = new Set(exclusions.current ?? []);
         if (excluded) draft.add(name); else draft.delete(name);
         void request([...draft]);
       }}
       onCancel={() => { version.current++; returnFocus.current = true; setOpen(false); setPreview(null); setPending(false); }} />}
+  </>;
+}
+
+
+export function DiscoveryWorkspace({ client, workspaceId, language, disabled }: {
+  client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean;
+}) {
+  const [projects, setProjects] = useState<ProjectList | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const version = useRef(0);
+  const t = (key: TranslationKey) => translate(language, key);
+  const load = async () => {
+    const current = ++version.current;
+    setLoading(true); setError(false);
+    try {
+      const result = await client.listProjects(workspaceId);
+      if (current !== version.current) return;
+      if (result.ok && result.value.workspaceId === workspaceId) setProjects(result.value);
+      else setError(true);
+    } catch { if (current === version.current) setError(true); }
+    finally { if (current === version.current) setLoading(false); }
+  };
+  useEffect(() => {
+    void load();
+    return () => { version.current++; };
+    // A workspace/root change remounts this controller. Cross-source event handling is the next slice.
+  }, [client, workspaceId]);
+  return <>
+    <DiscoveryController client={client} workspaceId={workspaceId} language={language} disabled={disabled}
+      onApplied={(value) => { version.current++; setProjects(value); setError(false); setLoading(false); }} />
+    <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
+      <div className="table-view__heading"><div>
+        <h3 id="table-title">{t("tableViewTitle")}</h3>
+        <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>
+      </div><span className="view-badge">{t("tableViewLabel")}</span></div>
+      {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
+      {error && <><StatusMessage kind="error" title={t("projectsError")} />
+        <button type="button" className="workspace-button workspace-button--secondary" disabled={loading} onClick={() => void load()}>{t("projectsRetry")}</button></>}
+      {!loading && !error && projects && <>
+        {projects.state !== "ready" && projects.state !== "empty" && <StatusMessage kind="error" title={t(stateLabels[projects.state])} />}
+        {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
+        {projects.projects.length > 0 ? <table className="project-table"><thead><tr><th scope="col">{t("projectName")}</th></tr></thead>
+          <tbody>{projects.projects.map((row) => <tr key={row.projectId}><td>{row.name}</td></tr>)}</tbody></table>
+          : <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
+      </>}
+    </section>
   </>;
 }

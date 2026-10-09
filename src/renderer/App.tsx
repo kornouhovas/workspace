@@ -3,9 +3,9 @@ import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
 import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
-import { EmptyStatePanel, LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
+import { LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
-import { DiscoveryController } from "./components/DiscoveryPanel.js";
+import { DiscoveryWorkspace } from "./components/DiscoveryPanel.js";
 import { WorkspaceServiceClient } from "./workspace-service-client.js";
 
 type ViewState = "loading" | "ready" | "unavailable" | "load-error";
@@ -560,19 +560,9 @@ export function App() {
                   {t("refreshSourceErrorDescription")}
                 </StatusMessage>
               )}
-              <DiscoveryController key={`${activeWorkspace.workspaceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
+              <DiscoveryWorkspace key={`${activeWorkspace.workspaceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />
-              <section className="table-view" aria-labelledby="table-title">
-                <div className="table-view__heading">
-                  <div>
-                    <h3 id="table-title">{t("tableViewTitle")}</h3>
-                    <p>{t("emptyTableDescription")}</p>
-                  </div>
-                  <span className="view-badge">{t("tableViewLabel")}</span>
-                </div>
-                <EmptyStatePanel>{t("emptyTableGuidance")}</EmptyStatePanel>
-              </section>
               <button
                 type="button"
                 className="workspace-button workspace-button--secondary"

@@ -1,6 +1,19 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  discoveryApply: "Apply reviewed projects",
+  discoveryApplying: "Saving reviewed projects…",
+  discoveryApplyError: "Projects could not be saved. Your saved configuration is unchanged. Try Apply again.",
+  discoveryStale: "The preview changed. Review the refreshed folders, then apply again.",
+  discoveryUnresolved: "Folder identity is uncertain. Existing metadata is retained; this folder cannot be associated automatically.",
+  projectsLoading: "Loading applied projects…",
+  projectsError: "Applied projects could not be loaded.",
+  projectsRetry: "Reload applied projects",
+  projectsApplied: "Applied project folders",
+  projectsEmpty: "The applied discovery has no active projects. Preview folders to review exclusions or new folders.",
+  projectsRetained: "Metadata for excluded, missing or uncertain folders is retained.",
+  projectName: "Project name",
+
   discoveryAction: "Preview project folders",
   discoveryTitle: "Direct project preview",
   discoveryDescription: "Review immediate child folders. Exclusions in this preview are not saved until applied.",
@@ -87,10 +100,23 @@ const english = {
   tableViewTitle: "Table",
   tableViewLabel: "Table view",
   emptyTableDescription: "This workspace has no discovered projects yet.",
-  emptyTableGuidance: "Your workspace and Table view are ready. Preview folders to review projects; applying discovery will be available in a future update.",
+  emptyTableGuidance: "Preview folders, choose exclusions and apply the reviewed projects to this Table.",
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  discoveryApply: "Применить проверенные проекты",
+  discoveryApplying: "Сохранение проверенных проектов…",
+  discoveryApplyError: "Не удалось сохранить проекты. Сохранённая конфигурация не изменилась. Повторите применение.",
+  discoveryStale: "Предпросмотр изменился. Проверьте обновлённые папки и примените ещё раз.",
+  discoveryUnresolved: "Идентичность папки неоднозначна. Метаданные сохранены; автоматическая привязка невозможна.",
+  projectsLoading: "Загрузка применённых проектов…",
+  projectsError: "Не удалось загрузить применённые проекты.",
+  projectsRetry: "Перезагрузить применённые проекты",
+  projectsApplied: "Применённые папки проектов",
+  projectsEmpty: "После применения нет активных проектов. Просмотрите папки, чтобы проверить исключения или новые папки.",
+  projectsRetained: "Метаданные исключённых, пропавших или неоднозначных папок сохранены.",
+  projectName: "Название проекта",
+
   discoveryAction: "Посмотреть папки проектов",
   discoveryTitle: "Предпросмотр прямого поиска проектов",
   discoveryDescription: "Проверьте папки непосредственно в источнике. Исключения не сохраняются до применения.",
@@ -177,7 +203,7 @@ const russian: Record<keyof typeof english, string> = {
   tableViewTitle: "Таблица",
   tableViewLabel: "Представление «Таблица»",
   emptyTableDescription: "В этом рабочем пространстве пока нет найденных проектов.",
-  emptyTableGuidance: "Рабочее пространство и таблица готовы. Просмотрите папки проектов; применение поиска появится в одном из следующих обновлений.",
+  emptyTableGuidance: "Просмотрите папки, выберите исключения и примените проверенные проекты к этой таблице.",
 };
 
 export type TranslationKey = keyof typeof english;

@@ -34,3 +34,11 @@ export const activeWorkspace = sqliteTable("active_workspace", {
   workspaceId: text("workspace_id").notNull().references(() => workspaces.id),
   viewId: text("view_id").notNull().references(() => views.id),
 });
+
+export const projects = sqliteTable("projects", {
+  id: text("id").primaryKey(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  relativePath: text("relative_path").notNull(),
+  nativeIdentity: text("native_identity").notNull(),
+  associationState: text("association_state", { enum: ["active", "excluded", "missing", "unresolved", "replaced"] }).notNull(),
+});

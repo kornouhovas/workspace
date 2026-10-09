@@ -24,7 +24,7 @@ const { act, cleanup, render, screen, waitFor } = await import("@testing-library
 const { default: userEvent } = await import("@testing-library/user-event");
 
 const ok = <T,>(value: T): ServiceResult<T> => ({ ok: true, value });
-const fail = <T,>(code: "invalid_input" | "filesystem" | "storage" | "service_unavailable"): ServiceResult<T> => ({
+const fail = <T,>(code: "invalid_input" | "filesystem" | "storage" | "service_unavailable" | "stale_preview"): ServiceResult<T> => ({
   ok: false,
   error: { code, message: "private service detail" },
 });
@@ -45,6 +45,7 @@ interface MockOptions {
   settingsResult?: ServiceResult<Settings>;
   picker?: WorkspaceDesktopApi["pickRoot"];
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
+  onProjects?: MockOptions["onWorkspace"];
   onSettings?: WorkspaceDesktopApi["settings"];
   backend?: "ready" | "unavailable";
 }
@@ -70,7 +71,10 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListener = undefined; };
     },
     settings: onSettings,
-    workspace: onWorkspace as WorkspaceDesktopApi["workspace"],
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjects"
+      ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
+        sourceId: `source-${input.workspaceId}`, revision: 0, configured: false, state: "empty" as const,
+        projects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
   return { emitChange: (event: WorkspaceChangeEvent) => changeListener?.(event), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
@@ -248,7 +252,7 @@ test("renders the persisted active Table workspace and flags an unavailable sour
   assert.ok(await screen.findByRole("heading", { name: "Saved workspace" }));
   assert.equal(screen.getByText((_content, element) => element?.classList.contains("workspace-root") ?? false).textContent, "/Users/me/Keep  Verbatim");
   assert.ok(screen.getByRole("heading", { name: "Таблица" }));
-  assert.ok(screen.getByText(/Просмотрите папки проектов/));
+  assert.ok(await screen.findByText(/Просмотрите папки, выберите исключения/));
   assert.ok(screen.getByRole("heading", { name: "Папка проекта недоступна" }));
   cleanup();
 });
@@ -356,7 +360,7 @@ test("typed client forwards settings, workspace, activation and picker requests"
 
 test("provides complete Russian workspace copy and English fallback for settings language names", () => {
   assert.equal(translate("ru", "workspacePermissionTitle"), "Нет доступа к папке");
-  assert.equal(translate("ru", "emptyTableGuidance"), "Рабочее пространство и таблица готовы. Просмотрите папки проектов; применение поиска появится в одном из следующих обновлений.");
+  assert.equal(translate("ru", "emptyTableGuidance"), "Просмотрите папки, выберите исключения и примените проверенные проекты к этой таблице.");
   assert.equal(translate("ru", "appTitle"), "Workspace");
 });
 
@@ -925,5 +929,128 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
       assert.ok(await screen.findByRole("heading", { name: translate(language, label) }));
       cleanup();
     }
+  }
+});
+
+const projectList = (active: ActiveWorkspace, projects: string[] = [], revision = 1) => ({
+  workspaceId: active.workspaceId, sourceId: active.sourceId, revision, configured: true,
+  state: (projects.length ? "ready" : "empty") as "ready" | "empty", retainedCount: 0,
+  projects: projects.map((name) => ({ projectId: `project-${name}`, name, relativePath: name })),
+});
+const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
+  workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0, canonicalRoot: active.canonicalRoot,
+  state: "ready" as const, previewToken: token, excludedRelativePaths,
+  entries: [{ name: "  Authored project  ", relativePath: "  Authored project  ", reason: null }],
+});
+
+test("EN/RU keyboard Apply prevents duplicate submission and displays committed names without changing Table identity", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("apply", "Workspace");
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const calls: WorkspaceRequest[] = [];
+    mockApi({ language, onWorkspace: async (input) => {
+      calls.push(input);
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+      if (input.type === "workspace.previewDiscovery") return ok(previewResult(active));
+      if (input.type === "workspace.applyDiscovery") return new Promise((resolve) => { finish = resolve; });
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    await userEvent.click(trigger);
+    const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+    await waitFor(() => assert.equal((apply as HTMLButtonElement).disabled, false));
+    apply.focus(); await userEvent.keyboard("{Enter}{Enter}");
+    assert.equal((apply as HTMLButtonElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement).disabled, true);
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryApplying") }));
+    assert.equal(calls.filter((input) => input.type === "workspace.applyDiscovery").length, 1);
+    await act(async () => { finish?.(ok(projectList(active, ["  Authored project  "]))); });
+    assert.equal(screen.getByRole("cell").textContent, "  Authored project  ");
+    assert.ok(screen.getByRole("heading", { name: translate(language, "tableViewTitle") }));
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
+    assert.equal(document.activeElement, trigger);
+    assert.deepEqual(calls.find((input) => input.type === "workspace.applyDiscovery"), {
+      type: "workspace.applyDiscovery", workspaceId: active.workspaceId, previewToken: "reviewed",
+    });
+    cleanup();
+  }
+});
+
+test("stale Apply refreshes the draft and requires explicit review/Apply; storage errors keep saved rows", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("stale", "Workspace");
+    let previewCalls = 0;
+    let applyCalls = 0;
+    mockApi({ language, onProjects: async () => ok(projectList(active, ["Saved project"])), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+      if (input.type === "workspace.previewDiscovery") return ok(previewResult(active, `token-${++previewCalls}`, input.excludedRelativePaths));
+      if (input.type === "workspace.applyDiscovery") {
+        applyCalls++;
+        assert.equal(input.previewToken, `token-${previewCalls}`);
+        return applyCalls === 1 ? fail("storage") : applyCalls === 2 ? fail("stale_preview") : ok(projectList(active, ["Refreshed project"], 2));
+      }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await screen.findByRole("cell", { name: "Saved project" });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    const apply = await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+    await userEvent.click(apply);
+    assert.ok(await screen.findByRole("heading", { name: translate(language, "discoveryApplyError") }));
+    assert.ok(screen.getByRole("cell", { name: "Saved project" }));
+    await userEvent.click(apply);
+    assert.ok(await screen.findByRole("heading", { name: translate(language, "discoveryStale") }));
+    await waitFor(() => assert.equal(previewCalls, 2));
+    assert.equal(applyCalls, 2);
+    assert.equal((apply as HTMLButtonElement).disabled, false);
+    assert.ok(screen.getByRole("cell", { name: "Saved project" }));
+    await userEvent.click(apply);
+    assert.ok(await screen.findByRole("cell", { name: "Refreshed project" }));
+    assert.equal(applyCalls, 3);
+    cleanup();
+  }
+});
+
+test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply while pending and restores keyboard focus", async () => {
+  const active = makeActive("focus", "Workspace");
+  let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  mockApi({ onWorkspace: async (input) => {
+    if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+    if (input.type === "workspace.previewDiscovery") return input.excludedRelativePaths
+      ? new Promise((resolve) => { finish = resolve; }) : ok(previewResult(active));
+    return fail("invalid_input");
+  } });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  const checkbox = await screen.findByRole("checkbox");
+  checkbox.focus(); await userEvent.keyboard(" ");
+  assert.equal(screen.getByRole("checkbox"), checkbox);
+  assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
+  await act(async () => { finish?.(ok({ ...previewResult(active, "new", ["  Authored project  "]),
+    entries: [{ name: "  Authored project  ", relativePath: "  Authored project  ", reason: "manual" }] })); });
+  assert.equal(document.activeElement, checkbox);
+  assert.equal((checkbox as HTMLInputElement).checked, true);
+  assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, false);
+  cleanup();
+});
+
+test("project lists distinguish applied-empty, retained, unavailable and loading/error recovery in EN/RU", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("list", "Workspace");
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let calls = 0;
+    mockApi({ language, load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+      onProjects: async () => ++calls === 1 ? new Promise((resolve) => { finish = resolve; })
+        : ok({ ...projectList(active), retainedCount: 2, state: "unavailable" }) });
+    render(<App />);
+    assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsLoading") }));
+    await act(async () => { finish?.(fail("storage")); });
+    assert.ok(screen.getByRole("heading", { name: translate(language, "projectsError") }));
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    assert.ok(await screen.findByText(translate(language, "projectsEmpty")));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "projectsRetained") }));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryUnavailable") }));
+    cleanup();
   }
 });

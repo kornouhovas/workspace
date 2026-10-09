@@ -43,8 +43,8 @@ export type WorkspaceChangeEvent =
   | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
   | { type: "workspace.sourceChanged"; source: WorkspaceSourceState };
 
-export type WorkspaceQuery = WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand;
+export type WorkspaceQuery = WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;
@@ -73,7 +73,7 @@ export interface WorkspaceCreated {
   canonicalRoot: string;
 }
 
-export type DiscoveryExclusionReason = "manual" | "link" | "hidden" | "service" | "archive";
+export type DiscoveryExclusionReason = "manual" | "link" | "hidden" | "service" | "archive" | "unresolved";
 export interface DiscoveryEntry {
   relativePath: string;
   name: string;
@@ -94,3 +94,24 @@ export type WorkspacePreviewDiscoveryQuery = {
   workspaceId: string;
   excludedRelativePaths?: string[];
 };
+
+export type WorkspaceApplyDiscoveryCommand = {
+  type: "workspace.applyDiscovery";
+  workspaceId: string;
+  previewToken: string;
+};
+export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string };
+export interface ProjectSummary {
+  projectId: string;
+  name: string;
+  relativePath: string;
+}
+export interface ProjectList {
+  workspaceId: string;
+  sourceId: string;
+  revision: number;
+  configured: boolean;
+  state: DiscoveryPreview["state"];
+  projects: ProjectSummary[];
+  retainedCount: number;
+}

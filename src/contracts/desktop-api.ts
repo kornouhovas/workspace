@@ -1,10 +1,10 @@
 import type { ServiceResult, Settings, SettingsCommand, SettingsQuery } from "./settings.js";
-import type { DiscoveryPreview, WorkspacePreviewDiscoveryQuery, ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand, WorkspaceReorderCommand, WorkspaceRemoveCommand, WorkspaceRefreshSourceCommand, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
+import type { ProjectList, WorkspaceApplyDiscoveryCommand, WorkspaceListProjectsQuery, DiscoveryPreview, WorkspacePreviewDiscoveryQuery, ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand, WorkspaceReorderCommand, WorkspaceRemoveCommand, WorkspaceRefreshSourceCommand, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
 export type WorkspaceRequest = WorkspaceQuery | WorkspaceCommand;
-export type WorkspaceResponse = DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type WorkspaceResponse = ProjectList | DiscoveryPreview | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 export type RootPickerResult =
   | { outcome: "selected"; path: string }
   | { outcome: "cancelled" }
@@ -14,6 +14,8 @@ export interface WorkspaceDesktopApi {
   getBackendStatus(): Promise<BackendStatus>;
   onBackendStatus(listener: (status: BackendStatus) => void): () => void;
   settings(input: SettingsRequest): Promise<ServiceResult<Settings>>;
+  workspace(input: WorkspaceApplyDiscoveryCommand): Promise<ServiceResult<ProjectList>>;
+  workspace(input: WorkspaceListProjectsQuery): Promise<ServiceResult<ProjectList>>;
   workspace(input: WorkspacePreviewDiscoveryQuery): Promise<ServiceResult<DiscoveryPreview>>;
   workspace(input: WorkspaceLoadQuery): Promise<ServiceResult<WorkspaceLoad>>;
   workspace(input: WorkspaceCreateCommand): Promise<ServiceResult<WorkspaceCreated>>;

@@ -562,3 +562,50 @@ test("real service IPC routes read-only discovery previews and rejects unsafe/fo
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("real service IPC applies reviewed projects, lists shared source state and rejects stale/invalid Apply", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-apply-ipc-"));
+  const root = join(directory, "root");
+  await mkdir(join(root, "Project", "Nested"), { recursive: true });
+  await mkdir(join(root, "Excluded"));
+  await writeFile(join(root, "Project", "keep"), "unchanged");
+  const parent = new EventEmitter(); parent.postMessage = () => {};
+  const port = new FakePort(); startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => { port.receive({ id: ++id, input }); assert.equal(port.sent.at(-1).id, id); return port.sent.at(-1).result; };
+    const one = request({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const sibling = request({ type: "workspace.create", name: "Two", rootPath: root }).value;
+    const listQuery = { type: "workspace.listProjects", workspaceId: one.workspaceId };
+    assert.equal(request(listQuery).value.configured, false);
+    const preview = request({ type: "workspace.previewDiscovery", workspaceId: one.workspaceId, excludedRelativePaths: ["Excluded"] }).value;
+    const command = { type: "workspace.applyDiscovery", workspaceId: one.workspaceId, previewToken: preview.previewToken };
+    for (const malformed of [{ ...command, extra: true }, { ...command, previewToken: null },
+      { ...listQuery, extra: true }, { ...listQuery, workspaceId: 0 }]) assert.equal(request(malformed).error.code, "invalid_input");
+    const applied = request(command);
+    assert.equal(applied.ok, true);
+    assert.deepEqual(applied.value.projects.map((row) => row.name), ["Project"]);
+    assert.deepEqual(request(listQuery), applied);
+    assert.deepEqual(request({ ...listQuery, workspaceId: sibling.workspaceId }).value.projects, applied.value.projects);
+    assert.equal(request(command).error.code, "stale_preview");
+    const next = request({ type: "workspace.previewDiscovery", workspaceId: one.workspaceId }).value;
+    await mkdir(join(root, "Late"));
+    assert.equal(request({ ...command, previewToken: next.previewToken }).error.code, "stale_preview");
+    assert.deepEqual(request(listQuery).value.projects, applied.value.projects);
+    assert.equal(await readFile(join(root, "Project", "keep"), "utf8"), "unchanged");
+  } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});
+
+test("BackendController accepts normalized stale-preview errors from the actual response envelope", async () => {
+  const child = new FakeChild(); const port = new FakePort();
+  const controller = new BackendController();
+  const ready = controller.start(child, port, "/tmp/discovery.sqlite", {}, 1000);
+  child.send({ type: "ready" }); await ready;
+  const pending = controller.request({ type: "workspace.applyDiscovery", workspaceId: "test", previewToken: "old" });
+  const sent = port.sent.at(-1);
+  const result = { ok: false, error: { code: "stale_preview", message: "Review again" } };
+  port.receive({ id: sent.id, result });
+  assert.deepEqual(await pending, result);
+  child.exit();
+});

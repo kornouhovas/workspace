@@ -1150,3 +1150,401 @@ test("preview rejects filesystem changes during enumeration and never resolves o
     }
   });
 });
+
+function applyDiscovery(service, workspaceId, previewToken = discoveryPreview(service, workspaceId).value.previewToken) {
+  return service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken });
+}
+function listProjects(service, workspaceId) {
+  return service.handleQuery({ type: "workspace.listProjects", workspaceId });
+}
+function projectRecords(databasePath) {
+  const sqlite = new Database(databasePath);
+  try { return sqlite.prepare("SELECT * FROM projects ORDER BY id").all(); }
+  finally { sqlite.close(); }
+}
+
+test("apply commits the reviewed projection/exclusions, retains IDs on rescan/restart and re-inclusion, writes no markers", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "One", "Nested"), { recursive: true });
+    mkdirSync(join(root, "Two"));
+    writeFileSync(join(root, "One", "keep"), "one");
+    writeFileSync(join(root, "Two", "keep"), "two");
+    let service = openSettingsService(databasePath);
+    const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+    try {
+      assert.equal(listProjects(service, workspace.workspaceId).value.configured, false);
+      const preview = discoveryPreview(service, workspace.workspaceId, ["Two"]).value;
+      const applied = applyDiscovery(service, workspace.workspaceId, preview.previewToken);
+      assert.equal(applied.ok, true);
+      assert.deepEqual(applied.value.projects.map((p) => p.name), ["One"]);
+      const id = applied.value.projects[0].projectId;
+      assert.notEqual(id, "One");
+      assert.deepEqual(discoveryPreview(service, workspace.workspaceId).value.excludedRelativePaths, ["Two"]);
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, id);
+      // Mutable timestamps are not durable folder identity.
+      writeFileSync(join(root, "One", "new"), "content");
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, id);
+      service.close(); service = openSettingsService(databasePath);
+      assert.equal(listProjects(service, workspace.workspaceId).value.projects[0].projectId, id);
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, id);
+      const excluded = discoveryPreview(service, workspace.workspaceId, ["One", "Two"]).value;
+      assert.equal(applyDiscovery(service, workspace.workspaceId, excluded.previewToken).value.retainedCount, 1);
+      const included = discoveryPreview(service, workspace.workspaceId, []).value;
+      const restored = applyDiscovery(service, workspace.workspaceId, included.previewToken).value;
+      assert.equal(restored.projects.find((p) => p.name === "One").projectId, id);
+      assert.deepEqual(fs.readdirSync(root).sort(), ["One", "Two"]);
+      assert.deepEqual(fs.readdirSync(join(root, "One")).sort(), ["Nested", "keep", "new"]);
+      assert.deepEqual(fs.readdirSync(join(root, "Two")), ["keep"]);
+      assert.equal(readFileSync(join(root, "Two", "keep"), "utf8"), "two");
+      assert.equal(service.workspaces.load().value.activeWorkspace.viewId, workspace.viewId);
+    } finally { service.close(); }
+  });
+});
+
+test("apply rejects stale filesystem/configuration, foreign/forged/expired tokens and exact-payload violations without writes", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+    const sibling = service.handleCommand({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+    const baseline = records(databasePath);
+    try {
+      const token = discoveryPreview(service, workspace.workspaceId).value.previewToken;
+      for (const input of [
+        { type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId },
+        { type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: token, projects: [] },
+        Object.create({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: token }),
+        { type: "workspace.listProjects", workspaceId: workspace.workspaceId, extra: true },
+      ]) assert.equal((input.type === "workspace.listProjects" ? service.handleQuery(input) : service.handleCommand(input)).error.code, "invalid_input");
+      assert.equal(applyDiscovery(service, sibling.workspaceId, token).error.code, "stale_preview");
+      assert.equal(applyDiscovery(service, workspace.workspaceId, randomUUID()).error.code, "stale_preview");
+      for (const mutate of [
+        () => { mkdirSync(join(root, "Added")); },
+        () => { rmSync(join(root, "Added"), { recursive: true }); },
+        () => { fs.renameSync(join(root, "Project"), join(directory, "old")); mkdirSync(join(root, "Project")); },
+        () => { rmSync(join(root, "Project"), { recursive: true }); symlinkSync(join(directory, "old"), join(root, "Project"), process.platform === "win32" ? "junction" : "dir"); },
+        () => { const sql = new Database(databasePath); sql.prepare("UPDATE sources SET discovery_revision = discovery_revision + 1").run(); sql.close(); },
+        () => { const sql = new Database(databasePath); sql.prepare("UPDATE sources SET archive_relative_path = 'Project'").run(); sql.close(); },
+      ]) {
+        const preview = discoveryPreview(service, workspace.workspaceId).value;
+        mutate();
+        const before = records(databasePath);
+        assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).error.code, "stale_preview");
+        assert.deepEqual(records(databasePath), before);
+        assert.deepEqual(projectRecords(databasePath), []);
+      }
+      assert.deepEqual(records(databasePath).views, baseline.views);
+      const current = discoveryPreview(service, sibling.workspaceId).value;
+      service.workspaces.remove({ type: "workspace.remove", workspaceId: sibling.workspaceId });
+      assert.equal(applyDiscovery(service, sibling.workspaceId, current.previewToken).error.code, "invalid_input");
+      const expired = discoveryPreview(service, workspace.workspaceId).value.previewToken;
+      service.close();
+      const reopened = openSettingsService(databasePath);
+      try { assert.equal(applyDiscovery(reopened, workspace.workspaceId, expired).error.code, "stale_preview"); }
+      finally { reopened.close(); }
+    } finally { service.close(); }
+  });
+});
+
+test("apply rolls back configuration/project failures and emits no committed discovery event", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+    const sql = new Database(databasePath);
+    const events = [];
+    service.workspaces.subscribe((event) => events.push(event));
+    try {
+      for (const table of ["sources", "projects"]) {
+        const preview = discoveryPreview(service, workspace.workspaceId, table === "projects" ? ["Project"] : []).value;
+        const before = records(databasePath);
+        const beforeProjects = projectRecords(databasePath);
+        sql.exec(`CREATE TRIGGER fail_write BEFORE ${table === "sources" ? "UPDATE" : "INSERT"} ON ${table} BEGIN SELECT RAISE(ABORT, 'injected'); END`);
+        assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).error.code, "storage");
+        assert.deepEqual(records(databasePath), before);
+        assert.deepEqual(projectRecords(databasePath), beforeProjects);
+        assert.deepEqual(events, []);
+        sql.exec("DROP TRIGGER fail_write");
+        assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).ok, true);
+        // Next iteration must insert a new folder.
+        mkdirSync(join(root, `Next-${table}`));
+      }
+    } finally { sql.close(); service.close(); }
+  });
+});
+
+test("replacement/copy gets a new ID, missing records stay unresolved, and final workspace removal retains source projects", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    writeFileSync(join(root, "Project", "keep"), "sentinel");
+    let service = openSettingsService(databasePath);
+    const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+    try {
+      const original = applyDiscovery(service, workspace.workspaceId).value.projects[0];
+      fs.renameSync(join(root, "Project"), join(directory, "original"));
+      fs.cpSync(join(directory, "original"), join(root, "Project"), { recursive: true });
+      const replacement = applyDiscovery(service, workspace.workspaceId).value;
+      assert.notEqual(replacement.projects[0].projectId, original.projectId);
+      assert.equal(replacement.retainedCount, 1);
+      assert.equal(projectRecords(databasePath).find((p) => p.id === original.projectId).association_state, "replaced");
+      const replacementId = replacement.projects[0].projectId;
+      fs.renameSync(join(root, "Project"), join(directory, "missing"));
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.retainedCount, 2);
+      fs.renameSync(join(directory, "missing"), join(root, "Project"));
+      const unresolved = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(unresolved.entries[0].reason, "unresolved");
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId, unresolved.previewToken).value.projects, []);
+      assert.equal(projectRecords(databasePath).find((p) => p.id === replacementId).association_state, "unresolved");
+      const savedProjects = projectRecords(databasePath);
+      service.workspaces.remove({ type: "workspace.remove", workspaceId: workspace.workspaceId });
+      assert.deepEqual(projectRecords(databasePath), savedProjects);
+      service.close(); service = openSettingsService(databasePath);
+      const recreated = service.handleCommand({ type: "workspace.create", name: "Again", rootPath: root }).value;
+      assert.equal(recreated.sourceId, workspace.sourceId);
+      assert.notEqual(recreated.viewId, workspace.viewId);
+      assert.equal(listProjects(service, recreated.workspaceId).value.retainedCount, 2);
+      assert.equal(discoveryPreview(service, recreated.workspaceId).value.entries[0].reason, "unresolved");
+      assert.equal(readFileSync(join(root, "Project", "keep"), "utf8"), "sentinel");
+    } finally { service.close(); }
+  });
+});
+
+test("insufficient/reused native evidence remains unresolved rather than transferring metadata", () => {
+  for (const evidence of ["insufficient", "reused", "reused-with-new-birth", "new-insufficient"]) {
+    withFixture(({ root, databasePath }) => {
+      mkdirSync(join(root, "One"));
+      const service = openSettingsService(databasePath);
+      const originalLstat = fs.lstatSync;
+      try {
+        const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+        const first = applyDiscovery(service, workspace.workspaceId).value.projects[0];
+        const identity = JSON.parse(projectRecords(databasePath)[0].native_identity);
+        if (evidence !== "insufficient") mkdirSync(join(root, "Two"));
+        fs.lstatSync = (path, options) => {
+          const stat = originalLstat(path, options);
+          if (path === join(workspace.canonicalRoot, evidence === "insufficient" ? "One" : "Two") && options?.bigint) {
+            if (evidence.endsWith("insufficient")) stat.birthtimeNs = 0n;
+            else {
+              stat.dev = BigInt(identity.dev); stat.ino = BigInt(identity.ino);
+              stat.birthtimeNs = BigInt(identity.birthtimeNs) + (evidence === "reused-with-new-birth" ? 1n : 0n);
+            }
+          }
+          return stat;
+        };
+        syncBuiltinESMExports();
+        const preview = discoveryPreview(service, workspace.workspaceId).value;
+        assert.equal(preview.entries.find((e) => e.name === (evidence === "insufficient" ? "One" : "Two")).reason, "unresolved");
+        const applied = applyDiscovery(service, workspace.workspaceId, preview.previewToken).value;
+        if (evidence === "insufficient" || evidence.startsWith("reused")) {
+          assert.deepEqual(applied.projects, []);
+          assert.equal(applied.retainedCount, 1);
+        } else assert.equal(applied.projects[0].projectId, first.projectId);
+        assert.equal(projectRecords(databasePath).length, 1);
+      } finally { fs.lstatSync = originalLstat; syncBuiltinESMExports(); service.close(); }
+    });
+  }
+});
+
+test("unavailable/unreadable/replaced roots keep saved projects and reject unsafe Apply", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    const originalOpen = fs.opendirSync;
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const applied = applyDiscovery(service, workspace.workspaceId).value;
+      const before = records(databasePath);
+      const saved = projectRecords(databasePath);
+      const token = discoveryPreview(service, workspace.workspaceId).value.previewToken;
+      fs.opendirSync = () => { throw Object.assign(new Error("denied"), { code: "EACCES" }); };
+      syncBuiltinESMExports();
+      assert.equal(listProjects(service, workspace.workspaceId).value.state, "unreadable");
+      assert.equal(applyDiscovery(service, workspace.workspaceId, token).error.code, "stale_preview");
+      fs.opendirSync = originalOpen; syncBuiltinESMExports();
+      fs.renameSync(root, join(directory, "disconnected"));
+      assert.equal(listProjects(service, workspace.workspaceId).value.state, "unavailable");
+      assert.deepEqual(listProjects(service, workspace.workspaceId).value.projects, applied.projects);
+      mkdirSync(root); mkdirSync(join(root, "Project"));
+      const conflict = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(conflict.state, "root_identity_conflict");
+      assert.equal(conflict.previewToken, null);
+      assert.equal(listProjects(service, workspace.workspaceId).value.state, "root_identity_conflict");
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(projectRecords(databasePath), saved);
+    } finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); service.close(); }
+  });
+});
+
+test("filesystem changes during apply persistence roll back configuration and projects", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    const originalOpen = fs.opendirSync;
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const preview = discoveryPreview(service, workspace.workspaceId).value;
+      const before = records(databasePath);
+      let opens = 0;
+      fs.opendirSync = (path, ...args) => {
+        if (++opens === 3) mkdirSync(join(root, "Late"));
+        return originalOpen(path, ...args);
+      };
+      syncBuiltinESMExports();
+      assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).error.code, "stale_preview");
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(projectRecords(databasePath), []);
+    } finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); service.close(); }
+  });
+});
+
+test("populated discovery configuration upgrades to projects, applies and reopens without changing workspace/view identities", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const legacy = join(directory, "discovery-migrations");
+    mkdirSync(join(legacy, "meta"), { recursive: true });
+    const migrations = "src/service/db/migrations";
+    const journal = JSON.parse(readFileSync(join(migrations, "meta", "_journal.json"), "utf8"));
+    journal.entries = journal.entries.slice(0, 4);
+    for (const entry of journal.entries) writeFileSync(join(legacy, `${entry.tag}.sql`), readFileSync(join(migrations, `${entry.tag}.sql`)));
+    writeFileSync(join(legacy, "meta", "_journal.json"), JSON.stringify(journal));
+    mkdirSync(join(root, "Kept")); mkdirSync(join(root, "Excluded"));
+    let service = openSettingsService(databasePath, legacy);
+    const workspace = service.handleCommand({ type: "workspace.create", name: "Original", rootPath: root }).value;
+    service.handleCommand({ type: "settings.setLanguage", language: "ru" }); service.close();
+    const sqlite = new Database(databasePath);
+    sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Excluded\"]', archive_relative_path = 'Archive', discovery_revision = 7").run();
+    sqlite.close();
+    const before = records(databasePath);
+    service = openSettingsService(databasePath);
+    let projects;
+    try {
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(projectRecords(databasePath), []);
+      projects = applyDiscovery(service, workspace.workspaceId).value;
+      assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);
+      assert.equal(projects.revision, 8);
+    } finally { service.close(); }
+    service = openSettingsService(databasePath);
+    try {
+      assert.deepEqual(listProjects(service, workspace.workspaceId).value, projects);
+      assert.equal(service.workspaces.load().value.activeWorkspace.viewId, workspace.viewId);
+      assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
+      assert.deepEqual(records(databasePath).workspaces, before.workspaces);
+      assert.deepEqual(records(databasePath).views, before.views);
+    } finally { service.close(); }
+  });
+});
+
+test("persisted archive casing follows actual filesystem identity without guessing on case-sensitive roots", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Storage", "Archive"), { recursive: true });
+    const service = openSettingsService(databasePath);
+    const originalLstat = fs.lstatSync;
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const sql = new Database(databasePath);
+      sql.prepare("UPDATE sources SET archive_relative_path = 'storage/Archive'").run(); sql.close();
+      const caseInsensitive = fs.existsSync(join(root, "storage"));
+      assert.equal(discoveryPreview(service, workspace.workspaceId).value.entries[0].reason, caseInsensitive ? "archive" : null);
+      // Exercise the real service scanner's alias-evidence branch on either platform.
+      fs.lstatSync = (path, ...args) => originalLstat(path === join(workspace.canonicalRoot, "storage")
+        ? join(workspace.canonicalRoot, "Storage") : path, ...args);
+      syncBuiltinESMExports();
+      const preview = discoveryPreview(service, workspace.workspaceId).value;
+      assert.equal(preview.entries[0].reason, "archive");
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId, preview.previewToken).value.projects, []);
+    } finally { fs.lstatSync = originalLstat; syncBuiltinESMExports(); service.close(); }
+  });
+});
+
+test("apply excludes designated archive/service/link/manual folders without reading contents or modifying any root bytes", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    for (const name of ["Project", "Manual", "Archive", "Storage", ".service", "$RECYCLE.BIN"])
+      mkdirSync(join(root, name));
+    const external = join(directory, "external"); mkdirSync(external);
+    symlinkSync(external, join(root, "Link"), process.platform === "win32" ? "junction" : "dir");
+    for (const folder of [root, external, ...["Project", "Manual", "Archive", "Storage", ".service", "$RECYCLE.BIN"].map((name) => join(root, name))])
+      writeFileSync(join(folder, "keep"), `bytes-${folder}`);
+    const originalOpen = fs.opendirSync;
+    const originalRealpath = fs.realpathSync.native;
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const sql = new Database(databasePath); sql.prepare("UPDATE sources SET archive_relative_path = 'Storage/nested'").run(); sql.close();
+      fs.opendirSync = (path, ...args) => { assert.equal(path, workspace.canonicalRoot); return originalOpen(path, ...args); };
+      fs.realpathSync.native = (path, ...args) => { assert.notEqual(path, external); assert.notEqual(path, join(root, "Link")); return originalRealpath(path, ...args); };
+      syncBuiltinESMExports();
+      const preview = discoveryPreview(service, workspace.workspaceId, ["Manual"]).value;
+      assert.deepEqual(applyDiscovery(service, workspace.workspaceId, preview.previewToken).value.projects.map((p) => p.name), ["Archive", "Project"]);
+      for (const folder of [root, external, ...["Project", "Manual", "Archive", "Storage", ".service", "$RECYCLE.BIN"].map((name) => join(root, name))]) {
+        assert.equal(readFileSync(join(folder, "keep"), "utf8"), `bytes-${folder}`);
+        if (folder !== root) assert.deepEqual(fs.readdirSync(folder), ["keep"]);
+      }
+      assert.deepEqual(fs.readdirSync(root).sort(), ["$RECYCLE.BIN", ".service", "Archive", "Link", "Manual", "Project", "Storage", "keep"]);
+    } finally { fs.opendirSync = originalOpen; fs.realpathSync.native = originalRealpath; syncBuiltinESMExports(); service.close(); }
+  });
+});
+
+test("new previews revoke previous tokens, failed removal preserves its token, and other sources cannot apply it", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const otherRoot = join(directory, "other"); mkdirSync(otherRoot);
+    const service = openSettingsService(databasePath);
+    const sql = new Database(databasePath);
+    try {
+      const one = service.handleCommand({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const other = service.handleCommand({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+      const first = discoveryPreview(service, one.workspaceId).value;
+      const second = discoveryPreview(service, one.workspaceId).value;
+      assert.equal(applyDiscovery(service, other.workspaceId, second.previewToken).error.code, "stale_preview");
+      assert.equal(listProjects(service, other.workspaceId).value.configured, false);
+      assert.equal(applyDiscovery(service, one.workspaceId, first.previewToken).error.code, "stale_preview");
+      const current = discoveryPreview(service, one.workspaceId).value;
+      sql.exec("CREATE TRIGGER fail_remove BEFORE DELETE ON workspaces BEGIN SELECT RAISE(ABORT, 'injected'); END");
+      assert.equal(service.handleCommand({ type: "workspace.remove", workspaceId: one.workspaceId }).error.code, "storage");
+      sql.exec("DROP TRIGGER fail_remove");
+      assert.equal(applyDiscovery(service, one.workspaceId, current.previewToken).ok, true);
+      assert.deepEqual(listProjects(service, other.workspaceId).value.projects, []);
+    } finally { sql.close(); service.close(); }
+  });
+});
+
+test("Apply rejects a replaced or link-retargeted root even before its first committed discovery", () => {
+  for (const retarget of ["directory", "link"]) withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const preview = discoveryPreview(service, workspace.workspaceId).value;
+      const before = records(databasePath);
+      fs.renameSync(root, join(directory, "previous"));
+      if (retarget === "directory") { mkdirSync(root); mkdirSync(join(root, "Project")); }
+      else symlinkSync(join(directory, "previous"), root, process.platform === "win32" ? "junction" : "dir");
+      assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).error.code, "stale_preview");
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(projectRecords(databasePath), []);
+    } finally { service.close(); }
+  });
+});
+
+test("a reused native inode with changed birth evidence at the same path retires old metadata and keeps the replacement ID", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const service = openSettingsService(databasePath);
+    const originalLstat = fs.lstatSync;
+    try {
+      const workspace = service.handleCommand({ type: "workspace.create", name: "Test", rootPath: root }).value;
+      const original = applyDiscovery(service, workspace.workspaceId).value.projects[0];
+      fs.lstatSync = (path, options) => {
+        const value = originalLstat(path, options);
+        if (path === join(workspace.canonicalRoot, "Project") && options?.bigint) value.birthtimeNs += 1n;
+        return value;
+      };
+      syncBuiltinESMExports();
+      const replacement = applyDiscovery(service, workspace.workspaceId).value;
+      assert.notEqual(replacement.projects[0].projectId, original.projectId);
+      assert.equal(replacement.retainedCount, 1);
+      assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, replacement.projects[0].projectId);
+      assert.equal(projectRecords(databasePath).find((row) => row.id === original.projectId).association_state, "replaced");
+    } finally { fs.lstatSync = originalLstat; syncBuiltinESMExports(); service.close(); }
+  });
+});

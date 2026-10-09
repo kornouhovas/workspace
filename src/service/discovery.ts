@@ -18,6 +18,7 @@ export interface DirectoryObservation {
 export interface DiscoverySnapshot {
   root: DirectoryObservation;
   children: DirectoryObservation[];
+  archiveChild: string | null;
 }
 export interface DirectScan {
   state: DiscoveryPreview["state"];
@@ -75,7 +76,20 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
     changed(root, observation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
   // Archive is validated even when currently absent; it is never followed or read.
   if (!validArchive(archiveRelativePath)) throw new RootConflict();
-  return { root, children: children.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
+  let archiveChild: string | null = archiveRelativePath?.split("/")[0] ?? null;
+  if (archiveChild && !children.some((child) => child.relativePath === archiveChild)) {
+    try {
+      // Resolve casing using only the designated immediate child's own evidence. Do not open it.
+      const archive = observation(archiveChild, lstatSync(join(canonicalRoot, archiveChild), { bigint: true }));
+      if (archive.kind === "directory") {
+        archiveChild = children.find((child) => child.kind === "directory" &&
+          sameIdentity(child.identity, archive.identity))?.relativePath ?? archiveChild;
+      }
+    } catch (error) {
+      if (!(typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")) throw error;
+    }
+  }
+  return { root, archiveChild, children: children.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
 }
 
 export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DirectScan {
@@ -83,7 +97,7 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
     const snapshot = scanOnce(canonicalRoot, archiveRelativePath);
     // Recheck the complete interpretation, including kind swaps and disappearing entries.
     if (JSON.stringify(snapshot) !== JSON.stringify(scanOnce(canonicalRoot, archiveRelativePath))) throw new ScanChanged();
-    const archiveChild = archiveRelativePath?.split("/")[0];
+    const archiveChild = snapshot.archiveChild;
     const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
       const name = child.relativePath;
       const reason = child.kind === "link" ? "link"
@@ -100,4 +114,76 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
       : code === "ENOENT" || code === "ENOTDIR" ? "unavailable" : "unreadable";
     return { state, entries: [], snapshot: null };
   }
+}
+
+export interface ProjectAssociation {
+  id: string;
+  sourceId: string;
+  relativePath: string;
+  nativeIdentity: string;
+  associationState: "active" | "excluded" | "missing" | "unresolved" | "replaced";
+}
+export function reliableIdentity(value: NativeIdentity): boolean {
+  return /^\d+$/.test(value.dev) && /^\d+$/.test(value.ino) && BigInt(value.ino) > 0n &&
+    /^\d+$/.test(value.birthtimeNs) && BigInt(value.birthtimeNs) > 0n;
+}
+export function sameIdentity(a: NativeIdentity, b: NativeIdentity): boolean {
+  return a.dev === b.dev && a.ino === b.ino && a.birthtimeNs === b.birthtimeNs;
+}
+function storedIdentity(row: ProjectAssociation): NativeIdentity {
+  const value = JSON.parse(row.nativeIdentity) as NativeIdentity;
+  if (!value || typeof value.dev !== "string" || typeof value.ino !== "string" || typeof value.birthtimeNs !== "string") {
+    throw new Error("Invalid stored native identity");
+  }
+  return value;
+}
+
+// Matching is deliberately path-local. Missing/ambiguous records never automatically reattach.
+// Retired records remain evidence of native identifier reuse; no user metadata is deleted.
+export function interpretProjects(scan: DirectScan, records: ProjectAssociation[]): {
+  entries: DiscoveryEntry[];
+  retained: ProjectAssociation[];
+  additions: { relativePath: string; nativeIdentity: string }[];
+} {
+  if (!scan.snapshot) throw new Error("Cannot interpret an incomplete scan");
+  const retained = records.map((row) => ({ ...row }));
+  const entries = scan.entries.map((entry) => ({ ...entry }));
+  const additions: { relativePath: string; nativeIdentity: string }[] = [];
+  const identities = records.map((row) => storedIdentity(row));
+  for (const row of retained.filter((row) => row.associationState !== "replaced")) {
+    const child = scan.snapshot.children.find((child) => child.relativePath === row.relativePath);
+    if (!child || child.kind !== "directory") {
+      if (row.associationState !== "unresolved") row.associationState = "missing";
+    }
+  }
+  for (const child of scan.snapshot.children.filter((child) => child.kind === "directory")) {
+    const entry = entries.find((entry) => entry.relativePath === child.relativePath)!;
+    const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
+    const reliable = reliableIdentity(child.identity);
+    const collision = records.some((row, index) => row.id !== current?.id &&
+      identities[index].dev === child.identity.dev && identities[index].ino === child.identity.ino &&
+      (row.relativePath !== child.relativePath || sameIdentity(identities[index], child.identity))) ||
+      scan.snapshot.children.some((other) => other.relativePath !== child.relativePath && other.kind === "directory" &&
+        other.identity.dev === child.identity.dev && other.identity.ino === child.identity.ino);
+    let unresolved = !reliable || collision;
+    if (current) {
+      const previous = storedIdentity(current);
+      if (reliable && reliableIdentity(previous) && !sameIdentity(previous, child.identity)) {
+        current.associationState = "replaced";
+      } else if (unresolved || !reliableIdentity(previous) ||
+        (current.associationState !== "active" && current.associationState !== "excluded")) {
+        current.associationState = "unresolved";
+        unresolved = true;
+      } else {
+        current.associationState = entry.reason === null ? "active" : "excluded";
+        continue;
+      }
+    }
+    if (unresolved) {
+      if (entry.reason === null) entry.reason = "unresolved";
+    } else if (entry.reason === null) {
+      additions.push({ relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity) });
+    }
+  }
+  return { entries, retained, additions };
 }

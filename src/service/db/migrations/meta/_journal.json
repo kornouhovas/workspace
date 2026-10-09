@@ -29,6 +29,13 @@
       "when": 1791504003000,
       "tag": "0003_source_discovery",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791504004000,
+      "tag": "0004_direct_projects",
+      "breakpoints": true
     }
   ]
 }

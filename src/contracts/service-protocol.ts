@@ -1,8 +1,8 @@
 import type { ServiceResult } from "./settings.js";
-import type { DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
+import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -34,7 +34,7 @@ export function isServiceResponse(value: unknown): value is ServiceResponse {
   const error = result.error;
   return result.ok === false && exact(result, ["ok", "error"]) &&
     record(error) && exact(error, ["code", "message"]) &&
-    ["invalid_input", "filesystem", "storage", "service_unavailable"].includes(typeof error.code === "string" ? error.code : "") &&
+    ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview"].includes(typeof error.code === "string" ? error.code : "") &&
     typeof error.message === "string";
 }
 

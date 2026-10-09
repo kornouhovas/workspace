@@ -1,5 +1,5 @@
-import { scanDirectSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
-import type { DiscoveryPreview } from "../contracts/workspaces.js";
+import { interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
+import type { DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
@@ -31,6 +31,8 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  applyDiscovery(input: unknown): ServiceResult<ProjectList>;
+  listProjects(input: unknown): ServiceResult<ProjectList>;
   previewDiscovery(input: unknown): ServiceResult<DiscoveryPreview>;
   subscribe(listener: (event: WorkspaceChangeEvent) => void): () => void;
   close(): void;
@@ -61,6 +63,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
     source: typeof schema.sources.$inferSelect;
+    projects: typeof schema.projects.$inferSelect[];
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
@@ -98,20 +101,76 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         }
         let snapshot = scan.snapshot;
         let state = scan.state;
-        if (source.appliedRootIdentity !== null && snapshot &&
-          JSON.stringify(JSON.parse(source.appliedRootIdentity)) !== JSON.stringify(snapshot.root.identity)) {
+        if (snapshot && (!reliableIdentity(snapshot.root.identity) || (source.appliedRootIdentity !== null &&
+          !sameIdentity(JSON.parse(source.appliedRootIdentity), snapshot.root.identity)))) {
           snapshot = null;
           state = "root_identity_conflict";
         }
+        const projects = readProjects(source.id);
+        const interpreted = snapshot ? interpretProjects(scan, projects).entries : [];
+        if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
         const preview: DiscoveryPreview = {
           workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
-          excludedRelativePaths: [...exclusions].sort(), entries: snapshot ? scan.entries : [], state,
+          excludedRelativePaths: [...exclusions].sort(), entries: interpreted, state,
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source });
+        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
+    },
+    listProjects(input) {
+      if (!workspacePayload(input, "workspace.listProjects", ["type", "workspaceId"])) return invalid("Choose a saved workspace.");
+      try {
+        const source = workspaceSource(input.workspaceId as string);
+        if (!source) return invalid("Choose a saved workspace.");
+        return { ok: true, value: projectList(input.workspaceId as string, source) };
+      } catch { return storageFailure(); }
+    },
+    applyDiscovery(input) {
+      if (!workspacePayload(input, "workspace.applyDiscovery", ["type", "workspaceId", "previewToken"]) ||
+        !isUuid(input.previewToken)) return invalid("Choose a saved workspace and a reviewed preview.");
+      const workspaceId = input.workspaceId as string;
+      const stale = () => {
+        previewTokens.delete(workspaceId);
+        return { ok: false as const, error: { code: "stale_preview" as const, message: "Refresh the preview and review current folders before applying." } };
+      };
+      try {
+        const source = workspaceSource(workspaceId);
+        if (!source) return invalid("Choose a saved workspace.");
+        const token = previewTokens.get(workspaceId);
+        if (!token || token.preview.previewToken !== input.previewToken ||
+          JSON.stringify(token.source) !== JSON.stringify(source) ||
+          JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id))) return stale();
+        const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+        if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
+          !reliableIdentity(scan.snapshot.root.identity)) return stale();
+        const interpretation = interpretProjects(scan, token.projects);
+        if (JSON.stringify(interpretation.entries) !== JSON.stringify(token.preview.entries)) return stale();
+        const result = db.transaction((tx) => {
+          if (JSON.stringify(workspaceSource(workspaceId)) !== JSON.stringify(source) ||
+            JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects)) throw new StalePreview();
+          tx.update(schema.sources).set({ discoveryMode: "direct", discoveryRevision: source.discoveryRevision + 1,
+            excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths),
+            appliedRootIdentity: JSON.stringify(scan.snapshot!.root.identity),
+          }).where(eq(schema.sources.id, source.id)).run();
+          // Retire associations before inserting replacements into the unique current-path index.
+          for (const row of interpretation.retained) {
+            tx.update(schema.projects).set({ associationState: row.associationState })
+              .where(eq(schema.projects.id, row.id)).run();
+          }
+          for (const row of interpretation.additions) tx.insert(schema.projects).values({
+            id: randomUUID(), sourceId: source.id, ...row, associationState: "active",
+          }).run();
+          // Observed changes during persistence roll back all DB writes. This is not a filesystem lock.
+          const recheck = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
+          const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
+          return projectList(workspaceId, committed, recheck);
+        });
+        previewTokens.delete(workspaceId);
+        return { ok: true, value: result };
+      } catch (error) { return error instanceof StalePreview ? stale() : storageFailure(); }
     },
     refreshSource(input) {
       if (!isRecord(input) || input.type !== "workspace.refreshSource" ||
@@ -307,6 +366,29 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     },
   };
 
+  function workspaceSource(workspaceId: string) {
+    return db.select().from(schema.workspaces).innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
+      .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
+  }
+  function readProjects(sourceId: string) {
+    return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
+  }
+  function projectList(workspaceId: string, source: typeof schema.sources.$inferSelect,
+    currentScan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, JSON.parse(source.excludedRelativePaths))): ProjectList {
+    if (!validExclusions(JSON.parse(source.excludedRelativePaths)) || !validArchive(source.archiveRelativePath) ||
+      !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
+      (source.discoveryMode !== null && source.discoveryMode !== "direct")) throw new Error("Invalid source configuration");
+    const projects = readProjects(source.id);
+    let state = currentScan.state;
+    if (currentScan.snapshot && source.appliedRootIdentity &&
+      !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity)) state = "root_identity_conflict";
+    const active = projects.filter((row) => row.associationState === "active").map((row) => ({
+      projectId: row.id, relativePath: row.relativePath, name: row.relativePath,
+    })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: source.discoveryMode !== null,
+      state, projects: active, retainedCount: projects.length - active.length };
+  }
+
   function sourceState(sourceId: string, state: { canonicalRoot: string; sourceAvailable: boolean }): WorkspaceSourceState {
     const references = db.select({ workspaceId: schema.workspaces.id }).from(schema.workspaces)
       .where(eq(schema.workspaces.sourceId, sourceId))
@@ -377,7 +459,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     create: (input) => run(() => service.create(input), currentSnapshot),
     rename: (input) => run(() => service.rename(input), returnedSnapshot),
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
-    remove: (input) => run(() => service.remove(input), returnedSnapshot),
+    remove: (input) => {
+      const result = run(() => service.remove(input), returnedSnapshot);
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") previewTokens.delete(input.workspaceId);
+      return result;
+    },
     activate: (input) => run(() => service.activate(input), activationSnapshot),
     load: () => run(() => service.load()),
     refreshSource: (input) => run(() => service.refreshSource(input)),
@@ -481,4 +567,10 @@ function filesystemError() {
 
 function storageFailure() {
   return { ok: false as const, error: { code: "storage" as const, message: "Workspace data could not be read or saved." } };
+}
+
+class StalePreview extends Error {}
+function workspacePayload(input: unknown, type: string, keys: string[]): input is Record<string, unknown> {
+  return isRecord(input) && input.type === type && Object.keys(input).length === keys.length &&
+    keys.every((key) => Object.hasOwn(input, key)) && isUuid(input.workspaceId);
 }
