@@ -35,6 +35,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 export interface WorkspaceService {
   listTextProperties(input: unknown): ServiceResult<TextPropertySnapshot>;
   createProperty(input: unknown): ServiceResult<TextPropertyMutation>;
+  setTextValue(input: unknown): ServiceResult<TextPropertyMutation>;
   renameProperty(input: unknown): ServiceResult<TextPropertyMutation>;
   applyDiscovery(input: unknown): ServiceResult<ProjectList>;
   listProjects(input: unknown): ServiceResult<ProjectList>;

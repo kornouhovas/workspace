@@ -1468,7 +1468,85 @@ test("EN/RU default Table creates and renames source-owned Text definitions thro
       assert.equal(shared.ok, true); if (!shared.ok) throw new Error("Fixture failed");
       assert.equal(shared.value.definitions[0].name, "  Общее имя  "); assert.equal(shared.value.revision, 2);
       assert.ok(screen.getByText(translate(language, "propertySaved")));
+      const cellLabel = `${translate(language, "editTextValue")}: Project / Общее имя`;
+      const cell = screen.getByRole("button", { name: cellLabel });
+      cell.focus(); await userEvent.keyboard("{Enter}");
+      await userEvent.type(screen.getByRole("textbox", { name: cellLabel }), "  Real 📝");
+      await userEvent.keyboard("{Enter}"); await userEvent.type(screen.getByRole("textbox", { name: cellLabel }), "значение  ");
+      await userEvent.keyboard("{Control>}{Enter}{/Control}");
+      await screen.findByText(translate(language, "textValueSaved"));
+      const values = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.value.workspaceId });
+      assert.equal(values.ok, true); if (!values.ok) throw new Error("Fixture failed");
+      assert.equal(values.value.values[0].value, "  Real 📝\nзначение  "); assert.equal(values.value.revision, 3);
+      assert.equal(cell.textContent, "  Real 📝\nзначение  ");
+      await userEvent.click(cell); await userEvent.click(screen.getByRole("button", { name: translate(language, "clearTextValue") }));
+      await waitFor(() => assert.equal(cell.textContent, translate(language, "textValueAbsent")));
+      const cleared = service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.value.workspaceId });
+      assert.equal(cleared.ok, true); if (!cleared.ok) throw new Error("Fixture failed");
+      assert.deepEqual(cleared.value.values, []); assert.equal(cleared.value.revision, 4);
       cleanup(); unsubscribe();
     } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves, clear and restore focus", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const workspaceId = randomUUID(), sourceId = randomUUID(), propertyId = randomUUID(), projectId = randomUUID();
+    let snapshot: TextPropertySnapshot = { workspaceId, sourceId, revision: 1, definitions: [{ propertyId, sourceId, name: "Notes", propertyType: "text" }], values: [] };
+    const calls: (string | null)[] = [];
+    let finish: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+    let throws = false;
+    mockApi({ onProperties: async () => ok(snapshot), onWorkspace: async (request) => {
+      if (request.type !== "workspace.setTextValue") return fail("invalid_input");
+      calls.push(request.value);
+      if (throws) throw new Error("Transport unavailable");
+      return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; });
+    } });
+    render(<TextPropertiesTable client={new WorkspaceServiceClient()} workspaceId={workspaceId} sourceId={sourceId}
+      projects={[{ projectId, name: "Project", relativePath: "Project" }]} language={language} disabled={false} />);
+    const label = `${translate(language, "editTextValue")}: Project / Notes`;
+    const cell = await screen.findByRole("button", { name: label });
+    assert.equal(cell.textContent, translate(language, "textValueAbsent"));
+    cell.focus(); await userEvent.keyboard("{Enter}");
+    const editor = screen.getByRole("textbox", { name: label });
+    assert.equal(document.activeElement === editor, true);
+    await userEvent.type(editor, "  日本語 📝"); await userEvent.keyboard("{Enter}"); await userEvent.type(editor, "Строка  ");
+    assert.deepEqual(calls, []);
+    await userEvent.click(screen.getByRole("cell", { name: "Project" })); assert.deepEqual(calls, [], "blur must not save");
+    editor.focus(); await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    assert.deepEqual(calls, ["  日本語 📝\nСтрока  "]);
+    assert.equal((editor as HTMLTextAreaElement).disabled, true);
+    const cancel = screen.getByRole("button", { name: translate(language, "cancelTextValue") }) as HTMLButtonElement;
+    assert.equal(cancel.disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "clearTextValue") }) as HTMLButtonElement).disabled, true);
+    await userEvent.keyboard("{Control>}{Enter}{/Control}{Escape}"); assert.equal(calls.length, 1);
+    await act(async () => { finish?.(fail("storage")); });
+    await screen.findByText(translate(language, "textValueSaveError"));
+    assert.equal((editor as HTMLTextAreaElement).value, "  日本語 📝\nСтрока  ");
+    editor.focus(); await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+    await act(async () => { finish?.(fail("invalid_input")); });
+    await screen.findByText(translate(language, "textValueValidation"));
+    assert.equal((editor as HTMLTextAreaElement).value, "  日本語 📝\nСтрока  ");
+    throws = true; await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await screen.findByText(translate(language, "textValueSaveError"));
+    throws = false;
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    snapshot = { ...snapshot, revision: 2, values: [{ projectId, propertyId, value: "  日本語 📝\nСтрока  " }] };
+    await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
+    await screen.findByText(translate(language, "textValueSaved"));
+    assert.equal(document.activeElement === cell, true);
+    assert.equal(cell.textContent, "  日本語 📝\nСтрока  ");
+    await userEvent.click(cell); await userEvent.clear(screen.getByRole("textbox", { name: label })); await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement === cell, true); assert.equal(cell.textContent, "  日本語 📝\nСтрока  ");
+    await userEvent.click(cell); await userEvent.clear(screen.getByRole("textbox", { name: label }));
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    assert.equal(calls.at(-1), ""); snapshot = { ...snapshot, revision: 3, values: [{ projectId, propertyId, value: "" }] };
+    await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
+    assert.equal(cell.textContent, translate(language, "textValueEmpty"));
+    await userEvent.click(cell); await userEvent.click(screen.getByRole("button", { name: translate(language, "clearTextValue") }));
+    assert.equal(calls.at(-1), null); snapshot = { ...snapshot, revision: 4, values: [] };
+    await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
+    assert.equal(cell.textContent, translate(language, "textValueAbsent"));
+    cleanup();
   }
 });

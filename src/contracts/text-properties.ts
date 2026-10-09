@@ -19,3 +19,4 @@ export interface TextPropertyMutation {
 export type WorkspaceListTextPropertiesQuery = { type: "workspace.listTextProperties"; workspaceId: string };
 export type WorkspaceCreatePropertyCommand = { type: "workspace.createProperty"; workspaceId: string; name: string; propertyType: "text" };
 export type WorkspaceRenamePropertyCommand = { type: "workspace.renameProperty"; workspaceId: string; propertyId: string; name: string };
+export type WorkspaceSetTextValueCommand = { type: "workspace.setTextValue"; workspaceId: string; projectId: string; propertyId: string; value: string | null };

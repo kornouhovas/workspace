@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { asc, eq, max } from "drizzle-orm";
+import { and, asc, eq, max } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
@@ -68,6 +68,36 @@ export function createTextPropertyService(db: Database, publish: (events: Worksp
         });
       } catch { return storage(); }
     },
+    setTextValue(input: unknown): ServiceResult<TextPropertyMutation> {
+      if (!payload(input, "workspace.setTextValue", ["type", "workspaceId", "projectId", "propertyId", "value"]) ||
+        !uuid(input.projectId) || !uuid(input.propertyId) || (input.value !== null && typeof input.value !== "string")) return invalidValue();
+      const workspaceId = input.workspaceId as string, projectId = input.projectId, propertyId = input.propertyId, text = input.value;
+      try {
+        const committed = db.transaction((tx) => {
+          const source = sourceFor(tx, workspaceId);
+          const property = tx.select().from(schema.propertyDefinitions).where(eq(schema.propertyDefinitions.id, propertyId)).get();
+          const project = tx.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get();
+          if (!source || !property || !project || property.propertyType !== "text" || property.sourceId !== source.id || project.sourceId !== source.id) return invalidValue();
+          const key = and(eq(schema.textPropertyValues.projectId, projectId), eq(schema.textPropertyValues.propertyId, propertyId));
+          const existing = tx.select().from(schema.textPropertyValues).where(key).get();
+          const changed = (existing?.value ?? null) !== text;
+          if (changed) {
+            if (text === null) tx.delete(schema.textPropertyValues).where(key).run();
+            else if (existing) tx.update(schema.textPropertyValues).set({ value: text }).where(key).run();
+            else tx.insert(schema.textPropertyValues).values({ projectId, propertyId, sourceId: source.id, value: text }).run();
+            if (!Number.isSafeInteger(source.propertyRevision + 1)) throw new Error("Property revision exhausted");
+            tx.update(schema.sources).set({ propertyRevision: source.propertyRevision + 1 }).where(eq(schema.sources.id, source.id)).run();
+          }
+          const value = snapshot(tx, workspaceId, source.id);
+          const workspaceIds = tx.select({ id: schema.workspaces.id }).from(schema.workspaces).where(eq(schema.workspaces.sourceId, source.id))
+            .orderBy(asc(schema.workspaces.position), asc(schema.workspaces.id)).all().map((row) => row.id);
+          return { ok: true as const, value, workspaceIds, changed };
+        });
+        if (!committed.ok) return committed;
+        if (committed.changed) publish([{ type: "workspace.propertiesChanged", sourceId: committed.value.sourceId, workspaceIds: committed.workspaceIds, revision: committed.value.revision }]);
+        return { ok: true, value: { snapshot: committed.value, projectId, propertyId } };
+      } catch { return storage(); }
+    },
     createProperty: (input: unknown) => mutate(input, true),
     renameProperty: (input: unknown) => mutate(input, false),
   };
@@ -82,3 +112,5 @@ function payload(input: unknown, type: string, keys: string[]): input is Record<
 }
 function invalid() { return { ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace and Text property, and enter a nonblank name." } }; }
 function storage() { return { ok: false as const, error: { code: "storage" as const, message: "Text properties could not be read or saved." } }; }
+
+function invalidValue() { return { ok: false as const, error: { code: "invalid_input" as const, message: "Choose a saved workspace, its project and Text property, and submit text or null to clear." } }; }

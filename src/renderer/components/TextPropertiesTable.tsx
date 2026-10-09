@@ -4,6 +4,7 @@ import type { ProjectSummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
+import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
 interface Props {
@@ -92,6 +93,15 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
       if (current === lifetime.current) { saving.current = false; setPending(false); }
     }
   };
+  const saveValue = async (projectId: string, propertyId: string, value: string | null) => {
+    const current = lifetime.current;
+    const result = await client.setTextValue(workspaceId, projectId, propertyId, value);
+    if (current === lifetime.current && result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId && accepts(result.value.snapshot)) {
+      listVersion.current++; setLoading(false); setLoadError(false);
+      minimumRevision.current = result.value.snapshot.revision; setSnapshot(result.value.snapshot);
+    }
+    return result;
+  };
   return <div className="text-properties" aria-busy={pending || loading}>
     {loading && <StatusMessage kind="info" title={t("propertiesLoading")} />}
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
@@ -119,7 +129,12 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
       </tr></thead><tbody>{projects.map((project) => <tr key={project.projectId}><td>{project.name}</td>
-        {snapshot?.definitions.map((property) => <td key={property.propertyId}>{t("textValueAbsent")}</td>)}
+        {snapshot?.definitions.map((property) => <td key={property.propertyId}>
+          <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
+            projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
+            value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
+            onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
+        </td>)}
       </tr>)}</tbody></table>
     </div>
   </div>;

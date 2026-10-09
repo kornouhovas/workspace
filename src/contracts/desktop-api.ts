@@ -1,4 +1,4 @@
-import type { TextPropertySnapshot, TextPropertyMutation, WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand } from "./text-properties.js";
+import type { TextPropertySnapshot, TextPropertyMutation, WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand, WorkspaceSetTextValueCommand } from "./text-properties.js";
 import type { ServiceResult, Settings, SettingsCommand, SettingsQuery } from "./settings.js";
 import type { ProjectList, WorkspaceApplyDiscoveryCommand, WorkspaceListProjectsQuery, DiscoveryPreview, WorkspacePreviewDiscoveryQuery, ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand, WorkspaceReorderCommand, WorkspaceRemoveCommand, WorkspaceRefreshSourceCommand, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 
@@ -17,6 +17,7 @@ export interface WorkspaceDesktopApi {
   settings(input: SettingsRequest): Promise<ServiceResult<Settings>>;
   workspace(input: WorkspaceListTextPropertiesQuery): Promise<ServiceResult<TextPropertySnapshot>>;
   workspace(input: WorkspaceCreatePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
+  workspace(input: WorkspaceSetTextValueCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceRenamePropertyCommand): Promise<ServiceResult<TextPropertyMutation>>;
   workspace(input: WorkspaceApplyDiscoveryCommand): Promise<ServiceResult<ProjectList>>;
   workspace(input: WorkspaceListProjectsQuery): Promise<ServiceResult<ProjectList>>;

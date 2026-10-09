@@ -73,6 +73,11 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "workspaceId", "name", "propertyType"]) ||
       typeof input.workspaceId !== "string" || typeof input.name !== "string" || input.propertyType !== "text";
   }
+  if (input.type === "workspace.setTextValue") {
+    return !hasExactKeys(input, ["type", "workspaceId", "projectId", "propertyId", "value"]) ||
+      typeof input.workspaceId !== "string" || typeof input.projectId !== "string" || typeof input.propertyId !== "string" ||
+      (input.value !== null && typeof input.value !== "string");
+  }
   if (input.type === "workspace.renameProperty") {
     return !hasExactKeys(input, ["type", "workspaceId", "propertyId", "name"]) ||
       typeof input.workspaceId !== "string" || typeof input.propertyId !== "string" || typeof input.name !== "string";

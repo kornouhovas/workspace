@@ -750,10 +750,10 @@ test("two typed clients receive committed project revisions through real ports/c
   } finally { offOne(); offTwo(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
 
-test("Text definitions traverse typed client and real service entry with committed events before responses", async () => {
+test("Text definitions and values traverse typed client and real service entry with committed events before responses", async () => {
   const directory = await mkdtemp(join(tmpdir(), "text-property-ipc-"));
   const root = join(directory, "root"), otherRoot = join(directory, "other");
-  await mkdir(root); await mkdir(otherRoot);
+  await mkdir(root); await mkdir(otherRoot); await mkdir(join(root, "Project"));
   const parent = new EventEmitter(); parent.postMessage = () => {};
   const port = new FakePort(); startServiceProcess(parent);
   try {
@@ -774,7 +774,30 @@ test("Text definitions traverse typed client and real service entry with committ
     assert.deepEqual((await client.listTextProperties(other.workspaceId)).value.definitions, []);
     const renamed = await client.renameProperty(sibling.workspaceId, created.value.propertyId, "Renamed");
     assert.equal(renamed.value.snapshot.revision, 2);
+    const preview = (await client.previewDiscovery(one.workspaceId)).value;
+    const projectId = (await client.applyDiscovery(one.workspaceId, preview.previewToken)).value.projects[0].projectId;
+    const propertyId = created.value.propertyId;
+    for (const [value, revision] of [["  日本語\nСтрока  ", 3], ["", 4], [null, 5]]) {
+      port.sent.length = 0;
+      const saved = await client.setTextValue(sibling.workspaceId, projectId, propertyId, value);
+      assert.equal(saved.ok, true); assert.equal(saved.value.snapshot.revision, revision);
+      assert.equal(saved.value.projectId, projectId);
+      assert.deepEqual(saved.value.snapshot.values, value === null ? [] : [{ projectId, propertyId, value }]);
+      assert.deepEqual(port.sent[0].change, { type: "workspace.propertiesChanged", sourceId: one.sourceId, workspaceIds: [one.workspaceId, sibling.workspaceId], revision });
+      assert.equal(port.sent[1].id, id);
+      assert.deepEqual((await client.listTextProperties(one.workspaceId)).value.values, saved.value.snapshot.values);
+      assert.deepEqual((await client.listTextProperties(other.workspaceId)).value.values, []);
+      port.sent.length = 0;
+      assert.equal((await client.setTextValue(one.workspaceId, projectId, propertyId, value)).value.snapshot.revision, revision);
+      assert.equal(port.sent.length, 1);
+    }
+    port.sent.length = 0;
+    assert.equal((await client.setTextValue(other.workspaceId, projectId, propertyId, "foreign")).error.code, "invalid_input");
+    assert.equal(port.sent.length, 1);
     for (const input of [
+      { type: "workspace.setTextValue", workspaceId: one.workspaceId, projectId, propertyId, value: "bad", propertyType: "number" },
+      { type: "workspace.setTextValue", workspaceId: one.workspaceId, projectId, propertyId, value: 4 },
+      { type: "workspace.setTextValue", workspaceId: one.workspaceId, projectId, propertyId },
       { type: "workspace.renameProperty", workspaceId: one.workspaceId, propertyId: created.value.propertyId, name: "Bad", propertyType: "number" },
       { type: "workspace.createProperty", workspaceId: one.workspaceId, name: "Bad", propertyType: "number" },
       { type: "workspace.listTextProperties", workspaceId: one.workspaceId, extra: true },

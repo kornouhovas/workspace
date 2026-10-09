@@ -284,3 +284,13 @@ body {
 .property-rename { margin-top: 0.5rem; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .project-table-scroll { min-width: 0; overflow-x: auto; }
 .project-table-scroll .project-table { min-width: 16rem; }
+
+.text-property-cell, .text-value-editor { display: grid; gap: 0.5rem; min-width: 0; }
+.text-value-button { width: 100%; min-height: 2.5rem; padding: 0.5rem; text-align: start; color: inherit; background: #f7f8fa; border: 1px solid #d7d9dc; border-radius: 0.35rem; white-space: pre-wrap; overflow-wrap: anywhere; cursor: pointer; }
+.text-value-button[hidden] { display: none; }
+.text-value-button:focus-visible { outline: 2px solid #526ed3; outline-offset: 2px; }
+.text-value-button:disabled { cursor: default; opacity: 0.6; }
+.text-value-editor textarea { width: 100%; min-width: 0; resize: vertical; white-space: pre-wrap; }
+.text-value-editor .workspace-form-actions { flex-wrap: wrap; }
+.text-value-label, .text-value-hint { overflow-wrap: anywhere; white-space: normal; }
+.text-value-hint { margin: 0; font-size: 0.85rem; color: #62666d; }

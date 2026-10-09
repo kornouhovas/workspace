@@ -129,13 +129,22 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Add failing service tests for nonempty strings, empty strings, null clearing, repeated no-op saves, Unicode, whitespace-only and multiline values. Verify exact returned and reopened values, revision changes, event suppression for no-ops and rollback for injected insert/update/delete failures.
-- [ ] Implement workspace.setTextValue with exact validation and same-source ownership checks. Persist the value change, revision and returned snapshot in one transaction; publish after commit. Reject foreign properties/projects, missing entities, non-string/non-null values and attempted property-type changes without writes.
-- [ ] Add an accessible cell editor labeled with project and property names. Enter on the cell opens editing; textarea Enter inserts a newline; Ctrl/Cmd+Enter saves; Escape cancels. Provide explicit keyboard-accessible Save, Clear and Cancel controls, focus restoration and pending state.
-- [ ] Preserve drafts after validation, storage or transport failure. Show localized absence/empty-string labels and useful EN/RU errors. Report saved state only from an actual successful service result; do not automatically save on blur or replay failed commands.
-- [ ] Extend real SQLite/filesystem regressions with values assigned before exclusion, missing-folder observation and folder replacement. Assert retained values remain attached to the original logical IDs, replacement IDs receive no inherited values, and sibling/last-workspace removal and source reuse preserve metadata after reopen. Compare fixture inventories and sentinel bytes before/after metadata commands.
-- [ ] Exercise save/clear through the typed client and service entry, including same-source sibling success and unrelated-source rejection. Add EN/RU interaction assertions for keyboard editing, cancellation, pending prevention and recoverable failed drafts.
-- [ ] Run the task checkpoint and commit the verified slice as feat: edit and clear shared Text values.
+- [x] Add failing service tests for nonempty strings, empty strings, null clearing, repeated no-op saves, Unicode, whitespace-only and multiline values. Verify exact returned and reopened values, revision changes, event suppression for no-ops and rollback for injected insert/update/delete failures.
+- [x] Implement workspace.setTextValue with exact validation and same-source ownership checks. Persist the value change, revision and returned snapshot in one transaction; publish after commit. Reject foreign properties/projects, missing entities, non-string/non-null values and attempted property-type changes without writes.
+- [x] Add an accessible cell editor labeled with project and property names. Enter on the cell opens editing; textarea Enter inserts a newline; Ctrl/Cmd+Enter saves; Escape cancels. Provide explicit keyboard-accessible Save, Clear and Cancel controls, focus restoration and pending state.
+- [x] Preserve drafts after validation, storage or transport failure. Show localized absence/empty-string labels and useful EN/RU errors. Report saved state only from an actual successful service result; do not automatically save on blur or replay failed commands.
+- [x] Extend real SQLite/filesystem regressions with values assigned before exclusion, missing-folder observation and folder replacement. Assert retained values remain attached to the original logical IDs, replacement IDs receive no inherited values, and sibling/last-workspace removal and source reuse preserve metadata after reopen. Compare fixture inventories and sentinel bytes before/after metadata commands.
+- [x] Exercise save/clear through the typed client and service entry, including same-source sibling success and unrelated-source rejection. Add EN/RU interaction assertions for keyboard editing, cancellation, pending prevention and recoverable failed drafts.
+- [x] Run the task checkpoint and commit the verified slice as feat: edit and clear shared Text values.
+
+Task 2 checkpoint:
+
+- Implemented workspace.setTextValue through the typed client/service entry and source-owned SQLite transactions. Null removes the value row; empty strings, Unicode, whitespace and line breaks are stored exactly. Identical assignments and clearing an absent value suppress revision increments and events.
+- Added the localized accessible Table cell editor with Enter to open, multiline textarea input, Ctrl/Cmd+Enter to save, Escape to cancel, explicit Save/Clear/Cancel, pending prevention and focus restoration. Validation, storage and transport failures retain drafts; blur does not save.
+- Verified with 166 passing tests via npm test, including production build and artifact regressions, real temporary SQLite rollback/reopen, typed client/service entry event-before-response behavior, and EN/RU mock and real-service UI interactions. npm run lint, npm run typecheck and git diff --check passed.
+- Disposable filesystem fixtures preserve directory inventories and sentinel bytes across metadata commands. Values remain on original IDs through exclusions, replacement/missing observations, sibling/final workspace removal and retained source reuse; settings, discovery configuration, project records, selection and independent views remain unchanged by value mutations.
+- Evidence is retained under work/ralphex/issue-12/task-2-evidence, including the initial failing service/cell tests and a focused IPC attempt run against an outdated compiled entry. The subsequent full npm test rebuilt the entry and passed all checks.
+- Notification conflict notices and backend lifecycle response guards remain Task 3. Native Electron/screenshots/restart/package checks remain Task 4; no native or Windows runtime verification is claimed here. Physical macOS27 shutdown #44 remains unresolved and a final-release blocker.
 
 ### Task 3: Preserve committed state and editing drafts across notifications
 

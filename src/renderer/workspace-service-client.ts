@@ -35,6 +35,10 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.renameProperty", workspaceId, propertyId, name });
   }
 
+  setTextValue(workspaceId: string, projectId: string, propertyId: string, value: string | null): Promise<ServiceResult<TextPropertyMutation>> {
+    return this.api.workspace({ type: "workspace.setTextValue", workspaceId, projectId, propertyId, value });
+  }
+
   previewDiscovery(workspaceId: string, excludedRelativePaths?: string[]): Promise<ServiceResult<DiscoveryPreview>> {
     return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId,
       ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });

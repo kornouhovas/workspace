@@ -87,6 +87,7 @@ export function openSettingsService(
 
     handleCommand(input) {
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
+      if (isRecord(input) && input.type === "workspace.setTextValue") return workspaces.setTextValue(input);
       if (isRecord(input) && input.type === "workspace.renameProperty") return workspaces.renameProperty(input);
       if (isRecord(input) && input.type === "workspace.applyDiscovery") return workspaces.applyDiscovery(input);
       if (isRecord(input) && input.type === "workspace.create") return workspaces.create(input);

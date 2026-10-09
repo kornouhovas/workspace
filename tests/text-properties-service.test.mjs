@@ -1,7 +1,7 @@
 import test from "node:test";
 
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, renameSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -149,5 +149,134 @@ test("SQLite composite foreign keys prevent cross-source values and keep definit
     assert.throws(() => sql.prepare("UPDATE property_definitions SET property_type = 'number' WHERE id = ?").run(propertyId), /immutable/);
     assert.equal(rename(f.service, f.sibling.workspaceId, propertyId, "Renamed").ok, true);
     assert.deepEqual(list(f.service, f.one.workspaceId).value.values, [{ projectId, propertyId, value: "authored" }]);
+  } finally { sql.close(); }
+}));
+
+const setValue = (service, workspaceId, projectId, propertyId, value) => service.handleCommand({ type: "workspace.setTextValue", workspaceId, projectId, propertyId, value });
+const discover = (service, workspaceId, excludedRelativePaths) => {
+  const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId, ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });
+  assert.equal(preview.ok, true);
+  const result = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken });
+  assert.equal(result.ok, true); return result.value;
+};
+
+test("authored Text values distinguish empty and null, survive reopen, and suppress repeated no-op events", () => fixture((f) => {
+  const propertyId = createProperty(f.service, f.one.workspaceId).value.propertyId;
+  const projectId = discover(f.service, f.one.workspaceId).projects[0].projectId;
+  let revision = 1;
+  for (const value of [null, "Text", "", " \t\n ", "  日本語 📝\nСтрока\r\n  ", null]) {
+    const events = []; const off = f.service.workspaces.subscribe((event) => events.push(event));
+    const result = setValue(f.service, f.sibling.workspaceId, projectId, propertyId, value);
+    assert.equal(result.ok, true);
+    if (value !== null || revision !== 1) revision++;
+    assert.equal(result.value.snapshot.revision, revision);
+    assert.equal(result.value.projectId, projectId); assert.equal(result.value.propertyId, propertyId);
+    const values = value === null ? [] : [{ projectId, propertyId, value }];
+    assert.deepEqual(result.value.snapshot.values, values);
+    assert.deepEqual(events, revision === 1 ? [] : [{ type: "workspace.propertiesChanged", sourceId: f.one.sourceId, workspaceIds: [f.one.workspaceId, f.sibling.workspaceId], revision }]);
+    events.length = 0;
+    assert.equal(setValue(f.service, f.one.workspaceId, projectId, propertyId, value).value.snapshot.revision, revision);
+    assert.deepEqual(events, []); off();
+    assert.deepEqual(list(f.service, f.other.workspaceId).value.values, []);
+    f.reopen(); assert.deepEqual(list(f.service, f.one.workspaceId).value.values, values);
+    assert.equal(list(f.service, f.one.workspaceId).value.revision, revision);
+  }
+}));
+
+test("Text value commands reject malformed payloads and foreign or missing entities without writes", () => fixture((f) => {
+  const propertyId = createProperty(f.service, f.one.workspaceId).value.propertyId;
+  const foreign = createProperty(f.service, f.other.workspaceId).value.propertyId;
+  const projectId = discover(f.service, f.one.workspaceId).projects[0].projectId;
+  const base = { type: "workspace.setTextValue", workspaceId: f.one.workspaceId, projectId, propertyId, value: "value" };
+  const before = list(f.service, f.one.workspaceId);
+  const events = []; f.service.workspaces.subscribe((event) => events.push(event));
+  const { value: omitted, ...missingValue } = base; assert.equal(omitted, "value");
+  for (const input of [missingValue, { ...base, value: undefined }, { ...base, value: 0 }, { ...base, value: {} }, { ...base, value: false },
+    { ...base, extra: true }, { ...base, propertyType: "text" }, { ...base, propertyType: "number" },
+    ...["workspaceId", "projectId", "propertyId"].flatMap((key) => [{ ...base, [key]: "bad" }, { ...base, [key]: randomUUID() }]),
+    { ...base, propertyId: foreign }, { ...base, workspaceId: f.other.workspaceId }]) {
+    assert.equal(f.service.handleCommand(input).error.code, "invalid_input");
+    assert.deepEqual(list(f.service, f.one.workspaceId), before);
+  }
+  // A foreign project is rejected even when the property belongs to the selected source.
+  assert.equal(setValue(f.service, f.other.workspaceId, projectId, foreign, "bad").error.code, "invalid_input");
+  assert.deepEqual(events, []);
+}));
+
+test("injected Text insert/update/delete and revision failures roll back snapshots and events", () => fixture((f) => {
+  const propertyId = createProperty(f.service, f.one.workspaceId).value.propertyId;
+  const projectId = discover(f.service, f.one.workspaceId).projects[0].projectId;
+  const sql = new Database(f.databasePath);
+  try {
+    for (const [table, operation, initial, next] of [
+      ["text_property_values", "INSERT", null, "insert"], ["text_property_values", "UPDATE", "old", "new"],
+      ["text_property_values", "DELETE", "old", null], ["sources", "UPDATE OF property_revision", null, "insert"],
+      ["sources", "UPDATE OF property_revision", "old", "new"], ["sources", "UPDATE OF property_revision", "old", null],
+    ]) {
+      assert.equal(setValue(f.service, f.one.workspaceId, projectId, propertyId, initial).ok, true);
+      const before = list(f.service, f.one.workspaceId);
+      const events = []; const off = f.service.workspaces.subscribe((event) => events.push(event));
+      sql.exec(`CREATE TRIGGER fail_value BEFORE ${operation} ON ${table} BEGIN SELECT RAISE(ABORT, 'injected failure'); END`);
+      assert.equal(setValue(f.service, f.one.workspaceId, projectId, propertyId, next).error.code, "storage");
+      assert.deepEqual(list(f.service, f.one.workspaceId), before); assert.deepEqual(events, []);
+      sql.exec("DROP TRIGGER fail_value"); off();
+      f.reopen(); assert.deepEqual(list(f.service, f.one.workspaceId), before);
+    }
+  } finally { sql.close(); }
+}));
+
+function inventory(root) {
+  const entries = [];
+  const visit = (path, prefix) => {
+    for (const entry of readdirSync(path, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const relative = `${prefix}${entry.name}`;
+      if (entry.isDirectory()) { entries.push([relative, "directory"]); visit(join(path, entry.name), `${relative}/`); }
+      else entries.push([relative, readFileSync(join(path, entry.name)).toString("hex")]);
+    }
+  };
+  visit(root, ""); return entries;
+}
+
+test("Text metadata stays on retained logical IDs through exclusions, replacements, missing folders and source reuse without file changes", () => fixture((f) => {
+  mkdirSync(join(f.root, "Project", "Nested"));
+  writeFileSync(join(f.root, "Project", "Nested", "sentinel.bin"), Buffer.from([0, 255, 42]));
+  const safe = (command) => { const before = inventory(f.root); const result = command(); assert.deepEqual(inventory(f.root), before); return result; };
+  const projectId = safe(() => discover(f.service, f.one.workspaceId)).projects[0].projectId;
+  const propertyId = safe(() => createProperty(f.service, f.one.workspaceId)).value.propertyId;
+  const sql = new Database(f.databasePath);
+  const inspect = () => Object.fromEntries(["settings", "sources", "projects", "workspaces", "views", "active_workspace"].map((table) => [table,
+    sql.prepare(`SELECT * FROM ${table}`).all().map((row) => { if (table === "sources") delete row.property_revision; return row; })]));
+  try {
+    const metadata = inspect();
+    assert.equal(safe(() => setValue(f.service, f.one.workspaceId, projectId, propertyId, "  Durable 📝\n  ")).ok, true);
+    assert.deepEqual(inspect(), metadata, "property mutations preserve discovery, project identities, settings, selection and independent views");
+    const expected = list(f.service, f.one.workspaceId).value;
+    assert.equal(safe(() => discover(f.service, f.one.workspaceId, ["Project"])).projects.length, 0);
+    assert.equal(safe(() => discover(f.service, f.one.workspaceId, [])).projects[0].projectId, projectId);
+    renameSync(join(f.root, "Project"), join(f.directory, "original"));
+    cpSync(join(f.directory, "original"), join(f.root, "Project"), { recursive: true });
+    const replacement = safe(() => discover(f.service, f.one.workspaceId));
+    const replacementId = replacement.projects[0].projectId; assert.notEqual(replacementId, projectId);
+    assert.deepEqual(list(f.service, f.sibling.workspaceId).value.values, expected.values);
+    assert.equal(list(f.service, f.one.workspaceId).value.values.some((value) => value.projectId === replacementId), false);
+    renameSync(join(f.root, "Project"), join(f.directory, "missing"));
+    assert.equal(safe(() => discover(f.service, f.one.workspaceId)).retainedCount, 2);
+    assert.deepEqual(list(f.service, f.one.workspaceId).value.values, expected.values);
+    renameSync(join(f.directory, "missing"), join(f.root, "Project"));
+    assert.equal(safe(() => discover(f.service, f.one.workspaceId)).projects.length, 0);
+    // Retained records remain explicitly addressable, without assigning their values to a path.
+    assert.equal(safe(() => setValue(f.service, f.sibling.workspaceId, projectId, propertyId, "  Durable 📝\n  ")).value.snapshot.revision, expected.revision);
+    safe(() => f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.sibling.workspaceId }));
+    f.reopen(); assert.deepEqual(list(f.service, f.one.workspaceId).value, expected);
+    const projects = sql.prepare("SELECT * FROM projects ORDER BY id").all();
+    safe(() => f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.one.workspaceId }));
+    f.reopen();
+    const reused = safe(() => f.service.handleCommand({ type: "workspace.create", rootPath: f.root, name: "Reused" })).value;
+    assert.equal(reused.sourceId, f.one.sourceId); assert.notEqual(reused.viewId, f.one.viewId);
+    assert.deepEqual(list(f.service, reused.workspaceId).value, { ...expected, workspaceId: reused.workspaceId });
+    assert.deepEqual(sql.prepare("SELECT * FROM projects ORDER BY id").all(), projects);
+    assert.equal(readFileSync(join(f.root, "Project", "keep"), "utf8"), "unchanged bytes");
+    assert.deepEqual(readFileSync(join(f.root, "Project", "Nested", "sentinel.bin")), Buffer.from([0, 255, 42]));
+    assert.deepEqual(inventory(join(f.directory, "original")), inventory(join(f.root, "Project")));
   } finally { sql.close(); }
 }));
