@@ -142,3 +142,238 @@ test("read-only observed replacement and ambiguous native evidence retain the ac
     assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
   });
 });
+
+function review(f, extra = {}) {
+  return f.service.handleQuery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: f.project.projectId, ...extra });
+}
+function recover(f, preview, relativePath, extra = {}) {
+  return f.service.handleCommand({ type: "workspace.reassociateProject", workspaceId: f.workspace.workspaceId,
+    projectId: f.project.projectId, previewToken: preview.previewToken, relativePath, ...extra });
+}
+
+test("direct recovery previews without Apply, cancels read-only and explicitly reopens with identical identity/Text", () => fixture((f) => {
+  fs.writeFileSync(join(f.root, "Project/sentinel"), "original bytes");
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Renamed"));
+  const before = f.records(), files = inventory(f.root), events = [];
+  f.service.workspaces.subscribe((event) => events.push(event));
+  const preview = review(f);
+  assert.equal(preview.ok, true);
+  assert.equal(preview.value.projectId, f.project.projectId);
+  assert.equal(preview.value.mode, "direct");
+  assert.equal(preview.value.entries.find((row) => row.relativePath === "Renamed").status, "selectable");
+  assert.deepEqual(f.records(), before); assert.deepEqual(events, []);
+  // Abandoning a preview is cancellation; no persisted token or mutation exists.
+  const refreshed = review(f).value;
+  assert.equal(recover(f, preview.value, "Renamed").error.code, "stale_preview");
+  const result = recover(f, refreshed, "Renamed");
+  assert.equal(result.ok, true);
+  assert.equal(result.value.projects[0].projectId, f.project.projectId);
+  assert.equal(result.value.projects[0].resolution, "active");
+  assert.equal(result.value.projects[0].relativePath, "Renamed");
+  assert.equal(result.value.revision, before[0][0].discovery_revision + 1);
+  assert.deepEqual(f.records().slice(2), before.slice(2));
+  assert.deepEqual(inventory(f.root), files);
+  assert.deepEqual(events.map((event) => [event.type, event.sourceId, event.revision]), [["workspace.projectsChanged", f.workspace.sourceId, result.value.revision]]);
+  assert.equal(recover(f, refreshed, "Renamed").error.code, "stale_preview");
+  const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+  try {
+    assert.equal(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects[0].projectId, f.project.projectId);
+    assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value.values[0].value, f.value);
+    assert.equal(reopened.workspaces.load().value.activeWorkspace.viewId, f.workspace.viewId);
+  } finally { reopened.close(); }
+}));
+
+test("removed, persisted missing and ambiguous subjects can recover; active and manually excluded subjects cannot", () => {
+  for (const state of ["observed", "missing", "unresolved"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+    if (state !== "observed") f.apply();
+    if (state === "unresolved") { fs.renameSync(join(f.directory, "away"), join(f.root, "Project")); f.apply(); }
+    fs.mkdirSync(join(f.root, "Target"));
+    const before = inventory(f.root);
+    const result = recover(f, review(f).value, "Target");
+    assert.equal(result.ok, true); assert.equal(result.value.projects[0].projectId, f.project.projectId);
+    assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
+    assert.deepEqual(inventory(f.root), before);
+  });
+  fixture((f) => {
+    assert.equal(review(f).error.code, "invalid_input");
+    f.apply({ excludedRelativePaths: ["Project"] });
+    assert.equal(review(f).error.code, "invalid_input");
+  });
+});
+
+test("recovery rejects non-direct, malformed/foreign ownership and unsafe or excluded targets without writes", () => {
+  fixture((f) => { assert.equal(review(f).error.code, "invalid_input"); }, "grouped");
+  fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+    for (const name of ["Target", ".hidden", "$RECYCLE.BIN", "System Volume Information", "Archive", "Manual"]) fs.mkdirSync(join(f.root, name));
+    fs.mkdirSync(join(f.root, "Target/nested")); fs.writeFileSync(join(f.root, "file"), "bytes");
+    fs.symlinkSync(join(f.directory, "away"), join(f.root, "link"), process.platform === "win32" ? "junction" : "dir");
+    f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = ?, archive_relative_path = ? WHERE id = ?").run('["Manual"]', "Archive/deep", f.workspace.sourceId);
+    const otherRoot = join(f.directory, "other"); fs.mkdirSync(otherRoot);
+    const foreign = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+    const before = f.records();
+    for (const extra of [{ extra: true }, { projectId: "bad" }, { workspaceId: foreign.workspaceId }, { projectId: foreign.workspaceId }]) {
+      assert.equal(review(f, extra).error.code, "invalid_input");
+    }
+    const preview = review(f).value;
+    for (const name of [".hidden", "$RECYCLE.BIN", "System Volume Information", "Archive", "Manual", "link"]) assert.notEqual(preview.entries.find((row) => row.relativePath === name)?.status, "selectable");
+    for (const path of ["", "..", "../away", "/Target", "Target/nested", "file", "absent", ".hidden", "Archive", "Manual", "link", "Target\0"]) {
+      assert.equal(recover(f, preview, path).error.code, "invalid_input");
+    }
+    for (const extra of [{ extra: true }, { projectId: "bad" }, { workspaceId: foreign.workspaceId }, { previewToken: "bad" }, { projectId: foreign.workspaceId }]) {
+      assert.equal(recover(f, preview, "Target", extra).ok, false);
+    }
+    assert.deepEqual(f.records(), before);
+  });
+});
+
+test("replacement already owned by another project cannot inherit retained Text or relinquish its reserved path", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.directory, "away")); fs.mkdirSync(join(f.root, "Project"));
+  const replacement = f.apply().projects[0];
+  const before = f.records(), files = inventory(f.root), preview = review(f).value;
+  assert.equal(preview.entries.find((row) => row.relativePath === "Project").status, "reserved_path");
+  assert.equal(recover(f, preview, "Project").error.code, "invalid_input");
+  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+  assert.ok(!f.query("workspace.listTextProperties").value.values.some((row) => row.projectId === replacement.projectId));
+}));
+
+test("retired native evidence alone does not block an explicit association or make its result ambiguous", () => fixture((f) => {
+  const original = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(f.project.projectId);
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  f.sqlite.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'replaced')")
+    .run("00000000-0000-4000-8000-000000000001", f.workspace.sourceId, "Historical", original.native_identity);
+  const result = recover(f, review(f).value, "Target");
+  assert.equal(result.ok, true); assert.equal(result.value.projects[0].resolution, "active");
+  assert.equal(result.value.projects[0].projectId, f.project.projectId);
+  assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, f.project.projectId);
+}));
+
+test("recovery reviews stale on root/target/configuration/record swaps; transactional failures roll back and emit no success", () => {
+  for (const failure of ["root", "target", "configuration", "record", "write", "revision_write", "after_write"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+    const preview = review(f).value;
+    if (failure === "root") { fs.renameSync(f.root, join(f.directory, "oldRoot")); fs.mkdirSync(f.root); fs.mkdirSync(join(f.root, "Target")); }
+    if (failure === "target") { fs.renameSync(join(f.root, "Target"), join(f.directory, "away")); fs.mkdirSync(join(f.root, "Target")); }
+    if (failure === "configuration") f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Target\"]'").run();
+    if (failure === "record") f.sqlite.prepare("UPDATE projects SET association_state = 'missing'").run();
+    if (failure === "write") f.sqlite.exec("CREATE TRIGGER fail_recovery BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'injected'); END;");
+    if (failure === "revision_write") f.sqlite.exec("CREATE TRIGGER fail_revision BEFORE UPDATE ON sources BEGIN SELECT RAISE(ABORT, 'injected after project update'); END;");
+    const before = f.records(), events = [];
+    f.service.workspaces.subscribe((event) => events.push(event));
+    const stat = fs.lstatSync;
+    let written = false;
+    if (failure === "after_write") {
+      // Use filesystem observation count to alter the final, post-write scan.
+      let rootReads = 0;
+      fs.lstatSync = (path, ...args) => {
+        const value = stat(path, ...args);
+        if (path === f.root && ++rootReads > 8) written = true;
+        if (written && path === join(f.root, "Target")) value.birthtimeNs += 1n;
+        return value;
+      };
+    }
+    syncBuiltinESMExports();
+    let result;
+    try { result = recover(f, preview, "Target"); }
+    finally { fs.lstatSync = stat; syncBuiltinESMExports(); }
+    assert.equal(result.ok, false, failure);
+    assert.equal(result.error.code, ["write", "revision_write"].includes(failure) ? "storage" : "stale_preview", failure);
+    assert.deepEqual(f.records(), before, failure); assert.deepEqual(events, [], failure);
+  });
+});
+
+test("recovery refuses current native aliases, while candidate queries and commits never enumerate project contents", () => {
+  for (const conflict of ["record", "directory", "none"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+    fs.mkdirSync(join(f.root, "Other")); fs.writeFileSync(join(f.root, "Target/sentinel"), "unchanged");
+    const identity = JSON.parse(f.sqlite.prepare("SELECT native_identity FROM projects WHERE id = ?").get(f.project.projectId).native_identity);
+    if (conflict === "record") f.sqlite.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'missing')")
+      .run("00000000-0000-4000-8000-000000000002", f.workspace.sourceId, "Reserved elsewhere", JSON.stringify(identity));
+    const originalStat = fs.lstatSync, originalOpen = fs.opendirSync;
+    fs.lstatSync = (path, ...args) => {
+      const stat = originalStat(path, ...args);
+      if (conflict === "directory" && path === join(f.root, "Other")) { stat.dev = BigInt(identity.dev); stat.ino = BigInt(identity.ino); }
+      return stat;
+    };
+    fs.opendirSync = (path, ...args) => {
+      assert.equal(path, f.root, "Project contents must not be enumerated");
+      return originalOpen(path, ...args);
+    };
+    const before = f.records(), files = inventory(f.root);
+    syncBuiltinESMExports();
+    try {
+      const preview = review(f).value, target = preview.entries.find((row) => row.relativePath === "Target");
+      assert.equal(target.status, conflict === "none" ? "selectable" : "native_conflict");
+      const result = recover(f, preview, "Target");
+      assert.equal(result.ok, conflict === "none");
+      if (conflict !== "none") { assert.equal(result.error.code, "invalid_input"); assert.deepEqual(f.records(), before); }
+    } finally { fs.lstatSync = originalStat; fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+    assert.deepEqual(inventory(f.root), files);
+  });
+});
+
+test("recovery handles unavailable or unverifiable roots with no token and rejects target link swaps inside the transaction", () => {
+  for (const problem of ["unavailable", "unreadable", "root_identity_conflict", "transaction_link"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+    f.apply(); fs.mkdirSync(join(f.root, "Target"));
+    const preview = review(f).value;
+    if (problem === "unavailable" || problem === "root_identity_conflict") fs.renameSync(f.root, join(f.directory, "oldRoot"));
+    if (problem === "root_identity_conflict") fs.mkdirSync(f.root);
+    const before = f.records(), events = []; f.service.workspaces.subscribe((event) => events.push(event));
+    const originalOpen = fs.opendirSync;
+    let opens = 0;
+    fs.opendirSync = (path, ...args) => {
+      if (problem === "unreadable" && path === f.root) throw Object.assign(new Error("denied"), { code: "EACCES" });
+      if (problem === "transaction_link" && path === f.root && ++opens === 3) {
+        fs.renameSync(join(f.root, "Target"), join(f.directory, "targetAway"));
+        fs.symlinkSync(join(f.directory, "away"), join(f.root, "Target"), process.platform === "win32" ? "junction" : "dir");
+      }
+      return originalOpen(path, ...args);
+    };
+    syncBuiltinESMExports();
+    try {
+      if (problem !== "transaction_link") {
+        const result = review(f); assert.equal(result.ok, true); assert.equal(result.value.state, problem); assert.equal(result.value.previewToken, null);
+      } else assert.equal(recover(f, preview, "Target").error.code, "stale_preview");
+    } finally { fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+    assert.deepEqual(f.records(), before); assert.deepEqual(events, []);
+  });
+});
+
+test("direct recovery preserves independent Text revisions and invalidates same-source discovery and recovery reviews", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+  const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+  const own = review(f).value;
+  const siblingRecovery = review(f, { workspaceId: sibling.workspaceId }).value;
+  const siblingDiscovery = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: sibling.workspaceId }).value;
+  assert.equal(recover(f, own, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
+  assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: sibling.workspaceId, projectId: f.project.projectId, propertyId: f.propertyId, value: "New authored value" }).ok, true);
+  const before = f.records(), events = []; f.service.workspaces.subscribe((event) => events.push(event));
+  assert.equal(recover(f, own, "Target").ok, true);
+  assert.equal(f.query("workspace.listTextProperties").value.values[0].value, "New authored value");
+  assert.equal(f.records()[0][0].property_revision, before[0][0].property_revision);
+  assert.equal(f.records()[0][0].category_property_revision, before[0][0].category_property_revision);
+  assert.deepEqual(events[0].workspaceIds, [f.workspace.workspaceId, sibling.workspaceId]);
+  assert.equal(recover(f, siblingRecovery, "Target", { workspaceId: sibling.workspaceId }).error.code, "stale_preview");
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: siblingDiscovery.previewToken }).error.code, "stale_preview");
+}));
+
+test("unreliable target identity and caller-edited preview conflicts cannot authorize recovery", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+  fs.mkdirSync(join(f.root, "Target"));
+  const before = f.records(), original = fs.lstatSync;
+  fs.lstatSync = (path, ...args) => {
+    const stat = original(path, ...args);
+    if (path === join(f.root, "Target")) stat.birthtimeNs = 0n;
+    return stat;
+  };
+  syncBuiltinESMExports();
+  try {
+    const preview = review(f).value;
+    assert.equal(preview.entries[0].status, "unresolved");
+    preview.entries[0].status = "selectable";
+    assert.equal(recover(f, preview, "Target").error.code, "invalid_input");
+    assert.deepEqual(f.records(), before);
+  } finally { fs.lstatSync = original; syncBuiltinESMExports(); }
+}));

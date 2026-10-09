@@ -1022,3 +1022,44 @@ test("category labels traverse entry/controller/preload/clients with validated o
     assert.equal(servicePort.sent.length, sent);
   } finally { off(); offSibling(); relay(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("direct recovery traverses production service ports/controller/client and rejects malformed requests without metadata transfer", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-recovery-ipc-"));
+  const root = join(directory, "root");
+  await mkdir(join(root, "Original"), { recursive: true });
+  await writeFile(join(root, "Original/sentinel"), "original bytes");
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController();
+  const client = new WorkspaceServiceClient({ workspace: (input) => controller.request(input), onWorkspaceChange: (listener) => controller.onWorkspaceChange(listener) });
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "workspace.sqlite"), {}, 100), true);
+    const workspace = (await client.createWorkspace("Recovery", root)).value;
+    const initial = await client.previewDiscovery(workspace.workspaceId);
+    const project = (await client.applyDiscovery(workspace.workspaceId, initial.value.previewToken)).value.projects[0];
+    const property = (await client.createProperty(workspace.workspaceId, "Notes")).value;
+    await client.setTextValue(workspace.workspaceId, project.projectId, property.propertyId, "  Exact\nТекст  ");
+    await rename(join(root, "Original"), join(root, "Target"));
+    for (const input of [
+      { type: "workspace.previewProjectRecovery", workspaceId: workspace.workspaceId },
+      { type: "workspace.previewProjectRecovery", workspaceId: workspace.workspaceId, projectId: project.projectId, extra: true },
+      { type: "workspace.reassociateProject", workspaceId: workspace.workspaceId, projectId: project.projectId, previewToken: "bad", relativePath: 42 },
+    ]) assert.equal((await controller.request(input)).error.code, "invalid_input");
+    const review = await client.previewProjectRecovery(workspace.workspaceId, project.projectId);
+    assert.equal(review.ok, true); assert.equal(review.value.entries[0].relativePath, "Target");
+    const messagesBefore = servicePort.sent.length;
+    const result = await client.reassociateProject(workspace.workspaceId, project.projectId, review.value.previewToken, "Target");
+    assert.equal(result.ok, true); assert.equal(result.value.projects[0].projectId, project.projectId);
+    assert.equal(servicePort.sent[messagesBefore].type, "workspace.change");
+    assert.equal(servicePort.sent[messagesBefore].change.type, "workspace.projectsChanged");
+    assert.ok(servicePort.sent[messagesBefore + 1].id);
+    assert.equal((await client.listTextProperties(workspace.workspaceId)).value.values[0].value, "  Exact\nТекст  ");
+    assert.equal(await readFile(join(root, "Target/sentinel"), "utf8"), "original bytes");
+    assert.deepEqual(fs.readdirSync(root), ["Target"]); assert.deepEqual(fs.readdirSync(join(root, "Target")), ["sentinel"]);
+    await controller.stop(100);
+  } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});

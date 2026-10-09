@@ -1,3 +1,4 @@
+import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
@@ -18,7 +19,7 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -68,6 +69,7 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.previewProjectRecovery") return workspaces.previewProjectRecovery(input);
       if (isRecord(input) && input.type === "workspace.listTextProperties") return workspaces.listTextProperties(input);
       if (isRecord(input) && input.type === "workspace.listProjects") return workspaces.listProjects(input);
       if (isRecord(input) && input.type === "workspace.previewDiscovery") return workspaces.previewDiscovery(input);
@@ -86,6 +88,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
       if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
       if (isRecord(input) && input.type === "workspace.setTextValue") return workspaces.setTextValue(input);

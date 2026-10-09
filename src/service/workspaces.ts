@@ -1,3 +1,5 @@
+import { createProjectRecoveryService } from "./project-recovery.js";
+import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
@@ -34,6 +36,8 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  previewProjectRecovery(input: unknown): ServiceResult<ProjectRecoveryPreview>;
+  reassociateProject(input: unknown): ServiceResult<ProjectList>;
   renameCategoryProperty(input: unknown): ServiceResult<CategoryPropertySnapshot>;
   listTextProperties(input: unknown): ServiceResult<TextPropertySnapshot>;
   createProperty(input: unknown): ServiceResult<TextPropertyMutation>;
@@ -78,14 +82,23 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   let pending = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
+  const recovery = createProjectRecoveryService(db, {
+    projectList,
+    committed(sourceId, revision, workspaceIds) {
+      for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+    },
+  });
   const service: WorkspaceService = {
+    previewProjectRecovery: recovery.previewProjectRecovery,
+    reassociateProject: recovery.reassociateProject,
     ...createTextPropertyService(db, publish),
     ...createCategoryPropertyService(db, publish),
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };
     },
-    close() { listeners.clear(); observed.clear(); previewTokens.clear(); },
+    close() { listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
         !["type", "workspaceId"].every((key) => Object.hasOwn(input, key)) ||
@@ -224,6 +237,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         });
         previewTokens.delete(workspaceId);
         if (changed) {
+          recovery.invalidateSource(source.id);
           for (const [id, saved] of previewTokens) if (saved.preview.sourceId === source.id) previewTokens.delete(id);
           publish([committedEvent]);
         }
@@ -544,7 +558,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") previewTokens.delete(input.workspaceId);
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),

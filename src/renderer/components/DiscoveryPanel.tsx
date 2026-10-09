@@ -1,6 +1,7 @@
+import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { useEffect, useRef, useState } from "react";
-import type { CategoryPropertySnapshot, DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
+import type { ProjectAssociationSummary, CategoryPropertySnapshot, DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -206,6 +207,17 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
+  const [recoveryProject, setRecoveryProject] = useState<ProjectAssociationSummary | null>(null);
+  const [recoverySaved, setRecoverySaved] = useState(false);
+  const recoveryTrigger = useRef<HTMLButtonElement | null>(null);
+  const tableHeading = useRef<HTMLHeadingElement>(null);
+  const restoreRecoveryFocus = useRef(false);
+  useEffect(() => {
+    if (!recoveryProject && restoreRecoveryFocus.current) {
+      (recoveryTrigger.current?.isConnected ? recoveryTrigger.current : tableHeading.current)?.focus();
+      restoreRecoveryFocus.current = false;
+    }
+  }, [recoveryProject]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const version = useRef(0);
@@ -287,7 +299,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
   return <>
     <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
-      invalidation={invalidation} language={language} disabled={disabled}
+      invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null}
       onApplied={(value) => {
         version.current++; minimumRevision.current = value.revision;
         if (value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
@@ -295,9 +307,20 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         } else { void load(); return; }
         setError(false); setLoading(false);
       }} />
+    {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
+      project={recoveryProject} minimumRevision={minimumRevision} invalidation={invalidation} language={language} disabled={disabled}
+      onReload={() => void load()} onClose={() => { restoreRecoveryFocus.current = true; setRecoveryProject(null); }}
+      onCommitted={(value) => {
+        version.current++; minimumRevision.current = value.revision;
+        const current = committedProjects.current;
+        const updated = value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current || !current ? value
+          : { ...value, categoryProperty: current.categoryProperty, categoryPropertyRevision: current.categoryPropertyRevision };
+        committedProjects.current = updated; setProjects(updated); setLoading(false); setError(false); setRecoverySaved(true);
+      }} />}
+    {recoverySaved && <StatusMessage kind="info" title={t("recoverySaved")} />}
     <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
       <div className="table-view__heading"><div>
-        <h3 id="table-title">{t("tableViewTitle")}</h3>
+        <h3 id="table-title" ref={tableHeading} tabIndex={-1}>{t("tableViewTitle")}</h3>
         <p>{t(projects?.configured ? "projectsApplied" : "emptyTableDescription")}</p>
       </div><span className="view-badge">{t("tableViewLabel")}</span></div>
       {loading && <StatusMessage kind="info" title={t("projectsLoading")} />}
@@ -316,6 +339,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       </div>}
       <TextPropertiesTable categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
+        locateDisabled={recoveryProject !== null}
+        onLocate={projects?.mode === "direct" ? (project, trigger) => {
+          recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
+        } : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />
     </section>
   </>;

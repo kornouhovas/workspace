@@ -1,3 +1,4 @@
+import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
@@ -50,6 +51,14 @@ export class WorkspaceServiceClient {
 
   applyDiscovery(workspaceId: string, previewToken: string): Promise<ServiceResult<ProjectList>> {
     return this.api.workspace({ type: "workspace.applyDiscovery", workspaceId, previewToken });
+  }
+
+  previewProjectRecovery(workspaceId: string, projectId: string): Promise<ServiceResult<ProjectRecoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewProjectRecovery", workspaceId, projectId });
+  }
+
+  reassociateProject(workspaceId: string, projectId: string, previewToken: string, relativePath: string): Promise<ServiceResult<ProjectList>> {
+    return this.api.workspace({ type: "workspace.reassociateProject", workspaceId, projectId, previewToken, relativePath });
   }
 
   listProjects(workspaceId: string): Promise<ServiceResult<ProjectList>> {

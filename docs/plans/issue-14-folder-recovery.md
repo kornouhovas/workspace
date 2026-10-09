@@ -88,6 +88,7 @@ Files:
 - Modify: src/contracts/workspaces.ts
 - Modify: src/contracts/desktop-api.ts
 - Modify: src/contracts/service-protocol.ts
+- Modify: src/service/discovery.ts (continuously verified recovery ignores retired historical evidence)
 - Modify: src/service/workspaces.ts
 - Modify: src/service/settings.ts
 - Modify: src/service/entry.ts
@@ -98,6 +99,7 @@ Files:
 - Modify: src/renderer/app.css
 - Modify: tests/project-recovery-service.test.mjs
 - Modify: tests/backend-lifecycle.test.mjs
+- Modify: tests/renderer-app.test.tsx (bounded retry assertion formatting)
 
 Interfaces:
 
@@ -108,14 +110,16 @@ Interfaces:
 - Successful reassociation returns ProjectList.
 - WorkspaceServiceClient exposes previewProjectRecovery and reassociateProject with typed ServiceResult returns.
 
-- [ ] Write direct recovery tests: externally remove or rename a fixture folder, preview candidates without Apply, cancel without writes, explicitly recover and reopen with the identical project ID and exact Text values.
-- [ ] Implement the focused recovery module and service-owned review lifecycle. Enforce exact payloads, UUIDs, existing same-source ownership, eligible recovery subject, configured mode and continuously verified accessible root evidence.
-- [ ] Validate target existence, directory kind, containment, native identity, basename/depth, exclusions, archive/service rules and project ownership. Reject files, traversal, wrong depth, links/junctions, native aliases and conflicting reserved paths; do not enumerate project contents.
-- [ ] Revalidate the reviewed configuration, records and filesystem inside the transaction before writes and after writes. Update only the selected association; increment discoveryRevision once, invalidate same-source reviews and publish projectsChanged only after commit.
-- [ ] Route the query, command and response through settings, production entry, protocol, desktop API and typed client. Reuse the existing generic main/preload route; extend its validation only where required.
-- [ ] Add Locate folder, candidate selection, target review, Reassociate, Refresh and Cancel controls with EN/RU text, keyboard/focus behavior, empty/loading/conflict/failure/pending states and truthful success feedback. Disable duplicate submission and cancellation during an accepted pending mutation.
-- [ ] Add real IPC/client tests plus service failure injection for rollback, stale/root/target swaps, foreign IDs and unchanged inventories/bytes. Verify a replacement already owned by another project cannot inherit the retained record's Text.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+- [x] Write direct recovery tests: externally remove or rename a fixture folder, preview candidates without Apply, cancel without writes, explicitly recover and reopen with the identical project ID and exact Text values.
+- [x] Implement the focused recovery module and service-owned review lifecycle. Enforce exact payloads, UUIDs, existing same-source ownership, eligible recovery subject, configured mode and continuously verified accessible root evidence.
+- [x] Validate target existence, directory kind, containment, native identity, basename/depth, exclusions, archive/service rules and project ownership. Reject files, traversal, wrong depth, links/junctions, native aliases and conflicting reserved paths; do not enumerate project contents.
+- [x] Revalidate the reviewed configuration, records and filesystem inside the transaction before writes and after writes. Update only the selected association; increment discoveryRevision once, invalidate same-source reviews and publish projectsChanged only after commit.
+- [x] Route the query, command and response through settings, production entry, protocol, desktop API and typed client. Reuse the existing generic main/preload route; extend its validation only where required.
+- [x] Add Locate folder, candidate selection, target review, Reassociate, Refresh and Cancel controls with EN/RU text, keyboard/focus behavior, empty/loading/conflict/failure/pending states and truthful success feedback. Disable duplicate submission and cancellation during an accepted pending mutation.
+- [x] Add real IPC/client tests plus service failure injection for rollback, stale/root/target swaps, foreign IDs and unchanged inventories/bytes. Verify a replacement already owned by another project cannot inherit the retained record's Text.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+
+Verification: npm ci used the committed lockfile. npm test passed all 239 tests and the production build; npm run lint, npm run typecheck, git diff --check and the fixed-base diff check passed. Real disposable SQLite/filesystem tests cover direct recovery/reopen, exact ID/Text/view preservation, read-only preview/cancellation, reserved paths/native aliases, exclusions/depth/links, unavailable/conflicting roots, transactional rollback before and after partial writes, and independent property revisions. Production service ports/controller/client and EN/RU workspace interactions cover explicit confirmation, keyboard selection/Escape, focus return, pending duplicate/cancel prevention, stale reselection, failure and uncertain responses. Historical replaced evidence alone no longer invalidates a continuously verified active association; new discovery remains conservative. Initial red probes and failed full/isolated renderer runs are retained in work/ralphex/issue-14/task-2-*.log. The source-retry regression used strict equality against a temporarily visible DOM element inside waitFor, causing unbounded diagnostic formatting and SIGKILL; Boolean absence assertions retain the same expectation and the final full suite passes. Grouped recovery, comprehensive race handling, actual Electron/runtime and screenshot/platform acceptance remain in their later tasks.
 
 ### Task 3: Recover grouped projects without violating category ownership
 

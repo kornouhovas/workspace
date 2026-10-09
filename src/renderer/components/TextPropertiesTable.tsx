@@ -18,6 +18,8 @@ interface Props {
   sourceId: string;
   projects: ProjectSummary[];
   retainedProjects?: ProjectAssociationSummary[];
+  locateDisabled?: boolean;
+  onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
   categoryPropertyRevision?: number;
@@ -29,7 +31,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +162,9 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
         return <tr key={project.projectId}><td key="project-name"><span>{project.name}</span>
           {label && <span className="project-resolution">{t(label)}</span>}
           {retained && <span className="project-previous-path">{retained.relativePath}</span>}
+          {onLocate && retained && reason && ["missing", "unresolved", "replaced"].includes(reason) &&
+            <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || locateDisabled}
+              aria-label={`${t("recoveryLocate")}: ${project.name}`} onClick={(event) => onLocate(retained, event.currentTarget)}>{t("recoveryLocate")}</button>}
         </td>
         {categoryProperty && <td key={categoryProperty.propertyId}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</td>}
         {snapshot?.definitions.map((property) => <td key={property.propertyId}>

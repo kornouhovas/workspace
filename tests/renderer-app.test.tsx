@@ -2456,8 +2456,8 @@ test("EN/RU retained transitions, source retry and failed list loads preserve th
     assert.equal(screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }), editor);
     loadFailure = false; state = "ready";
     await userEvent.click(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
-    await waitFor(() => assert.equal(screen.queryByText(translate(language, "projectsError")), null));
-    await waitFor(() => assert.equal(screen.queryByText(translate(language, "sourceUnavailableTitle")), null));
+    await waitFor(() => assert.ok(screen.queryByText(translate(language, "projectsError")) === null));
+    await waitFor(() => assert.ok(screen.queryByText(translate(language, "sourceUnavailableTitle")) === null));
     assert.equal(retries, 2); assert.equal(mutations, 0);
     assert.equal(editor.value, "Unsaved retained draft 📝");
     cleanup(); assert.equal(api.changeListenerCount(), 0);
