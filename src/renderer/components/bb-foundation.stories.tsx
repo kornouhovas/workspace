@@ -515,7 +515,8 @@ function ModeChangePreview({ language, state }: { language: Language; state: Mod
   const categoryRevision = useRef(0);
   const path = "Category-日本語-" + "long-path-".repeat(18);
   const retained: ProjectAssociationSummary = { projectId: textStoryIds.projectId, categoryId: "historic-category", categoryName: path,
-    name: "Mode-retained 日本語", relativePath: `${path}/Historical project`, associationState: "active", resolution: "active", retentionReason: "mode_change" };
+    name: "Mode-retained 日本語", relativePath: `${path}/Historical project`, associationState: state === "retained" ? "excluded" : "active",
+    resolution: state === "retained" ? "unresolved" : "active", retentionReason: "mode_change" };
   const [client] = useState(() => new class extends WorkspaceServiceClient {
     private value: string | null = longTextValue;
     private revision = 1;

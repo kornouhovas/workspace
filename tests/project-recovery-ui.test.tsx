@@ -56,6 +56,30 @@ class RecoveryClient extends WorkspaceServiceClient {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 
 for (const language of ["en", "ru"] as const) {
+  test(`${language}: removed exclusions expose mode-retained recovery while current exclusions still block it`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    for (const excluded of [true, false]) {
+      const client = new RecoveryClient();
+      client.projects = { ...initial, retainedProjects: [{ ...retained, retentionReason: "mode_change", associationState: "excluded", resolution: excluded ? "excluded" : "unresolved" }], retainedCount: 1 };
+      render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+      const edit = await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` });
+      assert.ok(edit.textContent?.includes("Exact authored Text"));
+      assert.ok(screen.getByText(t("projectModeRetained")));
+      const locate = screen.queryByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` });
+      assert.equal(Boolean(locate), !excluded);
+      assert.equal(Boolean(screen.queryByText(t("projectExcluded"))), excluded);
+      assert.equal(client.saves, 0);
+      if (locate) {
+        locate.focus(); await userEvent.keyboard("{Enter}");
+        const target = await screen.findByRole("radio", { name: "Target authored name" });
+        target.focus(); await userEvent.keyboard(" ");
+        screen.getByRole("button", { name: t("recoveryConfirm") }).focus(); await userEvent.keyboard("{Enter}");
+        await screen.findByText(t("recoverySaved"));
+        assert.equal(client.saves, 1);
+      }
+      cleanup(); assert.equal(client.listeners.size, 0);
+    }
+  });
   for (const delivery of ["batched", "separate"] as const) test(`${language}: a recovery response with a newer observation preserves the missing-folder projection (${delivery})`, async () => {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     const client = new RecoveryClient(), response = deferred<ServiceResult<ProjectList>>();

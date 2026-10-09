@@ -164,6 +164,11 @@ app.on('window-all-closed', () => app.quit());`);
         await input.focus(); await input.press("Escape");
         assert.equal(await page.locator(".category-property-header > button").evaluate((node) => node === globalThis.document.activeElement), true);
       } else if (modeState === "retained") {
+        const locate = page.locator(".project-previous-path + button");
+        assert.equal(await locate.isVisible(), true, "Removed exclusions must expose explicit recovery");
+        assert.equal(await page.locator(".project-resolution").count(), 1, "Historical exclusion must not display current exclusion guidance");
+        await locate.press("Enter");
+        assert.equal(await locate.evaluate((node) => node === globalThis.document.activeElement), true);
         const cell = page.locator(".text-value-button"); await cell.press("Enter");
         await page.locator("textarea").fill("  Mode-retained draft 日本語\n  ");
         await page.locator("textarea").press("Control+Enter");

@@ -4,7 +4,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ProjectRecoveryCandidate, ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { ProjectList } from "../contracts/workspaces.js";
-import { planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { modeRetainedResolution, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DiscoveryScan, type DiscoverySnapshot, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -46,7 +46,8 @@ export function createProjectRecoveryService(db: Database, integration: {
     if (!scan.snapshot) integration.invalidateSourceReviews(source.id);
     return scan;
   }
-  function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[]) {
+  function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[], source: Source) {
+    if (project.modeInactive) return modeRetainedResolution(scan, project, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath) !== "excluded";
     const resolution = scan.snapshot ? planDiscovery(scan, categories, projects).projects.retained.find((row) => row.id === project.id)?.associationState : null;
     // Exclusion has its own explicit discovery controls. It is not recovery.
     return project.associationState !== "excluded" && resolution !== "excluded" &&
@@ -100,7 +101,7 @@ export function createProjectRecoveryService(db: Database, integration: {
         const project = projects.find((row) => row.id === input.projectId);
         if (!project) return invalid();
         const scan = scanSource(source);
-        if (!eligible(project, scan, projects, categories)) return invalid();
+        if (!eligible(project, scan, projects, categories, source)) return invalid();
         const preview: ProjectRecoveryPreview = { workspaceId: input.workspaceId, sourceId: source.id, projectId: project.id,
           mode: source.discoveryMode, revision: source.discoveryRevision, state: scan.state,
           previewToken: scan.snapshot ? randomUUID() : null, entries: candidates(scan, project, projects, categories) };
@@ -131,7 +132,7 @@ export function createProjectRecoveryService(db: Database, integration: {
           const scan = scanSource(current);
           if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(review.snapshot)) throw new StaleReview();
           const project = review.projects.find((row) => row.id === input.projectId)!;
-          if (!eligible(project, scan, review.projects, review.categories) ||
+          if (!eligible(project, scan, review.projects, review.categories, current) ||
             candidates(scan, project, review.projects, review.categories).find((row) => row.relativePath === target.relativePath)?.status !== "selectable") throw new StaleReview();
           return scan;
         };

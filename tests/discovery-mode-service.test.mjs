@@ -9,6 +9,22 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { modeRetainedResolution } from "../src/service/discovery.ts";
+
+test("mode-retained archive containment uses exact paths and scanner-confirmed aliases", () => {
+  const identity = (ino) => ({ dev: "1", ino, birthtimeNs: "1" });
+  const directory = (relativePath, ino) => ({ relativePath, kind: "directory", identity: identity(ino), mtimeNs: "1", ctimeNs: "1" });
+  const project = { id: "project", sourceId: "source", relativePath: "Alpha", nativeIdentity: JSON.stringify(identity("2")), associationState: "excluded", modeInactive: true };
+  const scan = { state: "ready", entries: [], snapshot: { mode: "grouped", root: directory("", "1"), archiveChild: "alpha/Archive", children: [
+    directory("Alpha", "2"), directory("alpha", "3"), { relativePath: "alpha/Archive", kind: "excluded", reason: "archive" },
+  ] } };
+  // These are distinct directories on a case-sensitive filesystem, not aliases.
+  assert.equal(modeRetainedResolution(scan, project, [], "alpha/Archive"), "unresolved");
+  assert.equal(modeRetainedResolution(scan, project, [], "Alpha/Archive"), "excluded");
+  // On an insensitive filesystem the scanner resolves aliases using native IDs.
+  scan.snapshot.children = [directory("Alpha", "2"), { relativePath: "Alpha/Archive", kind: "excluded", reason: "archive" }];
+  assert.equal(modeRetainedResolution(scan, project, [], "alpha/Archive"), "excluded");
+});
 
 function fixture(run) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "workspace-mode-")));
@@ -45,6 +61,65 @@ function unchanged(f, run) {
   assert.deepEqual(events, []);
 }
 const paths = (rows) => rows.map((row) => row.relativePath);
+
+for (const exclusion of ["direct", "grouped-child", "grouped-category"]) for (const ownPath of [false, true]) {
+  test(`removed ${exclusion} exclusion permits explicit mode-retained recovery (ownPath=${ownPath})`, () => fixture((f) => {
+    fs.mkdirSync(join(f.root, "Category/Child"), { recursive: true });
+    fs.writeFileSync(join(f.root, "Category/Child/sentinel"), "unchanged");
+    const mode = exclusion === "direct" ? "direct" : "grouped", otherMode = mode === "direct" ? "grouped" : "direct";
+    const first = f.configure(mode), project = first.projects[0];
+    const excludedPath = exclusion === "grouped-child" ? project.relativePath : "Category";
+    const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: "Notes", propertyType: "text" }).value;
+    const value = "  Exact\nТекст 📝  ";
+    assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value }).ok, true);
+    f.configure(mode, { excludedRelativePaths: [excludedPath] });
+    f.configure(otherMode); f.restart();
+    const request = { workspaceId: f.workspace.workspaceId, projectId: project.projectId };
+    assert.equal(f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request }).error.code, "invalid_input");
+    const history = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
+    const files = inventory(f.root);
+    const cleared = f.configure(otherMode, { excludedRelativePaths: [] });
+    const observed = cleared.retainedProjects.find((row) => row.projectId === project.projectId);
+    assert.equal(observed.associationState, "excluded"); assert.equal(observed.resolution, "unresolved");
+    assert.equal(observed.retentionReason, "mode_change");
+    if (ownPath) f.configure(mode);
+    f.restart();
+    const target = ownPath ? project.relativePath : otherMode === "grouped" ? "New/Target" : "Target";
+    if (!ownPath) fs.mkdirSync(join(f.root, target), { recursive: true });
+    const before = databaseInventory(f.sqlite), targetFiles = inventory(f.root);
+    const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
+    assert.equal(preview.ok, true, JSON.stringify(preview));
+    assert.equal(preview.value.entries.find((entry) => entry.relativePath === target).status, "selectable");
+    assert.deepEqual(databaseInventory(f.sqlite), before);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId), history);
+    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: preview.value.previewToken, relativePath: target });
+    assert.equal(recovered.ok, true, JSON.stringify(recovered));
+    assert.equal(recovered.value.projects.find((row) => row.projectId === project.projectId).relativePath, target);
+    const stored = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
+    assert.equal(stored.association_state, "active"); assert.equal(stored.mode_inactive, 0);
+    assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values WHERE project_id = ?").get(project.projectId).value, value);
+    assert.deepEqual(inventory(f.root), targetFiles);
+    if (ownPath) assert.deepEqual(inventory(f.root), files);
+    f.restart();
+    assert.ok(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.some((row) => row.projectId === project.projectId));
+  }));
+}
+
+for (const mode of ["direct", "grouped"]) test(`mode-retained archive exclusions stay blocked after clearing manual exclusions (${mode})`, () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Child/Archive"), { recursive: true });
+  const project = f.configure(mode).projects[0];
+  f.sqlite.prepare("UPDATE sources SET archive_relative_path = ?").run("Category/Child/Archive");
+  f.configure(mode);
+  const switched = f.configure(mode === "direct" ? "grouped" : "direct", { excludedRelativePaths: [] });
+  const retained = switched.retainedProjects.find((row) => row.projectId === project.projectId);
+  assert.equal(retained.associationState, "excluded"); assert.equal(retained.resolution, "excluded");
+  const before = databaseInventory(f.sqlite), files = inventory(f.root);
+  const request = { type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: project.projectId };
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
+  f.restart();
+  assert.equal(f.service.workspaces.previewProjectRecovery(request).error.code, "invalid_input");
+  assert.deepEqual(databaseInventory(f.sqlite), before); assert.deepEqual(inventory(f.root), files);
+}));
 
 test("configured direct-to-grouped preview keeps direct metadata and reviews fresh target roles without writes", () => fixture((f) => {
   for (const path of ["Category/Child/Deeper", "Empty", "Mixed/src"]) fs.mkdirSync(join(f.root, path), { recursive: true });

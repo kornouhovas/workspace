@@ -5,7 +5,7 @@ import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
-import { planDiscovery, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoveryScan, type DiscoverySnapshot } from "./discovery.js";
+import { modeRetainedResolution, planDiscovery, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoveryScan, type DiscoverySnapshot } from "./discovery.js";
 import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
@@ -238,7 +238,6 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
         const planned = planDiscovery(scan, token.categories, token.projects);
-        const grouped = planned.categories ? { categories: planned.categories } : null;
         const interpretation = planned.projects;
         if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
@@ -246,8 +245,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           source.appliedRootIdentity !== JSON.stringify(scan.snapshot.root.identity) ||
           interpretation.additions.length > 0 ||
           interpretation.retained.some((row, index) => row.associationState !== token.projects[index].associationState || !!row.modeInactive !== token.projects[index].modeInactive) ||
-          !!grouped && (grouped.categories.additions.length > 0 ||
-            grouped.categories.retained.some((row, index) => row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive));
+          planned.categories.additions.length > 0 ||
+          planned.categories.retained.some((row, index) => row.associationState !== token.categories[index].associationState || !!row.modeInactive !== token.categories[index].modeInactive);
         if (changed && !Number.isSafeInteger(source.discoveryRevision + 1)) return storageFailure();
         const committedEvent: WorkspaceChangeEvent = { type: "workspace.projectsChanged", sourceId: source.id,
           workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
@@ -583,7 +582,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       return { projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
         categoryName: categories.find((category) => category.id === row.categoryId)?.relativePath ?? null,
         retentionReason: row.modeInactive ? "mode_change" as const : null,
-        associationState: row.associationState, resolution: interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? null };
+        associationState: row.associationState, resolution: row.modeInactive
+          ? modeRetainedResolution(verified ? currentScan : { ...currentScan, snapshot: null }, row, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath)
+          : interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? null };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
     const active = projection.filter((row) => row.retentionReason === null && row.associationState === "active" && (row.resolution === "active" || row.resolution === null));
     const retainedProjects = projection.filter((row) => !active.includes(row));

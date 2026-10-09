@@ -347,6 +347,23 @@ export interface GroupedProjectAssociation extends ProjectAssociation {
   categoryId: string | null;
 }
 
+// Keep historical association state intact. A removed exclusion permits only
+// explicit recovery; it must never reactivate an association through discovery.
+export function modeRetainedResolution(scan: DiscoveryScan, project: ProjectAssociation, exclusions: string[], archiveRelativePath: string | null): ProjectAssociationState | null {
+  if (project.associationState !== "excluded") return scan.snapshot ? project.associationState : null;
+  const parts = project.relativePath.split("/");
+  const prefixes = parts.map((_, index) => parts.slice(0, index + 1).join("/"));
+  const archive = archiveRelativePath?.split("/").slice(0, parts.length).join("/");
+  const excluded = exclusions.some((path) => prefixes.includes(path)) ||
+    parts.some((name) => automaticDirectoryReason(name, null) !== null) ||
+    // Archive containment remains reserved at the historical project's depth.
+    !!archive && prefixes.includes(archive) ||
+    !!scan.snapshot?.children.some((child) => child.kind === "excluded" &&
+      (prefixes.includes(child.relativePath) && ["manual", "hidden", "service", "archive"].includes(child.reason) ||
+        child.reason === "archive" && child.relativePath.startsWith(`${project.relativePath}/`)));
+  return excluded ? "excluded" : scan.snapshot ? "unresolved" : null;
+}
+
 // A project's evidence is meaningful only beneath its continuously matching category.
 // Category retirement/exclusion therefore precedes project identity matching.
 export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: ProjectAssociation[] = [], categoryReservations: ProjectAssociation[] = []) {
