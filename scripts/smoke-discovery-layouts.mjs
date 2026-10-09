@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { closeElectron } from "./runtime-lifecycle.mjs";
 
-// Static Ladle presentation fixtures complement, rather than replace, runtime smoke.
+// Deterministic Ladle presentation and interaction fixtures complement runtime smoke.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const built = join(root, "dist", "ladle");
 const evidence = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? join(root, "work", "discovery-layouts");
@@ -39,24 +39,44 @@ app.on('window-all-closed', () => app.quit());`);
   const page = await electron.firstWindow();
   page.setDefaultTimeout(15000);
   const meta = JSON.parse(await readFile(join(built, "meta.json"), "utf8"));
-  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-)/.test(name));
-  assert.equal(stories.length, 16, "Expected all eight EN/RU discovery presentation states");
+  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-)/.test(name));
+  assert.equal(stories.filter((name) => name.includes("--text-")).length, 18, "Expected all nine EN/RU Text states");
+  assert.equal(stories.length, 34, "Expected discovery and Text presentation states");
   for (const story of stories) {
     await page.goto(`${url}/?story=${story}&mode=preview`);
-    await page.locator(".discovery-panel, .table-view").waitFor();
+    const textStory = story.includes("--text-");
+    await page.locator(textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const textState = textStory ? await page.locator("[data-text-fixture]").getAttribute("data-text-fixture") : null;
+    if (textState === "loading") assert.equal(await page.locator(".text-properties").getAttribute("aria-busy"), "true");
+    if (textState === "no-definitions") assert.equal(await page.locator(".property-authored").count(), 0);
+    if (textState === "no-projects") assert.equal(await page.locator("tbody tr").count(), 0);
+    if (["editing", "saving", "validation", "failure", "sibling"].includes(textState)) {
+      await page.locator("textarea").waitFor();
+      assert.ok((await page.locator("textarea").inputValue()).includes("日本語"));
+      if (textState === "saving") await page.waitForFunction(() => globalThis.document.querySelector("textarea")?.disabled);
+      if (textState === "validation") await page.waitForFunction(() => globalThis.document.querySelector("textarea")?.getAttribute("aria-invalid") === "true");
+      if (textState === "failure") await page.getByRole("alert").waitFor();
+      if (textState === "sibling") await page.locator(".text-property-cell .bb-status").waitFor();
+    }
     if (story.includes("applied-")) await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false");
     for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
       await page.setViewportSize(size);
+      if (await page.locator(".text-value-editor").count()) await page.locator(".text-value-editor").scrollIntoViewIfNeeded();
       const layout = await page.evaluate(() => ({
         overflow: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table, .project-table td, .workspace-root, .workspace-form-actions"))
+        clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button")).filter((node) => {
+          const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
+          return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
+        }).map((node) => node.textContent),
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
-        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .project-table td, .workspace-root"))
+        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td:first-child, .workspace-root"))
           .filter((node) => node.textContent.length > 150).every((node) => {
             const range = globalThis.document.createRange(); range.selectNodeContents(node);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
+      assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
       assert.equal(layout.overflow, false, `${story} ${size.width} document overflow`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
       if (size.width === 420) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
@@ -64,6 +84,25 @@ app.on('window-all-closed', () => app.quit());`);
       await page.screenshot({ path: join(evidence, screenshot), fullPage: true });
       results.screenshots.push({ story, ...size, screenshot, layout });
     }
+    // Exercise the actual fixture controls after recording the requested state.
+    if (["editing", "sibling"].includes(textState)) {
+      await page.locator("textarea").press("Escape");
+      await page.locator("textarea").waitFor({ state: "detached" });
+      assert.equal(await page.locator(".text-value-button").evaluate((node) => node === globalThis.document.activeElement), true);
+      if (textState === "sibling") assert.equal(await page.locator(".text-value-button").textContent(), "Sibling committed change");
+    }
+    if (["validation", "failure"].includes(textState)) {
+      const draft = await page.locator("textarea").inputValue();
+      await page.locator("textarea").press("Control+Enter");
+      await page.locator("textarea").waitFor({ state: "detached" });
+      assert.equal(await page.locator(".text-value-button").textContent(), draft);
+    }
+    if (textState === "saving") {
+      assert.equal(await page.locator(".text-value-editor button:disabled").count(), 3);
+      await page.locator("textarea").press("Escape");
+      assert.equal(await page.locator("textarea").count(), 1);
+    }
+    if (textStory) { results.interactions ??= []; results.interactions.push({ story, state: textState, passed: true }); }
   }
   results.featurePassed = true; await save();
   console.info(`Verified ${results.screenshots.length} EN/RU Ladle screenshots, including wrapping and no horizontal overflow`);

@@ -18,16 +18,24 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Shared applied projects and exclusions across sibling configurations, committed revision notifications, stale-preview rejection and recovery that requires another explicit Apply.
 - Automatic exclusions for symbolic links/junctions, dot-prefixed folders, Windows service folders and persisted designated archives; ordinary undesignated Archive folders remain eligible.
 - Integrated development/packaged Electron scenarios and Ladle states for discovery, cancellation, stale review, source unavailability, retained metadata and long EN/RU layouts.
+- Source-owned Text definitions with stable IDs, creation and rename in the default Table; immutable type and source ownership enforced by the service.
+- Exact authored Text values, including Unicode, whitespace, line breaks and stored empty strings; explicit Clear removes the value rather than storing empty text.
+- English/Russian keyboard cell editing, Save/Clear/Cancel, recoverable failed drafts and sibling-change notices with committed revision guards.
+- Migration 0005, baseline upgrade/reopen and transactional rollback regressions, production property events, and permanent Text runtime/Ladle workflows.
 
 ### Fixed
 
 - Malformed desktop requests are rejected without stopping the local workspace service.
 - Saved workspace folder aliases retain source, workspace and view identities when their canonical path spelling changes.
+- Same-source availability and locator notifications preserve Text drafts while resetting discovery review for the changed folder state.
+- Backend restart discards obsolete source availability observations while preserving newer current-generation events over delayed reloads.
 
 ### Planned
 
-- Project properties, editable Table and Board views.
+- Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
 - Grouped folder discovery, external reconciliation/reassociation, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).
+
+Physical macOS27 native Electron shutdown #44 remains an unresolved final-release blocker. Local pre-quit feature evidence does not establish application restart or Windows acceptance; observed platform results and skipped scenarios are recorded with the execution evidence.

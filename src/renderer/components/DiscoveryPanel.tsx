@@ -176,8 +176,8 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; language: Language; disabled: boolean;
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, language, disabled }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; language: Language; disabled: boolean;
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +221,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, di
     return () => { version.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
   return <>
-    <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
+    <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       invalidation={invalidation} language={language} disabled={disabled}
       onApplied={(value) => { version.current++; minimumRevision.current = value.revision; setProjects(value); setError(false); setLoading(false); }} />
     <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
@@ -238,7 +238,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, di
         {projects.projects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
       <TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId}
-        projects={!loading && !error ? projects?.projects ?? [] : []} language={language} disabled={disabled} />
+        projects={!error ? projects?.projects ?? [] : []} language={language} disabled={disabled} />
     </section>
   </>;
 }

@@ -78,10 +78,11 @@ async function assertStopped(pids) {
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
+const stages = { preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
 
 async function recordEvidence(status, error) {
   if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
-    mode, platform: process.platform, arch: process.arch, executablePath, status,
+    mode, platform: process.platform, arch: process.arch, executablePath, status, stages,
     ...(error ? { error: error.message } : {}), observations,
   }, null, 2) + "\n");
 }
@@ -90,6 +91,28 @@ async function projects(page, workspaceId) {
   const result = await page.evaluate((id) => globalThis.window.workspace.workspace({ type: "workspace.listProjects", workspaceId: id }), workspaceId);
   assert.equal(result.ok, true);
   return result.value;
+}
+
+async function properties(page, workspaceId) {
+  const result = await page.evaluate((id) => globalThis.window.workspace.workspace({ type: "workspace.listTextProperties", workspaceId: id }), workspaceId);
+  assert.equal(result.ok, true);
+  return result.value;
+}
+const propertyLabels = {
+  en: { create: "Create Text property", name: "Property name", rename: "Rename property", edit: "Edit Text value", save: "Save value", clear: "Clear value", saved: "Value saved.", absent: "No value", empty: "Empty text" },
+  ru: { create: "Создать Text-свойство", name: "Название свойства", rename: "Переименовать свойство", edit: "Редактировать Text-значение", save: "Сохранить значение", clear: "Очистить значение", saved: "Значение сохранено.", absent: "Нет значения", empty: "Пустой текст" },
+};
+const accessibleName = (name) => name.replace(/\s+/g, " ").trim();
+async function editValue(page, projectName, propertyName, value, language = "en") {
+  const labels = propertyLabels[language];
+  const cell = page.getByRole("button", { name: accessibleName(`${labels.edit}: ${projectName} / ${propertyName}`), exact: true });
+  await cell.press("Enter");
+  const editor = page.getByRole("textbox", { name: accessibleName(`${labels.edit}: ${projectName} / ${propertyName}`), exact: true });
+  if (value === null) await page.getByRole("button", { name: labels.clear, exact: true }).press("Enter");
+  else { await editor.fill(value); await editor.press("Control+Enter"); }
+  await editor.waitFor({ state: "detached" });
+  await cell.locator("..").getByText(labels.saved, { exact: true }).waitFor();
+  assert.equal(await cell.textContent(), value === null ? labels.absent : value === "" ? labels.empty : value);
 }
 
 // Test-side byte/entry inventory follows no links, including external targets.
@@ -127,12 +150,17 @@ async function applyFolders(page, language = "en") {
 async function captureDiscovery(page, language, state) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
     await page.setViewportSize(size);
+    if (await page.locator(".text-value-editor").count()) await page.locator(".text-value-editor").scrollIntoViewIfNeeded();
     const overflow = await page.evaluate(() => ({
       document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
-      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .workspace-root, .project-table, .project-table td, .workspace-form-actions"))
+      clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button")).filter((node) => {
+        const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
+        return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
+      }).map((node) => node.textContent),
+      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
         .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
     }));
-    assert.deepEqual(overflow, { document: false, elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
+    assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
     if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
   }
 }
@@ -219,6 +247,7 @@ try {
   await symlink(externalRoot, join(projectRoot, "External-link"), process.platform === "win32" ? "junction" : "dir");
   let originalBytes = await folderBytes(projectRoot);
   const externalBytes = await folderBytes(externalRoot);
+  const otherBytes = await folderBytes(otherRoot);
   const canonicalProjectRoot = await realpath(projectRoot);
   const canonicalOtherRoot = await realpath(otherRoot);
   current = await launch(dataDirectory, projectRoot);
@@ -339,10 +368,72 @@ try {
   assert.deepEqual(await folderBytes(projectRoot), originalBytes);
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   observations.push({ scenario: "preview/exclude/cancel/apply, stale filesystem, sibling invalidation, retained exclusions, unchanged rescan", savedProjects, projectChanges });
+  // Text commands use the actual UI, typed preload and utilityProcess database.
+  const otherProperties = await properties(page, other.workspaceId);
+  const initialProperties = await properties(page, first.workspaceId);
+  await page.evaluate(() => {
+    globalThis.smokePropertyChanges = [];
+    globalThis.stopPropertyChanges = globalThis.window.workspace.onWorkspaceChange((event) => {
+      if (event.type === "workspace.propertiesChanged") globalThis.smokePropertyChanges.push(event);
+    });
+  });
+  const initialPropertyName = "  Notes 日本語  ";
+  const propertyName = "  Renamed-свойство-" + "long-name-".repeat(18) + "  ";
+  const authoredValue = "  日本語 📝 " + "authored-text-".repeat(20) + "\nСтрока с пробелами  ";
+  await page.getByRole("button", { name: propertyLabels.en.create, exact: true }).press("Enter");
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).fill(initialPropertyName);
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).press("Enter");
+  await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.rename}: ${initialPropertyName}`), exact: true }).waitFor();
+  const createdProperties = await properties(page, first.workspaceId);
+  assert.equal(createdProperties.revision, initialProperties.revision + 1);
+  const propertyId = createdProperties.definitions[0].propertyId;
+  await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.rename}: ${initialPropertyName}`), exact: true }).press("Enter");
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).fill(propertyName);
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).press("Enter");
+  await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.rename}: ${propertyName}`), exact: true }).waitFor();
+  assert.equal((await properties(page, first.workspaceId)).definitions[0].propertyId, propertyId);
+  await editValue(page, projectName, propertyName, authoredValue);
+  await editValue(page, "Archive", propertyName, "");
+  await captureDiscovery(page, "en", "text-authored-and-empty");
+  await editValue(page, "Archive", propertyName, null);
+  assert.equal((await properties(page, first.workspaceId)).values.some((entry) => entry.projectId === savedProjects.projects.find((project) => project.name === "Archive").projectId), false);
+  await captureDiscovery(page, "en", "text-cleared");
+  await editValue(page, "Archive", propertyName, "");
+  await editValue(page, "Late project", propertyName, "  \n\t  ");
+  const savedProperties = await properties(page, first.workspaceId);
+  assert.equal(savedProperties.revision, initialProperties.revision + 7);
+  assert.equal(savedProperties.definitions[0].name, propertyName);
+  assert.deepEqual(savedProperties.values.map((entry) => entry.value).sort(), [authoredValue, "", "  \n\t  "].sort());
+  await select(page, sibling);
+  assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
+  await page.getByRole("button", { name: accessibleName(`${propertyLabels.en.edit}: ${projectName} / ${propertyName}`), exact: true }).waitFor();
+  await select(page, other);
+  assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
+  assert.equal(await page.locator(".property-authored").count(), 0);
+  await select(page, first);
+  const propertyChanges = await page.evaluate(() => globalThis.smokePropertyChanges);
+  assert.equal(propertyChanges.length, 7);
+  assert.deepEqual(propertyChanges.map((event) => event.revision), Array.from({ length: 7 }, (_, index) => initialProperties.revision + index + 1));
+  assert.ok(propertyChanges.every((event) => event.sourceId === first.sourceId &&
+    JSON.stringify(event.workspaceIds) === JSON.stringify([first.workspaceId, sibling.workspaceId])));
+  await page.evaluate(() => globalThis.stopPropertyChanges());
+  assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+  observations.push({ scenario: "Text create/rename/authored/empty/clear/whitespace, sibling visibility and other-source isolation", identities: [first, sibling, other].map(identity), savedProperties, otherProperties, savedProjects, propertyChanges, unchangedProjectInventory: originalBytes });
   for (const language of ["en", "ru"]) {
     await page.locator("#interface-language").selectOption(language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await captureDiscovery(page, language, "applied-table");
+    const valueLabel = `${propertyLabels[language].edit}: ${projectName} / ${propertyName}`;
+    await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).press("Enter");
+    const textEditor = page.getByRole("textbox", { name: accessibleName(valueLabel), exact: true });
+    assert.equal(await textEditor.inputValue(), authoredValue);
+    await textEditor.fill("  Unsaved screenshot draft 日本語  ");
+    await captureDiscovery(page, language, "text-editing");
+    await textEditor.press("Escape");
+    assert.equal(await page.getByRole("button", { name: accessibleName(valueLabel), exact: true }).textContent(), authoredValue);
     await previewFolders(page, language);
     await captureDiscovery(page, language, "preview");
     await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
@@ -413,7 +504,9 @@ try {
     await closeElectron(closing.electron);
     await assertStopped(pids);
   }
+  stages.preQuitFeatures = true;
   await closeCurrent();
+  stages.firstShutdown = true;
   await stat(join(dataDirectory, "workspace.sqlite"));
   current = await launch(dataDirectory);
   page = current.page;
@@ -431,9 +524,18 @@ try {
   assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
   await applyFolders(page, "ru");
   assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  assert.deepEqual(await properties(page, first.workspaceId), savedProperties);
+  await select(page, sibling);
+  assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
+  assert.deepEqual(identity((await load(page)).activeWorkspace), identity(sibling));
+  await select(page, other); assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
+  await select(page, first);
+  stages.restartPersistence = true;
+  observations.push({ scenario: "Text persisted after application restart with unchanged project/source/workspace/view identities", savedProperties, savedProjects });
   // Inactive different-root removal, active fallback, and final removal.
   assert.deepEqual(identity((await remove(page, other)).activeWorkspace), identity(first));
   assert.deepEqual(identity((await remove(page, first)).activeWorkspace), identity(sibling));
+  assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
   assert.deepEqual(await remove(page, sibling), { workspaces: [], activeWorkspace: null });
   await page.getByRole("heading", { name: "Создать рабочее пространство", exact: true }).waitFor();
   for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
@@ -458,6 +560,9 @@ try {
   assert.deepEqual(await folderBytes(projectRoot), originalBytes);
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
+  assert.deepEqual(await properties(page, recreated.workspaceId), { ...savedProperties, workspaceId: recreated.workspaceId });
+  assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+  stages.retainedSourceReuse = true;
   observations.push({ scenario: "restart, inactive/active/final removal, empty restart and retained-source reuse", recreated, sentinelBytes: sentinel.length });
   await closeCurrent();
 
@@ -469,13 +574,14 @@ try {
     state: "unavailable",
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
   });
+  stages.startupFailure = true;
   const failurePids = await backendPids(current.electron);
   await recordEvidence("startup failure asserted before quit");
   const closing = current; current = undefined;
   await closeElectron(closing.electron);
   await assertStopped(failurePids);
   await recordEvidence("passed");
-  console.info(`Electron ${mode} runtime verified: discovery/exclusions/cancel/Apply, persistent project IDs/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
+  console.info(`Electron ${mode} runtime verified: discovery/exclusions/cancel/Apply, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
   await recordEvidence("failed", error);
   throw error;

@@ -135,6 +135,10 @@ export function App() {
       if (status.state !== backendState.current) {
         backendState.current = status.state;
         dataVersion.current++;
+        // Source observations belong to the backend that produced them.
+        // Events received after this transition can still override a delayed load.
+        sourceStates.current.clear();
+        sourceVersion.current.clear();
         // React may batch unavailable/ready notifications into one render.
         // Still discard children and responses belonging to the prior backend.
         setBackendGeneration((generation) => generation + 1);
@@ -573,7 +577,8 @@ export function App() {
                   {t("refreshSourceErrorDescription")}
                 </StatusMessage>
               )}
-              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
+              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
+                sourceState={`${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />
               <button

@@ -3,6 +3,9 @@ import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
 import type { ActiveWorkspace, DiscoveryPreview, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
+import { TextPropertiesTable } from "./TextPropertiesTable.js";
+import { WorkspaceServiceClient } from "../workspace-service-client.js";
+import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { DiscoveryPanel } from "./DiscoveryPanel.js";
 import "../app.css";
 import type { Story } from "@ladle/react";
@@ -77,6 +80,7 @@ function WorkspacePreview({ language, state = "management" }: {
         projects: state === "applied" ? [{ projectId: "project-preview", name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
           relativePath: "  Authored-проект-" + "long-name-".repeat(18) + "  " }] : [], retainedCount: state.startsWith("applied") ? 2 : 0,
       } };
+      if (input.type === "workspace.listTextProperties") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: 0, definitions: [], values: [] } };
       if (state === "error") return failure;
       if (input.type === "workspace.reorder") records = input.workspaceIds.map((id) => records.find((record) => record.workspaceId === id)!);
       else if (input.type === "workspace.rename") records = records.map((record) => record.workspaceId === input.workspaceId ? { ...record, name: input.name } : record);
@@ -163,3 +167,86 @@ export const AppliedTableEnglish: Story = () => <WorkspacePreview language="en" 
 export const AppliedTableRussian: Story = () => <WorkspacePreview language="ru" state="applied" />;
 export const AppliedEmptyEnglish: Story = () => <WorkspacePreview language="en" state="applied-empty" />;
 export const AppliedEmptyRussian: Story = () => <WorkspacePreview language="ru" state="applied-empty" />;
+
+// Text fixtures use the production Table/client and deterministic typed responses.
+// Pending requests intentionally remain unresolved; no filesystem is accessed.
+type TextStoryState = "no-definitions" | "no-projects" | "loading" | "editing" | "saving" | "validation" | "failure" | "sibling" | "saved";
+const textStoryIds = {
+  workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
+  propertyId: "00000000-0000-4000-8000-000000000030", projectId: "00000000-0000-4000-8000-000000000040",
+};
+const longPropertyName = "  Authored-свойство-" + "long-name-".repeat(18) + "  ";
+const longTextValue = "  日本語 📝 Authored-value-" + "unbroken-text-".repeat(20) + "\nВторая строка  ";
+function TextPreview({ language, state }: { language: Language; state: TextStoryState }) {
+  const [client, setClient] = useState<WorkspaceServiceClient | null>(null);
+  const [prepared, setPrepared] = useState(false);
+  useEffect(() => {
+    let snapshot: TextPropertySnapshot = {
+      workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 1,
+      definitions: state === "no-definitions" ? [] : [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" }],
+      values: state === "no-definitions" ? [] : [{ projectId: textStoryIds.projectId, propertyId: textStoryIds.propertyId, value: longTextValue }],
+    };
+    const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+    const emit = () => listeners.forEach((listener) => listener({ type: "workspace.propertiesChanged", sourceId: snapshot.sourceId, workspaceIds: [snapshot.workspaceId], revision: snapshot.revision }));
+    let saves = 0;
+    const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
+      if (input.type === "workspace.listTextProperties") return state === "loading" ? new Promise(() => {}) : { ok: true, value: snapshot };
+      if (input.type === "workspace.setTextValue") {
+        saves++;
+        if (state === "saving") return new Promise(() => {});
+        if (saves === 1 && (state === "validation" || state === "failure")) return { ok: false, error: { code: state === "validation" ? "invalid_input" : "storage", message: "Disposable fixture failure" } };
+        snapshot = { ...snapshot, revision: snapshot.revision + 1, values: input.value === null ? [] : [{ projectId: input.projectId, propertyId: input.propertyId, value: input.value }] };
+        emit();
+        return { ok: true, value: { snapshot, propertyId: input.propertyId, projectId: input.projectId } };
+      }
+      return { ok: false, error: { code: "invalid_input", message: "Unsupported fixture command" } };
+    };
+    const api: WorkspaceDesktopApi = {
+      workspace: workspace as WorkspaceDesktopApi["workspace"],
+      getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
+      settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }),
+      onWorkspaceChange: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    };
+    setClient(new WorkspaceServiceClient(api));
+    let opened = false;
+    const observer = new MutationObserver(() => {
+      const root = document.querySelector("[data-text-fixture]");
+      if (!root) return;
+      if (["loading", "no-definitions", "no-projects", "saved"].includes(state)) {
+        if (state === "loading" || root.querySelector(".text-properties")?.getAttribute("aria-busy") === "false") { observer.disconnect(); setPrepared(true); }
+        return;
+      }
+      const button = root.querySelector<HTMLButtonElement>(".text-value-button");
+      if (!opened && button) { opened = true; button.click(); return; }
+      if (!root.querySelector("textarea")) return;
+      observer.disconnect();
+      if (state === "sibling") { snapshot = { ...snapshot, revision: 2, values: [{ ...snapshot.values[0], value: "Sibling committed change" }] }; emit(); }
+      else if (state !== "editing") root.querySelector<HTMLButtonElement>(".text-value-editor .workspace-button")?.click();
+      setPrepared(true);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    return () => { observer.disconnect(); listeners.clear(); };
+  }, [language, state]);
+  return <main className="app-shell" lang={language} data-text-fixture={state} data-fixture-ready={prepared}>
+    {client && <TextPropertiesTable client={client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false}
+      projects={state === "no-projects" ? [] : [{ projectId: textStoryIds.projectId, name: "Authored-проект-" + "long-name-".repeat(18), relativePath: "Project" }]} />}
+  </main>;
+}
+export const TextNoDefinitionsEnglish: Story = () => <TextPreview language="en" state="no-definitions" />;
+export const TextNoDefinitionsRussian: Story = () => <TextPreview language="ru" state="no-definitions" />;
+export const TextNoProjectsEnglish: Story = () => <TextPreview language="en" state="no-projects" />;
+export const TextNoProjectsRussian: Story = () => <TextPreview language="ru" state="no-projects" />;
+export const TextLoadingEnglish: Story = () => <TextPreview language="en" state="loading" />;
+export const TextLoadingRussian: Story = () => <TextPreview language="ru" state="loading" />;
+export const TextEditingEnglish: Story = () => <TextPreview language="en" state="editing" />;
+export const TextEditingRussian: Story = () => <TextPreview language="ru" state="editing" />;
+export const TextSavingEnglish: Story = () => <TextPreview language="en" state="saving" />;
+export const TextSavingRussian: Story = () => <TextPreview language="ru" state="saving" />;
+export const TextValidationEnglish: Story = () => <TextPreview language="en" state="validation" />;
+export const TextValidationRussian: Story = () => <TextPreview language="ru" state="validation" />;
+export const TextFailureEnglish: Story = () => <TextPreview language="en" state="failure" />;
+export const TextFailureRussian: Story = () => <TextPreview language="ru" state="failure" />;
+export const TextSiblingEnglish: Story = () => <TextPreview language="en" state="sibling" />;
+export const TextSiblingRussian: Story = () => <TextPreview language="ru" state="sibling" />;
+export const TextSavedEnglish: Story = () => <TextPreview language="en" state="saved" />;
+export const TextSavedRussian: Story = () => <TextPreview language="ru" state="saved" />;

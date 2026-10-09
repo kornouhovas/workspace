@@ -1562,6 +1562,79 @@ function textFixture() {
     projects: [{ projectId, sourceId, name: "Project", relativePath: "Project" }] };
 }
 
+test("backend generations discard old source observations and preserve newer events over delayed reloads", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const batched of [false, true]) {
+      for (const newerEvent of [false, true]) {
+        const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
+        const data = { workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active };
+        let loads = 0;
+        let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+        const api = mockApi({ language, onProperties: async () => ok(f.snapshot(1)), onWorkspace: async (input) => {
+          if (input.type !== "workspace.load") return fail("invalid_input");
+          return ++loads === 1 ? ok(data) : new Promise((resolve) => { finish = resolve; });
+        } });
+        render(<App />);
+        await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Notes` });
+        const sourceEvent = (root: string): WorkspaceChangeEvent => ({ type: "workspace.sourceChanged", source: {
+          sourceId: f.sourceId, workspaceIds: [f.workspaceId], canonicalRoot: root, sourceAvailable: false,
+        } });
+        await act(async () => api.emitChange(sourceEvent("/Old-generation")));
+        await screen.findByText(translate(language, "sourceUnavailableTitle"));
+        if (batched) await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+        else { await act(async () => api.emitStatus("unavailable")); await act(async () => api.emitStatus("ready")); }
+        await waitFor(() => assert.equal(loads, 2));
+        if (newerEvent) await act(async () => api.emitChange(sourceEvent("/New-generation")));
+        await act(async () => finish?.(ok(data)));
+        await screen.findByRole("button", { name: `${translate(language, "renameProperty")}: Notes` });
+        assert.equal(screen.queryByText(translate(language, "sourceUnavailableTitle")) !== null, newerEvent);
+        assert.ok(screen.getByText(newerEvent ? "/New-generation" : active.canonicalRoot));
+        assert.equal(screen.queryByText("/Old-generation"), null);
+        cleanup();
+      }
+    }
+  }
+});
+
+test("same-source availability and locator notifications preserve Text drafts while invalidating discovery", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const kind of ["cell", "rename"] as const) {
+      const f = textFixture();
+      const active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
+      let finishProjects: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+      let delay = false;
+      const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
+        configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+      const api = mockApi({ language, load: ok({ workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active }),
+        onProperties: async () => ok(f.snapshot(1)),
+        onProjects: async () => delay ? new Promise((resolve) => { finishProjects = resolve; }) : ok(projection),
+        onWorkspace: async (input) => input.type === "workspace.load" ? ok({ workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active })
+          : input.type === "workspace.previewDiscovery" ? ok(previewResult(active)) : fail("invalid_input"),
+      });
+      render(<App />);
+      await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+      await screen.findByRole("button", { name: translate(language, "discoveryApply") });
+      await userEvent.click(screen.getByRole("button", { name: kind === "cell" ? `${translate(language, "editTextValue")}: Project / Notes` : `${translate(language, "renameProperty")}: Notes` }));
+      const editor = screen.getByRole("textbox");
+      await userEvent.clear(editor); await userEvent.type(editor, "  Unsaved 日本語  ");
+      delay = true;
+      for (const available of [false, true]) {
+        await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: {
+          sourceId: f.sourceId, workspaceIds: [f.workspaceId], canonicalRoot: "/Projects/New spelling", sourceAvailable: available,
+        } }));
+        assert.equal(screen.getByRole("textbox") === editor, true, "Source observation remounted the editor");
+        assert.equal((editor as HTMLInputElement).value, "  Unsaved 日本語  ");
+        assert.equal(screen.queryByRole("button", { name: translate(language, "discoveryApply") }), null);
+        await act(async () => finishProjects?.(ok({ ...projection, state: available ? "ready" : "unavailable" })));
+        assert.equal(screen.getByRole("textbox") === editor, true, "Project reload discarded the editor");
+      }
+      editor.focus(); await userEvent.keyboard("{Escape}");
+      await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      cleanup();
+    }
+  }
+});
+
 test("EN/RU sibling changes preserve cell and rename drafts; Cancel reveals the newest committed field", async () => {
   for (const language of ["en", "ru"] as const) {
     const f = textFixture(); let committed = f.snapshot(1), mutations = 0;
