@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
 import { startServiceProcess } from "../dist/service/entry.cjs";
 
@@ -87,6 +88,7 @@ test("service connects over its transferred port, routes settings requests, and 
   let closed = false;
   const exitCodes = [];
   startServiceProcess(parent, () => ({
+    workspaces: { subscribe: () => () => {} },
     handleQuery: (input) => input?.type === "settings.load"
       ? { ok: true, value: { language: "en" } }
       : { ok: false, error: { code: "invalid_input", message: "Bad query" } },
@@ -120,6 +122,7 @@ test("service routes typed workspace requests and rejects malformed workspace pa
   const port = new FakePort();
   const routed = [];
   startServiceProcess(parent, () => ({
+    workspaces: { subscribe: () => () => {} },
     handleQuery: (input) => {
       routed.push(["query", input]);
       return { ok: true, value: { workspaces: [], activeWorkspace: null } };
@@ -223,6 +226,7 @@ test("malformed service payloads are rejected by the settings boundary", () => {
   const port = new FakePort();
   const routed = [];
   startServiceProcess(parent, () => ({
+    workspaces: { subscribe: () => () => {} },
     handleQuery: (input) => { routed.push(["query", input]); return { ok: false, error: { code: "invalid_input", message: "Bad query" } }; },
     handleCommand: (input) => { routed.push(["command", input]); return { ok: false, error: { code: "invalid_input", message: "Bad command" } }; },
     close() {},
@@ -396,4 +400,127 @@ test("real service IPC reorders saved configurations and rejects invalid permuta
     parent.emit("message", { data: { type: "shutdown" }, ports: [] });
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("real service ports interleave committed source events with requests, fan out and shut down subscriptions", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-events-ipc-"));
+  const root = join(directory, "root");
+  const otherRoot = join(directory, "other");
+  await mkdir(root);
+  await mkdir(otherRoot);
+  const parent = new EventEmitter();
+  const child = new FakeChild();
+  const servicePort = new FakePort();
+  const desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController();
+  const changes = [];
+  const unsubscribe = controller.onWorkspaceChange((change) => changes.push(change));
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "workspace.sqlite"), {}, 100), true);
+    const one = (await controller.request({ type: "workspace.create", name: "One", rootPath: root })).value;
+    const two = (await controller.request({ type: "workspace.create", name: "Two", rootPath: root })).value;
+    const other = (await controller.request({ type: "workspace.create", name: "Other", rootPath: otherRoot })).value;
+    assert.equal(changes.filter((event) => event.type === "workspace.listChanged").length, 3);
+    changes.length = 0;
+    await rm(root, { recursive: true });
+    const refresh = { type: "workspace.refreshSource", workspaceId: one.workspaceId };
+    const unavailable = await controller.request(refresh);
+    assert.equal(unavailable.ok, true);
+    assert.deepEqual(changes, [{ type: "workspace.sourceChanged", source: unavailable.value }]);
+    assert.deepEqual(unavailable.value.workspaceIds, [one.workspaceId, two.workspaceId]);
+    assert.equal(unavailable.value.workspaceIds.includes(other.workspaceId), false);
+    await controller.request(refresh);
+    assert.equal(changes.length, 1);
+    const before = changes.length;
+    for (const input of [{ ...refresh, extra: true }, { type: "workspace.refreshSource" }, { ...refresh, workspaceId: "bad" }]) {
+      assert.equal((await controller.request(input)).error.code, "invalid_input");
+    }
+    assert.equal(changes.length, before);
+    await mkdir(root);
+    assert.equal((await controller.request(refresh)).value.sourceAvailable, true);
+    assert.equal(changes.at(-1).source.sourceAvailable, true);
+
+    // An event must never resolve a pending request, even with an injected request ID.
+    const pending = controller.request({ type: "settings.load" });
+    desktopPort.receive({ type: "workspace.change", id: 999, change: changes.at(-1) });
+    desktopPort.receive({ type: "workspace.change", change: { type: "workspace.sourceChanged", source: { sourceId: 42 } } });
+    assert.equal(changes.length, 2);
+    assert.deepEqual(await pending, { ok: true, value: { language: "en" } });
+    unsubscribe();
+    await rm(root, { recursive: true });
+    await controller.request(refresh);
+    assert.equal(changes.length, 2);
+    await controller.stop(100);
+    assert.equal(servicePort.closed && desktopPort.closed, true);
+    const count = servicePort.sent.length;
+    servicePort.receive({ id: 900, input: refresh });
+    assert.equal(servicePort.sent.length, count);
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("controller treats valid events separately from pending responses and removes subscriptions on exit", async () => {
+  const controller = new BackendController();
+  const child = new FakeChild();
+  const port = new FakePort();
+  const events = [];
+  controller.onWorkspaceChange((event) => events.push(event));
+  const ready = controller.start(child, port, "/tmp/events.sqlite", {}, 100);
+  child.send({ type: "ready" });
+  await ready;
+  let completed = false;
+  const response = controller.request({ type: "workspace.load" }).then((result) => { completed = true; return result; });
+  const envelope = { type: "workspace.change", change: {
+    type: "workspace.listChanged", snapshot: { workspaces: [], activeWorkspace: null },
+  } };
+  port.receive(envelope);
+  port.receive({ ...envelope, id: 1 });
+  port.receive({ type: "workspace.change", id: 1, result: { ok: true, value: {} } });
+  port.receive({ type: "workspace.change", change: { type: "workspace.listChanged", snapshot: { workspaces: [], activeWorkspace: {} } } });
+  await Promise.resolve();
+  assert.equal(completed, false);
+  assert.equal(events.length, 1);
+  port.receive({ id: 1, result: { ok: true, value: { workspaces: [], activeWorkspace: null } } });
+  assert.equal((await response).ok, true);
+  child.exit();
+  port.receive(envelope);
+  assert.equal(events.length, 1);
+});
+
+test("compiled preload validates source/list events, exposes no IPC objects and tears subscriptions down", async () => {
+  const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+  const ipc = new EventEmitter();
+  ipc.invoke = async () => ({ ok: true });
+  const unload = new EventTarget();
+  let api;
+  runInNewContext(preload, {
+    require: (name) => {
+      assert.equal(name, "electron");
+      return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_name, value) => { api = value; } } };
+    },
+    window: unload,
+  });
+  const events = [];
+  const unsubscribe = api.onWorkspaceChange((event) => events.push(event));
+  const event = { type: "workspace.listChanged", snapshot: { workspaces: [], activeWorkspace: null } };
+  ipc.emit("workspace:change", { sender: "privileged" }, event);
+  ipc.emit("workspace:change", {}, { ...event, extra: true });
+  ipc.emit("workspace:change", {}, { type: "workspace.sourceChanged", source: { sourceId: 42 } });
+  assert.equal(events.length, 1);
+  assert.deepEqual(events[0], event);
+  assert.equal(ipc.listenerCount("workspace:change"), 1);
+  unsubscribe();
+  assert.equal(ipc.listenerCount("workspace:change"), 0);
+  api.onWorkspaceChange(() => {});
+  api.onWorkspaceChange(() => {});
+  assert.equal(ipc.listenerCount("workspace:change"), 2);
+  unload.dispatchEvent(new Event("unload"));
+  assert.equal(ipc.listenerCount("workspace:change"), 0);
 });

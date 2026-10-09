@@ -1,5 +1,6 @@
 import type { BackendStatus } from "../contracts/desktop-api.js";
-import { isServiceResponse, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
+import { isServiceEvent, isServiceResponse, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
+import type { WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 
 type ChildProcess = {
@@ -14,6 +15,11 @@ type ChildProcess = {
 type Timer = ReturnType<typeof setTimeout>;
 
 export class BackendController {
+  private changeListeners = new Set<(event: WorkspaceChangeEvent) => void>();
+  onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => { this.changeListeners.delete(listener); };
+  }
   private child?: ChildProcess;
   private port?: ServicePort;
   private status: BackendStatus = { state: "starting" };
@@ -79,6 +85,7 @@ export class BackendController {
   }
 
   async stop(timeoutMs = 1500): Promise<void> {
+    this.changeListeners.clear();
     const child = this.child;
     if (!child) return;
     if (this.status.state === "ready") {
@@ -112,6 +119,13 @@ export class BackendController {
   }
 
   private onResponse(value: unknown): void {
+    if (!this.port || this.status.state !== "ready") return;
+    if (isServiceEvent(value)) {
+      for (const listener of [...this.changeListeners]) {
+        try { listener(value.change); } catch { /* Isolate subscribers from request routing. */ }
+      }
+      return;
+    }
     if (!isServiceResponse(value)) return;
     const pending = this.pending.get(value.id);
     if (!pending) return;
@@ -121,6 +135,7 @@ export class BackendController {
   }
 
   private onExit(): void {
+    this.changeListeners.clear();
     if (this.readiness) this.failStartup(this.readiness.resolve);
     this.rejectPending("The local service exited.");
     if (this.child) {

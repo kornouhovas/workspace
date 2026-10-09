@@ -770,3 +770,153 @@ test("reorder rolls back partial writes and resulting snapshot failures", () => 
     } finally { sqlite.close(); service.close(); }
   });
 });
+
+test("source observations fan out to actual references, suppress unchanged and failed changes, and unsubscribe", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const otherRoot = join(directory, "other");
+    mkdirSync(otherRoot);
+    const service = openSettingsService(databasePath);
+    const events = [];
+    try {
+      const unsubscribe = service.workspaces.subscribe((event) => events.push(event));
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      const other = service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+      events.length = 0;
+      rmSync(root, { recursive: true });
+      const refresh = { type: "workspace.refreshSource", workspaceId: one.workspaceId };
+      const unavailable = service.handleCommand(refresh);
+      assert.equal(unavailable.ok, true);
+      assert.deepEqual(unavailable.value, {
+        sourceId: one.sourceId, workspaceIds: [one.workspaceId, two.workspaceId],
+        canonicalRoot: join(realpathSync.native(directory), "selected"), sourceAvailable: false,
+      });
+      assert.deepEqual(events, [{ type: "workspace.sourceChanged", source: unavailable.value }]);
+      assert.equal(events[0].source.workspaceIds.includes(other.workspaceId), false);
+      service.handleCommand(refresh);
+      service.workspaces.activate({ type: "workspace.activate", workspaceId: two.workspaceId });
+      assert.equal(events.filter((event) => event.type === "workspace.sourceChanged").length, 1);
+      events.length = 0;
+      for (const input of [
+        { ...refresh, extra: true }, { ...refresh, workspaceId: randomUUID() },
+        { ...refresh, workspaceId: 42 }, { ...refresh, workspaceId: "bad" },
+      ]) assert.equal(service.handleCommand(input).error.code, "invalid_input");
+      assert.deepEqual(events, []);
+      mkdirSync(root);
+      service.workspaces.load();
+      assert.equal(events.length, 1);
+      assert.equal(events[0].source.sourceAvailable, true);
+      events.length = 0;
+      const sqlite = new Database(databasePath);
+      sqlite.exec("CREATE TRIGGER fail_rename BEFORE UPDATE OF name ON workspaces BEGIN SELECT RAISE(ABORT, 'fixture failure'); END");
+      sqlite.close();
+      assert.equal(service.workspaces.rename({ type: "workspace.rename", workspaceId: one.workspaceId, name: "No" }).ok, false);
+      assert.deepEqual(events, []);
+      unsubscribe();
+      service.workspaces.remove({ type: "workspace.remove", workspaceId: one.workspaceId });
+      assert.deepEqual(events, []);
+    } finally { service.close(); }
+  });
+});
+
+test("source locator notifications commit with normalization, and rollback suppresses observations until retry", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const { alias, canonicalRoot, previous, current } = aliasPolicies(root, directory);
+    const old = openSettingsService(databasePath, undefined, previous);
+    const one = old.workspaces.create({ type: "workspace.create", name: "One", rootPath: alias }).value;
+    const two = old.workspaces.create({ type: "workspace.create", name: "Two", rootPath: alias }).value;
+    old.close();
+    const service = openSettingsService(databasePath, undefined, current);
+    const events = [];
+    service.workspaces.subscribe((event) => events.push(event));
+    try {
+      const before = records(databasePath);
+      const sqlite = new Database(databasePath);
+      sqlite.exec("CREATE TRIGGER fail_source BEFORE UPDATE ON sources BEGIN SELECT RAISE(ABORT, 'fixture failure'); END");
+      sqlite.close();
+      assert.equal(service.handleCommand({ type: "workspace.refreshSource", workspaceId: one.workspaceId }).error.code, "storage");
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(events, []);
+      const writable = new Database(databasePath);
+      writable.exec("DROP TRIGGER fail_source");
+      writable.close();
+      const refreshed = service.handleCommand({ type: "workspace.refreshSource", workspaceId: two.workspaceId });
+      assert.equal(refreshed.value.canonicalRoot, canonicalRoot);
+      assert.deepEqual(events, [{ type: "workspace.sourceChanged", source: refreshed.value }]);
+      assert.deepEqual(refreshed.value.workspaceIds, [one.workspaceId, two.workspaceId]);
+      assert.equal(records(databasePath).sources[0].canonical_root, canonicalRoot);
+      service.workspaces.load();
+      assert.equal(events.length, 1);
+    } finally { service.close(); }
+  });
+});
+
+test("subscriptions observe committed snapshots, isolate listener failures, and clear on close", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const events = [];
+    service.workspaces.subscribe(() => { throw new Error("subscriber failure"); });
+    const committedRows = [];
+    service.workspaces.subscribe((event) => {
+      events.push(event);
+      if (event.type === "workspace.listChanged") committedRows.push({ event, rows: records(databasePath) });
+    });
+    const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+    assert.ok(one);
+    const snapshot = service.workspaces.rename({ type: "workspace.rename", workspaceId: one.workspaceId, name: "Renamed" });
+    assert.equal(snapshot.ok, true);
+    assert.deepEqual(events.at(-1), { type: "workspace.listChanged", snapshot: snapshot.value });
+    for (const { event, rows } of committedRows) {
+      assert.deepEqual(event.snapshot.workspaces.map((workspace) => workspace.workspaceId), rows.workspaces.map((workspace) => workspace.id));
+      assert.equal(event.snapshot.activeWorkspace?.workspaceId ?? null, rows.active[0]?.workspace_id ?? null);
+    }
+    const count = events.length;
+    service.close();
+    service.workspaces.load();
+    assert.equal(events.length, count);
+  });
+});
+
+test("source refresh rejects a retargeted root without changing source identity or locator", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    try {
+      const saved = service.workspaces.create({ type: "workspace.create", name: "Saved", rootPath: root }).value;
+      const before = records(databasePath);
+      const events = [];
+      service.workspaces.subscribe((event) => events.push(event));
+      rmSync(root, { recursive: true });
+      const other = join(directory, "replacement");
+      mkdirSync(other);
+      symlinkSync(other, root, process.platform === "win32" ? "junction" : "dir");
+      const refreshed = service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: saved.workspaceId });
+      assert.equal(refreshed.ok, true);
+      assert.equal(refreshed.value.sourceAvailable, false);
+      assert.equal(refreshed.value.canonicalRoot, saved.canonicalRoot);
+      assert.deepEqual(records(databasePath), before);
+      assert.deepEqual(events, [{ type: "workspace.sourceChanged", source: refreshed.value }]);
+    } finally { service.close(); }
+  });
+});
+
+test("subscription-triggered reads do not duplicate observations or reorder committed event batches", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const events = [];
+    let renamed = false;
+    service.workspaces.subscribe((event) => {
+      if (event.type === "workspace.listChanged" && !renamed) {
+        renamed = true;
+        service.workspaces.load();
+        service.workspaces.rename({ type: "workspace.rename", workspaceId: event.snapshot.activeWorkspace.workspaceId, name: "Renamed" });
+      }
+    });
+    service.workspaces.subscribe((event) => events.push(event));
+    try {
+      assert.equal(service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).ok, true);
+      assert.deepEqual(events.map((event) => event.type), ["workspace.listChanged", "workspace.sourceChanged", "workspace.listChanged"]);
+      assert.equal(events[0].snapshot.activeWorkspace.name, "One");
+      assert.equal(events[2].snapshot.activeWorkspace.name, "Renamed");
+    } finally { service.close(); }
+  });
+});

@@ -27,8 +27,24 @@ export type WorkspaceRemoveCommand = {
   workspaceId: string;
 };
 
+export type WorkspaceRefreshSourceCommand = {
+  type: "workspace.refreshSource";
+  workspaceId: string;
+};
+
+export interface WorkspaceSourceState {
+  sourceId: string;
+  workspaceIds: string[];
+  canonicalRoot: string;
+  sourceAvailable: boolean;
+}
+
+export type WorkspaceChangeEvent =
+  | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
+  | { type: "workspace.sourceChanged"; source: WorkspaceSourceState };
+
 export type WorkspaceQuery = WorkspaceLoadQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand;
+export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;

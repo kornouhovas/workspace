@@ -153,13 +153,13 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Define WorkspaceChangeEvent variants for committed workspace-list changes and source-state changes. Add validated event envelopes distinct from request/response messages.
-- [ ] Implement service subscriptions returning an unsubscribe function. Publish mutation events only after successful transactions; compute source fanout from actual referencing configurations.
-- [ ] Add workspace.refreshSource with workspaceId, returning the observed source state. Reuse canonical-root/access checks and observe changes during existing load/activate/create paths; unchanged observations must not generate refresh loops.
-- [ ] Route events through utilityProcess message ports, BackendController, main-process forwarding, narrow preload onWorkspaceChange and WorkspaceServiceClient.onWorkspaceChange. Clean subscriptions on unsubscribe, renderer teardown and backend shutdown.
-- [ ] Add a localized retry-folder-access action and apply authoritative source changes to referencing UI state. Ignore unrelated-source changes; prevent delayed reloads/events from restoring a removed or previously active workspace.
-- [ ] Test actual temporary-root unavailable/recovered transitions, same-source fanout, different-source isolation, locator normalization, rollback suppression, malformed events, request/event interleaving and unsubscription through service plus IPC/client boundaries.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
+- [x] Define WorkspaceChangeEvent variants for committed workspace-list changes and source-state changes. Add validated event envelopes distinct from request/response messages.
+- [x] Implement service subscriptions returning an unsubscribe function. Publish mutation events only after successful transactions; compute source fanout from actual referencing configurations.
+- [x] Add workspace.refreshSource with workspaceId, returning the observed source state. Reuse canonical-root/access checks and observe changes during existing load/activate/create paths; unchanged observations must not generate refresh loops.
+- [x] Route events through utilityProcess message ports, BackendController, main-process forwarding, narrow preload onWorkspaceChange and WorkspaceServiceClient.onWorkspaceChange. Clean subscriptions on unsubscribe, renderer teardown and backend shutdown.
+- [x] Add a localized retry-folder-access action and apply authoritative source changes to referencing UI state. Ignore unrelated-source changes; prevent delayed reloads/events from restoring a removed or previously active workspace.
+- [x] Test actual temporary-root unavailable/recovered transitions, same-source fanout, different-source isolation, locator normalization, rollback suppression, malformed events, request/event interleaving and unsubscription through service plus IPC/client boundaries.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
 
 ### Task 5: Verify integrated acceptance and update capability documentation
 

@@ -5,7 +5,7 @@ import React from "react";
 import { Window } from "happy-dom";
 import type { BackendStatus, WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../src/contracts/desktop-api.js";
 import type { ServiceResult, Settings } from "../src/contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceLoad } from "../src/contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceLoad, WorkspaceChangeEvent } from "../src/contracts/workspaces.js";
 import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
@@ -51,6 +51,7 @@ interface MockOptions {
 
 function mockApi(options: MockOptions = {}) {
   cleanup();
+  let changeListener: ((event: WorkspaceChangeEvent) => void) | undefined;
   let statusListener: ((status: BackendStatus) => void) | undefined;
   const onSettings = options.onSettings ?? (async (input) => input.type === "settings.load"
     ? options.settingsResult ?? settings(options.language ?? "en")
@@ -64,11 +65,15 @@ function mockApi(options: MockOptions = {}) {
       statusListener = listener;
       return () => { statusListener = undefined; };
     },
+    onWorkspaceChange: (listener) => {
+      changeListener = listener;
+      return () => { changeListener = undefined; };
+    },
     settings: onSettings,
     workspace: onWorkspace as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
-  return { emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
+  return { emitChange: (event: WorkspaceChangeEvent) => changeListener?.(event), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
 }
 
 test("loads English settings and preserves the language only after a successful save", async () => {
@@ -654,4 +659,168 @@ test("pending and failed removal retain selection, confirmation and list and per
       cleanup();
     }
   }
+});
+
+const eventWorkspace = (name: string, sourceId: string = crypto.randomUUID()): ActiveWorkspace => ({
+  workspaceId: crypto.randomUUID(), sourceId, viewId: crypto.randomUUID(),
+  name, canonicalRoot: "/Projects/" + name, sourceAvailable: true,
+});
+const snapshotOf = (active: ActiveWorkspace | null, workspaces = active ? [active] : []): WorkspaceLoad => ({
+  workspaces: workspaces.map(({ workspaceId, name }) => ({ workspaceId, name })), activeWorkspace: active,
+});
+const sourceEvent = (active: ActiveWorkspace, workspaceIds = [active.workspaceId], sourceAvailable = false): WorkspaceChangeEvent => ({
+  type: "workspace.sourceChanged",
+  source: { sourceId: active.sourceId, canonicalRoot: active.canonicalRoot, workspaceIds, sourceAvailable },
+});
+
+test("source notifications affect only referencing workspaces and client rejects malformed events and unsubscribes", async () => {
+  const one = eventWorkspace("First");
+  const two = eventWorkspace("Sibling", one.sourceId);
+  const other = eventWorkspace("Other");
+  const mock = mockApi({ load: ok(snapshotOf(one, [one, two, other])) });
+  render(<App />);
+  await screen.findByRole("heading", { name: "First" });
+  await act(async () => {
+    mock.emitChange(sourceEvent(other));
+    mock.emitChange({ type: "workspace.sourceChanged", source: { sourceId: one.sourceId } } as WorkspaceChangeEvent);
+    mock.emitChange(sourceEvent(one, [two.workspaceId]));
+  });
+  assert.equal(screen.queryByRole("heading", { name: "Project folder unavailable" }), null);
+  await act(async () => { mock.emitChange(sourceEvent(one, [one.workspaceId, two.workspaceId])); });
+  assert.ok(screen.getByRole("button", { name: "Retry folder access" }));
+  await act(async () => {
+    mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(two, [one, two, other]) });
+    mock.emitChange(sourceEvent(two, [one.workspaceId, two.workspaceId], false));
+  });
+  assert.ok(screen.getByRole("heading", { name: "Sibling" }));
+  assert.ok(screen.getByRole("heading", { name: "Project folder unavailable" }));
+  await act(async () => { mock.emitChange(sourceEvent(two, [one.workspaceId, two.workspaceId], true)); });
+  assert.equal(screen.queryByRole("heading", { name: "Project folder unavailable" }), null);
+  cleanup();
+
+  const client = new WorkspaceServiceClient();
+  let count = 0;
+  const unsubscribe = client.onWorkspaceChange(() => { count++; });
+  mock.emitChange(sourceEvent(one));
+  assert.equal(count, 1);
+  unsubscribe();
+  mock.emitChange(sourceEvent(one));
+  assert.equal(count, 1);
+});
+
+test("retry folder access supports EN/RU keyboard, pending, failure and recovered states", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = { ...eventWorkspace("Offline"), sourceAvailable: false };
+    let resolveRefresh: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let calls = 0;
+    const mock = mockApi({
+      language,
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active));
+        assert.equal(input.type, "workspace.refreshSource");
+        if (input.type === "workspace.refreshSource") assert.equal(input.workspaceId, active.workspaceId);
+        calls++;
+        return new Promise((resolve) => { resolveRefresh = resolve; });
+      },
+    });
+    render(<App />);
+    const retry = await screen.findByRole("button", { name: translate(language, "retrySourceAction") });
+    retry.focus();
+    await userEvent.keyboard("{Enter}");
+    assert.ok(screen.getByRole("button", { name: translate(language, "refreshingSource") }).hasAttribute("disabled"));
+    assert.equal(calls, 1);
+    await act(async () => { resolveRefresh?.(fail("service_unavailable")); });
+    assert.ok(screen.getByRole("heading", { name: translate(language, "refreshSourceErrorTitle") }));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "sourceUnavailableTitle") }));
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
+    await act(async () => {
+      const event = sourceEvent(active, [active.workspaceId], true);
+      mock.emitChange(event);
+      if (event.type === "workspace.sourceChanged") resolveRefresh?.(ok(event.source));
+    });
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "sourceUnavailableTitle") }), null);
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "refreshSourceErrorTitle") }), null);
+    cleanup();
+  }
+});
+
+test("delayed initial loads and activation responses cannot restore removed or previously active workspaces", async () => {
+  const one = eventWorkspace("Old");
+  const two = eventWorkspace("Current");
+  let resolveLoad: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  let resolveActivate: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  const mock = mockApi({
+    onWorkspace: async (input) => new Promise((resolve) => {
+      if (input.type === "workspace.load") resolveLoad = resolve;
+      if (input.type === "workspace.activate") resolveActivate = resolve;
+    }),
+  });
+  render(<App />);
+  await waitFor(() => assert.ok(resolveLoad));
+  await act(async () => {
+    mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(two, [one, two]) });
+    resolveLoad?.(ok(snapshotOf(one, [one, two])));
+  });
+  assert.ok(await screen.findByRole("heading", { name: "Current" }));
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Saved workspaces" }), one.workspaceId);
+  await act(async () => {
+    mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(two) });
+    resolveActivate?.(ok(one));
+  });
+  assert.ok(screen.getByRole("heading", { name: "Current" }));
+  assert.equal(screen.queryByRole("heading", { name: "Old" }), null);
+  await act(async () => { mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(null) }); });
+  assert.ok(screen.getByRole("heading", { name: "Create a workspace" }));
+  cleanup();
+});
+
+test("source observations arriving before initial load apply without a reload loop", async () => {
+  const one = eventWorkspace("Late");
+  let resolveLoad: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  let loads = 0;
+  const mock = mockApi({
+    onWorkspace: async (input) => {
+      assert.equal(input.type, "workspace.load");
+      loads++;
+      return new Promise((resolve) => { resolveLoad = resolve; });
+    },
+  });
+  render(<App />);
+  await waitFor(() => assert.ok(resolveLoad));
+  await act(async () => {
+    mock.emitChange(sourceEvent(one));
+    resolveLoad?.(ok(snapshotOf(one)));
+  });
+  assert.ok(await screen.findByRole("heading", { name: "Project folder unavailable" }));
+  assert.equal(loads, 1);
+  cleanup();
+});
+
+test("a delayed retry result cannot restore a removed configuration or overwrite newer source observations", async () => {
+  const one = { ...eventWorkspace("Offline"), sourceAvailable: false };
+  const other = eventWorkspace("Other");
+  let resolveRefresh: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  const mock = mockApi({
+    onWorkspace: async (input) => input.type === "workspace.load" ? ok(snapshotOf(one)) :
+      new Promise((resolve) => { resolveRefresh = resolve; }),
+  });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Retry folder access" }));
+  await act(async () => {
+    mock.emitChange(sourceEvent(other));
+    mock.emitChange(sourceEvent(one, [one.workspaceId], true));
+    const old = sourceEvent(one);
+    if (old.type === "workspace.sourceChanged") resolveRefresh?.(ok(old.source));
+  });
+  assert.equal(screen.queryByRole("heading", { name: "Project folder unavailable" }), null);
+  await act(async () => { mock.emitChange(sourceEvent(one)); });
+  await userEvent.click(screen.getByRole("button", { name: "Retry folder access" }));
+  await act(async () => {
+    mock.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(null) });
+    const source = sourceEvent(one, [one.workspaceId], true);
+    if (source.type === "workspace.sourceChanged") resolveRefresh?.(ok(source.source));
+  });
+  assert.ok(screen.getByRole("heading", { name: "Create a workspace" }));
+  assert.equal(screen.queryByRole("heading", { name: "Offline" }), null);
+  cleanup();
 });

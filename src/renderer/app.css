@@ -115,6 +115,12 @@ body {
   background: transparent;
 }
 
+.workspace-source-retry {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.75rem;
+}
+
 .workspace-button:disabled {
   cursor: progress;
   opacity: 0.65;

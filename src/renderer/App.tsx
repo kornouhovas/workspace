@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceLoad } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
 import { EmptyStatePanel, LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
@@ -29,12 +29,52 @@ export function App() {
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
-  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | "remove" | null>(null);
+  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | "remove" | "refresh" | null>(null);
   const [renameDraft, setRenameDraft] = useState<{ workspaceId: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<"blank" | "stale" | "save" | null>(null);
   const [reorderError, setReorderError] = useState<"stale" | "save" | null>(null);
   const [removalTarget, setRemovalTarget] = useState<{ workspaceId: string; name: string } | null>(null);
   const [removalError, setRemovalError] = useState<"stale" | "save" | null>(null);
+  const [refreshError, setRefreshError] = useState(false);
+  const dataVersion = useRef(0);
+  const sourceVersion = useRef(new Map<string, number>());
+  const sourceStates = useRef(new Map<string, WorkspaceSourceState>());
+  const applyObservedSource = useCallback((active: ActiveWorkspace): ActiveWorkspace => {
+    const source = sourceStates.current.get(active.sourceId);
+    return source && source.workspaceIds.includes(active.workspaceId)
+      ? { ...active, canonicalRoot: source.canonicalRoot, sourceAvailable: source.sourceAvailable }
+      : active;
+  }, []);
+  const applyWorkspaceData = useCallback((data: WorkspaceLoad) => {
+    setWorkspaceData({ ...data, activeWorkspace: data.activeWorkspace ? applyObservedSource(data.activeWorkspace) : null });
+  }, [applyObservedSource]);
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = client.onWorkspaceChange((event) => {
+      if (!active) return;
+      if (event.type === "workspace.listChanged") {
+        dataVersion.current++;
+        // This snapshot was observed after the cached source state.
+        if (event.snapshot.activeWorkspace) sourceStates.current.delete(event.snapshot.activeWorkspace.sourceId);
+        setWorkspaceData(event.snapshot);
+        setRenameDraft((draft) => draft && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === draft.workspaceId) ? null : draft);
+        setRemovalTarget((target) => target && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === target.workspaceId) ? null : target);
+        setRefreshError(false);
+      } else {
+        sourceVersion.current.set(event.source.sourceId, (sourceVersion.current.get(event.source.sourceId) ?? 0) + 1);
+        sourceStates.current.set(event.source.sourceId, event.source);
+        setWorkspaceData((current) => {
+          const workspace = current?.activeWorkspace;
+          if (!workspace || workspace.sourceId !== event.source.sourceId ||
+            !event.source.workspaceIds.includes(workspace.workspaceId)) return current;
+          return { ...current, activeWorkspace: {
+            ...workspace, canonicalRoot: event.source.canonicalRoot, sourceAvailable: event.source.sourceAvailable,
+          } };
+        });
+      }
+    });
+    return () => { active = false; dataVersion.current++; unsubscribe(); };
+  }, [client]);
   const removalFocus = useRef<string | null>(null);
   const createNameInput = useRef<HTMLInputElement>(null);
   const managementList = useRef<HTMLOListElement>(null);
@@ -68,20 +108,21 @@ export function App() {
   }, [renameDraft]);
 
   const loadInitialData = useCallback(async (isCurrent: () => boolean) => {
+    const version = dataVersion.current;
     try {
       const [settings, workspaces] = await Promise.all([client.loadSettings(), client.loadWorkspaces()]);
       if (!isCurrent()) return;
-      if (!settings.ok || !workspaces.ok) {
+      if (!settings.ok || (!workspaces.ok && version === dataVersion.current)) {
         setViewState("load-error");
         return;
       }
       setLanguage(settings.value.language);
-      setWorkspaceData(workspaces.value);
+      if (workspaces.ok && version === dataVersion.current) applyWorkspaceData(workspaces.value);
       setViewState("ready");
     } catch {
       if (isCurrent()) setViewState("load-error");
     }
-  }, [client]);
+  }, [client, applyWorkspaceData]);
 
   useEffect(() => {
     let active = true;
@@ -151,6 +192,7 @@ export function App() {
       setFormMessage("validation");
       return;
     }
+    const version = ++dataVersion.current;
     setBusy("create");
     try {
       const result = await client.createWorkspace(name, rootPath);
@@ -158,8 +200,8 @@ export function App() {
         setFormMessage(errorMessage(result.error.code));
         return;
       }
-      const activeWorkspace: ActiveWorkspace = { ...result.value, sourceAvailable: true };
-      setWorkspaceData((current) => ({
+      const activeWorkspace = applyObservedSource({ ...result.value, sourceAvailable: true });
+      if (version === dataVersion.current) setWorkspaceData((current) => ({
         workspaces: [
           ...(current?.workspaces.filter((item) => item.workspaceId !== activeWorkspace.workspaceId) ?? []),
           { workspaceId: activeWorkspace.workspaceId, name: activeWorkspace.name },
@@ -178,12 +220,13 @@ export function App() {
 
   const activateWorkspace = async (workspaceId: string) => {
     if (busy || !workspaceId) return;
+    const version = ++dataVersion.current;
     setBusy("activate");
     setFormMessage(null);
     try {
       const result = await client.activateWorkspace(workspaceId);
       if (result.ok) {
-        setWorkspaceData((current) => current ? { ...current, activeWorkspace: result.value } : current);
+        if (version === dataVersion.current) setWorkspaceData((current) => current ? { ...current, activeWorkspace: applyObservedSource(result.value) } : current);
       } else {
         setFormMessage("activation");
       }
@@ -206,12 +249,13 @@ export function App() {
       setRenameError("blank");
       return;
     }
+    const version = ++dataVersion.current;
     setBusy("rename");
     setRenameError(null);
     try {
       const result = await client.renameWorkspace(renameDraft.workspaceId, renameDraft.name);
       if (result.ok) {
-        setWorkspaceData(result.value);
+        if (version === dataVersion.current) applyWorkspaceData(result.value);
         setRenameDraft(null);
       } else {
         setRenameError(result.error.code === "invalid_input" ? "stale" : "save");
@@ -231,12 +275,14 @@ export function App() {
     if (index < 0 || target < 0 || target >= workspaceIds.length) return;
     [workspaceIds[index], workspaceIds[target]] = [workspaceIds[target], workspaceIds[index]];
     reorderFocus.current = { workspaceId, direction };
+    const version = ++dataVersion.current;
     setBusy("reorder");
     setReorderError(null);
     try {
       const result = await client.reorderWorkspaces(workspaceIds);
-      if (result.ok) setWorkspaceData(result.value);
-      else setReorderError(result.error.code === "invalid_input" ? "stale" : "save");
+      if (result.ok) {
+        if (version === dataVersion.current) applyWorkspaceData(result.value);
+      } else setReorderError(result.error.code === "invalid_input" ? "stale" : "save");
     } catch {
       setReorderError("save");
     } finally {
@@ -253,13 +299,14 @@ export function App() {
 
   const removeWorkspace = async () => {
     if (busy || !removalTarget) return;
+    const version = ++dataVersion.current;
     setBusy("remove");
     setRemovalError(null);
     try {
       const result = await client.removeWorkspace(removalTarget.workspaceId);
       if (result.ok) {
         removalFocus.current = removalTarget.workspaceId;
-        setWorkspaceData(result.value);
+        if (version === dataVersion.current) applyWorkspaceData(result.value);
         setRemovalTarget(null);
         setFormMessage(null);
         setReorderError(null);
@@ -271,6 +318,30 @@ export function App() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const refreshSource = async () => {
+    const selected = workspaceData?.activeWorkspace;
+    if (busy || !selected) return;
+    const { workspaceId, sourceId } = selected;
+    const version = sourceVersion.current.get(sourceId);
+    const selectionVersion = dataVersion.current;
+    setBusy("refresh");
+    setRefreshError(false);
+    try {
+      const result = await client.refreshSource(workspaceId);
+      if (selectionVersion !== dataVersion.current) return;
+      if (!result.ok) { setRefreshError(true); return; }
+      if (version !== sourceVersion.current.get(sourceId) || selectionVersion !== dataVersion.current) return;
+      setWorkspaceData((current) => {
+        const active = current?.activeWorkspace;
+        if (!active || active.workspaceId !== workspaceId || active.sourceId !== result.value.sourceId) return current;
+        return { ...current, activeWorkspace: {
+          ...active, canonicalRoot: result.value.canonicalRoot, sourceAvailable: result.value.sourceAvailable,
+        } };
+      });
+    } catch { if (selectionVersion === dataVersion.current) setRefreshError(true); }
+    finally { setBusy(null); }
   };
 
   const t = (key: TranslationKey) => translate(language, key);
@@ -477,6 +548,15 @@ export function App() {
               {!activeWorkspace.sourceAvailable && (
                 <StatusMessage kind="error" title={t("sourceUnavailableTitle")}>
                   {t("sourceUnavailableDescription")}
+                  <button type="button" className="workspace-button workspace-button--secondary workspace-source-retry"
+                    disabled={busy !== null} onClick={() => void refreshSource()}>
+                    {t(busy === "refresh" ? "refreshingSource" : "retrySourceAction")}
+                  </button>
+                </StatusMessage>
+              )}
+              {refreshError && (
+                <StatusMessage kind="error" title={t("refreshSourceErrorTitle")}>
+                  {t("refreshSourceErrorDescription")}
                 </StatusMessage>
               )}
               <section className="table-view" aria-labelledby="table-title">

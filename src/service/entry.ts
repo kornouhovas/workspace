@@ -15,10 +15,12 @@ export function startServiceProcess(
   let service: SettingsService | undefined;
   let requestPort: ServicePort | undefined;
   let stopping = false;
+  let unsubscribe: (() => void) | undefined;
 
   const shutdown = () => {
     if (stopping) return;
     stopping = true;
+    unsubscribe?.();
     requestPort?.close();
     service?.close();
   };
@@ -40,8 +42,11 @@ export function startServiceProcess(
       service = openService(data.databasePath, join(__dirname, "db/migrations"));
       requestPort = event.ports[0];
       if (!requestPort) throw new Error("Missing service message port");
+      unsubscribe = service.workspaces.subscribe((change) => {
+        if (!stopping) requestPort?.postMessage({ type: "workspace.change", change });
+      });
       requestPort.on("message", ({ data: request }) => {
-        if (!service || !isServiceRequest(request)) return;
+        if (stopping || !service || !isServiceRequest(request)) return;
         const result = isMalformedWorkspaceRequest(request.input)
           ? { ok: false, error: { code: "invalid_input", message: "The workspace request is invalid." } }
           : isLoadQuery(request.input)
@@ -77,7 +82,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "workspaceIds"]) ||
       !Array.isArray(input.workspaceIds) || !input.workspaceIds.every((id) => typeof id === "string");
   }
-  if (input.type === "workspace.activate" || input.type === "workspace.remove") {
+  if (input.type === "workspace.activate" || input.type === "workspace.remove" || input.type === "workspace.refreshSource") {
     return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   }
   return true;

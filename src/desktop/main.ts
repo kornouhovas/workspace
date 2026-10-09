@@ -17,6 +17,14 @@ const controller = new BackendController((status) => {
   }
 });
 
+controller.onWorkspaceChange((change) => {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
+      window.webContents.send("workspace:change", change);
+    }
+  }
+});
+
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
     width: 960,

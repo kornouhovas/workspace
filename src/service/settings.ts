@@ -14,11 +14,11 @@ import {
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
 import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
-import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<Settings | WorkspaceLoad>;
-  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad>;
+  handleCommand(input: unknown): ServiceResult<Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -86,6 +86,7 @@ export function openSettingsService(
       if (isRecord(input) && input.type === "workspace.activate") return workspaces.activate(input);
       if (isRecord(input) && input.type === "workspace.rename") return workspaces.rename(input);
       if (isRecord(input) && input.type === "workspace.reorder") return workspaces.reorder(input);
+      if (isRecord(input) && input.type === "workspace.refreshSource") return workspaces.refreshSource(input);
       if (isRecord(input) && input.type === "workspace.remove") return workspaces.remove(input);
       if (!isRecord(input) || input.type !== "settings.setLanguage" || !isLanguage(input.language)) {
         return { ok: false, error: invalidInput("Expected a supported language: en or ru.") };
@@ -103,6 +104,7 @@ export function openSettingsService(
     },
 
     close() {
+      workspaces.close();
       sqlite.close();
     },
   };

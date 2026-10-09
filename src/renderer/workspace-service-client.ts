@@ -1,7 +1,9 @@
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
+
+import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
 
 export class WorkspaceServiceClient {
   constructor(private readonly api: WorkspaceDesktopApi = window.workspace) {}
@@ -12,6 +14,18 @@ export class WorkspaceServiceClient {
 
   onBackendStatus(listener: (status: BackendStatus) => void): () => void {
     return this.api.onBackendStatus(listener);
+  }
+
+  onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void): () => void {
+    let active = true;
+    const unsubscribe = this.api.onWorkspaceChange((event) => {
+      if (active && isWorkspaceChangeEvent(event)) listener(event);
+    });
+    return () => { active = false; unsubscribe(); };
+  }
+
+  refreshSource(workspaceId: string): Promise<ServiceResult<WorkspaceSourceState>> {
+    return this.api.workspace({ type: "workspace.refreshSource", workspaceId });
   }
 
   loadSettings(): Promise<ServiceResult<Settings>> {
