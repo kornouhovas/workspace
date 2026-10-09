@@ -15,11 +15,15 @@ const requiredFiles = [
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
+export function normalizeAsarEntry(file) {
+  return file.replaceAll("\\", "/").replace(/^\/+/, "");
+}
+
 export async function checkArtifact(root, { platform = process.platform, arch = process.arch } = {}) {
   const asarPath = await findAsar(resolve(root));
   assert.ok(asarPath, `No app.asar found under ${root}`);
 
-  const files = new Set((await listPackage(asarPath)).map((file) => file.replace(/^\//, "")));
+  const files = new Set((await listPackage(asarPath)).map(normalizeAsarEntry));
   for (const file of requiredFiles) {
     assert.ok(files.has(file), `Packaged app is missing ${file}`);
   }

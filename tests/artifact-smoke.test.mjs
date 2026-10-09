@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, win32 } from "node:path";
 import { createPackage } from "@electron/asar";
 import test from "node:test";
-import { checkArtifact } from "../scripts/check-artifact.mjs";
+import { checkArtifact, normalizeAsarEntry } from "../scripts/check-artifact.mjs";
 
 const packagedFiles = [
   "dist/desktop/main.cjs",
@@ -36,6 +36,14 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = []) {
   await writeFile(nativeModule, "native module placeholder");
   return root;
 }
+
+test("ASAR file listings normalize Windows separators before resource checks", () => {
+  assert.equal(normalizeAsarEntry(win32.join("/", "package.json")), "package.json");
+  assert.equal(
+    normalizeAsarEntry(win32.join("/", "dist/service/db/migrations/meta/_journal.json")),
+    "dist/service/db/migrations/meta/_journal.json",
+  );
+});
 
 test("artifact check verifies launch resources, migration, native SQLite, license, and version", async () => {
   const root = await mkdtemp(join(tmpdir(), "workspace-artifact-"));
