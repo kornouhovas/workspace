@@ -26,7 +26,7 @@ test("fresh database migrates and starts with English", () => {
     service.close();
 
     const sqlite = new Database(databasePath);
-    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 1);
+    assert.equal(sqlite.prepare("SELECT count(*) AS count FROM __drizzle_migrations").get().count, 2);
     sqlite.close();
   });
 });

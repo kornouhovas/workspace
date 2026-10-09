@@ -12,10 +12,13 @@ import {
   supportedLanguages,
 } from "../contracts/settings.js";
 import { settings } from "./db/schema.js";
+import * as schema from "./db/schema.js";
+import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
 
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<Settings>;
   handleCommand(input: unknown): ServiceResult<Settings>;
+  workspaces: WorkspaceService;
   close(): void;
 }
 
@@ -38,13 +41,15 @@ function isLanguage(value: unknown): value is Language {
 export function openSettingsService(
   databasePath: string,
   migrationFolder = resolve(process.cwd(), "src/service/db/migrations"),
+  workspaceFilesystem?: WorkspaceFilesystem,
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
   const db = (() => {
     try {
       sqlite.pragma("journal_mode = WAL");
-      const database = drizzle(sqlite);
+      sqlite.pragma("foreign_keys = ON");
+      const database = drizzle(sqlite, { schema });
       migrate(database, { migrationsFolder: migrationFolder });
       const existing = database.select().from(settings).where(eq(settings.key, "language")).get();
       if (!existing) {
@@ -57,7 +62,9 @@ export function openSettingsService(
     }
   })();
 
+  const workspaces = createWorkspaceService(db, workspaceFilesystem);
   return {
+    workspaces,
     handleQuery(input) {
       if (!isRecord(input) || input.type !== "settings.load") {
         return { ok: false, error: invalidInput("Expected a settings.load query.") };
