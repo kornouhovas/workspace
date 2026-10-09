@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
-import type { ActiveWorkspace, DiscoveryPreview, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
+import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -131,7 +131,7 @@ export const UnavailableSource: Story = () => <WorkspacePreview language="ru" st
 
 // Present production panel states directly; no fake filesystem interpretation or timers.
 type DiscoveryStoryState = "preview" | "empty" | "pending" | "applying" | "error" | "stale";
-function DiscoveryState({ language, state }: { language: Language; state: DiscoveryStoryState }) {
+function DiscoveryState({ language, state, grouped = false }: { language: Language; state: DiscoveryStoryState; grouped?: boolean }) {
   const preview: DiscoveryPreview = {
     mode: "direct", configured: false,
     workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
@@ -147,11 +147,25 @@ function DiscoveryState({ language, state }: { language: Language; state: Discov
       { kind: "project", categoryPath: null, name: "Uncertain folder", relativePath: "Uncertain folder", reason: "unresolved" },
     ],
   };
+  if (grouped) {
+    preview.mode = "grouped";
+    preview.entries = state === "empty" ? [] : [
+      { kind: "category", name: "Категория-" + "long-category-".repeat(16), relativePath: "Category", reason: null, empty: false },
+      { kind: "project", categoryPath: "Category", name: "日本語-проект-" + "long-project-".repeat(16), relativePath: "Category/Project", reason: null },
+      { kind: "project", categoryPath: "Category", name: "Excluded child", relativePath: "Category/Excluded child", reason: "manual" },
+      { kind: "category", name: "Empty category", relativePath: "Empty category", reason: null, empty: true },
+      { kind: "category", name: "Direct-looking project", relativePath: "Direct-looking project", reason: null, empty: false },
+      { kind: "project", categoryPath: "Direct-looking project", name: "Immediate child only", relativePath: "Direct-looking project/Immediate child only", reason: null },
+      { kind: "category", name: "Excluded category", relativePath: "Excluded category", reason: "manual", empty: false },
+      { kind: "category", name: "External link", relativePath: "External link", reason: "link", empty: false },
+    ];
+    preview.excludedRelativePaths = ["Category/Excluded child", "Excluded category"];
+  }
   return <main className="app-shell" lang={language}><DiscoveryPanel language={language}
     preview={state === "error" || state === "stale" ? null : preview}
     pending={state === "pending" || state === "applying"} applying={state === "applying"}
     error={state === "error"} stale={state === "stale"}
-    onApply={() => {}} onExclude={() => {}} onRetry={() => {}} onCancel={() => {}} /></main>;
+    onMode={() => {}} onApply={() => {}} onExclude={() => {}} onRetry={() => {}} onCancel={() => {}} /></main>;
 }
 export const DiscoveryPreviewEnglish: Story = () => <DiscoveryState language="en" state="preview" />;
 export const DiscoveryPreviewRussian: Story = () => <DiscoveryState language="ru" state="preview" />;
@@ -252,3 +266,100 @@ export const TextSiblingEnglish: Story = () => <TextPreview language="en" state=
 export const TextSiblingRussian: Story = () => <TextPreview language="ru" state="sibling" />;
 export const TextSavedEnglish: Story = () => <TextPreview language="en" state="saved" />;
 export const TextSavedRussian: Story = () => <TextPreview language="ru" state="saved" />;
+
+export const GroupedPreviewEnglish: Story = () => <DiscoveryState language="en" state="preview" grouped />;
+export const GroupedPreviewRussian: Story = () => <DiscoveryState language="ru" state="preview" grouped />;
+export const GroupedEmptyEnglish: Story = () => <DiscoveryState language="en" state="empty" grouped />;
+export const GroupedEmptyRussian: Story = () => <DiscoveryState language="ru" state="empty" grouped />;
+export const GroupedPendingEnglish: Story = () => <DiscoveryState language="en" state="pending" grouped />;
+export const GroupedPendingRussian: Story = () => <DiscoveryState language="ru" state="pending" grouped />;
+export const GroupedApplyingEnglish: Story = () => <DiscoveryState language="en" state="applying" grouped />;
+export const GroupedApplyingRussian: Story = () => <DiscoveryState language="ru" state="applying" grouped />;
+export const GroupedErrorEnglish: Story = () => <DiscoveryState language="en" state="error" grouped />;
+export const GroupedErrorRussian: Story = () => <DiscoveryState language="ru" state="error" grouped />;
+export const GroupedStaleEnglish: Story = () => <DiscoveryState language="en" state="stale" grouped />;
+export const GroupedStaleRussian: Story = () => <DiscoveryState language="ru" state="stale" grouped />;
+
+// Folder-backed Table and label editor states use the production client/header.
+type CategoryStoryState = "default" | "authored" | "no-projects" | "loading" | "editing" | "saving" | "validation" | "failure" | "sibling" | "saved" | "newer";
+const longCategory = "Категория-日本語-" + "long-category-".repeat(16);
+const longCategoryLabel = "  Authored-категория-" + "long-label-".repeat(18) + "  ";
+function CategoryPreview({ language, state }: { language: Language; state: CategoryStoryState }) {
+  const [client, setClient] = useState<WorkspaceServiceClient | null>(null);
+  const [prepared, setPrepared] = useState(false);
+  const [label, setLabel] = useState<{ name: string | null; revision: number }>({ name: state === "default" ? null : state === "validation" ? "   " : longCategoryLabel, revision: 1 });
+  const minimum = useRef(1);
+  useEffect(() => {
+    let saves = 0;
+    const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
+      if (input.type === "workspace.listTextProperties") return state === "loading" ? new Promise(() => {}) : { ok: true, value: { ...textStoryIds, revision: 0, definitions: [], values: [] } };
+      if (input.type === "workspace.renameCategoryProperty") {
+        saves++;
+        if (state === "saving") return new Promise(() => {});
+        if (state === "failure" && saves === 1) return { ok: false, error: { code: "storage", message: "Disposable label failure" } };
+        return { ok: true, value: { workspaceId: input.workspaceId, sourceId: textStoryIds.sourceId, propertyId: input.propertyId, name: input.name, revision: 2 } };
+      }
+      return { ok: false, error: { code: "invalid_input", message: "Unsupported fixture command" } };
+    };
+    const api: WorkspaceDesktopApi = {
+      workspace: workspace as WorkspaceDesktopApi["workspace"],
+      getBackendStatus: async () => ({ state: "ready" }), onBackendStatus: () => () => {},
+      settings: async () => ({ ok: true, value: { language } }), pickRoot: async () => ({ outcome: "cancelled" }), onWorkspaceChange: () => () => {},
+    };
+    setClient(new WorkspaceServiceClient(api));
+    let opened = false;
+    const observer = new MutationObserver(() => {
+      const root = document.querySelector("[data-category-fixture]");
+      if (!root) return;
+      if (["default", "authored", "no-projects", "loading"].includes(state)) {
+        if (state === "loading" || root.querySelector(".text-properties")?.getAttribute("aria-busy") === "false") { observer.disconnect(); setPrepared(true); }
+        return;
+      }
+      const button = root.querySelector<HTMLButtonElement>(".category-property-header > button");
+      if (!opened && button) { opened = true; button.click(); return; }
+      const input = root.querySelector<HTMLInputElement>(".category-property-header input");
+      if (!input) return;
+      observer.disconnect();
+      if (state === "sibling") { minimum.current = 2; setLabel({ name: "Sibling category label", revision: 2 }); }
+      if (!["editing", "sibling"].includes(state)) root.querySelector<HTMLFormElement>(".category-property-header form")?.requestSubmit();
+      setPrepared(true);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    return () => observer.disconnect();
+  }, [language, state]);
+  const commit = (snapshot: CategoryPropertySnapshot) => {
+    minimum.current = state === "newer" ? snapshot.revision + 1 : snapshot.revision;
+    setLabel({ name: state === "newer" ? "Newer sibling label" : snapshot.name, revision: minimum.current });
+  };
+  return <main className="app-shell" lang={language} data-category-fixture={state} data-fixture-ready={prepared}>
+    <p>{language === "en" ? "Grouped: Root / Category / Project" : "Сгруппированная: Источник / Категория / Проект"}</p>
+    <ul className="saved-categories"><li>{longCategory}</li><li>Empty category</li></ul>
+    {client && <TextPropertiesTable client={client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false}
+      categoryProperty={{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: label.name }} categoryPropertyRevision={label.revision}
+      minimumCategoryPropertyRevision={minimum} onCategoryPropertyCommitted={commit}
+      categories={[{ categoryId: "category-fixture", name: longCategory, relativePath: "Category" }]}
+      projects={state === "no-projects" ? [] : [{ projectId: textStoryIds.projectId, categoryId: "category-fixture", name: "日本語-проект-" + "long-project-".repeat(16), relativePath: "Category/Project" }]} />}
+  </main>;
+}
+export const CategoryDefaultEnglish: Story = () => <CategoryPreview language="en" state="default" />;
+export const CategoryDefaultRussian: Story = () => <CategoryPreview language="ru" state="default" />;
+export const CategoryAuthoredEnglish: Story = () => <CategoryPreview language="en" state="authored" />;
+export const CategoryAuthoredRussian: Story = () => <CategoryPreview language="ru" state="authored" />;
+export const CategoryNoProjectsEnglish: Story = () => <CategoryPreview language="en" state="no-projects" />;
+export const CategoryNoProjectsRussian: Story = () => <CategoryPreview language="ru" state="no-projects" />;
+export const CategoryLoadingEnglish: Story = () => <CategoryPreview language="en" state="loading" />;
+export const CategoryLoadingRussian: Story = () => <CategoryPreview language="ru" state="loading" />;
+export const CategoryEditingEnglish: Story = () => <CategoryPreview language="en" state="editing" />;
+export const CategoryEditingRussian: Story = () => <CategoryPreview language="ru" state="editing" />;
+export const CategorySavingEnglish: Story = () => <CategoryPreview language="en" state="saving" />;
+export const CategorySavingRussian: Story = () => <CategoryPreview language="ru" state="saving" />;
+export const CategoryValidationEnglish: Story = () => <CategoryPreview language="en" state="validation" />;
+export const CategoryValidationRussian: Story = () => <CategoryPreview language="ru" state="validation" />;
+export const CategoryFailureEnglish: Story = () => <CategoryPreview language="en" state="failure" />;
+export const CategoryFailureRussian: Story = () => <CategoryPreview language="ru" state="failure" />;
+export const CategorySiblingEnglish: Story = () => <CategoryPreview language="en" state="sibling" />;
+export const CategorySiblingRussian: Story = () => <CategoryPreview language="ru" state="sibling" />;
+export const CategorySavedEnglish: Story = () => <CategoryPreview language="en" state="saved" />;
+export const CategorySavedRussian: Story = () => <CategoryPreview language="ru" state="saved" />;
+export const CategoryNewerEnglish: Story = () => <CategoryPreview language="en" state="newer" />;
+export const CategoryNewerRussian: Story = () => <CategoryPreview language="ru" state="newer" />;

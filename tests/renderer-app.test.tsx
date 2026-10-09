@@ -2328,3 +2328,29 @@ test("EN/RU same-source refresh preserves category drafts and newer label snapsh
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
+
+test("EN/RU long grouped Table labels remain exact and category values expose no mutation controls, including empty categories", async () => {
+  const categoryName = "Категория-日本語-" + "long-category-".repeat(16);
+  const label = "  Authored-категория-" + "long-label-".repeat(18) + "  ";
+  for (const language of ["en", "ru"] as const) {
+    mockApi({ language });
+    const client = new WorkspaceServiceClient(window.workspace);
+    const props = {
+      client, workspaceId: "long-table", sourceId: "source-long-table", language, disabled: false,
+      categoryProperty: { propertyId: "category-property", sourceId: "source-long-table", name: label },
+      categories: [{ categoryId: "category", name: categoryName, relativePath: "Category" }, { categoryId: "empty", name: "Empty category", relativePath: "Empty category" }],
+      projects: [{ projectId: "project", categoryId: "category", name: "日本語-проект-" + "long-project-".repeat(16), relativePath: "Category/Project" }],
+    };
+    const view = render(<TextPropertiesTable {...props} />);
+    await waitFor(() => assert.equal(document.querySelector(".text-properties")?.getAttribute("aria-busy"), "false"));
+    assert.equal(screen.getByText(label.trim()).textContent, label);
+    const category = screen.getByRole("cell", { name: categoryName });
+    assert.equal(category.textContent, categoryName);
+    assert.equal(category.querySelectorAll("button, input, select").length, 0);
+    assert.equal(document.querySelector(".project-table-scroll")?.firstElementChild?.tagName, "TABLE");
+    view.rerender(<TextPropertiesTable {...props} projects={[]} categoryProperty={{ ...props.categoryProperty, name: null }} />);
+    assert.equal(screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") }).textContent, translate(language, "discoveryCategory"));
+    assert.equal(document.querySelectorAll("tbody tr").length, 0);
+    cleanup();
+  }
+});

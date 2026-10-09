@@ -23,6 +23,11 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - English/Russian keyboard cell editing, Save/Clear/Cancel, recoverable failed drafts and sibling-change notices with committed revision guards.
 - Migration 0005, baseline upgrade/reopen and transactional rollback regressions, production property events, and permanent Text runtime/Ladle workflows.
 
+- Reviewed grouped discovery at exactly Root/Category/Project, with visible persisted empty categories and explicit interpretation of direct-looking root folders.
+- Required read-only folder-backed category values in Table, stable source-owned category/property IDs and both-level safe exclusions; direct Tables expose no category property.
+- Metadata-only category-property label rename with EN/RU keyboard controls, exact authored labels, sibling notifications, independent revision guards and retained drafts.
+- Migration 0006 upgrade/rollback/reopen regressions and permanent grouped/category-label Ladle and production Electron scenarios.
+
 ### Fixed
 
 - Malformed desktop requests are rejected without stopping the local workspace service.
@@ -33,7 +38,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 ### Planned
 
 - Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
-- Grouped folder discovery, external reconciliation/reassociation, archive and restore.
+- Configured-source mode switching, physical category editing, external reconciliation/reassociation, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).

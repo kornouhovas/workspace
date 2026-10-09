@@ -79,10 +79,11 @@ const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
 const stages = { preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
+const shutdowns = [];
 
 async function recordEvidence(status, error) {
   if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
-    mode, platform: process.platform, arch: process.arch, executablePath, status, stages,
+    mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns,
     ...(error ? { error: error.message } : {}), observations,
   }, null, 2) + "\n");
 }
@@ -137,8 +138,8 @@ async function previewFolders(page, language = "en") {
   await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).press("Enter");
   await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
 }
-async function excludeFolder(page, name, checked, language = "en") {
-  const checkbox = page.getByRole("checkbox", { name: `${discoveryLabels[language].exclude}: ${name}`, exact: true });
+async function excludeFolder(page, name, checked, language = "en", kind = null) {
+  const checkbox = page.getByRole("checkbox", { name: `${discoveryLabels[language].exclude}: ${kind ? (language === "en" ? kind : kind === "Category" ? "Категория" : "Проект") + ": " : ""}${name}`, exact: true });
   if (await checkbox.isChecked() !== checked) await checkbox.press("Space");
   await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
   assert.equal(await checkbox.isChecked(), checked);
@@ -151,9 +152,10 @@ async function captureDiscovery(page, language, state) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
     await page.setViewportSize(size);
     if (await page.locator(".text-value-editor").count()) await page.locator(".text-value-editor").scrollIntoViewIfNeeded();
+    if (await page.locator(".category-property-header").count()) await page.locator(".category-property-header").scrollIntoViewIfNeeded();
     const overflow = await page.evaluate(() => ({
       document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
-      clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button")).filter((node) => {
+      clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button, .category-property-header button")).filter((node) => {
         const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
         return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
       }).map((node) => node.textContent),
@@ -232,6 +234,16 @@ try {
   const dataDirectory = join(fixture, "normal");
   const projectRoot = join(fixture, `SelectedProjectRoot-${"a".repeat(90)}`);
   const otherRoot = join(fixture, "OtherProjectRoot");
+  const groupedRoot = join(fixture, "GroupedRoot");
+  const categoryName = "Категория-" + "long-category-".repeat(14);
+  const groupedProjectName = "日本語-проект-" + "long-project-".repeat(14);
+  for (const path of [join(groupedRoot, categoryName, groupedProjectName, "Never-recursive"), join(groupedRoot, categoryName, "Excluded child"),
+    join(groupedRoot, categoryName, ".hidden"), join(groupedRoot, categoryName, "$RECYCLE.BIN"), join(groupedRoot, "Empty category"),
+    join(groupedRoot, "Direct-looking project", "Immediate child"), join(groupedRoot, "Excluded category", "Hidden child"), join(groupedRoot, ".hidden")]) {
+    await mkdir(path, { recursive: true }); await writeFile(join(path, "sentinel.txt"), sentinelForGrouped());
+  }
+  function sentinelForGrouped() { return Buffer.from("Grouped fixture bytes\0retained\n"); }
+  await writeFile(join(groupedRoot, "ordinary-file.txt"), sentinelForGrouped());
   const sentinel = Buffer.from("Retained project bytes\0through workspace removal\n");
   for (const path of [projectRoot, otherRoot]) {
     await mkdir(path, { recursive: true });
@@ -245,6 +257,9 @@ try {
     await writeFile(join(path, "sentinel.txt"), sentinel);
   }
   await symlink(externalRoot, join(projectRoot, "External-link"), process.platform === "win32" ? "junction" : "dir");
+  await symlink(externalRoot, join(groupedRoot, "External-link"), process.platform === "win32" ? "junction" : "dir");
+  await symlink(externalRoot, join(groupedRoot, categoryName, "External-link"), process.platform === "win32" ? "junction" : "dir");
+  let groupedBytes = await folderBytes(groupedRoot);
   let originalBytes = await folderBytes(projectRoot);
   const externalBytes = await folderBytes(externalRoot);
   const otherBytes = await folderBytes(otherRoot);
@@ -496,13 +511,125 @@ try {
   await select(page, first);
   observations.push({ scenario: "management and source notifications", identities: [first, sibling, other], sourceChanges });
 
+  // Grouped workflow runs through the UI and actual preload/utilityProcess route.
+  await page.locator("#interface-language").selectOption("en");
+  await page.waitForFunction(() => globalThis.document.documentElement.lang === "en" && !globalThis.document.querySelector("#interface-language")?.disabled);
+  const grouped = await create(current, "Grouped configuration", groupedRoot);
+  const groupedSibling = await create(current, "Grouped sibling", groupedRoot);
+  assert.equal(grouped.sourceId, groupedSibling.sourceId);
+  assert.notEqual(grouped.viewId, groupedSibling.viewId);
+  await select(page, grouped);
+  const groupedUnconfigured = await projects(page, grouped.workspaceId);
+  await previewFolders(page);
+  await page.getByRole("combobox", { name: "Folder interpretation", exact: true }).selectOption("grouped");
+  await page.getByRole("heading", { name: "Grouped project preview", exact: true }).waitFor();
+  await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
+  assert.equal(await page.getByRole("checkbox", { name: /Never-recursive/ }).count(), 0);
+  await excludeFolder(page, "Excluded child", true, "en", "Project");
+  await excludeFolder(page, categoryName, true, "en", "Category");
+  assert.equal(await page.getByRole("checkbox", { name: /Excluded child/ }).count(), 0);
+  await excludeFolder(page, categoryName, false, "en", "Category");
+  await excludeFolder(page, "Excluded child", true, "en", "Project");
+  await excludeFolder(page, "Excluded category", true, "en", "Category");
+  await captureDiscovery(page, "en", "grouped-preview-cancel");
+  await page.getByRole("button", { name: "Cancel", exact: true }).press("Enter");
+  assert.deepEqual(await projects(page, grouped.workspaceId), groupedUnconfigured);
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
+  await previewFolders(page);
+  await page.getByRole("combobox", { name: "Folder interpretation", exact: true }).selectOption("grouped");
+  await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
+  for (const checkbox of await page.getByRole("checkbox").all()) {
+    if (/External-link|\.hidden|\$RECYCLE.BIN/.test(await checkbox.getAttribute("aria-label") ?? await checkbox.locator("..").textContent())) assert.equal(await checkbox.isDisabled(), true);
+  }
+  await excludeFolder(page, "Excluded child", true, "en", "Project");
+  await excludeFolder(page, "Excluded category", true, "en", "Category");
+  await mkdir(join(groupedRoot, "Late empty category"));
+  groupedBytes = await folderBytes(groupedRoot);
+  await page.getByRole("button", { name: discoveryLabels.en.apply, exact: true }).press("Enter");
+  await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
+  await page.getByRole("checkbox", { name: "Exclude: Category: Late empty category", exact: true }).waitFor();
+  assert.deepEqual(await projects(page, grouped.workspaceId), groupedUnconfigured);
+  await applyFolders(page);
+  const groupedApplied = await projects(page, grouped.workspaceId);
+  assert.equal(groupedApplied.mode, "grouped");
+  assert.deepEqual(groupedApplied.projects.map((entry) => entry.name).sort(), [groupedProjectName, "Immediate child"].sort());
+  assert.equal(groupedApplied.categories.length, 4);
+  assert.ok(groupedApplied.projects.every((entry) => groupedApplied.categories.some((category) => category.categoryId === entry.categoryId)));
+  await page.getByRole("cell", { name: categoryName, exact: true }).waitFor();
+  assert.equal(await page.getByRole("cell", { name: categoryName, exact: true }).getByRole("button").count(), 0);
+  const categoryPropertyId = groupedApplied.categoryProperty.propertyId;
+  const groupedTextName = "Grouped Notes";
+  await page.getByRole("button", { name: propertyLabels.en.create, exact: true }).press("Enter");
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).fill(groupedTextName);
+  await page.getByRole("textbox", { name: propertyLabels.en.name, exact: true }).press("Enter");
+  await page.getByRole("button", { name: `Rename property: ${groupedTextName}`, exact: true }).waitFor();
+  await editValue(page, groupedProjectName, groupedTextName, "  Grouped authored 日本語\nText  ");
+  const savedGroupedProperties = await properties(page, grouped.workspaceId);
+  await page.evaluate(() => {
+    globalThis.groupedLabelEvents = [];
+    globalThis.stopGroupedLabelEvents = globalThis.window.workspace.onWorkspaceChange((event) => {
+      if (event.type === "workspace.categoryPropertyChanged") globalThis.groupedLabelEvents.push(event);
+    });
+  });
+  let groupedLabel;
+  for (const language of ["en", "ru"]) {
+    await page.locator("#interface-language").selectOption(language);
+    await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
+    await previewFolders(page, language);
+    assert.equal(await page.locator(".discovery-mode").count(), 0, "Configured mode switching exposed");
+    await captureDiscovery(page, language, "grouped-configured-preview");
+    await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
+    const rename = language === "en" ? "Rename category property" : "Переименовать свойство категории";
+    const nameLabel = language === "en" ? "Category property name" : "Название свойства категории";
+    const trigger = page.getByRole("button", { name: new RegExp(`^${rename}:`) });
+    await trigger.press("Enter");
+    const input = page.getByRole("textbox", { name: nameLabel, exact: true });
+    assert.equal(await input.evaluate((node) => node === globalThis.document.activeElement), true);
+    await input.fill("   "); await input.press("Enter");
+    assert.equal(await input.getAttribute("aria-invalid"), "true");
+    await captureDiscovery(page, language, "grouped-label-validation");
+    groupedLabel = "  Authored-категория-" + "long-label-".repeat(16) + ` ${language}  `;
+    await input.fill(groupedLabel);
+    await captureDiscovery(page, language, "grouped-label-editing");
+    await input.press("Enter"); await input.waitFor({ state: "detached" });
+    await page.getByRole("button", { name: accessibleName(`${rename}: ${groupedLabel}`), exact: true }).waitFor();
+    const renamed = await projects(page, grouped.workspaceId);
+    assert.equal(renamed.revision, groupedApplied.revision);
+    assert.deepEqual(renamed.projects, groupedApplied.projects);
+    assert.deepEqual(renamed.categories, groupedApplied.categories);
+    assert.equal(renamed.categoryProperty.propertyId, categoryPropertyId);
+    assert.equal(renamed.categoryProperty.name, groupedLabel);
+    assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+    await captureDiscovery(page, language, "grouped-applied-label");
+    await select(page, groupedSibling);
+    assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...renamed, workspaceId: groupedSibling.workspaceId });
+    assert.deepEqual(await properties(page, groupedSibling.workspaceId), { ...savedGroupedProperties, workspaceId: groupedSibling.workspaceId });
+    await page.getByRole("button", { name: accessibleName(`${rename}: ${groupedLabel}`), exact: true }).waitFor();
+    await select(page, other);
+    assert.equal(await page.locator(".category-property-header").count(), 0);
+    assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+    assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
+    await select(page, grouped);
+  }
+  const savedGroupedProjects = await projects(page, grouped.workspaceId);
+  const labelEvents = await page.evaluate(() => globalThis.groupedLabelEvents);
+  assert.equal(labelEvents.length, 2);
+  assert.ok(labelEvents.every((event) => event.sourceId === grouped.sourceId && JSON.stringify(event.workspaceIds) === JSON.stringify([grouped.workspaceId, groupedSibling.workspaceId])));
+  await page.evaluate(() => globalThis.stopGroupedLabelEvents());
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  observations.push({ scenario: "grouped EN/RU preview/cancel, two-level exclusions, explicit stale Apply, required categories, label-only rename, siblings and isolation", grouped, groupedSibling, savedGroupedProjects, savedGroupedProperties, labelEvents, unchangedGroupedInventory: groupedBytes });
+  await select(page, first);
+
   async function closeCurrent() {
     const pids = await backendPids(current.electron);
     assert.ok(pids.length > 0, "No owned Node utility process is running");
     await recordEvidence("feature assertions before quit");
     const closing = current; current = undefined;
-    await closeElectron(closing.electron);
-    await assertStopped(pids);
+    const shutdown = { attempt: shutdowns.length + 1, passed: false }; shutdowns.push(shutdown);
+    try { await closeElectron(closing.electron); await assertStopped(pids); shutdown.passed = true; }
+    catch (error) { shutdown.error = error.message; throw error; }
+    await recordEvidence("normal quit and backend exit passed");
   }
   stages.preQuitFeatures = true;
   await closeCurrent();
@@ -515,7 +642,7 @@ try {
   assert.equal(await page.locator("html").getAttribute("lang"), "ru");
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
-  assert.deepEqual(reopened.workspaces, [other, first, sibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
+  assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
   await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
   await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
   assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
@@ -530,7 +657,19 @@ try {
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(sibling));
   await select(page, other); assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
   await select(page, first);
+  await select(page, grouped);
+  assert.deepEqual(await projects(page, grouped.workspaceId), savedGroupedProjects);
+  assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  await select(page, groupedSibling);
+  assert.deepEqual(identity((await load(page)).activeWorkspace), identity(groupedSibling));
+  assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...savedGroupedProjects, workspaceId: groupedSibling.workspaceId });
+  await select(page, first);
+  assert.deepEqual(identity((await remove(page, grouped)).activeWorkspace), identity(first));
+  assert.deepEqual(identity((await remove(page, groupedSibling)).activeWorkspace), identity(first));
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   stages.restartPersistence = true;
+  observations.push({ scenario: "grouped restart identities/label/Text/settings and final grouped source removal", savedGroupedProjects, savedGroupedProperties });
   observations.push({ scenario: "Text persisted after application restart with unchanged project/source/workspace/view identities", savedProperties, savedProjects });
   // Inactive different-root removal, active fallback, and final removal.
   assert.deepEqual(identity((await remove(page, other)).activeWorkspace), identity(first));
@@ -562,6 +701,17 @@ try {
   for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
   assert.deepEqual(await properties(page, recreated.workspaceId), { ...savedProperties, workspaceId: recreated.workspaceId });
   assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+  const reusedGrouped = await create(current, "Reused grouped source", groupedRoot, "ru");
+  assert.equal(reusedGrouped.sourceId, grouped.sourceId);
+  assert.notEqual(reusedGrouped.viewId, grouped.viewId);
+  assert.notEqual(reusedGrouped.viewId, groupedSibling.viewId);
+  assert.deepEqual(await projects(page, reusedGrouped.workspaceId), { ...savedGroupedProjects, workspaceId: reusedGrouped.workspaceId });
+  assert.deepEqual(await properties(page, reusedGrouped.workspaceId), { ...savedGroupedProperties, workspaceId: reusedGrouped.workspaceId });
+  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  await previewFolders(page, "ru"); await applyFolders(page, "ru");
+  assert.deepEqual(await projects(page, reusedGrouped.workspaceId), { ...savedGroupedProjects, workspaceId: reusedGrouped.workspaceId });
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
+  observations.push({ scenario: "retained grouped source reuse after empty restart", reusedGrouped, savedGroupedProjects, savedGroupedProperties });
   stages.retainedSourceReuse = true;
   observations.push({ scenario: "restart, inactive/active/final removal, empty restart and retained-source reuse", recreated, sentinelBytes: sentinel.length });
   await closeCurrent();
@@ -581,7 +731,7 @@ try {
   await closeElectron(closing.electron);
   await assertStopped(failurePids);
   await recordEvidence("passed");
-  console.info(`Electron ${mode} runtime verified: discovery/exclusions/cancel/Apply, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
+  console.info(`Electron ${mode} runtime verified: direct/grouped discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
   await recordEvidence("failed", error);
   throw error;
