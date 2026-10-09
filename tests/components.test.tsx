@@ -131,3 +131,24 @@ test("EN/RU source-level unavailable observations retain exact authored Text wit
     cleanup();
   }
 });
+
+test("EN/RU source Refresh is keyboard accessible and reports pending, errors and degraded guidance", async () => {
+  const { SourceRefresh } = await import("../src/renderer/components/SourceRefresh.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  for (const language of ["en", "ru"] as const) {
+    let calls = 0;
+    const props = { language, pending: false, error: false, degraded: true, unavailable: false, disabled: false, onRefresh: () => { calls++; } };
+    const view = render(<SourceRefresh {...props} />);
+    const button = screen.getByRole("button", { name: translate(language, "refreshSourceAction") });
+    await userEvent.tab(); assert.equal(document.activeElement, button); await userEvent.keyboard("{Enter}"); assert.equal(calls, 1);
+    assert.ok(screen.getByText(translate(language, "automaticUpdatesDegradedDescription")));
+    view.rerender(<SourceRefresh {...props} pending />);
+    await userEvent.keyboard("{Enter}"); assert.equal(calls, 1);
+    assert.equal(document.querySelector(".source-refresh")?.getAttribute("aria-busy"), "true");
+    assert.ok(screen.getByRole("heading", { name: translate(language, "refreshingSource") }));
+    view.rerender(<SourceRefresh {...props} error unavailable />);
+    assert.ok(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
+    assert.ok(screen.getByRole("alert"));
+    cleanup();
+  }
+});

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState, ProjectList } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent, ProjectList } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
 import { LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
+import { SourceRefresh } from "./components/SourceRefresh.js";
 import { DiscoveryWorkspace } from "./components/DiscoveryPanel.js";
 import { WorkspaceServiceClient } from "./workspace-service-client.js";
 
@@ -28,6 +29,8 @@ export function App() {
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [workspaceData, setWorkspaceData] = useState<WorkspaceLoad | null>(null);
+  const selectedWorkspace = useRef<ActiveWorkspace | null>(null);
+  selectedWorkspace.current = workspaceData?.activeWorkspace ?? null;
   const [name, setName] = useState("");
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
@@ -46,6 +49,9 @@ export function App() {
   const [removalTarget, setRemovalTarget] = useState<{ workspaceId: string; name: string } | null>(null);
   const [removalError, setRemovalError] = useState<"stale" | "save" | null>(null);
   const [refreshError, setRefreshError] = useState(false);
+  const refreshPending = useRef<object | null>(null);
+  const [sourceObservations, setSourceObservations] = useState(new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>());
+  const observationVersions = useRef(new Map<string, number>());
   const dataVersion = useRef(0);
   const sourceVersion = useRef(new Map<string, number>());
   const sourceStates = useRef(new Map<string, WorkspaceSourceState>());
@@ -66,10 +72,18 @@ export function App() {
         dataVersion.current++;
         // This snapshot was observed after the cached source state.
         if (event.snapshot.activeWorkspace) sourceStates.current.delete(event.snapshot.activeWorkspace.sourceId);
+        selectedWorkspace.current = event.snapshot.activeWorkspace;
         setWorkspaceData(event.snapshot);
         setRenameDraft((draft) => draft && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === draft.workspaceId) ? null : draft);
         setRemovalTarget((target) => target && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === target.workspaceId) ? null : target);
         setRefreshError(false);
+      } else if (event.type === "workspace.sourceObserved") {
+        const selected = selectedWorkspace.current;
+        if (selected?.sourceId === event.sourceId && !event.workspaceIds.includes(selected.workspaceId)) return;
+        if (!event.workspaceIds.length || event.observationRevision <= (observationVersions.current.get(event.sourceId) ?? 0)) return;
+        observationVersions.current.set(event.sourceId, event.observationRevision);
+        sourceVersion.current.set(event.sourceId, (sourceVersion.current.get(event.sourceId) ?? 0) + 1);
+        setSourceObservations((current) => new Map(current).set(event.sourceId, event));
       } else if (event.type === "workspace.sourceChanged") {
         sourceVersion.current.set(event.source.sourceId, (sourceVersion.current.get(event.source.sourceId) ?? 0) + 1);
         sourceStates.current.set(event.source.sourceId, event.source);
@@ -150,6 +164,10 @@ export function App() {
         // Events received after this transition can still override a delayed load.
         sourceStates.current.clear();
         sourceVersion.current.clear();
+        observationVersions.current.clear();
+        setSourceObservations(new Map());
+        setRefreshError(false);
+        if (refreshPending.current) { refreshPending.current = null; setBusy(null); }
         // React may batch unavailable/ready notifications into one render.
         // Still discard children and responses belonging to the prior backend.
         setBackendGeneration((generation) => generation + 1);
@@ -351,7 +369,9 @@ export function App() {
 
   const refreshSource = async () => {
     const selected = workspaceData?.activeWorkspace;
-    if (busy || !selected) return;
+    if (busy || refreshPending.current || !selected) return;
+    const request = {};
+    refreshPending.current = request;
     const { workspaceId, sourceId } = selected;
     const version = sourceVersion.current.get(sourceId);
     const selectionVersion = dataVersion.current;
@@ -359,7 +379,7 @@ export function App() {
     setRefreshError(false);
     try {
       const result = await client.refreshSource(workspaceId);
-      if (selectionVersion !== dataVersion.current) return;
+      if (refreshPending.current !== request || selectionVersion !== dataVersion.current) return;
       if (!result.ok) { setRefreshError(true); return; }
       setSourceRefreshVersion((current) => current + 1);
       if (version !== sourceVersion.current.get(sourceId) || selectionVersion !== dataVersion.current) return;
@@ -370,8 +390,8 @@ export function App() {
           ...active, canonicalRoot: result.value.canonicalRoot, sourceAvailable: result.value.sourceAvailable,
         } };
       });
-    } catch { if (selectionVersion === dataVersion.current) setRefreshError(true); }
-    finally { setBusy(null); }
+    } catch { if (refreshPending.current === request && selectionVersion === dataVersion.current) setRefreshError(true); }
+    finally { if (refreshPending.current === request) { refreshPending.current = null; setBusy(null); } }
   };
 
   const t = (key: TranslationKey) => translate(language, key);
@@ -577,31 +597,21 @@ export function App() {
                   {t(messageDescription.activation)}
                 </StatusMessage>
               )}
-              {(!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&
-                sourceFeedback.state !== "ready" && sourceFeedback.state !== "empty") && (
-                <StatusMessage kind="error" title={t(!activeWorkspace.sourceAvailable || sourceFeedback?.state === "unavailable" ? "sourceUnavailableTitle"
-                  : sourceFeedback?.state === "root_identity_conflict" ? "discoveryRootConflict" : sourceFeedback?.state === "changed" ? "discoveryChanged" : "discoveryUnreadable")}>
-                  {t("sourceUnavailableDescription")}
-                  <button type="button" className="workspace-button workspace-button--secondary workspace-source-retry"
-                    disabled={busy !== null} onClick={() => void refreshSource()}>
-                    {t(busy === "refresh" ? "refreshingSource" : "retrySourceAction")}
-                  </button>
-                </StatusMessage>
-              )}
-              {refreshError && (
-                <StatusMessage kind="error" title={t("refreshSourceErrorTitle")}>
-                  {t("refreshSourceErrorDescription")}
-                </StatusMessage>
-              )}
+              <SourceRefresh language={language} pending={busy === "refresh"} error={refreshError}
+                degraded={sourceObservations.get(activeWorkspace.sourceId)?.automaticUpdates === "degraded"}
+                unavailable={!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&
+                  sourceFeedback.state !== "ready" && sourceFeedback.state !== "empty"}
+                unavailableTitle={!activeWorkspace.sourceAvailable || sourceFeedback?.state === "unavailable" ? "sourceUnavailableTitle"
+                  : sourceFeedback?.state === "root_identity_conflict" ? "discoveryRootConflict" : sourceFeedback?.state === "changed" ? "discoveryChanged" : "discoveryUnreadable"}
+                disabled={busy !== null || renameDraft !== null || removalTarget !== null} onRefresh={() => void refreshSource()} />
               <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
                 refreshVersion={sourceRefreshVersion} onSourceState={observeSourceScan}
                 onRecoveryPending={(pending) => {
                   recoveryPending.current = pending ? activeWorkspace.workspaceId : null;
                   if (pending) setUncertainRecovery(null);
                 }}
-                sourceState={`${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
-                disabled={busy !== null || renameDraft !== null || removalTarget !== null} />
+                disabled={busy !== null && busy !== "refresh" || renameDraft !== null || removalTarget !== null} />
               <button
                 type="button"
                 className="workspace-button workspace-button--secondary"

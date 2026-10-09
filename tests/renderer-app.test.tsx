@@ -1755,7 +1755,8 @@ test("same-source availability and locator notifications preserve Text drafts wh
         } }));
         assert.equal(screen.getByRole("textbox") === editor, true, "Source observation remounted the editor");
         assert.equal((editor as HTMLInputElement).value, "  Unsaved 日本語  ");
-        assert.equal(screen.queryByRole("button", { name: translate(language, "discoveryApply") }), null);
+        assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+        assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
         await act(async () => finishProjects?.(ok({ ...projection, state: available ? "ready" : "unavailable" })));
         assert.equal(screen.getByRole("textbox") === editor, true, "Project reload discarded the editor");
       }
@@ -2586,5 +2587,209 @@ test("EN/RU observer-only changes reject delayed same-revision lists/previews an
     await screen.findByRole("checkbox", { name: /Authored project/ });
     assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
     cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU available and empty sources expose Refresh, prevent duplicate submissions and retry failures", async () => {
+  for (const language of ["en", "ru"] as const) for (const empty of [false, true]) {
+    const active = sharedEventWorkspace(); let refreshes = 0;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => ok(projectList(active, empty ? [] : ["Known"], 1)),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active));
+        if (input.type === "workspace.refreshSource") { refreshes++; return new Promise((resolve) => { finish = resolve; }); }
+        return fail("invalid_input");
+      } });
+    render(<App />); const button = await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    button.focus(); await userEvent.keyboard("{Enter}{Enter}");
+    assert.equal(refreshes, 1); assert.equal((button as HTMLButtonElement).disabled, true);
+    assert.ok(screen.getByRole("heading", { name: translate(language, "refreshingSource") }));
+    await act(async () => { finish?.(fail("storage")); });
+    await screen.findByRole("heading", { name: translate(language, "refreshSourceErrorTitle") });
+    assert.equal(screen.queryByText("private service detail"), null);
+    await userEvent.keyboard("{Enter}"); assert.equal(refreshes, 2);
+    // Reconciliation events are delivered before the initiating command response.
+    await act(async () => {
+      api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 });
+      api.emitChange({ type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 2, state: "ready", automaticUpdates: "degraded" });
+      finish?.(ok({ sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: true }));
+    });
+    await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+    assert.equal((button as HTMLButtonElement).disabled, false); assert.equal(document.activeElement, button);
+    assert.equal(screen.queryByText(translate(language, "refreshSourceErrorTitle")), null);
+    cleanup();
+  }
+});
+
+test("EN/RU stale Refresh responses cannot override newer observations or selection/removal/backend generations", async () => {
+  for (const language of ["en", "ru"] as const) for (const reason of ["observation", "selection", "removal", "restart"] as const) {
+    const active = { ...sharedEventWorkspace(), viewId: randomUUID() }, other = { ...sharedEventWorkspace(), workspaceId: randomUUID(), sourceId: randomUUID(), viewId: randomUUID(), name: "Other" };
+    let current = active, empty = false;
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, onProjects: async (input) => ok(projectList(input.type === "workspace.listProjects" && input.workspaceId === other.workspaceId ? other : active)),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(empty ? emptyLoad() : snapshotOf(current));
+        if (input.type === "workspace.refreshSource") return new Promise((resolve) => { finish = resolve; });
+        return fail("invalid_input");
+      } });
+    render(<App />); await userEvent.click(await screen.findByRole("button", { name: translate(language, "refreshSourceAction") }));
+    await act(async () => {
+      if (reason === "observation") api.emitChange({ type: "workspace.sourceChanged", source: { sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Current root", sourceAvailable: true } });
+      if (reason === "selection" || reason === "removal") { current = other; empty = reason === "removal"; api.emitChange({ type: "workspace.listChanged", snapshot: empty ? emptyLoad() : snapshotOf(other) }); }
+      if (reason === "restart") { api.emitStatus("unavailable"); api.emitStatus("ready"); }
+    });
+    if (reason === "restart") await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    await act(async () => { finish?.(ok({ sourceId: active.sourceId, workspaceIds: [active.workspaceId], canonicalRoot: "/Stale root", sourceAvailable: false })); });
+    assert.ok(screen.queryByText("/Stale root") === null, `${language} ${reason}: stale response replaced current root`);
+    assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
+    if (reason === "observation") assert.ok(screen.getByText("/Current root"));
+    if (reason === "selection") assert.ok(screen.getByRole("heading", { name: "Other" }));
+    if (reason === "removal") assert.ok(screen.getByRole("heading", { name: translate(language, "createWorkspaceTitle") }));
+    cleanup();
+  }
+});
+
+test("EN/RU production Refresh and observer placement create only a needed category and retain drafts, focus and independent metadata", async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.js");
+  const unwrap = <T,>(result: ServiceResult<T>): T => { if (!result.ok) throw new Error(result.error.code); return result.value; };
+  for (const language of ["en", "ru"] as const) for (const mechanism of ["refresh", "observer"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "reconcile-ui-")), root = join(directory, "root");
+    mkdirSync(join(root, "Old/Project"), { recursive: true });
+    const hints = new Map<string, () => void>();
+    const timers = new Set<{ delay: number; callback(): void }>();
+    const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
+      probe: nativeObserverDependencies.probe,
+      watch: (path, hint) => {
+        if (mechanism === "refresh") throw new Error("ENOSPC");
+        hints.set(path, hint); return { close: () => { hints.delete(path); } };
+      },
+      schedule: (callback, delay) => {
+        if (delay === 0) return nativeObserverDependencies.schedule(callback, delay);
+        const timer = { callback, delay }; timers.add(timer); return { cancel: () => { timers.delete(timer); } };
+      },
+    });
+    let off: (() => void) | undefined;
+    try {
+      const one = unwrap(service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }));
+      const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
+      const workspaceId = one.workspaceId;
+      unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
+      const preview = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }));
+      const applied = unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken! }));
+      const projectId = applied.projects[0].projectId, categoryPropertyId = applied.categoryProperty!.propertyId;
+      unwrap(service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId, propertyId: categoryPropertyId, name: "  Authored label  " }));
+      const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
+      unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId, value: "  Exact\nТекст 📝  " }));
+      const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      const beforeText = unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId }));
+      const requests: WorkspaceRequest[] = [];
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
+        requests.push(input);
+        return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+      } });
+      off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      const textLabel = `${translate(language, "editTextValue")}: Project / Notes`;
+      await userEvent.click(await screen.findByRole("button", { name: textLabel }));
+      const textEditor = screen.getByRole("textbox", { name: textLabel }) as HTMLTextAreaElement;
+      await userEvent.clear(textEditor); await userEvent.type(textEditor, "  Unsaved Text 📝  ");
+      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Authored label` }));
+      const labelEditor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+      await userEvent.clear(labelEditor); await userEvent.type(labelEditor, "  Unsaved label  ");
+      // A late renderer must see the startup watcher failure without another topology change.
+      if (mechanism === "refresh") await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+      mkdirSync(join(root, "Needed")); renameSync(join(root, "Old/Project"), join(root, "Needed/Renamed"));
+      mkdirSync(join(root, "Needed/Unrelated")); mkdirSync(join(root, "Other/Unrelated"), { recursive: true }); mkdirSync(join(root, "Empty"));
+      if (mechanism === "refresh") {
+        const refresh = screen.getByRole("button", { name: translate(language, "refreshSourceAction") }); refresh.focus(); await userEvent.keyboard("{Enter}");
+      } else {
+        textEditor.focus();
+        await act(async () => {
+          hints.get(one.canonicalRoot)!();
+          for (const timer of [...timers]) if (timer.delay === 100) { timers.delete(timer); timer.callback(); }
+        });
+      }
+      await screen.findByRole("cell", { name: "Renamed" });
+      assert.equal(screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Renamed / Notes` }), textEditor);
+      assert.equal(textEditor.value, "  Unsaved Text 📝  "); assert.equal(labelEditor.value, "  Unsaved label  ");
+      assert.equal(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), labelEditor);
+      if (mechanism === "observer") assert.equal(document.activeElement, textEditor);
+      assert.equal(document.querySelectorAll("tbody tr").length, 1);
+      assert.ok(screen.getByRole("cell", { name: "Needed" })); assert.equal(screen.queryByText("Unrelated"), null); assert.equal(screen.queryByText("Other"), null); assert.equal(screen.queryByText("Empty"), null);
+      const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }));
+      assert.equal(after.projects[0].projectId, projectId); assert.equal(after.categories.length, 2);
+      assert.equal(after.categoryProperty!.propertyId, categoryPropertyId); assert.equal(after.categoryProperty!.name, "  Authored label  ");
+      assert.equal(after.categoryPropertyRevision, before.categoryPropertyRevision); assert.equal(after.revision, before.revision + 1);
+      assert.deepEqual(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })), beforeText);
+      assert.equal(unwrap(service.workspaces.load()).activeWorkspace!.viewId, one.viewId);
+      assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 0);
+      assert.equal(requests.filter((request) => request.type === "workspace.setTextValue" || request.type === "workspace.renameCategoryProperty").length, 0);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+      assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).revision, after.revision);
+    } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU production Refresh retains metadata and recovery when an existing destination category is conflicting", async () => {
+  const unwrap = <T,>(result: ServiceResult<T>): T => { if (!result.ok) throw new Error(result.error.code); return result.value; };
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "conflicting-category-ui-")), root = join(directory, "root");
+    mkdirSync(join(root, "Old/Project"), { recursive: true }); mkdirSync(join(root, "Conflict"));
+    const service = openSettingsService(join(directory, "data.sqlite")); let off: (() => void) | undefined;
+    try {
+      const created = unwrap(service.workspaces.create({ type: "workspace.create", name: "Grouped", rootPath: root })), workspaceId = created.workspaceId;
+      const review = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }));
+      const initial = unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.previewToken! }));
+      const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
+      unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, projectId: initial.projects[0].projectId, propertyId: property.propertyId, value: "  Retained exact Text 📝  " }));
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) =>
+        (input.type === "workspace.load" || input.type === "workspace.previewProjectRecovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse> });
+      off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      await screen.findByRole("cell", { name: "Project" });
+      renameSync(join(root, "Conflict"), join(directory, "original-category")); mkdirSync(join(root, "Conflict"));
+      renameSync(join(root, "Old/Project"), join(root, "Conflict/Project"));
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+      await screen.findByText(translate(language, "projectMissing"));
+      const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      assert.equal(after.retainedProjects[0].projectId, initial.projects[0].projectId); assert.equal(after.revision, initial.revision);
+      assert.deepEqual(after.categories.map((category) => category.categoryId), initial.categories.filter((category) => category.relativePath !== "Conflict").map((category) => category.categoryId));
+      assert.deepEqual(after.categoryProperty, initial.categoryProperty);
+      const text = screen.getByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      assert.equal(text.textContent, "  Retained exact Text 📝  ");
+      await userEvent.click(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Project` }));
+      await screen.findByText(translate(language, "recoveryCategoryUnavailable"));
+      const target = screen.getByRole("radio", { name: /Conflict\/Project/ }) as HTMLInputElement;
+      assert.equal(target.disabled, true); assert.equal((screen.getByRole("button", { name: translate(language, "recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+      await userEvent.keyboard("{Escape}"); assert.equal(screen.queryByRole("heading", { name: translate(language, "recoveryTitle") }) === null, true);
+      assert.equal(text.textContent, "  Retained exact Text 📝  ");
+    } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU cached source guidance follows a newly selected sibling and resets at backend generation changes", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = { ...sharedEventWorkspace(), viewId: randomUUID() }, sibling = { ...sharedEventWorkspace(), workspaceId: randomUUID(), viewId: randomUUID(), name: "New sibling" };
+    let selected = active;
+    const api = mockApi({ language, onWorkspace: async (input) => input.type === "workspace.load" ? ok(snapshotOf(selected)) : fail("invalid_input") });
+    render(<App />); await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    const event: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 3, state: "ready", automaticUpdates: "degraded" };
+    await act(async () => api.emitChange(event));
+    await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+    selected = sibling;
+    await act(async () => api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(sibling) }));
+    await screen.findByRole("heading", { name: "New sibling" });
+    assert.ok(screen.getByRole("heading", { name: translate(language, "automaticUpdatesDegraded") }));
+    await act(async () => api.emitChange({ ...event, observationRevision: 4, automaticUpdates: "active" }));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "automaticUpdatesDegraded") }));
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "refreshSourceAction") }));
+    await screen.findByRole("heading", { name: translate(language, "refreshSourceErrorTitle") });
+    await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+    await screen.findByRole("button", { name: translate(language, "refreshSourceAction") });
+    assert.ok(screen.queryByText(translate(language, "automaticUpdatesDegraded")) === null);
+    assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
+    await act(async () => api.emitChange({ ...event, workspaceIds: [sibling.workspaceId], observationRevision: 1 }));
+    await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+    cleanup();
   }
 });

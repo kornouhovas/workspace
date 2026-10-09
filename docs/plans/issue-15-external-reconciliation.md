@@ -148,6 +148,7 @@ Verification (Task 3): npm test passed all 425 tests, including the production b
 
 **Files:**
 
+- Create: `src/renderer/components/SourceRefresh.tsx`
 - Modify: `src/renderer/App.tsx`
 - Modify: `src/renderer/components/DiscoveryPanel.tsx`
 - Modify: `src/renderer/components/ProjectRecoveryPanel.tsx`
@@ -159,13 +160,17 @@ Verification (Task 3): npm test passed all 425 tests, including the production b
 - Modify: `tests/components.test.tsx`
 - Modify: `scripts/smoke-discovery-layouts.mjs`
 
-- [ ] Expose a keyboard-accessible Refresh action for an available selected source as well as existing unavailable-source retry. Distinguish source refresh from discovery preview refresh and Apply.
-- [ ] Show localized pending/error feedback and degraded automatic-update guidance with explicit Refresh. Retain metadata and existing recovery controls for missing, ambiguous and conflicting associations.
-- [ ] Guard refresh/event/list responses against newer observations, selection/removal, cancellation and backend generations; accept an initiating commit event before its successful response.
-- [ ] Preserve Text and category-label drafts, stable logical row keys and editor focus across reconciled names/categories, including placement into a newly created needed category. Invalidate discovery/recovery reviews while retaining applicable exclusion choices and requiring explicit reselection/save.
-- [ ] Add EN/RU production-client interaction tests for available/empty/unavailable sources, duplicate submission prevention, error retry, observer-only resolution, sibling changes and delayed response races. Verify explicit Refresh and observer events project a known project's new category without Apply, keep the shared category-property ID/authored label and independent revisions, omit unrelated projects/categories, and retain recovery for conflicting existing categories.
-- [ ] Extend permanent Ladle states/layout interactions for Refresh, pending/error/degraded feedback, new-category placement and retained recovery; check keyboard/focus and long paths at 1440×960, 1024×720 and 420×800 without weakening existing assertions.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm run build:ladle; run lint and typecheck with the same explicit PATH prefix; commit verified explicit task paths and plan progress.
+- [x] Expose a keyboard-accessible Refresh action for an available selected source as well as existing unavailable-source retry. Distinguish source refresh from discovery preview refresh and Apply.
+- [x] Show localized pending/error feedback and degraded automatic-update guidance with explicit Refresh. Retain metadata and existing recovery controls for missing, ambiguous and conflicting associations.
+- [x] Guard refresh/event/list responses against newer observations, selection/removal, cancellation and backend generations; accept an initiating commit event before its successful response.
+- [x] Preserve Text and category-label drafts, stable logical row keys and editor focus across reconciled names/categories, including placement into a newly created needed category. Invalidate discovery/recovery reviews while retaining applicable exclusion choices and requiring explicit reselection/save.
+- [x] Add EN/RU production-client interaction tests for available/empty/unavailable sources, duplicate submission prevention, error retry, observer-only resolution, sibling changes and delayed response races. Verify explicit Refresh and observer events project a known project's new category without Apply, keep the shared category-property ID/authored label and independent revisions, omit unrelated projects/categories, and retain recovery for conflicting existing categories.
+- [x] Extend permanent Ladle states/layout interactions for Refresh, pending/error/degraded feedback, new-category placement and retained recovery; check keyboard/focus and long paths at 1440×960, 1024×720 and 420×800 without weakening existing assertions.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm run build:ladle; run lint and typecheck with the same explicit PATH prefix; commit verified explicit task paths and plan progress.
+
+Verification (Task 4): Node 22.21.1 npm test passed all 433 tests, including the production build; lint, typecheck, build:ladle and git diff --check passed. Production-client EN/RU fixtures use disposable real SQLite/folders for explicit Refresh, injected observer hints, needed-category-only placement, startup degraded guidance, exact Text/category labels and independent revisions, draft/focus preservation and conflicting-category recovery. Permanent UI tests also cover pending prevention, retry, observer-only review invalidation and response/selection/backend-generation races. The source Refresh control stays mounted across availability changes, and source-level guidance remains applicable to newly selected siblings without retaining prior-backend errors.
+
+Ladle verification (Task 4): the final browser-only run, PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" WORKSPACE_SMOKE_EVIDENCE_DIR=work/ralphex/issue-15/task-4-layouts-chromium-viewport node scripts/smoke-discovery-layouts.mjs --chromium, passed 306 EN/RU viewport captures for 102 states at 1440×960, 1024×720 and 420×800, plus 74 interaction checks. This includes all 14 new source states (42 captures). Browser mode retains the layout/focus/wrapping assertions and records browser cleanup separately; it does not establish Electron normal shutdown. Earlier full-page Chromium evidence is retained separately. The first native Electron attempt captured 252 screenshots, including all source states and their interactions, before a concurrent npm test clean removed the Ladle build and the remaining Text stages became unreachable. Its failure and the unchanged ten-second shutdown failure (#44), including forced-cleanup reporting, are preserved under task-4-layouts-01; no native retry or assertion relaxation was performed. Final automated logs are task-4-*-accepted.txt; earlier failed UI/test attempts remain under work/ralphex/issue-15. Task 5 runtime/platform/documentation gates remain open and coordinator-owned acceptance is unchanged.
 
 ### Task 5: Verify runtime behavior and document acceptance evidence
 

@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron } from "playwright-core";
+import { _electron, chromium } from "playwright-core";
 import { closeElectron } from "./runtime-lifecycle.mjs";
 
 // Deterministic Ladle presentation and interaction fixtures complement runtime smoke.
@@ -26,29 +26,51 @@ const server = createServer(async (request, response) => {
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const url = `http://127.0.0.1:${server.address().port}`;
-const results = { fixture: "production components with typed disposable Ladle data", screenshots: [], featurePassed: false, shutdownPassed: false };
+// Browser rendering can verify Ladle even when native Electron shutdown is a
+// separate platform gate. The default retains its normal-quit assertion.
+const browserOnly = process.argv.includes("--chromium");
+const results = { browser: browserOnly ? "Chromium" : "Electron", capture: browserOnly ? "viewport" : "full-page", fixture: "production components with typed disposable Ladle data", screenshots: [], featurePassed: false, shutdownPassed: false };
 const save = () => writeFile(join(evidence, "ladle-observations.json"), JSON.stringify(results, null, 2) + "\n");
 let electron;
+let browser;
 let failure;
 try {
   await writeFile(join(fixture, "main.cjs"), `const {app, BrowserWindow} = require('electron');
 app.setPath('userData', ${JSON.stringify(join(fixture, "data"))});
 app.whenReady().then(() => { const window = new BrowserWindow({width:1440,height:960,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}}); window.loadURL(${JSON.stringify(url)}); });
 app.on('window-all-closed', () => app.quit());`);
-  electron = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [join(fixture, "main.cjs")], timeout: 30000 });
-  const page = await electron.firstWindow();
+  let page;
+  if (browserOnly) {
+    browser = await chromium.launch({ executablePath: process.env.WORKSPACE_LAYOUT_BROWSER_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: true });
+    page = await browser.newPage();
+  } else {
+    electron = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [join(fixture, "main.cjs")], timeout: 30000 });
+    page = await electron.firstWindow();
+  }
   page.setDefaultTimeout(15000);
   const meta = JSON.parse(await readFile(join(built, "meta.json"), "utf8"));
-  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-)/.test(name));
+  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-|source-)/.test(name));
   assert.equal(stories.filter((name) => name.includes("--text-")).length, 18, "Expected all nine EN/RU Text states");
   assert.equal(stories.filter((name) => name.includes("--recovery-")).length, 20, "Expected all ten EN/RU recovery states");
-  assert.equal(stories.length, 88, "Expected discovery, Text, category and recovery presentation states");
+  assert.equal(stories.filter((name) => name.includes("--source-")).length, 14, "Expected all seven EN/RU source observation states");
+  assert.equal(stories.length, 102, "Expected discovery, Text, category and recovery presentation states");
   for (const story of stories) {
     await page.goto(`${url}/?story=${story}&mode=preview`);
+    const sourceStory = story.includes("--source-");
     const recoveryStory = story.includes("--recovery-");
     const categoryStory = story.includes("--category-");
     const textStory = story.includes("--text-");
-    await page.locator(recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    await page.locator(sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const sourceState = sourceStory ? await page.locator("[data-source-fixture]").getAttribute("data-source-fixture") : null;
+    if (sourceStory) {
+      await page.waitForFunction(() => globalThis.document.querySelector(".text-properties")?.getAttribute("aria-busy") === "false");
+      assert.equal(await page.locator(".source-refresh > button").isDisabled(), sourceState === "pending");
+      if (sourceState === "pending") assert.equal(await page.locator(".source-refresh").getAttribute("aria-busy"), "true");
+      if (sourceState === "error") await page.locator(".source-refresh [role=alert]").waitFor();
+      if (sourceState === "degraded") await page.locator(".source-refresh [role=status]").waitFor();
+      if (sourceState === "new-category") { assert.equal(await page.locator(".saved-categories li").count(), 2); assert.equal(await page.locator("tbody tr").count(), 1); }
+      if (sourceState === "empty") assert.equal(await page.locator("tbody tr").count(), 0);
+    }
     const recoveryState = recoveryStory ? await page.locator("[data-recovery-fixture]").getAttribute("data-recovery-fixture") : null;
     if (["retained", "saved"].includes(recoveryState)) await page.waitForFunction(() => globalThis.document.querySelector(".text-properties")?.getAttribute("aria-busy") === "false");
     const textState = textStory ? await page.locator("[data-text-fixture]").getAttribute("data-text-fixture") : null;
@@ -90,7 +112,7 @@ app.on('window-all-closed', () => app.quit());`);
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path"))
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
         wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path"))
           .filter((node) => node.textContent.length > 150).every((node) => {
@@ -112,10 +134,43 @@ app.on('window-all-closed', () => app.quit());`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
       if (size.width === 420 || recoveryStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
       const screenshot = `${story}-${size.width}x${size.height}.png`;
-      await page.screenshot({ path: join(evidence, screenshot), fullPage: true });
+      // Chromium uses exact viewport captures; native Electron retains the
+      // existing full-page evidence. DOM checks above still cover long content.
+      await page.screenshot({ path: join(evidence, screenshot), fullPage: !browserOnly });
       results.screenshots.push({ story, ...size, screenshot, layout });
     }
     // Exercise the actual fixture controls after recording the requested state.
+    if (sourceStory) {
+      const refresh = page.locator(".source-refresh > button");
+      if (sourceState === "pending") {
+        await page.locator("[data-complete-refresh]").press("Enter");
+        assert.equal(await refresh.isDisabled(), false);
+      } else {
+        let editor;
+        if (!["empty", "recovery"].includes(sourceState)) {
+          await page.locator(".text-value-button").press("Enter");
+          editor = page.locator("textarea"); await editor.fill("Unsaved refresh draft 日本語");
+          await editor.evaluate((node) => { globalThis.sourceFixtureEditor = node; });
+        }
+        await refresh.press("Enter");
+        if (editor) {
+          await page.getByRole("cell", { name: /^Renamed / }).waitFor();
+          assert.equal(await editor.inputValue(), "Unsaved refresh draft 日本語");
+          assert.equal(await editor.evaluate((node) => node === globalThis.sourceFixtureEditor), true);
+          await editor.press("Escape");
+          assert.equal(await page.locator(".text-value-button").evaluate((node) => node === globalThis.document.activeElement), true);
+        }
+        assert.equal(await page.locator(".source-refresh [role=alert]").count(), 0);
+        if (sourceState === "recovery") {
+          await page.locator(".project-resolution + .project-previous-path + button").press("Enter");
+          await page.locator(".recovery-panel").waitFor();
+          assert.equal(await page.locator(".recovery-panel input:not(:disabled)").count(), 0);
+          await page.locator(".recovery-panel").press("Escape");
+          assert.equal(await page.locator(".recovery-panel").count(), 0);
+        }
+      }
+      results.interactions ??= []; results.interactions.push({ story, state: sourceState, passed: true });
+    }
     if (["editing", "sibling"].includes(textState)) {
       await page.locator("textarea").press("Escape");
       await page.locator("textarea").waitFor({ state: "detached" });
@@ -187,6 +242,7 @@ app.on('window-all-closed', () => app.quit());`);
 finally {
   try {
     if (electron) { await closeElectron(electron); results.shutdownPassed = true; await save(); }
+    if (browser) { await browser.close(); results.browserClosed = true; await save(); }
   } catch (error) {
     results.shutdownError = error.message;
     failure = failure ? new AggregateError([failure, error], "Layout checks and shutdown failed") : error;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
-import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
+import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, ProjectList, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -10,7 +10,8 @@ import { ProjectRecoveryPanel } from "./ProjectRecoveryPanel.js";
 import type { ProjectRecoveryPreview } from "../../contracts/project-recovery.js";
 import type { ProjectAssociationSummary } from "../../contracts/workspaces.js";
 import { translate } from "../localization.js";
-import { DiscoveryPanel } from "./DiscoveryPanel.js";
+import { SourceRefresh } from "./SourceRefresh.js";
+import { DiscoveryWorkspace, DiscoveryPanel } from "./DiscoveryPanel.js";
 import "../app.css";
 import type { Story } from "@ladle/react";
 import "./bb-foundation.css";
@@ -441,3 +442,62 @@ export const RecoveryPendingEnglish: Story = () => <RecoveryPreview language="en
 export const RecoveryPendingRussian: Story = () => <RecoveryPreview language="ru" state="pending" />;
 export const RecoverySavedEnglish: Story = () => <RecoveryPreview language="en" state="saved" />;
 export const RecoverySavedRussian: Story = () => <RecoveryPreview language="ru" state="saved" />;
+
+type SourceStoryState = "available" | "empty" | "pending" | "error" | "degraded" | "new-category" | "recovery";
+function SourceObservationPreview({ language, state }: { language: Language; state: SourceStoryState }) {
+  const [pending, setPending] = useState(state === "pending");
+  const [error, setError] = useState(state === "error");
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [fixture] = useState(() => {
+    const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+    const grouped = state === "new-category" || state === "recovery";
+    const project: ProjectAssociationSummary = { projectId: textStoryIds.projectId, name: recoveryName, relativePath: grouped ? `Needed/${recoveryName}` : recoveryName,
+      categoryId: grouped ? "needed-category" : null, categoryName: grouped ? longCategory : null, associationState: "active", resolution: state === "recovery" ? "unresolved" : "active" };
+    let list: ProjectList = { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 3,
+      configured: true, mode: grouped ? "grouped" : "direct", state: state === "empty" ? "empty" : "ready",
+      projects: ["empty", "recovery"].includes(state) ? [] : [project], retainedProjects: state === "recovery" ? [project] : [], retainedCount: state === "recovery" ? 1 : 0,
+      categories: grouped ? [{ categoryId: "needed-category", name: longCategory, relativePath: "Needed" }, { categoryId: "old-category", name: "Old empty category", relativePath: "Old" }] : [],
+      categoryProperty: grouped ? { propertyId: "category-label", sourceId: textStoryIds.sourceId, name: longCategoryLabel } : null, categoryPropertyRevision: grouped ? 7 : 0 };
+    const client = new class extends WorkspaceServiceClient {
+      override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
+      override async listProjects() { return { ok: true as const, value: list }; }
+      override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
+        definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, propertyType: "text" as const, name: "Notes" }],
+        values: [{ projectId: project.projectId, propertyId: textStoryIds.propertyId, value: "  Exact authored 日本語\n" + "long-text-".repeat(24) + "  " }] } }; }
+      override async previewProjectRecovery() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, projectId: project.projectId,
+        mode: "grouped" as const, revision: list.revision, state: "ready" as const, previewToken: "disposable-review",
+        entries: [{ name: recoveryTarget, relativePath: `Needed/${recoveryTarget}`, categoryPath: "Needed", status: "category_unavailable" as const }] } }; }
+    }();
+    return { client, refresh() {
+      // A verified source commit updates locators and publishes before the response.
+      // The same UUIDs keep the Text editor mounted, including in a new category.
+      if (state !== "recovery" && state !== "empty") list = { ...list, revision: list.revision + 1,
+        projects: list.projects.map((row) => ({ ...row, name: `Renamed ${recoveryName}`, relativePath: `Needed/Renamed ${recoveryName}` })) };
+      for (const listener of listeners) listener({ type: "workspace.projectsChanged", sourceId: list.sourceId, workspaceIds: [list.workspaceId], revision: list.revision });
+    } };
+  });
+  const refresh = () => { setError(false); fixture.refresh(); setRefreshVersion((value) => value + 1); };
+  return <main className="workspace-screen" lang={language} data-source-fixture={state}>
+    <h2>{translate(language, "workspaceSelectLabel")}</h2>
+    <p className="workspace-root">{"/Projects/" + "long-authored-folder-path-".repeat(18)}</p>
+    <SourceRefresh language={language} pending={pending} error={error} degraded={state === "degraded"} unavailable={false} disabled={false} onRefresh={refresh} />
+    {state === "pending" && <button type="button" className="workspace-button" data-complete-refresh onClick={() => { setPending(false); refresh(); }}>
+      {translate(language, "cancelRenameWorkspace")}
+    </button>}
+    <DiscoveryWorkspace client={fixture.client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} refreshVersion={refreshVersion} language={language} disabled={false} />
+  </main>;
+}
+export const SourceAvailableEnglish: Story = () => <SourceObservationPreview language="en" state="available" />;
+export const SourceAvailableRussian: Story = () => <SourceObservationPreview language="ru" state="available" />;
+export const SourceEmptyEnglish: Story = () => <SourceObservationPreview language="en" state="empty" />;
+export const SourceEmptyRussian: Story = () => <SourceObservationPreview language="ru" state="empty" />;
+export const SourcePendingEnglish: Story = () => <SourceObservationPreview language="en" state="pending" />;
+export const SourcePendingRussian: Story = () => <SourceObservationPreview language="ru" state="pending" />;
+export const SourceErrorEnglish: Story = () => <SourceObservationPreview language="en" state="error" />;
+export const SourceErrorRussian: Story = () => <SourceObservationPreview language="ru" state="error" />;
+export const SourceDegradedEnglish: Story = () => <SourceObservationPreview language="en" state="degraded" />;
+export const SourceDegradedRussian: Story = () => <SourceObservationPreview language="ru" state="degraded" />;
+export const SourceNewCategoryEnglish: Story = () => <SourceObservationPreview language="en" state="new-category" />;
+export const SourceNewCategoryRussian: Story = () => <SourceObservationPreview language="ru" state="new-category" />;
+export const SourceRecoveryEnglish: Story = () => <SourceObservationPreview language="en" state="recovery" />;
+export const SourceRecoveryRussian: Story = () => <SourceObservationPreview language="ru" state="recovery" />;

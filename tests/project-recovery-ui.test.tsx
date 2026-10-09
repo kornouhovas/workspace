@@ -416,3 +416,26 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.keyboard("{Escape}"); assert.equal(cancels, 1); assert.equal(confirms, 0);
   });
 }
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: observer-only invalidation retains Text, restores the review keyboard route and requires reselection`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key), client = new RecoveryClient();
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));
+    const editor = screen.getByRole("textbox") as HTMLTextAreaElement;
+    await userEvent.clear(editor); await userEvent.type(editor, "Unsaved observation draft");
+    await userEvent.click(screen.getByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    const target = await screen.findByRole("radio", { name: "Target authored name" }); target.focus(); await userEvent.keyboard(" ");
+    await act(async () => client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 2, state: "ready", automaticUpdates: "degraded" }));
+    await screen.findByText(t("recoveryStale"));
+    assert.equal(screen.queryByRole("radio") === null, true);
+    assert.equal(document.activeElement, screen.getByRole("button", { name: t("discoveryRefresh") }));
+    assert.equal(document.querySelector("textarea"), editor); assert.equal(editor.value, "Unsaved observation draft");
+    await userEvent.keyboard("{Enter}");
+    const refreshed = await screen.findByRole("radio", { name: "Target authored name" }) as HTMLInputElement;
+    assert.equal(refreshed.checked, false); assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+    await act(async () => client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1, state: "unavailable", automaticUpdates: "degraded" }));
+    assert.equal(screen.getByRole("radio", { name: "Target authored name" }), refreshed);
+    assert.equal(client.saves, 0); cleanup();
+  });
+}

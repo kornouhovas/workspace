@@ -201,8 +201,8 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; refreshVersion?: number;
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersion = 0, onSourceState, onRecoveryPending, language, disabled }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; refreshVersion?: number;
   onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
   onRecoveryPending?(pending: boolean): void;
 }) {
@@ -316,7 +316,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   }, [refreshVersion]);
   useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
   return <>
-    <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
+    <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       invalidation={invalidation} language={language} disabled={disabled || recoveryProject !== null}
       onApplied={(value) => {
         if (value.revision < minimumRevision.current) { void load(); return; }

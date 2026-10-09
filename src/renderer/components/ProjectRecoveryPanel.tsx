@@ -23,9 +23,18 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
 }) {
   const t = (key: TranslationKey) => translate(language, key);
   const heading = useRef<HTMLHeadingElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const refreshButton = useRef<HTMLButtonElement>(null);
   const selected = preview?.entries.find((entry) => entry.relativePath === selectedPath && entry.status === "selectable");
   useEffect(() => { heading.current?.focus(); }, []);
-  return <section className="discovery-panel recovery-panel" aria-labelledby="recovery-title" aria-busy={loading || pending}
+  useEffect(() => {
+    // A removed candidate must leave a keyboard route to review again, while
+    // an editor outside this panel keeps its focus and unsaved draft.
+    if ((stale || uncertain) && (document.activeElement === document.body || panel.current?.contains(document.activeElement))) {
+      refreshButton.current?.focus();
+    }
+  }, [stale, uncertain]);
+  return <section ref={panel} className="discovery-panel recovery-panel" aria-labelledby="recovery-title" aria-busy={loading || pending}
     onKeyDown={(event) => { if (event.key === "Escape" && !pending) { event.preventDefault(); onCancel(); } }}>
     <h3 id="recovery-title" ref={heading} tabIndex={-1}>{t("recoveryTitle")}</h3>
     <p>{t("recoveryDescription")}</p>
@@ -56,7 +65,7 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
     </>}
     <div className="workspace-form-actions">
       <button type="button" className="workspace-button" disabled={loading || pending || !preview?.previewToken || !selected || stale || uncertain} onClick={onConfirm}>{t("recoveryConfirm")}</button>
-      <button type="button" className="workspace-button workspace-button--secondary" disabled={loading || pending} onClick={onRefresh}>{t("discoveryRefresh")}</button>
+      <button type="button" ref={refreshButton} className="workspace-button workspace-button--secondary" disabled={loading || pending} onClick={onRefresh}>{t("discoveryRefresh")}</button>
       <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
     </div>
   </section>;
