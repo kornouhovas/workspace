@@ -800,7 +800,7 @@ test("populated migrations 0000–0006 reopen with reconciled grouped locators a
   } finally { reopened.close(); }
 }));
 
-for (const mode of ["production", "category polling"]) test(`live native ${mode} observation permits grouped root disconnect/reconnect, category rename and same-category project rename`, async () => {
+for (const history of ["none", "direct role", "grouped round trip"]) for (const mode of ["production", "category polling"]) test(`live native ${mode} observation permits grouped root disconnect/reconnect, category rename and same-category project rename (${history})`, async () => {
   const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
   const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-grouped-moves-")));
@@ -823,12 +823,27 @@ for (const mode of ["production", "category polling"]) test(`live native ${mode}
     const sibling = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
     const query = (type) => service.handleQuery({ type, workspaceId: workspace.workspaceId }).value;
     const command = (type, extra = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...extra });
-    const review = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode: "grouped" }).value;
-    const initial = command("workspace.applyDiscovery", { previewToken: review.previewToken }).value;
+    const configure = (mode) => {
+      const review = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode });
+      assert.equal(review.ok, true);
+      const result = command("workspace.applyDiscovery", { previewToken: review.value.previewToken });
+      assert.equal(result.ok, true); return result.value;
+    };
+    const oldDirect = history === "direct role" ? configure("direct").projects[0] : null;
+    const initial = configure("grouped");
     const project = initial.projects[0], category = initial.categories[0];
+    if (history === "grouped round trip") {
+      configure("direct"); configure("grouped");
+      const review = service.handleQuery({ type: "workspace.previewProjectRecovery", workspaceId: workspace.workspaceId, projectId: project.projectId });
+      assert.equal(review.ok, true);
+      assert.equal(command("workspace.reassociateProject", { projectId: project.projectId, previewToken: review.value.previewToken, relativePath: project.relativePath }).ok, true);
+    }
     const property = command("workspace.createProperty", { name: "Notes", propertyType: "text" }).value;
     assert.equal(command("workspace.setTextValue", { propertyId: property.propertyId, projectId: project.projectId, value: "  Exact\nТекст  " }).ok, true);
     assert.equal(command("workspace.renameCategoryProperty", { propertyId: initial.categoryProperty.propertyId, name: "  Authored label  " }).ok, true);
+    if (oldDirect) assert.equal(command("workspace.setTextValue", { propertyId: property.propertyId, projectId: oldDirect.projectId, value: "  Dormant direct role 日本語  " }).ok, true);
+    const dormant = sqlite.prepare("SELECT * FROM projects WHERE mode_inactive = 1 ORDER BY id").all();
+    assert.equal(dormant.length, history === "none" ? 0 : 1);
     const text = query("workspace.listTextProperties"), before = query("workspace.listProjects");
     const stable = () => ["workspaces", "views", "property_definitions", "text_property_values", "category_properties"].map((table) =>
       sqlite.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all());
@@ -862,6 +877,7 @@ for (const mode of ["production", "category polling"]) test(`live native ${mode}
     assert.deepEqual(after.categoryProperty, before.categoryProperty);
     assert.equal(after.categoryPropertyRevision, before.categoryPropertyRevision);
     assert.deepEqual(query("workspace.listTextProperties"), text); assert.deepEqual(stable(), metadata);
+    assert.deepEqual(sqlite.prepare("SELECT * FROM projects WHERE mode_inactive = 1 ORDER BY id").all(), dormant);
     assert.equal(fs.readFileSync(join(root, "Renamed category/Renamed project/nested/sentinel"), "utf8"), "  Exact bytes\nТекст  ");
     service.close(); service = undefined; assert.equal(live.size, 0);
   } finally { service?.close(); sqlite?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
@@ -1045,3 +1061,66 @@ for (const mode of ["direct", "grouped"]) test(`live production observation afte
     service.close(); assert.equal(live.size, 0);
   } finally { service.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
+
+for (const groupedStart of [false, true]) test(`role history permits repeated category/child Refresh and startup reconciliation (${groupedStart ? "grouped round trip" : "direct to grouped"})`, () => fixture((f) => {
+  if (groupedStart) f.apply({ mode: "direct" });
+  f.apply({ mode: "grouped" });
+  const path = groupedStart ? "Category/Project" : "Project/nested";
+  if (groupedStart) {
+    const review = f.query("workspace.previewProjectRecovery", { projectId: f.project.projectId });
+    assert.equal(review.ok, true);
+    assert.equal(f.command("workspace.reassociateProject", { projectId: f.project.projectId, previewToken: review.value.previewToken, relativePath: path }).ok, true);
+  }
+  const current = f.query("workspace.listProjects").value;
+  const child = current.projects.find((row) => row.relativePath === path), category = current.categories.find((row) => row.categoryId === child.categoryId);
+  const dormant = f.records().projects.filter((row) => row.mode_inactive);
+  assert.equal(dormant.length, 1);
+  assert.equal(dormant[0].relative_path, category.relativePath);
+  assert.equal(f.command("workspace.setTextValue", { projectId: child.projectId, propertyId: f.propertyId, value: "  Current child 日本語\n  " }).ok, true);
+  const text = f.query("workspace.listTextProperties").value;
+  const before = f.records();
+  for (const name of ["Renamed", "Renamed again"]) {
+    const old = f.query("workspace.listProjects").value.categories.find((row) => row.categoryId === category.categoryId).relativePath;
+    fs.renameSync(join(f.root, old), join(f.root, name));
+    const bytes = inventory(f.root);
+    f.events.length = 0; assert.equal(f.refresh().ok, true);
+    const after = f.query("workspace.listProjects").value;
+    assert.equal(after.projects.find((row) => row.projectId === child.projectId)?.relativePath, `${name}/${child.name}`);
+    assert.equal(after.projects[0].categoryId, category.categoryId);
+    assert.deepEqual(f.records().projects.filter((row) => row.mode_inactive), dormant);
+    assert.deepEqual(f.query("workspace.listTextProperties").value, text);
+    assert.equal(f.events.length, 1); assert.deepEqual(f.events[0].workspaceIds, [f.workspace.workspaceId, f.sibling.workspaceId]);
+    assert.deepEqual(inventory(f.root), bytes);
+  }
+  f.service.close();
+  fs.renameSync(join(f.root, "Renamed again"), join(f.root, "Startup renamed"));
+  fs.renameSync(join(f.root, "Startup renamed", child.name), join(f.root, "Startup renamed", "New child name"));
+  const bytes = inventory(f.root), reopened = openSettingsService(f.databasePath);
+  try {
+    const after = reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value;
+    assert.equal(after.revision, current.revision + 3);
+    assert.equal(after.projects.find((row) => row.projectId === child.projectId)?.relativePath, "Startup renamed/New child name");
+    assert.equal(after.projects[0].categoryId, category.categoryId);
+    assert.deepEqual(f.records().projects.filter((row) => row.mode_inactive), dormant);
+    assert.deepEqual(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value, text);
+    for (const table of ["settings", "workspaces", "views", "active_workspace", "property_definitions", "text_property_values", "category_properties"]) assert.deepEqual(f.records()[table], before[table]);
+    assert.deepEqual(inventory(f.root), bytes);
+  } finally { reopened.close(); }
+}, { grouped: groupedStart }));
+
+for (const unsafe of ["missing", "unresolved", "replaced", "birthtime", "same-role"]) test(`role-history exception still rejects ${unsafe} competing evidence`, () => fixture((f) => {
+  const grouped = f.apply({ mode: "grouped" }), child = grouped.projects[0];
+  const history = f.records().projects.find((row) => row.mode_inactive);
+  if (["missing", "unresolved", "replaced"].includes(unsafe)) f.sqlite.prepare("UPDATE projects SET association_state = ? WHERE id = ?").run(unsafe, history.id);
+  if (unsafe === "birthtime") {
+    const identity = JSON.parse(history.native_identity); identity.birthtimeNs = String(BigInt(identity.birthtimeNs) + 1n);
+    f.sqlite.prepare("UPDATE projects SET native_identity = ? WHERE id = ?").run(JSON.stringify(identity), history.id);
+  }
+  if (unsafe === "same-role") f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state, mode_inactive) VALUES (?, ?, 'Other historical category', ?, 'active', 1)")
+    .run(randomUUID(), f.workspace.sourceId, history.native_identity);
+  fs.renameSync(join(f.root, "Project"), join(f.root, "Renamed"));
+  const before = f.records(), bytes = inventory(f.root); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  assert.ok(!f.query("workspace.listProjects").value.projects.some((row) => row.projectId === child.projectId));
+  assert.deepEqual(inventory(f.root), bytes);
+}));

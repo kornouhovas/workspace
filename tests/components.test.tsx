@@ -152,3 +152,81 @@ test("EN/RU source Refresh is keyboard accessible and reports pending, errors an
     cleanup();
   }
 });
+
+test("EN/RU configured-mode effects disclose inactive exclusions and category return with keyboard focus", async () => {
+  const { DiscoveryPanel } = await import("../src/renderer/components/DiscoveryPanel.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  const { waitFor } = await import("@testing-library/react");
+  for (const language of ["en", "ru"] as const) {
+    const preview = {
+      workspaceId: "workspace", sourceId: "source", configured: true, mode: "direct" as const, currentMode: "grouped" as const,
+      revision: 4, canonicalRoot: "/Projects", state: "ready" as const, previewToken: "review", entries: [],
+      excludedRelativePaths: ["Category/Excluded", "Literal"], effectiveExcludedRelativePaths: ["Literal"], inactiveExcludedRelativePaths: ["Category/Excluded"],
+      categoryAvailability: { current: true, target: false, propertyId: "label", name: "  Authored 日本語  " },
+      projectEffects: { added: [{ name: "Fresh role", relativePath: "Fresh role", categoryPath: null }], retained: [],
+        noLongerRecognized: [{ projectId: "old", categoryId: "category", name: "Old child", relativePath: "Category/Old child" }],
+        alreadyRetained: [{ projectId: "missing", categoryId: null, name: "Missing", relativePath: "Missing" }] },
+    };
+    let mode: string | null = null, cancelled = 0, applied = 0;
+    const props = { language, preview, pending: false, error: false, onMode: (value: string) => { mode = value; },
+      onExclude: () => {}, onRetry: () => {}, onCancel: () => { cancelled++; }, onApply: () => { applied++; } };
+    const view = render(<DiscoveryPanel {...props} />);
+    assert.ok(screen.getByText(translate(language, "discoveryCategoryHidden")));
+    assert.ok(screen.getByText("Category/Excluded"));
+    assert.ok(screen.getByText("Category/Old child"));
+    assert.ok(screen.getByRole("heading", { name: `${translate(language, "discoveryNoLongerRecognized")} (1)` }));
+    const select = screen.getByRole("combobox", { name: translate(language, "discoveryMode") });
+    select.focus(); await userEvent.selectOptions(select, "grouped"); assert.equal(mode, "grouped");
+    view.rerender(<DiscoveryPanel {...props} pending />);
+    assert.equal((select as HTMLSelectElement).disabled, true);
+    const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") });
+    assert.equal((apply as HTMLButtonElement).disabled, true);
+    await userEvent.click(apply); assert.equal(applied, 0);
+    view.rerender(<DiscoveryPanel {...props} preview={{ ...preview, mode: "grouped", categoryAvailability: { ...preview.categoryAvailability, target: true }, inactiveExcludedRelativePaths: [] }} />);
+    await waitFor(() => assert.equal(document.activeElement, select));
+    assert.ok(screen.getByText(translate(language, "discoveryCategoryAvailable")));
+    assert.equal(screen.queryByText("Category/Excluded"), null);
+    await userEvent.keyboard("{Escape}"); assert.equal(cancelled, 1);
+    cleanup();
+  }
+});
+
+test("EN/RU mode-retained rows keep exact Text editable without a direct-mode category column", async () => {
+  const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
+  const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  const { waitFor } = await import("@testing-library/react");
+  for (const language of ["en", "ru"] as const) {
+    let value = "  Exact retained 日本語\n  ", saves = 0;
+    const client = new class extends WorkspaceServiceClient {
+      override onWorkspaceChange() { return () => {}; }
+      override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: saves,
+        definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }], values: [{ projectId: "historical", propertyId: "notes", value }] } }; }
+      override async setTextValue(_workspace: string, projectId: string, propertyId: string, next: string | null) {
+        value = next!; saves++;
+        return { ok: true as const, value: { projectId, propertyId, snapshot: (await this.listTextProperties()).value } };
+      }
+    }();
+    let locates = 0;
+    render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} projects={[]}
+      categoryProperty={null} categories={[]} retainedProjects={[{ projectId: "historical", categoryId: "old-category", categoryName: "Historical category",
+        name: "Historical", relativePath: "Historical category/Historical", associationState: "active", resolution: "active", retentionReason: "mode_change" }]}
+      onLocate={() => { locates++; }} />);
+    assert.ok(await screen.findByText(translate(language, "projectModeRetained")));
+    assert.equal(document.querySelector(".category-property-header"), null);
+    const edit = await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Historical / Notes` });
+    await waitFor(() => assert.equal((edit as HTMLButtonElement).disabled, false));
+    assert.equal(edit.textContent, value);
+    await userEvent.click(edit);
+    const editor = screen.getByRole("textbox");
+    await userEvent.clear(editor); await userEvent.type(editor, "  Edited 日本語\n  ");
+    assert.equal(saves, 0);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await waitFor(() => assert.equal(saves, 1));
+    await waitFor(() => assert.equal(document.activeElement, edit));
+    assert.equal(edit.textContent, "  Edited 日本語\n  ");
+    await userEvent.click(screen.getByRole("button", { name: `${translate(language, "recoveryLocate")}: Historical` }));
+    assert.equal(locates, 1);
+    cleanup();
+  }
+});

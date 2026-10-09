@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
-import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, ProjectList, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
+import type { ActiveWorkspace, CategoryPropertySnapshot, DiscoveryPreview, ProjectList, DiscoveryMode, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -504,3 +504,78 @@ export const SourceNewCategoryEnglish: Story = () => <SourceObservationPreview l
 export const SourceNewCategoryRussian: Story = () => <SourceObservationPreview language="ru" state="new-category" />;
 export const SourceRecoveryEnglish: Story = () => <SourceObservationPreview language="en" state="recovery" />;
 export const SourceRecoveryRussian: Story = () => <SourceObservationPreview language="ru" state="recovery" />;
+
+// Configured-source reviews expose role effects and dormant authored exclusions.
+type ModeStoryState = "review" | "return" | "empty" | "loading" | "stale" | "failure" | "unavailable" | "retained" | "category";
+function ModeChangePreview({ language, state }: { language: Language; state: ModeStoryState }) {
+  const [target, setTarget] = useState<DiscoveryMode>((state === "return" || state === "category") ? "grouped" : "direct");
+  const [open, setOpen] = useState(true);
+  const [retried, setRetried] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const categoryRevision = useRef(0);
+  const path = "Category-日本語-" + "long-path-".repeat(18);
+  const retained: ProjectAssociationSummary = { projectId: textStoryIds.projectId, categoryId: "historic-category", categoryName: path,
+    name: "Mode-retained 日本語", relativePath: `${path}/Historical project`, associationState: "active", resolution: "active", retentionReason: "mode_change" };
+  const [client] = useState(() => new class extends WorkspaceServiceClient {
+    private value: string | null = longTextValue;
+    private revision = 1;
+    override onWorkspaceChange() { return () => {}; }
+    override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: this.revision,
+      definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longPropertyName, propertyType: "text" as const }],
+      values: this.value === null ? [] : [{ projectId: textStoryIds.projectId, propertyId: textStoryIds.propertyId, value: this.value }] } }; }
+    override async setTextValue(_workspace: string, projectId: string, propertyId: string, value: string | null) {
+      this.value = value; this.revision++;
+      return { ok: true as const, value: { projectId, propertyId, snapshot: (await this.listTextProperties()).value } };
+    }
+  }());
+  const preview: DiscoveryPreview = { ...textStoryIds, canonicalRoot: `/Projects/${path}`, configured: true, revision: 4,
+    mode: target, currentMode: state === "return" ? "direct" : "grouped", state: state === "unavailable" ? "unavailable" : state === "empty" ? "empty" : "ready",
+    previewToken: ["loading", "unavailable"].includes(state) || state === "stale" && !retried ? null : "disposable-mode-review",
+    excludedRelativePaths: ["Excluded category", `${path}/Excluded child`], effectiveExcludedRelativePaths: target === "grouped" ? ["Excluded category", `${path}/Excluded child`] : ["Excluded category"],
+    inactiveExcludedRelativePaths: target === "direct" ? [`${path}/Excluded child`] : [],
+    categoryAvailability: { current: state !== "return", target: target === "grouped", propertyId: "historic-label", name: longCategoryLabel },
+    projectEffects: state === "empty" || state === "unavailable" ? { added: [], retained: [], noLongerRecognized: [], alreadyRetained: [] } : {
+      added: [{ categoryPath: target === "direct" ? null : path, name: target === "direct" ? path : "New child", relativePath: target === "direct" ? path : `${path}/New child` }], retained: [],
+      noLongerRecognized: [{ projectId: "previous-role", categoryId: target === "direct" ? "historic-category" : null, name: "Previous role", relativePath: target === "direct" ? `${path}/Previous child` : path }],
+      alreadyRetained: [{ projectId: retained.projectId, categoryId: retained.categoryId, name: retained.name, relativePath: retained.relativePath }] }, entries: state === "empty" || state === "unavailable" ? [] : target === "direct" ? [
+      { kind: "project", categoryPath: null, name: path, relativePath: path, reason: null },
+      { kind: "project", categoryPath: null, name: "Excluded category", relativePath: "Excluded category", reason: "manual" },
+    ] : [
+      { kind: "category", name: path, relativePath: path, reason: null, empty: false },
+      { kind: "project", categoryPath: path, name: "New child", relativePath: `${path}/New child`, reason: null },
+      { kind: "project", categoryPath: path, name: "Excluded child", relativePath: `${path}/Excluded child`, reason: "manual" },
+      { kind: "category", name: "Excluded category", relativePath: "Excluded category", reason: "manual", empty: false },
+    ] };
+  const close = () => { setOpen(false); trigger.current?.focus(); };
+  return <main className="app-shell" lang={language} data-mode-fixture={state}>
+    <button ref={trigger} className="workspace-button" onClick={() => setOpen(true)}>{translate(language, "discoveryAction")}</button>
+    {state === "category" && <button data-toggle-mode className="workspace-button" onClick={() => setTarget(target === "direct" ? "grouped" : "direct")}>
+      {translate(language, target === "direct" ? "discoveryGroupedMode" : "discoveryDirectMode")}</button>}
+    {state === "retained" || state === "category" ? <TextPropertiesTable client={client} {...textStoryIds} language={language} disabled={false} projects={[]}
+      retainedProjects={[retained]} onLocate={() => {}}
+      categoryProperty={state === "category" && target === "grouped" ? { propertyId: "historic-label", sourceId: textStoryIds.sourceId, name: longCategoryLabel } : null}
+      categories={[{ categoryId: "historic-category", name: path, relativePath: path }]}
+      minimumCategoryPropertyRevision={categoryRevision} onCategoryPropertyCommitted={() => {}} /> : open && <DiscoveryPanel language={language} preview={preview}
+      pending={state === "loading"} stale={state === "stale" && !retried} error={false} applyError={state === "failure" && !retried}
+      onMode={setTarget} onExclude={() => {}} onApply={close} onRetry={() => setRetried(true)} onCancel={close} />}
+  </main>;
+}
+export const ModeReviewEnglish: Story = () => <ModeChangePreview language="en" state="review" />;
+export const ModeReviewRussian: Story = () => <ModeChangePreview language="ru" state="review" />;
+export const ModeReturnEnglish: Story = () => <ModeChangePreview language="en" state="return" />;
+export const ModeReturnRussian: Story = () => <ModeChangePreview language="ru" state="return" />;
+export const ModeEmptyEnglish: Story = () => <ModeChangePreview language="en" state="empty" />;
+export const ModeEmptyRussian: Story = () => <ModeChangePreview language="ru" state="empty" />;
+export const ModeLoadingEnglish: Story = () => <ModeChangePreview language="en" state="loading" />;
+export const ModeLoadingRussian: Story = () => <ModeChangePreview language="ru" state="loading" />;
+export const ModeStaleEnglish: Story = () => <ModeChangePreview language="en" state="stale" />;
+export const ModeStaleRussian: Story = () => <ModeChangePreview language="ru" state="stale" />;
+export const ModeFailureEnglish: Story = () => <ModeChangePreview language="en" state="failure" />;
+export const ModeFailureRussian: Story = () => <ModeChangePreview language="ru" state="failure" />;
+export const ModeUnavailableEnglish: Story = () => <ModeChangePreview language="en" state="unavailable" />;
+export const ModeUnavailableRussian: Story = () => <ModeChangePreview language="ru" state="unavailable" />;
+export const ModeRetainedEnglish: Story = () => <ModeChangePreview language="en" state="retained" />;
+export const ModeRetainedRussian: Story = () => <ModeChangePreview language="ru" state="retained" />;
+
+export const ModeCategoryEnglish: Story = () => <ModeChangePreview language="en" state="category" />;
+export const ModeCategoryRussian: Story = () => <ModeChangePreview language="ru" state="category" />;

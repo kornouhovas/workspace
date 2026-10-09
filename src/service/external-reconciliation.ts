@@ -61,12 +61,22 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   const eligible = (path: string) => scan.entries.some((entry) => entry.relativePath === path && entry.reason === null);
   const suppressed = (path: string) => exclusions.some((excluded) => path === excluded || path.startsWith(`${excluded}/`)) ||
     !!archive && archive.split("/").slice(0, 2).join("/") === path;
+  // Reviewed mode changes can retain a direct project over the same physical
+  // folder now owned by an operational category. This exact, continuous role
+  // history remains legitimate after the category moves; its old project locator
+  // must stay dormant. Same-role reservations and reused/ambiguous evidence still
+  // block reconciliation, and a new category has no owner for this exception.
+  const categoryRoleHistory = (row: Association, identity: NativeIdentity, owner?: Association) =>
+    owner !== undefined && !("categoryId" in owner) && !owner.modeInactive && owner.associationState === "active" &&
+    "categoryId" in row && row.categoryId === null && isChildName(row.relativePath) && row.sourceId === owner.sourceId &&
+    row.modeInactive && (row.associationState === "active" || row.associationState === "excluded") &&
+    reliableIdentity(identity) && sameIdentity(identity, storedIdentity(owner));
   const conflict = (child: DirectoryObservation, owner?: Association, continuous = false) =>
     directories.some((other) => other !== child && nativeAlias(other.identity, child.identity)) ||
     evidence.some(({ row, identity }) => row.id !== owner?.id && nativeAlias(identity, child.identity) &&
-      !(continuous && row.associationState === "replaced"));
-  // The same-path recovery exception is continuous only; cross-path evidence
-  // must have no competing current OR retired owner, including at other depths.
+      !(continuous && row.associationState === "replaced") && !categoryRoleHistory(row, identity, owner));
+  // The same-path recovery exception is continuous only. Cross-path matching
+  // still rejects competing same-role records and ambiguous native evidence.
   const candidate = (row: Association) => {
     if (row.modeInactive || row.associationState !== "active" || suppressed(row.relativePath)) return null;
     const identity = storedIdentity(row);

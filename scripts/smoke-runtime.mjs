@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
+import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -78,7 +79,7 @@ async function assertStopped(pids) {
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
-const stages = { nativeReconciliation: false, explicitRefresh: false, shutdownMissed: false, recoveryFeatures: false, preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
+const stages = createRuntimeStages();
 const shutdowns = [];
 
 async function recordEvidence(status, error) {
@@ -181,7 +182,7 @@ async function captureDiscovery(page, language, state) {
         const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
         return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
       }).map((node) => node.textContent),
-      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
+      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
         .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
     }));
     assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
@@ -263,7 +264,7 @@ try {
   let groupedProjectName = "日本語-проект-" + "long-project-".repeat(14);
   for (const path of [join(groupedRoot, categoryName, groupedProjectName, "Never-recursive"), join(groupedRoot, categoryName, "Excluded child"),
     join(groupedRoot, categoryName, ".hidden"), join(groupedRoot, categoryName, "$RECYCLE.BIN"), join(groupedRoot, "Empty category"),
-    join(groupedRoot, "Direct-looking project", "Immediate child"), join(groupedRoot, "Excluded category", "Hidden child"), join(groupedRoot, ".hidden")]) {
+    join(groupedRoot, "Direct-looking project", "Immediate child"), join(groupedRoot, "Excluded category", "Hidden child"), join(groupedRoot, ".hidden", "Archive")]) {
     await mkdir(path, { recursive: true }); await writeFile(join(path, "sentinel.txt"), sentinelForGrouped());
   }
   function sentinelForGrouped() { return Buffer.from("Grouped fixture bytes\0retained\n"); }
@@ -552,6 +553,16 @@ try {
   assert.equal(grouped.sourceId, groupedSibling.sourceId);
   assert.notEqual(grouped.viewId, groupedSibling.viewId);
   await select(page, grouped);
+  // Seed an existing designation in this disposable database: selecting an
+  // archive through the product is outside this slice. Native observation stays
+  // enabled, and every subsequent configuration change uses production IPC.
+  await current.electron.evaluate(async (_electron, { root, database, sourceId }) => {
+    const { createRequire } = process.getBuiltinModule("node:module");
+    const Database = createRequire(`${root}/package.json`)("better-sqlite3");
+    const db = new Database(database);
+    try { db.prepare("UPDATE sources SET archive_relative_path = ? WHERE id = ?").run(".hidden/Archive", sourceId); }
+    finally { db.close(); }
+  }, { root, database: join(dataDirectory, "workspace.sqlite"), sourceId: grouped.sourceId });
   const groupedUnconfigured = await projects(page, grouped.workspaceId);
   await previewFolders(page);
   await page.getByRole("combobox", { name: "Folder interpretation", exact: true }).selectOption("grouped");
@@ -612,7 +623,8 @@ try {
     await page.locator("#interface-language").selectOption(language);
     await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
     await previewFolders(page, language);
-    assert.equal(await page.locator(".discovery-mode").count(), 0, "Configured mode switching exposed");
+    assert.equal(await page.locator(".discovery-mode select").inputValue(), "grouped");
+    assert.equal(await page.locator(".discovery-mode select").isDisabled(), false);
     await captureDiscovery(page, language, "grouped-configured-preview");
     await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
     const rename = language === "en" ? "Rename category property" : "Переименовать свойство категории";
@@ -655,6 +667,132 @@ try {
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   observations.push({ scenario: "grouped EN/RU preview/cancel, two-level exclusions, explicit stale Apply, required categories, label-only rename, siblings and isolation", grouped, groupedSibling, savedGroupedProjects, savedGroupedProperties, labelEvents, unchangedGroupedInventory: groupedBytes });
+  // Mode changes precede native-observation checks so their evidence survives
+  // a later observation or native normal-quit failure. No filesystem mutation
+  // or fixture watcher suppression occurs during this round trip.
+  async function storageMetadata() {
+    return current.electron.evaluate(async (_electron, { root, database }) => {
+      const { createRequire } = process.getBuiltinModule("node:module");
+      const Database = createRequire(`${root}/package.json`)("better-sqlite3");
+      const db = new Database(database, { readonly: true });
+      try {
+        const tables = ["settings", "workspaces", "views", "active_workspace", "category_properties", "property_definitions", "text_property_values"];
+        return { tables: Object.fromEntries(tables.map((table) => [table, db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()])),
+          sources: db.prepare("SELECT id, canonical_root, discovery_mode, excluded_relative_paths, archive_relative_path, property_revision, category_property_revision FROM sources ORDER BY id").all(),
+          categoryIds: db.prepare("SELECT id, source_id, relative_path, native_identity FROM categories ORDER BY id").all() };
+      } finally { db.close(); }
+    }, { root, database: join(dataDirectory, "workspace.sqlite") });
+  }
+  await select(page, grouped);
+  const modeMetadata = await storageMetadata();
+  assert.equal(modeMetadata.sources.find((source) => source.id === grouped.sourceId).archive_relative_path, ".hidden/Archive");
+  const modeBefore = savedGroupedProjects;
+  const modeOther = await projects(page, other.workspaceId);
+  await page.evaluate(() => {
+    globalThis.modeEvents = [];
+    globalThis.stopModeEvents = globalThis.window.workspace.onWorkspaceChange((event) => {
+      if (event.type === "workspace.projectsChanged") globalThis.modeEvents.push(event);
+    });
+  });
+  async function chooseMode(target, language) {
+    await page.locator(".discovery-mode select").selectOption(target);
+    await page.waitForFunction((target) => globalThis.document.querySelector(".discovery-mode select")?.value === target &&
+      globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false", target);
+    assert.equal(await page.locator(".discovery-mode select").evaluate((node) => node === globalThis.document.activeElement), true);
+    await captureDiscovery(page, language, `mode-${target}-review`);
+  }
+  // Cancel in both languages preserves the entire persisted metadata snapshot.
+  for (const language of ["en", "ru"]) {
+    await page.locator("#interface-language").selectOption(language);
+    await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
+    const beforeCancel = await storageMetadata();
+    await previewFolders(page, language); await chooseMode("direct", language);
+    await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
+    await page.locator(".discovery-panel").waitFor({ state: "detached" });
+    assert.equal(await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).evaluate((node) => node === globalThis.document.activeElement), true);
+    assert.deepEqual(await projects(page, grouped.workspaceId), modeBefore);
+    assert.deepEqual(await storageMetadata(), beforeCancel);
+  }
+  completeRuntimeStage(stages, "modeChangeCancel");
+  await recordEvidence("EN/RU mode-change Cancel preserved persisted metadata");
+  await previewFolders(page, "ru"); await chooseMode("direct", "ru"); await applyFolders(page, "ru");
+  const modeDirect = await projects(page, grouped.workspaceId);
+  assert.equal(modeDirect.revision, modeBefore.revision + 1);
+  assert.equal(modeDirect.mode, "direct"); assert.equal(modeDirect.categoryProperty, null); assert.deepEqual(modeDirect.categories, []);
+  assert.ok(modeBefore.projects.every((row) => modeDirect.retainedProjects.some((retained) => retained.projectId === row.projectId && retained.retentionReason === "mode_change")));
+  await page.locator(".table-view[aria-busy=false]").waitFor();
+  assert.equal(await page.locator(".category-property-header").count(), 0);
+  assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+  assert.ok(modeDirect.projects.every((row) => !savedGroupedProperties.values.some((value) => value.projectId === row.projectId)), "Fresh direct role identities must not inherit child Text");
+  for (const row of modeBefore.projects) await page.getByRole("button", { name: accessibleName(`${propertyLabels.ru.edit}: ${row.name} / ${groupedTextName}`), exact: true }).waitFor();
+  const retainedValue = savedGroupedProperties.values.find((value) => value.projectId === modeBefore.projects.find((row) => row.name === groupedProjectName).projectId).value;
+  await editValue(page, groupedProjectName, groupedTextName, retainedValue, "ru");
+  assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties, "Exact no-op retained save must preserve independent Text revision");
+  await select(page, groupedSibling);
+  assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...modeDirect, workspaceId: groupedSibling.workspaceId });
+  await select(page, grouped);
+  // An open direct review is invalidated by sibling grouped Apply over IPC.
+  await previewFolders(page, "ru");
+  const directReview = await page.evaluate((workspaceId) => globalThis.window.workspace.workspace({ type: "workspace.previewDiscovery", workspaceId }), grouped.workspaceId);
+  assert.equal(directReview.ok, true);
+  assert.ok(directReview.value.inactiveExcludedRelativePaths.some((path) => path.endsWith("/Excluded child")));
+  const siblingMode = await page.evaluate(async (workspaceId) => {
+    const preview = await globalThis.window.workspace.workspace({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" });
+    if (!preview.ok) return preview;
+    return globalThis.window.workspace.workspace({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken });
+  }, groupedSibling.workspaceId);
+  assert.equal(siblingMode.ok, true);
+  await page.getByRole("heading", { name: discoveryLabels.ru.stale, exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);
+  await captureDiscovery(page, "ru", "mode-sibling-stale");
+  await settleSourceRefresh(page);
+  await page.getByRole("button", { name: "Обновить предпросмотр", exact: true }).press("Enter");
+  await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
+  await chooseMode("grouped", "ru");
+  await applyFolders(page, "ru"); // Explicit reviewed no-op, never replayed.
+  const modeReturned = await projects(page, grouped.workspaceId);
+  assert.equal(modeReturned.revision, modeDirect.revision + 1);
+  assert.deepEqual(modeReturned.categoryProperty, modeBefore.categoryProperty);
+  assert.equal(modeReturned.categoryPropertyRevision, modeBefore.categoryPropertyRevision);
+  assert.deepEqual(modeReturned.categories, modeBefore.categories);
+  assert.equal(modeReturned.projects.length, 0, "Mode return must not silently revive old projects");
+  completeRuntimeStage(stages, "modeChangeApply");
+  observations.push({ scenario: "mode-change Apply before recovery", modeBefore, modeDirect, modeReturned, modeMetadata });
+  await recordEvidence("both mode directions and sibling stale explicit re-Apply passed; recovery pending");
+  // Reserved historical child paths are recovered at the current grouped depth
+  // only by an explicit keyboard selection and reassociation through the UI.
+  for (const row of modeBefore.projects) {
+    await settleSourceRefresh(page);
+    const locate = page.getByRole("button", { name: accessibleName(`Найти папку: ${row.name}`), exact: true });
+    await locate.press("Enter");
+    const panel = page.locator(".recovery-panel");
+    await panel.locator("input[type=radio]").first().waitFor();
+    const index = await panel.locator("input[type=radio]").evaluateAll((nodes, path) => nodes.findIndex((node) => node.value === path && !node.disabled), row.relativePath);
+    assert.ok(index >= 0, "Own historical target-depth path must be selectable");
+    await panel.locator("input[type=radio]").nth(index).press("Space");
+    await panel.getByRole("button", { name: "Переподключить", exact: true }).press("Enter");
+    await panel.waitFor({ state: "detached" });
+    await page.getByRole("heading", { name: "Связь с папкой сохранена. Идентификатор проекта и значения Text сохранены.", exact: true }).waitFor();
+  }
+  savedGroupedProjects = await projects(page, grouped.workspaceId);
+  assert.deepEqual(savedGroupedProjects.projects, modeBefore.projects);
+  assert.ok(modeDirect.projects.every((row) => savedGroupedProjects.retainedProjects.some((retained) => retained.projectId === row.projectId && retained.retentionReason === "mode_change")));
+  assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+  assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  assert.deepEqual(await projects(page, other.workspaceId), modeOther);
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+  // Language is restored to the snapshot value before comparing exact storage.
+  assert.deepEqual(await storageMetadata(), modeMetadata);
+  const modeEvents = await page.evaluate(() => { globalThis.stopModeEvents(); return globalThis.modeEvents; });
+  assert.equal(modeEvents.length, 2 + modeBefore.projects.length);
+  assert.ok(modeEvents.every((event) => event.sourceId === grouped.sourceId && JSON.stringify(event.workspaceIds) === JSON.stringify([grouped.workspaceId, groupedSibling.workspaceId])));
+  completeRuntimeStage(stages, "modeChangeRecovery");
+  completeRuntimeStage(stages, "modeChangeFeatures");
+  observations.push({ scenario: "configured grouped/direct round trip, EN/RU Cancel, dormant exclusions/category, sibling stale explicit re-Apply and target-depth recovery", modeBefore, modeDirect, modeReturned, savedGroupedProjects, modeMetadata, modeEvents });
+  await recordEvidence("mode-change feature assertions passed before native observation and quit");
   // Wait only for production notifications before querying. No load/list/Refresh
   // command can cause the native notification assertions below to pass.
   await page.evaluate(() => {
@@ -930,6 +1068,7 @@ try {
     catch (error) { shutdown.error = error.message; throw error; }
     await recordEvidence("normal quit and backend exit passed");
   }
+  const metadataBeforeQuit = await storageMetadata();
   stages.preQuitFeatures = true;
   await closeCurrent();
   stages.firstShutdown = true;
@@ -950,6 +1089,9 @@ try {
   assert.equal(await page.locator("#interface-language").inputValue(), "ru");
   assert.deepEqual(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" })), savedSettings);
   assert.equal(await page.locator("html").getAttribute("lang"), "ru");
+  const metadataAfterRestart = await storageMetadata();
+  assert.deepEqual(metadataAfterRestart.tables, metadataBeforeQuit.tables);
+  assert.deepEqual(metadataAfterRestart.sources, metadataBeforeQuit.sources);
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
@@ -1003,6 +1145,7 @@ try {
   assert.deepEqual(identity((await remove(page, groupedSibling)).activeWorkspace), identity(first));
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   stages.restartPersistence = true;
+  completeRuntimeStage(stages, "modeChangeRestart");
   observations.push({ scenario: "grouped restart identities/label/Text/settings and final grouped source removal", savedGroupedProjects, savedGroupedProperties });
   observations.push({ scenario: "Text persisted after application restart with unchanged project/source/workspace/view identities", savedProperties, savedProjects });
   // Inactive different-root removal, active fallback, and final removal.
@@ -1051,6 +1194,10 @@ try {
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   observations.push({ scenario: "retained grouped source reuse after empty restart", reusedGrouped, savedGroupedProjects, savedGroupedProperties });
   stages.retainedSourceReuse = true;
+  const reusedMetadata = await storageMetadata();
+  assert.deepEqual(reusedMetadata.sources, metadataBeforeQuit.sources);
+  for (const table of ["settings", "category_properties", "property_definitions", "text_property_values"]) assert.deepEqual(reusedMetadata.tables[table], metadataBeforeQuit.tables[table]);
+  completeRuntimeStage(stages, "modeChangeSourceReuse");
   observations.push({ scenario: "restart, inactive/active/final removal, empty restart and retained-source reuse", recreated, sentinelBytes: sentinel.length });
   await closeCurrent();
 
@@ -1069,7 +1216,7 @@ try {
   await closeElectron(closing.electron);
   await assertStopped(failurePids);
   await recordEvidence("passed");
-  console.info(`Electron ${mode} runtime verified: direct/grouped recovery/discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
+  console.info(`Electron ${mode} runtime verified: configured-mode round trip/recovery/discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
   scenarioFailure = error;
   if (current && evidenceDirectory) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});

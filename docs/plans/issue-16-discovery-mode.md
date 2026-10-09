@@ -171,18 +171,30 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 - Modify: `src/renderer/components/bb-foundation.stories.tsx`
 - Modify: `scripts/smoke-discovery-layouts.mjs`
 - Modify: `scripts/smoke-runtime.mjs`
+- Create: `scripts/runtime-evidence.mjs`
+- Modify: `src/service/external-reconciliation.ts` (bounded repair of coordinator Finding1 reproduced by the graphical scenario)
+- Update: `tests/external-reconciliation-service.test.mjs`
 - Update: `tests/components.test.tsx`
 - Update: `tests/runtime-lifecycle.test.mjs` where changed scenario/evidence behavior requires it
 
 **Steps:**
 
-- [ ] Add permanent EN/RU Ladle states for configured-mode effects, inactive exclusions, category disappearance/return and mode-retained editable rows, including empty/loading/stale/failure states.
-- [ ] Extend layout assertions at 1440×960, 1024×720 and 420×800 for long paths, wrapped effects, reachable controls, focus and document overflow.
-- [ ] Extend the permanent dev/package Electron scenario through production UI/IPC: Cancel, both switch directions, stale review and explicit re-Apply, sibling sharing, unrelated-source isolation and target-depth recovery.
-- [ ] Compare settings, exact Text/labels, logical IDs, independent views, authored exclusions, archive designation and file inventory/bytes. Verify restart and final-removal/source reuse only after a successful normal quit.
-- [ ] Record mode-change stages separately from shutdown, restart and source-reuse stages. Retain failure evidence and regression-test any changed stage reporting without altering normal-quit policy.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test and npm run build:ladle as separate prefixed commands. Run affected layout/runtime checks in distinct ignored evidence directories; do not build or clean while a fixture uses dist.
-- [ ] Commit verified fixtures and report observed graphical results accurately. Preserve #44, the unchanged ten-second normal-quit assertion and forced-cleanup-as-failure behavior.
+- [x] Add permanent EN/RU Ladle states for configured-mode effects, inactive exclusions, category disappearance/return and mode-retained editable rows, including empty/loading/stale/failure states.
+- [x] Extend layout assertions at 1440×960, 1024×720 and 420×800 for long paths, wrapped effects, reachable controls, focus and document overflow.
+- [x] Extend the permanent dev/package Electron scenario through production UI/IPC: Cancel, both switch directions, stale review and explicit re-Apply, sibling sharing, unrelated-source isolation and target-depth recovery.
+- [x] Compare settings, exact Text/labels, logical IDs, independent views, authored exclusions, archive designation and file inventory/bytes. Verify restart and final-removal/source reuse only after a successful normal quit.
+- [x] Record mode-change stages separately from shutdown, restart and source-reuse stages. Retain failure evidence and regression-test any changed stage reporting without altering normal-quit policy.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test and npm run build:ladle as separate prefixed commands. Run affected layout/runtime checks in distinct ignored evidence directories; do not build or clean while a fixture uses dist.
+- [x] Commit verified fixtures and report observed graphical results accurately. Preserve #44, the unchanged ten-second normal-quit assertion and forced-cleanup-as-failure behavior.
+
+**Task 5 execution evidence (2026-10-10, macOS 27.0 / arm64):**
+
+- `npm test`: 528 passed, zero failures/skips (`work/ralphex/issue-16/task5-tests-04.log`). Final lint and typecheck passed; `npm run build:ladle` passed (`task5-ladle-build-05.log`). Every invocation prepended the required Node 22.21.1 directory to PATH.
+- Full Chromium Ladle run: 120 EN/RU stories, 360 screenshots (`work/ralphex/issue-16/task5-layouts-02`). After refining the new mode fixtures and their keyboard Apply assertions, the final affected-state run passed all 18 mode stories at all three sizes, 54 screenshots (`task5-layouts-03`, `--chromium --mode-changes`). The 102 unchanged stories reuse the successful full run from this same Task 5 milestone. Both runs closed Chromium successfully; they do not claim Electron Ladle shutdown verification.
+- Development Electron scenario passed every stage, including configured-mode Cancel/Apply/recovery, native reconciliation after the role round trip, normal quit/backend exit, restart persistence, final removal/source reuse and startup failure (`work/ralphex/issue-16/task5-runtime-dev-04`). Exact storage snapshots include authored exclusions, a disposable seeded `.hidden/Archive` designation, Text/labels, settings and independent views. Inventories/bytes remain unchanged by application commands.
+- The scenario reproduced coordinator Finding1 before repair (`task5-runtime-dev-03`). A bounded role-aware reconciliation exception now accepts only exact reliable native evidence from an inactive, previously active/excluded direct-role project alongside an operational category. Same-role, missing/unresolved/replaced and conflicting birthtime evidence still block matching. Permanent tests cover both relevant role histories, repeated Refresh, startup and production native/category-polling observations with dormant rows and values unchanged. The independent coordinator probe remains coordinator-owned.
+- Failed attempts are retained: `task5-layouts-01` (fixture lacked category editor wiring), `task5-runtime-dev-01` (Playwright main-context dynamic import), `task5-runtime-dev-02` (recovery opened before pending UI invalidation settled), and `task5-runtime-dev-03` (confirmed role-history reconciliation defect). No native checks were disabled or weakened. The ten-second normal-quit policy and forced-cleanup failure behavior are unchanged.
+- Fresh artifact/package execution belongs to Task 6. Windows exact-SHA acceptance remains coordinator-owned; this local development pass does not close physical macOS 27/Electron 44.7.0 issue #44 or establish release acceptance.
 
 ### Task 6: Verify delivery artifacts and document acceptance evidence
 

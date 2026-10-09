@@ -77,3 +77,29 @@ test("a real configured backend with native root/category watches does not keep 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("mode feature evidence survives failed normal quit without claiming restart or source reuse", async () => {
+  const { createRuntimeStages, completeRuntimeStage } = await import("../scripts/runtime-evidence.mjs");
+  const stages = createRuntimeStages();
+  completeRuntimeStage(stages, "modeChangeCancel");
+  completeRuntimeStage(stages, "modeChangeApply");
+  assert.equal(stages.modeChangeRecovery, false);
+  completeRuntimeStage(stages, "modeChangeRecovery");
+  completeRuntimeStage(stages, "modeChangeFeatures");
+  completeRuntimeStage(stages, "preQuitFeatures");
+  const child = await launchFixture();
+  try {
+    await assert.rejects(closeElectron({ process: () => child, evaluate: () => new Promise(() => {}), close: () => new Promise(() => {}) }, 20), /Electron shutdown timed out/);
+    const evidence = JSON.parse(JSON.stringify({ stages, shutdowns: [{ passed: false, error: "Electron shutdown timed out" }] }));
+    assert.equal(evidence.stages.modeChangeFeatures, true);
+    for (const name of ["firstShutdown", "modeChangeRestart", "modeChangeSourceReuse", "restartPersistence", "retainedSourceReuse"]) assert.equal(evidence.stages[name], false);
+    assert.throws(() => completeRuntimeStage(stages, "modeChangeRestart"), /requires firstShutdown/);
+    assert.throws(() => completeRuntimeStage(stages, "modeChangeSourceReuse"), /requires modeChangeRestart/);
+    completeRuntimeStage(stages, "firstShutdown");
+    assert.throws(() => completeRuntimeStage(stages, "modeChangeRestart"), /requires restartPersistence/);
+    completeRuntimeStage(stages, "restartPersistence"); completeRuntimeStage(stages, "modeChangeRestart");
+    assert.throws(() => completeRuntimeStage(stages, "modeChangeSourceReuse"), /requires retainedSourceReuse/);
+    completeRuntimeStage(stages, "retainedSourceReuse"); completeRuntimeStage(stages, "modeChangeSourceReuse");
+    assert.equal(stages.modeChangeSourceReuse, true);
+  } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
+});
