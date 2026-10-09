@@ -238,7 +238,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         {projects.projects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
       <TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId}
-        projects={!error ? projects?.projects ?? [] : []} language={language} disabled={disabled} />
+        projects={projects?.projects ?? []} language={language} disabled={disabled} />
     </section>
   </>;
 }

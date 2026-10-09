@@ -216,6 +216,14 @@ Task 4 checkpoint:
 - Inspected and retained the diff against fixed baseline 2856e7aeff972d8f97b5825987e7051a459e1d84. No dependencies, OS configuration, native quit helper/timeouts, accepted ADRs or copied bb modules/notices changed. Updated README, architecture/development capabilities and Unreleased notes describe the actual Text-only scope and verification limits.
 - Physical macOS27 native Electron shutdown #44 remains unresolved and a final-release blocker despite successful individual local runs. Existing failed evidence remains preserved. Windows runtime/package acceptance requires coordinator-arranged observed Windows evidence; it was not performed or inferred here. Outer five-perspective reviews, tracker acceptance, integration and delivery remain coordinator-owned. Checked plan tasks do not establish product completion.
 
+## Review iteration 1 checkpoint
+
+- Collected all five required perspectives against fixed baseline 2856e7aeff972d8f97b5825987e7051a459e1d84, using gpt-6.1-sol high in batches of three and two. Correctness, requirements and testing reported the same failed-refresh draft-loss defect; simplification and documentation reported no findings.
+- Confirmed the defect in DiscoveryWorkspace: a rejected project refresh passed an empty row array despite retaining the last accepted projection in state. Preserve those rows and cell editor instances while displaying the refresh error and Retry action. Revision and ownership checks still reject outdated responses.
+- Added a production App/client EN/RU regression for a recoverable failed-save draft, source notification/storage failure, rejected transport, below-revision project response and delayed successful retry. It failed on editor loss before the fix and passed afterward; refresh never replays the failed mutation, and explicit Save submits the retained authored text.
+- Verified all 175 tests through npm test (including the production build), npm run lint and npm run typecheck. Focused draft/reload/source-observation tests passed. Logs, including initial failed test setup and the expected regression failure, are preserved under work/ralphex/issue-12/review-1-evidence. Every Node/npm/tsx invocation used the required Node 22.21.1 PATH prefix.
+- No native Electron runtime or Windows check was rerun for this focused renderer error-path fix. Task 4 runtime evidence remains historical; Windows evidence and unresolved physical macOS27 shutdown #44 remain coordinator-owned external gates. No tracker changes, push, merge or release occurred.
+
 ## Acceptance Mapping
 
 - Create/rename definitions, service-enforced immutable type and validation: Task 1.

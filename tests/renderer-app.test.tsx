@@ -1339,10 +1339,11 @@ test("EN/RU notification reload failures and below-revision replies recover thro
     render(<App />); await screen.findByRole("cell", { name: "Saved" });
     await act(async () => { api.emitChange(projectEvent(active, 2)); });
     await screen.findByRole("heading", { name: translate(language, "projectsError") });
-    assert.equal(screen.queryByRole("cell"), null);
+    assert.ok(screen.getByRole("cell", { name: "Saved" }));
     await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
     await screen.findByRole("heading", { name: translate(language, "projectsError") });
     assert.equal(screen.queryByRole("cell", { name: "Outdated reply" }), null);
+    assert.ok(screen.getByRole("cell", { name: "Saved" }));
     await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
     await screen.findByRole("cell", { name: "Recovered" });
     cleanup(); assert.equal(api.changeListenerCount(), 0);
@@ -1632,6 +1633,65 @@ test("same-source availability and locator notifications preserve Text drafts wh
       await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
       cleanup();
     }
+  }
+});
+
+test("EN/RU failed project refreshes preserve recoverable Text drafts through errors, stale replies and retry", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
+    const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
+      configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+    let phase: "initial" | "storage" | "transport" | "stale" | "retry" = "initial";
+    let finish: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const saves: (string | null)[] = [];
+    const api = mockApi({ language,
+      onProperties: async () => ok(f.snapshot(1)),
+      onProjects: async () => {
+        if (phase === "storage") return fail("storage");
+        if (phase === "transport") throw new Error("Disconnected transport");
+        if (phase === "retry") return new Promise((resolve) => { finish = resolve; });
+        return ok(projection);
+      },
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type !== "workspace.setTextValue") return fail("invalid_input");
+        saves.push(input.value);
+        return saves.length === 1 ? fail("storage") : ok({ snapshot: f.snapshot(2, input.value), projectId: f.projectId, propertyId: f.propertyId });
+      },
+    });
+    render(<App />);
+    const label = `${translate(language, "editTextValue")}: Project / Notes`;
+    await userEvent.click(await screen.findByRole("button", { name: label }));
+    const editor = screen.getByRole("textbox") as HTMLTextAreaElement;
+    await userEvent.clear(editor); await userEvent.type(editor, "  Unsaved 日本語 📝  ");
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await screen.findByText(translate(language, "textValueSaveError"));
+    const assertDraft = () => {
+      assert.equal(screen.queryByRole("textbox") === editor, true, "Project reload discarded a recoverable Text draft");
+      assert.equal(editor.value, "  Unsaved 日本語 📝  ");
+      assert.deepEqual(saves, ["  Unsaved 日本語 📝  "], "Project refresh must not replay the failed save");
+    };
+    phase = "storage";
+    await act(async () => api.emitChange({ type: "workspace.sourceChanged", source: {
+      sourceId: f.sourceId, workspaceIds: [f.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: false,
+    } }));
+    await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
+    phase = "transport";
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
+    phase = "stale";
+    await act(async () => api.emitChange(projectEvent(active, 2)));
+    await screen.findByRole("heading", { name: translate(language, "projectsError") }); assertDraft();
+    phase = "retry";
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await screen.findByRole("heading", { name: translate(language, "projectsLoading") }); assertDraft();
+    await act(async () => finish?.(ok({ ...projection, revision: 2 }))); assertDraft();
+    assert.equal(screen.queryByRole("heading", { name: translate(language, "projectsError") }), null);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await screen.findByText(translate(language, "textValueSaved"));
+    assert.deepEqual(saves, ["  Unsaved 日本語 📝  ", "  Unsaved 日本語 📝  "]);
+    assert.equal(screen.getByRole("button", { name: label }).textContent, "  Unsaved 日本語 📝  ");
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });
 
