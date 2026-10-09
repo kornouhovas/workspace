@@ -254,6 +254,7 @@ export function scanGroupedSource(canonicalRoot: string, archiveRelativePath: st
 }
 
 export interface ProjectAssociation {
+  modeInactive?: boolean;
   id: string;
   sourceId: string;
   relativePath: string;
@@ -348,13 +349,13 @@ export interface GroupedProjectAssociation extends ProjectAssociation {
 
 // A project's evidence is meaningful only beneath its continuously matching category.
 // Category retirement/exclusion therefore precedes project identity matching.
-export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: ProjectAssociation[] = []) {
+export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: ProjectAssociation[] = [], categoryReservations: ProjectAssociation[] = []) {
   if (!scan.snapshot || scan.snapshot.mode !== "grouped") throw new Error("Cannot interpret an incomplete grouped scan");
   const categoryScan: DiscoveryScan = { ...scan,
     entries: scan.entries.filter((entry) => entry.kind === "category"),
     snapshot: { ...scan.snapshot, children: scan.snapshot.children.filter((child) => !child.relativePath.includes("/")) },
   };
-  const categoryInterpretation = interpretProjects(categoryScan, categories);
+  const categoryInterpretation = interpretProjects(categoryScan, categories, categoryReservations);
   const projectScan: DiscoveryScan = { ...scan,
     entries: scan.entries.filter((entry) => entry.kind === "project").map((entry) => ({ ...entry })),
     snapshot: { ...scan.snapshot, children: scan.snapshot.children.filter((child) => child.relativePath.includes("/")) },
@@ -391,20 +392,48 @@ export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssocia
 export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[]) {
   if (!scan.snapshot) throw new Error("Cannot plan an incomplete scan");
   const mode = scan.snapshot.mode;
-  const compatible = projects.filter((row) => mode === "grouped"
+  const compatible = projects.filter((row) => !row.modeInactive && (mode === "grouped"
     ? row.categoryId !== null && row.relativePath.split("/").length === 2
-    : row.categoryId === null && !row.relativePath.includes("/"));
+    : row.categoryId === null && !row.relativePath.includes("/")));
   const historical = projects.filter((row) => !compatible.includes(row));
-  const grouped = mode === "grouped" ? interpretGrouped(scan, categories, compatible, historical) : null;
+  // Only continuously active/excluded category history can be resumed by a
+  // reviewed Apply. Failed history keeps its exact prior evidence and state.
+  const resumable = categories.filter((row) => !row.modeInactive ||
+    row.associationState === "active" || row.associationState === "excluded");
+  const dormantCategories = categories.filter((row) => !resumable.includes(row));
+  const grouped = mode === "grouped" ? interpretGrouped(scan, resumable, compatible, historical, dormantCategories) : null;
+  if (grouped) {
+    grouped.categories.retained = categories.map((row) => {
+      const target = grouped.categories.retained.find((target) => target.id === row.id);
+      if (!target) return { ...row };
+      if (row.modeInactive) {
+        if (target.associationState !== "active" && target.associationState !== "excluded") return { ...row };
+        if (target.associationState === "excluded") return { ...row }; // No current native evidence.
+        return { ...target, modeInactive: false };
+      }
+      return target;
+    });
+    // A dormant category's reservation must never be replaced by enrollment.
+    grouped.categories.additions = grouped.categories.additions.filter((row) =>
+      !grouped.categories.retained.some((category) => category.modeInactive && category.relativePath === row.relativePath));
+    for (const entry of grouped.entries) {
+      const parent = grouped.categories.retained.find((row) => row.relativePath ===
+        (entry.kind === "category" ? entry.relativePath : entry.categoryPath));
+      if (parent?.modeInactive && entry.reason === null) entry.reason = "unresolved";
+    }
+    grouped.projects.additions = grouped.projects.additions.filter((row) =>
+      !grouped.categories.retained.some((category) => category.modeInactive && category.relativePath === row.relativePath.split("/")[0]));
+  }
   const interpreted = grouped?.projects ?? interpretProjects(scan, compatible, historical);
-  const retained = projects.map((row) => interpreted.retained.find((target) => target.id === row.id) ?? { ...row });
+  const retained = projects.map((row) => interpreted.retained.find((target) => target.id === row.id) ??
+    { ...row, modeInactive: true });
   const effects: DiscoveryProjectEffects = { added: interpreted.additions.map((row) => ({
     relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!,
     categoryPath: mode === "grouped" ? row.relativePath.split("/")[0] : null,
   })), retained: [], noLongerRecognized: [], alreadyRetained: [] };
   for (const row of projects) {
     const summary = { projectId: row.id, name: row.relativePath.split("/").at(-1)!, relativePath: row.relativePath, categoryId: row.categoryId };
-    if (row.associationState !== "active") effects.alreadyRetained.push(summary);
+    if (row.modeInactive || row.associationState !== "active") effects.alreadyRetained.push(summary);
     else if (compatible.includes(row) && retained.find((target) => target.id === row.id)?.associationState === "active") effects.retained.push(summary);
     else effects.noLongerRecognized.push(summary);
   }
@@ -412,5 +441,5 @@ export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociatio
     rows.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
   }
   return { entries: grouped?.entries ?? interpreted.entries,
-    projects: { ...interpreted, retained }, categories: grouped?.categories ?? null, projectEffects: effects };
+    projects: { ...interpreted, retained }, categories: grouped?.categories ?? { retained: categories.map((row) => ({ ...row, modeInactive: true })), additions: [], entries: [] }, projectEffects: effects };
 }

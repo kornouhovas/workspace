@@ -236,7 +236,7 @@ test("saved exclusions are validated before filesystem scans, and suppress activ
     f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = '[\"Project\"]'").run();
     const before = f.records(); assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
   });
-  for (const exclusions of ['["../outside"]', '["Category/Project"]', '{}', '["duplicate","duplicate"]', 'broken json']) fixture((f) => {
+  for (const exclusions of ['["../outside"]', '["Category/Project/Deep"]', '{}', '["duplicate","duplicate"]', 'broken json']) fixture((f) => {
     f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = ?").run(exclusions);
     const before = f.records();
     patchFs({ lstatSync: () => () => { assert.fail("Invalid exclusions must not scan"); } }, () => {
@@ -785,7 +785,7 @@ test("grouped persisted missing project can still use explicit T07 recovery into
 }));
 
 test("populated migrations 0000–0006 reopen with reconciled grouped locators and all metadata intact", () => groupedFixture((f) => {
-  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 7);
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 8);
   fs.mkdirSync(join(f.root, "Needed"));
   fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Needed/Moved"));
   f.events.length = 0; assert.equal(f.refresh().ok, true);

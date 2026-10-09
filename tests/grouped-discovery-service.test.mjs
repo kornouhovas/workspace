@@ -356,10 +356,10 @@ test("actual populated migrations 0000–0005 upgrade without changing settings,
       const inspected = new Database(databasePath);
       try {
         for (const table of tables) {
-          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null } : row);
+          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null, mode_inactive: 0 } : row);
           assert.deepEqual(inspected.prepare(`SELECT * FROM ${table}`).all(), expected);
         }
-        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 7);
+        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 8);
         assert.deepEqual(inspected.prepare("SELECT * FROM categories").all(), []);
         assert.deepEqual(inspected.prepare("SELECT * FROM category_properties").all(), []);
       } finally { inspected.close(); }
@@ -461,7 +461,7 @@ test("database guards reject foreign category IDs and direct category values on 
   const directReview = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: direct.workspaceId }).value;
   const directList = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: direct.workspaceId, previewToken: directReview.previewToken }).value;
   assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = ? WHERE id = ?").run(project.categoryId, directList.projects[0].projectId));
-  assert.throws(() => f.sqlite.prepare("INSERT INTO categories VALUES (?, ?, 'Invalid', '{}', 'active')").run(randomUUID(), direct.sourceId));
+  assert.throws(() => f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Invalid', '{}', 'active')").run(randomUUID(), direct.sourceId));
   assert.throws(() => f.sqlite.prepare("INSERT INTO category_properties VALUES (?, ?, NULL)").run(randomUUID(), direct.sourceId));
   assert.equal(directList.categoryProperty, null); assert.deepEqual(directList.categories, []);
 }));

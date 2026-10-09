@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
 
 function fixture(run) {
@@ -214,4 +216,172 @@ test("category label edits preserve the independent review and are reflected in 
   f.service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: f.workspace.workspaceId, propertyId: original.categoryProperty.propertyId, name: " Exact label " });
   assert.equal(f.apply(review).ok, true);
   assert.equal(f.query({ mode: "direct" }).value.categoryAvailability.name, " Exact label ");
+}));
+
+test("mode Apply retains logical history and exact Text while fresh folder roles get fresh identities", () => {
+  for (const current of ["direct", "grouped"]) fixture((f) => {
+    fs.mkdirSync(join(f.root, "Category/Child"), { recursive: true });
+    fs.writeFileSync(join(f.root, "Category/Child/sentinel"), Buffer.from([0, 255, 12]));
+    const first = f.configure(current), project = first.projects[0];
+    const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: " Notes ", propertyType: "text" }).value;
+    f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value: "  exact\nтекст  " });
+    const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+    const beforeFiles = inventory(f.root), beforeViews = f.sqlite.prepare("SELECT * FROM views ORDER BY id").all();
+    const beforeSource = f.sqlite.prepare("SELECT * FROM sources").get();
+    const beforeProject = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId);
+    const events = [], unsubscribe = f.service.workspaces.subscribe((event) => events.push(event));
+    const next = f.configure(current === "direct" ? "grouped" : "direct");
+    unsubscribe();
+    assert.equal(next.revision, first.revision + 1);
+    assert.equal(next.retainedProjects.find((row) => row.projectId === project.projectId).retentionReason, "mode_change");
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.projectId), { ...beforeProject, mode_inactive: 1 });
+    assert.ok(next.projects.every((row) => row.projectId !== project.projectId));
+    assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM text_property_values").get().count, 1);
+    assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values").get().value, "  exact\nтекст  ");
+    assert.equal(f.sqlite.prepare("SELECT property_revision FROM sources").get().property_revision, beforeSource.property_revision);
+    assert.equal(f.sqlite.prepare("SELECT category_property_revision FROM sources").get().category_property_revision, beforeSource.category_property_revision);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM views ORDER BY id").all(), beforeViews);
+    assert.deepEqual(inventory(f.root), beforeFiles);
+    const committed = events.filter((row) => row.type === "workspace.projectsChanged");
+    assert.equal(committed.length, 1); assert.deepEqual(new Set(committed[0].workspaceIds), new Set([f.workspace.workspaceId, sibling.workspaceId]));
+    if (current === "grouped") { assert.equal(next.categoryProperty, null); assert.deepEqual(next.categories, []); }
+    const revised = f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value: "still editable  " });
+    assert.equal(revised.ok, true);
+    unchanged(f, () => assert.deepEqual(f.configure(next.mode), next));
+    const reopened = openSettingsService(join(f.directory, "data", "workspace.sqlite"));
+    try {
+      assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value, next);
+      assert.equal(reopened.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: sibling.workspaceId }).ok, true);
+    } finally { reopened.close(); }
+  });
+});
+
+test("mode Apply rolls back partial writes and observed races without publishing committed events", () => {
+  for (const failure of ["source", "category", "project", "database_race", "filesystem_race"]) fixture((f) => {
+    fs.mkdirSync(join(f.root, "Category/Child"), { recursive: true }); f.configure("direct");
+    const review = f.query({ mode: "grouped" }).value;
+    if (["source", "category", "project"].includes(failure)) f.sqlite.exec(`CREATE TRIGGER injected_failure BEFORE ${failure === "source" ? "UPDATE" : "INSERT"} ON ${failure === "source" ? "sources" : failure === "category" ? "categories" : "projects"} BEGIN SELECT RAISE(ABORT, 'injected'); END`);
+    if (failure === "database_race") f.sqlite.exec("CREATE TRIGGER injected_race AFTER INSERT ON projects BEGIN UPDATE sources SET discovery_revision = discovery_revision + 1; END");
+    const original = fs.opendirSync; let reads = 0;
+    if (failure === "filesystem_race") { fs.opendirSync = (path, ...args) => { if (path === f.root && ++reads === 5) fs.mkdirSync(join(f.root, "Category/Raced")); return original(path, ...args); }; syncBuiltinESMExports(); }
+    const files = inventory(f.root);
+    const before = databaseInventory(f.sqlite), events = [], unsubscribe = f.service.workspaces.subscribe((event) => events.push(event));
+    let result;
+    try { result = f.apply(review); } finally { fs.opendirSync = original; syncBuiltinESMExports(); unsubscribe(); }
+    assert.equal(result.ok, false, JSON.stringify(result));
+    assert.equal(result.error.code, failure.endsWith("race") ? "stale_preview" : "storage");
+    assert.deepEqual(databaseInventory(f.sqlite), before); assert.deepEqual(events, []);
+    if (failure !== "filesystem_race") assert.deepEqual(inventory(f.root), files);
+  });
+});
+
+test("actual populated 0000–0006 upgrade preserves authored data, selection, IDs and independent views", () => {
+  for (const mode of ["direct", "grouped"]) {
+    const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "workspace-mode-upgrade-")));
+    const legacy = join(directory, "legacy"), root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
+    const relativePath = mode === "grouped" ? "Category/Project" : "Project";
+    fs.mkdirSync(join(root, relativePath), { recursive: true }); fs.mkdirSync(join(legacy, "meta"), { recursive: true });
+    fs.writeFileSync(join(root, relativePath, "sentinel"), Buffer.from([0, 255, 43]));
+    const folder = "src/service/db/migrations", journal = JSON.parse(fs.readFileSync(join(folder, "meta/_journal.json"), "utf8"));
+    journal.entries = journal.entries.slice(0, 7);
+    for (const entry of journal.entries) fs.copyFileSync(join(folder, `${entry.tag}.sql`), join(legacy, `${entry.tag}.sql`));
+    fs.writeFileSync(join(legacy, "meta/_journal.json"), JSON.stringify(journal));
+    const sql = new Database(databasePath); let service;
+    const sourceId = randomUUID(), workspaceId = randomUUID(), siblingId = randomUUID(), viewId = randomUUID(), siblingViewId = randomUUID();
+    const categoryId = randomUUID(), categoryPropertyId = randomUUID(), projectId = randomUUID(), propertyId = randomUUID();
+    const identity = (path) => { const stat = fs.lstatSync(path, { bigint: true }); return JSON.stringify({ dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) }); };
+    try {
+      migrate(drizzle(sql), { migrationsFolder: legacy }); sql.pragma("foreign_keys = ON");
+      sql.prepare("INSERT INTO settings VALUES ('language', 'ru')").run();
+      sql.prepare("INSERT INTO sources (id, canonical_root, discovery_mode, discovery_revision, property_revision, category_property_revision, excluded_relative_paths, archive_relative_path, applied_root_identity) VALUES (?, ?, ?, 7, 9, 11, ?, 'Archive', ?)").run(sourceId, root, mode, JSON.stringify(mode === "grouped" ? ["Category/Excluded"] : ["Excluded"]), identity(root));
+      for (const [id, view, name, position] of [[workspaceId, viewId, "One", 0], [siblingId, siblingViewId, "Sibling", 1]]) {
+        sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(id, name, sourceId, position);
+        sql.prepare("INSERT INTO views VALUES (?, ?, ?, 'table')").run(view, id, name);
+      }
+      sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingViewId);
+      if (mode === "grouped") {
+        sql.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Category', ?, 'active')").run(categoryId, sourceId, identity(join(root, "Category")));
+        sql.prepare("INSERT INTO category_properties VALUES (?, ?, ?)").run(categoryPropertyId, sourceId, "  Authored category  ");
+      }
+      sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'active', ?)").run(projectId, sourceId, relativePath, identity(join(root, relativePath)), mode === "grouped" ? categoryId : null);
+      sql.prepare("INSERT INTO property_definitions VALUES (?, ?, '  Notes  ', 'text', 0)").run(propertyId, sourceId);
+      sql.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, ?)").run(projectId, propertyId, sourceId, "  Authored\nтекст  ");
+      const before = databaseInventory(sql).filter(([table]) => table !== "__drizzle_migrations"), files = inventory(root); sql.close();
+      for (let attempt = 0; attempt < 2; attempt++) {
+        service = openSettingsService(databasePath);
+        const inspected = new Database(databasePath);
+        try {
+          assert.deepEqual(databaseInventory(inspected).filter(([table]) => table !== "__drizzle_migrations"), before.map(([table, rows]) =>
+            [table, rows.map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : row)]));
+          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 8);
+          assert.deepEqual(inspected.pragma("foreign_key_check"), []);
+        } finally { inspected.close(); }
+        const listed = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
+        assert.equal(listed.ok, true, JSON.stringify(listed)); assert.equal(listed.value.projects[0].projectId, projectId);
+        assert.equal(listed.value.categoryProperty?.name ?? null, mode === "grouped" ? "  Authored category  " : null);
+        assert.deepEqual(inventory(root), files); service.close(); service = undefined;
+      }
+    } finally { if (sql.open) sql.close(); service?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("final removal and source reuse preserve inactive histories, category labels and literal exclusions", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  fs.mkdirSync(join(f.root, "Category/Excluded"));
+  const grouped = f.configure("grouped", { excludedRelativePaths: ["Category/Excluded"] });
+  f.service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: f.workspace.workspaceId, propertyId: grouped.categoryProperty.propertyId, name: " Exact category " });
+  const files = inventory(f.root);
+  const direct = f.configure("direct");
+  assert.equal(direct.categoryProperty, null); assert.deepEqual(direct.categories, []);
+  assert.deepEqual(f.query().value.inactiveExcludedRelativePaths, ["Category/Excluded"]);
+  const before = databaseInventory(f.sqlite).filter(([table]) => ["sources", "projects", "categories", "category_properties"].includes(table));
+  assert.equal(f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.workspace.workspaceId }).ok, true);
+  const recreated = f.service.workspaces.create({ type: "workspace.create", name: "Reused", rootPath: f.root }).value;
+  assert.equal(recreated.sourceId, f.workspace.sourceId); assert.notEqual(recreated.viewId, f.workspace.viewId);
+  assert.deepEqual(databaseInventory(f.sqlite).filter(([table]) => ["sources", "projects", "categories", "category_properties"].includes(table)), before);
+  const listed = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: recreated.workspaceId }).value;
+  assert.equal(listed.mode, "direct"); assert.equal(listed.retainedProjects[0].retentionReason, "mode_change");
+  assert.equal(f.sqlite.prepare("SELECT name FROM category_properties").get().name, " Exact category ");
+  assert.deepEqual(inventory(f.root), files);
+}));
+
+test("mode Apply preserves dormant failed category reservations without enrolling replacement roles", () => {
+  for (const state of ["active", "missing", "unresolved", "replaced"]) fixture((f) => {
+    fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+    const first = f.configure("grouped");
+    if (state !== "active") {
+      f.sqlite.prepare("UPDATE projects SET association_state = 'missing'").run();
+      f.sqlite.prepare("UPDATE categories SET association_state = ?").run(state);
+    }
+    f.configure("direct");
+    const history = f.sqlite.prepare("SELECT * FROM categories").all();
+    fs.renameSync(join(f.root, "Category"), join(f.directory, "previous-category"));
+    fs.mkdirSync(join(f.root, "Category/Replacement"), { recursive: true });
+    const before = inventory(f.root), review = f.query({ mode: "grouped" }).value;
+    assert.equal(review.entries.find((row) => row.relativePath === "Category").reason, "unresolved");
+    assert.deepEqual(review.projectEffects.added, []);
+    const applied = f.apply(review); assert.equal(applied.ok, true, JSON.stringify(applied));
+    assert.deepEqual(applied.value.categories, []); assert.deepEqual(applied.value.projects, []);
+    assert.equal(applied.value.categoryProperty.propertyId, first.categoryProperty.propertyId);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all(), history);
+    assert.deepEqual(inventory(f.root), before);
+  });
+});
+
+test("migration guards distinguish dormant history from operational category ownership and depth", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const first = f.configure("grouped"), projectId = first.projects[0].projectId;
+  f.sqlite.pragma("foreign_keys = ON");
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET relative_path = 'Category/Project/Deep' WHERE id = ?").run(projectId));
+  assert.throws(() => f.sqlite.prepare("UPDATE categories SET mode_inactive = 1").run());
+  assert.throws(() => f.sqlite.prepare("UPDATE sources SET discovery_mode = 'direct'").run());
+  f.configure("direct");
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET mode_inactive = 0 WHERE id = ?").run(projectId));
+  const otherRoot = join(f.directory, "other"); fs.mkdirSync(join(otherRoot, "Other/Project"), { recursive: true });
+  const other = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+  const preview = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: other.workspaceId, mode: "grouped" }).value;
+  const grouped = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: other.workspaceId, previewToken: preview.previewToken }).value;
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = ? WHERE id = ?").run(grouped.categories[0].categoryId, projectId));
+  assert.throws(() => f.sqlite.prepare("UPDATE categories SET source_id = ? WHERE id = ?").run(other.sourceId, first.categories[0].categoryId));
+  assert.deepEqual(f.sqlite.pragma("foreign_key_check"), []);
 }));

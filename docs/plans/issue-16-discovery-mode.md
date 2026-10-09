@@ -100,13 +100,13 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 
 **Steps:**
 
-- [ ] Add populated upgrade fixtures built from the actual migrations 0000–0006. Preserve settings, source/project/category/property IDs, exact Text values, authored labels, selection and independent view IDs.
-- [ ] Add migration 0007 without editing historical migrations or resetting data. Replace affected triggers so inactive history is permitted while operational direct projects have no category and operational grouped projects require a same-source active category at the correct depth.
-- [ ] Implement ordered mode Apply: retire incompatible operational associations, change source configuration, establish validated target categories, then establish target projects. Preserve historical records and inactive exclusions in the same transaction.
-- [ ] Revalidate token ownership, source/root identity, configuration revision, stored associations and complete target snapshot before writes and after writes. Storage failures and observed races roll back every write and emit no committed event.
-- [ ] Update projection and minimum recovery/reconciliation validation so startup, lists and Refresh accept mixed historical records immediately. Direct projection hides category history; inactive projects remain retained with ordinary Text editing.
-- [ ] Test both switch directions, unchanged Apply, role changes without inherited values, injected partial-write failures, reopen and final-workspace removal/source reuse. Compare full inventories and sentinel bytes.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified persistence slice.
+- [x] Add populated upgrade fixtures built from the actual migrations 0000–0006. Preserve settings, source/project/category/property IDs, exact Text values, authored labels, selection and independent view IDs.
+- [x] Add migration 0007 without editing historical migrations or resetting data. Replace affected triggers so inactive history is permitted while operational direct projects have no category and operational grouped projects require a same-source active category at the correct depth.
+- [x] Implement ordered mode Apply: retire incompatible operational associations, change source configuration, establish validated target categories, then establish target projects. Preserve historical records and inactive exclusions in the same transaction.
+- [x] Revalidate token ownership, source/root identity, configuration revision, stored associations and complete target snapshot before writes and after writes. Storage failures and observed races roll back every write and emit no committed event.
+- [x] Update projection and minimum recovery/reconciliation validation so startup, lists and Refresh accept mixed historical records immediately. Direct projection hides category history; inactive projects remain retained with ordinary Text editing.
+- [x] Test both switch directions, unchanged Apply, role changes without inherited values, injected partial-write failures, reopen and final-workspace removal/source reuse. Compare full inventories and sentinel bytes.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified persistence slice.
 
 ### Task 3: Preserve recovery and observation across mode round trips
 

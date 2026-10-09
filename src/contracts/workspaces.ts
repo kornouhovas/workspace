@@ -156,6 +156,7 @@ export interface ProjectSummary {
 }
 export type ProjectAssociationState = "active" | "excluded" | "missing" | "unresolved" | "replaced";
 export interface ProjectAssociationSummary extends ProjectSummary {
+  retentionReason?: "mode_change" | null;
   associationState: ProjectAssociationState;
   // Null means the source scan could not safely establish individual resolution.
   resolution: ProjectAssociationState | null;

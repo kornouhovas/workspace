@@ -38,6 +38,7 @@ export const activeWorkspace = sqliteTable("active_workspace", {
 });
 
 export const categories = sqliteTable("categories", {
+  modeInactive: integer("mode_inactive", { mode: "boolean" }).notNull().default(false),
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   relativePath: text("relative_path").notNull(),
@@ -52,6 +53,7 @@ export const categoryProperties = sqliteTable("category_properties", {
 });
 
 export const projects = sqliteTable("projects", {
+  modeInactive: integer("mode_inactive", { mode: "boolean" }).notNull().default(false),
   categoryId: text("category_id").references(() => categories.id),
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),

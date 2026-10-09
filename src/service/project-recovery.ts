@@ -4,7 +4,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ProjectRecoveryCandidate, ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { ProjectList } from "../contracts/workspaces.js";
-import { interpretGrouped, interpretProjects, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DiscoveryScan, type DiscoverySnapshot, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -35,9 +35,9 @@ export function createProjectRecoveryService(db: Database, integration: {
   const categoriesFor = (sourceId: string) => db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
   function scanSource(source: Source) {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-    if (!validExclusions(exclusions, source.discoveryMode === "grouped" ? "grouped" : "direct") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
+    if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
       source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
-    const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
+    const scan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(exclusions, source.discoveryMode === "grouped" ? "grouped" : "direct").effective);
     if (scan.snapshot && (!reliableIdentity(scan.snapshot.root.identity) ||
       !sameIdentity(JSON.parse(source.appliedRootIdentity), scan.snapshot.root.identity))) {
       integration.invalidateSourceReviews(source.id);
@@ -47,8 +47,7 @@ export function createProjectRecoveryService(db: Database, integration: {
     return scan;
   }
   function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[]) {
-    const resolution = scan.snapshot ? (scan.snapshot.mode === "grouped" ? interpretGrouped(scan, categories, projects).projects
-      : interpretProjects(scan, projects)).retained.find((row) => row.id === project.id)?.associationState : null;
+    const resolution = scan.snapshot ? planDiscovery(scan, categories, projects).projects.retained.find((row) => row.id === project.id)?.associationState : null;
     // Exclusion has its own explicit discovery controls. It is not recovery.
     return project.associationState !== "excluded" && resolution !== "excluded" &&
       (["missing", "unresolved", "replaced"].includes(project.associationState) ||
@@ -61,7 +60,7 @@ export function createProjectRecoveryService(db: Database, integration: {
     const child = scan.snapshot?.children.find((row) => row.relativePath === path);
     if (!entry || entry.reason !== null || child?.kind !== "directory" || !reliableIdentity(child.identity)) return null;
     const current = categories.find((row) => row.relativePath === path && row.associationState !== "replaced");
-    if (current && (current.associationState !== "active" || !sameIdentity(JSON.parse(current.nativeIdentity), child.identity))) return null;
+    if (current && (current.modeInactive || current.associationState !== "active" || !sameIdentity(JSON.parse(current.nativeIdentity), child.identity))) return null;
     if (!current && categories.some((row) => row.relativePath === path)) return null;
     if (categories.some((row) => row.id !== current?.id && row.associationState !== "replaced" &&
       nativeAlias(JSON.parse(row.nativeIdentity), child.identity)) || scan.snapshot!.children.some((row) =>
@@ -150,7 +149,7 @@ export function createProjectRecoveryService(db: Database, integration: {
             if (!category) throw new StaleReview();
             categoryId = category.current?.id ?? randomUUID();
             if (!category.current) {
-              insertedCategory = { id: categoryId, sourceId: source.id, relativePath: target.categoryPath,
+              insertedCategory = { modeInactive: false, id: categoryId, sourceId: source.id, relativePath: target.categoryPath,
                 nativeIdentity: JSON.stringify(category.child.identity), associationState: "active" };
               tx.insert(schema.categories).values(insertedCategory).run();
             }

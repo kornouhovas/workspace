@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { isChildName, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DirectoryObservation, type DiscoveryScan, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -27,7 +27,7 @@ function directMappings(scan: DiscoveryScan, records: Project[], exclusions: str
   const mappings = new Map<string, string>();
   for (const [index, row] of records.entries()) {
     const stored = identities[index];
-    if (row.associationState !== "active" || !reliableIdentity(stored) || exclusions.includes(row.relativePath) ||
+    if (row.modeInactive || row.associationState !== "active" || !reliableIdentity(stored) || exclusions.includes(row.relativePath) ||
       row.relativePath === archive?.split("/")[0]) continue;
     const candidates = directories.filter((child) => reliableIdentity(child.identity) && sameIdentity(stored, child.identity) &&
       scan.entries.some((entry) => entry.relativePath === child.relativePath && entry.reason === null));
@@ -68,7 +68,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
   // The same-path recovery exception is continuous only; cross-path evidence
   // must have no competing current OR retired owner, including at other depths.
   const candidate = (row: Association) => {
-    if (row.associationState !== "active" || suppressed(row.relativePath)) return null;
+    if (row.modeInactive || row.associationState !== "active" || suppressed(row.relativePath)) return null;
     const identity = storedIdentity(row);
     if (!reliableIdentity(identity)) return null;
     const matches = directories.filter((child) => eligible(child.relativePath) && reliableIdentity(child.identity) && sameIdentity(child.identity, identity));
@@ -141,10 +141,10 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   if (source.discoveryMode !== "direct" && source.discoveryMode !== "grouped") return { changed: false, scan: null };
   const grouped = source.discoveryMode === "grouped";
   const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
-  if (!validExclusions(exclusions, grouped ? "grouped" : "direct") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
+  if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
   const appliedRoot: NativeIdentity = JSON.parse(source.appliedRootIdentity);
-  const scanSource = () => (grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
+  const scanSource = () => (grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective);
   const scan = scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
@@ -155,18 +155,17 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   const readCategories = () => db.select().from(schema.categories).where(eq(schema.categories.sourceId, source.id)).orderBy(asc(schema.categories.id)).all();
   const readProperty = () => db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
   const records = readProjects(), categories = readCategories(), property = readProperty();
-  if (grouped ? !property || categories.some((row) => !isChildName(row.relativePath)) || records.some((row) =>
-    !row.relativePath.split("/").every(isChildName) || row.relativePath.split("/").length !== 2 ||
-    !categories.some((category) => category.id === row.categoryId && (row.associationState !== "active" ||
-      category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath))) :
-    property || categories.length || records.some((row) => row.categoryId !== null || !isChildName(row.relativePath))) {
-    throw new Error("Invalid configured associations");
-  }
+  if (grouped && !property || categories.some((row) => !isChildName(row.relativePath)) || records.some((row) =>
+    !row.relativePath.split("/").every(isChildName) || row.relativePath.split("/").length > 2 ||
+    row.categoryId !== null && !categories.some((category) => category.id === row.categoryId) ||
+    !row.modeInactive && (grouped ? row.relativePath.split("/").length !== 2 || !categories.some((category) => category.id === row.categoryId &&
+      (row.associationState !== "active" || !category.modeInactive && category.associationState === "active" && row.relativePath.split("/")[0] === category.relativePath)) :
+      row.categoryId !== null || !isChildName(row.relativePath)))) throw new Error("Invalid configured associations");
   const mapping = grouped ? groupedMappings(scan, records, categories, exclusions, source.archiveRelativePath) : null;
   const mappings = mapping?.projects ?? new Map([...directMappings(scan, records, exclusions, source.archiveRelativePath)]
     .map(([id, relativePath]) => [id, { relativePath, categoryId: null }]));
   const categoryMappings = mapping?.categories ?? new Map<string, string>();
-  const insertedCategories: Category[] = (mapping?.needed ?? []).map((child) => ({ id: randomUUID(), sourceId: source.id,
+  const insertedCategories: Category[] = (mapping?.needed ?? []).map((child) => ({ modeInactive: false, id: randomUUID(), sourceId: source.id,
     relativePath: child.relativePath, nativeIdentity: JSON.stringify(child.identity), associationState: "active" }));
   for (const target of mappings.values()) if (target.categoryId === null && grouped) {
     target.categoryId = insertedCategories.find((row) => row.relativePath === target.relativePath.split("/")[0])!.id;

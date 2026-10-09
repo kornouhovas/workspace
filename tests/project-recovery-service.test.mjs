@@ -795,7 +795,7 @@ test("populated baseline reopens and recovers direct/grouped records without sch
       }
       sqlite.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingViewId);
       if (mode === "grouped") {
-        sqlite.prepare("INSERT INTO categories VALUES (?, ?, 'Category', ?, 'active')").run(categoryId, sourceId, identity(join(root, "Category")));
+        sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, 'Category', ?, 'active')").run(categoryId, sourceId, identity(join(root, "Category")));
         sqlite.prepare("INSERT INTO category_properties VALUES (?, ?, ?)").run(categoryPropertyId, sourceId, "  Этап / Category  ");
       }
       sqlite.prepare("INSERT INTO property_definitions VALUES (?, ?, '  Notes 📝  ', 'text', 0)").run(propertyId, sourceId);
