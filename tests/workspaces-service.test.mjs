@@ -32,6 +32,42 @@ function records(databasePath) {
   } finally { sqlite.close(); }
 }
 
+test("management responses and notifications share one source observation", () => {
+  withFixture(({ root, databasePath }) => {
+    let checks = 0;
+    let changing = false;
+    const filesystem = {
+      realpath: realpathSync.native,
+      isDirectory: (path) => statSync(path).isDirectory(),
+      assertAccessible() {
+        if (changing && ++checks > 1) throw new Error("Folder became unavailable");
+      },
+    };
+    const service = openSettingsService(databasePath, undefined, filesystem);
+    const events = [];
+    service.workspaces.subscribe((event) => events.push(event));
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      changing = true;
+      for (const command of [
+        { type: "workspace.rename", workspaceId: two.workspaceId, name: "Renamed" },
+        { type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId] },
+        { type: "workspace.remove", workspaceId: one.workspaceId },
+      ]) {
+        checks = 0;
+        events.length = 0;
+        const result = service.handleCommand(command);
+        assert.equal(result.ok, true);
+        const event = events.find((event) => event.type === "workspace.listChanged");
+        assert.deepEqual(event.snapshot, result.value);
+        assert.equal(result.value.activeWorkspace.sourceAvailable, true);
+        assert.equal(checks, 1);
+      }
+    } finally { service.close(); }
+  });
+});
+
 test("removal retains sources and file bytes, preserves surviving presentation and reuses orphan sources after restart", () => {
   withFixture(({ directory, root, databasePath }) => {
     const otherRoot = join(directory, "other");

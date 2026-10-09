@@ -62,7 +62,7 @@ The repository currently builds and runs an Electron application with settings a
 | `npm run lint` | Lint source, scripts and tests. |
 | `npm run typecheck` | Type-check the TypeScript application and tests. |
 | `npm run build` | Produce desktop, renderer and backend outputs, copy migrations, and verify the product version. |
-| `npm run ladle` | Start the component preview server. |
+| `npm run ladle` | Start the component preview server using its separate `.ladle/vite.config.mjs` configuration and Ladle's compatible React plugin. |
 | `npm run build:ladle` | Build the component previews. |
 | `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; create same-root and different-root configurations through the UI with a root-picker test seam; rename/reorder/select, restart, remove inactive/active/final configurations, restart empty and reuse retained sources; check notification fanout/unsubscription, retained file bytes, EN/RU layouts, isolation, backend shutdown and startup failure. |
 | `npm run package:dev:mac` | Build and verify a macOS development directory artifact on macOS. |

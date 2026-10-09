@@ -282,15 +282,23 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     } finally { publishing = false; }
   }
 
-  function run<R extends { ok: boolean }>(operation: () => R, changesList = false): R | ReturnType<typeof storageFailure> {
+  function returnedSnapshot(result: ReturnType<WorkspaceService["rename"]>): WorkspaceLoad | undefined {
+    return result.ok ? result.value : undefined;
+  }
+
+  function currentSnapshot(): WorkspaceLoad {
+    return readWorkspaceLoad(db, filesystem, observe);
+  }
+
+  function run<R extends { ok: boolean }>(operation: () => R, listSnapshot?: (result: R) => WorkspaceLoad | undefined): R | ReturnType<typeof storageFailure> {
     pending = new Map();
     let snapshot: WorkspaceLoad | undefined;
     let sources: WorkspaceSourceState[] = [];
     try {
-      const result = db.transaction((tx) => {
+      const result = db.transaction(() => {
         const result = operation();
         if (result.ok) {
-          if (changesList) snapshot = readWorkspaceLoad(tx, filesystem, observe);
+          snapshot = listSnapshot?.(result);
           sources = [...pending].map(([sourceId, state]) => sourceState(sourceId, state));
         }
         return result;
@@ -313,11 +321,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
 
   return {
     ...service,
-    create: (input) => run(() => service.create(input), true),
-    rename: (input) => run(() => service.rename(input), true),
-    reorder: (input) => run(() => service.reorder(input), true),
-    remove: (input) => run(() => service.remove(input), true),
-    activate: (input) => run(() => service.activate(input), true),
+    create: (input) => run(() => service.create(input), currentSnapshot),
+    rename: (input) => run(() => service.rename(input), returnedSnapshot),
+    reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
+    remove: (input) => run(() => service.remove(input), returnedSnapshot),
+    activate: (input) => run(() => service.activate(input), currentSnapshot),
     load: () => run(() => service.load()),
     refreshSource: (input) => run(() => service.refreshSource(input)),
   };
