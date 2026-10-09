@@ -178,6 +178,48 @@ test("same-mode preview separates continuous IDs, new folders and already retain
   });
 }));
 
+test("a continuously matching replacement category resumes across mode return without reviving superseded history", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Old"), { recursive: true });
+  const first = f.configure("grouped");
+  fs.renameSync(join(f.root, "Category"), join(f.directory, "old-category"));
+  fs.mkdirSync(join(f.root, "Category/New"), { recursive: true });
+  fs.writeFileSync(join(f.root, "Category/New/sentinel"), "unchanged");
+  const replacement = f.configure("grouped"), project = replacement.projects[0];
+  assert.notEqual(project.categoryId, first.projects[0].categoryId);
+  const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: "Notes", propertyType: "text" }).value;
+  const value = "  Replacement\nТекст 📝  ";
+  assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId: property.propertyId, value }).ok, true);
+  f.configure("direct"); f.restart();
+  const superseded = f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(first.projects[0].categoryId);
+  assert.equal(superseded.association_state, "replaced"); assert.equal(superseded.mode_inactive, 1);
+  const files = inventory(f.root);
+  unchanged(f, () => {
+    const review = f.query({ mode: "grouped" }).value;
+    assert.equal(review.entries.find((row) => row.relativePath === "Category").reason, null);
+    // Project history still reserves its path until explicit recovery.
+    assert.ok(review.projectEffects.alreadyRetained.some((row) => row.projectId === project.projectId));
+    assert.deepEqual(review.projectEffects.added, []);
+  });
+  const returned = f.configure("grouped");
+  assert.deepEqual(returned.categories.map((row) => row.categoryId), [project.categoryId]);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(superseded.id), superseded);
+  assert.ok(returned.retainedProjects.some((row) => row.projectId === project.projectId && row.retentionReason === "mode_change"));
+  const request = { workspaceId: f.workspace.workspaceId, projectId: project.projectId };
+  const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
+  assert.equal(preview.ok, true, JSON.stringify(preview));
+  assert.equal(preview.value.entries.find((row) => row.relativePath === "Category/New").status, "selectable");
+  const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request, previewToken: preview.value.previewToken, relativePath: "Category/New" });
+  assert.equal(recovered.ok, true, JSON.stringify(recovered));
+  assert.equal(recovered.value.projects.find((row) => row.projectId === project.projectId).categoryId, project.categoryId);
+  assert.equal(f.sqlite.prepare("SELECT value FROM text_property_values WHERE project_id = ?").get(project.projectId).value, value);
+  assert.deepEqual(inventory(f.root), files);
+  f.restart();
+  fs.mkdirSync(join(f.root, "Category/Extra"));
+  const enrolled = f.configure("grouped");
+  assert.equal(enrolled.projects.find((row) => row.relativePath === "Category/Extra").categoryId, project.categoryId);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories WHERE id = ?").get(superseded.id), superseded);
+}));
+
 test("empty configured roots can review either interpretation without persistent writes", () => {
   for (const current of ["direct", "grouped"]) fixture((f) => {
     f.configure(current);

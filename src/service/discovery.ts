@@ -309,13 +309,16 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     const entry = entries.find((entry) => entry.relativePath === child.relativePath)!;
     const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
     const reliable = reliableIdentity(child.identity);
-    const collision = reservations.some((row) => row.relativePath === child.relativePath ||
-      (storedIdentity(row).dev === child.identity.dev && storedIdentity(row).ino === child.identity.ino)) ||
+    const continuouslyMatching = reliable && current !== undefined &&
+      (current.associationState === "active" || current.associationState === "excluded") &&
+      reliableIdentity(storedIdentity(current)) && sameIdentity(storedIdentity(current), child.identity);
+    const collision = reservations.some((row) => !(row.associationState === "replaced" && continuouslyMatching) &&
+      (row.relativePath === child.relativePath ||
+      (storedIdentity(row).dev === child.identity.dev && storedIdentity(row).ino === child.identity.ino))) ||
       records.some((row, index) => row.id !== current?.id &&
       // Retired evidence alone cannot invalidate a continuously matching active
       // or excluded association established by recovery. New discovery stays conservative.
-      !(row.associationState === "replaced" && (current?.associationState === "active" || current?.associationState === "excluded") &&
-        sameIdentity(storedIdentity(current), child.identity)) &&
+      !(row.associationState === "replaced" && continuouslyMatching) &&
       identities[index].dev === child.identity.dev && identities[index].ino === child.identity.ino &&
       (row.relativePath !== child.relativePath || sameIdentity(identities[index], child.identity))) ||
       scan.snapshot.children.some((other) => other.relativePath !== child.relativePath && other.kind === "directory" &&
@@ -430,16 +433,19 @@ export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociatio
       }
       return target;
     });
-    // A dormant category's reservation must never be replaced by enrollment.
+    // Dormant history blocks new enrollment, but superseded replaced history
+    // cannot hide an already accepted, continuously verified current category.
+    const blockedCategoryPaths = new Set(grouped.categories.retained.filter((category) => category.modeInactive &&
+      !grouped.categories.retained.some((current) => !current.modeInactive && current.associationState === "active" &&
+        current.relativePath === category.relativePath)).map((category) => category.relativePath));
     grouped.categories.additions = grouped.categories.additions.filter((row) =>
-      !grouped.categories.retained.some((category) => category.modeInactive && category.relativePath === row.relativePath));
+      !blockedCategoryPaths.has(row.relativePath));
     for (const entry of grouped.entries) {
-      const parent = grouped.categories.retained.find((row) => row.relativePath ===
-        (entry.kind === "category" ? entry.relativePath : entry.categoryPath));
-      if (parent?.modeInactive && entry.reason === null) entry.reason = "unresolved";
+      const categoryPath = entry.kind === "category" ? entry.relativePath : entry.categoryPath;
+      if (categoryPath !== null && blockedCategoryPaths.has(categoryPath) && entry.reason === null) entry.reason = "unresolved";
     }
     grouped.projects.additions = grouped.projects.additions.filter((row) =>
-      !grouped.categories.retained.some((category) => category.modeInactive && category.relativePath === row.relativePath.split("/")[0]));
+      !blockedCategoryPaths.has(row.relativePath.split("/")[0]));
   }
   const interpreted = grouped?.projects ?? interpretProjects(scan, compatible, historical);
   const retained = projects.map((row) => interpreted.retained.find((target) => target.id === row.id) ??
