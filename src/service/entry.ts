@@ -64,7 +64,7 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery");
+  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
@@ -99,7 +99,7 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
     return !hasExactKeys(input, ["type", "workspaceId", "previewToken"]) ||
       typeof input.workspaceId !== "string" || typeof input.previewToken !== "string";
   }
-  if (input.type === "workspace.listProjects") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
+  if (input.type === "workspace.listProjects" || input.type === "workspace.getSourceObservation") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.load") return !hasExactKeys(input, ["type"]);
   if (input.type === "workspace.create") {
     return !hasExactKeys(input, ["type", "name", "rootPath"]) ||

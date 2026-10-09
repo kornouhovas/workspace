@@ -14,7 +14,7 @@ import { isAbsolute, join, relative, sep } from "node:path";
 import { asc, eq, max, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
-import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
 
@@ -38,6 +38,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  getSourceObservation(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot>;
   previewProjectRecovery(input: unknown): ServiceResult<ProjectRecoveryPreview>;
   reassociateProject(input: unknown): ServiceResult<ProjectList>;
   renameCategoryProperty(input: unknown): ServiceResult<CategoryPropertySnapshot>;
@@ -105,6 +106,17 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const service: WorkspaceService = {
+    getSourceObservation(input) {
+      if (!isRecord(input) || input.type !== "workspace.getSourceObservation" || !isUuid(input.workspaceId) ||
+        Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId")) return invalid("Choose a saved workspace.");
+      try {
+        const workspace = db.select().from(schema.workspaces).where(eq(schema.workspaces.id, input.workspaceId)).get();
+        if (!workspace) return invalid("Choose a saved workspace.");
+        const event = observationEvents.get(workspace.sourceId);
+        const workspaceIds = sourceState(workspace.sourceId, { canonicalRoot: "", sourceAvailable: false }).workspaceIds;
+        return { ok: true, value: { observation: event ? { ...event, workspaceIds } : null } };
+      } catch { return storageFailure(); }
+    },
     previewProjectRecovery: recovery.previewProjectRecovery,
     reassociateProject: recovery.reassociateProject,
     ...createTextPropertyService(db, publish),

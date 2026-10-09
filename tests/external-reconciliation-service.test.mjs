@@ -799,3 +799,94 @@ test("populated migrations 0000–0006 reopen with reconciled grouped locators a
     assert.deepEqual(inventory(f.root), files);
   } finally { reopened.close(); }
 }));
+
+for (const grouped of [false, true]) test(`real native notifications and shutdown-missed ${grouped ? "grouped needed-category" : "direct"} changes preserve metadata before Refresh`, async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-reconciliation-")));
+  const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
+  const original = grouped ? "Category/Project" : "Project";
+  fs.mkdirSync(join(root, original, "nested"), { recursive: true });
+  fs.writeFileSync(join(root, original, "nested/sentinel"), Buffer.from([0, 10, 255, 42]));
+  const sqlite = new Database(databasePath);
+  let hints = 0, service;
+  const dependencies = { ...nativeObserverDependencies,
+    watch(path, hint, failed) {
+      return nativeObserverDependencies.watch(path, () => { ++hints; hint(); }, failed);
+    },
+  };
+  try {
+    service = openSettingsService(databasePath, undefined, undefined, dependencies);
+    const workspace = service.workspaces.create({ type: "workspace.create", name: "Native", rootPath: root }).value;
+    const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+    const query = (type) => service.handleQuery({ type, workspaceId: workspace.workspaceId }).value;
+    const command = (type, extra = {}) => service.handleCommand({ type, workspaceId: workspace.workspaceId, ...extra });
+    const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode: grouped ? "grouped" : "direct" }).value;
+    assert.equal(command("workspace.applyDiscovery", { previewToken: preview.previewToken }).ok, true);
+    const project = query("workspace.listProjects").projects[0];
+    const property = command("workspace.createProperty", { name: " Notes 日本語 ", propertyType: "text" }).value;
+    assert.equal(command("workspace.setTextValue", { projectId: project.projectId, propertyId: property.propertyId, value: "  Exact\nТекст 📝  " }).ok, true);
+    if (grouped) assert.equal(command("workspace.renameCategoryProperty", { propertyId: query("workspace.listProjects").categoryProperty.propertyId, name: "  Authored label  " }).ok, true);
+    const text = query("workspace.listTextProperties");
+    const stable = () => Object.fromEntries(["workspaces", "views", "settings", "property_definitions", "text_property_values", "category_properties"]
+      .map((table) => [table, sqlite.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
+    const before = stable(), source = sqlite.prepare("SELECT * FROM sources").get();
+    const initial = query("workspace.listProjects");
+    // Drain initial installation-window scheduling before changing the fixture.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    let off;
+    const committed = new Promise((resolve) => {
+      off = service.workspaces.subscribe((event) => {
+        if (event.type === "workspace.projectsChanged" && event.sourceId === workspace.sourceId) resolve(event);
+      });
+    });
+    const target = grouped ? "Needed/Moved" : "Renamed";
+    if (grouped) {
+      for (const path of ["Needed/Unrelated", "Other new/Unrelated", "Empty new"]) fs.mkdirSync(join(root, path), { recursive: true });
+    }
+    const hintsBefore = hints;
+    fs.renameSync(join(root, original), join(root, target));
+    const prepared = inventory(root);
+    let event;
+    try { event = await withDeadline(committed, 4000, "Native reconciliation notification"); }
+    finally { off(); }
+    assert.ok(hints > hintsBefore, "Expected an actual fs.watch hint, not only health/Refresh");
+    assert.deepEqual(event.workspaceIds, [workspace.workspaceId, sibling.workspaceId]);
+    const notified = query("workspace.listProjects");
+    assert.equal(notified.revision, initial.revision + 1);
+    assert.deepEqual(notified.projects.map((row) => [row.projectId, row.relativePath]), [[project.projectId, target]]);
+    assert.equal(notified.categories.length, grouped ? 2 : 0);
+    assert.deepEqual(query("workspace.listTextProperties"), text);
+    assert.deepEqual(stable(), before);
+    assert.deepEqual(sqlite.prepare("SELECT * FROM sources").get(), { ...source, discovery_revision: source.discovery_revision + 1 });
+    assert.deepEqual(inventory(root), prepared);
+    const categoryMetadata = notified.categoryProperty;
+    // Close owned watchers, then mutate while service is stopped. A reopened
+    // service must commit before the first query and never need Discovery Apply.
+    service.close(); service = undefined;
+    const offline = grouped ? "Offline needed/Offline moved" : "Offline renamed";
+    if (grouped) for (const path of ["Offline needed/Unrelated", "Offline other/Unrelated", "Offline empty"]) fs.mkdirSync(join(root, path), { recursive: true });
+    fs.renameSync(join(root, target), join(root, offline));
+    const offlineInventory = inventory(root);
+    service = openSettingsService(databasePath, undefined, undefined, dependencies);
+    assert.equal(sqlite.prepare("SELECT relative_path FROM projects WHERE id = ?").get(project.projectId).relative_path, offline);
+    const reopened = query("workspace.listProjects");
+    assert.equal(reopened.revision, notified.revision + 1);
+    assert.equal(reopened.projects.length, 1);
+    assert.equal(reopened.projects[0].projectId, project.projectId);
+    assert.equal(reopened.projects[0].relativePath, offline);
+    assert.equal(reopened.categories.length, grouped ? 3 : 0);
+    assert.deepEqual(reopened.categoryProperty, categoryMetadata);
+    assert.equal(reopened.categoryPropertyRevision, notified.categoryPropertyRevision);
+    const stateAfterStartup = stable();
+    for (let pass = 0; pass < 2; ++pass) {
+      assert.equal(command("workspace.refreshSource").ok, true);
+      assert.deepEqual(query("workspace.listProjects"), reopened);
+      assert.deepEqual(query("workspace.listTextProperties"), text);
+      assert.deepEqual(stable(), stateAfterStartup);
+    }
+    assert.deepEqual(stateAfterStartup, before);
+    assert.deepEqual(sqlite.prepare("SELECT * FROM sources").get(), { ...source, discovery_revision: source.discovery_revision + 2 });
+    assert.deepEqual(inventory(root), offlineInventory);
+  } finally { service?.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});

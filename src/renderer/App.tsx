@@ -52,6 +52,7 @@ export function App() {
   const refreshPending = useRef<object | null>(null);
   const [sourceObservations, setSourceObservations] = useState(new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>());
   const observationVersions = useRef(new Map<string, number>());
+  const backendLifetime = useRef(0);
   const dataVersion = useRef(0);
   const sourceVersion = useRef(new Map<string, number>());
   const sourceStates = useRef(new Map<string, WorkspaceSourceState>());
@@ -64,6 +65,14 @@ export function App() {
   const applyWorkspaceData = useCallback((data: WorkspaceLoad) => {
     setWorkspaceData({ ...data, activeWorkspace: data.activeWorkspace ? applyObservedSource(data.activeWorkspace) : null });
   }, [applyObservedSource]);
+  const acceptSourceObservation = useCallback((event: Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>) => {
+    const selected = selectedWorkspace.current;
+    if (selected?.sourceId === event.sourceId && !event.workspaceIds.includes(selected.workspaceId)) return;
+    if (!event.workspaceIds.length || event.observationRevision <= (observationVersions.current.get(event.sourceId) ?? 0)) return;
+    observationVersions.current.set(event.sourceId, event.observationRevision);
+    sourceVersion.current.set(event.sourceId, (sourceVersion.current.get(event.sourceId) ?? 0) + 1);
+    setSourceObservations((current) => new Map(current).set(event.sourceId, event));
+  }, []);
   useEffect(() => {
     let active = true;
     const unsubscribe = client.onWorkspaceChange((event) => {
@@ -78,12 +87,7 @@ export function App() {
         setRemovalTarget((target) => target && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === target.workspaceId) ? null : target);
         setRefreshError(false);
       } else if (event.type === "workspace.sourceObserved") {
-        const selected = selectedWorkspace.current;
-        if (selected?.sourceId === event.sourceId && !event.workspaceIds.includes(selected.workspaceId)) return;
-        if (!event.workspaceIds.length || event.observationRevision <= (observationVersions.current.get(event.sourceId) ?? 0)) return;
-        observationVersions.current.set(event.sourceId, event.observationRevision);
-        sourceVersion.current.set(event.sourceId, (sourceVersion.current.get(event.sourceId) ?? 0) + 1);
-        setSourceObservations((current) => new Map(current).set(event.sourceId, event));
+        acceptSourceObservation(event);
       } else if (event.type === "workspace.sourceChanged") {
         sourceVersion.current.set(event.source.sourceId, (sourceVersion.current.get(event.source.sourceId) ?? 0) + 1);
         sourceStates.current.set(event.source.sourceId, event.source);
@@ -98,7 +102,7 @@ export function App() {
       }
     });
     return () => { active = false; dataVersion.current++; unsubscribe(); };
-  }, [client]);
+  }, [client, acceptSourceObservation]);
   const removalFocus = useRef<string | null>(null);
   const createNameInput = useRef<HTMLInputElement>(null);
   const managementList = useRef<HTMLOListElement>(null);
@@ -159,6 +163,7 @@ export function App() {
           recoveryPending.current = null;
         }
         backendState.current = status.state;
+        backendLifetime.current++;
         dataVersion.current++;
         // Source observations belong to the backend that produced them.
         // Events received after this transition can still override a delayed load.
@@ -201,6 +206,23 @@ export function App() {
     }
     return () => { active = false; };
   }, [backend.state, backendGeneration, loadInitialData]);
+
+  useEffect(() => {
+    let current = true;
+    const selected = workspaceData?.activeWorkspace;
+    const lifetime = backendLifetime.current;
+    if (backend.state === "ready" && selected) {
+      // Startup events can precede renderer subscription. Read current status
+      // after selection/readiness; newer live revisions still win over this read.
+      void client.getSourceObservation(selected.workspaceId).then((result) => {
+        if (!current || lifetime !== backendLifetime.current || !result.ok || !result.value.observation || backendState.current !== "ready" ||
+          selectedWorkspace.current?.workspaceId !== selected.workspaceId) return;
+        const observation = result.value.observation;
+        if (observation.sourceId === selected.sourceId) acceptSourceObservation(observation);
+      }).catch(() => { /* Ordinary refresh/events remain available after a failed status read. */ });
+    }
+    return () => { current = false; };
+  }, [client, backend.state, backendGeneration, workspaceData?.activeWorkspace?.workspaceId, acceptSourceObservation]);
 
   const changeLanguage = async (nextLanguage: Language) => {
     if (savingLanguage || nextLanguage === language) return;

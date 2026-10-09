@@ -78,7 +78,7 @@ async function assertStopped(pids) {
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
-const stages = { recoveryFeatures: false, preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
+const stages = { nativeReconciliation: false, explicitRefresh: false, shutdownMissed: false, recoveryFeatures: false, preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
 const shutdowns = [];
 
 async function recordEvidence(status, error) {
@@ -92,6 +92,15 @@ async function projects(page, workspaceId) {
   const result = await page.evaluate((id) => globalThis.window.workspace.workspace({ type: "workspace.listProjects", workspaceId: id }), workspaceId);
   assert.equal(result.ok, true);
   return result.value;
+}
+
+function assertProjection(actual, expected) {
+  const normalize = (list) => ({ ...list,
+    projects: [...list.projects].sort((a, b) => a.projectId.localeCompare(b.projectId)),
+    retainedProjects: [...list.retainedProjects].sort((a, b) => a.projectId.localeCompare(b.projectId)),
+    categories: [...list.categories].sort((a, b) => a.categoryId.localeCompare(b.categoryId)),
+  });
+  assert.deepEqual(normalize(actual), normalize(expected));
 }
 
 async function properties(page, workspaceId) {
@@ -134,7 +143,20 @@ const discoveryLabels = {
   ru: { preview: "Посмотреть папки проектов", apply: "Применить проверенные проекты", cancel: "Отмена",
     exclude: "Исключить", stale: "Предпросмотр изменился. Проверьте обновлённые папки и примените ещё раз." },
 };
+async function settleSourceRefresh(page) {
+  // Explicitly observe the previous commit before starting a new review. A
+  // queued native pass must not turn this static fixture into a stale review;
+  // deliberate changes made after opening still require explicit re-review.
+  await page.locator(".source-refresh > button").press("Enter");
+  await page.waitForFunction(() => globalThis.document.querySelector(".source-refresh")?.getAttribute("aria-busy") === "false");
+  // The response schedules a React effect which reloads Table and invalidates
+  // drafts. Allow that effect to run, then wait for its authoritative read.
+  await page.evaluate(() => new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+  await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false");
+  await page.evaluate(() => new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+}
 async function previewFolders(page, language = "en") {
+  await settleSourceRefresh(page);
   await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).press("Enter");
   await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
 }
@@ -230,12 +252,14 @@ async function captureLayouts(page, language, name) {
 }
 
 let current;
+let scenarioFailure;
+let cleanupFailure;
 try {
   const dataDirectory = join(fixture, "normal");
   const projectRoot = join(fixture, `SelectedProjectRoot-${"a".repeat(90)}`);
   const otherRoot = join(fixture, "OtherProjectRoot");
   const groupedRoot = join(fixture, "GroupedRoot");
-  const categoryName = "Категория-" + "long-category-".repeat(14);
+  let categoryName = "Категория-" + "long-category-".repeat(14);
   let groupedProjectName = "日本語-проект-" + "long-project-".repeat(14);
   for (const path of [join(groupedRoot, categoryName, groupedProjectName, "Never-recursive"), join(groupedRoot, categoryName, "Excluded child"),
     join(groupedRoot, categoryName, ".hidden"), join(groupedRoot, categoryName, "$RECYCLE.BIN"), join(groupedRoot, "Empty category"),
@@ -350,6 +374,11 @@ try {
   await page.getByRole("checkbox", { name: "Exclude: Late project", exact: true }).waitFor();
   assert.deepEqual((await projects(page, first.workspaceId)).projects, savedProjects.projects);
   await captureDiscovery(page, "en", "filesystem-stale");
+  // Notification invalidation can arrive after the stale Apply response; review
+  // again explicitly after the changed observation, never replay the mutation.
+  await settleSourceRefresh(page);
+  await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
+  await page.getByRole("checkbox", { name: "Exclude: Late project", exact: true }).waitFor();
   await applyFolders(page);
   savedProjects = await projects(page, first.workspaceId);
   assert.deepEqual(savedProjects.projects.filter((row) => row.name !== "Late project"), initialIds);
@@ -365,6 +394,7 @@ try {
   await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
   await page.getByRole("cell", { name: "Excluded", exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).isDisabled(), true);
+  await settleSourceRefresh(page);
   await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
   await page.getByRole("checkbox", { name: "Exclude: Excluded", exact: true }).waitFor();
   assert.equal(await page.getByRole("checkbox", { name: "Exclude: Excluded", exact: true }).isChecked(), true);
@@ -552,6 +582,9 @@ try {
   await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
   await page.getByRole("checkbox", { name: "Exclude: Category: Late empty category", exact: true }).waitFor();
   assert.deepEqual(await projects(page, grouped.workspaceId), groupedUnconfigured);
+  await settleSourceRefresh(page);
+  await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
+  await page.getByRole("checkbox", { name: "Exclude: Category: Late empty category", exact: true }).waitFor();
   await applyFolders(page);
   const groupedApplied = await projects(page, grouped.workspaceId);
   assert.equal(groupedApplied.mode, "grouped");
@@ -622,8 +655,106 @@ try {
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   observations.push({ scenario: "grouped EN/RU preview/cancel, two-level exclusions, explicit stale Apply, required categories, label-only rename, siblings and isolation", grouped, groupedSibling, savedGroupedProjects, savedGroupedProperties, labelEvents, unchangedGroupedInventory: groupedBytes });
+  // Wait only for production notifications before querying. No load/list/Refresh
+  // command can cause the native notification assertions below to pass.
+  await page.evaluate(() => {
+    globalThis.reconciliationEvents = [];
+    globalThis.stopReconciliationEvents = globalThis.window.workspace.onWorkspaceChange((event) => {
+      globalThis.reconciliationEvents.push(event);
+    });
+  });
+  async function nativeCommit(workspace, revision) {
+    await page.waitForFunction(({ sourceId, revision }) => globalThis.reconciliationEvents.some((event) =>
+      event.type === "workspace.projectsChanged" && event.sourceId === sourceId && event.revision > revision),
+    { sourceId: workspace.sourceId, revision }, { timeout: 15000 });
+    return projects(page, workspace.workspaceId);
+  }
+  async function refresh(workspace, language) {
+    await select(page, workspace);
+    const button = page.getByRole("button", { name: language === "en" ? "Refresh source" : "Обновить источник", exact: true });
+    await settleSourceRefresh(page);
+    await button.waitFor();
+  }
+  const directKnown = savedProjects.projects.find((entry) => entry.name === projectName);
+  const directRenamed = "Automatically renamed 日本語";
   await select(page, first);
-
+  await rename(join(projectRoot, projectName), join(projectRoot, directRenamed));
+  const directInventory = await folderBytes(projectRoot);
+  const directBefore = savedProjects;
+  savedProjects = await nativeCommit(first, directBefore.revision);
+  assertProjection(savedProjects, { ...directBefore, revision: directBefore.revision + 1,
+    projects: directBefore.projects.map((entry) => entry.projectId === directKnown.projectId
+      ? { ...entry, name: directRenamed, relativePath: directRenamed } : entry) });
+  projectName = directRenamed;
+  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  assert.deepEqual(await properties(page, first.workspaceId), savedProperties);
+  assert.deepEqual(await folderBytes(projectRoot), directInventory);
+  originalBytes = directInventory;
+  const groupedKnown = savedGroupedProjects.projects.find((entry) => entry.name === groupedProjectName);
+  await select(page, grouped);
+  const renamedCategory = "Automatically renamed category 日本語";
+  const categoryBefore = savedGroupedProjects;
+  await rename(join(groupedRoot, categoryName), join(groupedRoot, renamedCategory));
+  const categoryInventory = await folderBytes(groupedRoot);
+  savedGroupedProjects = await nativeCommit(grouped, categoryBefore.revision);
+  assertProjection(savedGroupedProjects, { ...categoryBefore, revision: categoryBefore.revision + 1,
+    categories: categoryBefore.categories.map((entry) => entry.categoryId === groupedKnown.categoryId
+      ? { ...entry, name: renamedCategory, relativePath: renamedCategory } : entry),
+    projects: categoryBefore.projects.map((entry) => entry.categoryId === groupedKnown.categoryId
+      ? { ...entry, relativePath: `${renamedCategory}/${entry.name}`, categoryName: renamedCategory } : entry) });
+  categoryName = renamedCategory;
+  await page.getByRole("cell", { name: categoryName, exact: true }).waitFor();
+  assert.deepEqual(await folderBytes(groupedRoot), categoryInventory);
+  const neededCategory = "Automatically needed category";
+  const unrelatedCategory = "Unrelated new category";
+  const emptyCategory = "Unrelated empty category";
+  for (const path of [`${neededCategory}/Unregistered child`, `${unrelatedCategory}/Unregistered project`, emptyCategory]) {
+    await mkdir(join(groupedRoot, path), { recursive: true });
+  }
+  const placementBefore = savedGroupedProjects;
+  await rename(join(groupedRoot, categoryName, groupedProjectName), join(groupedRoot, neededCategory, "Automatically moved project"));
+  const placementInventory = await folderBytes(groupedRoot);
+  savedGroupedProjects = await nativeCommit(grouped, placementBefore.revision);
+  const placed = savedGroupedProjects.projects.find((entry) => entry.projectId === groupedKnown.projectId);
+  const needed = savedGroupedProjects.categories.find((entry) => entry.name === neededCategory);
+  assert.ok(needed);
+  assert.equal(savedGroupedProjects.categories.length, placementBefore.categories.length + 1);
+  assert.equal(savedGroupedProjects.projects.length, placementBefore.projects.length);
+  assert.deepEqual(savedGroupedProjects.categories.filter((entry) => entry.categoryId !== needed.categoryId), placementBefore.categories);
+  assertProjection(savedGroupedProjects, { ...placementBefore, revision: placementBefore.revision + 1, categories: savedGroupedProjects.categories, projects: placementBefore.projects.map((entry) => entry.projectId === groupedKnown.projectId
+    ? { ...entry, name: "Automatically moved project", relativePath: `${neededCategory}/Automatically moved project`, categoryId: needed.categoryId, categoryName: neededCategory } : entry) });
+  assert.equal(savedGroupedProjects.revision, placementBefore.revision + 1);
+  groupedProjectName = placed.name;
+  assert.deepEqual(savedGroupedProjects.categoryProperty, placementBefore.categoryProperty);
+  assert.equal(savedGroupedProjects.categoryPropertyRevision, placementBefore.categoryPropertyRevision);
+  assert.deepEqual(await properties(page, grouped.workspaceId), savedGroupedProperties);
+  await page.getByRole("cell", { name: neededCategory, exact: true }).waitFor();
+  await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
+  for (const language of ["en", "ru"]) {
+    await page.locator("#interface-language").selectOption(language);
+    await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang &&
+      !globalThis.document.querySelector("#interface-language")?.disabled, language);
+    await refresh(grouped, language);
+    assert.deepEqual(await projects(page, grouped.workspaceId), savedGroupedProjects);
+    await captureDiscovery(page, language, "external-needed-category");
+  }
+  stages.explicitRefresh = true;
+  assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...savedGroupedProjects, workspaceId: groupedSibling.workspaceId });
+  assert.deepEqual(await projects(page, sibling.workspaceId), { ...savedProjects, workspaceId: sibling.workspaceId });
+  assert.deepEqual(await folderBytes(groupedRoot), placementInventory);
+  groupedBytes = placementInventory;
+  const nativeEvents = await page.evaluate(() => { globalThis.stopReconciliationEvents(); return globalThis.reconciliationEvents; });
+  const locatorEvents = nativeEvents.filter((event) => event.type === "workspace.projectsChanged");
+  assert.equal(locatorEvents.length, 3);
+  for (const event of locatorEvents) assert.deepEqual(event.workspaceIds, event.sourceId === first.sourceId
+    ? [first.workspaceId, sibling.workspaceId] : [grouped.workspaceId, groupedSibling.workspaceId]);
+  assert.deepEqual(identity((await load(page)).activeWorkspace), identity(grouped));
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  stages.nativeReconciliation = true;
+  observations.push({ scenario: "native notifications before queries, direct/category rename, needed-category-only placement, EN/RU explicit Refresh idempotence",
+    nativeEvents, savedProjects, savedGroupedProjects, savedProperties, savedGroupedProperties, placementInventory });
+  await recordEvidence("native reconciliation and explicit Refresh passed");
+  await select(page, first);
 
   // Externally prepared changes are confined to disposable roots. Recovery itself
   // must change only SQLite associations, never the inventory or sentinel bytes.
@@ -641,7 +772,7 @@ try {
   };
   async function recover(workspace, oldProject, target, language, expectedResolution, staleSwap) {
     const labels = recoveryLabels[language];
-    await select(page, workspace);
+    await refresh(workspace, language);
     const before = await projects(page, workspace.workspaceId);
     const row = before.retainedProjects.find((entry) => entry.projectId === oldProject.projectId);
     assert.equal(row?.resolution, expectedResolution);
@@ -691,6 +822,8 @@ try {
       assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
       await captureDiscovery(page, language, `recovery-${workspace.sourceId}-stale`);
       await rename(staleSwap, join(workspace.canonicalRoot, target));
+      const observedRestore = await page.evaluate((workspaceId) => globalThis.window.workspace.workspace({ type: "workspace.refreshSource", workspaceId }), workspace.workspaceId);
+      assert.equal(observedRestore.ok, true);
       await panel.getByRole("button", { name: labels.refresh, exact: true }).press("Enter");
       await panel.locator("input[type=radio]").first().waitFor();
       assert.equal(await panel.locator("input:checked").count(), 0);
@@ -717,7 +850,9 @@ try {
   await select(page, sibling);
   const directOriginal = savedProjects.projects.find((entry) => entry.name === projectName);
   const recoveredName = "Recovered-日本語-" + "long-target-".repeat(14);
-  await rename(join(projectRoot, projectName), join(projectRoot, recoveredName));
+  await rename(join(projectRoot, projectName), join(fixture, "held-direct"));
+  await previewFolders(page, "ru"); await applyFolders(page, "ru");
+  await rename(join(fixture, "held-direct"), join(projectRoot, recoveredName));
   savedProjects = await recover(first, directOriginal, recoveredName, "ru", "missing", join(fixture, "stale-direct-target"));
   projectName = recoveredName;
   // Persist a missing row, then restore the exact folder: conservative matching
@@ -729,7 +864,9 @@ try {
   await select(page, sibling);
   savedProjects = await recover(first, ambiguous, "Late project", "ru", "unresolved");
   const replaced = savedProjects.projects.find((entry) => entry.name === "Archive");
-  await rename(join(projectRoot, "Archive"), join(projectRoot, "Recovered archive"));
+  await rename(join(projectRoot, "Archive"), join(fixture, "held-archive"));
+  await previewFolders(page, "ru"); await applyFolders(page, "ru");
+  await rename(join(fixture, "held-archive"), join(projectRoot, "Recovered archive"));
   await mkdir(join(projectRoot, "Archive")); await writeFile(join(projectRoot, "Archive", "sentinel.txt"), sentinel);
   await select(page, sibling);
   savedProjects = await recover(first, replaced, "Recovered archive", "ru", "replaced");
@@ -746,17 +883,21 @@ try {
 
   await page.locator("#interface-language").selectOption("en");
   await page.waitForFunction(() => globalThis.document.documentElement.lang === "en" && !globalThis.document.querySelector("#interface-language")?.disabled);
+  await select(page, grouped);
   const groupedOriginal = savedGroupedProjects.projects.find((entry) => entry.name === groupedProjectName);
   const newCategory = "Recovery category-日本語-" + "long-category-".repeat(12);
   const groupedRecoveredName = "Recovered grouped project-日本語";
   await mkdir(join(groupedRoot, newCategory));
-  await rename(join(groupedRoot, categoryName, groupedProjectName), join(groupedRoot, newCategory, groupedRecoveredName));
+  await rename(join(groupedRoot, neededCategory, groupedProjectName), join(fixture, "held-grouped"));
+  await previewFolders(page); await applyFolders(page);
+  await rename(join(fixture, "held-grouped"), join(groupedRoot, newCategory, groupedRecoveredName));
   savedGroupedProjects = await recover(grouped, groupedOriginal, `${newCategory}/${groupedRecoveredName}`, "en", "missing");
   groupedProjectName = groupedRecoveredName;
+  assert.ok(savedGroupedProjects.projects.some((entry) => entry.name === "Unregistered child"), "Explicit Apply must remain available for unrelated folders");
   assert.deepEqual(savedGroupedProjects.categoryProperty, { ...groupedApplied.categoryProperty, name: groupedLabel });
   assert.equal(savedGroupedProjects.categoryPropertyRevision, 2);
   assert.ok(savedGroupedProjects.categories.some((entry) => entry.name === newCategory));
-  assert.ok(savedGroupedProjects.categories.some((entry) => entry.name === categoryName && entry.categoryId === groupedOriginal.categoryId));
+  assert.ok(savedGroupedProjects.categories.some((entry) => entry.name === neededCategory && entry.categoryId === groupedOriginal.categoryId));
   groupedBytes = await folderBytes(groupedRoot);
   await select(page, groupedSibling);
   assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...savedGroupedProjects, workspaceId: groupedSibling.workspaceId });
@@ -793,6 +934,16 @@ try {
   await closeCurrent();
   stages.firstShutdown = true;
   await stat(join(dataDirectory, "workspace.sqlite"));
+  const offlineDirectName = "Renamed while shut down";
+  await rename(join(projectRoot, projectName), join(projectRoot, offlineDirectName));
+  const offlineCategory = "Needed while shut down";
+  await mkdir(join(groupedRoot, offlineCategory, "Offline unregistered"), { recursive: true });
+  await mkdir(join(groupedRoot, "Offline empty"));
+  const offlineGroupedName = "Moved while shut down";
+  const offlineProject = savedGroupedProjects.projects.find((entry) => entry.name === groupedProjectName);
+  await rename(join(groupedRoot, newCategory, groupedProjectName), join(groupedRoot, offlineCategory, offlineGroupedName));
+  originalBytes = await folderBytes(projectRoot); groupedBytes = await folderBytes(groupedRoot);
+  const directBeforeRestart = savedProjects, groupedBeforeRestart = savedGroupedProjects;
   current = await launch(dataDirectory);
   page = current.page;
   await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
@@ -804,7 +955,31 @@ try {
   assert.deepEqual(reopened.workspaces, [other, first, sibling, grouped, groupedSibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
   await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
   await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
+  savedProjects = await projects(page, first.workspaceId);
+  assertProjection(savedProjects, { ...directBeforeRestart, revision: directBeforeRestart.revision + 1,
+    projects: directBeforeRestart.projects.map((entry) => entry.name === projectName
+      ? { ...entry, name: offlineDirectName, relativePath: offlineDirectName } : entry) });
+  projectName = offlineDirectName;
+  savedGroupedProjects = await projects(page, grouped.workspaceId);
+  const offlineNeeded = savedGroupedProjects.categories.find((entry) => entry.name === offlineCategory);
+  assert.ok(offlineNeeded);
+  assert.deepEqual(savedGroupedProjects.categories.filter((entry) => entry.categoryId !== offlineNeeded.categoryId), groupedBeforeRestart.categories);
+  assertProjection(savedGroupedProjects, { ...groupedBeforeRestart, revision: groupedBeforeRestart.revision + 1, categories: savedGroupedProjects.categories, projects: groupedBeforeRestart.projects.map((entry) => entry.projectId === offlineProject.projectId
+    ? { ...entry, name: offlineGroupedName, relativePath: `${offlineCategory}/${offlineGroupedName}`, categoryId: offlineNeeded.categoryId, categoryName: offlineCategory } : entry) });
+  assert.equal(savedGroupedProjects.revision, groupedBeforeRestart.revision + 1);
+  assert.deepEqual(savedGroupedProjects.categoryProperty, groupedBeforeRestart.categoryProperty);
+  assert.equal(savedGroupedProjects.categoryPropertyRevision, groupedBeforeRestart.categoryPropertyRevision);
+  groupedProjectName = offlineGroupedName;
+  // Check startup before Apply, then two Refresh passes with no record/revision churn.
+  await refresh(first, "ru"); await refresh(first, "ru");
   assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  await refresh(grouped, "ru"); await refresh(grouped, "ru");
+  assert.deepEqual(await projects(page, grouped.workspaceId), savedGroupedProjects);
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
+  stages.shutdownMissed = true;
+  observations.push({ scenario: "shutdown-missed direct rename/new-category placement before Apply, repeated Refresh idempotence", savedProjects, savedGroupedProjects });
+  await select(page, first);
   await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
@@ -868,7 +1043,11 @@ try {
   assert.deepEqual(await properties(page, reusedGrouped.workspaceId), { ...savedGroupedProperties, workspaceId: reusedGrouped.workspaceId });
   await page.getByRole("cell", { name: groupedProjectName, exact: true }).waitFor();
   await previewFolders(page, "ru"); await applyFolders(page, "ru");
-  assert.deepEqual(await projects(page, reusedGrouped.workspaceId), { ...savedGroupedProjects, workspaceId: reusedGrouped.workspaceId });
+  const explicitlyDiscovered = await projects(page, reusedGrouped.workspaceId);
+  assert.equal(explicitlyDiscovered.projects.find((entry) => entry.name === "Offline unregistered")?.categoryId,
+    savedGroupedProjects.categories.find((entry) => entry.name === offlineCategory).categoryId);
+  assert.equal(explicitlyDiscovered.projects.find((entry) => entry.projectId === offlineProject.projectId)?.relativePath,
+    `${offlineCategory}/${offlineGroupedName}`);
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   observations.push({ scenario: "retained grouped source reuse after empty restart", reusedGrouped, savedGroupedProjects, savedGroupedProperties });
   stages.retainedSourceReuse = true;
@@ -892,10 +1071,25 @@ try {
   await recordEvidence("passed");
   console.info(`Electron ${mode} runtime verified: direct/grouped recovery/discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
+  scenarioFailure = error;
   if (current && evidenceDirectory) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
   await recordEvidence("failed", error);
-  throw error;
 } finally {
-  try { if (current) await closeElectron(current.electron); }
-  finally { await rm(fixture, { recursive: true, force: true }); }
+  try {
+    if (current) {
+      const closing = current; current = undefined;
+      const shutdown = { attempt: shutdowns.length + 1, kind: "failure cleanup", passed: false };
+      shutdowns.push(shutdown);
+      try { await closeElectron(closing.electron); shutdown.passed = true; }
+      catch (cleanupError) {
+        cleanupFailure = cleanupError;
+        shutdown.error = cleanupError.message;
+        await recordEvidence("failed", scenarioFailure ?? cleanupError);
+      }
+      await recordEvidence("failed", scenarioFailure);
+    }
+  } finally { await rm(fixture, { recursive: true, force: true }); }
 }
+if (scenarioFailure && cleanupFailure) throw new AggregateError([scenarioFailure, cleanupFailure], "Runtime scenario and cleanup failed");
+if (scenarioFailure) throw scenarioFailure;
+if (cleanupFailure) throw cleanupFailure;

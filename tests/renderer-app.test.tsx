@@ -92,6 +92,7 @@ interface MockOptions {
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
   onProjects?: MockOptions["onWorkspace"];
   onProperties?: MockOptions["onWorkspace"];
+  onObservation?: MockOptions["onWorkspace"];
   onSettings?: WorkspaceDesktopApi["settings"];
   backend?: "ready" | "unavailable";
 }
@@ -117,7 +118,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listTextProperties"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getSourceObservation"
+      ? options.onObservation?.(input) ?? Promise.resolve(ok({ observation: null }))
+      : input.type === "workspace.listTextProperties"
       ? options.onProperties?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: `source-${input.workspaceId}`, revision: 0, definitions: [], values: [] }))
       : input.type === "workspace.listProjects"
       ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
@@ -2790,6 +2793,88 @@ test("EN/RU cached source guidance follows a newly selected sibling and resets a
     assert.ok(screen.queryByText(translate(language, "refreshSourceErrorTitle")) === null);
     await act(async () => api.emitChange({ ...event, workspaceIds: [sibling.workspaceId], observationRevision: 1 }));
     await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+    cleanup();
+  }
+});
+
+test("EN/RU late App mount reads real startup degraded status after early delivery and resets it after backend restart", async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.js");
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "late-startup-ui-")), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+    mkdirSync(join(root, "Project"), { recursive: true });
+    let service = openSettingsService(database);
+    const created = service.workspaces.create({ type: "workspace.create", name: "Late startup", rootPath: root });
+    assert.equal(created.ok, true); if (!created.ok) throw new Error("Fixture failed");
+    const workspaceId = created.value.workspaceId;
+    const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId });
+    assert.equal(preview.ok, true); if (!preview.ok) throw new Error("Preview failed");
+    const applied = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken });
+    assert.equal(applied.ok, true); service.close();
+    const timers = new Set<{ callback(): void; delay: number }>();
+    let failWatch = true;
+    const dependencies = { ...nativeObserverDependencies,
+      schedule(callback: () => void, delay: number) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
+      watch() { if (failWatch) throw new Error("Watch unavailable"); return { close() {} }; },
+    };
+    service = openSettingsService(database, undefined, undefined, dependencies);
+    let api: ReturnType<typeof mockApi> | undefined;
+    let off = service.workspaces.subscribe((event) => api?.emitChange(event));
+    // Mirror backend delivery before App subscriptions exist.
+    for (const timer of [...timers].filter((timer) => timer.delay === 0)) { timers.delete(timer); timer.callback(); }
+    let reads = 0, mutations = 0;
+    const queries = new Set(["workspace.load", "workspace.getSourceObservation", "workspace.listProjects", "workspace.listTextProperties"]);
+    api = mockApi({ language, onObservation: async (input) => { reads++; return service.handleQuery(input) as ServiceResult<WorkspaceResponse>; }, onProjects: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+      onProperties: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+      onWorkspace: async (input) => {
+        if (queries.has(input.type)) return service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+        mutations++; return service.handleCommand(input) as ServiceResult<WorkspaceResponse>;
+      } });
+    try {
+      render(<App />);
+      await screen.findByRole("cell", { name: "Project" });
+      await screen.findByRole("heading", { name: translate(language, "automaticUpdatesDegraded") });
+      assert.equal(reads, 1); assert.equal(mutations, 0);
+      assert.deepEqual(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }), applied);
+      off(); service.close(); failWatch = false;
+      service = openSettingsService(database, undefined, undefined, dependencies);
+      // Again drop startup replay before renderer readiness; current read repairs it.
+      off = service.workspaces.subscribe((event) => { if (event.type !== "workspace.sourceObserved") api?.emitChange(event); });
+      await act(async () => { api?.emitStatus("unavailable"); api?.emitStatus("ready"); });
+      await screen.findByRole("cell", { name: "Project" });
+      await waitFor(() => assert.equal(screen.queryByRole("heading", { name: translate(language, "automaticUpdatesDegraded") }), null));
+      assert.equal(reads, 2); assert.equal(mutations, 0);
+      assert.deepEqual(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }), applied);
+    } finally { cleanup(); off(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("a delayed current-observation read cannot override newer events or a backend generation", async () => {
+  for (const reason of ["event", "restart", "selection"] as const) {
+    const active = { ...sharedEventWorkspace(), viewId: randomUUID() }, other = { ...sharedEventWorkspace(), workspaceId: randomUUID(), sourceId: randomUUID(), viewId: randomUUID(), name: "Other" };
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let reads = 0, selected = active;
+    const observation: Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }> = {
+      type: "workspace.sourceObserved", sourceId: active.sourceId, workspaceIds: [active.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "degraded",
+    };
+    const read = async (): Promise<ServiceResult<WorkspaceResponse>> => {
+      if (++reads === 1) return new Promise((resolve) => { finish = resolve; });
+      return ok({ observation: null });
+    };
+    const api = mockApi({ onObservation: read, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(selected));
+      return fail("invalid_input");
+    } });
+    render(<App />); await screen.findByRole("button", { name: "Refresh source" });
+    await waitFor(() => assert.equal(reads, 1));
+    await act(async () => {
+      if (reason === "event") api.emitChange({ ...observation, observationRevision: 2, automaticUpdates: "active" });
+      else if (reason === "restart") { api.emitStatus("unavailable"); api.emitStatus("ready"); finish?.(ok({ observation })); }
+      else { selected = other; api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other) }); }
+    });
+    if (reason === "restart") await waitFor(() => assert.equal(reads, 2));
+    if (reason === "selection") await screen.findByRole("heading", { name: "Other" });
+    await act(async () => { finish?.(ok({ observation })); });
+    assert.equal(screen.queryByRole("heading", { name: translate("en", "automaticUpdatesDegraded") }), null);
     cleanup();
   }
 });

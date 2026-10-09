@@ -33,6 +33,11 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Service-validated source-contained recovery with reserved-path/native-identity conflicts, atomic new-category insertion, stale review refresh and uncertain-outcome reload without command replay.
 - Preserved Text/category-label drafts across recovery and source refresh, populated-baseline regressions and permanent recovery Electron/Ladle scenarios.
 
+- External direct/grouped project and category reconciliation through Refresh source, bounded backend folder notifications and startup rescanning, preserving logical IDs, exact Text/category labels and independent workspace views.
+- Atomic creation of only genuinely new eligible categories needed by uniquely matched known-project moves; unrelated folders remain explicit discovery choices and conflicting existing categories retain recovery.
+- English/Russian keyboard Refresh with pending/error/degraded guidance, current startup observation delivery and preserved Text/category-label drafts across external changes.
+- Conservative unique native-evidence matching, bounded watcher cleanup and service/runtime regressions for notification-driven and shutdown-missed changes without folder markers or project-content scanning.
+
 ### Fixed
 
 - Malformed desktop requests are rejected without stopping the local workspace service.
@@ -43,7 +48,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 ### Planned
 
 - Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
-- Configured-source mode switching, physical category editing, automatic external reconciliation, archive and restore.
+- Configured-source mode switching, physical category editing, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).

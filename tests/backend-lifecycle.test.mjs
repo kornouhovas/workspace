@@ -1217,3 +1217,60 @@ test("source observation traverses production entry/controller/preload/clients b
     const sent = servicePort.sent.length; watchers[0].hint(); watchers[0].failed(); flush(); assert.equal(servicePort.sent.length, sent);
   } finally { off(); offTwo(); offOther(); relay(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("late preload/client reads startup degraded observation through production ports without events, revision churn or mutation replay", async () => {
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const directory = await mkdtemp(join(tmpdir(), "late-observation-ipc-"));
+  const root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+  await mkdir(join(root, "Project"), { recursive: true });
+  let prepared = openSettingsService(database);
+  const workspace = prepared.workspaces.create({ type: "workspace.create", name: "Late", rootPath: root }).value;
+  const review = prepared.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId }).value;
+  const baseline = prepared.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: review.previewToken }).value;
+  prepared.close(); prepared = undefined;
+  const timers = new Set();
+  const dependencies = { ...nativeObserverDependencies,
+    schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => timers.delete(timer) }; },
+    watch() { throw Object.assign(new Error("Watch unavailable"), { code: "ENOSPC" }); },
+  };
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, (path, migrations) => openSettingsService(path, migrations, undefined, dependencies), () => child.exit());
+  const controller = new BackendController(), ipc = new EventEmitter();
+  ipc.invoke = async (_channel, input) => controller.request(input);
+  const relay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+  const unload = new EventTarget(); let api, off;
+  try {
+    assert.equal(await controller.start(child, desktopPort, database, {}, 100), true);
+    // Backend-ready replay is delivered before the preload/renderer exists.
+    for (const timer of [...timers].filter((timer) => timer.delay === 0)) { timers.delete(timer); timer.callback(); }
+    const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+    runInNewContext(preload, { window: unload, require: () => ({ ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_name, value) => { api = value; } } }) });
+    const client = new WorkspaceServiceClient(api), events = [];
+    off = client.onWorkspaceChange((event) => events.push(event));
+    assert.equal((await client.loadWorkspaces()).ok, true);
+    assert.deepEqual(events, []);
+    const status = await client.getSourceObservation(workspace.workspaceId);
+    assert.equal(status.ok, true);
+    assert.deepEqual(status.value.observation, { type: "workspace.sourceObserved", sourceId: workspace.sourceId,
+      workspaceIds: [workspace.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "degraded" });
+    assert.deepEqual(await client.getSourceObservation(workspace.workspaceId), status);
+    status.value.observation.workspaceIds.length = 0;
+    assert.deepEqual((await client.getSourceObservation(workspace.workspaceId)).value.observation.workspaceIds, [workspace.workspaceId]);
+    for (const malformed of [{ type: "workspace.getSourceObservation" }, { type: "workspace.getSourceObservation", workspaceId: 42 },
+      { type: "workspace.getSourceObservation", workspaceId: "bad" }, { type: "workspace.getSourceObservation", workspaceId: workspace.workspaceId, extra: true },
+      { type: "workspace.getSourceObservation", workspaceId: "00000000-0000-4000-8000-000000000000" }]) {
+      assert.equal((await controller.request(malformed)).error.code, "invalid_input");
+    }
+    assert.equal((await client.refreshSource(workspace.workspaceId)).ok, true);
+    assert.deepEqual((await client.listProjects(workspace.workspaceId)).value, baseline);
+    assert.deepEqual(events, []);
+    assert.equal(desktopPort.sent.filter((message) => message.input?.type === "workspace.applyDiscovery").length, 0);
+    off(); unload.dispatchEvent(new Event("unload")); await controller.stop(100);
+    assert.equal(timers.size, 0); assert.equal(ipc.listenerCount("workspace:change"), 0);
+  } finally { off?.(); relay(); unload.dispatchEvent(new Event("unload")); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});

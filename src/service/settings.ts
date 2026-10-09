@@ -17,10 +17,10 @@ import {
 import { settings } from "./db/schema.js";
 import * as schema from "./db/schema.js";
 import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService } from "./workspaces.js";
-import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -71,6 +71,7 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.getSourceObservation") return workspaces.getSourceObservation(input);
       if (isRecord(input) && input.type === "workspace.previewProjectRecovery") return workspaces.previewProjectRecovery(input);
       if (isRecord(input) && input.type === "workspace.listTextProperties") return workspaces.listTextProperties(input);
       if (isRecord(input) && input.type === "workspace.listProjects") return workspaces.listProjects(input);

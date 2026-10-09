@@ -2,7 +2,7 @@ import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
-import type { CategoryPropertySnapshot, ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
+import type { CategoryPropertySnapshot, ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
 
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
@@ -63,6 +63,17 @@ export class WorkspaceServiceClient {
 
   listProjects(workspaceId: string): Promise<ServiceResult<ProjectList>> {
     return this.api.workspace({ type: "workspace.listProjects", workspaceId });
+  }
+
+  async getSourceObservation(workspaceId: string): Promise<ServiceResult<WorkspaceSourceObservationSnapshot>> {
+    const result = await this.api.workspace({ type: "workspace.getSourceObservation", workspaceId });
+    if (!result.ok) return result;
+    const observation = result.value.observation;
+    if (observation !== null && (!isWorkspaceChangeEvent(observation) || observation.type !== "workspace.sourceObserved" ||
+      !observation.workspaceIds.includes(workspaceId))) {
+      return { ok: false, error: { code: "service_unavailable", message: "The source observation is unavailable." } };
+    }
+    return result;
   }
 
   refreshSource(workspaceId: string): Promise<ServiceResult<WorkspaceSourceState>> {
