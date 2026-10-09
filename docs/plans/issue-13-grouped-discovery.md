@@ -302,6 +302,12 @@ Before review, reread work/ralphex/issue-13/coordinator-findings.md. Use the fix
 
 Verify findings against actual code; fix confirmed in-scope defects with tests and verified commits. Report consequential unrelated issues without expanding this ticket.
 
+Review iteration 0 execution evidence (2026-10-09):
+
+- Collected all five prescribed independent reviews against the fixed base in slot-limited batches. Quality, implementation, testing and documentation identified the same missing Finding 2 regression and inaccurate checkpoint attribution; simplification reported no issues. Verified the gap against the tracked tests and coordinator requirement.
+- Added the permanent EN/RU event-before-opening-editor / pending-list test through production components and the typed client with disposable real SQLite/filesystem fixtures. It preserves the rendered old draft, shows the newer committed header and sibling-change notice, leaves discovery revision unchanged and restores focus on Escape. The focused test passes, fails when the original baseline bug is temporarily restored, and passes again after restoring the production file unchanged.
+- Fresh npm test (with the explicit Node PATH prefix) passed 214 tests, 0 failures/skips, including production build. npm run lint and npm run typecheck exited 0. Logs and red/green evidence remain in work/ralphex/issue-13/evidence/review-0. Corrected the verification report without rewriting historical Task 4 results. No new graphical/platform check or #44 retry was performed; follow-up review and coordinator gates remain pending.
+
 Coordinator gates remain pending until observed:
 
 - Plan approval before execution.

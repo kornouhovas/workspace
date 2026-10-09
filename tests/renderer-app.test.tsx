@@ -2210,6 +2210,61 @@ function categoryLabelFixture(active: ActiveWorkspace) {
   return { propertyId, list, event, saved };
 }
 
+test("EN/RU opening category rename during a pending sibling refresh keeps the rendered draft and change notice", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "category-pending-refresh-ui-")), root = join(directory, "root");
+    mkdirSync(join(root, "Category/Project"), { recursive: true });
+    const service = openSettingsService(join(directory, "data.sqlite"));
+    let off: (() => void) | undefined;
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
+      const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root });
+      if (!one.ok || !sibling.ok) throw new Error("Fixture creation failed");
+      const workspaceId = one.value.workspaceId;
+      service.workspaces.activate({ type: "workspace.activate", workspaceId });
+      const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" });
+      if (!review.ok) throw new Error("Fixture preview failed");
+      const applied = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.value.previewToken });
+      if (!applied.ok || !applied.value.categoryProperty) throw new Error("Fixture Apply failed");
+      const propertyId = applied.value.categoryProperty.propertyId;
+      const initial = service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId, propertyId, name: "Old label" });
+      assert.equal(initial.ok && initial.value.revision, 1);
+      let delayList = false, finishList: (() => void) | undefined;
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProperties: query, onWorkspace: query, onProjects: async (input) => {
+        const result = service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+        return delayList ? new Promise((resolve) => { finishList = () => resolve(result); }) : result;
+      } });
+      off = service.workspaces.subscribe(api.emitChange);
+      render(<App />);
+      const trigger = await screen.findByRole("button", { name: `${translate(language, "renameCategoryProperty")}: Old label` });
+      delayList = true;
+      await act(async () => {
+        const renamed = service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: sibling.value.workspaceId, propertyId, name: "Sibling label" });
+        assert.equal(renamed.ok && renamed.value.revision, 2);
+      });
+      await waitFor(() => assert.equal(typeof finishList, "function"));
+      assert.ok(screen.getByRole("columnheader", { name: "Old label" }));
+      assert.ok(screen.getByText(translate(language, "projectsLoading")));
+      trigger.focus(); await userEvent.keyboard("{Enter}");
+      const editor = screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }) as HTMLInputElement;
+      assert.equal(editor.value, "Old label");
+      assert.equal(document.activeElement, editor);
+      await act(async () => { finishList!(); });
+      await screen.findByRole("columnheader", { name: "Sibling label" });
+      assert.equal(screen.getByRole("textbox", { name: translate(language, "categoryPropertyName") }), editor);
+      assert.equal(editor.value, "Old label");
+      assert.ok(screen.getByText(translate(language, "categoryPropertyExternalChange")));
+      const current = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
+      assert.equal(current.ok && current.value.categoryProperty?.name, "Sibling label");
+      assert.equal(current.ok && current.value.revision, applied.value.revision);
+      await userEvent.keyboard("{Escape}");
+      assert.equal(document.activeElement, trigger);
+      assert.equal(screen.queryByRole("textbox", { name: translate(language, "categoryPropertyName") }), null);
+    } finally { off?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
 test("EN/RU category label races accept own events but preserve newer labels and independently refreshed projects", async () => {
   for (const language of ["en", "ru"] as const) for (const outcome of ["own", "newer", "oldList"] as const) {
     const active = sharedEventWorkspace(), f = categoryLabelFixture(active);
