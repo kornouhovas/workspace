@@ -652,8 +652,10 @@ test("grouped recovery rejects native aliases at both levels and insufficient ca
   }, "grouped");
 });
 
-test("source observations invalidate both review kinds even after the same root reconnects", () => fixture((f) => {
-  fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
+test("source observations invalidate both review kinds for persisted missing metadata even after the same root reconnects", () => fixture((f) => {
+  fs.renameSync(join(f.root, "Project"), join(f.directory, "away"));
+  f.apply(); // Persisted missing associations still require explicit recovery.
+  fs.renameSync(join(f.directory, "away"), join(f.root, "Target"));
   const recovery = review(f).value;
   const discovery = f.query("workspace.previewDiscovery").value;
   const before = f.records(), files = inventory(f.root);

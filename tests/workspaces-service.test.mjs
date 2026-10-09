@@ -1734,3 +1734,38 @@ test("committed projects fan out to actual source references, invalidate sibling
     } finally { service.close(); }
   });
 });
+
+test("configured source Refresh preserves command validation and blocks reconciliation during an access outage", () => {
+  withFixture(({ root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    let unavailable = false;
+    const filesystem = {
+      realpath: realpathSync.native,
+      isDirectory: (path) => statSync(path).isDirectory(),
+      assertAccessible: () => { if (unavailable) throw new Error("Source unavailable"); },
+    };
+    const service = openSettingsService(databasePath, undefined, filesystem), sqlite = new Database(databasePath);
+    try {
+      const workspace = service.workspaces.create({ type: "workspace.create", name: "Configured", rootPath: root }).value;
+      const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId }).value;
+      const project = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: preview.previewToken }).value.projects[0];
+      fs.renameSync(join(root, "Project"), join(root, "Renamed"));
+      const before = sqlite.prepare("SELECT * FROM projects").all(), events = [];
+      service.workspaces.subscribe((event) => events.push(event));
+      const input = { type: "workspace.refreshSource", workspaceId: workspace.workspaceId };
+      for (const invalid of [{ ...input, extra: true }, { ...input, workspaceId: randomUUID() }, { ...input, workspaceId: "bad" }, { type: input.type }]) {
+        assert.equal(service.handleCommand(invalid).error.code, "invalid_input");
+      }
+      assert.deepEqual(events, []); assert.deepEqual(sqlite.prepare("SELECT * FROM projects").all(), before);
+      unavailable = true;
+      assert.equal(service.handleCommand(input).value.sourceAvailable, false);
+      assert.deepEqual(sqlite.prepare("SELECT * FROM projects").all(), before);
+      assert.deepEqual(events.map((event) => event.type), ["workspace.sourceChanged"]);
+      unavailable = false; events.length = 0;
+      assert.equal(service.handleCommand(input).value.sourceAvailable, true);
+      assert.deepEqual(events.map((event) => event.type), ["workspace.projectsChanged", "workspace.sourceChanged"]);
+      assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value.projects[0].projectId, project.projectId);
+      assert.equal(sqlite.prepare("SELECT relative_path FROM projects").get().relative_path, "Renamed");
+    } finally { sqlite.close(); service.close(); }
+  });
+});

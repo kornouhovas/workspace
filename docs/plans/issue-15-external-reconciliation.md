@@ -87,13 +87,15 @@ The bounded watcher strategy and matching rules above are implementation choices
 - Modify: `tests/workspaces-service.test.mjs`
 - Modify: `tests/project-recovery-service.test.mjs`
 
-- [ ] Add public-service tests for external direct rename, case-only rename where supported, rename followed by old-path replacement, copied folders, reused dev/ino with changed birthtime, ambiguous evidence and cross-volume evidence.
-- [ ] Implement the bounded mapping contract in external-reconciliation.ts using existing scans and stored associations; extend workspace.refreshSource to invoke it while preserving its existing WorkspaceSourceState response and input validation.
-- [ ] Validate saved exclusions before matching and avoid accessing suppressed targets. Leave unrelated folders for explicit Preview/Apply; keep listProjects and preview queries free of reconciliation writes.
-- [ ] Commit locator mappings atomically with one discoveryRevision increment. Support verified direct path swaps by temporarily releasing affected reservations inside the transaction, preserving UUIDs and restoring final states before commit.
-- [ ] Revalidate source configuration, records, root and scan before/after writes; test injected storage/race failures, unchanged snapshots, no-op events, unavailable roots, source containment and unchanged inventories/bytes.
-- [ ] Verify exact Text/property/source/workspace/view retention, actual sibling fanout, stale discovery/recovery rejection and successful manual recovery for uncertain cases.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; run lint and typecheck with the same explicit PATH prefix; commit verified explicit task paths and plan progress.
+- [x] Add public-service tests for external direct rename, case-only rename where supported, rename followed by old-path replacement, copied folders, reused dev/ino with changed birthtime, ambiguous evidence and cross-volume evidence.
+- [x] Implement the bounded mapping contract in external-reconciliation.ts using existing scans and stored associations; extend workspace.refreshSource to invoke it while preserving its existing WorkspaceSourceState response and input validation.
+- [x] Validate saved exclusions before matching and avoid accessing suppressed targets. Leave unrelated folders for explicit Preview/Apply; keep listProjects and preview queries free of reconciliation writes.
+- [x] Commit locator mappings atomically with one discoveryRevision increment. Support verified direct path swaps by temporarily releasing affected reservations inside the transaction, preserving UUIDs and restoring final states before commit.
+- [x] Revalidate source configuration, records, root and scan before/after writes; test injected storage/race failures, unchanged snapshots, no-op events, unavailable roots, source containment and unchanged inventories/bytes.
+- [x] Verify exact Text/property/source/workspace/view retention, actual sibling fanout, stale discovery/recovery rejection and successful manual recovery for uncertain cases.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; run lint and typecheck with the same explicit PATH prefix; commit verified explicit task paths and plan progress.
+
+Verification (Task 1): Node 22.21.1 lockfile install, npm test (322 passed, including production build and existing regressions), lint, typecheck and git diff --check passed. New service fixtures ran on local macOS; Windows and graphical acceptance remain later/coordinator-owned gates. The initial failing test run is retained under work/ralphex/issue-15/task-1-npm-test.txt; passing results are under task-1-npm-test-green.txt, task-1-lint.txt and task-1-typecheck.txt.
 
 ### Task 2: Reconcile grouped categories and project placement atomically
 

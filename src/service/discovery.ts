@@ -64,7 +64,7 @@ function automaticDirectoryReason(name: string, archiveChild: string | null): Ex
     : name === archiveChild ? "archive" : null;
 }
 
-function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): DiscoverySnapshot {
+function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoverySnapshot {
   const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
   // Do not open a retargeted root or a link, including a link in an ancestor.
   if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot) throw new RootConflict();
@@ -79,7 +79,7 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
       if (entry.isFile()) continue;
       if (!isChildName(entry.name)) throw new ScanChanged();
       const reason = entry.isSymbolicLink() ? "link"
-        : entry.isDirectory() ? automaticDirectoryReason(entry.name, archiveChild) : null;
+        : entry.isDirectory() ? automaticDirectoryReason(entry.name, archiveChild) ?? (exclusions.includes(entry.name) ? "manual" : null) : null;
       if (reason) {
         // The root's directory entry is sufficient to exclude these locations. Do not access their metadata.
         children.push({ relativePath: entry.name, kind: "excluded", reason });
@@ -99,7 +99,9 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
   if (realpathSync.native(canonicalRoot) !== canonicalRoot ||
     changed(root, observation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
   // Resolve non-exact archive casing only with verified identity evidence, never by guessing names.
-  if (archiveChild && !automaticDirectoryReason(archiveChild, null) &&
+  const suppressedArchiveAlias = archiveChild && children.some((child) => child.kind === "excluded" &&
+    child.relativePath.normalize("NFD").toLowerCase() === archiveChild!.normalize("NFD").toLowerCase());
+  if (archiveChild && !suppressedArchiveAlias && !automaticDirectoryReason(archiveChild, null) &&
     !children.some((child) => child.relativePath === archiveChild)) {
     try {
       // Resolve casing using only the designated immediate child's own evidence. Do not open it.
@@ -119,9 +121,9 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
 
 export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoveryScan {
   try {
-    const snapshot = scanOnce(canonicalRoot, archiveRelativePath);
+    const snapshot = scanOnce(canonicalRoot, archiveRelativePath, exclusions);
     // Recheck the complete interpretation, including kind swaps and disappearing entries.
-    if (JSON.stringify(snapshot) !== JSON.stringify(scanOnce(canonicalRoot, archiveRelativePath))) throw new ScanChanged();
+    if (JSON.stringify(snapshot) !== JSON.stringify(scanOnce(canonicalRoot, archiveRelativePath, exclusions))) throw new ScanChanged();
     const archiveChild = snapshot.archiveChild;
     const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
       const name = child.relativePath;

@@ -1,9 +1,10 @@
+import { reconcileDirectSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
-import { interpretGrouped, interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
+import { interpretGrouped, interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoveryScan, type DiscoverySnapshot } from "./discovery.js";
 import type { CategoryPropertySnapshot, DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
@@ -80,6 +81,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
+  let pendingProjectEvents: WorkspaceChangeEvent[] = [];
   let pending = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
   const observe: SourceObserver = (sourceId, state) => { pending.set(sourceId, state); };
   const recovery = createProjectRecoveryService(db, {
@@ -260,6 +262,11 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         .where(eq(schema.workspaces.id, input.workspaceId)).get();
       if (!source) return invalid("Choose a saved workspace.");
       const state = normalizeSource(db, source.sourceId, source.canonicalRoot, filesystem, observe);
+      const configured = workspaceSource(input.workspaceId)!;
+      const reconciled = state.sourceAvailable ? reconcileDirectSource(db, configured) : { changed: false, scan: null };
+      if (!state.sourceAvailable || reconciled.scan && !reconciled.scan.snapshot) invalidateSourceReviews(source.sourceId);
+      if (reconciled.changed) pendingProjectEvents.push({ type: "workspace.projectsChanged", sourceId: source.sourceId,
+        revision: configured.discoveryRevision + 1, workspaceIds: sourceState(source.sourceId, state).workspaceIds });
       return { ok: true, value: sourceState(source.sourceId, state) };
     },
     create(input) {
@@ -455,12 +462,13 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     return db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
   }
   function projectList(workspaceId: string, source: typeof schema.sources.$inferSelect,
-    currentScan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, JSON.parse(source.excludedRelativePaths))): ProjectList {
+    observedScan?: DiscoveryScan): ProjectList {
     const mode = source.discoveryMode;
     if (!validExclusions(JSON.parse(source.excludedRelativePaths), mode === "grouped" ? "grouped" : "direct") || !validArchive(source.archiveRelativePath) ||
       !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
       !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
       (mode !== null && mode !== "direct" && mode !== "grouped")) throw new Error("Invalid source configuration");
+    const currentScan = observedScan ?? (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, JSON.parse(source.excludedRelativePaths));
     const projects = readProjects(source.id);
     const categories = readCategories(source.id);
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
@@ -531,6 +539,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
 
   function run<R extends { ok: boolean }>(operation: () => R, listSnapshot?: (result: R) => WorkspaceLoad | undefined): R | ReturnType<typeof storageFailure> {
     pending = new Map();
+    pendingProjectEvents = [];
     let snapshot: WorkspaceLoad | undefined;
     let sources: WorkspaceSourceState[] = [];
     try {
@@ -545,6 +554,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       if (result.ok) {
         // Publish the authoritative selection/list before source observations.
         const events: WorkspaceChangeEvent[] = snapshot ? [{ type: "workspace.listChanged", snapshot }] : [];
+        for (const event of pendingProjectEvents) {
+          if (event.type === "workspace.projectsChanged") invalidateSourceReviews(event.sourceId);
+          events.push(event);
+        }
         for (const source of sources) {
           const previous = observed.get(source.sourceId);
           observed.set(source.sourceId, { canonicalRoot: source.canonicalRoot, sourceAvailable: source.sourceAvailable });
