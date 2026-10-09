@@ -71,10 +71,10 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
   </section>;
 }
 
-export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, invalidation, observation, language, disabled, onCommitted, onReload, onClose, onPendingChange }: {
+export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, observationVersion, invalidation, observation, language, disabled, onCommitted, onReload, onClose, onPendingChange }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; project: ProjectAssociationSummary;
-  minimumRevision: { current: number }; invalidation: number; observation: number; language: Language; disabled: boolean;
-  onCommitted(value: ProjectList): void; onReload(): void; onClose(): void;
+  minimumRevision: { current: number }; observationVersion: { current: number }; invalidation: number; observation: number; language: Language; disabled: boolean;
+  onCommitted(value: ProjectList, observedVersion: number): void; onReload(): void; onClose(): void;
   onPendingChange?(pending: boolean): void;
 }) {
   const [preview, setPreview] = useState<ProjectRecoveryPreview | null>(null);
@@ -121,13 +121,14 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
   const confirm = async () => {
     if (disabled || saving.current || loading || stale || uncertain || !preview?.previewToken || !selectedPath || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
+    const observedVersion = observationVersion.current;
     saving.current = true; setPending(true); setError(false); onPendingChange?.(true);
     try {
       const result = await client.reassociateProject(workspaceId, project.projectId, preview.previewToken, selectedPath);
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision > preview.revision &&
         result.value.projects.some((row) => row.projectId === project.projectId && row.relativePath === selectedPath && row.resolution === "active")) {
-        onCommitted(result.value); onClose();
+        onCommitted(result.value, observedVersion); onClose();
       } else if (!result.ok && result.error.code === "stale_preview") {
         setStale(true); setPreview(null); setSelectedPath(null);
       } else if (!result.ok && result.error.code !== "service_unavailable") setError(true);

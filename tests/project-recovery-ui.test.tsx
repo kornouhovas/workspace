@@ -56,6 +56,32 @@ class RecoveryClient extends WorkspaceServiceClient {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 
 for (const language of ["en", "ru"] as const) {
+  test(`${language}: a recovery response batched with a newer observation preserves the missing-folder projection`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const client = new RecoveryClient(), response = deferred<ServiceResult<ProjectList>>();
+    client.handler = () => response.promise;
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    await userEvent.click(await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Target authored name" }));
+    await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
+    client.projects = { ...committed, state: "empty", projects: [], retainedProjects: [
+      ...committed.projects.map((row) => ({ ...row, resolution: "missing" as const })), ...committed.retainedProjects,
+    ], retainedCount: 2 };
+    await act(async () => {
+      client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"],
+        observationRevision: 2, state: "empty", automaticUpdates: "active" });
+      response.resolve({ ok: true, value: committed });
+    });
+    assert.ok(await screen.findByRole("button", { name: `${t("recoveryLocate")}: Target authored name` }));
+    assert.ok(screen.getByText(t("recoverySaved")));
+    assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }));
+    assert.equal(screen.queryByRole("heading", { name: t("recoveryTitle") }), null);
+    assert.equal(client.saves, 1, "a confirmed recovery must not be replayed");
+    cleanup(); assert.equal(client.listeners.size, 0);
+  });
+}
+
+for (const language of ["en", "ru"] as const) {
   test(`${language}: manually excluded projects keep reinclusion guidance and editable Text when folder observations change`, async () => {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     for (const resolution of ["missing", "unresolved", "replaced", null] as const) {

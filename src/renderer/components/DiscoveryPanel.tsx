@@ -335,14 +335,14 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         setError(false); setLoading(false);
       }} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
-      project={recoveryProject} minimumRevision={minimumRevision} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
+      project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
       onPendingChange={onRecoveryPending}
       onReload={() => void load()} onClose={() => { restoreRecoveryFocus.current = true; setRecoveryProject(null); }}
-      onCommitted={(value) => {
+      onCommitted={(value, observedVersion) => {
         setRecoverySaved(true);
-        // A confirmed own commit can be older than a sibling commit. Report the
-        // success without replacing its newer projection or pending reload.
-        if (value.revision < minimumRevision.current) { void load(); return; }
+        // Live observations advance synchronously, before recovery's effects.
+        // Keep confirmed success while reloading any newer placement/resolution.
+        if (value.revision < minimumRevision.current || observedVersion !== observationVersion.current) { void load(); return; }
         version.current++; minimumRevision.current = value.revision;
         const current = committedProjects.current;
         const updated = value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current || !current ? value
