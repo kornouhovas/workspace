@@ -558,8 +558,18 @@ test("real service IPC routes read-only discovery previews and rejects unsafe/fo
     const eventsBefore = port.sent.filter((message) => message.type === "workspace.change").length;
     const preview = request(query);
     assert.equal(preview.ok, true);
-    assert.deepEqual(preview.value.entries, [{ relativePath: "Project", name: "Project", reason: null }]);
+    assert.deepEqual(preview.value.entries, [{ kind: "project", categoryPath: null, relativePath: "Project", name: "Project", reason: null }]);
     assert.equal(request({ ...query, excludedRelativePaths: ["Project"] }).value.entries[0].reason, "manual");
+    const grouped = request({ ...query, mode: "grouped" });
+    assert.equal(grouped.ok, true);
+    assert.equal(grouped.value.mode, "grouped");
+    assert.deepEqual(grouped.value.entries, [
+      { kind: "category", relativePath: "Project", name: "Project", reason: null, empty: false },
+      { kind: "project", relativePath: "Project/Nested", name: "Nested", reason: null, categoryPath: "Project" },
+    ]);
+    assert.equal(request({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: grouped.value.previewToken }).error.code, "invalid_input");
+    assert.equal(request({ ...query, mode: "grouped", excludedRelativePaths: ["Project/Nested"] }).value.entries[1].reason, "manual");
+    for (const mode of ["recursive", null, 1]) assert.equal(request({ ...query, mode }).error.code, "invalid_input");
     for (const input of [{ ...query, extra: true }, { type: query.type }, { ...query, workspaceId: "bad" },
       { ...query, workspaceId: "00000000-0000-4000-8000-000000000000" },
       { ...query, excludedRelativePaths: null }, { ...query, excludedRelativePaths: ["../escape"] },

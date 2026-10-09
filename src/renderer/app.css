@@ -294,3 +294,7 @@ body {
 .text-value-editor .workspace-form-actions { flex-wrap: wrap; }
 .text-value-label, .text-value-hint { overflow-wrap: anywhere; white-space: normal; }
 .text-value-hint { margin: 0; font-size: 0.85rem; color: #62666d; }
+
+.discovery-mode { min-width: 0; display: grid; gap: 0.5rem; }
+.discovery-mode select { min-width: 0; max-width: 100%; width: 100%; padding: 0.5rem; }
+.discovery-entries--projects { padding-inline-start: 1.5rem; border-inline-start: 1px solid #d7d9dc; }

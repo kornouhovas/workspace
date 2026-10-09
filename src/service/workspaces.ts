@@ -1,6 +1,6 @@
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
-import { interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
+import { interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
 import type { DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
@@ -85,9 +85,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
         !["type", "workspaceId"].every((key) => Object.hasOwn(input, key)) ||
-        !Object.keys(input).every((key) => ["type", "workspaceId", "excludedRelativePaths"].includes(key)) ||
-        (Object.hasOwn(input, "excludedRelativePaths") && !validExclusions(input.excludedRelativePaths))) {
-        return invalid("Choose a saved workspace and valid direct-folder exclusions.");
+        !Object.keys(input).every((key) => ["type", "workspaceId", "excludedRelativePaths", "mode"].includes(key)) ||
+        (Object.hasOwn(input, "mode") && input.mode !== "direct" && input.mode !== "grouped")) {
+        return invalid("Choose a saved workspace and valid discovery mode and folder exclusions.");
       }
       const workspaceId = input.workspaceId;
       previewTokens.delete(workspaceId);
@@ -96,12 +96,16 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
           .where(eq(schema.workspaces.id, workspaceId)).get()?.sources;
         if (!source) return invalid("Choose a saved workspace.");
+        const mode = input.mode ?? source.discoveryMode ?? "direct";
+        if (source.discoveryMode !== null && mode !== source.discoveryMode) return invalid("Configured source mode cannot be changed.");
+        if (mode !== "direct" && mode !== "grouped") return storageFailure();
+        if (Object.hasOwn(input, "excludedRelativePaths") && !validExclusions(input.excludedRelativePaths, mode)) return invalid("Choose valid source-relative exclusions.");
         const saved: unknown = JSON.parse(source.excludedRelativePaths);
-        if (!validExclusions(saved) || !validArchive(source.archiveRelativePath) ||
+        if (!validExclusions(saved, mode) || !validArchive(source.archiveRelativePath) ||
           !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
           (source.discoveryMode !== null && source.discoveryMode !== "direct")) return storageFailure();
         const exclusions = Object.hasOwn(input, "excludedRelativePaths") ? input.excludedRelativePaths as string[] : saved;
-        const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, exclusions);
+        const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
         if (scan.snapshot && exclusions.some((name) => !saved.includes(name) &&
           !scan.entries.some((entry) => entry.relativePath === name && (entry.reason === null || entry.reason === "manual")))) {
           return invalid("Exclude only selectable folders in the current preview.");
@@ -114,10 +118,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           state = "root_identity_conflict";
         }
         const projects = readProjects(source.id);
-        const interpreted = snapshot ? interpretProjects(scan, projects).entries : [];
+        const interpreted = snapshot ? mode === "grouped" ? scan.entries : interpretProjects(scan, projects).entries : [];
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
         const preview: DiscoveryPreview = {
-          workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
+          mode, configured: source.discoveryMode !== null, workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
           excludedRelativePaths: [...exclusions].sort(), entries: interpreted, state,
           previewToken: snapshot ? randomUUID() : null,
         };
@@ -149,6 +153,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!token || token.preview.previewToken !== input.previewToken ||
           discoverySourceState(token.source) !== discoverySourceState(source) ||
           JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id))) return stale();
+        if (token.preview.mode === "grouped") return invalid("Grouped Apply is not available yet.");
         const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();

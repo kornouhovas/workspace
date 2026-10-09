@@ -132,17 +132,18 @@ export const UnavailableSource: Story = () => <WorkspacePreview language="ru" st
 type DiscoveryStoryState = "preview" | "empty" | "pending" | "applying" | "error" | "stale";
 function DiscoveryState({ language, state }: { language: Language; state: DiscoveryStoryState }) {
   const preview: DiscoveryPreview = {
+    mode: "direct", configured: false,
     workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
     revision: 1, canonicalRoot: "/Projects/" + "long-authored-folder-path-".repeat(8), excludedRelativePaths: ["Excluded"],
     state: state === "empty" ? "empty" : "ready", previewToken: state === "pending" || state === "applying" ? null : "preview-fixture",
     entries: state === "empty" ? [] : [
-      { name: "  Authored-проект-" + "long-name-".repeat(18) + "  ", relativePath: "Project", reason: null },
-      { name: "Excluded", relativePath: "Excluded", reason: "manual" },
-      { name: ".hidden", relativePath: ".hidden", reason: "hidden" },
-      { name: "External link", relativePath: "External link", reason: "link" },
-      { name: "$RECYCLE.BIN", relativePath: "$RECYCLE.BIN", reason: "service" },
-      { name: "Designated archive", relativePath: "Designated archive", reason: "archive" },
-      { name: "Uncertain folder", relativePath: "Uncertain folder", reason: "unresolved" },
+      { kind: "project", categoryPath: null, name: "  Authored-проект-" + "long-name-".repeat(18) + "  ", relativePath: "Project", reason: null },
+      { kind: "project", categoryPath: null, name: "Excluded", relativePath: "Excluded", reason: "manual" },
+      { kind: "project", categoryPath: null, name: ".hidden", relativePath: ".hidden", reason: "hidden" },
+      { kind: "project", categoryPath: null, name: "External link", relativePath: "External link", reason: "link" },
+      { kind: "project", categoryPath: null, name: "$RECYCLE.BIN", relativePath: "$RECYCLE.BIN", reason: "service" },
+      { kind: "project", categoryPath: null, name: "Designated archive", relativePath: "Designated archive", reason: "archive" },
+      { kind: "project", categoryPath: null, name: "Uncertain folder", relativePath: "Uncertain folder", reason: "unresolved" },
     ],
   };
   return <main className="app-shell" lang={language}><DiscoveryPanel language={language}

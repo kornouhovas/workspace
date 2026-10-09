@@ -1,6 +1,6 @@
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { useEffect, useRef, useState } from "react";
-import type { DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
+import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, ProjectList } from "../../contracts/workspaces.js";
 import type { Language } from "../../contracts/settings.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
@@ -15,6 +15,7 @@ interface PanelProps {
   applyError?: boolean;
   stale?: boolean;
   onApply?(): void;
+  onMode?(mode: DiscoveryMode): void;
   onExclude(relativePath: string, excluded: boolean): void;
   onRetry(): void;
   onCancel(): void;
@@ -28,22 +29,56 @@ const reasonLabels = {
   service: "discoveryService", archive: "discoveryArchive", unresolved: "discoveryUnresolved",
 } as const;
 
-export function DiscoveryPanel({ language, preview, pending, error, applying, applyError, stale, onApply, onExclude, onRetry, onCancel }: PanelProps) {
+export function DiscoveryPanel({ language, preview, pending, error, applying, applyError, stale, onApply, onMode, onExclude, onRetry, onCancel }: PanelProps) {
   const t = (key: TranslationKey) => translate(language, key);
   const heading = useRef<HTMLHeadingElement>(null);
   const requestedFocus = useRef<string | null>(null);
   const controls = useRef(new Map<string, HTMLInputElement>());
   const retry = useRef<HTMLButtonElement>(null);
+  const modeControl = useRef<HTMLSelectElement>(null);
+  const modeFocus = useRef(false);
   useEffect(() => {
+    if (!pending && modeFocus.current) { (modeControl.current ?? retry.current)?.focus(); modeFocus.current = false; }
     if (!pending && requestedFocus.current) {
       (controls.current.get(requestedFocus.current) ?? retry.current)?.focus();
       requestedFocus.current = null;
     }
   }, [pending, preview]);
   useEffect(() => { heading.current?.focus(); }, []);
+  const renderEntry = (entry: DiscoveryEntry) => {
+    const automatic = entry.reason !== null && entry.reason !== "manual";
+    const projects = preview?.entries.filter((project) => project.kind === "project" && project.categoryPath === entry.relativePath) ?? [];
+    return <li key={entry.relativePath}>
+      <label>
+        <input type="checkbox" ref={(element) => {
+          if (element) controls.current.set(entry.relativePath, element);
+          else {
+            if (document.activeElement === controls.current.get(entry.relativePath)) requestedFocus.current = entry.relativePath;
+            controls.current.delete(entry.relativePath);
+          }
+        }} checked={entry.reason !== null} disabled={pending || automatic}
+          onChange={(event) => { requestedFocus.current = entry.relativePath; onExclude(entry.relativePath, event.currentTarget.checked); }} />
+        <span>{t("discoveryExclude")}: {preview?.mode === "grouped" && <span>{t(entry.kind === "category" ? "discoveryCategory" : "discoveryProject")}: </span>}
+          <span className="discovery-name">{entry.name}</span></span>
+      </label>
+      {entry.reason && <span className="discovery-reason">{t(reasonLabels[entry.reason])}</span>}
+      {entry.kind === "category" && entry.reason === null && entry.empty && <span className="discovery-reason">{t("discoveryEmptyCategory")}</span>}
+      {projects.length > 0 && <ul className="discovery-entries discovery-entries--projects">{projects.map(renderEntry)}</ul>}
+    </li>;
+  };
   return <section className="discovery-panel" aria-labelledby="discovery-title" aria-busy={pending}>
-    <h3 id="discovery-title" ref={heading} tabIndex={-1}>{t("discoveryTitle")}</h3>
-    <p>{t("discoveryDescription")}</p>
+    <h3 id="discovery-title" ref={heading} tabIndex={-1}>{t(preview?.mode === "grouped" ? "discoveryGroupedTitle" : "discoveryTitle")}</h3>
+    {preview && !preview.configured && onMode && <label className="discovery-mode">
+      <span>{t("discoveryMode")}</span>
+      <select ref={modeControl} value={preview.mode} disabled={pending} onChange={(event) => {
+        modeFocus.current = true; onMode(event.currentTarget.value as DiscoveryMode);
+      }}>
+        <option value="direct">{t("discoveryDirectMode")}</option>
+        <option value="grouped">{t("discoveryGroupedMode")}</option>
+      </select>
+    </label>}
+    <p>{t(preview?.mode === "grouped" ? "discoveryGroupedDescription" : "discoveryDescription")}</p>
+    {preview?.mode === "grouped" && <StatusMessage kind="info" title={t("discoveryGroupedReviewOnly")} />}
     {pending && <StatusMessage kind="info" title={t(applying ? "discoveryApplying" : "discoveryLoading")} />}
     {applyError && <StatusMessage kind="error" title={t("discoveryApplyError")} />}
     {stale && <StatusMessage kind="info" title={t("discoveryStale")} />}
@@ -52,27 +87,11 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
       <p className="workspace-root">{preview.canonicalRoot}</p>
       <StatusMessage kind={pending || preview.previewToken ? "info" : "error"} title={t(stateLabels[preview.state])} />
       {preview.entries.length > 0 ? <ul className="discovery-entries">
-        {preview.entries.map((entry) => {
-          const automatic = entry.reason !== null && entry.reason !== "manual";
-          return <li key={entry.relativePath}>
-            <label>
-              <input type="checkbox" ref={(element) => {
-                if (element) controls.current.set(entry.relativePath, element);
-                else {
-                  if (document.activeElement === controls.current.get(entry.relativePath)) requestedFocus.current = entry.relativePath;
-                  controls.current.delete(entry.relativePath);
-                }
-              }} checked={entry.reason !== null} disabled={pending || automatic}
-                onChange={(event) => { requestedFocus.current = entry.relativePath; onExclude(entry.relativePath, event.currentTarget.checked); }} />
-              <span>{t("discoveryExclude")}: <span className="discovery-name">{entry.name}</span></span>
-            </label>
-            {entry.reason && <span className="discovery-reason">{t(reasonLabels[entry.reason])}</span>}
-          </li>;
-        })}
+        {preview.entries.filter((entry) => entry.kind === "category" || entry.categoryPath === null).map(renderEntry)}
       </ul> : preview.previewToken && <EmptyStatePanel>{t("discoveryEmptyDescription")}</EmptyStatePanel>}
     </>}
     <div className="workspace-form-actions">
-      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken} onClick={onApply}>{t("discoveryApply")}</button>}
+      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken || preview.mode === "grouped"} onClick={onApply}>{t("discoveryApply")}</button>}
       <button ref={retry} type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={onRetry}>{t("discoveryRefresh")}</button>
       <button type="button" className="workspace-button workspace-button--secondary" disabled={applying} onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
     </div>
@@ -94,6 +113,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
   const trigger = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
   const exclusions = useRef<string[] | undefined>(undefined);
+  const mode = useRef<DiscoveryMode | undefined>(undefined);
   const lastInvalidation = useRef(invalidation);
   useEffect(() => {
     if (lastInvalidation.current === invalidation) return;
@@ -114,24 +134,24 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     setError(false);
     setPreview((current) => current ? { ...current, previewToken: null } : null);
     try {
-      let result = await client.previewDiscovery(workspaceId, draft);
+      let result = await client.previewDiscovery(workspaceId, draft, mode.current);
       if (current !== version.current) return;
       if (!result.ok && result.error.code === "invalid_input" && draft) {
         // A vanished or automatically excluded unsaved choice can invalidate a draft.
         // Rebuild it from an authoritative preview, preserving the remaining choices.
-        const saved = await client.previewDiscovery(workspaceId);
+        const saved = await client.previewDiscovery(workspaceId, undefined, mode.current);
         if (current !== version.current) return;
         result = saved;
         if (saved.ok && saved.value.workspaceId === workspaceId && saved.value.sourceId === sourceId &&
           saved.value.revision >= minimumRevision.current && saved.value.previewToken) {
           const available = new Set([...saved.value.excludedRelativePaths, ...saved.value.entries
             .filter((entry) => entry.reason === null || entry.reason === "manual").map((entry) => entry.relativePath)]);
-          result = await client.previewDiscovery(workspaceId, draft.filter((name) => available.has(name)));
+          result = await client.previewDiscovery(workspaceId, draft.filter((name) => available.has(name)), mode.current);
         }
       }
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
-        result.value.revision >= minimumRevision.current) {
+        result.value.revision >= minimumRevision.current && (mode.current === undefined || result.value.mode === mode.current)) {
         setPreview(result.value);
         exclusions.current = result.value.previewToken ? result.value.excludedRelativePaths : draft ?? result.value.excludedRelativePaths;
       } else { setPreview(null); setError(true); }
@@ -139,7 +159,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     finally { if (current === version.current) setPending(false); }
   };
   const apply = async () => {
-    if (pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
+    if (pending || applyingRef.current || preview?.mode === "grouped" || !preview?.previewToken || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
     applyingRef.current = true;
     setApplying(true); setPending(true); setApplyError(false); setStale(false);
@@ -163,8 +183,9 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
   };
   return <>
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
-      onClick={() => { setOpen(true); setApplyError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
+      onClick={() => { mode.current = undefined; setOpen(true); setApplyError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
     {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} applyError={applyError} stale={stale} onApply={() => void apply()}
+      onMode={(value) => { mode.current = value; setApplyError(false); setStale(false); void request(); }}
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}
       onExclude={(name, excluded) => {
         const draft = new Set(exclusions.current ?? []);

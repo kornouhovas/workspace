@@ -57,8 +57,8 @@ test("EN/RU discovery state controls require a reviewed token and respect pendin
         ...previewResult(makeActive("panel", "Workspace")), state: state === "empty" ? "empty" as const : "ready" as const,
         previewToken: pending ? null : "reviewed",
         entries: state === "empty" ? [] : [
-          { name: "  Authored project  ", relativePath: "  Authored project  ", reason: null },
-          { name: "External link", relativePath: "External link", reason: "link" as const },
+          { kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: null },
+          { kind: "project" as const, categoryPath: null, name: "External link", relativePath: "External link", reason: "link" as const },
         ],
       };
       render(<DiscoveryPanel language={language} preview={preview} pending={pending} applying={state === "applying"}
@@ -912,9 +912,9 @@ test("EN/RU preview requests authoritative exclusion drafts, uses keyboard contr
         if (input.type !== "workspace.previewDiscovery") return fail("invalid_input");
         return ok({ workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0,
           canonicalRoot: active.canonicalRoot, excludedRelativePaths: input.excludedRelativePaths ?? [], state: "ready" as const,
-          previewToken: "opaque-preview", entries: [
-            { relativePath: "  Authored project  ", name: "  Authored project  ", reason: input.excludedRelativePaths?.length ? "manual" as const : null },
-            { relativePath: ".service", name: ".service", reason: "hidden" as const },
+          mode: "direct" as const, configured: false, previewToken: "opaque-preview", entries: [
+            { kind: "project" as const, categoryPath: null, relativePath: "  Authored project  ", name: "  Authored project  ", reason: input.excludedRelativePaths?.length ? "manual" as const : null },
+            { kind: "project" as const, categoryPath: null, relativePath: ".service", name: ".service", reason: "hidden" as const },
           ] });
       } });
     render(<App />);
@@ -968,7 +968,7 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
         if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
         if (++attempts === 1) return fail("storage");
         return ok({ workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0, canonicalRoot: active.canonicalRoot,
-          excludedRelativePaths: [], entries: [], state, previewToken: state === "empty" ? "token" : null });
+          excludedRelativePaths: [], entries: [], state, mode: "direct" as const, configured: false, previewToken: state === "empty" ? "token" : null });
       } });
       render(<App />);
       await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
@@ -987,8 +987,134 @@ const projectList = (active: ActiveWorkspace, projects: string[] = [], revision 
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, canonicalRoot: active.canonicalRoot,
-  state: "ready" as const, previewToken: token, excludedRelativePaths,
-  entries: [{ name: "  Authored project  ", relativePath: "  Authored project  ", reason: null }],
+  state: "ready" as const, mode: "direct" as const, configured: false, previewToken: token, excludedRelativePaths,
+  entries: [{ kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: null }],
+});
+
+test("EN/RU grouped review uses the real service and keyboard mode/exclusion controls without configuring the source", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "workspace-grouped-ui-"));
+    const root = join(directory, "root");
+    for (const path of ["Category/Project/Deeper", "Empty", "DirectLooking/src"]) mkdirSync(join(root, path), { recursive: true });
+    const service = openSettingsService(join(directory, "data", "workspace.sqlite"));
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "Test", rootPath: root });
+      if (!created.ok) throw new Error("Fixture creation failed");
+      const workspaceId = created.value.workspaceId;
+      const calls: WorkspaceRequest[] = [];
+      mockApi({ language,
+        onProjects: async (input) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>,
+        onWorkspace: async (input) => {
+          calls.push(input);
+          return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery"
+            ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+        } });
+      render(<App />);
+      const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+      await userEvent.click(trigger);
+      const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
+      mode.focus();
+      await userEvent.selectOptions(mode, "grouped");
+      await screen.findByRole("heading", { name: translate(language, "discoveryGroupedTitle") });
+      await waitFor(() => assert.equal(document.activeElement, mode));
+      assert.ok(screen.getByText(translate(language, "discoveryGroupedDescription")));
+      assert.ok(screen.getByText(translate(language, "discoveryEmptyCategory")));
+      const checkbox = (kind: "discoveryCategory" | "discoveryProject", name: string) => screen.getByRole("checkbox", {
+        name: `${translate(language, "discoveryExclude")}: ${translate(language, kind)}: ${name}`,
+      }) as HTMLInputElement;
+      assert.ok(checkbox("discoveryProject", "src"));
+      assert.equal(screen.queryByText("Deeper"), null);
+      assert.ok(checkbox("discoveryCategory", "Category").closest("li")?.contains(checkbox("discoveryProject", "Project")));
+      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+      const project = checkbox("discoveryProject", "Project"); project.focus();
+      await userEvent.keyboard(" ");
+      await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
+      assert.equal(checkbox("discoveryProject", "Project").checked, true);
+      assert.equal(document.activeElement, checkbox("discoveryProject", "Project"));
+      assert.deepEqual(calls.at(-1), { type: "workspace.previewDiscovery", workspaceId, mode: "grouped", excludedRelativePaths: ["Category/Project"] });
+      await userEvent.click(checkbox("discoveryCategory", "DirectLooking"));
+      await waitFor(() => assert.equal(checkbox("discoveryCategory", "DirectLooking").disabled, false));
+      assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryProject")}: src` }), null);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+      assert.equal(document.activeElement, trigger);
+      const list = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
+      assert.equal(list.ok && list.value.configured, false);
+      await userEvent.click(trigger);
+      const restoredMode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
+      assert.equal((restoredMode as HTMLSelectElement).value, "direct");
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await screen.findByRole("cell", { name: "Category" });
+      await userEvent.click(trigger);
+      await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: Category` });
+      assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+    } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("delayed grouped requests cannot revive cancelled, switched, removed or restarted reviews", async () => {
+  for (const transition of ["cancel", "switch", "remove", "restart", "newerEvent"] as const) {
+    const active = sharedEventWorkspace(); const other = eventWorkspace("Other");
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ load: ok(snapshotOf(active, [active, other])), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
+      if (input.type === "workspace.previewDiscovery") return input.mode === "grouped"
+        ? new Promise((resolve) => { finish = resolve; }) : ok(previewResult(active));
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Folder interpretation" }), "grouped");
+    assert.ok(screen.getByRole("heading", { name: "Scanning project folders…" }));
+    if (transition === "cancel") {
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      await userEvent.click(screen.getByRole("button", { name: "Preview project folders" }));
+      await screen.findByRole("checkbox");
+    } else if (transition === "restart") {
+      await act(async () => { api.emitStatus("starting"); });
+      await act(async () => { api.emitStatus("ready"); });
+    } else if (transition === "newerEvent") {
+      await act(async () => { api.emitChange({ type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision: 2 }); });
+    } else {
+      await act(async () => { api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, transition === "remove" ? [other] : [active, other]) }); });
+    }
+    await act(async () => { finish?.(ok({ ...previewResult(active), mode: "grouped", entries: [{ kind: "category", empty: true, name: "Late category", relativePath: "Late category", reason: null }] })); });
+    assert.equal(screen.queryByRole("heading", { name: "Grouped project preview" }), null);
+    assert.equal(screen.queryByText("Late category"), null);
+    cleanup();
+  }
+});
+
+test("EN/RU grouped selection shows pending, recoverable failure and empty review without enabling Apply", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let groupedCalls = 0;
+    mockApi({ language, load: ok(snapshotOf(active)), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.previewDiscovery") {
+        if (input.mode !== "grouped") return ok(previewResult(active));
+        if (++groupedCalls === 1) return new Promise((resolve) => { finish = resolve; });
+        return ok({ ...previewResult(active), mode: "grouped", state: "empty", entries: [] });
+      }
+      return fail("invalid_input");
+    } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryAction") }));
+    const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
+    await userEvent.selectOptions(mode, "grouped");
+    assert.equal((mode as HTMLSelectElement).disabled, true);
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryLoading") }));
+    await act(async () => { finish?.(fail("storage")); });
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryError") }));
+    const retry = screen.getByRole("button", { name: translate(language, "discoveryRefresh") });
+    assert.equal(document.activeElement, retry);
+    await userEvent.keyboard("{Enter}");
+    await screen.findByRole("heading", { name: translate(language, "discoveryGroupedTitle") });
+    assert.equal(groupedCalls, 2);
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryEmpty") }));
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    cleanup();
+  }
 });
 
 test("EN/RU keyboard Apply prevents duplicate submission and displays committed names without changing Table identity", async () => {
@@ -1076,7 +1202,7 @@ test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply 
   assert.equal(screen.getByRole("checkbox"), checkbox);
   assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
   await act(async () => { finish?.(ok({ ...previewResult(active, "new", ["  Authored project  "]),
-    entries: [{ name: "  Authored project  ", relativePath: "  Authored project  ", reason: "manual" }] })); });
+    entries: [{ kind: "project" as const, categoryPath: null, name: "  Authored project  ", relativePath: "  Authored project  ", reason: "manual" }] })); });
   assert.equal(document.activeElement, checkbox);
   assert.equal((checkbox as HTMLInputElement).checked, true);
   assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, false);

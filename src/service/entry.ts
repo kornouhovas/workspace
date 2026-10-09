@@ -84,9 +84,10 @@ function isMalformedWorkspaceRequest(input: unknown): boolean {
   }
   if (input.type === "workspace.listTextProperties") return !hasExactKeys(input, ["type", "workspaceId"]) || typeof input.workspaceId !== "string";
   if (input.type === "workspace.previewDiscovery") {
-    const keys = Object.hasOwn(input, "excludedRelativePaths")
-      ? ["type", "workspaceId", "excludedRelativePaths"] : ["type", "workspaceId"];
+    const keys = ["type", "workspaceId", ...(Object.hasOwn(input, "excludedRelativePaths") ? ["excludedRelativePaths"] : []),
+      ...(Object.hasOwn(input, "mode") ? ["mode"] : [])];
     return !hasExactKeys(input, keys) || typeof input.workspaceId !== "string" ||
+      (Object.hasOwn(input, "mode") && input.mode !== "direct" && input.mode !== "grouped") ||
       (Object.hasOwn(input, "excludedRelativePaths") &&
         (!Array.isArray(input.excludedRelativePaths) || !input.excludedRelativePaths.every((path) => typeof path === "string")));
   }

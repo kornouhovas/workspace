@@ -78,12 +78,19 @@ export interface WorkspaceCreated {
 }
 
 export type DiscoveryExclusionReason = "manual" | "link" | "hidden" | "service" | "archive" | "unresolved";
-export interface DiscoveryEntry {
+export type DiscoveryMode = "direct" | "grouped";
+interface DiscoveryEntryBase {
   relativePath: string;
   name: string;
   reason: DiscoveryExclusionReason | null;
 }
+export type DiscoveryEntry = DiscoveryEntryBase & (
+  | { kind: "category"; empty: boolean }
+  | { kind: "project"; categoryPath: string | null }
+);
 export interface DiscoveryPreview {
+  mode: DiscoveryMode;
+  configured: boolean;
   workspaceId: string;
   sourceId: string;
   revision: number;
@@ -97,6 +104,7 @@ export type WorkspacePreviewDiscoveryQuery = {
   type: "workspace.previewDiscovery";
   workspaceId: string;
   excludedRelativePaths?: string[];
+  mode?: DiscoveryMode;
 };
 
 export type WorkspaceApplyDiscoveryCommand = {

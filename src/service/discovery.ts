@@ -1,6 +1,6 @@
 import { lstatSync, opendirSync, realpathSync, type BigIntStats } from "node:fs";
 import { basename, isAbsolute, join, relative } from "node:path";
-import type { DiscoveryEntry, DiscoveryPreview } from "../contracts/workspaces.js";
+import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryExclusionReason } from "../contracts/workspaces.js";
 
 // Native evidence is lossless and local to this machine. It is never a logical ID.
 export interface NativeIdentity {
@@ -18,14 +18,15 @@ export interface DirectoryObservation {
 interface ExcludedObservation {
   relativePath: string;
   kind: "excluded";
-  reason: "link" | "hidden" | "service" | "archive";
+  reason: DiscoveryExclusionReason;
 }
 export interface DiscoverySnapshot {
+  mode: DiscoveryMode;
   root: DirectoryObservation;
   children: (DirectoryObservation | ExcludedObservation)[];
   archiveChild: string | null;
 }
-export interface DirectScan {
+export interface DiscoveryScan {
   state: DiscoveryPreview["state"];
   entries: DiscoveryEntry[];
   snapshot: DiscoverySnapshot | null;
@@ -35,8 +36,10 @@ export function isChildName(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value !== "." && value !== ".." &&
     !value.includes("\0") && !isAbsolute(value) && basename(value) === value;
 }
-export function validExclusions(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(isChildName) && new Set(value).size === value.length;
+export function validExclusions(value: unknown, mode: DiscoveryMode = "direct"): value is string[] {
+  return Array.isArray(value) && Array.from(value).every((path: unknown) => typeof path === "string" &&
+    path.split("/").length <= (mode === "grouped" ? 2 : 1) && path.split("/").every(isChildName)) &&
+    new Set(value).size === value.length;
 }
 export function validArchive(value: unknown): value is string | null {
   return value === null || (typeof value === "string" && value.split("/").every(isChildName));
@@ -109,12 +112,12 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null): Di
       if (!(typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")) throw error;
     }
   }
-  return { root, archiveChild, children: children.map((child) => child.kind === "directory" && child.relativePath === archiveChild
+  return { mode: "direct", root, archiveChild, children: children.map((child) => child.kind === "directory" && child.relativePath === archiveChild
     ? { relativePath: child.relativePath, kind: "excluded" as const, reason: "archive" as const } : child)
     .sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
 }
 
-export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DirectScan {
+export function scanDirectSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoveryScan {
   try {
     const snapshot = scanOnce(canonicalRoot, archiveRelativePath);
     // Recheck the complete interpretation, including kind swaps and disappearing entries.
@@ -124,7 +127,7 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
       const name = child.relativePath;
       const reason = child.kind === "excluded" ? child.reason : child.kind === "link" ? "link"
         : automaticDirectoryReason(name, archiveChild) ?? (exclusions.includes(name) ? "manual" : null);
-      return { name, relativePath: name, reason };
+      return { kind: "project", categoryPath: null, name, relativePath: name, reason };
     });
     return { state: entries.some((entry) => entry.reason === null) ? "ready" : "empty", entries, snapshot };
   } catch (error) {
@@ -132,6 +135,113 @@ export function scanDirectSource(canonicalRoot: string, archiveRelativePath: str
     const state = error instanceof RootConflict ? "root_identity_conflict" : error instanceof ScanChanged ? "changed"
       : code === "ENOENT" || code === "ENOTDIR" ? "unavailable" : "unreadable";
     return { state, entries: [], snapshot: null };
+  }
+}
+
+// Exactly two levels. Every parent is reverified before accessing children and
+// after enumeration; excluded entries use only their parent's directory entries.
+function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoverySnapshot {
+  const root = observation("", lstatSync(canonicalRoot, { bigint: true }));
+  if (root.kind !== "directory" || realpathSync.native(canonicalRoot) !== canonicalRoot ||
+    !validArchive(archiveRelativePath)) throw new RootConflict();
+  const children: DiscoverySnapshot["children"] = [];
+  const archive = archiveRelativePath?.split("/") ?? [];
+  const verify = (parent: DirectoryObservation) => {
+    const path = join(canonicalRoot, parent.relativePath);
+    // lstat first: a swapped link must never be resolved or traversed.
+    if (changed(parent, observation(parent.relativePath, lstatSync(path, { bigint: true }))) ||
+      realpathSync.native(path) !== path) throw new ScanChanged();
+  };
+  const readLevel = (parent: DirectoryObservation, archiveName: string | null) => {
+    verify(root); verify(parent);
+    const path = join(canonicalRoot, parent.relativePath);
+    const directory = opendirSync(path);
+    const entries = [];
+    try {
+      verify(root); verify(parent);
+      let entry;
+      while ((entry = directory.readSync()) !== null) {
+        if (entry.isFile()) continue;
+        if (!isChildName(entry.name)) throw new ScanChanged();
+        entries.push(entry);
+      }
+    } finally { directory.closeSync(); }
+    verify(root); verify(parent);
+    let designated = archiveName;
+    const excludedAlias = designated && entries.some((entry) =>
+      entry.name.normalize("NFD").toLowerCase() === designated!.normalize("NFD").toLowerCase() &&
+      (entry.isSymbolicLink() || automaticDirectoryReason(entry.name, null) ||
+        exclusions.includes(parent.relativePath ? `${parent.relativePath}/${entry.name}` : entry.name)));
+    if (designated && !excludedAlias && !entries.some((entry) => entry.name === designated) && !automaticDirectoryReason(designated, null)) {
+      // Case aliases require the designated child's own evidence. No directory
+      // is opened here, and symlinks cannot provide archive identity evidence.
+      try {
+        const target = observation(designated, lstatSync(join(path, designated), { bigint: true }));
+        if (target.kind === "directory") {
+          for (const entry of entries) {
+            const relativePath = parent.relativePath ? `${parent.relativePath}/${entry.name}` : entry.name;
+            if (!entry.isDirectory() || automaticDirectoryReason(entry.name, null) || exclusions.includes(relativePath)) continue;
+            verify(root); verify(parent);
+            const candidate = observation(relativePath, lstatSync(join(path, entry.name), { bigint: true }));
+            if (candidate.kind === "directory" && sameIdentity(candidate.identity, target.identity)) { designated = entry.name; break; }
+          }
+        }
+      } catch (error) {
+        if (!(typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")) throw error;
+      }
+    }
+    return { entries, designated };
+  };
+  const top = readLevel(root, archive[0] ?? null);
+  const visit = (entry: (typeof top.entries)[number], parent: DirectoryObservation, archiveName: string | null) => {
+    const relativePath = parent.relativePath ? `${parent.relativePath}/${entry.name}` : entry.name;
+    const reason = entry.isSymbolicLink() ? "link" : entry.isDirectory()
+      ? automaticDirectoryReason(entry.name, archiveName) ?? (exclusions.includes(relativePath) ? "manual" : null) : null;
+    if (reason) { children.push({ relativePath, kind: "excluded", reason }); return null; }
+    verify(root); verify(parent);
+    const path = join(canonicalRoot, relativePath);
+    const child = observation(relativePath, lstatSync(path, { bigint: true }));
+    if (child.kind === "directory") {
+      if (realpathSync.native(path) !== path) throw new ScanChanged();
+      verify(root); verify(parent); verify(child);
+    }
+    children.push(child);
+    return child.kind === "directory" ? child : null;
+  };
+  for (const entry of top.entries) {
+    const category = visit(entry, root, archive.length === 1 ? top.designated : null);
+    if (!category) continue;
+    if (!reliableIdentity(category.identity)) {
+      children[children.length - 1] = { relativePath: category.relativePath, kind: "excluded", reason: "unresolved" };
+      continue;
+    }
+    const nested = readLevel(category, category.relativePath === top.designated ? archive[1] ?? null : null);
+    for (const project of nested.entries) visit(project, category, nested.designated);
+    verify(root); verify(category);
+  }
+  verify(root);
+  return { mode: "grouped", root, archiveChild: archiveRelativePath,
+    children: children.sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0) };
+}
+
+export function scanGroupedSource(canonicalRoot: string, archiveRelativePath: string | null, exclusions: string[]): DiscoveryScan {
+  try {
+    const snapshot = scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions);
+    if (JSON.stringify(snapshot) !== JSON.stringify(scanGroupedOnce(canonicalRoot, archiveRelativePath, exclusions))) throw new ScanChanged();
+    const entries: DiscoveryEntry[] = snapshot.children.filter((child) => child.kind !== "other").map((child) => {
+      const parts = child.relativePath.split("/");
+      const reason = child.kind === "excluded" ? child.reason : child.kind === "link" ? "link" :
+        !reliableIdentity(child.identity) ? "unresolved" : null;
+      const base = { name: parts.at(-1)!, relativePath: child.relativePath, reason };
+      return parts.length === 1 ? { ...base, kind: "category", empty: !snapshot.children.some((project) =>
+        project.relativePath.startsWith(`${child.relativePath}/`) && project.kind === "directory" && reliableIdentity(project.identity)) }
+        : { ...base, kind: "project", categoryPath: parts[0] };
+    });
+    return { state: entries.some((entry) => entry.reason === null) ? "ready" : "empty", entries, snapshot };
+  } catch (error) {
+    const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+    return { state: error instanceof RootConflict ? "root_identity_conflict" : error instanceof ScanChanged ? "changed"
+      : code === "ENOENT" || code === "ENOTDIR" ? "unavailable" : "unreadable", entries: [], snapshot: null };
   }
 }
 
@@ -159,7 +269,7 @@ function storedIdentity(row: ProjectAssociation): NativeIdentity {
 
 // Matching is deliberately path-local. Missing/ambiguous records never automatically reattach.
 // Retired records remain evidence of native identifier reuse; no user metadata is deleted.
-export function interpretProjects(scan: DirectScan, records: ProjectAssociation[]): {
+export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociation[]): {
   entries: DiscoveryEntry[];
   retained: ProjectAssociation[];
   additions: { relativePath: string; nativeIdentity: string }[];

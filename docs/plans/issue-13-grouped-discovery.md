@@ -115,13 +115,21 @@ Interfaces:
 - Produce the mode-aware preview contract, discriminated category/project entries and complete reviewed scan snapshot.
 - Preserve the existing Apply payload; mode is bound inside the reviewed token.
 
-- [ ] Document and test exact depth, visible empty categories, mixed-depth roots, ignored files and stopping at projects before enabling grouped Apply.
-- [ ] Implement a bounded grouped scanner that verifies source/category containment and native observations around child enumeration; include root/category/project interpretation in repeated snapshot comparisons.
-- [ ] Apply both-level automatic/manual exclusions and the settled archive policy; reject traversal, malformed depths, duplicates and unselectable new exclusions while preserving native basename rules and saved exclusions.
-- [ ] Extend preview/token validation and production request routing; reject configured-source mode switching. Until Task 2 supplies persistence, reject grouped Apply explicitly and disable its UI action.
-- [ ] Add EN/RU initial mode selection and category/project preview hierarchy, explicit interpretation guidance, keyboard/focus behavior and empty/loading/validation/error states. Guard cancelled, superseded and delayed requests.
-- [ ] Add real service tests for read-only preview, inaccessible excluded targets, category/link swaps, case/archive behavior and unchanged inventories/bytes; add production IPC/client and EN/RU interaction regressions.
-- [ ] Run the task checkpoint and commit explicit task paths as feat: preview grouped discovery safely.
+- [x] Document and test exact depth, visible empty categories, mixed-depth roots, ignored files and stopping at projects before enabling grouped Apply.
+- [x] Implement a bounded grouped scanner that verifies source/category containment and native observations around child enumeration; include root/category/project interpretation in repeated snapshot comparisons.
+- [x] Apply both-level automatic/manual exclusions and the settled archive policy; reject traversal, malformed depths, duplicates and unselectable new exclusions while preserving native basename rules and saved exclusions.
+- [x] Extend preview/token validation and production request routing; reject configured-source mode switching. Until Task 2 supplies persistence, reject grouped Apply explicitly and disable its UI action.
+- [x] Add EN/RU initial mode selection and category/project preview hierarchy, explicit interpretation guidance, keyboard/focus behavior and empty/loading/validation/error states. Guard cancelled, superseded and delayed requests.
+- [x] Add real service tests for read-only preview, inaccessible excluded targets, category/link swaps, case/archive behavior and unchanged inventories/bytes; add production IPC/client and EN/RU interaction regressions.
+- [x] Run the task checkpoint and commit explicit task paths as feat: preview grouped discovery safely.
+
+Task 1 execution evidence (2026-10-09):
+
+- Implemented optional reviewed mode, discriminated category/project preview, exact two-level grouped scan, both-level exclusions and EN/RU initial mode selection/hierarchy. Grouped Apply is explicitly rejected by the service and disabled in the UI; direct Apply remains verified.
+- Disposable real SQLite/filesystem tests cover empty/mixed-depth roots, ignored files, no project-content enumeration, excluded metadata access, category replacement/link swaps, repeated snapshot changes, native basename rules, archive casing/designation, root failures and token/mode ownership. Production message-port routing and client-backed EN/RU keyboard/focus/race/error recovery tests passed.
+- Final checkpoint: PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test passed 188 tests (0 failures, 0 skips), including a fresh production build. npm run lint, npm run typecheck and npm run check:docs all exited 0 with the same explicit PATH prefix; documentation check covered 60 Markdown files. git diff d1a00f6df2820362bf205bde48869b6799dd9145 --check passed.
+- Logs: work/ralphex/issue-13/evidence/task-1/npm-test-final.log, lint-final.log, typecheck-final.log and check-docs-final.log. Earlier successful checkpoints are retained as npm-test-1.log and npm-test-2.log. The initial targeted test invocation found no dist/service/settings.mjs; after building the baseline, all six initial grouped tests failed as expected because mode was not implemented. During development, the category-swap spy was corrected to use the canonical macOS fixture path, and TypeScript caught an incorrect mock status argument before it was fixed.
+- Existing direct Ladle fixtures were updated only to conform to the discriminated contract; grouped graphical fixtures/checks remain Task 4. No Electron graphical runtime, packaged runtime, Windows or platform acceptance is claimed in this checkpoint. Full review, coordinator acceptance, tracker/integration actions and independent #44 remain pending outside actionable checkboxes.
 
 ### Task 2: Apply grouped discovery atomically and show required categories in Table
 

@@ -1,7 +1,7 @@
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
 import type { Language, ServiceResult, Settings } from "../contracts/settings.js";
-import type { ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
+import type { ProjectList, DiscoveryMode, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceState, WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { RootPickerResult } from "../contracts/desktop-api.js";
 
 import { isWorkspaceChangeEvent } from "../contracts/service-protocol.js";
@@ -39,8 +39,8 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.setTextValue", workspaceId, projectId, propertyId, value });
   }
 
-  previewDiscovery(workspaceId: string, excludedRelativePaths?: string[]): Promise<ServiceResult<DiscoveryPreview>> {
-    return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId,
+  previewDiscovery(workspaceId: string, excludedRelativePaths?: string[], mode?: DiscoveryMode): Promise<ServiceResult<DiscoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewDiscovery", workspaceId, ...(mode === undefined ? {} : { mode }),
       ...(excludedRelativePaths === undefined ? {} : { excludedRelativePaths }) });
   }
 
