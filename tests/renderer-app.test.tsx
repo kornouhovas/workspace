@@ -9,6 +9,7 @@ import type { ActiveWorkspace, WorkspaceLoad, WorkspaceChangeEvent } from "../sr
 import { App } from "../src/renderer/App.js";
 import { translate } from "../src/renderer/localization.js";
 import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.js";
+import { DiscoveryPanel } from "../src/renderer/components/DiscoveryPanel.js";
 
 const browser = new Window({ url: "http://localhost" });
 Object.assign(globalThis, {
@@ -38,6 +39,43 @@ const makeActive = (workspaceId: string, name: string, root = "/Projects/Work") 
   sourceAvailable: true,
 });
 const emptyLoad = (): WorkspaceLoad => ({ workspaces: [], activeWorkspace: null });
+
+test("EN/RU discovery state controls require a reviewed token and respect pending/automatic exclusions", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const state of ["ready", "empty", "pending", "applying", "error", "stale"] as const) {
+      cleanup();
+      let applies = 0, cancels = 0;
+      const pending = state === "pending" || state === "applying";
+      const preview = state === "error" || state === "stale" ? null : {
+        ...previewResult(makeActive("panel", "Workspace")), state: state === "empty" ? "empty" as const : "ready" as const,
+        previewToken: pending ? null : "reviewed",
+        entries: state === "empty" ? [] : [
+          { name: "  Authored project  ", relativePath: "  Authored project  ", reason: null },
+          { name: "External link", relativePath: "External link", reason: "link" as const },
+        ],
+      };
+      render(<DiscoveryPanel language={language} preview={preview} pending={pending} applying={state === "applying"}
+        error={state === "error"} stale={state === "stale"} onApply={() => { applies++; }} onCancel={() => { cancels++; }}
+        onExclude={() => {}} onRetry={() => {}} />);
+      const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+      const cancel = screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }) as HTMLButtonElement;
+      assert.equal(apply.disabled, state !== "ready" && state !== "empty");
+      assert.equal(cancel.disabled, state === "applying");
+      if (preview?.entries.length) {
+        const checkboxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+        assert.equal(checkboxes[0].disabled, pending);
+        assert.equal(checkboxes[1].checked, true);
+        assert.equal(checkboxes[1].disabled, true);
+        assert.equal(screen.getByText("Authored project").textContent, "  Authored project  ");
+      }
+      apply.focus(); await userEvent.keyboard("{Enter}");
+      assert.equal(applies, apply.disabled ? 0 : 1);
+      cancel.focus(); await userEvent.keyboard("{Enter}");
+      assert.equal(cancels, cancel.disabled ? 0 : 1);
+    }
+  }
+  cleanup();
+});
 
 interface MockOptions {
   language?: "en" | "ru";

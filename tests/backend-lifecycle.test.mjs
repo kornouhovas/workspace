@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import fs from "node:fs";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -604,6 +605,87 @@ test("real service IPC applies reviewed projects, lists shared source state and 
     assert.deepEqual(request(listQuery).value.projects, applied.value.projects);
     assert.equal(await readFile(join(root, "Project", "keep"), "utf8"), "unchanged");
   } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
+});
+
+test("production IPC exposes insufficient root identity as non-applyable on repeated previews", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-root-evidence-ipc-"));
+  const root = join(directory, "root"); await mkdir(join(root, "Project"), { recursive: true });
+  const parent = new EventEmitter(); parent.postMessage = () => {};
+  const port = new FakePort(); startServiceProcess(parent);
+  const originalLstat = fs.lstatSync;
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "data.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => { port.receive({ id: ++id, input }); const response = port.sent.at(-1); assert.equal(response.id, id); return response.result; };
+    const workspace = request({ type: "workspace.create", name: "Root evidence", rootPath: root }).value;
+    const before = request({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value;
+    fs.lstatSync = (path, options) => {
+      const info = originalLstat(path, options);
+      if (path === workspace.canonicalRoot && options?.bigint) info.birthtimeNs = 0n;
+      return info;
+    };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const preview = request({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId });
+      assert.equal(preview.ok, true);
+      assert.equal(preview.value.state, "root_identity_conflict");
+      assert.equal(preview.value.previewToken, null);
+      assert.deepEqual(preview.value.entries, []);
+    }
+    fs.lstatSync = originalLstat;
+    assert.deepEqual(request({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value, before);
+    assert.equal(port.sent.filter((message) => message.change?.type === "workspace.projectsChanged").length, 0);
+  } finally {
+    fs.lstatSync = originalLstat;
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("production IPC keeps applied IDs/exclusions through unavailable roots, final removal and service restart", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-retention-ipc-"));
+  const root = join(directory, "root"), disconnected = join(directory, "disconnected");
+  await mkdir(join(root, "Project"), { recursive: true }); await mkdir(join(root, "Excluded"));
+  await writeFile(join(root, "Excluded", "keep"), "retained excluded bytes");
+  const databasePath = join(directory, "workspace.sqlite");
+  const connect = () => {
+    const parent = new EventEmitter(); parent.postMessage = () => {};
+    const port = new FakePort(); startServiceProcess(parent);
+    parent.emit("message", { data: { type: "connect", databasePath }, ports: [port] });
+    let id = 0;
+    return {
+      request(input) { port.receive({ id: ++id, input }); const reply = port.sent.at(-1); assert.equal(reply.id, id); return reply.result; },
+      close() { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); assert.equal(port.closed, true); },
+    };
+  };
+  let connection = connect();
+  try {
+    const first = connection.request({ type: "workspace.create", name: "First", rootPath: root }).value;
+    const apply = (workspaceId, excludedRelativePaths) => {
+      const preview = connection.request({ type: "workspace.previewDiscovery", workspaceId, excludedRelativePaths }).value;
+      const applied = connection.request({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken });
+      assert.equal(applied.ok, true); return applied.value;
+    };
+    apply(first.workspaceId, []);
+    const saved = apply(first.workspaceId, ["Excluded"]);
+    assert.equal(saved.retainedCount, 1);
+    await rename(root, disconnected);
+    const unavailable = connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value;
+    assert.deepEqual(unavailable, { ...saved, state: "unavailable" });
+    assert.equal(connection.request({ type: "workspace.previewDiscovery", workspaceId: first.workspaceId }).value.previewToken, null);
+    await rename(disconnected, root);
+    assert.deepEqual(connection.request({ type: "workspace.listProjects", workspaceId: first.workspaceId }).value, saved);
+    assert.equal(connection.request({ type: "workspace.remove", workspaceId: first.workspaceId }).ok, true);
+    connection.close(); connection = connect();
+    assert.deepEqual(connection.request({ type: "workspace.load" }).value, { workspaces: [], activeWorkspace: null });
+    const recreated = connection.request({ type: "workspace.create", name: "Recreated", rootPath: root }).value;
+    assert.equal(recreated.sourceId, first.sourceId); assert.notEqual(recreated.viewId, first.viewId);
+    assert.deepEqual(connection.request({ type: "workspace.listProjects", workspaceId: recreated.workspaceId }).value,
+      { ...saved, workspaceId: recreated.workspaceId });
+    const reviewed = connection.request({ type: "workspace.previewDiscovery", workspaceId: recreated.workspaceId }).value;
+    assert.deepEqual(reviewed.excludedRelativePaths, ["Excluded"]);
+    assert.deepEqual(apply(recreated.workspaceId, reviewed.excludedRelativePaths), { ...saved, workspaceId: recreated.workspaceId });
+    assert.equal(await readFile(join(root, "Excluded", "keep"), "utf8"), "retained excluded bytes");
+  } finally { connection.close(); await rm(directory, { recursive: true, force: true }); }
 });
 
 test("BackendController accepts normalized stale-preview errors from the actual response envelope", async () => {

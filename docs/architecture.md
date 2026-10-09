@@ -2,11 +2,11 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable local desktop application with settings and workspace management. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
+This branch contains a runnable local desktop application with settings, workspace management and reviewed direct project discovery. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
 
 Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
 
-The desktop includes a native directory picker and a localized empty Table screen. Project discovery and editing, properties, Board views, archive/restore and other filesystem operations remain future work. SQLite with Drizzle is the selected persistence foundation.
+The desktop includes a native directory picker, EN/RU direct-discovery preview/exclusions/Apply and project names in the default Table. The service persists source-owned exclusions/configuration and logical project records. Project editing, grouped discovery, properties, Board views, archive/restore and other filesystem mutations remain future work. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -18,10 +18,10 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | React settings, workspace creation/management, removal confirmation and empty Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
-| Typed service boundary | Settings/workspace commands, committed snapshots, source refresh and validated change events through preload and IPC | Additional domain contracts as features are added |
-| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection and observed source state | Discovery policy, properties and future domain capabilities |
-| Machine filesystem adapter | Validated discovery, moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
+| Desktop renderer | React settings, workspace creation/management, removal confirmation, discovery review and applied Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
+| Typed service boundary | Settings/workspace commands, committed snapshots, discovery preview/Apply/project-list commands, source refresh and validated change events through preload and IPC | Additional domain contracts as features are added |
+| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection, direct discovery/identity matching and observed source state | Grouped discovery, properties and future domain capabilities |
+| Machine filesystem adapter | Implemented contained direct scanning; future moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
 | Hosted access, later | Owner-device access to the host service, including responsive mobile browser | Transport, device authentication, client feature scope and host lifecycle |
@@ -33,7 +33,19 @@ The renderer uses a narrow preload/service boundary. It cannot directly read SQL
 
 The service publishes workspace-list snapshots after successful mutations and source-state events after changed availability or committed locator observations. Source events carry source ID, canonical root, availability and the actual referencing workspace IDs. Load/create/activate and the real refresh-source command observe folder state using the existing canonicalization/access rules; unchanged observations and failed transactions do not publish committed changes. Source availability is runtime state, not a new persisted discovery or watcher capability.
 
-Validated event envelopes are separate from responses on utilityProcess message ports. BackendController forwards events to main, narrow preload subscriptions and WorkspaceServiceClient. Unsubscription, renderer unload and backend shutdown release listeners. React applies source changes only to a referencing configuration and guards delayed command results against newer selection/source observations. The unavailable-folder screen exposes an EN/RU retry action. External folder watchers, project/property changes and general view management remain future slices.
+Validated event envelopes are separate from responses on utilityProcess message ports. BackendController forwards events to main, narrow preload subscriptions and WorkspaceServiceClient. Unsubscription, renderer unload and backend shutdown release listeners. React applies source changes only to a referencing configuration and guards delayed command results against newer selection/source observations. The unavailable-folder screen exposes an EN/RU retry action. Applied discovery commits publish workspace.projectsChanged with source ID, actual referencing workspace IDs and committed revision. Sibling configurations reload applied projects and invalidate previews; unchanged Apply and failed transactions emit no project event. Events precede command responses, including an initiating Apply. Renderer revision guards accept that own successful response and reject older responses after newer sibling commits. External folder watchers, property changes and general view management remain future slices.
+
+## Implemented direct discovery and persistence
+
+The service scanner reads only immediate source entries. Ordinary files do not become projects. Symlinks/junctions are excluded without opening their targets; dot-prefixed directories, case-insensitive Windows service directory names ($RECYCLE.BIN and System Volume Information), and the child containing a validated persisted archive designation are automatic exclusions. Archive designation is nullable and is not guessed from names. Invalid designation or unsafe root identity blocks Apply.
+
+Source records own direct mode, revision, saved exact child-name exclusions, nullable archive path and applied root evidence (migration 0003). Project records own opaque UUIDs, source ID, relative path, lossless dev/ino/birth-time evidence and association state (migration 0004). Same-source workspaces share those records; each workspace retains its own Table view. Removing the final workspace preserves the source configuration and projects for later reuse.
+
+Preview performs no persistent writes. One service-memory token per workspace binds source ownership, revision, root identity, draft exclusions and the complete interpretation snapshot; newer previews, removal, service close/restart invalidate owned tokens. Apply accepts no submitted project list. It rescans and revalidates the reviewed state, commits configuration and associations atomically, and publishes only committed changes. Stale previews require refresh and explicit re-Apply. Unavailable/unreadable roots keep saved projects rather than marking every association missing.
+
+Matching only reuses a continuously matching same-path association under the same verified root with sufficient unchanged dev/ino/birth-time evidence and no conflict. Mutable modification/change timestamps assist scan stability checks but are not durable identity. Reliable changed evidence produces a new logical project ID while retaining the replaced record; insufficient, conflicting, missing or reused evidence remains unresolved. Exclusion retains records and continuous re-inclusion can reuse IDs. Missing/unresolved records do not automatically reattach, and native IDs do not match projects across paths. The UI explains retained metadata; reassociation controls remain future work.
+
+Repeated observations and pre-commit checks detect observed changes without providing a filesystem lock or atomic filesystem/database coordination. Later changes and indistinguishable evidence reuse remain a boundary of this local identity strategy.
 
 ## bb UI reference
 
@@ -62,7 +74,7 @@ The previous implementation derived ordinary project IDs from source/path inform
 
 For the local release, project records remain in the application database and are associated with folders using paths and native filesystem identity. No permanent project-ID marker is written inside project folders. Filesystem evidence helps reconcile a folder with its logical project record; neither a path nor a raw filesystem ID becomes the portable identity of the project. See [ADR-0004](adr/0004-local-folder-identity-without-markers.md).
 
-When a folder cannot be matched unambiguously, retain its project and properties, show that its folder is missing and offer manual reassociation. When the whole root is unavailable, represent source unavailability rather than treating every project as individually deleted. No automatic metadata deletion follows either case.
+When a folder cannot be matched unambiguously, retain its project and properties, show retained/missing state; manual reassociation is a later capability. When the whole root is unavailable, represent source unavailability rather than treating every project as individually deleted. No automatic metadata deletion follows either case.
 
 Matching synchronized replicas across computers is still an open part of the later sharing protocol. The local decision does not claim that filesystem IDs persist across volumes or devices; copied/replaced folders and reused identifiers require conservative matching rules.
 

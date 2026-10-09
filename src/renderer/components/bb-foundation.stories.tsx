@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
-import type { ActiveWorkspace, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
+import type { ActiveWorkspace, DiscoveryPreview, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
 import { App } from "../App.js";
+import { DiscoveryPanel } from "./DiscoveryPanel.js";
 import "../app.css";
 import type { Story } from "@ladle/react";
 import "./bb-foundation.css";
@@ -42,7 +43,7 @@ export const Russian: Story = () => (
 // in-memory fixtures never access the desktop service or a user's folders.
 function WorkspacePreview({ language, state = "management" }: {
   language: Language;
-  state?: "management" | "confirmation" | "loading" | "error" | "empty" | "unavailable";
+  state?: "management" | "confirmation" | "loading" | "error" | "empty" | "unavailable" | "applied" | "applied-empty";
 }) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -70,6 +71,12 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.listProjects") return { ok: true, value: {
+        workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
+        configured: state.startsWith("applied"), state: state === "unavailable" ? "unavailable" : state === "applied" ? "ready" : "empty",
+        projects: state === "applied" ? [{ projectId: "project-preview", name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
+          relativePath: "  Authored-проект-" + "long-name-".repeat(18) + "  " }] : [], retainedCount: state.startsWith("applied") ? 2 : 0,
+      } };
       if (state === "error") return failure;
       if (input.type === "workspace.reorder") records = input.workspaceIds.map((id) => records.find((record) => record.workspaceId === id)!);
       else if (input.type === "workspace.rename") records = records.map((record) => record.workspaceId === input.workspaceId ? { ...record, name: input.name } : record);
@@ -116,3 +123,43 @@ export const ManagementError: Story = () => <WorkspacePreview language="en" stat
 export const EmptyWorkspace: Story = () => <WorkspacePreview language="ru" state="empty" />;
 export const LoadingWorkspace: Story = () => <WorkspacePreview language="en" state="loading" />;
 export const UnavailableSource: Story = () => <WorkspacePreview language="ru" state="unavailable" />;
+
+// Present production panel states directly; no fake filesystem interpretation or timers.
+type DiscoveryStoryState = "preview" | "empty" | "pending" | "applying" | "error" | "stale";
+function DiscoveryState({ language, state }: { language: Language; state: DiscoveryStoryState }) {
+  const preview: DiscoveryPreview = {
+    workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
+    revision: 1, canonicalRoot: "/Projects/" + "long-authored-folder-path-".repeat(8), excludedRelativePaths: ["Excluded"],
+    state: state === "empty" ? "empty" : "ready", previewToken: state === "pending" || state === "applying" ? null : "preview-fixture",
+    entries: state === "empty" ? [] : [
+      { name: "  Authored-проект-" + "long-name-".repeat(18) + "  ", relativePath: "Project", reason: null },
+      { name: "Excluded", relativePath: "Excluded", reason: "manual" },
+      { name: ".hidden", relativePath: ".hidden", reason: "hidden" },
+      { name: "External link", relativePath: "External link", reason: "link" },
+      { name: "$RECYCLE.BIN", relativePath: "$RECYCLE.BIN", reason: "service" },
+      { name: "Designated archive", relativePath: "Designated archive", reason: "archive" },
+      { name: "Uncertain folder", relativePath: "Uncertain folder", reason: "unresolved" },
+    ],
+  };
+  return <main className="app-shell" lang={language}><DiscoveryPanel language={language}
+    preview={state === "error" || state === "stale" ? null : preview}
+    pending={state === "pending" || state === "applying"} applying={state === "applying"}
+    error={state === "error"} stale={state === "stale"}
+    onApply={() => {}} onExclude={() => {}} onRetry={() => {}} onCancel={() => {}} /></main>;
+}
+export const DiscoveryPreviewEnglish: Story = () => <DiscoveryState language="en" state="preview" />;
+export const DiscoveryPreviewRussian: Story = () => <DiscoveryState language="ru" state="preview" />;
+export const DiscoveryEmptyEnglish: Story = () => <DiscoveryState language="en" state="empty" />;
+export const DiscoveryEmptyRussian: Story = () => <DiscoveryState language="ru" state="empty" />;
+export const DiscoveryPendingEnglish: Story = () => <DiscoveryState language="en" state="pending" />;
+export const DiscoveryPendingRussian: Story = () => <DiscoveryState language="ru" state="pending" />;
+export const DiscoveryApplyingEnglish: Story = () => <DiscoveryState language="en" state="applying" />;
+export const DiscoveryApplyingRussian: Story = () => <DiscoveryState language="ru" state="applying" />;
+export const DiscoveryErrorEnglish: Story = () => <DiscoveryState language="en" state="error" />;
+export const DiscoveryErrorRussian: Story = () => <DiscoveryState language="ru" state="error" />;
+export const DiscoveryStaleEnglish: Story = () => <DiscoveryState language="en" state="stale" />;
+export const DiscoveryStaleRussian: Story = () => <DiscoveryState language="ru" state="stale" />;
+export const AppliedTableEnglish: Story = () => <WorkspacePreview language="en" state="applied" />;
+export const AppliedTableRussian: Story = () => <WorkspacePreview language="ru" state="applied" />;
+export const AppliedEmptyEnglish: Story = () => <WorkspacePreview language="en" state="applied-empty" />;
+export const AppliedEmptyRussian: Story = () => <WorkspacePreview language="ru" state="applied-empty" />;

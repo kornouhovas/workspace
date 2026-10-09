@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -79,6 +79,64 @@ const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
 
+async function recordEvidence(status, error) {
+  if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
+    mode, platform: process.platform, arch: process.arch, executablePath, status,
+    ...(error ? { error: error.message } : {}), observations,
+  }, null, 2) + "\n");
+}
+
+async function projects(page, workspaceId) {
+  const result = await page.evaluate((id) => globalThis.window.workspace.workspace({ type: "workspace.listProjects", workspaceId: id }), workspaceId);
+  assert.equal(result.ok, true);
+  return result.value;
+}
+
+// Test-side byte/entry inventory follows no links, including external targets.
+async function folderBytes(path) {
+  const entries = [];
+  for (const name of (await readdir(path)).sort()) {
+    const child = join(path, name), info = await lstat(child);
+    entries.push([name, info.isSymbolicLink() ? ["link", await readlink(child)]
+      : info.isDirectory() ? ["directory", await folderBytes(child)]
+      : ["file", (await readFile(child)).toString("base64")]]);
+  }
+  return entries;
+}
+
+const discoveryLabels = {
+  en: { preview: "Preview project folders", apply: "Apply reviewed projects", cancel: "Cancel",
+    exclude: "Exclude", stale: "The preview changed. Review the refreshed folders, then apply again." },
+  ru: { preview: "Посмотреть папки проектов", apply: "Применить проверенные проекты", cancel: "Отмена",
+    exclude: "Исключить", stale: "Предпросмотр изменился. Проверьте обновлённые папки и примените ещё раз." },
+};
+async function previewFolders(page, language = "en") {
+  await page.getByRole("button", { name: discoveryLabels[language].preview, exact: true }).press("Enter");
+  await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
+}
+async function excludeFolder(page, name, checked, language = "en") {
+  const checkbox = page.getByRole("checkbox", { name: `${discoveryLabels[language].exclude}: ${name}`, exact: true });
+  if (await checkbox.isChecked() !== checked) await checkbox.press("Space");
+  await page.waitForFunction(() => globalThis.document.querySelector(".discovery-panel")?.getAttribute("aria-busy") === "false");
+  assert.equal(await checkbox.isChecked(), checked);
+}
+async function applyFolders(page, language = "en") {
+  await page.getByRole("button", { name: discoveryLabels[language].apply, exact: true }).press("Enter");
+  await page.locator(".discovery-panel").waitFor({ state: "detached" });
+}
+async function captureDiscovery(page, language, state) {
+  for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
+    await page.setViewportSize(size);
+    const overflow = await page.evaluate(() => ({
+      document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .workspace-root, .project-table, .project-table td, .workspace-form-actions"))
+        .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
+    }));
+    assert.deepEqual(overflow, { document: false, elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
+    if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
+  }
+}
+
 async function load(page) {
   const result = await page.evaluate(() => globalThis.window.workspace.workspace({ type: "workspace.load" }));
   assert.equal(result.ok, true);
@@ -151,6 +209,16 @@ try {
     await mkdir(path, { recursive: true });
     await writeFile(join(path, "sentinel.txt"), sentinel);
   }
+  const projectName = "Authored-проект-" + "long-name-".repeat(14);
+  const externalRoot = join(fixture, "ExternalTarget");
+  for (const path of [join(projectRoot, projectName, "Nested-not-a-project"), join(projectRoot, "Excluded"),
+    join(projectRoot, "Archive"), join(projectRoot, ".hidden"), join(projectRoot, "$RECYCLE.BIN"), externalRoot]) {
+    await mkdir(path, { recursive: true });
+    await writeFile(join(path, "sentinel.txt"), sentinel);
+  }
+  await symlink(externalRoot, join(projectRoot, "External-link"), process.platform === "win32" ? "junction" : "dir");
+  let originalBytes = await folderBytes(projectRoot);
+  const externalBytes = await folderBytes(externalRoot);
   const canonicalProjectRoot = await realpath(projectRoot);
   const canonicalOtherRoot = await realpath(otherRoot);
   current = await launch(dataDirectory, projectRoot);
@@ -177,7 +245,7 @@ try {
   assert.equal(other.canonicalRoot, canonicalOtherRoot);
   assert.equal(new Set([first, sibling, other].map((item) => item.viewId)).size, 3);
   assert.ok([first, sibling, other].every((item) => item.sourceAvailable));
-  await page.getByText("Project discovery will be available in a future update.", { exact: false }).waitFor();
+  await page.getByText("Preview folders, choose exclusions and apply the reviewed projects to this Table.", { exact: true }).waitFor();
   await select(page, first);
   const authoredName = `  Renamed-${workspaceName}  `;
   await page.getByRole("button", { name: "Rename workspace", exact: true }).click();
@@ -193,6 +261,93 @@ try {
   const orderedIds = [other, first, sibling].map((item) => item.workspaceId);
   assert.deepEqual((await load(page)).workspaces.map((item) => item.workspaceId), orderedIds);
   assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
+  const unconfigured = await projects(page, first.workspaceId);
+  await previewFolders(page);
+  for (const name of [".hidden", "$RECYCLE.BIN", "External-link"]) {
+    assert.equal(await page.getByRole("checkbox", { name: `Exclude: ${name}`, exact: true }).isDisabled(), true);
+  }
+  assert.equal(await page.getByRole("checkbox", { name: /Nested-not-a-project/ }).count(), 0);
+  assert.equal(await page.getByRole("checkbox", { name: "Exclude: Archive", exact: true }).isDisabled(), false);
+  await excludeFolder(page, "Excluded", true);
+  await page.getByRole("button", { name: "Cancel", exact: true }).press("Enter");
+  assert.deepEqual(await projects(page, first.workspaceId), unconfigured);
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  await previewFolders(page);
+  assert.equal(await page.getByRole("checkbox", { name: "Exclude: Excluded", exact: true }).isChecked(), false);
+  await excludeFolder(page, "Excluded", true);
+  await captureDiscovery(page, "en", "preview");
+  await applyFolders(page);
+  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  let savedProjects = await projects(page, first.workspaceId);
+  assert.deepEqual(savedProjects.projects.map((row) => row.name).sort(), ["Archive", projectName].sort());
+  const initialIds = savedProjects.projects;
+  await select(page, sibling);
+  assert.deepEqual((await projects(page, sibling.workspaceId)).projects, savedProjects.projects);
+  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await select(page, other);
+  await previewFolders(page);
+  await captureDiscovery(page, "en", "empty-preview");
+  await applyFolders(page);
+  assert.equal((await projects(page, other.workspaceId)).state, "empty");
+  await select(page, first);
+  await page.evaluate(() => {
+    globalThis.smokeProjectChanges = [];
+    globalThis.stopProjectChanges = globalThis.window.workspace.onWorkspaceChange((event) => {
+      if (event.type === "workspace.projectsChanged") globalThis.smokeProjectChanges.push(event);
+    });
+  });
+  // Filesystem change refreshes the draft but requires another explicit Apply.
+  await previewFolders(page);
+  await mkdir(join(projectRoot, "Late project"));
+  await writeFile(join(projectRoot, "Late project", "sentinel.txt"), sentinel);
+  originalBytes = await folderBytes(projectRoot);
+  await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).press("Enter");
+  await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
+  await page.getByRole("checkbox", { name: "Exclude: Late project", exact: true }).waitFor();
+  assert.deepEqual((await projects(page, first.workspaceId)).projects, savedProjects.projects);
+  await captureDiscovery(page, "en", "filesystem-stale");
+  await applyFolders(page);
+  savedProjects = await projects(page, first.workspaceId);
+  assert.deepEqual(savedProjects.projects.filter((row) => row.name !== "Late project"), initialIds);
+  await page.getByRole("cell", { name: "Late project", exact: true }).waitFor();
+  // Sibling Apply uses the production utilityProcess/preload route while our preview stays open.
+  await previewFolders(page);
+  const siblingApply = await page.evaluate(async (workspaceId) => {
+    const preview = await globalThis.window.workspace.workspace({ type: "workspace.previewDiscovery", workspaceId, excludedRelativePaths: [] });
+    if (!preview.ok) return preview;
+    return globalThis.window.workspace.workspace({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken });
+  }, sibling.workspaceId);
+  assert.equal(siblingApply.ok, true);
+  await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
+  await page.getByRole("cell", { name: "Excluded", exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).isDisabled(), true);
+  await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
+  await page.getByRole("checkbox", { name: "Exclude: Excluded", exact: true }).waitFor();
+  assert.equal(await page.getByRole("checkbox", { name: "Exclude: Excluded", exact: true }).isChecked(), true);
+  await applyFolders(page);
+  savedProjects = await projects(page, first.workspaceId);
+  assert.equal(savedProjects.retainedCount, 1);
+  assert.deepEqual(savedProjects.projects.filter((row) => row.name !== "Late project"), initialIds);
+  const projectChanges = await page.evaluate(() => globalThis.smokeProjectChanges);
+  assert.equal(projectChanges.length, 3);
+  assert.ok(projectChanges.every((event) => event.sourceId === first.sourceId &&
+    JSON.stringify(event.workspaceIds) === JSON.stringify([first.workspaceId, sibling.workspaceId])));
+  await previewFolders(page); await applyFolders(page);
+  assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  assert.equal(await page.evaluate(() => globalThis.smokeProjectChanges.length), 3, "Unchanged rescan emitted an event");
+  await page.evaluate(() => globalThis.stopProjectChanges());
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  observations.push({ scenario: "preview/exclude/cancel/apply, stale filesystem, sibling invalidation, retained exclusions, unchanged rescan", savedProjects, projectChanges });
+  for (const language of ["en", "ru"]) {
+    await page.locator("#interface-language").selectOption(language);
+    await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang && !globalThis.document.querySelector("#interface-language")?.disabled, language);
+    await captureDiscovery(page, language, "applied-table");
+    await previewFolders(page, language);
+    await captureDiscovery(page, language, "preview");
+    await page.getByRole("button", { name: discoveryLabels[language].cancel, exact: true }).press("Enter");
+    await select(page, other); await captureDiscovery(page, language, "applied-empty"); await select(page, first);
+  }
   await captureLayouts(page, "en", authoredName);
   await captureLayouts(page, "ru", authoredName);
   await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
@@ -209,6 +364,14 @@ try {
   await rename(projectRoot, disconnectedRoot);
   await select(page, sibling);
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
+  const disconnectedProjects = await projects(page, sibling.workspaceId);
+  assert.equal(disconnectedProjects.state, "unavailable");
+  assert.deepEqual(disconnectedProjects.projects, savedProjects.projects);
+  assert.equal(disconnectedProjects.retainedCount, savedProjects.retainedCount);
+  await previewFolders(page, "ru");
+  assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);
+  await captureDiscovery(page, "ru", "unavailable");
+  await page.getByRole("button", { name: discoveryLabels.ru.cancel, exact: true }).press("Enter");
   await page.waitForFunction(() => globalThis.smokeChanges.some((event) => event.type === "workspace.sourceChanged"));
   const unavailable = await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged"));
   assert.equal(unavailable.length, 1);
@@ -245,8 +408,9 @@ try {
   async function closeCurrent() {
     const pids = await backendPids(current.electron);
     assert.ok(pids.length > 0, "No owned Node utility process is running");
-    await closeElectron(current.electron);
-    current = undefined;
+    await recordEvidence("feature assertions before quit");
+    const closing = current; current = undefined;
+    await closeElectron(closing.electron);
     await assertStopped(pids);
   }
   await closeCurrent();
@@ -261,6 +425,12 @@ try {
   assert.deepEqual(reopened.workspaces, [other, first, sibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
   await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
   await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
+  assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
+  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await previewFolders(page, "ru");
+  assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
+  await applyFolders(page, "ru");
+  assert.deepEqual(await projects(page, first.workspaceId), savedProjects);
   // Inactive different-root removal, active fallback, and final removal.
   assert.deepEqual(identity((await remove(page, other)).activeWorkspace), identity(first));
   assert.deepEqual(identity((await remove(page, first)).activeWorkspace), identity(sibling));
@@ -280,6 +450,13 @@ try {
   assert.notEqual(recreated.viewId, first.viewId);
   assert.notEqual(recreated.viewId, sibling.viewId);
   assert.equal(recreated.canonicalRoot, canonicalProjectRoot);
+  assert.deepEqual(await projects(page, recreated.workspaceId), { ...savedProjects, workspaceId: recreated.workspaceId });
+  await page.getByRole("cell", { name: projectName, exact: true }).waitFor();
+  await previewFolders(page, "ru");
+  assert.equal(await page.getByRole("checkbox", { name: "Исключить: Excluded", exact: true }).isChecked(), true);
+  await applyFolders(page, "ru");
+  assert.deepEqual(await folderBytes(projectRoot), originalBytes);
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
   observations.push({ scenario: "restart, inactive/active/final removal, empty restart and retained-source reuse", recreated, sentinelBytes: sentinel.length });
   await closeCurrent();
@@ -293,13 +470,15 @@ try {
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
   });
   const failurePids = await backendPids(current.electron);
-  await closeElectron(current.electron);
-  current = undefined;
+  await recordEvidence("startup failure asserted before quit");
+  const closing = current; current = undefined;
+  await closeElectron(closing.electron);
   await assertStopped(failurePids);
-  if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
-    mode, platform: process.platform, arch: process.arch, executablePath, observations,
-  }, null, 2) + "\n");
-  console.info(`Electron ${mode} runtime verified: workspace management/restart/removal, retained files/source, source notification fanout/unsubscription, EN/RU layouts, isolation, backend exit, startup failure`);
+  await recordEvidence("passed");
+  console.info(`Electron ${mode} runtime verified: discovery/exclusions/cancel/Apply, persistent project IDs/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
+} catch (error) {
+  await recordEvidence("failed", error);
+  throw error;
 } finally {
   try { if (current) await closeElectron(current.electron); }
   finally { await rm(fixture, { recursive: true, force: true }); }
