@@ -128,13 +128,13 @@ Save the accepted plan to docs/plans/issue-16-discovery-mode.md. Coordinator rev
 
 **Steps:**
 
-- [ ] Test direct-to-grouped-to-direct and grouped-to-direct-to-grouped, including restart between switches. Original project IDs/values stay retained until explicit recovery; unchanged category history resumes only under the stated reviewed contract.
-- [ ] Extend recovery eligibility for mode-retained associations while preserving exclusion, reserved-path, native-conflict, category-availability and containment rules. Explicit successful recovery clears mode inactivity only for the chosen project.
-- [ ] Cover target-depth reassociation, own historical-path recovery, occupied/reserved targets, old-path replacement, wrong-depth inputs and stale recovery after sibling mode Apply. Retain metadata on every rejected operation.
-- [ ] Restrict automatic reconciliation to operational associations in the configured interpretation. Refresh, watch hints, startup and missed-notification recovery cannot revive dormant projects or enroll unrelated children.
-- [ ] Retarget observation after committed mode changes and invalidate discovery/recovery reviews for all source siblings. Preserve macOS root/category watches and Windows root-only watches with five-second full grouped polling.
-- [ ] Test same-source fanout, different-source isolation, observer deduplication, degraded/unavailable/changed-root retention, obsolete callbacks and final-reference/service-close cleanup. Native watcher fixtures keep production observation active.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified recovery/observation slice.
+- [x] Test direct-to-grouped-to-direct and grouped-to-direct-to-grouped, including restart between switches. Original project IDs/values stay retained until explicit recovery; unchanged category history resumes only under the stated reviewed contract.
+- [x] Extend recovery eligibility for mode-retained associations while preserving exclusion, reserved-path, native-conflict, category-availability and containment rules. Explicit successful recovery clears mode inactivity only for the chosen project.
+- [x] Cover target-depth reassociation, own historical-path recovery, occupied/reserved targets, old-path replacement, wrong-depth inputs and stale recovery after sibling mode Apply. Retain metadata on every rejected operation.
+- [x] Restrict automatic reconciliation to operational associations in the configured interpretation. Refresh, watch hints, startup and missed-notification recovery cannot revive dormant projects or enroll unrelated children.
+- [x] Retarget observation after committed mode changes and invalidate discovery/recovery reviews for all source siblings. Preserve macOS root/category watches and Windows root-only watches with five-second full grouped polling.
+- [x] Test same-source fanout, different-source isolation, observer deduplication, degraded/unavailable/changed-root retention, obsolete callbacks and final-reference/service-close cleanup. Native watcher fixtures keep production observation active.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm test, lint and typecheck. Commit the verified recovery/observation slice.
 
 ### Task 4: Deliver the configured-mode review through IPC and localized UI
 

@@ -50,7 +50,7 @@ export function createProjectRecoveryService(db: Database, integration: {
     const resolution = scan.snapshot ? planDiscovery(scan, categories, projects).projects.retained.find((row) => row.id === project.id)?.associationState : null;
     // Exclusion has its own explicit discovery controls. It is not recovery.
     return project.associationState !== "excluded" && resolution !== "excluded" &&
-      (["missing", "unresolved", "replaced"].includes(project.associationState) ||
+      (project.modeInactive || ["missing", "unresolved", "replaced"].includes(project.associationState) ||
         resolution !== null && resolution !== undefined && ["missing", "unresolved", "replaced"].includes(resolution));
   }
   // Existing categories are reusable only while both stored and observed states
@@ -155,7 +155,7 @@ export function createProjectRecoveryService(db: Database, integration: {
             }
           }
           tx.update(schema.projects).set({ relativePath: target.relativePath, nativeIdentity: JSON.stringify(child.identity),
-            categoryId, associationState: "active" }).where(eq(schema.projects.id, input.projectId)).run();
+            categoryId, associationState: "active", modeInactive: false }).where(eq(schema.projects.id, input.projectId)).run();
           tx.update(schema.sources).set({ discoveryRevision: source.discoveryRevision + 1 }).where(eq(schema.sources.id, source.id)).run();
           // Observations are not a filesystem lock. Any change seen during writes
           // rolls back; a later external change requires another explicit review.
@@ -163,7 +163,7 @@ export function createProjectRecoveryService(db: Database, integration: {
           if (!after.snapshot || JSON.stringify(after.snapshot) !== JSON.stringify(review.snapshot)) throw new StaleReview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
           const expectedProjects = review.projects.map((row) => row.id === input.projectId ? { ...row,
-            relativePath: target.relativePath, nativeIdentity: JSON.stringify(child.identity), categoryId, associationState: "active" } : row);
+            relativePath: target.relativePath, nativeIdentity: JSON.stringify(child.identity), categoryId, associationState: "active", modeInactive: false } : row);
           const expectedCategories = [...review.categories, ...(insertedCategory ? [insertedCategory] : [])]
             .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
           if (configuration(committed) !== configuration({ ...review.source, discoveryRevision: source.discoveryRevision + 1 }) ||

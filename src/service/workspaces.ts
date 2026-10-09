@@ -252,7 +252,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const committedEvent: WorkspaceChangeEvent = { type: "workspace.projectsChanged", sourceId: source.id,
           workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
           revision: source.discoveryRevision + (changed ? 1 : 0) };
-        const result = db.transaction((tx) => {
+        const { result, observation } = db.transaction((tx) => {
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(source) ||
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
             JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories)) throw new StalePreview();
@@ -314,15 +314,27 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             !sameAssociations(readProjects(source.id), expectedProjects) ||
             !sameAssociations(readCategories(source.id), expectedCategories)) throw new StalePreview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
-          return projectList(workspaceId, committed, recheck);
+          const result = projectList(workspaceId, committed, recheck);
+          return { result, observation: sourceObservation(committed, recheck, result) };
         });
         previewTokens.delete(workspaceId);
+        const observationVersion = (observationVersions.get(source.id) ?? 0) + 1;
+        observationVersions.set(source.id, observationVersion);
         if (changed) {
           recovery.invalidateSource(source.id);
           for (const [id, saved] of previewTokens) if (saved.preview.sourceId === source.id) previewTokens.delete(id);
           publish([committedEvent]);
         }
         syncObserverReferences();
+        // Subscribers may commit a newer mode before publication returns. Only
+        // accept this command's validated targets while its lifetime is current.
+        if (source.discoveryMode !== mode && observationVersions.get(source.id) === observationVersion) {
+          const current = db.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get();
+          if (current?.discoveryRevision === result.revision && current.discoveryMode === mode) {
+            observationCache.set(source.id, observation);
+            observer.accept(source.id, observation);
+          }
+        }
         observer.request(source.id);
         return { ok: true, value: result };
       } catch (error) { return error instanceof StalePreview ? stale() : storageFailure(); }
@@ -348,18 +360,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const scan = reconciled.scan ?? { state: "unavailable" as const, entries: [], snapshot: null };
         const current = workspaceSource(input.workspaceId)!;
         const projection = projectList(input.workspaceId, current, scan);
-        const targets = scan.snapshot ? [scan.snapshot.root, ...scan.snapshot.children.filter((child) =>
-          scan.snapshot!.mode === "grouped" && child.kind === "directory" && !child.relativePath.includes("/"))]
-          .filter((child) => child.kind === "directory" && reliableIdentity(child.identity))
-          .map((child) => {
-            if (child.kind !== "directory") throw new Error("Invalid watch target");
-            return { path: join(current.canonicalRoot, child.relativePath), identity: child.identity, stamp: `${child.mtimeNs}:${child.ctimeNs}` };
-          }) : [];
-        // Timestamp changes help validate scans, but have no semantic observation revision.
-        const topology = scan.snapshot?.children.map((child) => child.kind === "excluded" ? child :
-          { relativePath: child.relativePath, kind: child.kind, identity: child.identity });
-        pendingObservations.set(current.id, { version: observationVersion, value: { state: projection.state, targets,
-          signature: JSON.stringify([topology, projection.projects, projection.retainedProjects, projection.categories]) } });
+        pendingObservations.set(current.id, { version: observationVersion, value: sourceObservation(current, scan, projection) });
       }
       return { ok: true, value: sourceState(source.sourceId, state) };
     },
@@ -594,6 +595,21 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       categoryProperty: mode === "grouped" && property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name } : null,
       categoryPropertyRevision: source.categoryPropertyRevision,
       state, projects: active, retainedProjects, retainedCount: retainedProjects.length };
+  }
+
+  function sourceObservation(current: typeof schema.sources.$inferSelect, scan: DiscoveryScan, projection: ProjectList): SourceObservation {
+    const targets = scan.snapshot ? [scan.snapshot.root, ...scan.snapshot.children.filter((child) =>
+      scan.snapshot!.mode === "grouped" && child.kind === "directory" && !child.relativePath.includes("/"))]
+      .filter((child) => child.kind === "directory" && reliableIdentity(child.identity))
+      .map((child) => {
+        if (child.kind !== "directory") throw new Error("Invalid watch target");
+        return { path: join(current.canonicalRoot, child.relativePath), identity: child.identity, stamp: `${child.mtimeNs}:${child.ctimeNs}` };
+      }) : [];
+    // Timestamp changes help validate scans, but have no semantic observation revision.
+    const topology = scan.snapshot?.children.map((child) => child.kind === "excluded" ? child :
+      { relativePath: child.relativePath, kind: child.kind, identity: child.identity });
+    return { state: projection.state, targets,
+      signature: JSON.stringify([topology, projection.projects, projection.retainedProjects, projection.categories]) };
   }
 
   function sourceState(sourceId: string, state: { canonicalRoot: string; sourceAvailable: boolean }): WorkspaceSourceState {

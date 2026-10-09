@@ -854,3 +854,148 @@ test("populated baseline reopens and recovers direct/grouped records without sch
     } finally { service?.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
   }
 });
+
+
+for (const mode of ["direct", "grouped"]) test(`mode-retained recovery accepts only reviewed target-depth folders and clears only its subject (${mode})`, () => fixture((f) => {
+  const targetMode = mode === "direct" ? "grouped" : "direct";
+  // Configure the other interpretation before adding the intended recovery folder.
+  f.apply({ mode: targetMode });
+  const target = targetMode === "grouped" ? "New/Target" : "Target";
+  fs.mkdirSync(join(f.root, target, "contents"), { recursive: true });
+  fs.writeFileSync(join(f.root, target, "contents/sentinel"), Buffer.from([0, 255, 42]));
+  fs.mkdirSync(join(f.root, targetMode === "grouped" ? "New/Excluded" : "Excluded"), { recursive: true });
+  f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = ?").run(JSON.stringify([targetMode === "grouped" ? "New/Excluded" : "Excluded"]));
+  const before = f.records(), files = inventory(f.root);
+  const preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
+  assert.equal(preview.value.mode, targetMode);
+  assert.equal(preview.value.entries.find((row) => row.relativePath === target).status, "selectable");
+  assert.equal(preview.value.entries.find((row) => row.relativePath.endsWith("Excluded")).status, "excluded");
+  for (const path of [mode === "direct" ? "New" : "Target/Deep", "../Target", `${target}/Deep`]) {
+    assert.equal(recover(f, preview.value, path).error.code, "invalid_input"); assert.deepEqual(f.records(), before);
+  }
+  for (const row of preview.value.entries.filter((entry) => entry.status !== "selectable")) {
+    assert.equal(recover(f, preview.value, row.relativePath).error.code, "invalid_input"); assert.deepEqual(f.records(), before);
+  }
+  assert.deepEqual(f.records(), before); // Cancel/preview is read-only.
+  const result = recover(f, preview.value, target); assert.equal(result.ok, true, JSON.stringify(result));
+  const after = f.records();
+  const stored = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(f.project.projectId);
+  assert.equal(stored.mode_inactive, 0); assert.equal(stored.association_state, "active"); assert.equal(stored.relative_path, target);
+  assert.equal(result.value.projects.find((row) => row.projectId === f.project.projectId).retentionReason, null);
+  assert.deepEqual(after[1].filter((row) => row.id !== f.project.projectId), before[1].filter((row) => row.id !== f.project.projectId));
+  assert.equal(after[0][0].discovery_revision, before[0][0].discovery_revision + 1);
+  assert.deepEqual(after[3], before[3]); assert.deepEqual(after[4], before[4]); assert.deepEqual(after[5], before[5]); assert.deepEqual(after[6], before[6]);
+  assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value); assert.deepEqual(inventory(f.root), files);
+}, mode));
+
+test("sibling mode Apply invalidates retained recovery and discovery reviews without changing their subjects", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "New/Target"), { recursive: true }); f.apply({ mode: "grouped" });
+  const preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
+  const discovery = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: f.workspace.workspaceId }).value;
+  const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+  const change = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: sibling.workspaceId, mode: "direct" }).value;
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: sibling.workspaceId, previewToken: change.previewToken }).ok, true);
+  const before = f.records(), files = inventory(f.root);
+  assert.equal(recover(f, preview.value, "New/Target").error.code, "stale_preview");
+  assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: discovery.previewToken }).error.code, "stale_preview");
+  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+}));
+
+for (const mode of ["direct", "grouped"]) test(`mode-retained own-path replacement requires explicit recovery and preserves exact values (${mode})`, () => fixture((f) => {
+  f.apply({ mode: mode === "direct" ? "grouped" : "direct" }); f.apply({ mode });
+  const path = f.project.relativePath;
+  fs.renameSync(join(f.root, path), join(f.directory, "original")); fs.mkdirSync(join(f.root, path));
+  const before = f.records(), files = inventory(f.root), preview = review(f);
+  assert.equal(preview.ok, true, JSON.stringify(preview));
+  assert.equal(preview.value.entries.find((row) => row.relativePath === path).status, "selectable");
+  assert.deepEqual(f.records(), before);
+  assert.equal(recover(f, preview.value, path).ok, true);
+  assert.equal(f.query("workspace.listProjects").value.projects.find((row) => row.projectId === f.project.projectId).relativePath, path);
+  assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
+  assert.deepEqual(inventory(f.root), files);
+}, mode));
+
+
+for (const problem of ["missing", "unresolved", "excluded", "replaced", "observed_replaced"]) test(`mode-retained project recovery never repairs unavailable category history (${problem})`, () => fixture((f) => {
+  if (problem !== "observed_replaced") {
+    f.sqlite.prepare("UPDATE projects SET association_state = 'missing'").run();
+    f.sqlite.prepare("UPDATE categories SET association_state = ?").run(problem);
+  }
+  f.apply({ mode: "direct" });
+  if (problem === "observed_replaced") {
+    fs.renameSync(join(f.root, "Category"), join(f.directory, "old-category")); fs.mkdirSync(join(f.root, "Category"));
+  }
+  f.apply({ mode: "grouped", ...(problem === "excluded" ? { excludedRelativePaths: ["Category"] } : {}) });
+  fs.mkdirSync(join(f.root, "Category/Target"));
+  const before = f.records(), files = inventory(f.root);
+  const preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
+  const target = preview.value.entries.find((row) => row.relativePath === "Category/Target");
+  if (problem === "excluded") assert.equal(target, undefined);
+  else assert.equal(target.status, "category_unavailable");
+  assert.equal(recover(f, preview.value, "Category/Target").error.code, "invalid_input");
+  assert.deepEqual(f.records(), before); assert.deepEqual(inventory(f.root), files);
+}, "grouped"));
+
+for (const mode of ["direct", "grouped"]) test(`mode-retained projects respect current and dormant path/native reservations (${mode})`, () => fixture((f) => {
+  const other = mode === "grouped" ? "Category/Other" : "Other";
+  fs.mkdirSync(join(f.root, other)); f.apply();
+  const targetMode = mode === "direct" ? "grouped" : "direct";
+  f.apply({ mode: targetMode });
+  const target = targetMode === "grouped" ? "New/Target" : "Target";
+  fs.mkdirSync(join(f.root, target), { recursive: true });
+  const evidence = fs.lstatSync(join(f.root, target), { bigint: true });
+  const identity = JSON.stringify({ dev: evidence.dev.toString(), ino: evidence.ino.toString(), birthtimeNs: evidence.birthtimeNs.toString() });
+  f.sqlite.prepare("UPDATE projects SET native_identity = ? WHERE relative_path = ?").run(identity, other);
+  let before = f.records();
+  let preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
+  assert.equal(preview.value.entries.find((row) => row.relativePath === target).status, "native_conflict");
+  assert.equal(recover(f, preview.value, target).error.code, "invalid_input"); assert.deepEqual(f.records(), before);
+  // An explicit discovery review cannot enroll over dormant native reservations.
+  const discovery = f.apply({ mode: targetMode });
+  assert.ok(!discovery.projects.some((row) => row.relativePath === target));
+  const fresh = targetMode === "grouped" ? "New/Occupied" : "Occupied";
+  fs.mkdirSync(join(f.root, fresh)); f.apply({ mode: targetMode });
+  before = f.records(); preview = review(f); assert.equal(preview.ok, true);
+  assert.equal(preview.value.entries.find((row) => row.relativePath === fresh).status, "reserved_path");
+  assert.equal(recover(f, preview.value, fresh).error.code, "invalid_input"); assert.deepEqual(f.records(), before);
+}, mode));
+
+for (const mode of ["direct", "grouped"]) test(`mode inactivity does not bypass explicit project exclusion (${mode})`, () => fixture((f) => {
+  f.apply({ excludedRelativePaths: [f.project.relativePath] });
+  f.apply({ mode: mode === "direct" ? "grouped" : "direct" });
+  const before = f.records(); assert.equal(review(f).error.code, "invalid_input"); assert.deepEqual(f.records(), before);
+}, mode));
+
+for (const state of ["unavailable", "unreadable", "changed", "root_identity_conflict"]) test(`mode-retained recovery preserves metadata under an unsafe source (${state})`, () => fixture((f) => {
+  f.apply({ mode: "grouped" });
+  const originalOpen = fs.opendirSync, originalStat = fs.lstatSync;
+  if (["unavailable", "root_identity_conflict"].includes(state)) fs.renameSync(f.root, join(f.directory, "away"));
+  if (state === "root_identity_conflict") fs.mkdirSync(f.root);
+  const before = f.records(); let count = 0;
+  fs.opendirSync = (path, ...args) => {
+    if (state === "unreadable" && path === f.root) throw Object.assign(new Error("denied"), { code: "EACCES" });
+    return originalOpen(path, ...args);
+  };
+  fs.lstatSync = (path, ...args) => { const stat = originalStat(path, ...args); if (state === "changed" && path === f.root) stat.mtimeNs += BigInt(++count); return stat; };
+  syncBuiltinESMExports();
+  try {
+    const preview = review(f); assert.equal(preview.ok, true, JSON.stringify(preview));
+    assert.equal(preview.value.state, state); assert.equal(preview.value.previewToken, null); assert.deepEqual(preview.value.entries, []);
+    assert.equal(f.service.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.workspace.workspaceId }).ok, true);
+    assert.deepEqual(f.records(), before);
+  } finally { fs.opendirSync = originalOpen; fs.lstatSync = originalStat; syncBuiltinESMExports(); }
+}));
+
+
+for (const failure of ["project", "revision"]) test(`mode-retained recovery rolls back inactivity, category creation and revision on ${failure} failure`, () => fixture((f) => {
+  f.apply({ mode: "grouped" }); fs.mkdirSync(join(f.root, "New/Target"), { recursive: true });
+  const preview = review(f); assert.equal(preview.ok, true);
+  const before = f.records(), files = inventory(f.root), events = [];
+  const unsubscribe = f.service.workspaces.subscribe((event) => events.push(event));
+  f.sqlite.exec(failure === "project"
+    ? "CREATE TRIGGER fail_recovery BEFORE UPDATE OF mode_inactive ON projects BEGIN SELECT RAISE(ABORT, 'injected'); END"
+    : "CREATE TRIGGER fail_recovery BEFORE UPDATE OF discovery_revision ON sources BEGIN SELECT RAISE(ABORT, 'injected'); END");
+  assert.equal(recover(f, preview.value, "New/Target").error.code, "storage"); unsubscribe();
+  assert.deepEqual(f.records(), before); assert.deepEqual(events, []); assert.deepEqual(inventory(f.root), files);
+  assert.ok(!f.sqlite.prepare("SELECT * FROM categories WHERE relative_path = 'New'").get());
+}));

@@ -957,3 +957,91 @@ for (const grouped of [false, true]) test(`real native notifications and shutdow
     assert.deepEqual(inventory(root), offlineInventory);
   } finally { service?.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 });
+
+
+for (const grouped of [false, true]) test(`refresh and startup never revive mode-inactive projects or enroll unrelated targets (${grouped})`, () => fixture((f) => {
+  const mode = grouped ? "grouped" : "direct";
+  f.apply({ mode: grouped ? "direct" : "grouped" }); f.apply({ mode });
+  const dormant = f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(f.project.projectId);
+  const destination = grouped ? "Category/Renamed" : "Renamed";
+  fs.renameSync(join(f.root, dormant.relative_path), join(f.root, destination));
+  fs.mkdirSync(join(f.root, grouped ? "Category/Unrelated" : "Unrelated"));
+  const before = f.records(), files = inventory(f.root); f.events.length = 0;
+  assert.equal(f.refresh().ok, true); assert.deepEqual(f.records(), before); assert.deepEqual(f.events, []);
+  f.service.close();
+  const reopened = openSettingsService(f.databasePath);
+  try {
+    assert.deepEqual(f.records(), before);
+    const list = reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value;
+    assert.equal(list.projects.length, 0); assert.equal(list.retainedProjects.find((row) => row.projectId === f.project.projectId).retentionReason, "mode_change");
+    assert.equal(reopened.workspaces.refreshSource({ type: "workspace.refreshSource", workspaceId: f.sibling.workspaceId }).ok, true);
+    assert.deepEqual(f.records(), before);
+  } finally { reopened.close(); }
+  assert.deepEqual(inventory(f.root), files);
+}, { grouped }));
+
+test("operational category rename follows its evidence while dormant children retain their historical locators", () => groupedFixture((f) => {
+  f.apply({ mode: "direct", excludedRelativePaths: ["Category"] });
+  f.apply({ mode: "grouped", excludedRelativePaths: [] });
+  const before = f.records();
+  fs.renameSync(join(f.root, "Category"), join(f.root, "Renamed"));
+  const files = inventory(f.root);
+  assert.equal(f.refresh().ok, true);
+  const after = f.records();
+  assert.equal(after.categories[0].relative_path, "Renamed"); assert.equal(after.categories[0].id, before.categories[0].id);
+  assert.deepEqual(after.projects, before.projects);
+  assert.deepEqual(after.text_property_values, before.text_property_values); assert.deepEqual(after.views, before.views);
+  assert.equal(after.sources[0].discovery_revision, before.sources[0].discovery_revision + 1);
+  assert.deepEqual(inventory(f.root), files);
+}));
+
+
+for (const mode of ["direct", "grouped"]) test(`live production observation after a mode round trip retains dormant projects (${mode})`, async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.ts");
+  const { withDeadline } = await import("../scripts/runtime-lifecycle.mjs");
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-mode-roundtrip-")));
+  const root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
+  fs.mkdirSync(join(root, "Category/Project/nested"), { recursive: true });
+  fs.writeFileSync(join(root, "Category/Project/nested/sentinel"), Buffer.from([0, 255, 43]));
+  const live = new Set();
+  const dependencies = { ...nativeObserverDependencies, watch(path, hint, failed) {
+    const handle = nativeObserverDependencies.watch(path, hint, failed); live.add(path);
+    return { close() { live.delete(path); handle.close(); } };
+  } };
+  const service = openSettingsService(databasePath, undefined, undefined, dependencies), sqlite = new Database(databasePath);
+  try {
+    const workspace = service.workspaces.create({ type: "workspace.create", name: "Native", rootPath: root }).value;
+    const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }).value;
+    const configure = (target) => {
+      const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode: target });
+      assert.equal(preview.ok, true);
+      const result = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: preview.value.previewToken });
+      assert.equal(result.ok, true, JSON.stringify(result)); return result.value;
+    };
+    const original = configure(mode).projects[0];
+    const property = service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: workspace.workspaceId, name: "Notes", propertyType: "text" }).value;
+    service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: workspace.workspaceId, projectId: original.projectId, propertyId: property.propertyId, value: "  Exact\nТекст  " });
+    configure(mode === "direct" ? "grouped" : "direct"); configure(mode);
+    assert.deepEqual([...live].sort(), [root, ...(mode === "grouped" && !dependencies.pollCategories ? [join(root, "Category")] : [])].sort());
+    await new Promise((resolve) => setTimeout(resolve, 250)); // Drain installation-window scans.
+    const records = () => ["sources", "projects", "categories", "text_property_values", "category_properties", "views"].map((table) => sqlite.prepare(`SELECT * FROM ${table} ORDER BY 1`).all());
+    const before = records();
+    const target = mode === "direct" ? "Renamed category" : "Category/Renamed project";
+    let off;
+    const observed = new Promise((resolve) => { off = service.workspaces.subscribe((event) => {
+      if (event.type === "workspace.sourceObserved") resolve(event);
+    }); });
+    let event;
+    try {
+      fs.renameSync(join(root, original.relativePath), join(root, target));
+      event = await withDeadline(observed, 7500, "Native mode round-trip observation");
+    } finally { off(); }
+    assert.deepEqual(event.workspaceIds, [workspace.workspaceId, sibling.workspaceId]); assert.equal(event.sourceId, workspace.sourceId);
+    assert.deepEqual(records(), before);
+    const list = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value;
+    assert.equal(list.projects.length, 0); assert.equal(list.retainedProjects.find((row) => row.projectId === original.projectId).retentionReason, "mode_change");
+    const sentinel = mode === "direct" ? `${target}/Project/nested/sentinel` : `${target}/nested/sentinel`;
+    assert.deepEqual(fs.readFileSync(join(root, sentinel)), Buffer.from([0, 255, 43]));
+    service.close(); assert.equal(live.size, 0);
+  } finally { service.close(); sqlite.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});

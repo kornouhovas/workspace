@@ -426,3 +426,86 @@ test("startup degraded status reaches a newly connected subscriber without revis
   assert.deepEqual(events.map((event) => [event.type, event.observationRevision, event.automaticUpdates]), [["workspace.sourceObserved", 2, "active"]]);
   off(); const count = events.length; f.h.advance(200); assert.equal(events.length, count);
 }));
+
+
+for (const polling of [false, true]) test(`mode Apply immediately retargets shared observation and rejects obsolete category callbacks (polling=${polling})`, () => fixture(true, (f) => {
+  f.h.dependencies.pollCategories = polling;
+  const otherRoot = join(f.directory, "other"); fs.mkdirSync(join(otherRoot, "Project"), { recursive: true });
+  const other = f.command("workspace.create", { name: "Unrelated", rootPath: otherRoot }).value;
+  const configure = (workspaceId, mode) => {
+    const preview = f.query("workspace.previewDiscovery", { workspaceId, mode }); assert.equal(preview.ok, true);
+    const result = f.command("workspace.applyDiscovery", { workspaceId, previewToken: preview.value.previewToken });
+    assert.equal(result.ok, true, JSON.stringify(result)); return result.value;
+  };
+  configure(other.workspaceId, "direct"); f.h.advance(200);
+  // Reinstall under the platform strategy before observing mode transitions.
+  f.restart(); f.h.advance(200); f.events.length = 0;
+  const obsolete = f.h.live().find((watch) => watch.path === join(f.root, "Category"));
+  const siblingPreview = f.query("workspace.previewDiscovery", { workspaceId: f.two.workspaceId }).value;
+  const direct = configure(f.one.workspaceId, "direct");
+  assert.equal(direct.retainedProjects.find((row) => row.projectId === f.projectId).retentionReason, "mode_change");
+  assert.deepEqual(f.h.live().map((watch) => watch.path).sort(), [f.root, otherRoot].sort());
+  assert.equal(f.command("workspace.applyDiscovery", { workspaceId: f.two.workspaceId, previewToken: siblingPreview.previewToken }).error.code, "stale_preview");
+  f.h.advance(200);
+  const count = f.events.length;
+  if (obsolete) { assert.equal(obsolete.closed, true); obsolete.hint(); obsolete.failed(); }
+  f.h.advance(100); assert.equal(f.events.length, count);
+  const recovery = f.query("workspace.previewProjectRecovery", { workspaceId: f.two.workspaceId, projectId: f.projectId });
+  assert.equal(recovery.ok, true, JSON.stringify(recovery));
+  const grouped = configure(f.two.workspaceId, "grouped");
+  assert.equal(grouped.categories[0].categoryId, f.initial.categories[0].categoryId);
+  assert.deepEqual(f.h.live().map((watch) => watch.path).sort(), [f.root, otherRoot, ...(polling ? [] : [join(f.root, "Category")])].sort());
+  assert.equal(f.command("workspace.reassociateProject", { workspaceId: f.two.workspaceId, projectId: f.projectId,
+    previewToken: recovery.value.previewToken, relativePath: "Category" }).error.code, "stale_preview");
+  f.h.advance(200);
+  const before = f.records();
+  fs.mkdirSync(join(f.root, "Category/Unrelated")); fs.renameSync(join(f.root, f.path), join(f.root, "Category/Renamed"));
+  if (polling) f.h.advance(5100); else { f.h.hint(join(f.root, "Category")); f.h.advance(200); }
+  assert.deepEqual(f.records(), before);
+  assert.equal(f.query("workspace.listProjects").value.retainedProjects.find((row) => row.projectId === f.projectId).relativePath, f.path);
+  assert.ok(f.events.some((event) => event.type === "workspace.sourceObserved"));
+  for (const event of f.events.filter((event) => event.type === "workspace.projectsChanged" || event.type === "workspace.sourceObserved")) {
+    assert.equal(event.sourceId, f.one.sourceId); assert.deepEqual(event.workspaceIds, [f.one.workspaceId, f.two.workspaceId]);
+  }
+  assert.equal(new Set(f.h.live().map((watch) => watch.path)).size, f.h.live().length);
+  f.command("workspace.remove"); f.command("workspace.remove", { workspaceId: f.two.workspaceId });
+  assert.deepEqual(f.h.live().map((watch) => watch.path), [otherRoot]);
+  const old = f.h.live()[0]; f.close(); const finalEvents = f.events.length;
+  old.hint(); old.failed(); f.h.advance(10000);
+  assert.equal(f.h.live().length, 0); assert.equal(f.h.timers.size, 0); assert.equal(f.events.length, finalEvents);
+}));
+
+
+test("a reentrant sibling mode Apply cannot install obsolete observation targets", () => fixture(true, (f) => {
+  let switched = false;
+  const unsubscribe = f.subscribe((event) => {
+    if (event.type !== "workspace.projectsChanged" || switched) return;
+    switched = true;
+    const preview = f.query("workspace.previewDiscovery", { workspaceId: f.two.workspaceId, mode: "grouped" }).value;
+    const result = f.command("workspace.applyDiscovery", { workspaceId: f.two.workspaceId, previewToken: preview.previewToken });
+    assert.equal(result.ok, true, JSON.stringify(result));
+  });
+  const preview = f.query("workspace.previewDiscovery", { mode: "direct" }).value;
+  const result = f.command("workspace.applyDiscovery", { previewToken: preview.previewToken }); unsubscribe();
+  assert.equal(result.ok, true); assert.equal(result.value.mode, "direct"); assert.equal(switched, true);
+  assert.equal(f.query("workspace.listProjects").value.mode, "grouped");
+  assert.deepEqual(f.h.live().map((watch) => watch.path).sort(), [f.root, join(f.root, "Category")].sort());
+  const latest = f.records(); f.h.advance(200);
+  assert.deepEqual(f.records(), latest);
+  assert.equal(f.query("workspace.listProjects").value.projects.length, 0);
+  assert.deepEqual(f.events.filter((event) => event.type === "workspace.projectsChanged").map((event) => event.revision), [result.value.revision, result.value.revision + 1]);
+}));
+
+
+test("mode observation belongs to the source when a subscriber removes the initiating workspace", () => fixture(true, (f) => {
+  const unsubscribe = f.subscribe((event) => {
+    if (event.type === "workspace.projectsChanged") f.command("workspace.remove");
+  });
+  const preview = f.query("workspace.previewDiscovery", { mode: "direct" }).value;
+  const result = f.command("workspace.applyDiscovery", { previewToken: preview.previewToken }); unsubscribe();
+  assert.equal(result.ok, true);
+  assert.deepEqual(f.h.live().map((watch) => watch.path), [f.root]);
+  assert.equal(f.query("workspace.listProjects", { workspaceId: f.two.workspaceId }).value.mode, "direct");
+  f.h.advance(200);
+  assert.deepEqual(f.events.filter((event) => event.type === "workspace.sourceObserved").at(-1).workspaceIds, [f.two.workspaceId]);
+}));

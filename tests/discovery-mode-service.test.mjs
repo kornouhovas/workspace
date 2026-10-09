@@ -14,7 +14,7 @@ function fixture(run) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "workspace-mode-")));
   const root = join(directory, "root"); fs.mkdirSync(root);
   const databasePath = join(directory, "data", "workspace.sqlite");
-  const service = openSettingsService(databasePath);
+  let service = openSettingsService(databasePath);
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Mode", rootPath: root }).value;
   const sqlite = new Database(databasePath);
   const query = (extra = {}) => service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, ...extra });
@@ -23,7 +23,8 @@ function fixture(run) {
     const preview = query({ mode, ...extra }); assert.equal(preview.ok, true, JSON.stringify(preview));
     const result = apply(preview.value); assert.equal(result.ok, true, JSON.stringify(result)); return result.value;
   };
-  try { run({ directory, root, sqlite, service, workspace, query, apply, configure }); }
+  const restart = () => { service.close(); service = openSettingsService(databasePath); };
+  try { run({ directory, root, sqlite, get service() { return service; }, workspace, query, apply, configure, restart }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 function inventory(path) {
@@ -384,4 +385,43 @@ test("migration guards distinguish dormant history from operational category own
   assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = ? WHERE id = ?").run(grouped.categories[0].categoryId, projectId));
   assert.throws(() => f.sqlite.prepare("UPDATE categories SET source_id = ? WHERE id = ?").run(other.sourceId, first.categories[0].categoryId));
   assert.deepEqual(f.sqlite.pragma("foreign_key_check"), []);
+}));
+
+
+for (const mode of ["direct", "grouped"]) test(`mode round trip with restart retains projects until explicit own-path recovery (${mode})`, () => fixture((f) => {
+  for (const path of ["Category/One", "Category/Two"]) fs.mkdirSync(join(f.root, path), { recursive: true });
+  fs.writeFileSync(join(f.root, "Category/One/sentinel"), Buffer.from([0, 255, 17]));
+  const first = f.configure(mode), original = f.sqlite.prepare("SELECT * FROM projects ORDER BY id").all();
+  const propertyId = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId,
+    name: " Notes ", propertyType: "text" }).value.propertyId;
+  for (const project of first.projects) assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue",
+    workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId, value: `  Exact\nТекст ${project.projectId}  ` }).ok, true);
+  if (mode === "grouped") f.service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty",
+    workspaceId: f.workspace.workspaceId, propertyId: first.categoryProperty.propertyId, name: "  Authored category  " });
+  const values = f.sqlite.prepare("SELECT * FROM text_property_values ORDER BY project_id").all();
+  const views = f.sqlite.prepare("SELECT * FROM views").all(), files = inventory(f.root);
+  const categories = f.sqlite.prepare("SELECT * FROM categories").all(), label = f.sqlite.prepare("SELECT * FROM category_properties").all();
+  f.configure(mode === "direct" ? "grouped" : "direct"); f.restart();
+  const returned = f.configure(mode); f.restart();
+  assert.deepEqual(returned.projects, []);
+  for (const project of original) assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), { ...project, mode_inactive: 1 });
+  if (mode === "grouped") {
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all(), categories);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM category_properties").all(), label);
+    assert.equal(returned.categoryProperty.propertyId, first.categoryProperty.propertyId);
+  }
+  for (const project of original) {
+    const request = { workspaceId: f.workspace.workspaceId, projectId: project.id };
+    const review = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", ...request });
+    assert.equal(review.ok, true, JSON.stringify(review));
+    assert.equal(review.value.entries.find((row) => row.relativePath === project.relative_path).status, "selectable");
+    const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", ...request,
+      previewToken: review.value.previewToken, relativePath: project.relative_path });
+    assert.equal(recovered.ok, true, JSON.stringify(recovered));
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects WHERE id = ?").get(project.id), project);
+  }
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM text_property_values ORDER BY project_id").all(), values);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM views").all(), views); assert.deepEqual(inventory(f.root), files);
+  f.restart();
+  assert.deepEqual(new Set(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.projects.map((row) => row.projectId)), new Set(original.map((row) => row.id)));
 }));

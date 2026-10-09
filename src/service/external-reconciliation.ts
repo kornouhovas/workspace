@@ -122,7 +122,7 @@ function groupedMappings(scan: DiscoveryScan, projects: Project[], categories: C
     } while (blocked);
     for (const category of categories) {
       if (verified.has(category.id) && verified.get(category.id) !== category.relativePath &&
-        projects.some((project) => project.categoryId === category.id && project.associationState === "active" && !placements.has(project.id))) {
+        projects.some((project) => project.categoryId === category.id && !project.modeInactive && project.associationState === "active" && !placements.has(project.id))) {
         // A parent rename cannot leave an active child at its old locator under
         // SQLite's required-category invariant. Defer the dependent mapping;
         // never infer absent/excluded children's identities or persist absence.
