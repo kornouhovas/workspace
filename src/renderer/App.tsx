@@ -21,6 +21,8 @@ function errorMessage(code: ServiceErrorCode): FormMessage {
 export function App() {
   const [client] = useState(() => new WorkspaceServiceClient());
   const [backend, setBackend] = useState<BackendStatus>({ state: "starting" });
+  const backendState = useRef<BackendStatus["state"]>("starting");
+  const [backendGeneration, setBackendGeneration] = useState(0);
   const [viewState, setViewState] = useState<ViewState>("loading");
   const [language, setLanguage] = useState<Language>("en");
   const [savingLanguage, setSavingLanguage] = useState(false);
@@ -128,14 +130,25 @@ export function App() {
   useEffect(() => {
     let active = true;
     let receivedEvent = false;
+    const observe = (status: BackendStatus) => {
+      if (!active) return;
+      if (status.state !== backendState.current) {
+        backendState.current = status.state;
+        dataVersion.current++;
+        // React may batch unavailable/ready notifications into one render.
+        // Still discard children and responses belonging to the prior backend.
+        setBackendGeneration((generation) => generation + 1);
+      }
+      setBackend(status);
+    };
     const unsubscribe = client.onBackendStatus((status) => {
       receivedEvent = true;
-      setBackend(status);
+      observe(status);
     });
     void client.getBackendStatus().then((status) => {
-      if (active && !receivedEvent) setBackend(status);
+      if (active && !receivedEvent) observe(status);
     }).catch(() => {
-      if (active && !receivedEvent) setBackend({ state: "unavailable" });
+      if (active && !receivedEvent) observe({ state: "unavailable" });
     });
     return () => { active = false; unsubscribe(); };
   }, [client]);
@@ -154,7 +167,7 @@ export function App() {
       setViewState("loading");
     }
     return () => { active = false; };
-  }, [backend.state, loadInitialData]);
+  }, [backend.state, backendGeneration, loadInitialData]);
 
   const changeLanguage = async (nextLanguage: Language) => {
     if (savingLanguage || nextLanguage === language) return;
@@ -560,7 +573,7 @@ export function App() {
                   {t("refreshSourceErrorDescription")}
                 </StatusMessage>
               )}
-              <DiscoveryWorkspace key={`${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
+              <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />
               <button

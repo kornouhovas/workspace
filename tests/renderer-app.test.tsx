@@ -1425,6 +1425,7 @@ test("Text property lists and saves reject older revisions and responses after w
   await act(async () => { lists[2](ok(snapshot(3, "Sibling"))); lists[1](ok(snapshot(2, "Own"))); finishSave?.(ok({ snapshot: snapshot(2, "Own"), propertyId, projectId: null })); });
   assert.ok(screen.getByRole("button", { name: "Rename property: Sibling" }));
   assert.equal(screen.queryByRole("button", { name: "Rename property: Own" }), null);
+  assert.ok(screen.getByText(translate("en", "propertyNewerChange")));
   await userEvent.click(screen.getByRole("button", { name: "Rename property: Sibling" }));
   await userEvent.keyboard("{Enter}");
   const next = { ...props, workspaceId: randomUUID(), sourceId: randomUUID() };
@@ -1548,5 +1549,188 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
     await act(async () => { finish?.(ok({ snapshot, projectId, propertyId })); });
     assert.equal(cell.textContent, translate(language, "textValueAbsent"));
     cleanup();
+  }
+});
+
+function textFixture() {
+  const workspaceId = randomUUID(), sourceId = randomUUID(), propertyId = randomUUID(), projectId = randomUUID();
+  const snapshot = (revision: number, value: string | null = "Original", name = "Notes"): TextPropertySnapshot => ({
+    workspaceId, sourceId, revision, definitions: [{ propertyId, sourceId, name, propertyType: "text" }],
+    values: value === null ? [] : [{ projectId, propertyId, value }],
+  });
+  return { workspaceId, sourceId, propertyId, projectId, snapshot,
+    projects: [{ projectId, sourceId, name: "Project", relativePath: "Project" }] };
+}
+
+test("EN/RU sibling changes preserve cell and rename drafts; Cancel reveals the newest committed field", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const f = textFixture(); let committed = f.snapshot(1), mutations = 0;
+    const api = mockApi({ onProperties: async () => ok(committed), onWorkspace: async () => { mutations++; return fail("storage"); } });
+    render(<TextPropertiesTable {...f} client={new WorkspaceServiceClient(window.workspace)} language={language} disabled={false} />);
+    const label = `${translate(language, "editTextValue")}: Project / Notes`;
+    await userEvent.click(await screen.findByRole("button", { name: label }));
+    await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "  Unsaved 📝  ");
+    committed = f.snapshot(2, "Sibling");
+    await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 2 }); });
+    assert.equal((screen.getByRole("textbox") as HTMLTextAreaElement).value, "  Unsaved 📝  ");
+    assert.ok(screen.getByText(translate(language, "textValueExternalChange")));
+    assert.equal(mutations, 0);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelTextValue") }));
+    assert.equal(screen.getByRole("button", { name: label }).textContent, "Sibling");
+    await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Notes` }));
+    await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "My name");
+    committed = f.snapshot(3, "Sibling", "Their name");
+    await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 3 }); });
+    assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "My name");
+    assert.ok(screen.getByText(translate(language, "propertyExternalChange")));
+    await userEvent.keyboard("{Escape}");
+    assert.ok(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Their name` }));
+    assert.equal(mutations, 0); cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("Text cell saves keep own event-before-response success and reject overtaken lists/save snapshots", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const f = textFixture();
+    const lists: ((result: ServiceResult<TextPropertySnapshot>) => void)[] = [];
+    let finish: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+    let saves = 0;
+    const api = mockApi({ onProperties: async () => new Promise<ServiceResult<TextPropertySnapshot>>((resolve) => lists.push(resolve)),
+      onWorkspace: async () => { saves++; return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; }); } });
+    render(<TextPropertiesTable {...f} client={new WorkspaceServiceClient(window.workspace)} language={language} disabled={false} />);
+    await act(async () => { lists[0](ok(f.snapshot(1))); });
+    const label = `${translate(language, "editTextValue")}: Project / Notes`;
+    const editSave = async (value: string) => {
+      await userEvent.click(screen.getByRole("button", { name: label }));
+      await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), value);
+      await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    };
+    const event = (revision: number) => api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision });
+    await editSave("Own");
+    await act(async () => { event(2); lists[1](ok(f.snapshot(2, "Own"))); });
+    await act(async () => { finish?.(ok({ snapshot: f.snapshot(2, "Own"), projectId: f.projectId, propertyId: f.propertyId })); });
+    assert.ok(screen.getByText(translate(language, "textValueSaved")));
+    assert.equal(screen.queryByText(translate(language, "textValueExternalChange")), null);
+    await act(async () => { event(3); lists[2](ok(f.snapshot(3, "Later sibling"))); });
+    assert.ok(screen.getByText(translate(language, "textValueNewerChange")));
+    await editSave("Older own");
+    await act(async () => { event(4); event(5); event(5); });
+    assert.equal(lists.length, 5, "duplicate events must not create reloads");
+    await act(async () => {
+      lists[4](ok(f.snapshot(5, "Newest sibling"))); lists[3](ok(f.snapshot(4, "Older own")));
+      finish?.(ok({ snapshot: f.snapshot(4, "Older own"), projectId: f.projectId, propertyId: f.propertyId }));
+    });
+    assert.equal(screen.getByRole("button", { name: label }).textContent, "Newest sibling");
+    assert.ok(screen.getByText(translate(language, "textValueNewerChange")));
+    assert.equal(screen.queryByText(translate(language, "textValueSaved")), null);
+    assert.equal(saves, 2); cleanup(); assert.equal(api.changeListenerCount(), 0);
+    await act(async () => { event(6); }); assert.equal(lists.length, 5);
+  }
+});
+
+test("backend restart, workspace switch/removal and cleanup invalidate delayed Text lists and cell/definition saves without replay", async () => {
+  for (const phase of ["list", "value", "rename"] as const) {
+    for (const transition of ["restart", "restart-batched", "switch", "remove", "cleanup"] as const) {
+      const f = textFixture(), next = textFixture();
+      const active: ActiveWorkspace = { workspaceId: f.workspaceId, sourceId: f.sourceId, viewId: randomUUID(), name: "Old workspace", canonicalRoot: "/Fixture", sourceAvailable: true };
+      const other = { ...active, workspaceId: next.workspaceId, sourceId: next.sourceId, viewId: randomUUID(), name: "New workspace" };
+      const lists: ((result: ServiceResult<TextPropertySnapshot>) => void)[] = [];
+      let finish: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+      let ready = false, saves = 0;
+      const api = mockApi({ onProperties: async (input) => {
+        if (input.type !== "workspace.listTextProperties") return fail("invalid_input");
+        if (input.workspaceId === other.workspaceId) return ok(next.snapshot(1, "Current", "New property"));
+        if (ready) return ok(f.snapshot(3, "Restarted", "Restarted property"));
+        if (phase !== "list" && lists.length === 0) { lists.push(() => {}); return ok(f.snapshot(1)); }
+        return new Promise<ServiceResult<TextPropertySnapshot>>((resolve) => lists.push(resolve));
+      }, onProjects: async (input) => {
+        if (input.type !== "workspace.listProjects") return fail("invalid_input");
+        return ok({ workspaceId: input.workspaceId, sourceId: input.workspaceId === other.workspaceId ? next.sourceId : f.sourceId,
+          revision: 1, configured: true, state: "ready", retainedCount: 0, projects: input.workspaceId === other.workspaceId ? next.projects : f.projects });
+      },
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
+        saves++; return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; });
+      } });
+      render(<App />);
+      await screen.findByRole("heading", { name: "Old workspace" });
+      if (phase === "value") {
+        await userEvent.click(await screen.findByRole("button", { name: "Edit Text value: Project / Notes" }));
+        await userEvent.type(screen.getByRole("textbox", { name: "Edit Text value: Project / Notes" }), " old draft");
+        await userEvent.click(screen.getByRole("button", { name: "Save value" }));
+      } else if (phase === "rename") {
+        await userEvent.click(await screen.findByRole("button", { name: "Rename property: Notes" }));
+        await userEvent.type(screen.getByRole("textbox", { name: "Property name" }), " old draft"); await userEvent.keyboard("{Enter}");
+      }
+      if (transition === "restart-batched") {
+        ready = true;
+        await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+        await screen.findByRole("button", { name: "Rename property: Restarted property" });
+      } else if (transition === "restart") {
+        await act(async () => { api.emitStatus("unavailable"); }); ready = true;
+        await act(async () => { api.emitStatus("ready"); });
+        await screen.findByRole("button", { name: "Rename property: Restarted property" });
+      } else if (transition === "cleanup") cleanup();
+      else {
+        await act(async () => { api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, transition === "remove" ? [other] : [active, other]) }); });
+        await screen.findByRole("button", { name: "Rename property: New property" });
+      }
+      await act(async () => {
+        lists.at(-1)?.(ok(f.snapshot(2, "Delayed value", "Delayed property")));
+        finish?.(ok({ snapshot: f.snapshot(2, "Delayed value", "Delayed property"), projectId: phase === "value" ? f.projectId : null, propertyId: f.propertyId }));
+      });
+      assert.equal(screen.queryByText("Delayed value"), null);
+      assert.equal(screen.queryByText("Delayed property"), null);
+      assert.equal(screen.queryByText("Value saved."), null);
+      assert.equal(screen.queryByText("Property saved."), null);
+      assert.equal(saves, phase === "list" ? 0 : 1);
+      cleanup(); assert.equal(api.changeListenerCount(), 0);
+    }
+  }
+});
+
+test("EN/RU sibling commits during a failed save retain drafts and require an explicit retry command", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const f = textFixture(); let committed = f.snapshot(1);
+    const commands: WorkspaceRequest[] = [];
+    let finish: ((result: ServiceResult<TextPropertyMutation>) => void) | undefined;
+    const api = mockApi({ onProperties: async () => ok(committed), onWorkspace: async (input) => {
+      commands.push(input); return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; });
+    } });
+    render(<TextPropertiesTable {...f} client={new WorkspaceServiceClient(window.workspace)} language={language} disabled={false} />);
+    const label = `${translate(language, "editTextValue")}: Project / Notes`;
+    await userEvent.click(await screen.findByRole("button", { name: label }));
+    await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "  My draft\n  ");
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    committed = f.snapshot(2, "Sibling during save");
+    await act(async () => {
+      api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 2 });
+      finish?.(fail("storage"));
+    });
+    assert.equal((screen.getByRole("textbox") as HTMLTextAreaElement).value, "  My draft\n  ");
+    assert.ok(screen.getByText(translate(language, "textValueExternalChange")));
+    assert.ok(screen.getByText(translate(language, "textValueSaveError")));
+    assert.equal(commands.length, 1);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    assert.equal(commands.length, 2);
+    assert.deepEqual(commands[1], { type: "workspace.setTextValue", workspaceId: f.workspaceId,
+      projectId: f.projectId, propertyId: f.propertyId, value: "  My draft\n  " });
+    committed = f.snapshot(3, "  My draft\n  ");
+    await act(async () => { finish?.(ok({ snapshot: committed, projectId: f.projectId, propertyId: f.propertyId })); });
+    assert.ok(screen.getByText(translate(language, "textValueSaved")));
+    assert.equal(screen.queryByText(translate(language, "textValueExternalChange")), null);
+    assert.equal(screen.getByRole("button", { name: label }).textContent, "  My draft\n  ");
+    await userEvent.click(screen.getByRole("button", { name: `${translate(language, "renameProperty")}: Notes` }));
+    await userEvent.clear(screen.getByRole("textbox")); await userEvent.type(screen.getByRole("textbox"), "Renamed"); await userEvent.keyboard("{Enter}");
+    committed = f.snapshot(4, "  My draft\n  ", "Renamed");
+    await act(async () => {
+      api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 4 });
+      finish?.(ok({ snapshot: committed, projectId: null, propertyId: f.propertyId }));
+    });
+    assert.ok(screen.getByText(translate(language, "propertySaved")));
+    committed = f.snapshot(5, "After rename", "Renamed");
+    await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 5 }); });
+    assert.ok(screen.getByText(translate(language, "propertyNewerChange")));
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });

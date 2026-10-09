@@ -280,3 +280,45 @@ test("Text metadata stays on retained logical IDs through exclusions, replacemen
     assert.deepEqual(inventory(join(f.directory, "original")), inventory(join(f.root, "Project")));
   } finally { sql.close(); }
 }));
+
+test("property notification batches isolate subscriber failures and serialize reentrant reads/mutations with discovery", () => fixture((f) => {
+  const propertyId = createProperty(f.service, f.one.workspaceId).value.propertyId;
+  const projectId = discover(f.service, f.one.workspaceId).projects[0].projectId;
+  setValue(f.service, f.one.workspaceId, projectId, propertyId, "Original");
+  const sql = new Database(f.databasePath);
+  try {
+    const views = sql.prepare("SELECT * FROM views ORDER BY id").all();
+    const selection = sql.prepare("SELECT * FROM active_workspace").all();
+    const discoveryBefore = sql.prepare("SELECT discovery_revision FROM sources WHERE id = ?").get(f.one.sourceId);
+    const order = [], reads = [];
+    f.service.workspaces.subscribe(() => { throw new Error("subscriber failure"); });
+    let nested;
+    f.service.workspaces.subscribe((event) => {
+      if (event.type !== "workspace.propertiesChanged") return;
+      reads.push(list(f.service, f.sibling.workspaceId).value);
+      if (event.revision === 3) {
+        nested = setValue(f.service, f.sibling.workspaceId, projectId, propertyId, "Reentrant");
+        assert.equal(nested.ok, true);
+        discover(f.service, f.one.workspaceId, ["Project"]);
+      }
+    });
+    const unsubscribe = f.service.workspaces.subscribe((event) => order.push([event.type, event.revision]));
+    const result = rename(f.service, f.one.workspaceId, propertyId, "Renamed");
+    assert.equal(result.ok, true, "subscriber failures must not turn a committed rename into a failed save");
+    assert.equal(result.value.snapshot.revision, 3);
+    assert.deepEqual(result.value.snapshot.values, [{ projectId, propertyId, value: "Original" }]);
+    assert.deepEqual(order, [["workspace.propertiesChanged", 3], ["workspace.propertiesChanged", 4], ["workspace.projectsChanged", 2]]);
+    assert.deepEqual(reads.map((snapshot) => [snapshot.revision, snapshot.values[0].value]), [[3, "Original"], [4, "Reentrant"]]);
+    assert.equal(nested.value.snapshot.definitions[0].name, "Renamed");
+    assert.deepEqual(list(f.service, f.sibling.workspaceId).value.values, [{ projectId, propertyId, value: "Reentrant" }]);
+    assert.deepEqual(list(f.service, f.other.workspaceId).value.definitions, []);
+    assert.deepEqual(sql.prepare("SELECT * FROM views ORDER BY id").all(), views);
+    assert.deepEqual(sql.prepare("SELECT * FROM active_workspace").all(), selection);
+    assert.equal(discoveryBefore.discovery_revision, 1);
+    assert.equal(sql.prepare("SELECT discovery_revision FROM sources WHERE id = ?").get(f.one.sourceId).discovery_revision, 2);
+    assert.equal(readFileSync(join(f.root, "Project", "keep"), "utf8"), "unchanged bytes");
+    unsubscribe();
+    rename(f.service, f.one.workspaceId, propertyId, "After unsubscribe");
+    assert.equal(order.length, 3);
+  } finally { sql.close(); }
+}));

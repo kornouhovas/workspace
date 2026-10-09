@@ -12,24 +12,33 @@ interface Props {
   projectName: string;
   propertyName: string;
   value: string | null;
+  revision: number;
+  minimumRevision: { current: number };
   language: Language;
   disabled: boolean;
   onSave(value: string | null): Promise<ServiceResult<TextPropertyMutation>>;
 }
 
-export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, language, disabled, onSave }: Props) {
+export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId, projectName, propertyName, value, revision, minimumRevision, language, disabled, onSave }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const label = `${t("editTextValue")}: ${projectName} / ${propertyName}`;
   const id = useId();
   const [draft, setDraft] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<"textValueValidation" | "textValueSaveError" | "textValueSaved" | null>(null);
+  const [message, setMessage] = useState<"textValueValidation" | "textValueSaveError" | "textValueSaved" | "textValueNewerChange" | null>(null);
+  const originalValue = useRef(value);
+  const savedRevision = useRef(0);
   const button = useRef<HTMLButtonElement>(null);
   const editor = useRef<HTMLTextAreaElement>(null);
   const saving = useRef(false);
   const lifetime = useRef(0);
   const restoreFocus = useRef(false);
   const editing = draft !== null;
+  useEffect(() => {
+    if (revision > savedRevision.current) {
+      setMessage((current) => current === "textValueSaved" ? "textValueNewerChange" : current);
+    }
+  }, [revision]);
   useEffect(() => {
     if (editing) editor.current?.focus();
     else if (restoreFocus.current) { button.current?.focus(); restoreFocus.current = false; }
@@ -48,14 +57,16 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
       if (current !== lifetime.current) return;
       if (result.ok && result.value.projectId === projectId && result.value.propertyId === propertyId &&
         result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
-        restoreFocus.current = true; setDraft(null); setMessage("textValueSaved");
+        savedRevision.current = result.value.snapshot.revision;
+        restoreFocus.current = true; setDraft(null);
+        setMessage(result.value.snapshot.revision < minimumRevision.current ? "textValueNewerChange" : "textValueSaved");
       } else setMessage(!result.ok && result.error.code === "invalid_input" ? "textValueValidation" : "textValueSaveError");
     } catch { if (current === lifetime.current) setMessage("textValueSaveError"); }
     finally { if (current === lifetime.current) { saving.current = false; setPending(false); } }
   };
   return <div className="text-property-cell" aria-busy={pending}>
     <button ref={button} type="button" className="text-value-button" aria-label={label} hidden={editing} disabled={disabled}
-      onClick={() => { setDraft(value ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : value}</button>
+      onClick={() => { originalValue.current = value; setDraft(value ?? ""); setMessage(null); }}>{value === null ? t("textValueAbsent") : value === "" ? t("textValueEmpty") : value}</button>
     {editing && <div className="text-value-editor" onKeyDown={(event) => {
       if (event.key === "Escape") { event.preventDefault(); cancel(); }
       else if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.nativeEvent.isComposing) { event.preventDefault(); void save(draft); }
@@ -70,6 +81,7 @@ export function TextPropertyCell({ workspaceId, sourceId, projectId, propertyId,
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelTextValue")}</button>
       </div>
     </div>}
-    {message && <StatusMessage kind={message === "textValueSaved" ? "info" : "error"} title={t(message)} />}
+    {editing && !pending && value !== originalValue.current && <StatusMessage kind="info" title={t("textValueExternalChange")} />}
+    {message && <StatusMessage kind={message === "textValueSaved" || message === "textValueNewerChange" ? "info" : "error"} title={t(message)} />}
   </div>;
 }

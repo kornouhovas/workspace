@@ -162,12 +162,23 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Add controlled deferred-response tests for an own event arriving before its save response, a newer sibling commit overtaking an older list/save response, multiple property notifications, workspace switching/removal, backend unavailable/ready transitions and component cleanup.
-- [ ] Keep committed snapshots and editing drafts separate. Reload affected source data without replacing an unsaved draft. If the same field changes externally, preserve the draft and show a localized notice; Save remains an explicit new command and Cancel reveals current committed data.
-- [ ] Accept snapshots only for the current workspace/source and at least the newest observed property revision. Allow an own successful response at that revision, reject older snapshot replacement and distinguish a completed save from a subsequent sibling change. Invalidate pending work on backend lifecycle changes and cleanup; never replay mutations automatically.
-- [ ] Extend IPC regressions through the real service entry with temporary SQLite, BackendController event handling, preload subscriptions and WorkspaceServiceClient validation. Assert event-before-response ordering, actual sibling fanout, unrelated-source isolation, malformed-event rejection, unsubscribe/unload cleanup and no events from failed/no-op transactions.
-- [ ] Verify subscriber failures and reentrant reads cannot change committed results or reorder property event batches. Preserve discovery notification behavior and test that definition rename does not lose values or disturb independent views.
-- [ ] Run the task checkpoint and commit the verified slice as fix: guard shared Text updates and editing drafts.
+- [x] Add controlled deferred-response tests for an own event arriving before its save response, a newer sibling commit overtaking an older list/save response, multiple property notifications, workspace switching/removal, backend unavailable/ready transitions and component cleanup.
+- [x] Keep committed snapshots and editing drafts separate. Reload affected source data without replacing an unsaved draft. If the same field changes externally, preserve the draft and show a localized notice; Save remains an explicit new command and Cancel reveals current committed data.
+- [x] Accept snapshots only for the current workspace/source and at least the newest observed property revision. Allow an own successful response at that revision, reject older snapshot replacement and distinguish a completed save from a subsequent sibling change. Invalidate pending work on backend lifecycle changes and cleanup; never replay mutations automatically.
+- [x] Extend IPC regressions through the real service entry with temporary SQLite, BackendController event handling, preload subscriptions and WorkspaceServiceClient validation. Assert event-before-response ordering, actual sibling fanout, unrelated-source isolation, malformed-event rejection, unsubscribe/unload cleanup and no events from failed/no-op transactions.
+- [x] Verify subscriber failures and reentrant reads cannot change committed results or reorder property event batches. Preserve discovery notification behavior and test that definition rename does not lose values or disturb independent views.
+- [x] Run the task checkpoint and commit the verified slice as feat: guard shared Text updates and editing drafts.
+
+Task 3 checkpoint:
+
+- Kept committed property snapshots separate from cell/name drafts. Same-field sibling changes show localized EN/RU notices without replacing drafts; Cancel reveals current committed data, and retry sends an explicit new command with the retained authored draft.
+- Cell save feedback now distinguishes a successful command overtaken by a newer source revision. Own events before responses retain success; older list/save snapshots cannot replace newer committed data. Later sibling changes update completed cell and definition feedback.
+- Added backend generations in App so even batched unavailable/ready notifications invalidate prior component lifetimes and trigger fresh queries. Old editors are reset on backend restart, workspace/source replacement or removal; pending mutations are never replayed automatically. Tests also cover unmount cleanup.
+- Verified the existing service notification queue with throwing subscribers, reentrant committed reads and nested property/discovery mutations. Event batches remain ordered, committed responses remain unchanged, rename retains values, and independent views/selection and sentinel file bytes are preserved.
+- Extended real temporary SQLite entry/controller/compiled-preload/client regressions for two subscribers, actual sibling fanout, unrelated-source isolation, event-before-response ordering, no-op/failed transactions, malformed-event rejection and unsubscribe/unload/shutdown cleanup.
+- All 172 tests passed through npm test, including the production build and existing build/artifact regressions. npm run lint, npm run typecheck and git diff --check passed. No dependency, migration, transport contract or upstream copied-code changes were needed in this task.
+- Evidence is retained under work/ralphex/issue-12/task-3-evidence, including initial failing notice/feedback tests, the reproduced batched-lifecycle failure and a failed typecheck attempt followed by corrected passing checkpoint logs.
+- Native Electron feature checks, screenshots, application restart and packaging evidence remain Task 4. No native or Windows runtime acceptance is claimed. Physical macOS27 shutdown #44 remains unresolved and a final-release blocker; Windows evidence remains coordinator-owned.
 
 ### Task 4: Add permanent runtime evidence and document the implemented slice
 

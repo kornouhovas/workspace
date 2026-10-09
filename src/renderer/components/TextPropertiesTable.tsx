@@ -23,17 +23,23 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [draft, setDraft] = useState<{ propertyId: string | null; name: string } | null>(null);
+  const [draft, setDraft] = useState<{ propertyId: string | null; name: string; originalName: string } | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<"propertyValidation" | "propertySaveError" | "propertySaved" | "propertyNewerChange" | null>(null);
   const minimumRevision = useRef(0);
   const listVersion = useRef(0);
   const lifetime = useRef(0);
   const saving = useRef(false);
+  const savedRevision = useRef(0);
   const trigger = useRef<HTMLButtonElement>(null);
   const renameButtons = useRef(new Map<string, HTMLButtonElement>());
   const focusTarget = useRef<string | null | undefined>(undefined);
   const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (snapshot && snapshot.revision > savedRevision.current) {
+      setMessage((current) => current === "propertySaved" ? "propertyNewerChange" : current);
+    }
+  }, [snapshot?.revision]);
   useEffect(() => {
     if (draft) input.current?.focus();
     else if (focusTarget.current !== undefined) {
@@ -80,6 +86,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
         : await client.renameProperty(workspaceId, draft.propertyId, draft.name);
       if (current !== lifetime.current) return;
       if (result.ok && result.value.snapshot.workspaceId === workspaceId && result.value.snapshot.sourceId === sourceId) {
+        savedRevision.current = result.value.snapshot.revision;
         if (accepts(result.value.snapshot)) {
           // Supersede older lists while preserving an own event-before-response success.
           listVersion.current++; setLoading(false); setLoadError(false);
@@ -107,7 +114,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
     {loadError && <><StatusMessage kind="error" title={t("propertiesLoadError")} />
       <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading} onClick={() => void load()}>{t("propertiesRetry")}</button></>}
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || loadError || draft !== null}
-      onClick={() => { setMessage(null); setDraft({ propertyId: null, name: "" }); }}>{t("createTextProperty")}</button>
+      onClick={() => { setMessage(null); setDraft({ propertyId: null, name: "", originalName: "" }); }}>{t("createTextProperty")}</button>
     {draft && <form className="property-form" onSubmit={(event) => { event.preventDefault(); void save(); }}
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancel(); } }}>
       <label htmlFor="property-name">{t("propertyName")}</label>
@@ -118,6 +125,8 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
         <button type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={cancel}>{t("cancelRenameWorkspace")}</button>
       </div>
     </form>}
+    {draft?.propertyId && !pending && snapshot?.definitions.find((property) => property.propertyId === draft.propertyId)?.name !== draft.originalName &&
+      <StatusMessage kind="info" title={t("propertyExternalChange")} />}
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     <div className="project-table-scroll">
@@ -126,11 +135,12 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
           <span className="property-authored">{property.name}</span>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
-            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name }); }}>{t("renameProperty")}</button>
+            disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
       </tr></thead><tbody>{projects.map((project) => <tr key={project.projectId}><td>{project.name}</td>
         {snapshot?.definitions.map((property) => <td key={property.propertyId}>
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
+            revision={snapshot.revision} minimumRevision={minimumRevision}
             projectName={project.name} propertyName={property.name} language={language} disabled={disabled || loadError || draft !== null}
             value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />

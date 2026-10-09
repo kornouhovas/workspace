@@ -813,3 +813,103 @@ test("Text definitions and values traverse typed client and real service entry w
     assert.equal(port.sent.length, 1);
   } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+test("Text events traverse real SQLite entry/controller/preload/clients in commit order and clean up on unsubscribe/unload", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "text-events-transport-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other"), databasePath = join(directory, "data.sqlite");
+  await mkdir(join(root, "Project"), { recursive: true }); await mkdir(otherRoot);
+  await writeFile(join(root, "Project", "keep"), "unchanged transport bytes");
+  const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController();
+  const ipc = new EventEmitter();
+  ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
+  const offBroken = controller.onWorkspaceChange(() => { throw new Error("broken desktop subscriber"); });
+  const offRelay = controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+  const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+  const createSurface = () => {
+    const unload = new EventTarget(); let api;
+    runInNewContext(preload, { window: unload, require: (name) => {
+      assert.equal(name, "electron");
+      return { ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_name, value) => { api = value; } } };
+    } });
+    return { api, unload, client: new WorkspaceServiceClient(api) };
+  };
+  const oneSurface = createSurface(), siblingSurface = createSurface();
+  const events = [], siblingEvents = [];
+  const offOne = oneSurface.client.onWorkspaceChange((event) => events.push(event));
+  const offSibling = siblingSurface.client.onWorkspaceChange((event) => siblingEvents.push(event));
+  let sql;
+  try {
+    assert.equal(await controller.start(child, desktopPort, databasePath, {}, 100), true);
+    const one = (await oneSurface.client.createWorkspace("One", root)).value;
+    const sibling = (await siblingSurface.client.createWorkspace("Sibling", root)).value;
+    const other = (await oneSurface.client.createWorkspace("Other", otherRoot)).value;
+    const preview = (await oneSurface.client.previewDiscovery(one.workspaceId)).value;
+    const projectId = (await oneSurface.client.applyDiscovery(one.workspaceId, preview.previewToken)).value.projects[0].projectId;
+    events.length = siblingEvents.length = 0; servicePort.sent.length = 0;
+    const created = await oneSurface.client.createProperty(one.workspaceId, "Notes");
+    const propertyId = created.value.propertyId;
+    const expected = (revision) => ({ type: "workspace.propertiesChanged", sourceId: one.sourceId, workspaceIds: [one.workspaceId, sibling.workspaceId], revision });
+    assert.deepEqual(events, [expected(1)]); assert.deepEqual(siblingEvents, events);
+    assert.equal(servicePort.sent[0].type, "workspace.change"); assert.equal(servicePort.sent[1].result.ok, true);
+    servicePort.sent.length = 0;
+    const value = await siblingSurface.client.setTextValue(sibling.workspaceId, projectId, propertyId, "  Exact 📝\n  ");
+    assert.equal(value.ok, true); assert.equal(servicePort.sent[0].change.revision, 2);
+    assert.equal(servicePort.sent[1].result.value.snapshot.revision, 2);
+    assert.deepEqual((await oneSurface.client.listTextProperties(one.workspaceId)).value.values, value.value.snapshot.values);
+    assert.deepEqual((await oneSurface.client.listTextProperties(other.workspaceId)).value, {
+      workspaceId: other.workspaceId, sourceId: other.sourceId, revision: 0, definitions: [], values: [],
+    });
+    await oneSurface.client.renameProperty(one.workspaceId, propertyId, "Renamed");
+    assert.deepEqual(events, [expected(1), expected(2), expected(3)]); assert.deepEqual(siblingEvents, events);
+    assert.deepEqual((await siblingSurface.client.listTextProperties(sibling.workspaceId)).value.values, value.value.snapshot.values);
+    assert.notEqual(one.viewId, sibling.viewId);
+    const count = events.length;
+    await oneSurface.client.renameProperty(one.workspaceId, propertyId, "Renamed");
+    await oneSurface.client.setTextValue(one.workspaceId, projectId, propertyId, "  Exact 📝\n  ");
+    assert.equal((await oneSurface.client.setTextValue(other.workspaceId, projectId, propertyId, "foreign")).ok, false);
+    const Database = (await import("better-sqlite3")).default; sql = new Database(databasePath);
+    sql.exec("CREATE TRIGGER fail_value BEFORE UPDATE ON text_property_values BEGIN SELECT RAISE(ABORT, 'transport rollback'); END");
+    assert.equal((await oneSurface.client.setTextValue(one.workspaceId, projectId, propertyId, "failure")).error.code, "storage");
+    sql.exec("DROP TRIGGER fail_value");
+    assert.equal(events.length, count); assert.equal(siblingEvents.length, count);
+    assert.equal((await oneSurface.client.listTextProperties(one.workspaceId)).value.revision, 3);
+    const valid = expected(4);
+    for (const change of [{ ...valid, extra: true }, { ...valid, revision: -1 }, { ...valid, revision: 1.5 },
+      { ...valid, revision: "4" }, { ...valid, revision: Number.MAX_SAFE_INTEGER + 1 },
+      { ...valid, workspaceIds: [] }, { ...valid, workspaceIds: [one.workspaceId, one.workspaceId] },
+      { ...valid, sourceId: "bad" }]) {
+      desktopPort.receive({ type: "workspace.change", change });
+      ipc.emit("workspace:change", {}, change);
+    }
+    desktopPort.receive({ type: "workspace.change", id: 999, change: valid });
+    // Bypass preload too, to assert the typed client independently validates events.
+    let directListener;
+    const direct = new WorkspaceServiceClient({ onWorkspaceChange: (listener) => { directListener = listener; return () => {}; } });
+    const directEvents = []; const offDirect = direct.onWorkspaceChange((event) => directEvents.push(event));
+    directListener({ ...valid, revision: null }); directListener(valid); offDirect(); directListener(valid);
+    assert.deepEqual(directEvents, [valid]);
+    assert.equal(events.length, count); assert.equal(siblingEvents.length, count);
+    offSibling(); assert.equal(ipc.listenerCount("workspace:change"), 1);
+    await oneSurface.client.setTextValue(one.workspaceId, projectId, propertyId, null);
+    assert.equal(events.length, count + 1); assert.equal(siblingEvents.length, count);
+    oneSurface.unload.dispatchEvent(new Event("unload")); assert.equal(ipc.listenerCount("workspace:change"), 0);
+    await oneSurface.client.renameProperty(one.workspaceId, propertyId, "After unload");
+    assert.equal(events.length, count + 1);
+    assert.equal(await readFile(join(root, "Project", "keep"), "utf8"), "unchanged transport bytes");
+    const before = servicePort.sent.length;
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    desktopPort.receive({ type: "workspace.change", change: expected(6) });
+    servicePort.receive({ id: 999, input: { type: "workspace.listTextProperties", workspaceId: one.workspaceId } });
+    assert.equal(servicePort.sent.length, before); assert.equal(events.length, count + 1);
+  } finally {
+    offOne(); offSibling(); offBroken(); offRelay(); sql?.close();
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});
