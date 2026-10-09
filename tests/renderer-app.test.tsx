@@ -1293,8 +1293,11 @@ test("project lists distinguish applied-empty, retained, unavailable and loading
         : ok({ ...projectList(active), retainedCount: 2, state: "unavailable" }) });
     render(<App />);
     assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsLoading") }));
-    await act(async () => { finish?.(fail("storage")); });
-    assert.ok(screen.getByRole("heading", { name: translate(language, "projectsError") }));
+    await waitFor(() => assert.ok(finish));
+    assert.ok(finish);
+    const finishFirstRequest = finish;
+    await act(async () => { finishFirstRequest(fail("storage")); });
+    assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsError") }));
     await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
     assert.ok(await screen.findByText(translate(language, "projectsEmpty")));
     assert.ok(screen.getByRole("heading", { name: translate(language, "projectsRetained") }));

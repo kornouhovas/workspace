@@ -56,6 +56,12 @@ With the current production code, the focused test passed. Temporarily restoring
 
 After the test addition, the explicitly prefixed npm test completed a fresh production build and passed 214 tests with 0 failures/skips; npm run lint and npm run typecheck exited 0. Logs: work/ralphex/issue-13/evidence/review-0/{npm-test,lint,typecheck}-fixed.log. The historical 213-test and graphical results above retain their original attribution. No new Electron graphical, packaged shutdown or Windows run was performed in this review.
 
+## Coordinator Finding 3 fixture repair
+
+The subsequent five-perspective review confirmed only the loading/error fixture race already recorded by the coordinator. The initial loading heading can appear before the deferred project-list request installs its resolver, so the optional resolver call could silently do nothing. The EN/RU test now waits for and asserts resolver installation, invokes it explicitly, and awaits the error heading. Its loading, Retry, applied-empty, retained and unavailable assertions remain intact; production behavior and timeouts are unchanged. The original intermittent failure remains preserved in work/ralphex/issue-13/review-intermittent-ui-failure.txt.
+
+The focused EN/RU test passed, followed by a fresh production build and all 214 tests (0 failures/skips), lint and typecheck. Documentation links and the full-base diff whitespace check also passed. Every Node/npm/tsx invocation used the explicit Node 22.21.1 PATH prefix. Logs: work/ralphex/issue-13/evidence/finding-3-review/{focused,npm-test,lint,typecheck,check-docs,diff-check}.log. No graphical, packaged shutdown or Windows check was rerun; exact-new-commit CI and final platform acceptance remain coordinator gates.
+
 ## Pending coordinator gates
 
 Final review and resolution of confirmed in-scope findings, inspection/acceptance of local macOS evidence, actual Windows CI/runtime/package evidence, tracker updates and authorized integration remain coordinator responsibilities. Independent native macOS27 shutdown #44 retains its unchanged ten-second normal-quit bound and remains a final-release prerequisite. A successful local quit does not resolve it. Failed or unreached stages cannot establish product/platform acceptance; checked Task items record implementation and truthful execution reporting only.
