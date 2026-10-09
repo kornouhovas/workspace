@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import type { ServiceErrorCode } from "../contracts/settings.js";
-import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState } from "../contracts/workspaces.js";
+import type { ActiveWorkspace, WorkspaceLoad, WorkspaceSourceState, ProjectList } from "../contracts/workspaces.js";
 import type { Language } from "../contracts/settings.js";
 import { LanguageSelect, StatusMessage } from "./components/bb-foundation.js";
 import { translate, type TranslationKey } from "./localization.js";
@@ -33,6 +33,11 @@ export function App() {
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
   const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | "remove" | "refresh" | null>(null);
+  const [sourceFeedback, setSourceFeedback] = useState<{ workspaceId: string; state: ProjectList["state"] } | null>(null);
+  const [sourceRefreshVersion, setSourceRefreshVersion] = useState(0);
+  const observeSourceScan = useCallback((workspaceId: string, state: ProjectList["state"]) => {
+    setSourceFeedback((current) => current?.workspaceId === workspaceId && current.state === state ? current : { workspaceId, state });
+  }, []);
   const [renameDraft, setRenameDraft] = useState<{ workspaceId: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<"blank" | "stale" | "save" | null>(null);
   const [reorderError, setReorderError] = useState<"stale" | "save" | null>(null);
@@ -350,6 +355,7 @@ export function App() {
       const result = await client.refreshSource(workspaceId);
       if (selectionVersion !== dataVersion.current) return;
       if (!result.ok) { setRefreshError(true); return; }
+      setSourceRefreshVersion((current) => current + 1);
       if (version !== sourceVersion.current.get(sourceId) || selectionVersion !== dataVersion.current) return;
       setWorkspaceData((current) => {
         const active = current?.activeWorkspace;
@@ -563,8 +569,10 @@ export function App() {
                   {t(messageDescription.activation)}
                 </StatusMessage>
               )}
-              {!activeWorkspace.sourceAvailable && (
-                <StatusMessage kind="error" title={t("sourceUnavailableTitle")}>
+              {(!activeWorkspace.sourceAvailable || sourceFeedback?.workspaceId === activeWorkspace.workspaceId &&
+                sourceFeedback.state !== "ready" && sourceFeedback.state !== "empty") && (
+                <StatusMessage kind="error" title={t(!activeWorkspace.sourceAvailable || sourceFeedback?.state === "unavailable" ? "sourceUnavailableTitle"
+                  : sourceFeedback?.state === "root_identity_conflict" ? "discoveryRootConflict" : sourceFeedback?.state === "changed" ? "discoveryChanged" : "discoveryUnreadable")}>
                   {t("sourceUnavailableDescription")}
                   <button type="button" className="workspace-button workspace-button--secondary workspace-source-retry"
                     disabled={busy !== null} onClick={() => void refreshSource()}>
@@ -578,6 +586,7 @@ export function App() {
                 </StatusMessage>
               )}
               <DiscoveryWorkspace key={`${backendGeneration}:${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}`}
+                refreshVersion={sourceRefreshVersion} onSourceState={observeSourceScan}
                 sourceState={`${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
                 client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />

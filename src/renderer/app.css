@@ -304,3 +304,10 @@ body {
 
 .category-property-header { display: grid; gap: 0.5rem; min-width: 0; font-weight: normal; }
 .category-property-header > .property-authored { font-weight: 600; }
+.project-resolution, .project-previous-path {
+  display: block;
+  margin-top: 0.5rem;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  color: var(--muted-foreground, #596579);
+}

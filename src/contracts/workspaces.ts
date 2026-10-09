@@ -130,6 +130,13 @@ export interface ProjectSummary {
   name: string;
   relativePath: string;
 }
+export type ProjectAssociationState = "active" | "excluded" | "missing" | "unresolved" | "replaced";
+export interface ProjectAssociationSummary extends ProjectSummary {
+  associationState: ProjectAssociationState;
+  // Null means the source scan could not safely establish individual resolution.
+  resolution: ProjectAssociationState | null;
+  categoryName: string | null;
+}
 export interface ProjectList {
   mode: DiscoveryMode | null;
   categories: CategorySummary[];
@@ -140,7 +147,8 @@ export interface ProjectList {
   revision: number;
   configured: boolean;
   state: DiscoveryPreview["state"];
-  projects: ProjectSummary[];
+  projects: ProjectAssociationSummary[];
+  retainedProjects: ProjectAssociationSummary[];
   retainedCount: number;
 }
 

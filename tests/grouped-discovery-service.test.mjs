@@ -467,7 +467,7 @@ test("grouped unavailable roots and cross-path category moves retain association
   const first = applied(f);
   const disconnected = join(f.directory, "disconnected"); fs.renameSync(f.root, disconnected);
   const listed = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value;
-  assert.equal(listed.state, "unavailable"); assert.deepEqual(listed.projects, first.projects); assert.deepEqual(listed.categories, first.categories);
+  assert.equal(listed.state, "unavailable"); assert.deepEqual(listed.projects, first.projects.map((row) => ({ ...row, resolution: null }))); assert.deepEqual(listed.categories, first.categories);
   assert.equal(f.preview().value.previewToken, null);
   fs.renameSync(disconnected, f.root); fs.renameSync(join(f.root, "Category"), join(f.root, "Moved"));
   const review = f.preview().value;

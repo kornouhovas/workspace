@@ -1501,7 +1501,7 @@ test("unavailable/unreadable/replaced roots keep saved projects and reject unsaf
       fs.opendirSync = originalOpen; syncBuiltinESMExports();
       fs.renameSync(root, join(directory, "disconnected"));
       assert.equal(listProjects(service, workspace.workspaceId).value.state, "unavailable");
-      assert.deepEqual(listProjects(service, workspace.workspaceId).value.projects, applied.projects);
+      assert.deepEqual(listProjects(service, workspace.workspaceId).value.projects, applied.projects.map((row) => ({ ...row, resolution: null })));
       mkdirSync(root); mkdirSync(join(root, "Project"));
       const conflict = discoveryPreview(service, workspace.workspaceId).value;
       assert.equal(conflict.state, "root_identity_conflict");

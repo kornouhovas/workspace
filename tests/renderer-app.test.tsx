@@ -122,7 +122,7 @@ function mockApi(options: MockOptions = {}) {
       : input.type === "workspace.listProjects"
       ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
         sourceId: `source-${input.workspaceId}`, revision: 0, mode: null, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: false, state: "empty" as const,
-        projects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
+        projects: [], retainedProjects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
   return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
@@ -982,8 +982,8 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
 
 const projectList = (active: ActiveWorkspace, projects: string[] = [], revision = 1) => ({
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision, configured: true, mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
-  state: (projects.length ? "ready" : "empty") as "ready" | "empty", retainedCount: 0,
-  projects: projects.map((name) => ({ projectId: `project-${name}`, categoryId: null, name, relativePath: name })),
+  state: (projects.length ? "ready" : "empty") as "ready" | "empty", retainedProjects: [], retainedCount: 0,
+  projects: projects.map((name) => ({ projectId: `project-${name}`, categoryId: null, name, relativePath: name, associationState: "active" as const, resolution: "active" as const, categoryName: null })),
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, canonicalRoot: active.canonicalRoot,
@@ -1290,7 +1290,7 @@ test("project lists distinguish applied-empty, retained, unavailable and loading
     let calls = 0;
     mockApi({ language, load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
       onProjects: async () => ++calls === 1 ? new Promise((resolve) => { finish = resolve; })
-        : ok({ ...projectList(active), retainedCount: 2, state: "unavailable" }) });
+        : ok({ ...projectList(active), retainedCount: 2, retainedProjects: ["Missing", "Excluded"].map((name) => ({ projectId: name, categoryId: null, categoryName: null, name, relativePath: name, associationState: name === "Missing" ? "missing" as const : "excluded" as const, resolution: null })), state: "unavailable" }) });
     render(<App />);
     assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsLoading") }));
     await waitFor(() => assert.ok(finish));
@@ -1299,9 +1299,10 @@ test("project lists distinguish applied-empty, retained, unavailable and loading
     await act(async () => { finishFirstRequest(fail("storage")); });
     assert.ok(await screen.findByRole("heading", { name: translate(language, "projectsError") }));
     await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
-    assert.ok(await screen.findByText(translate(language, "projectsEmpty")));
+    assert.ok(await screen.findByText(translate(language, "projectExcluded")));
+    assert.equal(screen.queryByText(translate(language, "projectsEmpty")), null);
     assert.ok(screen.getByRole("heading", { name: translate(language, "projectsRetained") }));
-    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryUnavailable") }));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "sourceUnavailableTitle") }));
     cleanup();
   }
 });
@@ -1689,7 +1690,7 @@ function textFixture() {
     values: value === null ? [] : [{ projectId, propertyId, value }],
   });
   return { workspaceId, sourceId, propertyId, projectId, snapshot,
-    projects: [{ projectId, categoryId: null, sourceId, name: "Project", relativePath: "Project" }] };
+    projects: [{ associationState: "active" as const, resolution: "active" as const, categoryName: null, projectId, categoryId: null, sourceId, name: "Project", relativePath: "Project" }] };
 }
 
 test("backend generations discard old source observations and preserve newer events over delayed reloads", async () => {
@@ -1734,7 +1735,7 @@ test("same-source availability and locator notifications preserve Text drafts wh
       let finishProjects: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
       let delay = false;
       const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
-        mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+        mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedProjects: [], retainedCount: 0 };
       const api = mockApi({ language, load: ok({ workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active }),
         onProperties: async () => ok(f.snapshot(1)),
         onProjects: async () => delay ? new Promise((resolve) => { finishProjects = resolve; }) : ok(projection),
@@ -1769,7 +1770,7 @@ test("EN/RU failed project refreshes preserve recoverable Text drafts through er
   for (const language of ["en", "ru"] as const) {
     const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
     const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
-      mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+      mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedProjects: [], retainedCount: 0 };
     let phase: "initial" | "storage" | "transport" | "stale" | "retry" = "initial";
     let finish: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
     const saves: (string | null)[] = [];
@@ -1908,7 +1909,7 @@ test("backend restart, workspace switch/removal and cleanup invalidate delayed T
       }, onProjects: async (input) => {
         if (input.type !== "workspace.listProjects") return fail("invalid_input");
         return ok({ workspaceId: input.workspaceId, sourceId: input.workspaceId === other.workspaceId ? next.sourceId : f.sourceId,
-          revision: 1, mode: "direct", categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready", retainedCount: 0, projects: input.workspaceId === other.workspaceId ? next.projects : f.projects });
+          revision: 1, mode: "direct", categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready", retainedProjects: [], retainedCount: 0, projects: input.workspaceId === other.workspaceId ? next.projects : f.projects });
       },
       onWorkspace: async (input) => {
         if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
@@ -2101,7 +2102,7 @@ test("EN/RU delayed grouped Apply respects newer discovery and independent categ
     let revision = 1, labelRevision = 0;
     const listed = (name: string, discoveryRevision: number, categoryPropertyRevision = labelRevision) => ({
       ...projectList(active, [name], discoveryRevision), mode: "grouped" as const,
-      projects: [{ projectId: "project-stable", categoryId, name, relativePath: `Category/${name}` }],
+      projects: [{ associationState: "active" as const, resolution: "active" as const, categoryName: "Category", projectId: "project-stable", categoryId, name, relativePath: `Category/${name}` }],
       categories: [{ categoryId, name: "Category", relativePath: "Category" }], categoryPropertyRevision,
       categoryProperty: { propertyId, sourceId: active.sourceId, name: categoryPropertyRevision ? "Current label" : null },
     });
@@ -2204,7 +2205,7 @@ function categoryLabelFixture(active: ActiveWorkspace) {
   const propertyId = randomUUID(), categoryId = randomUUID();
   const list = (label: string | null, labelRevision = 0, discoveryRevision = 1, projectName = "Project") => ({
     ...projectList(active, [], discoveryRevision), mode: "grouped" as const,
-    projects: [{ projectId: randomUUID(), name: projectName, relativePath: `Category/${projectName}`, categoryId }],
+    projects: [{ associationState: "active" as const, resolution: "active" as const, categoryName: "Category", projectId: randomUUID(), name: projectName, relativePath: `Category/${projectName}`, categoryId }],
     categories: [{ categoryId, name: "Category", relativePath: "Category" }],
     categoryProperty: { propertyId, sourceId: active.sourceId, name: label }, categoryPropertyRevision: labelRevision,
   });
@@ -2410,5 +2411,74 @@ test("EN/RU long grouped Table labels remain exact and category values expose no
     assert.equal(screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") }).textContent, translate(language, "discoveryCategory"));
     assert.equal(document.querySelectorAll("tbody tr").length, 0);
     cleanup();
+  }
+});
+
+test("EN/RU retained transitions, source retry and failed list loads preserve the same unsaved Text editor", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
+    let resolution: "active" | "missing" = "active";
+    let state: "ready" | "unavailable" = "ready";
+    let loadFailure = false, retries = 0, mutations = 0;
+    const list = () => ({ ...projectList(active), projects: resolution === "active" ? f.projects : [],
+      retainedProjects: resolution === "missing" ? [{ ...f.projects[0], resolution: state === "unavailable" ? null : "missing" as const }] : [],
+      retainedCount: resolution === "missing" ? 1 : 0, state });
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => loadFailure ? fail("storage") : ok(list()),
+      onProperties: async () => ok(f.snapshot(1)), onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active));
+        if (input.type === "workspace.refreshSource") {
+          retries++;
+          return ok({ sourceId: f.sourceId, workspaceIds: [f.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: true });
+        }
+        mutations++; return fail("invalid_input");
+      } });
+    render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` }));
+    const editor = screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }) as HTMLTextAreaElement;
+    await userEvent.clear(editor); await userEvent.type(editor, "Unsaved retained draft 📝");
+    resolution = "missing";
+    const observation: WorkspaceChangeEvent = { type: "workspace.sourceChanged", source: { sourceId: f.sourceId,
+      workspaceIds: [f.workspaceId], canonicalRoot: active.canonicalRoot, sourceAvailable: true } };
+    await act(async () => { api.emitChange(observation); });
+    await screen.findByText(translate(language, "projectMissing"));
+    assert.equal(screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }), editor);
+    assert.equal(editor.value, "Unsaved retained draft 📝");
+    state = "unavailable";
+    await act(async () => { api.emitChange({ ...observation, source: { ...observation.source, sourceAvailable: false } }); });
+    await screen.findByText(translate(language, "sourceUnavailableTitle"));
+    assert.equal(screen.getAllByText(translate(language, "sourceUnavailableTitle")).length, 1);
+    assert.equal(screen.queryByText(translate(language, "discoveryUnavailable")), null);
+    loadFailure = true;
+    const retry = screen.getByRole("button", { name: translate(language, "retrySourceAction") });
+    retry.focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByText(translate(language, "projectsError"));
+    assert.equal(editor.value, "Unsaved retained draft 📝");
+    assert.equal(screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: Project / Notes` }), editor);
+    loadFailure = false; state = "ready";
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "retrySourceAction") }));
+    await waitFor(() => assert.equal(screen.queryByText(translate(language, "projectsError")), null));
+    await waitFor(() => assert.equal(screen.queryByText(translate(language, "sourceUnavailableTitle")), null));
+    assert.equal(retries, 2); assert.equal(mutations, 0);
+    assert.equal(editor.value, "Unsaved retained draft 📝");
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU unavailable, unreadable and conflicting sources show feedback once at the source retry location", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const [state, label] of [["unavailable", "sourceUnavailableTitle"], ["unreadable", "discoveryUnreadable"], ["root_identity_conflict", "discoveryRootConflict"]] as const) {
+      const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
+      mockApi({ language, load: ok(snapshotOf(active)), onProperties: async () => ok(f.snapshot(1)),
+        onProjects: async () => ok({ ...projectList(active), state, projects: f.projects.map((row) => ({ ...row, resolution: null })) }) });
+      render(<App />);
+      await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Project / Notes` });
+      await screen.findByRole("heading", { name: translate(language, label) });
+      assert.equal(screen.getAllByRole("heading", { name: translate(language, label) }).length, 1);
+      const retry = screen.getByRole("button", { name: translate(language, "retrySourceAction") });
+      assert.ok(retry.closest("[role=alert]")?.textContent?.includes(translate(language, label)));
+      assert.equal(screen.queryByText(translate(language, "projectMissing")), null);
+      assert.equal(screen.queryByText(translate(language, "projectUnresolved")), null);
+      cleanup();
+    }
   }
 });

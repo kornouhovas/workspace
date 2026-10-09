@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
-import type { ProjectSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
+import type { ProjectSummary, ProjectAssociationSummary, CategoryProperty, CategoryPropertySnapshot, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -8,11 +8,16 @@ import { CategoryPropertyHeader } from "./CategoryPropertyHeader.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
+const resolutionLabels = {
+  excluded: "projectExcluded", missing: "projectMissing", unresolved: "projectUnresolved", replaced: "projectReplaced",
+} as const;
+
 interface Props {
   client: WorkspaceServiceClient;
   workspaceId: string;
   sourceId: string;
   projects: ProjectSummary[];
+  retainedProjects?: ProjectAssociationSummary[];
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
   categoryPropertyRevision?: number;
@@ -24,7 +29,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], categoryProperty, categories = [], categoryPropertyRevision = 0, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,8 +153,15 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, catego
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
-      </tr></thead><tbody>{projects.map((project) => <tr key={project.projectId}><td key="project-name">{project.name}</td>
-        {categoryProperty && <td key={categoryProperty.propertyId}>{categories.find((category) => category.categoryId === project.categoryId)?.name}</td>}
+      </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
+        const retained = retainedProjects.find((row) => row.projectId === project.projectId);
+        const reason = retained?.resolution ?? retained?.associationState;
+        const label = reason && reason !== "active" ? resolutionLabels[reason] : null;
+        return <tr key={project.projectId}><td key="project-name"><span>{project.name}</span>
+          {label && <span className="project-resolution">{t(label)}</span>}
+          {retained && <span className="project-previous-path">{retained.relativePath}</span>}
+        </td>
+        {categoryProperty && <td key={categoryProperty.propertyId}>{retained?.categoryName ?? categories.find((category) => category.categoryId === project.categoryId)?.name}</td>}
         {snapshot?.definitions.map((property) => <td key={property.propertyId}>
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}
@@ -157,7 +169,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, catego
             value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
         </td>)}
-      </tr>)}</tbody></table>
+      </tr>; })}</tbody></table>
     </div>
   </div>;
 }

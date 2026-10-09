@@ -200,8 +200,9 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; language: Language; disabled: boolean;
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState, refreshVersion = 0, onSourceState, language, disabled }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; sourceState?: string; refreshVersion?: number;
+  onSourceState?(workspaceId: string, state: ProjectList["state"]): void; language: Language; disabled: boolean;
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const committedProjects = useRef<ProjectList | null>(null);
@@ -211,6 +212,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   const minimumRevision = useRef(0);
   const minimumCategoryPropertyRevision = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
+  const lastRefreshVersion = useRef(refreshVersion);
   const t = (key: TranslationKey) => translate(language, key);
   const commitLabel = (value: CategoryPropertySnapshot) => {
     const current = committedProjects.current;
@@ -277,6 +279,12 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
     void load();
     return () => { version.current++; unsubscribe(); };
   }, [client, workspaceId, sourceId]);
+  useEffect(() => {
+    if (lastRefreshVersion.current === refreshVersion) return;
+    lastRefreshVersion.current = refreshVersion;
+    void load();
+  }, [refreshVersion]);
+  useEffect(() => { if (projects) onSourceState?.(workspaceId, projects.state); }, [projects?.state, workspaceId, onSourceState]);
   return <>
     <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       invalidation={invalidation} language={language} disabled={disabled}
@@ -296,9 +304,9 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       {error && <><StatusMessage kind="error" title={t("projectsError")} />
         <button type="button" className="workspace-button workspace-button--secondary" disabled={loading} onClick={() => void load()}>{t("projectsRetry")}</button></>}
       {!loading && !error && projects && <>
-        {projects.state !== "ready" && projects.state !== "empty" && <StatusMessage kind="error" title={t(stateLabels[projects.state])} />}
+        {!onSourceState && projects.state !== "ready" && projects.state !== "empty" && <StatusMessage kind="error" title={t(stateLabels[projects.state])} />}
         {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
-        {projects.projects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
+        {projects.projects.length === 0 && projects.retainedProjects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
       {projects?.mode === "grouped" && <div className="saved-categories">
         <p>{t("discoveryGroupedMode")}</p>
@@ -308,7 +316,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       </div>}
       <TextPropertiesTable categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
-        projects={projects?.projects ?? []} language={language} disabled={disabled} />
+        projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />
     </section>
   </>;
 }

@@ -63,13 +63,19 @@ Files:
 - Create: tests/project-recovery-service.test.mjs
 - Modify: tests/renderer-app.test.tsx
 - Modify: tests/components.test.tsx
+- Modify: tests/backend-lifecycle.test.mjs (projection fixture)
+- Modify: tests/grouped-discovery-service.test.mjs (projection fixture)
+- Modify: tests/workspaces-service.test.mjs (projection fixture)
+- Modify: src/renderer/components/bb-foundation.stories.tsx (typed retained projection fixture)
 
-- [ ] Add service tests showing that listProjects exposes missing, ambiguous, replaced and excluded logical records with their original IDs and accessible Text values, including an individual disappearance observed before discovery Apply.
-- [ ] Extend ProjectList with retainedProjects; expose stored association state and observed resolution separately. Preserve active rows and derive individual resolution only from a complete scan under verified root evidence. Queries leave database records and revisions unchanged.
-- [ ] Return historical category labels for retained rows without representing retired categories as active options. Define retainedCount consistently with the returned retained projection and update affected fixtures.
-- [ ] Render active and retained rows through stable project/property keys so Text remains editable. Show source-level unavailable/unreadable/root-conflict feedback once in the normal workspace screen, retain visible metadata and reuse retry at the existing source location.
-- [ ] Add EN/RU interaction tests for distinct exclusion/recovery explanations, retained Text editing, source retry, load failure and draft preservation. Assert no mass missing labels and no metadata/file mutation during failed or incomplete scans.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+- [x] Add service tests showing that listProjects exposes missing, ambiguous, replaced and excluded logical records with their original IDs and accessible Text values, including an individual disappearance observed before discovery Apply.
+- [x] Extend ProjectList with retainedProjects; expose stored association state and observed resolution separately. Preserve active rows and derive individual resolution only from a complete scan under verified root evidence. Queries leave database records and revisions unchanged.
+- [x] Return historical category labels for retained rows without representing retired categories as active options. Define retainedCount consistently with the returned retained projection and update affected fixtures.
+- [x] Render active and retained rows through stable project/property keys so Text remains editable. Show source-level unavailable/unreadable/root-conflict feedback once in the normal workspace screen, retain visible metadata and reuse retry at the existing source location.
+- [x] Add EN/RU interaction tests for distinct exclusion/recovery explanations, retained Text editing, source retry, load failure and draft preservation. Assert no mass missing labels and no metadata/file mutation during failed or incomplete scans.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+
+Verification: npm ci completed with the committed lockfile. npm test passed all 222 tests and its production build; npm run lint, npm run typecheck, git diff --check and the fixed-base diff check passed. Logs, including earlier failed probes, are retained in work/ralphex/issue-14/task-1-*.log. Source retry explicitly reloads project observations even when availability is unchanged. Runtime/platform and screenshot acceptance remain in later tasks.
 
 ### Task 2: Deliver explicit direct-folder reassociation through the production UI
 

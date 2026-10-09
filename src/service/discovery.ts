@@ -1,6 +1,6 @@
 import { lstatSync, opendirSync, realpathSync, type BigIntStats } from "node:fs";
 import { basename, isAbsolute, join, relative } from "node:path";
-import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryExclusionReason } from "../contracts/workspaces.js";
+import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryExclusionReason, ProjectAssociationState } from "../contracts/workspaces.js";
 
 // Native evidence is lossless and local to this machine. It is never a logical ID.
 export interface NativeIdentity {
@@ -250,7 +250,7 @@ export interface ProjectAssociation {
   sourceId: string;
   relativePath: string;
   nativeIdentity: string;
-  associationState: "active" | "excluded" | "missing" | "unresolved" | "replaced";
+  associationState: ProjectAssociationState;
 }
 export function reliableIdentity(value: NativeIdentity): boolean {
   return /^\d+$/.test(value.dev) && /^\d+$/.test(value.ino) && BigInt(value.ino) > 0n &&

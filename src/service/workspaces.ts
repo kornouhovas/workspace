@@ -446,22 +446,30 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
     if (mode === "grouped" ? !property : property || categories.length) throw new Error("Invalid category property configuration");
     let state = currentScan.state;
-    if (currentScan.snapshot && source.appliedRootIdentity &&
-      !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity)) state = "root_identity_conflict";
-    const active = projects.filter((row) => row.associationState === "active").map((row) => {
+    if (currentScan.snapshot && (!reliableIdentity(currentScan.snapshot.root.identity) || source.appliedRootIdentity &&
+      !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity))) state = "root_identity_conflict";
+    const verified = currentScan.snapshot && state !== "root_identity_conflict";
+    const grouped = verified && mode === "grouped" ? interpretGrouped(currentScan, categories, projects) : null;
+    const interpretation = grouped?.projects ?? (verified ? interpretProjects(currentScan, projects) : null);
+    const projection = projects.map((row) => {
       const category = categories.find((category) => category.id === row.categoryId && category.associationState === "active");
-      if (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null) {
+      if (row.associationState === "active" && (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null)) {
         throw new Error("Invalid required category");
       }
-      return { projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId };
+      return { projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId,
+        categoryName: categories.find((category) => category.id === row.categoryId)?.relativePath ?? null,
+        associationState: row.associationState, resolution: interpretation?.retained.find((observed) => observed.id === row.id)?.associationState ?? null };
     }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
+    const active = projection.filter((row) => row.associationState === "active" && (row.resolution === "active" || row.resolution === null));
+    const retainedProjects = projection.filter((row) => !active.includes(row));
     return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: mode !== null, mode,
-      categories: categories.filter((row) => row.associationState === "active").map((row) => ({
+      categories: categories.filter((row) => row.associationState === "active" &&
+        (!grouped || grouped.categories.retained.find((observed) => observed.id === row.id)?.associationState === "active")).map((row) => ({
         categoryId: row.id, relativePath: row.relativePath, name: row.relativePath,
       })).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0),
       categoryProperty: property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name } : null,
       categoryPropertyRevision: source.categoryPropertyRevision,
-      state, projects: active, retainedCount: projects.length - active.length };
+      state, projects: active, retainedProjects, retainedCount: retainedProjects.length };
   }
 
   function sourceState(sourceId: string, state: { canonicalRoot: string; sourceAvailable: boolean }): WorkspaceSourceState {

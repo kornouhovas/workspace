@@ -64,3 +64,46 @@ test("bb provenance and full MIT notice stay with adapted components", async () 
   assert.match(license, /Permission is hereby granted/);
   assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
 });
+
+test("EN/RU retained rows explain exclusion and recovery, display historical categories and save Text by stable IDs", async () => {
+  const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
+  const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  const { waitFor } = await import("@testing-library/react");
+  for (const language of ["en", "ru"] as const) {
+    const states = ["excluded", "missing", "unresolved", "replaced"] as const;
+    const rows = states.map((state) => ({ projectId: state, name: state, relativePath: `Former category/${state}`,
+      categoryId: "retired-category", categoryName: "Former category", associationState: state, resolution: state }));
+    let saves = 0;
+    let snapshot = { workspaceId: "workspace", sourceId: "source", revision: 1,
+      definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }],
+      values: rows.map((row) => ({ projectId: row.projectId, propertyId: "notes", value: `Authored ${row.name}` })) };
+    const client = new class extends WorkspaceServiceClient {
+      override async listTextProperties() { return { ok: true as const, value: snapshot }; }
+      override onWorkspaceChange() { return () => {}; }
+      override async setTextValue(workspaceId: string, projectId: string, propertyId: string, value: string | null) {
+        assert.equal(workspaceId, "workspace"); assert.equal(projectId, "missing"); assert.equal(propertyId, "notes");
+        saves++;
+        snapshot = { ...snapshot, revision: 2, values: snapshot.values.map((row) => row.projectId === projectId ? { ...row, value: value! } : row) };
+        return { ok: true as const, value: { projectId, propertyId, snapshot } };
+      }
+    }();
+    render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" projects={[]} retainedProjects={rows}
+      categoryProperty={{ propertyId: "category-label", sourceId: "source", name: "Category" }} categories={[]} language={language} disabled={false} />);
+    const labels = ["projectExcluded", "projectMissing", "projectUnresolved", "projectReplaced"] as const;
+    for (const label of labels) assert.ok(await screen.findByText(translate(language, label)));
+    assert.equal(screen.getAllByRole("cell", { name: "Former category" }).length, 4);
+    const edit = await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: missing / Notes` });
+    await waitFor(() => assert.equal((edit as HTMLButtonElement).disabled, false));
+    edit.focus(); await userEvent.keyboard("{Enter}");
+    const editor = screen.getByRole("textbox", { name: `${translate(language, "editTextValue")}: missing / Notes` });
+    await userEvent.clear(editor); await userEvent.type(editor, "  Edited retained\nТекст  ");
+    assert.equal(saves, 0);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "saveTextValue") }));
+    await screen.findByText(translate(language, "textValueSaved"));
+    assert.equal(saves, 1);
+    assert.equal(screen.getByRole("button", { name: `${translate(language, "editTextValue")}: missing / Notes` }).textContent, "  Edited retained\nТекст  ");
+    assert.equal(document.activeElement, edit);
+    cleanup();
+  }
+});

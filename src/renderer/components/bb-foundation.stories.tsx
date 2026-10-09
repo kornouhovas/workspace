@@ -78,8 +78,13 @@ function WorkspacePreview({ language, state = "management" }: {
         workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
         mode: state.startsWith("applied") ? "direct" : null, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
         configured: state.startsWith("applied"), state: state === "unavailable" ? "unavailable" : state === "applied" ? "ready" : "empty",
-        projects: state === "applied" ? [{ projectId: "project-preview", categoryId: null, name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
-          relativePath: "  Authored-проект-" + "long-name-".repeat(18) + "  " }] : [], retainedCount: state.startsWith("applied") ? 2 : 0,
+        projects: state === "applied" ? [{ associationState: "active", resolution: "active", categoryName: null, projectId: "project-preview", categoryId: null, name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
+          relativePath: "  Authored-проект-" + "long-name-".repeat(18) + "  " }] : [],
+        retainedProjects: state.startsWith("applied") ? ["missing", "excluded"].map((associationState) => ({
+          projectId: `retained-${associationState}`, categoryId: null, categoryName: null,
+          name: `Retained ${associationState}`, relativePath: `Retained ${associationState}`,
+          associationState: associationState as "missing" | "excluded", resolution: associationState as "missing" | "excluded",
+        })) : [], retainedCount: state.startsWith("applied") ? 2 : 0,
       } };
       if (input.type === "workspace.listTextProperties") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: 0, definitions: [], values: [] } };
       if (state === "error") return failure;
