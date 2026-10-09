@@ -131,14 +131,12 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const view = db.select().from(schema.views)
           .where(eq(schema.views.workspaceId, workspace.workspaceId)).get();
         if (!view || view.kind !== "table") return storageFailure();
-        db.transaction((tx) => {
-          tx.insert(schema.activeWorkspace).values({
-            key: "active", workspaceId: workspace.workspaceId, viewId: view.id,
-          }).onConflictDoUpdate({
-            target: schema.activeWorkspace.key,
-            set: { workspaceId: workspace.workspaceId, viewId: view.id },
-          }).run();
-        });
+        db.insert(schema.activeWorkspace).values({
+          key: "active", workspaceId: workspace.workspaceId, viewId: view.id,
+        }).onConflictDoUpdate({
+          target: schema.activeWorkspace.key,
+          set: { workspaceId: workspace.workspaceId, viewId: view.id },
+        }).run();
         return { ok: true, value: toActiveWorkspace(workspace, view.id, isRootAvailable(workspace.canonicalRoot, filesystem)) };
       } catch {
         return storageFailure();

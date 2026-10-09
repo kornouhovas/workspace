@@ -24,4 +24,4 @@ Use a task branch based on `new-workspace` for implementation. Complete only the
 
 GitHub Issues owns requirements and completion status; Beads records linked execution steps. Ralphex executes bounded English plans under [the development workflow](docs/development.md). Preserve existing tracker history. A worktree shares the repository's Beads database.
 
-Report the result, actual checks, remaining limitations and existing commit in Russian. This branch contains an initial runnable settings application; claim build or runtime verification only when those checks were actually performed.
+Report the result, actual checks, remaining limitations and existing commit in Russian. This branch contains a runnable settings application with workspace creation and reopening; claim build or runtime verification only when those checks were actually performed.
