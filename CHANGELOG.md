@@ -40,6 +40,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 ### Fixed
 
+- Healthy source observations preserve pending folder-reassociation confirmations while refreshing newer placement; source disconnects still reject obsolete responses.
 - Windows grouped-source observation uses root notifications and bounded five-second validated scans without holding category watch handles during external parent moves.
 - Malformed desktop requests are rejected without stopping the local workspace service.
 - Saved workspace folder aliases retain source, workspace and view identities when their canonical path spelling changes.

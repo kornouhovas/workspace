@@ -2037,10 +2037,22 @@ test("EN/RU sibling commits during a failed save retain drafts and require an ex
 });
 
 test("EN/RU production grouped Apply normalizes child-then-parent exclusions and preserves Text drafts on rescan", async () => {
+  const { nativeObserverDependencies } = await import("../src/service/source-observer.js");
   for (const language of ["en", "ru"] as const) {
     const directory = mkdtempSync(join(tmpdir(), "grouped-apply-ui-")), root = join(directory, "root");
     mkdirSync(join(root, "Category/Project"), { recursive: true }); mkdirSync(join(root, "Empty"));
-    const service = openSettingsService(join(directory, "data.sqlite")); let unsubscribe: (() => void) | undefined;
+    const hints = new Map<string, () => void>();
+    const timers = new Set<{ callback(): void; delay: number }>();
+    const service = openSettingsService(join(directory, "data.sqlite"), undefined, undefined, {
+      probe: nativeObserverDependencies.probe,
+      watch(path, hint) { hints.set(path, hint); return { close: () => { hints.delete(path); } }; },
+      schedule(callback, delay) { const timer = { callback, delay }; timers.add(timer); return { cancel: () => { timers.delete(timer); } }; },
+    });
+    const deliverNotifications = (path: string) => {
+      const hint = hints.get(path); assert.ok(hint, "configured source has a live observer"); hint();
+      for (const timer of [...timers]) if (timer.delay === 100) { timers.delete(timer); timer.callback(); }
+    };
+    let unsubscribe: (() => void) | undefined;
     try {
       const created = service.workspaces.create({ type: "workspace.create", name: "Grouped", rootPath: root });
       if (!created.ok) throw new Error("Fixture creation failed");
@@ -2101,6 +2113,17 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       await userEvent.click(trigger);
       await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryCategory")}: AnotherEmpty` });
       assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+      // Deliver the folder hint after Preview, proving that a stale review
+      // prevents submission before explicitly requesting a fresh review.
+      await act(async () => { deliverNotifications(created.value.canonicalRoot); });
+      await screen.findByRole("heading", { name: translate(language, "discoveryStale") });
+      const staleApply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+      assert.equal(staleApply.disabled, true);
+      await userEvent.click(staleApply);
+      assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 1);
+      assert.equal(finishApply, undefined);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await waitFor(() => assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false));
       holdReload = true;
       await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
       await waitFor(() => assert.ok(finishApply));
@@ -2123,7 +2146,11 @@ test("EN/RU production grouped Apply normalizes child-then-parent exclusions and
       assert.equal(document.activeElement, trigger);
       assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 2);
       const rescannedView = service.workspaces.load(); assert.equal(rescannedView.ok && rescannedView.value.activeWorkspace?.viewId, viewId);
-    } finally { unsubscribe?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+    } finally {
+      unsubscribe?.(); cleanup(); service.close();
+      assert.equal(hints.size, 0); assert.equal(timers.size, 0);
+      rmSync(directory, { recursive: true, force: true });
+    }
   }
 });
 

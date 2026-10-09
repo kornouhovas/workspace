@@ -228,6 +228,18 @@ All five prescribed review perspectives were collected in batches of three plus 
 
 Local macOS npm test passed all 450 tests with no failures/skips, including the production build; lint/typecheck, documentation links, Ladle build and git diff --check passed. Forced category-polling and production native fixtures both passed with real SQLite/folders. Critical/major quality and implementation follow-ups found no further issue. Evidence is retained under work/ralphex/issue-15/ci-repair-*. Windows handle mechanism and exact-SHA repair acceptance still require coordinator-owned Windows CI; the existing macOS graphical/package evidence remains historical. No observers were disabled in the failed fixtures, timeouts/skips were changed, #44 was retried, or push/integration/tracker/release action was performed.
 
+## Second bounded CI continuation review repair
+
+The completed macOS job 113998205613 in CI37983084539 at a5a604d reported 449 passed, one failed and zero skipped. The grouped Apply ordering fixture's uncontrolled native notification invalidated its preview before the second command was submitted. Windows remained running at the recorded coordinator snapshot; this checkpoint claims no final Windows outcome. The original CI log remains preserved.
+
+All five review perspectives were collected before changes. The UI fixture now controls watcher/scheduler delivery while retaining real SQLite/service/client behavior, explicitly checks stale-before-Apply prevention and fresh user review, and preserves held-success/pending-list ordering, exclusions, Text draft/editor identity, focus and no replay. Native filesystem/platform tests keep their production observers.
+
+The requirement review additionally reproduced a late recovery confirmation canceled by a healthy observation in a separate React flush. Recovery now preserves pending confirmation within the current source lifetime and reloads newer placement; synchronous lifetime invalidation retains disconnect/backend/selection safety. EN/RU regressions cover batched/separate healthy delivery, older unavailable observations and both disconnect notification types. The separated healthy cases failed before repair; all 42 recovery UI cases now pass.
+
+Local npm test passed all 458 tests without failures/skips, including the production build; lint, typecheck and Ladle build passed. Critical/major quality and implementation follow-up reviews found no further issue. Evidence is retained under work/ralphex/issue-15/ci-ui-repair-*. Exact-SHA macOS/Windows CI, platform acceptance, integration and tracker updates remain coordinator-owned. This repair checkpoint does not signal a zero-findings review or release acceptance.
+
+Documentation links and diff checks passed. Fresh development and unsigned packaged macOS Electron scenarios passed all nine stages and three normal scenario shutdowns each, with no forced cleanup; packaging/resource checks passed with CSC_IDENTITY_AUTO_DISCOVERY=false. EN/RU narrow saved-recovery captures were inspected. The exact response race remains covered by deterministic regressions. Native Ladle's existing #44 failure was not retried, and exact-SHA platform acceptance remains open.
+
 ## Post-Completion
 
 - Coordinator independently reviews the final fixed-base diff, acceptance matrix, screenshots and check evidence.

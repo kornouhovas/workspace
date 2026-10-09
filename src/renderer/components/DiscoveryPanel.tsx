@@ -227,6 +227,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   const minimumCategoryPropertyRevision = useRef(0);
   const minimumObservationRevision = useRef(0);
   const observationVersion = useRef(0);
+  const sourceLifetime = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
   const [observation, setObservation] = useState(0);
   const lastScanState = useRef<ProjectList["state"] | null>(null);
@@ -255,6 +256,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
           const available = (state: ProjectList["state"] | null) => state === "ready" || state === "empty";
           if (lastScanState.current !== null && (!available(value.state) || !available(lastScanState.current))) {
             observationVersion.current++;
+            sourceLifetime.current++;
             setObservation((value) => value + 1); setInvalidation((value) => value + 1);
           }
           lastScanState.current = value.state;
@@ -303,6 +305,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
           if (event.observationRevision <= minimumObservationRevision.current) return;
           minimumObservationRevision.current = event.observationRevision;
         }
+        if (event.type === "workspace.sourceChanged" || !["ready", "empty"].includes(event.state)) sourceLifetime.current++;
         observationVersion.current++;
         setObservation((value) => value + 1);
       }
@@ -335,7 +338,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         setError(false); setLoading(false);
       }} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
-      project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
+      project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
       onPendingChange={onRecoveryPending}
       onReload={() => void load()} onClose={() => { restoreRecoveryFocus.current = true; setRecoveryProject(null); }}
       onCommitted={(value, observedVersion) => {

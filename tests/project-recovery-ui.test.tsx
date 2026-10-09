@@ -56,7 +56,7 @@ class RecoveryClient extends WorkspaceServiceClient {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 
 for (const language of ["en", "ru"] as const) {
-  test(`${language}: a recovery response batched with a newer observation preserves the missing-folder projection`, async () => {
+  for (const delivery of ["batched", "separate"] as const) test(`${language}: a recovery response with a newer observation preserves the missing-folder projection (${delivery})`, async () => {
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     const client = new RecoveryClient(), response = deferred<ServiceResult<ProjectList>>();
     client.handler = () => response.promise;
@@ -70,8 +70,15 @@ for (const language of ["en", "ru"] as const) {
     await act(async () => {
       client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"],
         observationRevision: 2, state: "empty", automaticUpdates: "active" });
-      response.resolve({ ok: true, value: committed });
+      client.emit({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"],
+        observationRevision: 1, state: "unavailable", automaticUpdates: "degraded" });
+      if (delivery === "batched") response.resolve({ ok: true, value: committed });
     });
+    if (delivery === "separate") {
+      assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+      assert.equal(client.saves, 1);
+      await act(async () => { response.resolve({ ok: true, value: committed }); });
+    }
     assert.ok(await screen.findByRole("button", { name: `${t("recoveryLocate")}: Target authored name` }));
     assert.ok(screen.getByText(t("recoverySaved")));
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }));
@@ -329,13 +336,18 @@ for (const language of ["en", "ru"] as const) {
     assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
     cleanup(); assert.equal(client.listeners.size, 0);
   });
-  test(`${language}: source disconnect during an accepted mutation discards its delayed response`, async () => {
+  for (const delivery of ["batched", "separate"] as const) for (const notification of ["availability", "observation"] as const)
+  test(`${language}: source disconnect during an accepted mutation discards its delayed response (${delivery}, ${notification})`, async () => {
     const client = new RecoveryClient(); const response = deferred<ServiceResult<ProjectList>>(); client.handler = () => response.promise;
     render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
     await openTarget(); await userEvent.click(screen.getByRole("button", { name: t("recoveryConfirm") }));
-    await act(async () => client.emit(sourceEvent(false)));
+    await act(async () => {
+      client.emit(notification === "availability" ? sourceEvent(false) : { type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"],
+        observationRevision: 1, state: "unavailable", automaticUpdates: "degraded" });
+      if (delivery === "batched") response.resolve({ ok: true, value: committed });
+    });
     await screen.findByText(t("recoveryUncertain"));
-    await act(async () => response.resolve({ ok: true, value: committed }));
+    if (delivery === "separate") await act(async () => response.resolve({ ok: true, value: committed }));
     assert.equal(screen.queryByText(t("recoverySaved")), null);
     assert.equal(client.saves, 1);
     assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: ${retained.name} / Notes` }));

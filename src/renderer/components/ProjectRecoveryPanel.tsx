@@ -71,9 +71,9 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
   </section>;
 }
 
-export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, observationVersion, invalidation, observation, language, disabled, onCommitted, onReload, onClose, onPendingChange }: {
+export function ProjectRecoveryController({ client, workspaceId, sourceId, project, minimumRevision, observationVersion, sourceLifetime, invalidation, observation, language, disabled, onCommitted, onReload, onClose, onPendingChange }: {
   client: WorkspaceServiceClient; workspaceId: string; sourceId: string; project: ProjectAssociationSummary;
-  minimumRevision: { current: number }; observationVersion: { current: number }; invalidation: number; observation: number; language: Language; disabled: boolean;
+  minimumRevision: { current: number }; observationVersion: { current: number }; sourceLifetime: { current: number }; invalidation: number; observation: number; language: Language; disabled: boolean;
   onCommitted(value: ProjectList, observedVersion: number): void; onReload(): void; onClose(): void;
   onPendingChange?(pending: boolean): void;
 }) {
@@ -88,6 +88,7 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
   const saving = useRef(false);
   const lastInvalidation = useRef(invalidation);
   const lastObservation = useRef(observation);
+  const lastSourceLifetime = useRef(sourceLifetime.current);
   const request = async () => {
     const current = ++version.current;
     setLoading(true); setPreview(null); setSelectedPath(null); setError(false); setStale(false); setUncertain(false);
@@ -110,7 +111,13 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
   useEffect(() => {
     if (lastObservation.current === observation) return;
     lastObservation.current = observation;
-    version.current++; setLoading(false); setPreview(null); setSelectedPath(null);
+    const interrupted = lastSourceLifetime.current !== sourceLifetime.current;
+    lastSourceLifetime.current = sourceLifetime.current;
+    setLoading(false); setPreview(null); setSelectedPath(null);
+    // Healthy observations can precede our confirmed command response. Keep
+    // that response alive; onCommitted reloads any newer observed placement.
+    if (saving.current && !interrupted) { onReload(); return; }
+    version.current++;
     if (saving.current) {
       saving.current = false; setPending(false); setUncertain(true); onPendingChange?.(false); onReload();
     } else setStale(true);
@@ -122,10 +129,11 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
     if (disabled || saving.current || loading || stale || uncertain || !preview?.previewToken || !selectedPath || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
     const observedVersion = observationVersion.current;
+    const lifetime = sourceLifetime.current;
     saving.current = true; setPending(true); setError(false); onPendingChange?.(true);
     try {
       const result = await client.reassociateProject(workspaceId, project.projectId, preview.previewToken, selectedPath);
-      if (current !== version.current) return;
+      if (current !== version.current || lifetime !== sourceLifetime.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision > preview.revision &&
         result.value.projects.some((row) => row.projectId === project.projectId && row.relativePath === selectedPath && row.resolution === "active")) {
         onCommitted(result.value, observedVersion); onClose();
@@ -134,8 +142,8 @@ export function ProjectRecoveryController({ client, workspaceId, sourceId, proje
       } else if (!result.ok && result.error.code !== "service_unavailable") setError(true);
       else { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
     } catch {
-      if (current === version.current) { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
-    } finally { if (current === version.current) { saving.current = false; setPending(false); onPendingChange?.(false); } }
+      if (current === version.current && lifetime === sourceLifetime.current) { setUncertain(true); setPreview(null); setSelectedPath(null); onReload(); }
+    } finally { if (current === version.current && lifetime === sourceLifetime.current) { saving.current = false; setPending(false); onPendingChange?.(false); } }
   };
   return <ProjectRecoveryPanel language={language} project={project} preview={preview} selectedPath={selectedPath} loading={loading} pending={pending}
     error={error} stale={stale || disabled} uncertain={uncertain} onSelect={setSelectedPath} onConfirm={() => void confirm()}
