@@ -38,6 +38,10 @@ export class WorkspaceServiceClient {
     return this.api.workspace({ type: "workspace.rename", workspaceId, name });
   }
 
+  reorderWorkspaces(workspaceIds: string[]): Promise<ServiceResult<WorkspaceLoad>> {
+    return this.api.workspace({ type: "workspace.reorder", workspaceIds });
+  }
+
   pickRoot(): Promise<RootPickerResult> {
     return this.api.pickRoot();
   }

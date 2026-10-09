@@ -1,4 +1,4 @@
-import { text, sqliteTable } from "drizzle-orm/sqlite-core";
+import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
 
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
@@ -13,6 +13,7 @@ export const sources = sqliteTable("sources", {
 export const workspaces = sqliteTable("workspaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  position: integer("position").notNull(),
   sourceId: text("source_id").notNull().references(() => sources.id),
 });
 

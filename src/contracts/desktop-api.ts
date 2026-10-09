@@ -1,5 +1,5 @@
 import type { ServiceResult, Settings, SettingsCommand, SettingsQuery } from "./settings.js";
-import type { ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand } from "./workspaces.js";
+import type { ActiveWorkspace, WorkspaceActivateCommand, WorkspaceCommand, WorkspaceCreateCommand, WorkspaceCreated, WorkspaceLoad, WorkspaceLoadQuery, WorkspaceQuery, WorkspaceRenameCommand, WorkspaceReorderCommand } from "./workspaces.js";
 
 export type BackendStatus = { state: "starting" | "ready" | "unavailable"; message?: string };
 export type SettingsRequest = SettingsQuery | SettingsCommand;
@@ -18,6 +18,7 @@ export interface WorkspaceDesktopApi {
   workspace(input: WorkspaceCreateCommand): Promise<ServiceResult<WorkspaceCreated>>;
   workspace(input: WorkspaceActivateCommand): Promise<ServiceResult<ActiveWorkspace>>;
   workspace(input: WorkspaceRenameCommand): Promise<ServiceResult<WorkspaceLoad>>;
+  workspace(input: WorkspaceReorderCommand): Promise<ServiceResult<WorkspaceLoad>>;
   workspace(input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>>;
   pickRoot(): Promise<RootPickerResult>;
 }

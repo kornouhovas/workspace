@@ -29,9 +29,22 @@ export function App() {
   const [rootPath, setRootPath] = useState("");
   const [formMessage, setFormMessage] = useState<FormMessage>(null);
   const [addingWorkspace, setAddingWorkspace] = useState(false);
-  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | null>(null);
+  const [busy, setBusy] = useState<"picker" | "create" | "activate" | "rename" | "reorder" | null>(null);
   const [renameDraft, setRenameDraft] = useState<{ workspaceId: string; name: string } | null>(null);
   const [renameError, setRenameError] = useState<"blank" | "stale" | "save" | null>(null);
+  const [reorderError, setReorderError] = useState<"stale" | "save" | null>(null);
+  const managementList = useRef<HTMLOListElement>(null);
+  const reorderFocus = useRef<{ workspaceId: string; direction: "up" | "down" } | null>(null);
+
+  useEffect(() => {
+    if (busy || !reorderFocus.current) return;
+    const { workspaceId, direction } = reorderFocus.current;
+    const buttons = Array.from(managementList.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])
+      .filter((button) => button.dataset.workspaceId === workspaceId && !button.disabled);
+    (buttons.find((button) => button.dataset.direction === direction) ?? buttons[0])?.focus();
+    reorderFocus.current = null;
+  }, [busy, workspaceData]);
+
   const renameButton = useRef<HTMLButtonElement>(null);
   const returnRenameFocus = useRef(false);
 
@@ -198,6 +211,27 @@ export function App() {
     }
   };
 
+  const moveWorkspace = async (workspaceId: string, direction: "up" | "down") => {
+    if (busy || renameDraft || !workspaceData) return;
+    const workspaceIds = workspaceData.workspaces.map((workspace) => workspace.workspaceId);
+    const index = workspaceIds.indexOf(workspaceId);
+    const target = index + (direction === "up" ? -1 : 1);
+    if (index < 0 || target < 0 || target >= workspaceIds.length) return;
+    [workspaceIds[index], workspaceIds[target]] = [workspaceIds[target], workspaceIds[index]];
+    reorderFocus.current = { workspaceId, direction };
+    setBusy("reorder");
+    setReorderError(null);
+    try {
+      const result = await client.reorderWorkspaces(workspaceIds);
+      if (result.ok) setWorkspaceData(result.value);
+      else setReorderError(result.error.code === "invalid_input" ? "stale" : "save");
+    } catch {
+      setReorderError("save");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const t = (key: TranslationKey) => translate(language, key);
   const messageTitle: Record<NonNullable<FormMessage>, TranslationKey> = {
     cancelled: "pickerCancelledTitle",
@@ -270,6 +304,38 @@ export function App() {
                   </select>
                 </div>
               </div>
+              <section className="workspace-management" aria-labelledby="workspace-order-title" aria-busy={busy === "reorder"}>
+                <h3 id="workspace-order-title">{t("workspaceOrderTitle")}</h3>
+                <ol ref={managementList} className="workspace-management__list" aria-label={t("workspaceOrderTitle")}>
+                  {workspaceData?.workspaces.map((workspace, index, all) => (
+                    <li key={workspace.workspaceId} className="workspace-management__row">
+                      <span className="workspace-management__name">{workspace.name}</span>
+                      <div className="workspace-form-actions">
+                        {(["up", "down"] as const).map((direction) => (
+                          <button
+                            key={direction}
+                            type="button"
+                            className="workspace-button workspace-button--secondary"
+                            data-workspace-id={workspace.workspaceId}
+                            data-direction={direction}
+                            aria-label={`${t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}: ${workspace.name}`}
+                            disabled={busy !== null || renameDraft !== null || (direction === "up" ? index === 0 : index === all.length - 1)}
+                            onClick={() => void moveWorkspace(workspace.workspaceId, direction)}
+                          >
+                            {t(direction === "up" ? "moveWorkspaceUp" : "moveWorkspaceDown")}
+                          </button>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                {busy === "reorder" && <p role="status">{t("savingWorkspaceOrder")}</p>}
+                {reorderError && (
+                  <StatusMessage kind="error" title={t("reorderErrorTitle")}>
+                    {t(reorderError === "stale" ? "reorderStaleDescription" : "reorderErrorDescription")}
+                  </StatusMessage>
+                )}
+              </section>
               <button
                 ref={renameButton}
                 type="button"

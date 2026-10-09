@@ -6,6 +6,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
 
 function withFixture(run) {
@@ -495,5 +498,138 @@ test("rename rolls back both write failures and failures reading the resulting s
     sqlite.close();
     assert.equal(service.workspaces.load().value.activeWorkspace.name, "Original");
     service.close();
+  });
+});
+
+
+test("upgrades populated two-migration databases in insertion order without changing identities or presentation", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const legacyFolder = join(directory, "legacy-migrations");
+    mkdirSync(join(legacyFolder, "meta"), { recursive: true });
+    const migrations = "src/service/db/migrations";
+    for (const name of ["0000_settings.sql", "0001_workspaces.sql"]) {
+      writeFileSync(join(legacyFolder, name), readFileSync(join(migrations, name)));
+    }
+    const journal = JSON.parse(readFileSync(join(migrations, "meta", "_journal.json"), "utf8"));
+    journal.entries = journal.entries.slice(0, 2);
+    writeFileSync(join(legacyFolder, "meta", "_journal.json"), JSON.stringify(journal));
+    mkdirSync(join(directory, "data"));
+    const sqlite = new Database(databasePath);
+    migrate(drizzle(sqlite), { migrationsFolder: legacyFolder });
+    const sourceId = randomUUID();
+    sqlite.prepare("INSERT INTO settings VALUES (?, ?)").run("language", "ru");
+    sqlite.prepare("INSERT INTO sources VALUES (?, ?)").run(sourceId, realpathSync.native(root));
+    // Deliberately oppose lexical ID order to the previous insertion order.
+    const ids = [randomUUID(), randomUUID(), randomUUID()].sort().reverse();
+    const viewIds = ids.map(() => randomUUID());
+    ids.forEach((id, index) => {
+      sqlite.prepare("INSERT INTO workspaces VALUES (?, ?, ?)").run(id, `  Saved ${index}  `, sourceId);
+      sqlite.prepare("INSERT INTO views VALUES (?, ?, ?, ?)").run(viewIds[index], id, `Independent ${index}`, "table");
+    });
+    sqlite.prepare("INSERT INTO active_workspace VALUES (?, ?, ?)").run("active", ids[1], viewIds[1]);
+    sqlite.close();
+    const before = records(databasePath);
+    for (let reopen = 0; reopen < 2; reopen++) {
+      const service = openSettingsService(databasePath);
+      try {
+        assert.deepEqual(service.workspaces.load().value.workspaces.map((row) => row.workspaceId), ids);
+        const after = records(databasePath);
+        assert.deepEqual(after, { ...before, workspaces: before.workspaces.map((row, position) => ({ ...row, position })) });
+        assert.equal(service.handleQuery({ type: "settings.load" }).value.language, "ru");
+      } finally { service.close(); }
+    }
+  });
+});
+
+test("reorder survives restart and append while preserving shared sources, selection and independent views", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    const otherRoot = join(directory, "other");
+    mkdirSync(otherRoot);
+    const service = openSettingsService(databasePath);
+    const create = (name, rootPath = root) => service.handleCommand({ type: "workspace.create", name, rootPath }).value;
+    const one = create("One");
+    const two = create("Two");
+    const other = create("Other", otherRoot);
+    const sqlite = new Database(databasePath);
+    sqlite.prepare("UPDATE views SET name = ? WHERE id = ?").run("Custom presentation", two.viewId);
+    sqlite.close();
+    const before = records(databasePath);
+    const workspaceIds = [other.workspaceId, one.workspaceId, two.workspaceId];
+    const reordered = service.handleCommand({ type: "workspace.reorder", workspaceIds });
+    assert.equal(reordered.ok, true);
+    assert.deepEqual(reordered.value.workspaces.map((row) => row.workspaceId), workspaceIds);
+    assert.equal(reordered.value.activeWorkspace.workspaceId, other.workspaceId);
+    const after = records(databasePath);
+    assert.deepEqual(after.sources, before.sources);
+    assert.deepEqual(after.views, before.views);
+    assert.deepEqual(after.active, before.active);
+    assert.deepEqual(after.workspaces, before.workspaces.map((row) => ({ ...row, position: workspaceIds.indexOf(row.id) })));
+    service.close();
+    const reopened = openSettingsService(databasePath);
+    try {
+      assert.deepEqual(reopened.workspaces.load(), reordered);
+      const added = reopened.workspaces.create({ type: "workspace.create", name: "Append", rootPath: root }).value;
+      assert.deepEqual(reopened.workspaces.load().value.workspaces.map((row) => row.workspaceId), [...workspaceIds, added.workspaceId]);
+      assert.equal(records(databasePath).workspaces.find((row) => row.id === added.workspaceId).position, 3);
+      assert.equal(reopened.workspaces.activate({ type: "workspace.activate", workspaceId: two.workspaceId }).value.viewId, two.viewId);
+    } finally { reopened.close(); }
+  });
+});
+
+test("reorder rejects malformed permutations and stale membership after creation or removal without writes", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    try {
+      assert.deepEqual(service.handleCommand({ type: "workspace.reorder", workspaceIds: [] }), { ok: true, value: { workspaces: [], activeWorkspace: null } });
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+      const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+      const before = records(databasePath);
+      const valid = { type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId] };
+      for (const input of [null, [], {}, { ...valid, type: "workspace.unknown" }, { ...valid, extra: true },
+        { type: "workspace.reorder" }, { ...valid, workspaceIds: null }, { ...valid, workspaceIds: "ids" },
+        { ...valid, workspaceIds: [one.workspaceId, 42] }, { ...valid, workspaceIds: [one.workspaceId, "bad-id"] },
+        { ...valid, workspaceIds: [one.workspaceId, "00000000-0000-4000-8000-000000000000"] },
+        { ...valid, workspaceIds: [one.workspaceId, one.workspaceId] }, { ...valid, workspaceIds: [] },
+        { ...valid, workspaceIds: [one.workspaceId] },
+      ]) {
+        const result = service.workspaces.reorder(input);
+        assert.equal(result.ok, false);
+        assert.equal(result.error.code, "invalid_input");
+        assert.deepEqual(records(databasePath), before);
+      }
+      const third = service.workspaces.create({ type: "workspace.create", name: "Third", rootPath: root }).value;
+      const afterCreate = records(databasePath);
+      assert.equal(service.handleCommand(valid).error.code, "invalid_input");
+      assert.deepEqual(records(databasePath), afterCreate);
+      const oldIds = [one.workspaceId, two.workspaceId, third.workspaceId];
+      // Removal is delivered in Task 3; model a removed inactive configuration at the storage boundary.
+      const sqlite = new Database(databasePath);
+      sqlite.prepare("DELETE FROM views WHERE workspace_id = ?").run(one.workspaceId);
+      sqlite.prepare("DELETE FROM workspaces WHERE id = ?").run(one.workspaceId);
+      sqlite.close();
+      const afterRemove = records(databasePath);
+      assert.equal(service.handleCommand({ type: "workspace.reorder", workspaceIds: oldIds }).error.code, "invalid_input");
+      assert.deepEqual(records(databasePath), afterRemove);
+    } finally { service.close(); }
+  });
+});
+
+test("reorder rolls back partial writes and resulting snapshot failures", () => {
+  withFixture(({ root, databasePath }) => {
+    const service = openSettingsService(databasePath);
+    const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
+    const before = records(databasePath);
+    const sqlite = new Database(databasePath);
+    try {
+      for (const body of ["SELECT CASE WHEN NEW.position = 1 THEN RAISE(ABORT, 'injected failure') END;", "UPDATE views SET kind = 'unsupported';"]) {
+        sqlite.exec(`CREATE TRIGGER fail_reorder AFTER UPDATE OF position ON workspaces BEGIN ${body} END;`);
+        const result = service.handleCommand({ type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId] });
+        assert.equal(result.ok, false);
+        assert.equal(result.error.code, "storage");
+        assert.deepEqual(records(databasePath), before);
+        sqlite.exec("DROP TRIGGER fail_reorder;");
+      }
+    } finally { sqlite.close(); service.close(); }
   });
 });

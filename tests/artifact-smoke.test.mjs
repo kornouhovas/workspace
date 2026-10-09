@@ -14,6 +14,7 @@ const packagedFiles = [
   "dist/version.json",
   "dist/service/db/migrations/0000_settings.sql",
   "dist/service/db/migrations/0001_workspaces.sql",
+  "dist/service/db/migrations/0002_workspace_order.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -74,6 +75,20 @@ test("artifact check rejects a package missing Drizzle's migration journal", asy
     await assert.rejects(
       checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
       /missing dist\/service\/db\/migrations\/meta\/_journal\.json/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+
+test("artifact check rejects a package missing the workspace order migration", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-order-"));
+  try {
+    await makeArtifact(root, "0.1.0", ["dist/service/db/migrations/0002_workspace_order.sql"]);
+    await assert.rejects(
+      checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
+      /missing dist\/service\/db\/migrations\/0002_workspace_order\.sql/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });

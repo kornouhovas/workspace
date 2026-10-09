@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { accessSync, constants, opendirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
-import { eq } from "drizzle-orm";
+import { asc, eq, max } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./db/schema.js";
 import type { ActiveWorkspace, WorkspaceCreated, WorkspaceLoad } from "../contracts/workspaces.js";
@@ -32,6 +32,9 @@ export interface WorkspaceService {
     | { ok: true; value: WorkspaceCreated }
     | { ok: false; error: { code: "invalid_input" | "filesystem" | "storage"; message: string } };
   rename(input: unknown):
+    | { ok: true; value: WorkspaceLoad }
+    | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
+  reorder(input: unknown):
     | { ok: true; value: WorkspaceLoad }
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
   assertContained(sourceRoot: string, targetPath: string): boolean;
@@ -78,7 +81,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
             source = { id: randomUUID(), canonicalRoot };
             tx.insert(schema.sources).values(source).run();
           }
-          tx.insert(schema.workspaces).values({ id: workspaceId, name, sourceId: source.id }).run();
+          const lastPosition = tx.select({ value: max(schema.workspaces.position) }).from(schema.workspaces).get()?.value;
+          tx.insert(schema.workspaces).values({ id: workspaceId, name, sourceId: source.id, position: (lastPosition ?? -1) + 1 }).run();
           tx.insert(schema.views).values({
             id: viewId, workspaceId, name: "Table", kind: "table",
           }).run();
@@ -107,6 +111,30 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           const workspace = tx.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId)).get();
           if (!workspace) return invalid("Choose a saved workspace and enter a nonblank name.");
           tx.update(schema.workspaces).set({ name }).where(eq(schema.workspaces.id, workspaceId)).run();
+          return { ok: true as const, value: readWorkspaceLoad(tx, filesystem) };
+        });
+      } catch {
+        return storageFailure();
+      }
+    },
+    reorder(input) {
+      if (!isRecord(input) || input.type !== "workspace.reorder" ||
+        Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceIds") ||
+        !Array.isArray(input.workspaceIds) || !input.workspaceIds.every(isUuid)) {
+        return invalid("Submit the complete current workspace order.");
+      }
+      const workspaceIds = input.workspaceIds as string[];
+      try {
+        return db.transaction((tx) => {
+          const current = tx.select({ id: schema.workspaces.id }).from(schema.workspaces).all();
+          const submitted = new Set(workspaceIds);
+          if (submitted.size !== workspaceIds.length || current.length !== workspaceIds.length ||
+            !current.every(({ id }) => submitted.has(id))) {
+            return invalid("Submit the complete current workspace order.");
+          }
+          workspaceIds.forEach((id, position) => {
+            tx.update(schema.workspaces).set({ position }).where(eq(schema.workspaces.id, id)).run();
+          });
           return { ok: true as const, value: readWorkspaceLoad(tx, filesystem) };
         });
       } catch {
@@ -172,7 +200,8 @@ function readWorkspaceLoad(db: Pick<Database, "select" | "update">, filesystem: 
     sourceId: schema.sources.id,
     canonicalRoot: schema.sources.canonicalRoot,
   }).from(schema.workspaces)
-    .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id)).all();
+    .innerJoin(schema.sources, eq(schema.workspaces.sourceId, schema.sources.id))
+    .orderBy(asc(schema.workspaces.position), asc(schema.workspaces.id)).all();
   const active = db.select({
     workspaceId: schema.activeWorkspace.workspaceId,
     viewId: schema.activeWorkspace.viewId,

@@ -302,3 +302,43 @@ test("real service IPC renames shared and separate roots and rejects malformed o
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("real service IPC reorders saved configurations and rejects invalid permutations without changing selection", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-reorder-ipc-"));
+  const root = join(directory, "root");
+  await mkdir(root);
+  const parent = new EventEmitter();
+  parent.postMessage = () => {};
+  const port = new FakePort();
+  startServiceProcess(parent);
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "workspace.sqlite") }, ports: [port] });
+    let id = 0;
+    const request = (input) => {
+      port.receive({ id: ++id, input });
+      assert.equal(port.sent.at(-1).id, id);
+      return port.sent.at(-1).result;
+    };
+    const one = request({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const two = request({ type: "workspace.create", name: "Two", rootPath: root }).value;
+    const valid = { type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId] };
+    const reordered = request(valid);
+    assert.equal(reordered.ok, true);
+    assert.deepEqual(reordered.value.workspaces.map((row) => row.workspaceId), valid.workspaceIds);
+    assert.equal(reordered.value.activeWorkspace.workspaceId, two.workspaceId);
+    assert.equal(reordered.value.activeWorkspace.viewId, two.viewId);
+    for (const input of [{ ...valid, extra: true }, { type: valid.type },
+      { ...valid, workspaceIds: null }, { ...valid, workspaceIds: [42] },
+      { ...valid, workspaceIds: ["bad-id", one.workspaceId] },
+      { ...valid, workspaceIds: [one.workspaceId, one.workspaceId] },
+      { ...valid, workspaceIds: [one.workspaceId] },
+      { ...valid, workspaceIds: [one.workspaceId, "00000000-0000-4000-8000-000000000000"] },
+    ]) {
+      assert.equal(request(input).error.code, "invalid_input");
+      assert.deepEqual(request({ type: "workspace.load" }), reordered);
+    }
+  } finally {
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await rm(directory, { recursive: true, force: true });
+  }
+});

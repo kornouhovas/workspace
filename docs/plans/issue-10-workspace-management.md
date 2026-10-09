@@ -96,13 +96,16 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: tests/renderer-app.test.tsx
 - Modify: tests/build-smoke.test.mjs
+- Modify: tests/settings-service.test.mjs
+- Modify: tests/artifact-smoke.test.mjs
+- Modify: scripts/check-artifact.mjs
 
-- [ ] Add an upgrade fixture using the existing two migrations and populated workspace/view/selection records. Assert insertion-order backfill, unchanged IDs/data and successful repeated reopen.
-- [ ] Add workspace positions, append-on-create and explicitly ordered loads. Ship the new migration through the existing migration-copy/build mechanism.
-- [ ] Add workspace.reorder with workspaceIds, returning ServiceResult<WorkspaceLoad>. Validate the exact current permutation before changing positions in one transaction; preserve active selection and owned views.
-- [ ] Add a saved-workspace management list with labeled Move up/Move down buttons, disabled boundary/pending states and stable keyboard focus. Refresh the switcher from successful committed results.
-- [ ] Test restart order, identity/presentation preservation, duplicate/omitted/unknown IDs, stale lists after create/remove, injected rollback and EN/RU keyboard operation.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
+- [x] Add an upgrade fixture using the existing two migrations and populated workspace/view/selection records. Assert insertion-order backfill, unchanged IDs/data and successful repeated reopen.
+- [x] Add workspace positions, append-on-create and explicitly ordered loads. Ship the new migration through the existing migration-copy/build mechanism.
+- [x] Add workspace.reorder with workspaceIds, returning ServiceResult<WorkspaceLoad>. Validate the exact current permutation before changing positions in one transaction; preserve active selection and owned views.
+- [x] Add a saved-workspace management list with labeled Move up/Move down buttons, disabled boundary/pending states and stable keyboard focus. Refresh the switcher from successful committed results.
+- [x] Test restart order, identity/presentation preservation, duplicate/omitted/unknown IDs, stale lists after create/remove, injected rollback and EN/RU keyboard operation.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test and npm run typecheck with the same explicit PATH prefix; commit the verified slice.
 
 ### Task 3: Remove configurations atomically while retaining sources and files
 

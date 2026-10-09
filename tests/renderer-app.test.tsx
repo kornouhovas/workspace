@@ -206,6 +206,7 @@ test("creates named workspaces and then lets the user activate either one", asyn
           canonicalRoot: workspace.canonicalRoot,
         });
       }
+      if (input.type !== "workspace.activate") return fail("invalid_input");
       const workspace = created.find((item) => item.workspaceId === input.workspaceId);
       return workspace ? ok(workspace) : fail("invalid_input");
     },
@@ -469,6 +470,76 @@ test("rename reports unavailable transport and stale targets in both languages",
       assert.ok(await screen.findByRole("heading", { name: translate(language, "renameErrorTitle") }));
       assert.ok(screen.getByRole("heading", { name: "Actual" }));
       assert.equal((input as HTMLInputElement).value, "Draft");
+      cleanup();
+    }
+  }
+});
+
+test("reorder is localized, keyboard operable and preserves focus and active workspace using committed order", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = makeActive("two", "Two");
+    let data: WorkspaceLoad = { workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }, { workspaceId: "three", name: "Three" }], activeWorkspace: active };
+    const calls: WorkspaceRequest[] = [];
+    mockApi({ language, onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(data);
+      calls.push(input);
+      if (input.type !== "workspace.reorder") return fail("invalid_input");
+      data = { ...data, workspaces: input.workspaceIds.map((id) => data.workspaces.find((row) => row.workspaceId === id)!) };
+      return ok(data);
+    } });
+    render(<App />);
+    const label = (key: "moveWorkspaceUp" | "moveWorkspaceDown", name: string) => `${translate(language, key)}: ${name}`;
+    const up = await screen.findByRole("button", { name: label("moveWorkspaceUp", "Two") });
+    assert.equal((screen.getByRole("button", { name: label("moveWorkspaceUp", "One") }) as HTMLButtonElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: label("moveWorkspaceDown", "Three") }) as HTMLButtonElement).disabled, true);
+    // Reach the reorder control using native tab navigation, then submit with Enter.
+    for (let step = 0; document.activeElement !== up && step < 15; step++) await userEvent.tab();
+    assert.equal(document.activeElement, up);
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => assert.deepEqual(calls[0], { type: "workspace.reorder", workspaceIds: ["two", "one", "three"] }));
+    const down = screen.getByRole("button", { name: label("moveWorkspaceDown", "Two") });
+    await waitFor(() => assert.equal(document.activeElement, down));
+    assert.equal((up as HTMLButtonElement).disabled, true);
+    assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).value, "two");
+    assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options).map((option) => option.value), ["two", "one", "three"]);
+    await userEvent.keyboard(" ");
+    await waitFor(() => assert.equal(calls.length, 2));
+    await waitFor(() => assert.equal(document.activeElement, down));
+    assert.deepEqual(calls[1], { type: "workspace.reorder", workspaceIds: ["one", "two", "three"] });
+    assert.ok(screen.getByRole("heading", { name: "Two" }));
+    cleanup();
+  }
+});
+
+test("reorder disables conflicting controls while pending and failures preserve the actual order", async () => {
+  for (const language of ["en", "ru"] as const) {
+    for (const failure of ["storage", "invalid_input", "service_unavailable", "throw"] as const) {
+      const active = makeActive("two", "Two");
+      const data: WorkspaceLoad = { workspaces: [{ workspaceId: "one", name: "One" }, { workspaceId: "two", name: "Two" }], activeWorkspace: active };
+      let finish: ((result: ServiceResult<WorkspaceLoad>) => void) | undefined;
+      const pending = new Promise<ServiceResult<WorkspaceLoad>>((resolve) => { finish = resolve; });
+      let calls = 0;
+      mockApi({ language, onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(data);
+        calls++;
+        const result = await pending;
+        if (failure === "throw") throw new Error("closed");
+        return result;
+      } });
+      render(<App />);
+      const up = await screen.findByRole("button", { name: `${translate(language, "moveWorkspaceUp")}: Two` });
+      await userEvent.click(up);
+      assert.equal((up as HTMLButtonElement).disabled, true);
+      assert.equal((screen.getByRole("button", { name: translate(language, "renameWorkspaceAction") }) as HTMLButtonElement).disabled, true);
+      assert.equal((screen.getByRole("button", { name: translate(language, "addWorkspaceAction") }) as HTMLButtonElement).disabled, true);
+      assert.equal((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).disabled, true);
+      assert.ok(screen.getByRole("status"));
+      await act(async () => { finish?.(fail(failure === "throw" ? "storage" : failure)); await pending; });
+      assert.ok(await screen.findByRole("heading", { name: translate(language, "reorderErrorTitle") }));
+      assert.equal(screen.queryByText("private service detail"), null);
+      assert.deepEqual(Array.from((screen.getByRole("combobox", { name: translate(language, "workspaceSelectLabel") }) as HTMLSelectElement).options).map((option) => option.value), ["one", "two"]);
+      assert.equal(document.activeElement, up);
+      assert.equal(calls, 1);
       cleanup();
     }
   }

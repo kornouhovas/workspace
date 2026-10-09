@@ -15,6 +15,13 @@
       "when": 1791504001000,
       "tag": "0001_workspaces",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791504002000,
+      "tag": "0002_workspace_order",
+      "breakpoints": true
     }
   ]
 }

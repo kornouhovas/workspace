@@ -138,6 +138,42 @@ body {
   flex: none;
 }
 
+.workspace-management {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.workspace-management h3,
+.workspace-management p {
+  margin: 0;
+}
+
+.workspace-management__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workspace-management__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.workspace-management__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.workspace-management__row .workspace-form-actions {
+  flex: none;
+}
+
 .workspace-rename {
   display: grid;
   gap: 1rem;
@@ -190,6 +226,19 @@ body {
   .workspace-button,
   .workspace-switcher {
     width: 100%;
+  }
+
+  .workspace-management__row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace-management__row .workspace-form-actions {
+    flex-wrap: nowrap;
+  }
+
+  .workspace-management__row .workspace-button {
+    flex: 1;
   }
 
   .selected-root {

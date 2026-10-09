@@ -17,8 +17,13 @@ export type WorkspaceRenameCommand = {
   name: string;
 };
 
+export type WorkspaceReorderCommand = {
+  type: "workspace.reorder";
+  workspaceIds: string[];
+};
+
 export type WorkspaceQuery = WorkspaceLoadQuery;
-export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand;
+export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;
