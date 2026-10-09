@@ -5,6 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import Database from "better-sqlite3";
+import { randomUUID } from "node:crypto";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openSettingsService } from "../dist/service/settings.mjs";
 
 function fixture(run) {
@@ -16,7 +19,7 @@ function fixture(run) {
   const workspace = service.workspaces.create({ type: "workspace.create", name: "Grouped", rootPath: root }).value;
   const sqlite = new Database(databasePath);
   const preview = (extra = {}) => service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode: "grouped", ...extra });
-  try { run({ directory, root, sqlite, service, workspace, preview }); }
+  try { run({ directory, root, databasePath, sqlite, service, workspace, preview }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
@@ -105,8 +108,6 @@ test("grouped preview rejects unsafe depths, unselectable exclusions and modes w
   }
   for (const mode of [null, "recursive", 0]) assert.equal(preview({ mode }).error.code, "invalid_input");
   assert.equal(preview({ extra: true }).error.code, "invalid_input");
-  const token = preview().value.previewToken;
-  assert.equal(service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: token }).error.code, "invalid_input");
   assert.deepEqual(sqlite.prepare("SELECT * FROM sources").all(), before);
   const direct = preview({ mode: "direct" }).value;
   assert.equal(service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: direct.previewToken }).ok, true);
@@ -204,11 +205,11 @@ test("a grouped review is workspace/token bound and returned data cannot change 
   const command = { type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: reviewed.previewToken };
   assert.equal(service.handleCommand({ ...command, workspaceId: sibling.workspaceId }).error.code, "stale_preview");
   reviewed.mode = "direct"; reviewed.entries.length = 0;
-  assert.equal(service.handleCommand(command).error.code, "invalid_input");
+  assert.equal(service.handleCommand(command).value.mode, "grouped");
   assert.equal(service.handleCommand({ ...command, mode: "direct" }).error.code, "invalid_input");
-  const direct = preview({ mode: "direct" }).value;
   assert.equal(service.handleCommand(command).error.code, "stale_preview");
-  assert.equal(service.handleCommand({ ...command, previewToken: direct.previewToken }).error.code, "stale_preview");
+  const refreshed = preview().value;
+  assert.equal(service.handleCommand({ ...command, previewToken: refreshed.previewToken }).ok, true);
 }));
 
 test("archive casing resolution never accesses an already excluded alias", () => fixture(({ root, sqlite, preview }) => {
@@ -229,4 +230,258 @@ test("archive casing resolution never accesses an already excluded alias", () =>
     assert.ok(result.value.previewToken);
     assert.equal(result.value.entries.find((entry) => entry.relativePath === exclusion).reason, "manual");
   }
+}));
+
+function applied(f, extra = {}) {
+  const review = f.preview(extra); assert.equal(review.ok, true);
+  const result = f.service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: review.value.previewToken });
+  assert.equal(result.ok, true, JSON.stringify(result)); return result.value;
+}
+
+test("grouped Apply persists empty categories, required same-source values and independent property identity", () => fixture((f) => {
+  for (const path of ["Category/Project/Deeper", "Empty", "DirectLooking/src"]) fs.mkdirSync(join(f.root, path), { recursive: true });
+  fs.writeFileSync(join(f.root, "Category/Project/bytes"), Buffer.from([0, 42, 255]));
+  const before = inventory(f.root);
+  const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+  const otherRoot = join(f.directory, "other"); fs.mkdirSync(otherRoot);
+  const other = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+  const events = []; f.service.workspaces.subscribe((event) => events.push(event));
+  const result = applied(f);
+  assert.equal(result.mode, "grouped"); assert.equal(result.revision, 1);
+  assert.equal(result.categoryProperty.name, null); assert.equal(result.categoryPropertyRevision, 0);
+  assert.deepEqual(result.categories.map((row) => row.name), ["Category", "DirectLooking", "Empty"]);
+  assert.deepEqual(result.projects.map((row) => [row.name, row.relativePath]), [["Project", "Category/Project"], ["src", "DirectLooking/src"]]);
+  for (const project of result.projects) assert.equal(result.categories.find((row) => row.categoryId === project.categoryId).relativePath, project.relativePath.split("/")[0]);
+  assert.equal(events.length, 1); assert.equal(events[0].type, "workspace.projectsChanged");
+  assert.deepEqual(new Set(events[0].workspaceIds), new Set([f.workspace.workspaceId, sibling.workspaceId]));
+  assert.equal(events[0].workspaceIds.includes(other.workspaceId), false);
+  assert.deepEqual(applied(f), result); assert.equal(events.length, 1);
+  const fromSibling = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId }).value;
+  assert.deepEqual({ ...fromSibling, workspaceId: result.workspaceId }, result);
+  assert.equal(f.preview({ mode: "direct" }).error.code, "invalid_input");
+  const reopened = openSettingsService(f.databasePath);
+  try { assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value, result); }
+  finally { reopened.close(); }
+  f.sqlite.pragma("foreign_keys = ON");
+  const project = result.projects[0], category = result.categories.find((row) => row.categoryId === project.categoryId);
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = NULL WHERE id = ?").run(project.projectId));
+  assert.throws(() => f.sqlite.prepare("UPDATE categories SET association_state = 'missing' WHERE id = ?").run(category.categoryId));
+  assert.throws(() => f.sqlite.prepare("UPDATE sources SET discovery_mode = 'direct' WHERE id = ?").run(result.sourceId));
+  assert.deepEqual(inventory(f.root), before);
+}));
+
+test("grouped categories and project replacements retain Text without transferring old metadata", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true }); fs.mkdirSync(join(f.root, "Empty"));
+  const first = applied(f), project = first.projects[0];
+  const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: "Notes", propertyType: "text" });
+  assert.equal(property.ok, true);
+  const propertyId = property.value.propertyId;
+  assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: project.projectId, propertyId, value: "retained" }).ok, true);
+  const excluded = applied(f, { excludedRelativePaths: ["Category"] });
+  assert.equal(excluded.projects.length, 0); assert.equal(excluded.retainedCount, 1);
+  assert.equal(applied(f, { excludedRelativePaths: [] }).projects[0].projectId, project.projectId);
+  fs.renameSync(join(f.root, "Category"), join(f.directory, "old-category"));
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const replacement = applied(f);
+  assert.notEqual(replacement.projects[0].projectId, project.projectId);
+  assert.notEqual(replacement.projects[0].categoryId, project.categoryId);
+  assert.equal(replacement.categoryProperty.propertyId, first.categoryProperty.propertyId);
+  assert.equal(replacement.retainedCount, 1);
+  const text = f.service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value;
+  assert.deepEqual(text.values.map((row) => [row.projectId, row.value]), [[project.projectId, "retained"]]);
+  fs.renameSync(join(f.root, "Category"), join(f.directory, "missing-category"));
+  assert.equal(applied(f).projects.length, 0);
+  fs.renameSync(join(f.directory, "missing-category"), join(f.root, "Category"));
+  assert.equal(applied(f).projects.length, 0, "missing category must not automatically reattach projects");
+  fs.rmdirSync(join(f.root, "Empty"));
+  const noEmpty = applied(f); assert.equal(noEmpty.categories.length, 0);
+  assert.ok(f.sqlite.prepare("SELECT * FROM categories WHERE relative_path = 'Empty'").get());
+}));
+
+test("grouped Apply rejects stale reviewed categories/projects and rolls back writes without events", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const events = []; f.service.workspaces.subscribe((event) => events.push(event));
+  const command = (token) => f.service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: token });
+  let review = f.preview().value;
+  fs.mkdirSync(join(f.root, "Empty")); assert.equal(command(review.previewToken).error.code, "stale_preview");
+  review = f.preview().value;
+  fs.mkdirSync(join(f.root, "Category/New")); assert.equal(command(review.previewToken).error.code, "stale_preview");
+  const before = f.sqlite.prepare("SELECT * FROM sources").all();
+  f.sqlite.exec("CREATE TRIGGER fail_grouped BEFORE INSERT ON projects BEGIN SELECT RAISE(ABORT, 'injected'); END");
+  review = f.preview().value; assert.equal(command(review.previewToken).error.code, "storage");
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM sources").all(), before);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all(), []);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM category_properties").all(), []);
+  assert.deepEqual(events, []);
+  f.sqlite.exec("DROP TRIGGER fail_grouped");
+  assert.equal(command(review.previewToken).ok, true);
+  const initial = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value;
+  review = f.preview().value;
+  f.sqlite.prepare("UPDATE categories SET native_identity = ? WHERE id = ?").run(JSON.stringify({ dev: "1", ino: "2", birthtimeNs: "3" }), initial.categories[0].categoryId);
+  assert.equal(command(review.previewToken).error.code, "stale_preview");
+  assert.equal(events.length, 1);
+}));
+
+test("actual populated migrations 0000–0005 upgrade without changing settings, identities, Text or views", () => {
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "grouped-upgrade-")));
+  const legacy = join(directory, "legacy"), root = join(directory, "root"), databasePath = join(directory, "workspace.sqlite");
+  fs.mkdirSync(join(root, "Project"), { recursive: true }); fs.mkdirSync(join(legacy, "meta"), { recursive: true });
+  const folder = "src/service/db/migrations", journal = JSON.parse(fs.readFileSync(join(folder, "meta/_journal.json"), "utf8"));
+  journal.entries = journal.entries.slice(0, 6);
+  for (const entry of journal.entries) fs.copyFileSync(join(folder, `${entry.tag}.sql`), join(legacy, `${entry.tag}.sql`));
+  fs.writeFileSync(join(legacy, "meta/_journal.json"), JSON.stringify(journal));
+  const sql = new Database(databasePath); let service;
+  const sourceId = randomUUID(), workspaceId = randomUUID(), siblingId = randomUUID(), viewId = randomUUID(), siblingView = randomUUID(), projectId = randomUUID(), propertyId = randomUUID();
+  const identity = (path) => { const stat = fs.lstatSync(path, { bigint: true }); return JSON.stringify({ dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) }); };
+  try {
+    migrate(drizzle(sql), { migrationsFolder: legacy }); sql.pragma("foreign_keys = ON");
+    sql.prepare("INSERT INTO settings VALUES ('language', 'ru')").run();
+    sql.prepare("INSERT INTO sources (id, canonical_root, discovery_mode, discovery_revision, property_revision, applied_root_identity) VALUES (?, ?, 'direct', 7, 9, ?)").run(sourceId, root, identity(root));
+    for (const [id, view, name, position] of [[workspaceId, viewId, "One", 0], [siblingId, siblingView, "Sibling", 1]]) {
+      sql.prepare("INSERT INTO workspaces (id, name, source_id, position) VALUES (?, ?, ?, ?)").run(id, name, sourceId, position);
+      sql.prepare("INSERT INTO views VALUES (?, ?, ?, 'table')").run(view, id, name);
+    }
+    sql.prepare("INSERT INTO active_workspace VALUES ('active', ?, ?)").run(siblingId, siblingView);
+    sql.prepare("INSERT INTO projects VALUES (?, ?, 'Project', ?, 'active')").run(projectId, sourceId, identity(join(root, "Project")));
+    sql.prepare("INSERT INTO property_definitions VALUES (?, ?, '  Notes  ', 'text', 0)").run(propertyId, sourceId);
+    sql.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, ?)").run(projectId, propertyId, sourceId, "  Authored\nvalue  ");
+    const tables = ["settings", "sources", "workspaces", "views", "active_workspace", "projects", "property_definitions", "text_property_values"];
+    const before = Object.fromEntries(tables.map((table) => [table, sql.prepare(`SELECT * FROM ${table}`).all()])); sql.close();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      service = openSettingsService(databasePath);
+      const inspected = new Database(databasePath);
+      try {
+        for (const table of tables) {
+          const expected = before[table].map((row) => table === "sources" ? { ...row, category_property_revision: 0 } : table === "projects" ? { ...row, category_id: null } : row);
+          assert.deepEqual(inspected.prepare(`SELECT * FROM ${table}`).all(), expected);
+        }
+        assert.equal(inspected.prepare('SELECT COUNT(*) AS count FROM "__drizzle_migrations"').get().count, 7);
+        assert.deepEqual(inspected.prepare("SELECT * FROM categories").all(), []);
+        assert.deepEqual(inspected.prepare("SELECT * FROM category_properties").all(), []);
+      } finally { inspected.close(); }
+      const listed = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }).value;
+      assert.equal(listed.mode, "direct"); assert.equal(listed.categoryProperty, null); assert.equal(listed.projects[0].categoryId, null);
+      const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId }).value;
+      assert.deepEqual(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: review.previewToken }).value, listed);
+      assert.equal(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode: "grouped" }).error.code, "invalid_input");
+      service.close(); service = undefined;
+    }
+  } finally { if (sql.open) sql.close(); service?.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("category-only changes emit discovery revisions and final removal retains grouped source data", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Empty"));
+  const first = applied(f); assert.equal(first.projects.length, 0); assert.equal(first.categories.length, 1);
+  const events = []; f.service.workspaces.subscribe((event) => events.push(event));
+  fs.mkdirSync(join(f.root, "NewEmpty"));
+  const second = applied(f); assert.equal(second.revision, first.revision + 1); assert.equal(events.length, 1);
+  assert.equal(second.categories.find((row) => row.name === "Empty").categoryId, first.categories[0].categoryId);
+  assert.equal(second.categoryProperty.propertyId, first.categoryProperty.propertyId);
+  assert.equal(f.service.workspaces.remove({ type: "workspace.remove", workspaceId: f.workspace.workspaceId }).ok, true);
+  const reopened = openSettingsService(f.databasePath);
+  try {
+    const recreated = reopened.workspaces.create({ type: "workspace.create", name: "Recreated", rootPath: f.root }).value;
+    assert.equal(recreated.sourceId, f.workspace.sourceId); assert.notEqual(recreated.viewId, f.workspace.viewId);
+    assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: recreated.workspaceId }).value, { ...second, workspaceId: recreated.workspaceId });
+  } finally { reopened.close(); }
+}));
+
+test("parent exclusions safely replace reviewed child drafts and reinclusion restores the same associations", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const initial = applied(f);
+  assert.ok(f.preview({ excludedRelativePaths: ["Category/Project"] }).value.previewToken);
+  const originalStat = fs.lstatSync, originalOpen = fs.opendirSync;
+  const denied = join(f.root, "Category");
+  fs.lstatSync = (path, ...args) => { assert.ok(path !== denied && !String(path).startsWith(`${denied}/`)); return originalStat(path, ...args); };
+  fs.opendirSync = (path, ...args) => { assert.ok(path !== denied && !String(path).startsWith(`${denied}/`)); return originalOpen(path, ...args); };
+  syncBuiltinESMExports();
+  try {
+    const review = f.preview({ excludedRelativePaths: ["Category"] }).value;
+    assert.ok(review.previewToken); assert.deepEqual(review.entries.map((entry) => entry.relativePath), ["Category"]);
+    // The service still rejects unselectable redundant child inputs. UI normalizes known child choices.
+    assert.equal(f.preview({ excludedRelativePaths: ["Category", "Category/Invented"] }).error.code, "invalid_input");
+    assert.equal(applied(f, { excludedRelativePaths: ["Category"] }).projects.length, 0);
+  } finally { fs.lstatSync = originalStat; fs.opendirSync = originalOpen; syncBuiltinESMExports(); }
+  assert.deepEqual(applied(f, { excludedRelativePaths: [] }).projects, initial.projects);
+}));
+
+test("grouped Apply rolls back a category/link swap observed inside its transaction", () => {
+  for (const link of [false, true]) fixture((f) => {
+    fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+    const external = join(f.directory, "outside"); fs.mkdirSync(join(external, "Foreign"), { recursive: true });
+    const reviewed = f.preview().value, before = f.sqlite.prepare("SELECT * FROM sources").all();
+    const events = []; f.service.workspaces.subscribe((event) => events.push(event));
+    const original = fs.opendirSync; let swapped = false;
+    fs.opendirSync = (path, ...args) => {
+      assert.notEqual(path, external);
+      // Source mode becomes visible through this connection only after the writes.
+      if (path === f.root && !swapped && f.sqlite.prepare("SELECT discovery_mode FROM sources").get().discovery_mode === "grouped") throw new Error("unexpected isolation leak");
+      // Apply scans twice before writes and twice inside before writes; the fifth root read is post-write revalidation.
+      if (path === f.root && ++reads === 5) {
+        swapped = true; fs.renameSync(join(f.root, "Category"), join(f.directory, "old"));
+        if (link) fs.symlinkSync(external, join(f.root, "Category"), process.platform === "win32" ? "junction" : "dir");
+        else fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+      }
+      return original(path, ...args);
+    };
+    let reads = 0; syncBuiltinESMExports(); let result;
+    try { result = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: reviewed.previewToken }); }
+    finally { fs.opendirSync = original; syncBuiltinESMExports(); }
+    assert.equal(swapped, true); assert.equal(result.error.code, "stale_preview");
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM sources").all(), before);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects").all(), []);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all(), []);
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM category_properties").all(), []);
+    assert.deepEqual(events, []);
+  });
+});
+
+test("database guards reject foreign category IDs and direct category values on insert and update", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const grouped = applied(f), project = grouped.projects[0];
+  const otherRoot = join(f.directory, "other"); fs.mkdirSync(join(otherRoot, "Other/Project"), { recursive: true });
+  const other = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+  const review = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: other.workspaceId, mode: "grouped" }).value;
+  const foreign = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: other.workspaceId, previewToken: review.previewToken }).value;
+  f.sqlite.pragma("foreign_keys = ON");
+  const before = f.sqlite.prepare("SELECT * FROM projects ORDER BY id").all();
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = ? WHERE id = ?").run(foreign.categories[0].categoryId, project.projectId));
+  assert.throws(() => f.sqlite.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, 'Category/Injected', '{}', 'active', ?)").run(randomUUID(), grouped.sourceId, foreign.categories[0].categoryId));
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET relative_path = 'Elsewhere/Project' WHERE id = ?").run(project.projectId));
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = NULL WHERE id = ?").run(project.projectId));
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects ORDER BY id").all(), before);
+  applied(f, { excludedRelativePaths: ["Category"] });
+  assert.throws(() => f.sqlite.prepare("UPDATE categories SET source_id = ? WHERE id = ?").run(foreign.sourceId, project.categoryId));
+  const directRoot = join(f.directory, "direct"); fs.mkdirSync(join(directRoot, "Direct"), { recursive: true });
+  const direct = f.service.workspaces.create({ type: "workspace.create", name: "Direct", rootPath: directRoot }).value;
+  const directReview = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: direct.workspaceId }).value;
+  const directList = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: direct.workspaceId, previewToken: directReview.previewToken }).value;
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET category_id = ? WHERE id = ?").run(project.categoryId, directList.projects[0].projectId));
+  assert.throws(() => f.sqlite.prepare("INSERT INTO categories VALUES (?, ?, 'Invalid', '{}', 'active')").run(randomUUID(), direct.sourceId));
+  assert.throws(() => f.sqlite.prepare("INSERT INTO category_properties VALUES (?, ?, NULL)").run(randomUUID(), direct.sourceId));
+  assert.equal(directList.categoryProperty, null); assert.deepEqual(directList.categories, []);
+}));
+
+test("grouped unavailable roots and cross-path category moves retain associations without metadata reassociation", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const first = applied(f);
+  const disconnected = join(f.directory, "disconnected"); fs.renameSync(f.root, disconnected);
+  const listed = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value;
+  assert.equal(listed.state, "unavailable"); assert.deepEqual(listed.projects, first.projects); assert.deepEqual(listed.categories, first.categories);
+  assert.equal(f.preview().value.previewToken, null);
+  fs.renameSync(disconnected, f.root); fs.renameSync(join(f.root, "Category"), join(f.root, "Moved"));
+  const review = f.preview().value;
+  assert.equal(review.entries.find((entry) => entry.relativePath === "Moved").reason, "unresolved");
+  assert.equal(review.entries.find((entry) => entry.relativePath === "Moved/Project").reason, "unresolved");
+  const after = applied(f); assert.deepEqual(after.projects, []); assert.deepEqual(after.categories, []);
+  assert.equal(after.retainedCount, 1);
+  assert.equal(f.sqlite.prepare("SELECT association_state FROM categories WHERE id = ?").get(first.categories[0].categoryId).association_state, "missing");
+}));
+
+test("grouped persistence respects native POSIX basenames rather than SQL pattern matching", { skip: process.platform === "win32" }, () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category_%:one", "Project\\two"), { recursive: true });
+  const first = applied(f); assert.equal(first.projects[0].name, "Project\\two");
+  assert.equal(first.categories[0].name, "Category_%:one");
+  assert.deepEqual(applied(f).projects, first.projects);
+  assert.throws(() => f.sqlite.prepare("UPDATE projects SET relative_path = 'Category-XX:one/Project' WHERE id = ?").run(first.projects[0].projectId));
 }));

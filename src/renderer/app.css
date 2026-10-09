@@ -298,3 +298,6 @@ body {
 .discovery-mode { min-width: 0; display: grid; gap: 0.5rem; }
 .discovery-mode select { min-width: 0; max-width: 100%; width: 100%; padding: 0.5rem; }
 .discovery-entries--projects { padding-inline-start: 1.5rem; border-inline-start: 1px solid #d7d9dc; }
+
+.saved-categories { min-width: 0; margin-block: 1rem; }
+.saved-categories li { overflow-wrap: anywhere; white-space: pre-wrap; }

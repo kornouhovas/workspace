@@ -1,6 +1,6 @@
 import { createTextPropertyService } from "./text-properties.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
-import { interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
+import { interpretGrouped, interpretProjects, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions, type DiscoverySnapshot } from "./discovery.js";
 import type { DiscoveryPreview, ProjectList } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { randomUUID } from "node:crypto";
@@ -70,6 +70,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     snapshot: DiscoverySnapshot;
     source: typeof schema.sources.$inferSelect;
     projects: typeof schema.projects.$inferSelect[];
+    categories: typeof schema.categories.$inferSelect[];
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observed = new Map<string, { canonicalRoot: string; sourceAvailable: boolean }>();
@@ -103,7 +104,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const saved: unknown = JSON.parse(source.excludedRelativePaths);
         if (!validExclusions(saved, mode) || !validArchive(source.archiveRelativePath) ||
           !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
-          (source.discoveryMode !== null && source.discoveryMode !== "direct")) return storageFailure();
+          (source.discoveryMode !== null && source.discoveryMode !== "direct" && source.discoveryMode !== "grouped")) return storageFailure();
         const exclusions = Object.hasOwn(input, "excludedRelativePaths") ? input.excludedRelativePaths as string[] : saved;
         const scan = (mode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, exclusions);
         if (scan.snapshot && exclusions.some((name) => !saved.includes(name) &&
@@ -118,7 +119,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           state = "root_identity_conflict";
         }
         const projects = readProjects(source.id);
-        const interpreted = snapshot ? mode === "grouped" ? scan.entries : interpretProjects(scan, projects).entries : [];
+        const categories = readCategories(source.id);
+        const interpreted = snapshot ? mode === "grouped" ? interpretGrouped(scan, categories, projects).entries : interpretProjects(scan, projects).entries : [];
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
         const preview: DiscoveryPreview = {
           mode, configured: source.discoveryMode !== null, workspaceId, sourceId: source.id, revision: source.discoveryRevision, canonicalRoot: source.canonicalRoot,
@@ -126,7 +128,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects });
+        if (snapshot) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
     },
@@ -152,38 +154,67 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const token = previewTokens.get(workspaceId);
         if (!token || token.preview.previewToken !== input.previewToken ||
           discoverySourceState(token.source) !== discoverySourceState(source) ||
-          JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id))) return stale();
-        if (token.preview.mode === "grouped") return invalid("Grouped Apply is not available yet.");
-        const scan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id)) ||
+          JSON.stringify(token.categories) !== JSON.stringify(readCategories(source.id))) return stale();
+        const mode = token.preview.mode;
+        if (source.discoveryMode !== null && source.discoveryMode !== mode) return stale();
+        const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
+        const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
-        const interpretation = interpretProjects(scan, token.projects);
-        if (JSON.stringify(interpretation.entries) !== JSON.stringify(token.preview.entries)) return stale();
-        const changed = source.discoveryMode !== "direct" ||
+        const grouped = mode === "grouped" ? interpretGrouped(scan, token.categories, token.projects) : null;
+        const interpretation = grouped?.projects ?? interpretProjects(scan, token.projects);
+        if (JSON.stringify(grouped?.entries ?? interpretation.entries) !== JSON.stringify(token.preview.entries)) return stale();
+        const changed = source.discoveryMode !== mode ||
           source.excludedRelativePaths !== JSON.stringify(token.preview.excludedRelativePaths) ||
           source.appliedRootIdentity !== JSON.stringify(scan.snapshot.root.identity) ||
           interpretation.additions.length > 0 ||
-          interpretation.retained.some((row, index) => row.associationState !== token.projects[index].associationState);
+          interpretation.retained.some((row, index) => row.associationState !== token.projects[index].associationState) ||
+          !!grouped && (grouped.categories.additions.length > 0 ||
+            grouped.categories.retained.some((row, index) => row.associationState !== token.categories[index].associationState));
         const committedEvent: WorkspaceChangeEvent = { type: "workspace.projectsChanged", sourceId: source.id,
           workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
           revision: source.discoveryRevision + (changed ? 1 : 0) };
         const result = db.transaction((tx) => {
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(source) ||
-            JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects)) throw new StalePreview();
-          if (changed) tx.update(schema.sources).set({ discoveryMode: "direct", discoveryRevision: source.discoveryRevision + (changed ? 1 : 0),
+            JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
+            JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories)) throw new StalePreview();
+          // Revalidate again inside the transaction, before making any persistent change.
+          const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
+          if (changed) tx.update(schema.sources).set({ discoveryMode: mode, discoveryRevision: source.discoveryRevision + 1,
             excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths),
             appliedRootIdentity: JSON.stringify(scan.snapshot!.root.identity),
           }).where(eq(schema.sources.id, source.id)).run();
-          // Retire associations before inserting replacements into the unique current-path index.
-          for (const row of interpretation.retained.filter((row, index) => row.associationState !== token.projects[index].associationState)) {
-            tx.update(schema.projects).set({ associationState: row.associationState })
-              .where(eq(schema.projects.id, row.id)).run();
+          // First deactivate projects whose parents retire; then retire categories.
+          const changedProjects = interpretation.retained.filter((row, index) => row.associationState !== token.projects[index].associationState);
+          for (const row of changedProjects.filter((row) => row.associationState !== "active")) {
+            tx.update(schema.projects).set({ associationState: row.associationState }).where(eq(schema.projects.id, row.id)).run();
           }
-          for (const row of interpretation.additions) tx.insert(schema.projects).values({
-            id: randomUUID(), sourceId: source.id, ...row, associationState: "active",
-          }).run();
+          if (grouped) {
+            for (const row of grouped.categories.retained.filter((row, index) => row.associationState !== token.categories[index].associationState)) {
+              tx.update(schema.categories).set({ associationState: row.associationState }).where(eq(schema.categories.id, row.id)).run();
+            }
+            for (const row of grouped.categories.additions) tx.insert(schema.categories).values({
+              id: randomUUID(), sourceId: source.id, ...row, associationState: "active",
+            }).run();
+            if (!tx.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get()) {
+              tx.insert(schema.categoryProperties).values({ id: randomUUID(), sourceId: source.id, name: null }).run();
+            }
+          }
+          for (const row of changedProjects.filter((row) => row.associationState === "active")) {
+            tx.update(schema.projects).set({ associationState: row.associationState }).where(eq(schema.projects.id, row.id)).run();
+          }
+          const categories = readCategories(source.id);
+          for (const row of interpretation.additions) {
+            const category = mode === "grouped" ? categories.find((category) => category.relativePath === row.relativePath.split("/")[0] && category.associationState === "active") : null;
+            if (mode === "grouped" && !category) throw new Error("Missing required category");
+            tx.insert(schema.projects).values({ id: randomUUID(), sourceId: source.id, ...row,
+              categoryId: category?.id ?? null, associationState: "active",
+            }).run();
+          }
           // Observed changes during persistence roll back all DB writes. This is not a filesystem lock.
-          const recheck = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
+          const recheck = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.excludedRelativePaths);
           if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
           return projectList(workspaceId, committed, recheck);
@@ -397,19 +428,36 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function readProjects(sourceId: string) {
     return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   }
+  function readCategories(sourceId: string) {
+    return db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
+  }
   function projectList(workspaceId: string, source: typeof schema.sources.$inferSelect,
-    currentScan = scanDirectSource(source.canonicalRoot, source.archiveRelativePath, JSON.parse(source.excludedRelativePaths))): ProjectList {
-    if (!validExclusions(JSON.parse(source.excludedRelativePaths)) || !validArchive(source.archiveRelativePath) ||
+    currentScan = (source.discoveryMode === "grouped" ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, JSON.parse(source.excludedRelativePaths))): ProjectList {
+    const mode = source.discoveryMode;
+    if (!validExclusions(JSON.parse(source.excludedRelativePaths), mode === "grouped" ? "grouped" : "direct") || !validArchive(source.archiveRelativePath) ||
       !Number.isSafeInteger(source.discoveryRevision) || source.discoveryRevision < 0 ||
-      (source.discoveryMode !== null && source.discoveryMode !== "direct")) throw new Error("Invalid source configuration");
+      !Number.isSafeInteger(source.categoryPropertyRevision) || source.categoryPropertyRevision < 0 ||
+      (mode !== null && mode !== "direct" && mode !== "grouped")) throw new Error("Invalid source configuration");
     const projects = readProjects(source.id);
+    const categories = readCategories(source.id);
+    const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
+    if (mode === "grouped" ? !property : property || categories.length) throw new Error("Invalid category property configuration");
     let state = currentScan.state;
     if (currentScan.snapshot && source.appliedRootIdentity &&
       !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity)) state = "root_identity_conflict";
-    const active = projects.filter((row) => row.associationState === "active").map((row) => ({
-      projectId: row.id, relativePath: row.relativePath, name: row.relativePath,
-    })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-    return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: source.discoveryMode !== null,
+    const active = projects.filter((row) => row.associationState === "active").map((row) => {
+      const category = categories.find((category) => category.id === row.categoryId && category.associationState === "active");
+      if (mode === "grouped" ? !category || row.relativePath.split("/").length !== 2 || row.relativePath.split("/")[0] !== category.relativePath : row.categoryId !== null) {
+        throw new Error("Invalid required category");
+      }
+      return { projectId: row.id, relativePath: row.relativePath, name: row.relativePath.split("/").at(-1)!, categoryId: row.categoryId };
+    }).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0);
+    return { workspaceId, sourceId: source.id, revision: source.discoveryRevision, configured: mode !== null, mode,
+      categories: categories.filter((row) => row.associationState === "active").map((row) => ({
+        categoryId: row.id, relativePath: row.relativePath, name: row.relativePath,
+      })).sort((a, b) => a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0),
+      categoryProperty: property ? { propertyId: property.id, sourceId: property.sourceId, name: property.name } : null,
+      categoryPropertyRevision: source.categoryPropertyRevision,
       state, projects: active, retainedCount: projects.length - active.length };
   }
 

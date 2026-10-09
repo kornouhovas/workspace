@@ -16,7 +16,8 @@ const requiredFiles = [
   "dist/service/db/migrations/0002_workspace_order.sql",
   "dist/service/db/migrations/0003_source_discovery.sql",
   "dist/service/db/migrations/0004_direct_projects.sql",
-    "dist/service/db/migrations/0005_text_properties.sql",
+  "dist/service/db/migrations/0005_text_properties.sql",
+  "dist/service/db/migrations/0006_grouped_discovery.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 

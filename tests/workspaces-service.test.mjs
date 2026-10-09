@@ -21,7 +21,7 @@ function withFixture(run) {
 }
 
 const unconfiguredDiscovery = {
-  property_revision: 0, discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
+  category_property_revision: 0, property_revision: 0, discovery_mode: null, discovery_revision: 0, excluded_relative_paths: "[]",
   archive_relative_path: null, applied_root_identity: null,
 };
 
@@ -1560,7 +1560,7 @@ test("populated discovery configuration upgrades to projects, applies and reopen
     let service = openSettingsService(databasePath);
     let projects;
     try {
-      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0 })) });
+      assert.deepEqual(records(databasePath), { ...before, sources: before.sources.map((row) => ({ ...row, property_revision: 0, category_property_revision: 0 })) });
       assert.deepEqual(projectRecords(databasePath), []);
       projects = applyDiscovery(service, workspace.workspaceId).value;
       assert.deepEqual(projects.projects.map((p) => p.name), ["Kept"]);

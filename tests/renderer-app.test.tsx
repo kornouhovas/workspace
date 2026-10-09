@@ -121,7 +121,7 @@ function mockApi(options: MockOptions = {}) {
       ? options.onProperties?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: `source-${input.workspaceId}`, revision: 0, definitions: [], values: [] }))
       : input.type === "workspace.listProjects"
       ? options.onProjects?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId,
-        sourceId: `source-${input.workspaceId}`, revision: 0, configured: false, state: "empty" as const,
+        sourceId: `source-${input.workspaceId}`, revision: 0, mode: null, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: false, state: "empty" as const,
         projects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
@@ -981,9 +981,9 @@ test("preview exposes localized empty, unavailable, unreadable, changed and retr
 });
 
 const projectList = (active: ActiveWorkspace, projects: string[] = [], revision = 1) => ({
-  workspaceId: active.workspaceId, sourceId: active.sourceId, revision, configured: true,
+  workspaceId: active.workspaceId, sourceId: active.sourceId, revision, configured: true, mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
   state: (projects.length ? "ready" : "empty") as "ready" | "empty", retainedCount: 0,
-  projects: projects.map((name) => ({ projectId: `project-${name}`, name, relativePath: name })),
+  projects: projects.map((name) => ({ projectId: `project-${name}`, categoryId: null, name, relativePath: name })),
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
   workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, canonicalRoot: active.canonicalRoot,
@@ -1025,7 +1025,7 @@ test("EN/RU grouped review uses the real service and keyboard mode/exclusion con
       assert.ok(checkbox("discoveryProject", "src"));
       assert.equal(screen.queryByText("Deeper"), null);
       assert.ok(checkbox("discoveryCategory", "Category").closest("li")?.contains(checkbox("discoveryProject", "Project")));
-      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+      assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
       const project = checkbox("discoveryProject", "Project"); project.focus();
       await userEvent.keyboard(" ");
       await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
@@ -1084,7 +1084,7 @@ test("delayed grouped requests cannot revive cancelled, switched, removed or res
   }
 });
 
-test("EN/RU grouped selection shows pending, recoverable failure and empty review without enabling Apply", async () => {
+test("EN/RU grouped selection shows pending, recoverable failure and empty review with explicit Apply", async () => {
   for (const language of ["en", "ru"] as const) {
     const active = sharedEventWorkspace();
     let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
@@ -1112,7 +1112,7 @@ test("EN/RU grouped selection shows pending, recoverable failure and empty revie
     await screen.findByRole("heading", { name: translate(language, "discoveryGroupedTitle") });
     assert.equal(groupedCalls, 2);
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryEmpty") }));
-    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
     cleanup();
   }
 });
@@ -1631,7 +1631,7 @@ test("EN/RU Text cells preserve failed drafts, support multiline keyboard saves,
       return new Promise<ServiceResult<TextPropertyMutation>>((resolve) => { finish = resolve; });
     } });
     render(<TextPropertiesTable client={new WorkspaceServiceClient()} workspaceId={workspaceId} sourceId={sourceId}
-      projects={[{ projectId, name: "Project", relativePath: "Project" }]} language={language} disabled={false} />);
+      projects={[{ projectId, categoryId: null, name: "Project", relativePath: "Project" }]} language={language} disabled={false} />);
     const label = `${translate(language, "editTextValue")}: Project / Notes`;
     const cell = await screen.findByRole("button", { name: label });
     assert.equal(cell.textContent, translate(language, "textValueAbsent"));
@@ -1686,7 +1686,7 @@ function textFixture() {
     values: value === null ? [] : [{ projectId, propertyId, value }],
   });
   return { workspaceId, sourceId, propertyId, projectId, snapshot,
-    projects: [{ projectId, sourceId, name: "Project", relativePath: "Project" }] };
+    projects: [{ projectId, categoryId: null, sourceId, name: "Project", relativePath: "Project" }] };
 }
 
 test("backend generations discard old source observations and preserve newer events over delayed reloads", async () => {
@@ -1731,7 +1731,7 @@ test("same-source availability and locator notifications preserve Text drafts wh
       let finishProjects: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
       let delay = false;
       const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
-        configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+        mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
       const api = mockApi({ language, load: ok({ workspaces: [{ workspaceId: f.workspaceId, name: active.name }], activeWorkspace: active }),
         onProperties: async () => ok(f.snapshot(1)),
         onProjects: async () => delay ? new Promise((resolve) => { finishProjects = resolve; }) : ok(projection),
@@ -1766,7 +1766,7 @@ test("EN/RU failed project refreshes preserve recoverable Text drafts through er
   for (const language of ["en", "ru"] as const) {
     const f = textFixture(), active = { ...makeActive(f.workspaceId, "Workspace"), sourceId: f.sourceId };
     const projection = { workspaceId: f.workspaceId, sourceId: f.sourceId, revision: 1,
-      configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
+      mode: "direct" as const, categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready" as const, projects: f.projects, retainedCount: 0 };
     let phase: "initial" | "storage" | "transport" | "stale" | "retry" = "initial";
     let finish: ((value: ServiceResult<WorkspaceResponse>) => void) | undefined;
     const saves: (string | null)[] = [];
@@ -1905,7 +1905,7 @@ test("backend restart, workspace switch/removal and cleanup invalidate delayed T
       }, onProjects: async (input) => {
         if (input.type !== "workspace.listProjects") return fail("invalid_input");
         return ok({ workspaceId: input.workspaceId, sourceId: input.workspaceId === other.workspaceId ? next.sourceId : f.sourceId,
-          revision: 1, configured: true, state: "ready", retainedCount: 0, projects: input.workspaceId === other.workspaceId ? next.projects : f.projects });
+          revision: 1, mode: "direct", categories: [], categoryProperty: null, categoryPropertyRevision: 0, configured: true, state: "ready", retainedCount: 0, projects: input.workspaceId === other.workspaceId ? next.projects : f.projects });
       },
       onWorkspace: async (input) => {
         if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
@@ -1990,6 +1990,147 @@ test("EN/RU sibling commits during a failed save retain drafts and require an ex
     committed = f.snapshot(5, "After rename", "Renamed");
     await act(async () => { api.emitChange({ type: "workspace.propertiesChanged", sourceId: f.sourceId, workspaceIds: [f.workspaceId], revision: 5 }); });
     assert.ok(screen.getByText(translate(language, "propertyNewerChange")));
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU production grouped Apply normalizes child-then-parent exclusions and preserves Text drafts on rescan", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "grouped-apply-ui-")), root = join(directory, "root");
+    mkdirSync(join(root, "Category/Project"), { recursive: true }); mkdirSync(join(root, "Empty"));
+    const service = openSettingsService(join(directory, "data.sqlite")); let unsubscribe: (() => void) | undefined;
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "Grouped", rootPath: root });
+      if (!created.ok) throw new Error("Fixture creation failed");
+      const workspaceId = created.value.workspaceId, viewId = created.value.viewId;
+      const property = service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" });
+      assert.equal(property.ok, true);
+      const requests: WorkspaceRequest[] = [];
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const surface = mockApi({ language, onProjects: query, onProperties: query, onWorkspace: async (input) => {
+        requests.push(input);
+        return (input.type === "workspace.load" || input.type === "workspace.previewDiscovery" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+      } });
+      unsubscribe = service.workspaces.subscribe(surface.emitChange);
+      render(<App />);
+      const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+      await userEvent.click(trigger);
+      await userEvent.selectOptions(await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }), "grouped");
+      const checkbox = (kind: "discoveryCategory" | "discoveryProject", name: string) => screen.getByRole("checkbox", {
+        name: `${translate(language, "discoveryExclude")}: ${translate(language, kind)}: ${name}`,
+      }) as HTMLInputElement;
+      await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
+      await userEvent.click(checkbox("discoveryProject", "Project"));
+      await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
+      const category = checkbox("discoveryCategory", "Category"); category.focus(); await userEvent.keyboard(" ");
+      await waitFor(() => assert.equal(checkbox("discoveryCategory", "Category").disabled, false));
+      assert.equal(checkbox("discoveryCategory", "Category").checked, true);
+      assert.equal(screen.queryByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryProject")}: Project` }), null);
+      assert.deepEqual(requests.at(-1), { type: "workspace.previewDiscovery", workspaceId, mode: "grouped", excludedRelativePaths: ["Category"] });
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+      await waitFor(() => assert.equal(checkbox("discoveryCategory", "Category").disabled, false));
+      await userEvent.click(checkbox("discoveryCategory", "Category"));
+      await waitFor(() => assert.equal(checkbox("discoveryProject", "Project").disabled, false));
+      assert.equal(checkbox("discoveryProject", "Project").checked, false);
+      const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") });
+      apply.focus(); await userEvent.keyboard("{Enter}");
+      await screen.findByRole("cell", { name: "Project" });
+      assert.equal(document.activeElement, trigger);
+      const header = screen.getByRole("columnheader", { name: translate(language, "discoveryCategory") });
+      assert.equal(header.querySelector("button, input, select"), null);
+      const categoryCell = screen.getByRole("cell", { name: "Category" }); assert.equal(categoryCell.querySelector("button, input, select"), null);
+      assert.ok(screen.getByText("Empty")); assert.ok(screen.getByText(translate(language, "discoveryGroupedMode")));
+      const loadedView = service.workspaces.load(); assert.equal(loadedView.ok && loadedView.value.activeWorkspace?.viewId, viewId);
+      const valueLabel = `${translate(language, "editTextValue")}: Project / Notes`;
+      await userEvent.click(await screen.findByRole("button", { name: valueLabel }));
+      const editor = screen.getByRole("textbox", { name: valueLabel }); await userEvent.type(editor, "Retained draft");
+      mkdirSync(join(root, "AnotherEmpty"));
+      await userEvent.click(trigger);
+      await screen.findByRole("checkbox", { name: `${translate(language, "discoveryExclude")}: ${translate(language, "discoveryCategory")}: AnotherEmpty` });
+      assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+      await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryApply") }));
+      await waitFor(() => assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null));
+      assert.equal(screen.getByRole("textbox", { name: valueLabel }), editor);
+      assert.equal((editor as HTMLTextAreaElement).value, "Retained draft");
+      assert.ok(screen.getByText("AnotherEmpty"));
+      assert.equal(requests.filter((request) => request.type === "workspace.applyDiscovery").length, 2);
+      const rescannedView = service.workspaces.load(); assert.equal(rescannedView.ok && rescannedView.value.activeWorkspace?.viewId, viewId);
+    } finally { unsubscribe?.(); cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU grouped Table exposes saved empty categories for siblings and no category for direct sources", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "grouped-empty-ui-")), root = join(directory, "root"), directRoot = join(directory, "direct");
+    mkdirSync(join(root, "Empty"), { recursive: true }); mkdirSync(join(directRoot, "DirectProject"), { recursive: true });
+    const service = openSettingsService(join(directory, "data.sqlite"));
+    try {
+      const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root });
+      if (!one.ok) throw new Error("Fixture creation failed");
+      const review = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: one.value.workspaceId, mode: "grouped" });
+      if (!review.ok) throw new Error("Fixture preview failed");
+      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: one.value.workspaceId, previewToken: review.value.previewToken }).ok, true);
+      const sibling = service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root });
+      if (!sibling.ok) throw new Error("Fixture creation failed");
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      mockApi({ language, onProjects: query, onProperties: query, onWorkspace: query }); render(<App />);
+      await screen.findByRole("columnheader", { name: translate(language, "discoveryCategory") });
+      assert.ok(screen.getByText("Empty")); assert.ok(screen.getByText(translate(language, "projectsEmpty")));
+      assert.equal(screen.queryByRole("cell"), null);
+      cleanup();
+      const direct = service.workspaces.create({ type: "workspace.create", name: "Direct", rootPath: directRoot });
+      if (!direct.ok) throw new Error("Fixture creation failed");
+      const directReview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: direct.value.workspaceId });
+      if (!directReview.ok) throw new Error("Fixture preview failed");
+      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: direct.value.workspaceId, previewToken: directReview.value.previewToken }).ok, true);
+      mockApi({ language, onProjects: query, onProperties: query, onWorkspace: query }); render(<App />);
+      await screen.findByRole("cell", { name: "DirectProject" });
+      assert.equal(screen.queryByRole("columnheader", { name: translate(language, "discoveryCategory") }), null);
+      assert.equal(screen.queryByText(translate(language, "savedCategories")), null);
+    } finally { cleanup(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU delayed grouped Apply respects newer discovery and independent category-label snapshots", async () => {
+  for (const language of ["en", "ru"] as const) for (const outcome of ["ownCommit", "newerDiscovery", "newerLabel"] as const) {
+    const active = sharedEventWorkspace(), categoryId = randomUUID(), propertyId = randomUUID();
+    let revision = 1, labelRevision = 0;
+    const listed = (name: string, discoveryRevision: number, categoryPropertyRevision = labelRevision) => ({
+      ...projectList(active, [name], discoveryRevision), mode: "grouped" as const,
+      projects: [{ projectId: "project-stable", categoryId, name, relativePath: `Category/${name}` }],
+      categories: [{ categoryId, name: "Category", relativePath: "Category" }], categoryPropertyRevision,
+      categoryProperty: { propertyId, sourceId: active.sourceId, name: categoryPropertyRevision ? "Current label" : null },
+    });
+    let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ language, load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+      onProjects: async () => ok(listed(revision === 1 ? "Saved" : "Current", revision)),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type === "workspace.previewDiscovery") return ok({ ...previewResult(active), mode: "grouped", configured: true, entries: [
+          { kind: "category", empty: false, relativePath: "Category", name: "Category", reason: null },
+          { kind: "project", categoryPath: "Category", relativePath: "Category/Saved", name: "Saved", reason: null },
+        ] });
+        if (input.type === "workspace.applyDiscovery") return new Promise((resolve) => { finish = resolve; });
+        return fail("invalid_input");
+      } });
+    render(<App />); await screen.findByRole("cell", { name: "Saved" });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    await userEvent.click(await screen.findByRole("button", { name: translate(language, "discoveryApply") }));
+    await act(async () => {
+      revision = outcome === "newerDiscovery" ? 3 : 2; labelRevision = outcome === "newerLabel" ? 4 : 0;
+      api.emitChange(projectEvent(active, revision));
+    });
+    await screen.findByRole("cell", { name: "Current" });
+    await act(async () => { finish?.(ok(listed("Own response", 2, 0))); });
+    if (outcome === "ownCommit") {
+      assert.ok(screen.getByRole("cell", { name: "Own response" }));
+      assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryGroupedTitle") }), null);
+    } else {
+      assert.equal(screen.queryByRole("cell", { name: "Own response" }), null);
+      assert.ok(screen.getByRole("cell", { name: "Current" }));
+      if (outcome === "newerLabel") assert.ok(screen.getByRole("columnheader", { name: "Current label" }));
+      else assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
+    }
     cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });

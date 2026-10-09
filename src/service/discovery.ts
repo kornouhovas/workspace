@@ -321,3 +321,46 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
   }
   return { entries, retained, additions };
 }
+
+export interface GroupedProjectAssociation extends ProjectAssociation {
+  categoryId: string | null;
+}
+
+// A project's evidence is meaningful only beneath its continuously matching category.
+// Category retirement/exclusion therefore precedes project identity matching.
+export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[]) {
+  if (!scan.snapshot || scan.snapshot.mode !== "grouped") throw new Error("Cannot interpret an incomplete grouped scan");
+  const categoryScan: DiscoveryScan = { ...scan,
+    entries: scan.entries.filter((entry) => entry.kind === "category"),
+    snapshot: { ...scan.snapshot, children: scan.snapshot.children.filter((child) => !child.relativePath.includes("/")) },
+  };
+  const categoryInterpretation = interpretProjects(categoryScan, categories);
+  const projectScan: DiscoveryScan = { ...scan,
+    entries: scan.entries.filter((entry) => entry.kind === "project").map((entry) => ({ ...entry })),
+    snapshot: { ...scan.snapshot, children: scan.snapshot.children.filter((child) => child.relativePath.includes("/")) },
+  };
+  const projectRecords = projects.map((row) => {
+    const parent = categoryInterpretation.retained.find((category) => category.id === row.categoryId);
+    if (row.associationState === "replaced") return { ...row };
+    if (!parent || parent.associationState === "replaced") return { ...row, associationState: "replaced" as const };
+    if (parent.associationState === "excluded") {
+      // Suppressed children are never accessed. Propagate the reviewed parent exclusion.
+      if (!projectScan.snapshot!.children.some((child) => child.relativePath === row.relativePath)) {
+        projectScan.snapshot!.children.push({ relativePath: row.relativePath, kind: "excluded", reason: "manual" });
+      }
+      return { ...row };
+    }
+    if (parent.associationState !== "active") return { ...row, associationState: parent.associationState };
+    return { ...row };
+  });
+  for (const entry of projectScan.entries) {
+    if (entry.kind !== "project") throw new Error("Invalid grouped project entry");
+    const parent = categoryInterpretation.entries.find((category) => category.relativePath === entry.categoryPath);
+    if (parent?.reason !== null && entry.reason === null) entry.reason = "unresolved";
+  }
+  const projectInterpretation = interpretProjects(projectScan, projectRecords);
+  return { entries: scan.entries.map((entry) =>
+    (entry.kind === "category" ? categoryInterpretation.entries : projectInterpretation.entries)
+      .find((interpreted) => interpreted.relativePath === entry.relativePath)!),
+    categories: categoryInterpretation, projects: projectInterpretation };
+}

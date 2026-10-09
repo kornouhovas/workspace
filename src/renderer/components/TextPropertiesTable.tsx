@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../../contracts/settings.js";
-import type { ProjectSummary } from "../../contracts/workspaces.js";
+import type { ProjectSummary, CategoryProperty, CategorySummary } from "../../contracts/workspaces.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
@@ -12,13 +12,15 @@ interface Props {
   workspaceId: string;
   sourceId: string;
   projects: ProjectSummary[];
+  categoryProperty?: CategoryProperty | null;
+  categories?: CategorySummary[];
   language: Language;
   disabled: boolean;
 }
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, categoryProperty, categories = [], language, disabled }: Props) {
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,14 +132,16 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, langua
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     <div className="project-table-scroll">
-      <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 1) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
+      <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 1 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
+        {categoryProperty && <th key={categoryProperty.propertyId} scope="col">{categoryProperty.name ?? t("discoveryCategory")}</th>}
         {snapshot?.definitions.map((property) => <th scope="col" key={property.propertyId}>
           <span className="property-authored">{property.name}</span>
           <button type="button" ref={(element) => { if (element) renameButtons.current.set(property.propertyId, element); else renameButtons.current.delete(property.propertyId); }}
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
-      </tr></thead><tbody>{projects.map((project) => <tr key={project.projectId}><td>{project.name}</td>
+      </tr></thead><tbody>{projects.map((project) => <tr key={project.projectId}><td key="project-name">{project.name}</td>
+        {categoryProperty && <td key={categoryProperty.propertyId}>{categories.find((category) => category.categoryId === project.categoryId)?.name}</td>}
         {snapshot?.definitions.map((property) => <td key={property.propertyId}>
           <TextPropertyCell workspaceId={workspaceId} sourceId={sourceId} projectId={project.projectId} propertyId={property.propertyId}
             revision={snapshot.revision} minimumRevision={minimumRevision}

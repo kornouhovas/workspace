@@ -78,7 +78,6 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
       </select>
     </label>}
     <p>{t(preview?.mode === "grouped" ? "discoveryGroupedDescription" : "discoveryDescription")}</p>
-    {preview?.mode === "grouped" && <StatusMessage kind="info" title={t("discoveryGroupedReviewOnly")} />}
     {pending && <StatusMessage kind="info" title={t(applying ? "discoveryApplying" : "discoveryLoading")} />}
     {applyError && <StatusMessage kind="error" title={t("discoveryApplyError")} />}
     {stale && <StatusMessage kind="info" title={t("discoveryStale")} />}
@@ -91,7 +90,7 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
       </ul> : preview.previewToken && <EmptyStatePanel>{t("discoveryEmptyDescription")}</EmptyStatePanel>}
     </>}
     <div className="workspace-form-actions">
-      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken || preview.mode === "grouped"} onClick={onApply}>{t("discoveryApply")}</button>}
+      {onApply && <button type="button" className="workspace-button" disabled={pending || !preview?.previewToken} onClick={onApply}>{t("discoveryApply")}</button>}
       <button ref={retry} type="button" className="workspace-button workspace-button--secondary" disabled={pending} onClick={onRetry}>{t("discoveryRefresh")}</button>
       <button type="button" className="workspace-button workspace-button--secondary" disabled={applying} onClick={onCancel}>{t("cancelRenameWorkspace")}</button>
     </div>
@@ -159,7 +158,7 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
     finally { if (current === version.current) setPending(false); }
   };
   const apply = async () => {
-    if (pending || applyingRef.current || preview?.mode === "grouped" || !preview?.previewToken || preview.revision < minimumRevision.current) return;
+    if (pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
     applyingRef.current = true;
     setApplying(true); setPending(true); setApplyError(false); setStale(false);
@@ -189,7 +188,11 @@ export function DiscoveryController({ client, workspaceId, sourceId, minimumRevi
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}
       onExclude={(name, excluded) => {
         const draft = new Set(exclusions.current ?? []);
-        if (excluded) draft.add(name); else draft.delete(name);
+        if (excluded) {
+          // A parent exclusion subsumes its child choices without opening them.
+          for (const path of draft) if (path.startsWith(`${name}/`)) draft.delete(path);
+          draft.add(name);
+        } else draft.delete(name);
         void request([...draft]);
       }}
       onCancel={() => { version.current++; returnFocus.current = true; setOpen(false); setPreview(null); setPending(false); }} />}
@@ -205,6 +208,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   const [error, setError] = useState(false);
   const version = useRef(0);
   const minimumRevision = useRef(0);
+  const minimumCategoryPropertyRevision = useRef(0);
   const [invalidation, setInvalidation] = useState(0);
   const t = (key: TranslationKey) => translate(language, key);
   const load = async () => {
@@ -214,7 +218,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       const result = await client.listProjects(workspaceId);
       if (current !== version.current) return;
       if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
-        result.value.revision >= minimumRevision.current) {
+        result.value.revision >= minimumRevision.current && result.value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
+        minimumCategoryPropertyRevision.current = result.value.categoryPropertyRevision;
         if (result.value.revision > minimumRevision.current) {
           minimumRevision.current = result.value.revision;
           setInvalidation((value) => value + 1);
@@ -244,7 +249,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
   return <>
     <DiscoveryController key={sourceState} client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
       invalidation={invalidation} language={language} disabled={disabled}
-      onApplied={(value) => { version.current++; minimumRevision.current = value.revision; setProjects(value); setError(false); setLoading(false); }} />
+      onApplied={(value) => {
+        version.current++; minimumRevision.current = value.revision;
+        if (value.categoryPropertyRevision >= minimumCategoryPropertyRevision.current) {
+          minimumCategoryPropertyRevision.current = value.categoryPropertyRevision; setProjects(value);
+        } else { void load(); return; }
+        setError(false); setLoading(false);
+      }} />
     <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
       <div className="table-view__heading"><div>
         <h3 id="table-title">{t("tableViewTitle")}</h3>
@@ -258,7 +269,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
         {projects.retainedCount > 0 && <StatusMessage kind="info" title={t("projectsRetained")} />}
         {projects.projects.length === 0 && <EmptyStatePanel>{t(projects.configured ? "projectsEmpty" : "emptyTableGuidance")}</EmptyStatePanel>}
       </>}
-      <TextPropertiesTable client={client} workspaceId={workspaceId} sourceId={sourceId}
+      {projects?.mode === "grouped" && <div className="saved-categories">
+        <p>{t("discoveryGroupedMode")}</p>
+        <p>{t("savedCategories")}</p>
+        {projects.categories.length > 0 ? <ul>{projects.categories.map((category) => <li key={category.categoryId}>{category.name}</li>)}</ul>
+          : <p>{t("savedCategoriesEmpty")}</p>}
+      </div>}
+      <TextPropertiesTable categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         projects={projects?.projects ?? []} language={language} disabled={disabled} />
     </section>
   </>;

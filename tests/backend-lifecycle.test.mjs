@@ -567,7 +567,6 @@ test("real service IPC routes read-only discovery previews and rejects unsafe/fo
       { kind: "category", relativePath: "Project", name: "Project", reason: null, empty: false },
       { kind: "project", relativePath: "Project/Nested", name: "Nested", reason: null, categoryPath: "Project" },
     ]);
-    assert.equal(request({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: grouped.value.previewToken }).error.code, "invalid_input");
     assert.equal(request({ ...query, mode: "grouped", excludedRelativePaths: ["Project/Nested"] }).value.entries[1].reason, "manual");
     for (const mode of ["recursive", null, 1]) assert.equal(request({ ...query, mode }).error.code, "invalid_input");
     for (const input of [{ ...query, extra: true }, { type: query.type }, { ...query, workspaceId: "bad" },
@@ -922,4 +921,42 @@ test("Text events traverse real SQLite entry/controller/preload/clients in commi
     parent.emit("message", { data: { type: "shutdown" }, ports: [] });
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("grouped Apply uses production ports and typed clients with categories, no-op fanout and token ownership", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-grouped-events-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(join(root, "Category/Project"), { recursive: true }); await mkdir(join(root, "Empty")); await mkdir(otherRoot);
+  const parent = new EventEmitter(), child = new FakeChild();
+  const servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController();
+  const api = { workspace: (input) => controller.request(input), onWorkspaceChange: (listener) => controller.onWorkspaceChange(listener) };
+  const oneClient = new WorkspaceServiceClient(api), siblingClient = new WorkspaceServiceClient(api);
+  const events = []; const unsubscribe = siblingClient.onWorkspaceChange((event) => events.push(event));
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "data.sqlite"), {}, 100), true);
+    const one = (await oneClient.createWorkspace("One", root)).value, sibling = (await siblingClient.createWorkspace("Sibling", root)).value;
+    const other = (await oneClient.createWorkspace("Other", otherRoot)).value; events.length = 0;
+    const staleReview = (await siblingClient.previewDiscovery(sibling.workspaceId, undefined, "grouped")).value;
+    const reviewed = (await oneClient.previewDiscovery(one.workspaceId, undefined, "grouped")).value;
+    const applied = await oneClient.applyDiscovery(one.workspaceId, reviewed.previewToken); assert.equal(applied.ok, true);
+    assert.equal(applied.value.mode, "grouped"); assert.equal(applied.value.projects[0].name, "Project");
+    assert.equal(applied.value.projects[0].categoryId, applied.value.categories.find((category) => category.name === "Category").categoryId);
+    assert.ok(applied.value.categories.some((category) => category.name === "Empty"));
+    assert.equal(events.length, 1); assert.deepEqual(events[0].workspaceIds, [one.workspaceId, sibling.workspaceId]);
+    assert.equal(servicePort.sent.at(-2).type, "workspace.change");
+    assert.equal((await siblingClient.applyDiscovery(sibling.workspaceId, staleReview.previewToken)).error.code, "stale_preview");
+    assert.deepEqual((await siblingClient.listProjects(sibling.workspaceId)).value, { ...applied.value, workspaceId: sibling.workspaceId });
+    assert.equal((await oneClient.listProjects(other.workspaceId)).value.categoryProperty, null);
+    const unchanged = (await oneClient.previewDiscovery(one.workspaceId)).value;
+    assert.equal(unchanged.mode, "grouped"); assert.equal((await oneClient.applyDiscovery(one.workspaceId, unchanged.previewToken)).ok, true);
+    assert.equal(events.length, 1);
+    assert.equal((await siblingClient.previewDiscovery(sibling.workspaceId, undefined, "direct")).error.code, "invalid_input");
+    unsubscribe(); await controller.stop(100);
+  } finally { unsubscribe(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });

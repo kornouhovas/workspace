@@ -123,7 +123,8 @@ test("upgrade from populated baseline 0000–0004 preserves settings, sources, p
       try {
         for (const table of tables) {
           const actual = inspected.prepare(`SELECT * FROM ${table}`).all();
-          if (table === "sources") actual.forEach((row) => delete row.property_revision);
+          if (table === "sources") actual.forEach((row) => { delete row.property_revision; delete row.category_property_revision; });
+          if (table === "projects") actual.forEach((row) => delete row.category_id);
           assert.deepEqual(actual, before[table]);
         }
       } finally { inspected.close(); }

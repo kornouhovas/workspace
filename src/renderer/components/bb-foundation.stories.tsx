@@ -76,8 +76,9 @@ function WorkspacePreview({ language, state = "management" }: {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
       if (input.type === "workspace.listProjects") return { ok: true, value: {
         workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
+        mode: state.startsWith("applied") ? "direct" : null, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
         configured: state.startsWith("applied"), state: state === "unavailable" ? "unavailable" : state === "applied" ? "ready" : "empty",
-        projects: state === "applied" ? [{ projectId: "project-preview", name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
+        projects: state === "applied" ? [{ projectId: "project-preview", categoryId: null, name: "  Authored-проект-" + "long-name-".repeat(18) + "  ",
           relativePath: "  Authored-проект-" + "long-name-".repeat(18) + "  " }] : [], retainedCount: state.startsWith("applied") ? 2 : 0,
       } };
       if (input.type === "workspace.listTextProperties") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: 0, definitions: [], values: [] } };
@@ -230,7 +231,7 @@ function TextPreview({ language, state }: { language: Language; state: TextStory
   }, [language, state]);
   return <main className="app-shell" lang={language} data-text-fixture={state} data-fixture-ready={prepared}>
     {client && <TextPropertiesTable client={client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false}
-      projects={state === "no-projects" ? [] : [{ projectId: textStoryIds.projectId, name: "Authored-проект-" + "long-name-".repeat(18), relativePath: "Project" }]} />}
+      projects={state === "no-projects" ? [] : [{ projectId: textStoryIds.projectId, categoryId: null, name: "Authored-проект-" + "long-name-".repeat(18), relativePath: "Project" }]} />}
   </main>;
 }
 export const TextNoDefinitionsEnglish: Story = () => <TextPreview language="en" state="no-definitions" />;

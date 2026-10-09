@@ -9,6 +9,7 @@ export const sources = sqliteTable("sources", {
   id: text("id").primaryKey(),
   canonicalRoot: text("canonical_root").notNull().unique(),
   discoveryMode: text("discovery_mode"),
+  categoryPropertyRevision: integer("category_property_revision").notNull().default(0),
   propertyRevision: integer("property_revision").notNull().default(0),
   discoveryRevision: integer("discovery_revision").notNull().default(0),
   excludedRelativePaths: text("excluded_relative_paths").notNull().default("[]"),
@@ -36,7 +37,22 @@ export const activeWorkspace = sqliteTable("active_workspace", {
   viewId: text("view_id").notNull().references(() => views.id),
 });
 
+export const categories = sqliteTable("categories", {
+  id: text("id").primaryKey(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  relativePath: text("relative_path").notNull(),
+  nativeIdentity: text("native_identity").notNull(),
+  associationState: text("association_state", { enum: ["active", "excluded", "missing", "unresolved", "replaced"] }).notNull(),
+}, (table) => [unique("categories_id_source").on(table.id, table.sourceId)]);
+
+export const categoryProperties = sqliteTable("category_properties", {
+  id: text("id").primaryKey(),
+  sourceId: text("source_id").notNull().unique().references(() => sources.id),
+  name: text("name"),
+});
+
 export const projects = sqliteTable("projects", {
+  categoryId: text("category_id").references(() => categories.id),
   id: text("id").primaryKey(),
   sourceId: text("source_id").notNull().references(() => sources.id),
   relativePath: text("relative_path").notNull(),

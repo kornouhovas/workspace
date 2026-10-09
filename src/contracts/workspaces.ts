@@ -113,12 +113,27 @@ export type WorkspaceApplyDiscoveryCommand = {
   previewToken: string;
 };
 export type WorkspaceListProjectsQuery = { type: "workspace.listProjects"; workspaceId: string };
+export interface CategorySummary {
+  categoryId: string;
+  name: string;
+  relativePath: string;
+}
+export interface CategoryProperty {
+  propertyId: string;
+  sourceId: string;
+  name: string | null;
+}
 export interface ProjectSummary {
+  categoryId: string | null;
   projectId: string;
   name: string;
   relativePath: string;
 }
 export interface ProjectList {
+  mode: DiscoveryMode | null;
+  categories: CategorySummary[];
+  categoryProperty: CategoryProperty | null;
+  categoryPropertyRevision: number;
   workspaceId: string;
   sourceId: string;
   revision: number;
