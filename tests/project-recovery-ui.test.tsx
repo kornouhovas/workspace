@@ -359,3 +359,42 @@ for (const language of ["en", "ru"] as const) {
     assert.equal(client.saves, 0); cleanup();
   });
 }
+
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: long authored grouped recovery paths remain exact and every conflict is explained without selectable controls`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const category = "  Категория-日本語-" + "long-category-".repeat(18) + "  ";
+    const name = "  Authored-project-" + "long-name-".repeat(18) + "  ";
+    const path = `${category}/${name}`;
+    const statuses = ["reserved_path", "native_conflict", "category_unavailable", "excluded", "unresolved"] as const;
+    const reasons = ["recoveryReserved", "recoveryNativeConflict", "recoveryCategoryUnavailable", "recoveryExcluded", "recoveryUnresolved"] as const;
+    const longPreview: ProjectRecoveryPreview = { ...preview, mode: "grouped", entries: [
+      { name, relativePath: path, categoryPath: category, status: "selectable" },
+      ...statuses.map((status) => ({ name: status, relativePath: `${category}/${status}`, categoryPath: category, status })),
+    ] };
+    let selected: string | null = null, confirms = 0, cancels = 0;
+    const props = { language, project: { ...retained, name, relativePath: path }, preview: longPreview,
+      selectedPath: null as string | null, loading: false, pending: false, error: false, stale: false, uncertain: false,
+      onSelect: (value: string) => { selected = value; }, onConfirm: () => { confirms++; }, onCancel: () => { cancels++; }, onRefresh: () => {} };
+    const view = render(<ProjectRecoveryPanel {...props} />);
+    assert.equal(document.activeElement, screen.getByRole("heading", { name: t("recoveryTitle") }));
+    const radios = screen.getAllByRole("radio") as HTMLInputElement[];
+    assert.equal(radios[0].value, path);
+    for (let index = 0; index < statuses.length; index++) {
+      assert.equal(radios[index + 1].disabled, true);
+      assert.ok(screen.getByText(t(reasons[index])));
+    }
+    radios[0].focus(); await userEvent.keyboard(" ");
+    assert.equal(selected, path); assert.equal(confirms, 0);
+    view.rerender(<ProjectRecoveryPanel {...props} selectedPath={selected} />);
+    const values = Array.from(view.container.querySelectorAll(".recovery-review dd"), (node) => node.textContent);
+    assert.deepEqual(values, [name, path, path, category]);
+    view.rerender(<ProjectRecoveryPanel {...props} selectedPath={selected} pending />);
+    assert.ok(screen.getByText(t("recoverySaving")));
+    assert.equal(screen.getAllByRole("button").every((button) => (button as HTMLButtonElement).disabled), true);
+    await userEvent.keyboard("{Escape}"); assert.equal(cancels, 0);
+    view.rerender(<ProjectRecoveryPanel {...props} selectedPath={selected} />);
+    await userEvent.keyboard("{Escape}"); assert.equal(cancels, 1); assert.equal(confirms, 0);
+  });
+}

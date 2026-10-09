@@ -107,3 +107,27 @@ test("EN/RU retained rows explain exclusion and recovery, display historical cat
     cleanup();
   }
 });
+
+
+test("EN/RU source-level unavailable observations retain exact authored Text without individual missing explanations", async () => {
+  const { TextPropertiesTable } = await import("../src/renderer/components/TextPropertiesTable.js");
+  const { WorkspaceServiceClient } = await import("../src/renderer/workspace-service-client.js");
+  const { translate } = await import("../src/renderer/localization.js");
+  const value = "  Authored 日本語\n" + "long-text-".repeat(24) + "  ";
+  const client = new class extends WorkspaceServiceClient {
+    override onWorkspaceChange() { return () => {}; }
+    override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 4,
+      definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }],
+      values: [{ projectId: "project", propertyId: "notes", value }] } }; }
+  }();
+  for (const language of ["en", "ru"] as const) {
+    const rows = [{ projectId: "project", name: "Authored project", relativePath: "Authored project", categoryId: null,
+        associationState: "active" as const, resolution: null, categoryName: null }];
+    render(<TextPropertiesTable client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} projects={rows} />);
+    const button = await screen.findByRole("button", { name: `${translate(language, "editTextValue")}: Authored project / Notes` });
+    assert.equal(button.textContent, value);
+    assert.equal(screen.queryByText(translate(language, "projectMissing")), null);
+    assert.equal(screen.queryByText(translate(language, "projectUnresolved")), null);
+    cleanup();
+  }
+});

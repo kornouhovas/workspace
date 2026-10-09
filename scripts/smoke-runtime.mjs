@@ -78,7 +78,7 @@ async function assertStopped(pids) {
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
 if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
-const stages = { preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
+const stages = { recoveryFeatures: false, preQuitFeatures: false, firstShutdown: false, restartPersistence: false, retainedSourceReuse: false, startupFailure: false };
 const shutdowns = [];
 
 async function recordEvidence(status, error) {
@@ -236,7 +236,7 @@ try {
   const otherRoot = join(fixture, "OtherProjectRoot");
   const groupedRoot = join(fixture, "GroupedRoot");
   const categoryName = "Категория-" + "long-category-".repeat(14);
-  const groupedProjectName = "日本語-проект-" + "long-project-".repeat(14);
+  let groupedProjectName = "日本語-проект-" + "long-project-".repeat(14);
   for (const path of [join(groupedRoot, categoryName, groupedProjectName, "Never-recursive"), join(groupedRoot, categoryName, "Excluded child"),
     join(groupedRoot, categoryName, ".hidden"), join(groupedRoot, categoryName, "$RECYCLE.BIN"), join(groupedRoot, "Empty category"),
     join(groupedRoot, "Direct-looking project", "Immediate child"), join(groupedRoot, "Excluded category", "Hidden child"), join(groupedRoot, ".hidden")]) {
@@ -249,7 +249,7 @@ try {
     await mkdir(path, { recursive: true });
     await writeFile(join(path, "sentinel.txt"), sentinel);
   }
-  const projectName = "Authored-проект-" + "long-name-".repeat(14);
+  let projectName = "Authored-проект-" + "long-name-".repeat(14);
   const externalRoot = join(fixture, "ExternalTarget");
   for (const path of [join(projectRoot, projectName, "Nested-not-a-project"), join(projectRoot, "Excluded"),
     join(projectRoot, "Archive"), join(projectRoot, ".hidden"), join(projectRoot, "$RECYCLE.BIN"), externalRoot]) {
@@ -472,7 +472,10 @@ try {
   await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
   const disconnectedProjects = await projects(page, sibling.workspaceId);
   assert.equal(disconnectedProjects.state, "unavailable");
-  assert.deepEqual(disconnectedProjects.projects, savedProjects.projects);
+  assert.equal(await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).count(), 1);
+  assert.deepEqual(disconnectedProjects.projects, savedProjects.projects.map((row) => ({ ...row, resolution: null })));
+  assert.ok([...disconnectedProjects.projects, ...disconnectedProjects.retainedProjects].every((row) => row.resolution === null));
+  assert.deepEqual(await properties(page, sibling.workspaceId), { ...savedProperties, workspaceId: sibling.workspaceId });
   assert.equal(disconnectedProjects.retainedCount, savedProjects.retainedCount);
   await previewFolders(page, "ru");
   assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);
@@ -611,7 +614,7 @@ try {
     assert.deepEqual(await properties(page, other.workspaceId), otherProperties);
     await select(page, grouped);
   }
-  const savedGroupedProjects = await projects(page, grouped.workspaceId);
+  let savedGroupedProjects = await projects(page, grouped.workspaceId);
   const labelEvents = await page.evaluate(() => globalThis.groupedLabelEvents);
   assert.equal(labelEvents.length, 2);
   assert.ok(labelEvents.every((event) => event.sourceId === grouped.sourceId && JSON.stringify(event.workspaceIds) === JSON.stringify([grouped.workspaceId, groupedSibling.workspaceId])));
@@ -619,6 +622,161 @@ try {
   assert.deepEqual(await folderBytes(groupedRoot), groupedBytes);
   assert.deepEqual(await folderBytes(externalRoot), externalBytes);
   observations.push({ scenario: "grouped EN/RU preview/cancel, two-level exclusions, explicit stale Apply, required categories, label-only rename, siblings and isolation", grouped, groupedSibling, savedGroupedProjects, savedGroupedProperties, labelEvents, unchangedGroupedInventory: groupedBytes });
+  await select(page, first);
+
+
+  // Externally prepared changes are confined to disposable roots. Recovery itself
+  // must change only SQLite associations, never the inventory or sentinel bytes.
+  await page.evaluate(() => {
+    globalThis.recoveryEvents = [];
+    globalThis.stopRecoveryEvents = globalThis.window.workspace.onWorkspaceChange((event) => {
+      if (event.type === "workspace.projectsChanged") globalThis.recoveryEvents.push(event);
+    });
+  });
+  const recoveryLabels = {
+    en: { locate: "Locate folder", confirm: "Reassociate", refresh: "Refresh preview", saved: "Folder association saved. Project identity and Text values preserved.",
+      stale: "Folders or associations changed. Refresh, select a folder again and explicitly confirm." },
+    ru: { locate: "Найти папку", confirm: "Переподключить", refresh: "Обновить предпросмотр", saved: "Связь с папкой сохранена. Идентификатор проекта и значения Text сохранены.",
+      stale: "Папки или связи изменились. Обновите список, выберите папку заново и явно подтвердите действие." },
+  };
+  async function recover(workspace, oldProject, target, language, expectedResolution, staleSwap) {
+    const labels = recoveryLabels[language];
+    await select(page, workspace);
+    const before = await projects(page, workspace.workspaceId);
+    const row = before.retainedProjects.find((entry) => entry.projectId === oldProject.projectId);
+    assert.equal(row?.resolution, expectedResolution);
+    const textBefore = await properties(page, workspace.workspaceId);
+    const bytesBefore = await folderBytes(workspace.canonicalRoot);
+    const locate = page.getByRole("button", { name: accessibleName(`${labels.locate}: ${row.name}`), exact: true });
+    await locate.press("Enter");
+    const panel = page.locator(".recovery-panel");
+    await panel.locator("input[type=radio]").first().waitFor();
+    assert.equal(await page.locator("#recovery-title").evaluate((node) => node === globalThis.document.activeElement), true);
+    await captureDiscovery(page, language, `recovery-${workspace.sourceId}-${expectedResolution}-review`);
+    await panel.press("Escape"); await panel.waitFor({ state: "detached" });
+    assert.equal(await locate.evaluate((node) => node === globalThis.document.activeElement), true);
+    assert.deepEqual(await projects(page, workspace.workspaceId), before);
+    assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
+    assert.deepEqual(await folderBytes(workspace.canonicalRoot), bytesBefore);
+    // A disabled owned target is also rejected through the production service route.
+    const rejected = await page.evaluate(async ({ workspaceId, projectId }) => {
+      const review = await globalThis.window.workspace.workspace({ type: "workspace.previewProjectRecovery", workspaceId, projectId });
+      if (!review.ok) return { review };
+      const conflict = review.value.entries.find((entry) => entry.status === "reserved_path");
+      if (!conflict) return { missingConflict: true };
+      const result = await globalThis.window.workspace.workspace({ type: "workspace.reassociateProject", workspaceId, projectId,
+        previewToken: review.value.previewToken, relativePath: conflict.relativePath });
+      return { conflict, result };
+    }, { workspaceId: workspace.workspaceId, projectId: row.projectId });
+    assert.equal(rejected.result?.ok, false);
+    assert.equal(rejected.result.error.code, "invalid_input");
+    assert.deepEqual(await projects(page, workspace.workspaceId), before);
+    assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
+    assert.deepEqual(await folderBytes(workspace.canonicalRoot), bytesBefore);
+    await locate.press("Enter");
+    const targetRadio = panel.locator("input[type=radio]");
+    await targetRadio.first().waitFor();
+    const choose = async () => {
+      const radio = panel.locator("input[type=radio]");
+      const selected = await radio.evaluateAll((nodes, value) => nodes.findIndex((node) => node.value === value), target);
+      assert.ok(selected >= 0, "Target missing from source-relative directory list");
+      await radio.nth(selected).press("Space");
+      assert.equal(await radio.nth(selected).isChecked(), true);
+    };
+    await choose();
+    if (staleSwap) {
+      await rename(join(workspace.canonicalRoot, target), staleSwap);
+      await panel.getByRole("button", { name: labels.confirm, exact: true }).press("Enter");
+      await page.getByRole("heading", { name: labels.stale, exact: true }).waitFor();
+      assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
+      await captureDiscovery(page, language, `recovery-${workspace.sourceId}-stale`);
+      await rename(staleSwap, join(workspace.canonicalRoot, target));
+      await panel.getByRole("button", { name: labels.refresh, exact: true }).press("Enter");
+      await panel.locator("input[type=radio]").first().waitFor();
+      assert.equal(await panel.locator("input:checked").count(), 0);
+      assert.equal(await panel.getByRole("button", { name: labels.confirm, exact: true }).isDisabled(), true);
+      await choose();
+    }
+    await captureDiscovery(page, language, `recovery-${workspace.sourceId}-${expectedResolution}-selected`);
+    await panel.getByRole("button", { name: labels.confirm, exact: true }).press("Enter");
+    await panel.waitFor({ state: "detached" });
+    await page.getByRole("heading", { name: labels.saved, exact: true }).waitFor();
+    assert.equal(await page.locator("#table-title").evaluate((node) => node === globalThis.document.activeElement), true);
+    const after = await projects(page, workspace.workspaceId);
+    assert.equal(after.revision, before.revision + 1);
+    assert.equal(after.projects.find((entry) => entry.projectId === row.projectId)?.relativePath, target);
+    assert.deepEqual(await properties(page, workspace.workspaceId), textBefore);
+    assert.deepEqual(identity((await load(page)).activeWorkspace), identity(workspace));
+    assert.deepEqual(await folderBytes(workspace.canonicalRoot), bytesBefore);
+    await captureDiscovery(page, language, `recovery-${workspace.sourceId}-${expectedResolution}-saved`);
+    observations.push({ scenario: "production UI recovery cancellation/conflict/explicit save", expectedResolution, before, after, textBefore,
+      identity: identity(workspace), rejected, unchangedPreparedInventory: bytesBefore, staleReconfirmed: Boolean(staleSwap) });
+    await recordEvidence("recovery feature checkpoint");
+    return after;
+  }
+  await select(page, sibling);
+  const directOriginal = savedProjects.projects.find((entry) => entry.name === projectName);
+  const recoveredName = "Recovered-日本語-" + "long-target-".repeat(14);
+  await rename(join(projectRoot, projectName), join(projectRoot, recoveredName));
+  savedProjects = await recover(first, directOriginal, recoveredName, "ru", "missing", join(fixture, "stale-direct-target"));
+  projectName = recoveredName;
+  // Persist a missing row, then restore the exact folder: conservative matching
+  // yields unresolved, and only explicit recovery reconnects its authored Text.
+  const ambiguous = savedProjects.projects.find((entry) => entry.name === "Late project");
+  await rename(join(projectRoot, "Late project"), join(fixture, "ambiguous-held"));
+  await previewFolders(page, "ru"); await applyFolders(page, "ru");
+  await rename(join(fixture, "ambiguous-held"), join(projectRoot, "Late project"));
+  await select(page, sibling);
+  savedProjects = await recover(first, ambiguous, "Late project", "ru", "unresolved");
+  const replaced = savedProjects.projects.find((entry) => entry.name === "Archive");
+  await rename(join(projectRoot, "Archive"), join(projectRoot, "Recovered archive"));
+  await mkdir(join(projectRoot, "Archive")); await writeFile(join(projectRoot, "Archive", "sentinel.txt"), sentinel);
+  await select(page, sibling);
+  savedProjects = await recover(first, replaced, "Recovered archive", "ru", "replaced");
+  // The replacement becomes a distinct ID only in a later, explicitly reviewed Apply.
+  await previewFolders(page, "ru"); await applyFolders(page, "ru");
+  savedProjects = await projects(page, first.workspaceId);
+  const replacement = savedProjects.projects.find((entry) => entry.name === "Archive");
+  assert.notEqual(replacement.projectId, replaced.projectId);
+  assert.equal((await properties(page, first.workspaceId)).values.some((entry) => entry.projectId === replacement.projectId), false);
+  assert.deepEqual(await properties(page, first.workspaceId), savedProperties);
+  originalBytes = await folderBytes(projectRoot);
+  await select(page, sibling);
+  assert.deepEqual(await projects(page, sibling.workspaceId), { ...savedProjects, workspaceId: sibling.workspaceId });
+
+  await page.locator("#interface-language").selectOption("en");
+  await page.waitForFunction(() => globalThis.document.documentElement.lang === "en" && !globalThis.document.querySelector("#interface-language")?.disabled);
+  const groupedOriginal = savedGroupedProjects.projects.find((entry) => entry.name === groupedProjectName);
+  const newCategory = "Recovery category-日本語-" + "long-category-".repeat(12);
+  const groupedRecoveredName = "Recovered grouped project-日本語";
+  await mkdir(join(groupedRoot, newCategory));
+  await rename(join(groupedRoot, categoryName, groupedProjectName), join(groupedRoot, newCategory, groupedRecoveredName));
+  savedGroupedProjects = await recover(grouped, groupedOriginal, `${newCategory}/${groupedRecoveredName}`, "en", "missing");
+  groupedProjectName = groupedRecoveredName;
+  assert.deepEqual(savedGroupedProjects.categoryProperty, { ...groupedApplied.categoryProperty, name: groupedLabel });
+  assert.equal(savedGroupedProjects.categoryPropertyRevision, 2);
+  assert.ok(savedGroupedProjects.categories.some((entry) => entry.name === newCategory));
+  assert.ok(savedGroupedProjects.categories.some((entry) => entry.name === categoryName && entry.categoryId === groupedOriginal.categoryId));
+  groupedBytes = await folderBytes(groupedRoot);
+  await select(page, groupedSibling);
+  assert.deepEqual(await projects(page, groupedSibling.workspaceId), { ...savedGroupedProjects, workspaceId: groupedSibling.workspaceId });
+  assert.deepEqual(await properties(page, groupedSibling.workspaceId), { ...savedGroupedProperties, workspaceId: groupedSibling.workspaceId });
+  const recoveryEvents = await page.evaluate(() => { globalThis.stopRecoveryEvents(); return globalThis.recoveryEvents; });
+  for (const workspace of [first, grouped]) {
+    const related = recoveryEvents.filter((event) => event.sourceId === workspace.sourceId);
+    assert.ok(related.length > 0);
+    const expectedIds = workspace.sourceId === first.sourceId ? [first.workspaceId, sibling.workspaceId] : [grouped.workspaceId, groupedSibling.workspaceId];
+    assert.ok(related.every((event) => JSON.stringify(event.workspaceIds) === JSON.stringify(expectedIds)));
+    assert.ok(related.every((event, index) => index === 0 || event.revision > related[index - 1].revision));
+  }
+  assert.ok(recoveryEvents.every((event) => event.sourceId !== other.sourceId));
+  assert.deepEqual(await folderBytes(externalRoot), externalBytes);
+  assert.deepEqual(await folderBytes(otherRoot), otherBytes);
+  await page.locator("#interface-language").selectOption("ru");
+  await page.waitForFunction(() => globalThis.document.documentElement.lang === "ru" && !globalThis.document.querySelector("#interface-language")?.disabled);
+  observations.push({ scenario: "direct/grouped recovery identities, revisions, source events and independent Text/category revisions", recoveryEvents,
+    savedProjects, savedProperties, savedGroupedProjects, savedGroupedProperties, savedSettings, identities: [first, sibling, grouped, groupedSibling].map(identity) });
+  stages.recoveryFeatures = true;
   await select(page, first);
 
   async function closeCurrent() {
@@ -639,6 +797,7 @@ try {
   page = current.page;
   await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
   assert.equal(await page.locator("#interface-language").inputValue(), "ru");
+  assert.deepEqual(await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" })), savedSettings);
   assert.equal(await page.locator("html").getAttribute("lang"), "ru");
   const reopened = await load(page);
   assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
@@ -731,8 +890,9 @@ try {
   await closeElectron(closing.electron);
   await assertStopped(failurePids);
   await recordEvidence("passed");
-  console.info(`Electron ${mode} runtime verified: direct/grouped discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
+  console.info(`Electron ${mode} runtime verified: direct/grouped recovery/discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
+  if (current && evidenceDirectory) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
   await recordEvidence("failed", error);
   throw error;
 } finally {

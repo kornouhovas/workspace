@@ -6,6 +6,10 @@ import { App } from "../App.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
+import { ProjectRecoveryPanel } from "./ProjectRecoveryPanel.js";
+import type { ProjectRecoveryPreview } from "../../contracts/project-recovery.js";
+import type { ProjectAssociationSummary } from "../../contracts/workspaces.js";
+import { translate } from "../localization.js";
 import { DiscoveryPanel } from "./DiscoveryPanel.js";
 import "../app.css";
 import type { Story } from "@ladle/react";
@@ -368,3 +372,72 @@ export const CategorySavedEnglish: Story = () => <CategoryPreview language="en" 
 export const CategorySavedRussian: Story = () => <CategoryPreview language="ru" state="saved" />;
 export const CategoryNewerEnglish: Story = () => <CategoryPreview language="en" state="newer" />;
 export const CategoryNewerRussian: Story = () => <CategoryPreview language="ru" state="newer" />;
+
+// Presentation states exercise production recovery and retained Text components.
+// Selection, cancellation and saving are explicit fixture actions, never timers.
+type RecoveryStoryState = "retained" | "loading" | "empty" | "selection" | "grouped" | "conflict" | "stale" | "failure" | "pending" | "saved";
+const recoveryName = "  Authored-日本語-проект-" + "long-name-".repeat(18) + "  ";
+const recoveryTarget = "Target-日本語-" + "long-target-".repeat(18);
+function RecoveryPreview({ language, state }: { language: Language; state: RecoveryStoryState }) {
+  const grouped = state === "grouped" || state === "conflict";
+  const path = grouped ? `${longCategory}/${recoveryTarget}` : recoveryTarget;
+  const project: ProjectAssociationSummary = { projectId: textStoryIds.projectId, name: recoveryName, relativePath: recoveryName,
+    categoryId: null, categoryName: null, associationState: "active", resolution: "missing" };
+  const [closed, setClosed] = useState(state === "retained" || state === "saved");
+  const [saved, setSaved] = useState(state === "saved");
+  const [selected, setSelected] = useState<string | null>(["selection", "grouped", "failure", "pending"].includes(state) ? path : null);
+  const [refreshed, setRefreshed] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
+  useEffect(() => { if (closed && returnFocus.current) { trigger.current?.focus(); returnFocus.current = false; } }, [closed]);
+  const [client] = useState(() => new class extends WorkspaceServiceClient {
+    override onWorkspaceChange() { return () => {}; }
+    override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 7,
+      definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longCategoryLabel, propertyType: "text" as const }],
+      values: [project.projectId, "retained-unresolved", "retained-replaced", "retained-excluded"].map((projectId) => ({ projectId,
+        propertyId: textStoryIds.propertyId, value: "  Exact authored 日本語\n" + "long-text-".repeat(24) + "  " })) } }; }
+  }());
+  const preview: ProjectRecoveryPreview = { ...textStoryIds, revision: 3, mode: grouped ? "grouped" : "direct", state: state === "empty" ? "empty" : "ready",
+    previewToken: "disposable-review", entries: state === "empty" ? [] : [
+      ...(state === "conflict" ? [] : [{ relativePath: path, name: recoveryTarget, categoryPath: grouped ? longCategory : null, status: "selectable" as const }]),
+      ...(["reserved_path", "native_conflict", "category_unavailable", "excluded", "unresolved"] as const).filter((status) => grouped || status !== "category_unavailable").map((status) => ({
+        relativePath: (grouped ? `${longCategory}/` : "") + status + "long-conflicting-path-".repeat(12), name: status, categoryPath: grouped ? longCategory : null, status,
+      })),
+    ] };
+  const close = () => { returnFocus.current = true; setClosed(true); };
+  const retained = (["missing", "unresolved", "replaced", "excluded"] as const).map((resolution, index) => ({ ...project,
+    projectId: index === 0 ? project.projectId : `retained-${resolution}`, name: `${resolution} ${recoveryName}`,
+    associationState: resolution, resolution, categoryName: longCategory }));
+  return <main className="app-shell" lang={language} data-recovery-fixture={state}>
+    <button className="workspace-button" ref={trigger} onClick={() => { setSelected(null); setClosed(false); }}>{translate(language, "recoveryLocate")}</button>
+    {closed ? <>
+      {saved && <StatusMessage kind="info" title={translate(language, "recoverySaved")} />}
+      <TextPropertiesTable client={client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language} disabled={false}
+        projects={saved ? [{ ...project, name: recoveryTarget, relativePath: path }] : []}
+        retainedProjects={saved ? [] : retained} />
+    </> : <ProjectRecoveryPanel language={language} project={project} preview={state === "loading" || state === "stale" && !refreshed ? null : preview}
+      selectedPath={selected} loading={state === "loading"} pending={state === "pending"} error={state === "failure" && !refreshed}
+      stale={state === "stale" && !refreshed} uncertain={false} onSelect={setSelected} onCancel={close}
+      onRefresh={() => { setRefreshed(true); setSelected(null); }} onConfirm={() => { setSaved(true); close(); }} />}
+  </main>;
+}
+export const RecoveryRetainedEnglish: Story = () => <RecoveryPreview language="en" state="retained" />;
+export const RecoveryRetainedRussian: Story = () => <RecoveryPreview language="ru" state="retained" />;
+export const RecoveryLoadingEnglish: Story = () => <RecoveryPreview language="en" state="loading" />;
+export const RecoveryLoadingRussian: Story = () => <RecoveryPreview language="ru" state="loading" />;
+export const RecoveryEmptyEnglish: Story = () => <RecoveryPreview language="en" state="empty" />;
+export const RecoveryEmptyRussian: Story = () => <RecoveryPreview language="ru" state="empty" />;
+export const RecoverySelectionEnglish: Story = () => <RecoveryPreview language="en" state="selection" />;
+export const RecoverySelectionRussian: Story = () => <RecoveryPreview language="ru" state="selection" />;
+export const RecoveryGroupedEnglish: Story = () => <RecoveryPreview language="en" state="grouped" />;
+export const RecoveryGroupedRussian: Story = () => <RecoveryPreview language="ru" state="grouped" />;
+export const RecoveryConflictEnglish: Story = () => <RecoveryPreview language="en" state="conflict" />;
+export const RecoveryConflictRussian: Story = () => <RecoveryPreview language="ru" state="conflict" />;
+export const RecoveryStaleEnglish: Story = () => <RecoveryPreview language="en" state="stale" />;
+export const RecoveryStaleRussian: Story = () => <RecoveryPreview language="ru" state="stale" />;
+export const RecoveryFailureEnglish: Story = () => <RecoveryPreview language="en" state="failure" />;
+export const RecoveryFailureRussian: Story = () => <RecoveryPreview language="ru" state="failure" />;
+export const RecoveryPendingEnglish: Story = () => <RecoveryPreview language="en" state="pending" />;
+export const RecoveryPendingRussian: Story = () => <RecoveryPreview language="ru" state="pending" />;
+export const RecoverySavedEnglish: Story = () => <RecoveryPreview language="en" state="saved" />;
+export const RecoverySavedRussian: Story = () => <RecoveryPreview language="ru" state="saved" />;

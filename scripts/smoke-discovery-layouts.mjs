@@ -39,14 +39,18 @@ app.on('window-all-closed', () => app.quit());`);
   const page = await electron.firstWindow();
   page.setDefaultTimeout(15000);
   const meta = JSON.parse(await readFile(join(built, "meta.json"), "utf8"));
-  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-)/.test(name));
+  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-)/.test(name));
   assert.equal(stories.filter((name) => name.includes("--text-")).length, 18, "Expected all nine EN/RU Text states");
-  assert.equal(stories.length, 68, "Expected discovery and Text presentation states");
+  assert.equal(stories.filter((name) => name.includes("--recovery-")).length, 20, "Expected all ten EN/RU recovery states");
+  assert.equal(stories.length, 88, "Expected discovery, Text, category and recovery presentation states");
   for (const story of stories) {
     await page.goto(`${url}/?story=${story}&mode=preview`);
+    const recoveryStory = story.includes("--recovery-");
     const categoryStory = story.includes("--category-");
     const textStory = story.includes("--text-");
-    await page.locator(categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    await page.locator(recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const recoveryState = recoveryStory ? await page.locator("[data-recovery-fixture]").getAttribute("data-recovery-fixture") : null;
+    if (["retained", "saved"].includes(recoveryState)) await page.waitForFunction(() => globalThis.document.querySelector(".text-properties")?.getAttribute("aria-busy") === "false");
     const textState = textStory ? await page.locator("[data-text-fixture]").getAttribute("data-text-fixture") : null;
     const categoryState = categoryStory ? await page.locator("[data-category-fixture]").getAttribute("data-category-fixture") : null;
     if (categoryStory) {
@@ -86,18 +90,27 @@ app.on('window-all-closed', () => app.quit());`);
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header"))
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
-        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root"))
+        wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path"))
           .filter((node) => node.textContent.length > 150).every((node) => {
             const range = globalThis.document.createRange(); range.selectNodeContents(node);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
+      if (recoveryStory) {
+        for (const button of await page.locator(".recovery-panel button").all()) {
+          await button.scrollIntoViewIfNeeded();
+          assert.equal(await button.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            return rect.left >= 0 && rect.right <= globalThis.innerWidth && rect.top >= 0 && rect.bottom <= globalThis.innerHeight;
+          }), true, `${story} ${size.width} recovery control unreachable`);
+        }
+      }
       assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
       assert.equal(layout.overflow, false, `${story} ${size.width} document overflow`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
-      if (size.width === 420) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (size.width === 420 || recoveryStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
       const screenshot = `${story}-${size.width}x${size.height}.png`;
       await page.screenshot({ path: join(evidence, screenshot), fullPage: true });
       results.screenshots.push({ story, ...size, screenshot, layout });
@@ -131,6 +144,39 @@ app.on('window-all-closed', () => app.quit());`);
     if (categoryState === "saving") {
       await page.locator(".category-property-header input").press("Escape");
       assert.equal(await page.locator(".category-property-header input").count(), 1);
+    }
+    if (recoveryStory) {
+      const trigger = page.locator("[data-recovery-fixture] > button");
+      const panel = page.locator(".recovery-panel");
+      if (["selection", "grouped", "failure", "stale"].includes(recoveryState)) {
+        if (["failure", "stale"].includes(recoveryState)) {
+          await panel.locator("button").nth(1).press("Enter");
+          assert.equal(await panel.locator("input:checked").count(), 0, "Refresh must require reselection");
+          assert.equal(await panel.locator("button").first().isDisabled(), true);
+        }
+        const radio = panel.locator("input[type=radio]:not(:disabled)").first();
+        await radio.press("Space");
+        assert.equal(await radio.isChecked(), true);
+        await panel.locator("button").first().press("Enter");
+        await panel.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+        await page.locator(".text-value-button").waitFor();
+      } else if (recoveryState === "pending") {
+        assert.equal(await panel.locator("button:disabled").count(), 3);
+        await panel.press("Escape");
+        assert.equal(await panel.count(), 1);
+      } else if (["loading", "empty", "conflict"].includes(recoveryState)) {
+        if (recoveryState === "conflict") assert.equal(await panel.locator("input:not(:disabled)").count(), 0);
+        await panel.press("Escape"); await panel.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+      } else if (recoveryState === "retained") {
+        assert.equal(await page.locator("tbody tr").count(), 4);
+        assert.ok((await page.locator(".text-value-button").first().textContent()).includes("Exact authored 日本語"));
+      } else if (recoveryState === "saved") {
+        assert.equal(await page.locator("tbody tr").count(), 1);
+        assert.ok((await page.locator(".text-value-button").textContent()).includes("Exact authored 日本語"));
+      }
+      results.interactions ??= []; results.interactions.push({ story, state: recoveryState, passed: true });
     }
     if (categoryStory) { results.interactions ??= []; results.interactions.push({ story, state: categoryState, passed: true }); }
     if (textStory) { results.interactions ??= []; results.interactions.push({ story, state: textState, passed: true }); }
