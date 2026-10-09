@@ -340,7 +340,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, sourceState,
       <TextPropertiesTable categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         locateDisabled={recoveryProject !== null}
-        onLocate={projects?.mode === "direct" ? (project, trigger) => {
+        onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}
         projects={projects?.projects ?? []} retainedProjects={projects?.retainedProjects ?? []} language={language} disabled={disabled} />

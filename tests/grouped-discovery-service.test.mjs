@@ -578,3 +578,58 @@ test("category label notification queue preserves committed snapshots with throw
   assert.deepEqual(observed, [1, 2]);
   assert.equal(f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId }).value.categoryProperty.name, "Second");
 }));
+
+test("explicit grouped recovery remains active through discovery when moved category evidence is historical", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const apply = () => {
+    const preview = f.preview(); assert.equal(preview.ok, true);
+    return f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: preview.value.previewToken });
+  };
+  const original = apply().value.projects[0];
+  const property = f.service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: f.workspace.workspaceId, name: "Notes", propertyType: "text" }).value;
+  f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId, projectId: original.projectId, propertyId: property.propertyId, value: "Historical project Text" });
+  fs.renameSync(join(f.root, "Category"), join(f.root, "New category"));
+  fs.mkdirSync(join(f.root, "Category/Replacement"), { recursive: true });
+  const discovered = apply(); assert.equal(discovered.ok, true);
+  assert.equal(discovered.value.retainedProjects.find((row) => row.projectId === original.projectId).resolution, "replaced");
+  const oldCategories = f.sqlite.prepare("SELECT * FROM categories").all();
+  const preview = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: original.projectId });
+  assert.equal(preview.ok, true);
+  assert.equal(preview.value.entries.find((row) => row.relativePath === "New category/Project").status, "selectable");
+  const files = inventory(f.root);
+  const recovered = f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: f.workspace.workspaceId, projectId: original.projectId,
+    previewToken: preview.value.previewToken, relativePath: "New category/Project" });
+  assert.equal(recovered.ok, true);
+  assert.equal(recovered.value.projects.find((row) => row.projectId === original.projectId).resolution, "active");
+  const review = f.preview(); assert.equal(review.ok, true);
+  assert.ok(review.value.entries.every((entry) => entry.reason === null));
+  const reapplied = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: review.value.previewToken });
+  assert.deepEqual(reapplied, recovered);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM categories").all().filter((row) => oldCategories.some((old) => old.id === row.id)), oldCategories);
+  assert.equal(f.service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: f.workspace.workspaceId }).value.values[0].value, "Historical project Text");
+  assert.deepEqual(inventory(f.root), files);
+}));
+
+test("insufficient category evidence retains unresolved projects rather than reporting manual exclusion", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Project"), { recursive: true });
+  const preview = f.preview().value;
+  const original = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: preview.previewToken }).value.projects[0];
+  const before = f.sqlite.prepare("SELECT * FROM projects").all();
+  const stat = fs.lstatSync;
+  fs.lstatSync = (path, ...args) => {
+    const result = stat(path, ...args);
+    if (path === join(f.root, "Category")) result.birthtimeNs = 0n;
+    return result;
+  };
+  syncBuiltinESMExports();
+  try {
+    const observed = f.service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId });
+    assert.equal(observed.ok, true);
+    assert.deepEqual(observed.value.projects, []); assert.deepEqual(observed.value.categories, []);
+    assert.equal(observed.value.retainedProjects[0].projectId, original.projectId);
+    assert.equal(observed.value.retainedProjects[0].resolution, "unresolved");
+    assert.deepEqual(f.sqlite.prepare("SELECT * FROM projects").all(), before);
+    const recovery = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspace.workspaceId, projectId: original.projectId });
+    assert.equal(recovery.ok, true); assert.deepEqual(recovery.value.entries, []);
+  } finally { fs.lstatSync = stat; syncBuiltinESMExports(); }
+}));

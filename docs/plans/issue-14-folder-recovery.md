@@ -127,18 +127,21 @@ Files:
 
 - Modify: src/service/project-recovery.ts
 - Modify: src/service/discovery.ts
+- Modify: src/renderer/components/DiscoveryPanel.tsx (enable grouped Locate folder)
 - Modify: src/renderer/components/ProjectRecoveryPanel.tsx
 - Modify: src/renderer/localization.ts
 - Modify: tests/project-recovery-service.test.mjs
 - Modify: tests/grouped-discovery-service.test.mjs
 - Modify: tests/project-recovery-ui.test.tsx
 
-- [ ] Add grouped tests recovering into an existing active category and into a newly observed category without discovery Apply. Assert required same-source category ownership and unchanged project ID/Text, category-property ID/label and independent views.
-- [ ] Validate both directory levels using the existing scanner. Reuse an active category only when its path and native evidence continuously match; reject excluded, replaced, missing or ambiguous current category associations with an actionable unavailable-target explanation.
-- [ ] For a genuinely new category, insert its source-owned record before activating the recovered project in the same transaction. Preserve all existing projects/categories; do not discover unrelated candidate projects as a side effect.
-- [ ] Add deterministic category/root/link swaps and category-insert/project-update failures. Assert complete rollback, no emitted committed event and unchanged property/category-label revisions and file inventories.
-- [ ] Show grouped target category and full source-relative path in the EN/RU selection/review UI. Test keyboard operation, category conflicts, empty target sets and explicit refresh after stale review.
-- [ ] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+- [x] Add grouped tests recovering into an existing active category and into a newly observed category without discovery Apply. Assert required same-source category ownership and unchanged project ID/Text, category-property ID/label and independent views.
+- [x] Validate both directory levels using the existing scanner. Reuse an active category only when its path and native evidence continuously match; reject excluded, replaced, missing or ambiguous current category associations with an actionable unavailable-target explanation.
+- [x] For a genuinely new category, insert its source-owned record before activating the recovered project in the same transaction. Preserve all existing projects/categories; do not discover unrelated candidate projects as a side effect.
+- [x] Add deterministic category/root/link swaps and category-insert/project-update failures. Assert complete rollback, no emitted committed event and unchanged property/category-label revisions and file inventories.
+- [x] Show grouped target category and full source-relative path in the EN/RU selection/review UI. Test keyboard operation, category conflicts, empty target sets and explicit refresh after stale review.
+- [x] Run PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" npm test; commit the verified explicit task paths.
+
+Verification: npm ci used the committed lockfile. npm test passed all 251 tests and the production build; npm run lint, npm run typecheck, git diff --check and the fixed-base diff check passed. Real disposable SQLite/filesystem tests cover recovery within and across active categories, atomic new-category insertion without discovering unrelated projects, same-source ownership, exact project ID/Text/category-property label/view preservation after reopen, independent edits after review, reserved paths/native aliases at both levels, exclusions/depth/links, category/root swaps before and during transactions, post-write swaps, category-insert/project-update/revision failures and corrupted writes with complete rollback and no committed event. Insufficient category evidence now reports unresolved rather than excluded. Discovery remains stable after explicit recovery involving retired historical category evidence. EN/RU production workspace interactions cover grouped Locate folder, keyboard selection/confirmation, full target/category review, category conflicts, empty targets, stale refresh with explicit reselection and restored save focus. Logs, including red probes and failed fixture/full-suite attempts, are retained in work/ralphex/issue-14/task-3-*.log. Draft/race handling and actual Electron, screenshot and platform acceptance remain in later tasks.
 
 ### Task 4: Preserve drafts and reject stale recovery responses
 

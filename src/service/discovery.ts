@@ -281,6 +281,12 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
   const identities = records.map((row) => storedIdentity(row));
   for (const row of retained.filter((row) => row.associationState !== "replaced")) {
     const child = scan.snapshot.children.find((child) => child.relativePath === row.relativePath);
+    if (child?.kind === "excluded" && child.reason === "unresolved") {
+      // Grouped scanning suppresses children when parent evidence is insufficient.
+      // This is an ambiguous association, not a user or policy exclusion.
+      row.associationState = "unresolved";
+      continue;
+    }
     if (child?.kind === "excluded" && child.reason !== "link") {
       // Exclusion retains existing evidence without claiming a new association or reattaching missing metadata.
       if (row.associationState === "active" || row.associationState === "excluded") row.associationState = "excluded";

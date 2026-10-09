@@ -28,6 +28,7 @@ const committed: ProjectList = { ...initial, revision: 2, projects: [{ ...retain
   retainedProjects: [initial.retainedProjects[1]], retainedCount: 1 };
 class RecoveryClient extends WorkspaceServiceClient {
   projects = initial;
+  recoveryPreview = preview;
   previews = 0;
   saves = 0;
   handler: () => Promise<ServiceResult<ProjectList>> = async () => { this.projects = committed; return { ok: true, value: committed }; };
@@ -38,10 +39,10 @@ class RecoveryClient extends WorkspaceServiceClient {
     values: [{ projectId: "project", propertyId: "notes", value: "Exact authored Text" }] } }; }
   override async previewProjectRecovery(workspaceId: string, projectId: string) {
     assert.equal(workspaceId, "workspace"); assert.equal(projectId, "project"); this.previews++;
-    return { ok: true as const, value: preview };
+    return { ok: true as const, value: this.recoveryPreview };
   }
   override async reassociateProject(workspaceId: string, projectId: string, token: string, path: string) {
-    assert.deepEqual([workspaceId, projectId, token, path], ["workspace", "project", "review", "Target authored name"]);
+    assert.deepEqual([workspaceId, projectId, token, path], ["workspace", "project", this.recoveryPreview.previewToken, this.recoveryPreview.entries[0].relativePath]);
     this.saves++; return this.handler();
   }
 }
@@ -126,5 +127,68 @@ for (const language of ["en", "ru"] as const) {
     await screen.findByText(t("recoveryUncertain"));
     await waitFor(() => assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true));
     assert.equal(client.saves, 2); cleanup();
+  });
+}
+
+for (const language of ["en", "ru"] as const) {
+  test(`${language}: grouped recovery reviews full path/category, blocks category conflicts and requires fresh keyboard selection`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const client = new RecoveryClient();
+    const groupedProject = { ...retained, relativePath: "Old category/Original authored name", categoryId: "old-category", categoryName: "Old category" };
+    client.projects = { ...initial, mode: "grouped", retainedProjects: [groupedProject], retainedCount: 1,
+      categoryProperty: { propertyId: "category-property", sourceId: "source", name: "Authored category label" } };
+    client.recoveryPreview = { ...preview, mode: "grouped", entries: [
+      { relativePath: "New authored category/Target authored name", name: "Target authored name", categoryPath: "New authored category", status: "selectable" },
+      { relativePath: "Conflicting category/Blocked", name: "Blocked", categoryPath: "Conflicting category", status: "category_unavailable" },
+    ] };
+    client.handler = async () => ({ ok: false, error: { code: "stale_preview", message: "category changed" } });
+    render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+    const locate = await screen.findByRole("button", { name: `${t("recoveryLocate")}: ${retained.name}` });
+    locate.focus(); await userEvent.keyboard("{Enter}");
+    const target = await screen.findByRole("radio", { name: /New authored category\/Target authored name/ });
+    assert.equal((screen.getByRole("radio", { name: /Conflicting category\/Blocked/ }) as HTMLInputElement).disabled, true);
+    assert.ok(screen.getByText(t("recoveryCategoryUnavailable")));
+    target.focus(); await userEvent.keyboard(" ");
+    const review = document.querySelector(".recovery-review")!;
+    assert.ok(review.textContent?.includes(groupedProject.relativePath));
+    assert.ok(review.textContent?.includes("New authored category/Target authored name"));
+    assert.ok(review.textContent?.includes("New authored category"));
+    assert.equal(client.saves, 0);
+    const confirm = screen.getByRole("button", { name: t("recoveryConfirm") });
+    confirm.focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByText(t("recoveryStale"));
+    assert.equal(client.saves, 1); assert.equal(screen.queryByRole("radio"), null);
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    const fresh = await screen.findByRole("radio", { name: /New authored category\/Target authored name/ });
+    assert.equal((fresh as HTMLInputElement).checked, false);
+    assert.equal((confirm as HTMLButtonElement).disabled, true);
+    fresh.focus(); await userEvent.keyboard(" ");
+    client.handler = async () => {
+      const saved: ProjectList = { ...client.projects, revision: 2, retainedProjects: [], retainedCount: 0,
+        categories: [{ categoryId: "new-category", name: "New authored category", relativePath: "New authored category" }],
+        projects: [{ ...groupedProject, relativePath: client.recoveryPreview.entries[0].relativePath, name: "Target authored name",
+          categoryId: "new-category", categoryName: "New authored category", resolution: "active" }] };
+      client.projects = saved; return { ok: true, value: saved };
+    };
+    confirm.focus(); await userEvent.keyboard("{Enter}");
+    await screen.findByText(t("recoverySaved"));
+    assert.equal(client.saves, 2); assert.equal(client.previews, 2);
+    assert.equal(document.activeElement, screen.getByRole("heading", { name: t("tableViewTitle") }));
+    assert.ok(screen.getByRole("button", { name: `${t("editTextValue")}: Target authored name / Notes` }).textContent?.includes("Exact authored Text"));
+    cleanup();
+  });
+  test(`${language}: grouped empty target set and category-only conflicts remain cancellable`, async () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const props = { language, project: retained, selectedPath: null, loading: false, pending: false, error: false, stale: false, uncertain: false,
+      onSelect() {}, onConfirm() {}, onRefresh() {}, onCancel() {} };
+    const view = render(<ProjectRecoveryPanel {...props} preview={{ ...preview, mode: "grouped", entries: [] }} />);
+    assert.ok(screen.getByText(t("recoveryEmpty")));
+    view.rerender(<ProjectRecoveryPanel {...props} preview={{ ...preview, mode: "grouped", entries: [
+      { relativePath: "Unavailable/Project", name: "Project", categoryPath: "Unavailable", status: "category_unavailable" },
+    ] }} />);
+    assert.equal((screen.getByRole("radio") as HTMLInputElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: t("recoveryConfirm") }) as HTMLButtonElement).disabled, true);
+    assert.equal((screen.getByRole("button", { name: t("cancelRenameWorkspace") }) as HTMLButtonElement).disabled, false);
+    cleanup();
   });
 }

@@ -20,7 +20,7 @@ const english = {
   recoveryUnresolved: "Folder identity cannot be verified.",
   recoveryReserved: "This path is reserved by another project.",
   recoveryNativeConflict: "Current folder evidence conflicts with another association.",
-  recoveryCategoryUnavailable: "The category association is unavailable for recovery.",
+  recoveryCategoryUnavailable: "This category association cannot be verified. Choose an active category or a new category folder.",
 
   renameCategoryProperty: "Rename category property",
   categoryPropertyName: "Category property name",
@@ -197,7 +197,7 @@ const russian: Record<keyof typeof english, string> = {
   recoveryUnresolved: "Не удалось подтвердить идентичность папки.",
   recoveryReserved: "Этот путь зарезервирован другим проектом.",
   recoveryNativeConflict: "Текущие данные папки конфликтуют с другой связью.",
-  recoveryCategoryUnavailable: "Связь категории недоступна для восстановления.",
+  recoveryCategoryUnavailable: "Не удалось подтвердить связь категории с папкой. Выберите действующую категорию или новую папку категории.",
 
   renameCategoryProperty: "Переименовать свойство категории",
   categoryPropertyName: "Название свойства категории",

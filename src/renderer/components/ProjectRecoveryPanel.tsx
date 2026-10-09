@@ -49,6 +49,7 @@ export function ProjectRecoveryPanel({ language, project, preview, selectedPath,
             <input type="radio" name="recovery-target" value={entry.relativePath} checked={selectedPath === entry.relativePath}
               disabled={entry.status !== "selectable"} onChange={() => onSelect(entry.relativePath)} />
             <span><span className="recovery-path">{entry.relativePath}</span>
+              {entry.categoryPath && <span className="discovery-reason">{t("discoveryCategory")}: {entry.categoryPath}</span>}
               {entry.status !== "selectable" && <span className="discovery-reason">{t(conflicts[entry.status])}</span>}</span>
           </label>)}
         </fieldset>}

@@ -9,7 +9,7 @@ import { openSettingsService } from "../dist/service/settings.mjs";
 
 function inventory(path) {
   return fs.readdirSync(path, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)).map((entry) => [entry.name,
-    entry.isDirectory() ? inventory(join(path, entry.name)) : fs.readFileSync(join(path, entry.name)).toString("hex")]);
+    entry.isSymbolicLink() ? fs.readlinkSync(join(path, entry.name)) : entry.isDirectory() ? inventory(join(path, entry.name)) : fs.readFileSync(join(path, entry.name)).toString("hex")]);
 }
 
 function fixture(run, mode = "direct") {
@@ -31,7 +31,7 @@ function fixture(run, mode = "direct") {
   const propertyId = service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId: workspace.workspaceId, name: "Notes", propertyType: "text" }).value.propertyId;
   const value = "  Authored\nТекст 📝  ";
   assert.equal(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: workspace.workspaceId, projectId: project.projectId, propertyId, value }).ok, true);
-  const records = () => ["sources", "projects", "categories", "property_definitions", "text_property_values", "views"].map((table) => sqlite.prepare(`SELECT * FROM ${table}`).all());
+  const records = () => ["sources", "projects", "categories", "property_definitions", "text_property_values", "views", "category_properties"].map((table) => sqlite.prepare(`SELECT * FROM ${table}`).all());
   try { run({ directory, root, sqlite, service, workspace, project, propertyId, value, query, apply, records }); }
   finally { sqlite.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
@@ -377,3 +377,221 @@ test("unreliable target identity and caller-edited preview conflicts cannot auth
     assert.deepEqual(f.records(), before);
   } finally { fs.lstatSync = original; syncBuiltinESMExports(); }
 }));
+
+test("grouped recovery reuses active or atomically creates new categories without Apply or discovering siblings", () => {
+  for (const destination of ["Category", "New category"]) fixture((f) => {
+    const sibling = f.service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: f.root }).value;
+    const property = f.query("workspace.listProjects").value.categoryProperty;
+    assert.equal(f.service.handleCommand({ type: "workspace.renameCategoryProperty", workspaceId: sibling.workspaceId,
+      propertyId: property.propertyId, name: "  Authored category label  " }).ok, true);
+    const originalCategories = f.records()[2];
+    fs.mkdirSync(join(f.root, destination), { recursive: true });
+    fs.renameSync(join(f.root, "Category/Project"), join(f.root, destination, "Recovered"));
+    fs.mkdirSync(join(f.root, destination, "Unrelated"));
+    fs.mkdirSync(join(f.root, "Unrelated category/Unrelated project"), { recursive: true });
+    fs.writeFileSync(join(f.root, destination, "Recovered/sentinel"), "untouched bytes");
+    const before = f.records(), files = inventory(f.root), events = [];
+    f.service.workspaces.subscribe((event) => events.push(event));
+    const preview = review(f);
+    assert.equal(preview.ok, true); assert.equal(preview.value.mode, "grouped");
+    const target = preview.value.entries.find((row) => row.relativePath === `${destination}/Recovered`);
+    assert.deepEqual(target, { relativePath: `${destination}/Recovered`, name: "Recovered", categoryPath: destination, status: "selectable" });
+    assert.ok(preview.value.entries.every((row) => row.relativePath.split("/").length === 2));
+    assert.deepEqual(f.records(), before); assert.deepEqual(events, []);
+    const result = recover(f, preview.value, target.relativePath);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.value.projects.map((row) => [row.projectId, row.relativePath, row.categoryName, row.resolution]),
+      [[f.project.projectId, target.relativePath, destination, "active"]]);
+    assert.equal(result.value.revision, before[0][0].discovery_revision + 1);
+    assert.equal(result.value.categoryProperty.propertyId, property.propertyId);
+    assert.equal(result.value.categoryProperty.name, "  Authored category label  ");
+    const after = f.records();
+    assert.deepEqual(after.slice(3), before.slice(3));
+    assert.equal(after[0][0].property_revision, before[0][0].property_revision);
+    assert.equal(after[0][0].category_property_revision, before[0][0].category_property_revision);
+    assert.deepEqual(after[2].filter((row) => originalCategories.some((old) => old.id === row.id)), originalCategories);
+    assert.equal(after[2].length, originalCategories.length + (destination === "Category" ? 0 : 1));
+    assert.equal(after[1].length, 1);
+    assert.equal(after[2].find((row) => row.relative_path === destination).source_id, f.workspace.sourceId);
+    assert.equal(result.value.projects[0].categoryId, after[2].find((row) => row.relative_path === destination).id);
+    assert.equal(f.query("workspace.listTextProperties").value.values[0].value, f.value);
+    assert.equal(events.length, 1); assert.deepEqual(events[0].workspaceIds, [f.workspace.workspaceId, sibling.workspaceId]);
+    assert.deepEqual(inventory(f.root), files);
+    const reopened = openSettingsService(join(f.directory, "workspace.sqlite"));
+    try {
+      const list = reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspace.workspaceId });
+      assert.deepEqual(list, result);
+      assert.equal(reopened.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: sibling.workspaceId }).value.values[0].value, f.value);
+      assert.deepEqual(f.records().slice(3), before.slice(3));
+    } finally { reopened.close(); }
+  }, "grouped");
+});
+
+test("grouped recovery refuses excluded, missing, replaced, ambiguous and foreign category ownership", () => {
+  for (const problem of ["excluded", "missing", "replaced", "unresolved", "observed_replaced", "native_alias", "foreign"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Category/Project"), join(f.directory, "away"));
+    const categoryId = f.project.categoryId;
+    if (["excluded", "missing", "replaced", "unresolved"].includes(problem)) {
+      f.sqlite.prepare("UPDATE projects SET association_state = 'missing'").run();
+      f.sqlite.prepare("UPDATE categories SET association_state = ? WHERE id = ?").run(problem, categoryId);
+    }
+    if (problem === "observed_replaced") {
+      fs.renameSync(join(f.root, "Category"), join(f.directory, "oldCategory")); fs.mkdirSync(join(f.root, "Category"));
+    }
+    fs.mkdirSync(join(f.root, "Category/Target"));
+    if (problem === "native_alias") {
+      const identity = f.sqlite.prepare("SELECT native_identity FROM categories WHERE id = ?").get(categoryId).native_identity;
+      f.sqlite.prepare("INSERT INTO categories (id, source_id, relative_path, native_identity, association_state) VALUES (?, ?, ?, ?, 'missing')")
+        .run("00000000-0000-4000-8000-000000000002", f.workspace.sourceId, "Other path", identity);
+    }
+    const before = f.records(), files = inventory(f.root);
+    const preview = review(f);
+    assert.equal(preview.ok, true, problem);
+    assert.equal(preview.value.entries.find((row) => row.relativePath === "Category/Target").status,
+      problem === "foreign" ? "selectable" : "category_unavailable", problem);
+    if (problem === "foreign") {
+      const other = join(f.directory, "foreign"); fs.mkdirSync(other);
+      const foreign = f.service.workspaces.create({ type: "workspace.create", rootPath: other, name: "Foreign" }).value;
+      const withForeign = f.records();
+      assert.equal(recover(f, preview.value, "Category/Target", { workspaceId: foreign.workspaceId }).error.code, "invalid_input");
+      assert.deepEqual(f.records(), withForeign);
+    } else {
+      preview.value.entries[0].status = "selectable";
+      assert.equal(recover(f, preview.value, "Category/Target").error.code, "invalid_input", problem);
+      assert.deepEqual(f.records(), before);
+    }
+    assert.deepEqual(inventory(f.root), files);
+  }, "grouped");
+});
+
+test("grouped targets use both-level exclusion, depth, link, reserved-path and native checks without reading project contents", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Category/Occupied")); f.apply();
+  fs.renameSync(join(f.root, "Category/Project"), join(f.directory, "away"));
+  for (const path of ["Category/Target/Deeper", "Category/.hidden", "Category/System Volume Information", "Category/Manual", "Category/Archive", "Manual category/Inside", "Storage/Inside"])
+    fs.mkdirSync(join(f.root, path), { recursive: true });
+  fs.writeFileSync(join(f.root, "Category/file"), "bytes");
+  f.sqlite.prepare("UPDATE sources SET excluded_relative_paths = ?, archive_relative_path = ?")
+    .run(JSON.stringify(["Category/Manual", "Manual category"]), "Category/Archive");
+  fs.symlinkSync(join(f.directory, "away"), join(f.root, "Category/Linked"), process.platform === "win32" ? "junction" : "dir");
+  fs.symlinkSync(join(f.root, "Category"), join(f.root, "Linked category"), process.platform === "win32" ? "junction" : "dir");
+  const open = fs.opendirSync;
+  fs.opendirSync = (path, ...args) => {
+    assert.ok([f.root, join(f.root, "Category"), join(f.root, "Storage")].includes(path), "only eligible roots/categories may be enumerated");
+    return open(path, ...args);
+  };
+  const before = f.records(), files = inventory(f.root); syncBuiltinESMExports();
+  try {
+    const preview = review(f).value;
+    assert.equal(preview.entries.find((row) => row.relativePath === "Category/Target").status, "selectable");
+    assert.equal(preview.entries.find((row) => row.relativePath === "Category/Occupied").status, "reserved_path");
+    for (const path of ["Category/.hidden", "Category/System Volume Information", "Category/Manual", "Category/Archive", "Category/Linked"])
+      assert.equal(preview.entries.find((row) => row.relativePath === path).status, "excluded", path);
+    for (const path of ["Category", "Category/Target/Deeper", "../Category/Target", "/Category/Target", "Category/../Target", "Category/file", "Manual category/Inside", "Linked category/Inside", "Category/Occupied"])
+      assert.equal(recover(f, preview, path).error.code, "invalid_input", path);
+    assert.deepEqual(f.records(), before);
+    assert.equal(recover(f, preview, "Category/Target").ok, true);
+  } finally { fs.opendirSync = open; syncBuiltinESMExports(); }
+  assert.deepEqual(inventory(f.root), files);
+}, "grouped"));
+
+test("grouped category/root/link swaps and category-insert/project-update failures roll back all writes and events", () => {
+  for (const failure of ["category", "root", "category_link", "project_link", "category_insert", "project_update", "revision_update", "after_insert", "after_update", "after_write_category", "after_write_root"]) fixture((f) => {
+    fs.mkdirSync(join(f.root, "New")); fs.renameSync(join(f.root, "Category/Project"), join(f.root, "New/Target"));
+    fs.writeFileSync(join(f.root, "New/Target/sentinel"), "untouched");
+    const preview = review(f);
+    assert.equal(preview.ok, true);
+    if (failure === "category") { fs.renameSync(join(f.root, "New"), join(f.directory, "oldNew")); fs.mkdirSync(join(f.root, "New/Target"), { recursive: true }); }
+    if (failure === "root") { fs.renameSync(f.root, join(f.directory, "oldRoot")); fs.mkdirSync(join(f.root, "New/Target"), { recursive: true }); }
+    if (failure === "category_insert") f.sqlite.exec("CREATE TRIGGER fail_category BEFORE INSERT ON categories BEGIN SELECT RAISE(ABORT, 'injected'); END;");
+    if (failure === "project_update") f.sqlite.exec("CREATE TRIGGER fail_project BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'after category insert'); END;");
+    if (failure === "revision_update") f.sqlite.exec("CREATE TRIGGER fail_revision BEFORE UPDATE ON sources BEGIN SELECT RAISE(ABORT, 'after project update'); END;");
+    if (failure === "after_insert") f.sqlite.exec("CREATE TRIGGER corrupt_category AFTER INSERT ON categories BEGIN UPDATE categories SET native_identity = '{}' WHERE id = NEW.id; END;");
+    if (failure === "after_update") f.sqlite.exec("CREATE TRIGGER corrupt_project AFTER UPDATE ON projects BEGIN UPDATE projects SET native_identity = '{}' WHERE id = NEW.id; END;");
+    const before = f.records(), events = []; f.service.workspaces.subscribe((event) => events.push(event));
+    const open = fs.opendirSync; let opens = 0;
+    const externalFiles = () => inventory(f.directory).filter(([name]) => name !== "workspace.sqlite" && !name.startsWith("workspace.sqlite-"));
+    let preparedFiles = externalFiles();
+    fs.opendirSync = (path, ...args) => {
+      if (path === f.root) opens++;
+      if (["category_link", "project_link"].includes(failure) && path === f.root && opens === 3) {
+        const relativePath = failure === "category_link" ? "New" : "New/Target";
+        fs.renameSync(join(f.root, relativePath), join(f.directory, "swapped"));
+        fs.symlinkSync(join(f.directory, "swapped"), join(f.root, relativePath), process.platform === "win32" ? "junction" : "dir");
+        preparedFiles = externalFiles();
+      }
+      if (["after_write_category", "after_write_root"].includes(failure) && path === f.root && opens === 5) {
+        const swapped = failure === "after_write_root" ? f.root : join(f.root, "New");
+        fs.renameSync(swapped, join(f.directory, "swapped"));
+        fs.mkdirSync(join(f.root, "New/Target"), { recursive: true });
+        preparedFiles = externalFiles();
+      }
+      return open(path, ...args);
+    };
+    syncBuiltinESMExports(); let result;
+    try { result = recover(f, preview.value, "New/Target"); }
+    finally { fs.opendirSync = open; syncBuiltinESMExports(); }
+    assert.equal(result.ok, false, failure);
+    assert.equal(result.error.code, ["category_insert", "project_update", "revision_update"].includes(failure) ? "storage" : "stale_preview", failure);
+    assert.deepEqual(f.records(), before, failure); assert.deepEqual(events, [], failure);
+    // Compare against the last externally prepared state, including symlink targets.
+    assert.deepEqual(externalFiles(), preparedFiles, failure);
+  }, "grouped");
+});
+
+test("grouped recovery into another active category preserves all peer records and independent edits made after preview", () => fixture((f) => {
+  fs.mkdirSync(join(f.root, "Destination/Peer"), { recursive: true });
+  const baseline = f.apply();
+  const peer = baseline.projects.find((row) => row.name === "Peer");
+  const category = baseline.categories.find((row) => row.name === "Destination");
+  fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Destination/Target"));
+  const preview = review(f); assert.equal(preview.ok, true);
+  const occupied = preview.value.entries.find((row) => row.relativePath === "Destination/Peer");
+  assert.equal(occupied.status, "reserved_path");
+  const label = "  New category label after review  ";
+  assert.equal(f.service.workspaces.renameCategoryProperty({ type: "workspace.renameCategoryProperty", workspaceId: f.workspace.workspaceId,
+    propertyId: baseline.categoryProperty.propertyId, name: label }).ok, true);
+  assert.equal(f.service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId: f.workspace.workspaceId,
+    projectId: f.project.projectId, propertyId: f.propertyId, value: "Text changed after review" }).ok, true);
+  const before = f.records(), files = inventory(f.root);
+  assert.equal(recover(f, preview.value, "Destination/Peer").error.code, "invalid_input");
+  assert.deepEqual(f.records(), before);
+  const result = recover(f, preview.value, "Destination/Target"); assert.equal(result.ok, true);
+  assert.equal(result.value.projects.find((row) => row.projectId === f.project.projectId).categoryId, category.categoryId);
+  assert.deepEqual(result.value.projects.find((row) => row.projectId === peer.projectId), peer);
+  assert.equal(result.value.categoryProperty.name, label);
+  assert.equal(result.value.categoryPropertyRevision, before[0][0].category_property_revision);
+  assert.deepEqual(f.records()[2], before[2]);
+  assert.deepEqual(f.records().slice(3), before.slice(3));
+  assert.equal(f.query("workspace.listTextProperties").value.values.find((row) => row.projectId === f.project.projectId).value, "Text changed after review");
+  assert.deepEqual(inventory(f.root), files);
+}, "grouped"));
+
+test("grouped recovery rejects native aliases at both levels and insufficient category evidence", () => {
+  for (const conflict of ["category_alias", "project_alias", "project_record", "category_unreliable"]) fixture((f) => {
+    fs.renameSync(join(f.root, "Category/Project"), join(f.root, "Category/Target"));
+    fs.mkdirSync(join(f.root, "Other/Other project"), { recursive: true });
+    const projectIdentity = JSON.parse(f.sqlite.prepare("SELECT native_identity FROM projects").get().native_identity);
+    const categoryIdentity = JSON.parse(f.sqlite.prepare("SELECT native_identity FROM categories").get().native_identity);
+    if (conflict === "project_record") f.sqlite.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'missing', ?)")
+      .run("00000000-0000-4000-8000-000000000002", f.workspace.sourceId, "Category/Reserved", JSON.stringify(projectIdentity), f.project.categoryId);
+    const stat = fs.lstatSync;
+    fs.lstatSync = (path, ...args) => {
+      const result = stat(path, ...args);
+      const identity = conflict === "category_alias" && path === join(f.root, "Other") ? categoryIdentity
+        : conflict === "project_alias" && path === join(f.root, "Other/Other project") ? projectIdentity : null;
+      if (identity) { result.dev = BigInt(identity.dev); result.ino = BigInt(identity.ino); }
+      if (conflict === "category_unreliable" && path === join(f.root, "Category")) result.birthtimeNs = 0n;
+      return result;
+    };
+    const before = f.records(), files = inventory(f.root); syncBuiltinESMExports();
+    try {
+      const preview = review(f); assert.equal(preview.ok, true, conflict);
+      const target = preview.value.entries.find((row) => row.relativePath === "Category/Target");
+      if (conflict === "category_unreliable") assert.equal(target, undefined);
+      else assert.equal(target.status, conflict === "category_alias" ? "category_unavailable" : "native_conflict");
+      assert.equal(recover(f, preview.value, "Category/Target").error.code, "invalid_input");
+      assert.deepEqual(f.records(), before);
+    } finally { fs.lstatSync = stat; syncBuiltinESMExports(); }
+    assert.deepEqual(inventory(f.root), files);
+  }, "grouped");
+});
