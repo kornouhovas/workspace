@@ -28,6 +28,11 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Metadata-only category-property label rename with EN/RU keyboard controls, exact authored labels, sibling notifications, independent revision guards and retained drafts.
 - Migration 0006 upgrade/rollback/reopen regressions and permanent grouped/category-label Ladle and production Electron scenarios.
 
+- Accessible retained missing, unresolved, replaced and excluded project rows with editable Text and source-level unavailable/unreadable/root-conflict feedback.
+- Explicit English/Russian Locate folder, target review and metadata-only Reassociate for direct and grouped projects, preserving logical IDs and exact Text through restart and source reuse.
+- Service-validated source-contained recovery with reserved-path/native-identity conflicts, atomic new-category insertion, stale review refresh and uncertain-outcome reload without command replay.
+- Preserved Text/category-label drafts across recovery and source refresh, populated-baseline regressions and permanent recovery Electron/Ladle scenarios.
+
 ### Fixed
 
 - Malformed desktop requests are rejected without stopping the local workspace service.
@@ -38,7 +43,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 ### Planned
 
 - Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.
-- Configured-source mode switching, physical category editing, external reconciliation/reassociation, archive and restore.
+- Configured-source mode switching, physical category editing, automatic external reconciliation, archive and restore.
 - The full 0.1.0 local desktop release and its remaining capabilities.
 
 The Unreleased entries describe verified source changes, not a published release. Planned items are not shipped functionality. Move verified changes into a dated version entry only when preparing an authorized release, following [the release policy](docs/releases.md).
