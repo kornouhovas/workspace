@@ -50,7 +50,10 @@ test("management responses and notifications share one source observation", () =
       const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
       const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
       changing = true;
+      checks = 1;
+      assert.equal(service.workspaces.load().value.activeWorkspace.sourceAvailable, false);
       for (const command of [
+        { type: "workspace.activate", workspaceId: one.workspaceId },
         { type: "workspace.rename", workspaceId: two.workspaceId, name: "Renamed" },
         { type: "workspace.reorder", workspaceIds: [two.workspaceId, one.workspaceId] },
         { type: "workspace.remove", workspaceId: one.workspaceId },
@@ -60,8 +63,17 @@ test("management responses and notifications share one source observation", () =
         const result = service.handleCommand(command);
         assert.equal(result.ok, true);
         const event = events.find((event) => event.type === "workspace.listChanged");
-        assert.deepEqual(event.snapshot, result.value);
-        assert.equal(result.value.activeWorkspace.sourceAvailable, true);
+        const active = command.type === "workspace.activate" ? result.value : result.value.activeWorkspace;
+        if (command.type === "workspace.activate") {
+          assert.deepEqual(event.snapshot.activeWorkspace, active);
+          assert.equal(events.filter((event) => event.type === "workspace.sourceChanged").length, 1);
+        }
+        else assert.deepEqual(event.snapshot, result.value);
+        assert.equal(active.sourceAvailable, true);
+        for (const sourceEvent of events.filter((event) => event.type === "workspace.sourceChanged")) {
+          assert.equal(sourceEvent.source.sourceAvailable, active.sourceAvailable);
+          assert.equal(sourceEvent.source.canonicalRoot, active.canonicalRoot);
+        }
         assert.equal(checks, 1);
       }
     } finally { service.close(); }

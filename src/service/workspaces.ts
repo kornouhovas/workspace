@@ -290,6 +290,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     return readWorkspaceLoad(db, filesystem, observe);
   }
 
+  function activationSnapshot(result: ReturnType<WorkspaceService["activate"]>): WorkspaceLoad | undefined {
+    return result.ok ? readWorkspaceLoad(db, filesystem, observe, result.value) : undefined;
+  }
+
   function run<R extends { ok: boolean }>(operation: () => R, listSnapshot?: (result: R) => WorkspaceLoad | undefined): R | ReturnType<typeof storageFailure> {
     pending = new Map();
     let snapshot: WorkspaceLoad | undefined;
@@ -325,7 +329,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     rename: (input) => run(() => service.rename(input), returnedSnapshot),
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => run(() => service.remove(input), returnedSnapshot),
-    activate: (input) => run(() => service.activate(input), currentSnapshot),
+    activate: (input) => run(() => service.activate(input), activationSnapshot),
     load: () => run(() => service.load()),
     refreshSource: (input) => run(() => service.refreshSource(input)),
   };
@@ -333,7 +337,12 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
 
 type SourceObserver = (sourceId: string, state: { canonicalRoot: string; sourceAvailable: boolean }) => void;
 
-function readWorkspaceLoad(db: Pick<Database, "select" | "update">, filesystem: WorkspaceFilesystem, observe: SourceObserver): WorkspaceLoad {
+function readWorkspaceLoad(
+  db: Pick<Database, "select" | "update">,
+  filesystem: WorkspaceFilesystem,
+  observe: SourceObserver,
+  observedSource?: Pick<ActiveWorkspace, "sourceId" | "canonicalRoot" | "sourceAvailable">,
+): WorkspaceLoad {
   const workspaces = db.select({
     workspaceId: schema.workspaces.id,
     name: schema.workspaces.name,
@@ -354,7 +363,9 @@ function readWorkspaceLoad(db: Pick<Database, "select" | "update">, filesystem: 
   if (!current || !view || view.workspaceId !== current.workspaceId || view.kind !== "table") {
     throw new Error("Invalid active workspace or view.");
   }
-  const sourceState = normalizeSource(db, current.sourceId, current.canonicalRoot, filesystem, observe);
+  const sourceState = observedSource?.sourceId === current.sourceId
+    ? { canonicalRoot: observedSource.canonicalRoot, sourceAvailable: observedSource.sourceAvailable }
+    : normalizeSource(db, current.sourceId, current.canonicalRoot, filesystem, observe);
   const activeWorkspace = { ...toActiveWorkspace(current, active.viewId, sourceState.sourceAvailable), ...sourceState };
   return { workspaces: summaries, activeWorkspace };
 }
