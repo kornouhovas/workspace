@@ -6,6 +6,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import { BackendController } from "../dist/desktop/backend-controller.mjs";
+import { WorkspaceServiceClient } from "../src/renderer/workspace-service-client.ts";
 import { startServiceProcess } from "../dist/service/entry.cjs";
 
 class FakePort extends EventEmitter {
@@ -494,7 +495,7 @@ test("controller treats valid events separately from pending responses and remov
   assert.equal(events.length, 1);
 });
 
-test("compiled preload validates source/list events, exposes no IPC objects and tears subscriptions down", async () => {
+test("compiled preload validates project/source/list events, exposes no IPC objects and tears subscriptions down", async () => {
   const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
   const ipc = new EventEmitter();
   ipc.invoke = async () => ({ ok: true });
@@ -513,8 +514,16 @@ test("compiled preload validates source/list events, exposes no IPC objects and 
   ipc.emit("workspace:change", { sender: "privileged" }, event);
   ipc.emit("workspace:change", {}, { ...event, extra: true });
   ipc.emit("workspace:change", {}, { type: "workspace.sourceChanged", source: { sourceId: 42 } });
-  assert.equal(events.length, 1);
+  const projectEvent = { type: "workspace.projectsChanged", sourceId: "00000000-0000-4000-8000-000000000001",
+    workspaceIds: ["00000000-0000-4000-8000-000000000002"], revision: 3 };
+  ipc.emit("workspace:change", {}, projectEvent);
+  for (const malformed of [{ ...projectEvent, extra: true }, { ...projectEvent, revision: -1 },
+    { ...projectEvent, revision: 1.5 }, { ...projectEvent, revision: Number.MAX_SAFE_INTEGER + 1 },
+    { ...projectEvent, workspaceIds: [] }, { ...projectEvent, workspaceIds: [...projectEvent.workspaceIds, ...projectEvent.workspaceIds] },
+    { ...projectEvent, sourceId: "foreign" }]) ipc.emit("workspace:change", {}, malformed);
+  assert.equal(events.length, 2);
   assert.deepEqual(events[0], event);
+  assert.deepEqual(events[1], projectEvent);
   assert.equal(ipc.listenerCount("workspace:change"), 1);
   unsubscribe();
   assert.equal(ipc.listenerCount("workspace:change"), 0);
@@ -608,4 +617,53 @@ test("BackendController accepts normalized stale-preview errors from the actual 
   port.receive({ id: sent.id, result });
   assert.deepEqual(await pending, result);
   child.exit();
+});
+
+test("two typed clients receive committed project revisions through real ports/controller and clean up", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-project-events-"));
+  const root = join(directory, "root"), otherRoot = join(directory, "other");
+  await mkdir(join(root, "Project"), { recursive: true }); await mkdir(otherRoot);
+  const parent = new EventEmitter(), child = new FakeChild();
+  const servicePort = new FakePort(), desktopPort = new FakePort();
+  servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+  desktopPort.postMessage = (message) => servicePort.receive(message);
+  parent.postMessage = (message) => child.send(message);
+  child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+  startServiceProcess(parent, undefined, () => child.exit());
+  const controller = new BackendController();
+  const api = { workspace: (input) => controller.request(input), onWorkspaceChange: (listener) => controller.onWorkspaceChange(listener) };
+  const oneClient = new WorkspaceServiceClient(api), twoClient = new WorkspaceServiceClient(api);
+  const oneEvents = [], twoEvents = [];
+  const offOne = oneClient.onWorkspaceChange((event) => oneEvents.push(event));
+  const offTwo = twoClient.onWorkspaceChange((event) => twoEvents.push(event));
+  try {
+    assert.equal(await controller.start(child, desktopPort, join(directory, "data.sqlite"), {}, 100), true);
+    const one = (await oneClient.createWorkspace("One", root)).value;
+    const two = (await twoClient.createWorkspace("Two", root)).value;
+    const other = (await oneClient.createWorkspace("Other", otherRoot)).value;
+    oneEvents.length = twoEvents.length = 0;
+    const sibling = (await twoClient.previewDiscovery(two.workspaceId)).value;
+    const reviewed = (await oneClient.previewDiscovery(one.workspaceId)).value;
+    const applied = await oneClient.applyDiscovery(one.workspaceId, reviewed.previewToken);
+    const event = { type: "workspace.projectsChanged", sourceId: one.sourceId,
+      workspaceIds: [one.workspaceId, two.workspaceId], revision: applied.value.revision };
+    assert.deepEqual(oneEvents, [event]); assert.deepEqual(twoEvents, [event]);
+    assert.equal(servicePort.sent.at(-2).type, "workspace.change");
+    assert.equal((await twoClient.applyDiscovery(two.workspaceId, sibling.previewToken)).error.code, "stale_preview");
+    assert.deepEqual((await twoClient.listProjects(two.workspaceId)).value.projects, applied.value.projects);
+    assert.deepEqual((await oneClient.listProjects(other.workspaceId)).value.projects, []);
+    const pending = oneClient.listProjects(one.workspaceId);
+    desktopPort.receive({ type: "workspace.change", id: 777, change: event });
+    desktopPort.receive({ type: "workspace.change", change: { ...event, revision: "3" } });
+    assert.deepEqual((await pending).value.projects, applied.value.projects);
+    assert.equal(oneEvents.length, 1);
+    offTwo();
+    const excluded = (await oneClient.previewDiscovery(one.workspaceId, ["Project"])).value;
+    await oneClient.applyDiscovery(one.workspaceId, excluded.previewToken);
+    assert.equal(oneEvents.length, 2); assert.equal(twoEvents.length, 1);
+    offOne(); await controller.stop(100);
+    const before = servicePort.sent.length;
+    servicePort.receive({ id: 999, input: { type: "workspace.listProjects", workspaceId: one.workspaceId } });
+    assert.equal(servicePort.sent.length, before);
+  } finally { offOne(); offTwo(); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });

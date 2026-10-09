@@ -41,7 +41,8 @@ export interface WorkspaceSourceState {
 
 export type WorkspaceChangeEvent =
   | { type: "workspace.listChanged"; snapshot: WorkspaceLoad }
-  | { type: "workspace.sourceChanged"; source: WorkspaceSourceState };
+  | { type: "workspace.sourceChanged"; source: WorkspaceSourceState }
+  | { type: "workspace.projectsChanged"; sourceId: string; workspaceIds: string[]; revision: number };
 
 export type WorkspaceQuery = WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
 export type WorkspaceCommand = WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;

@@ -52,7 +52,7 @@ interface MockOptions {
 
 function mockApi(options: MockOptions = {}) {
   cleanup();
-  let changeListener: ((event: WorkspaceChangeEvent) => void) | undefined;
+  const changeListeners = new Set<(event: WorkspaceChangeEvent) => void>();
   let statusListener: ((status: BackendStatus) => void) | undefined;
   const onSettings = options.onSettings ?? (async (input) => input.type === "settings.load"
     ? options.settingsResult ?? settings(options.language ?? "en")
@@ -67,8 +67,8 @@ function mockApi(options: MockOptions = {}) {
       return () => { statusListener = undefined; };
     },
     onWorkspaceChange: (listener) => {
-      changeListener = listener;
-      return () => { changeListener = undefined; };
+      changeListeners.add(listener);
+      return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
     workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjects"
@@ -77,7 +77,7 @@ function mockApi(options: MockOptions = {}) {
         projects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
-  return { emitChange: (event: WorkspaceChangeEvent) => changeListener?.(event), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
+  return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
 }
 
 test("loads English settings and preserves the language only after a successful save", async () => {
@@ -938,7 +938,7 @@ const projectList = (active: ActiveWorkspace, projects: string[] = [], revision 
   projects: projects.map((name) => ({ projectId: `project-${name}`, name, relativePath: name })),
 });
 const previewResult = (active: ActiveWorkspace, token = "reviewed", excludedRelativePaths: string[] = []) => ({
-  workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 0, canonicalRoot: active.canonicalRoot,
+  workspaceId: active.workspaceId, sourceId: active.sourceId, revision: 1, canonicalRoot: active.canonicalRoot,
   state: "ready" as const, previewToken: token, excludedRelativePaths,
   entries: [{ name: "  Authored project  ", relativePath: "  Authored project  ", reason: null }],
 });
@@ -1052,5 +1052,177 @@ test("project lists distinguish applied-empty, retained, unavailable and loading
     assert.ok(screen.getByRole("heading", { name: translate(language, "projectsRetained") }));
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryUnavailable") }));
     cleanup();
+  }
+});
+
+const sharedEventWorkspace = () => ({ ...makeActive("00000000-0000-4000-8000-000000000011", "Shared"),
+  sourceId: "00000000-0000-4000-8000-000000000012" });
+const projectEvent = (active: ActiveWorkspace, revision: number): WorkspaceChangeEvent => ({
+  type: "workspace.projectsChanged", sourceId: active.sourceId, workspaceIds: [active.workspaceId], revision,
+});
+
+test("EN/RU source notifications reject delayed rows/previews, preserve draft exclusions and require refreshed review", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let listCalls = 0, previewCalls = 0;
+    let finishList: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    let finishPreview: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const drafts: (string[] | undefined)[] = [];
+    const api = mockApi({ language,
+      load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+      onProjects: async () => {
+        listCalls++;
+        if (listCalls === 2) return new Promise((resolve) => { finishList = resolve; });
+        return ok(projectList(active, [listCalls === 1 ? "Saved" : "Current"], listCalls === 1 ? 1 : 3));
+      }, onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type === "workspace.previewDiscovery") {
+          drafts.push(input.excludedRelativePaths);
+          if (++previewCalls === 2) return new Promise((resolve) => { finishPreview = resolve; });
+          return ok({ ...previewResult(active, `review-${previewCalls}`, input.excludedRelativePaths), revision: previewCalls === 1 ? 1 : 3 });
+        }
+        return fail("invalid_input");
+      } });
+    render(<App />);
+    await screen.findByRole("cell", { name: "Saved" });
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryAction") }));
+    const checkbox = await screen.findByRole("checkbox", { name: /Authored project/ });
+    await userEvent.click(checkbox);
+    await act(async () => {
+      api.emitChange({ ...projectEvent(active, 2), sourceId: "00000000-0000-4000-8000-000000000099" } as WorkspaceChangeEvent);
+    });
+    assert.equal(listCalls, 1);
+    await act(async () => { api.emitChange(projectEvent(active, 2)); });
+    assert.equal(document.activeElement, screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryStale") }));
+    assert.equal(screen.queryByRole("checkbox"), null);
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, true);
+    await act(async () => { api.emitChange(projectEvent(active, 3)); });
+    await screen.findByRole("cell", { name: "Current" });
+    await act(async () => {
+      finishList?.(ok(projectList(active, ["Delayed old rows"], 2)));
+      finishPreview?.(ok({ ...previewResult(active, "old-token"), revision: 1 }));
+    });
+    assert.equal(screen.queryByRole("cell", { name: "Delayed old rows" }), null);
+    assert.equal(screen.queryByRole("checkbox"), null);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    await screen.findByRole("checkbox", { name: /Authored project/ });
+    assert.deepEqual(drafts.at(-1), ["  Authored project  "]);
+    assert.equal((screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement).disabled, false);
+    await act(async () => { api.emitChange(projectEvent(active, 2)); api.emitChange(projectEvent(active, 3)); });
+    assert.equal(listCalls, 3);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("Apply accepts its preceding commit event but rejects a delayed result older than a sibling revision", async () => {
+  for (const newerSibling of [false, true]) {
+    const active = sharedEventWorkspace();
+    let revision = 1;
+    let finishApply: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const api = mockApi({ load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+      onProjects: async () => ok(projectList(active, [revision === 1 ? "Saved" : "Latest"], revision)),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active });
+        if (input.type === "workspace.previewDiscovery") return ok({ ...previewResult(active), revision });
+        if (input.type === "workspace.applyDiscovery") return new Promise((resolve) => { finishApply = resolve; });
+        return fail("invalid_input");
+      } });
+    render(<App />); await screen.findByRole("cell", { name: "Saved" });
+    await userEvent.click(screen.getByRole("button", { name: "Preview project folders" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Apply reviewed projects" }));
+    await act(async () => { revision = newerSibling ? 3 : 2; api.emitChange(projectEvent(active, revision)); });
+    await screen.findByRole("cell", { name: "Latest" });
+    await act(async () => { finishApply?.(ok(projectList(active, ["Applied response"], 2))); });
+    if (newerSibling) {
+      assert.equal(screen.queryByRole("cell", { name: "Applied response" }), null);
+      assert.ok(screen.getByRole("heading", { name: translate("en", "discoveryStale") }));
+      assert.equal((screen.getByRole("button", { name: "Apply reviewed projects" }) as HTMLButtonElement).disabled, true);
+    } else {
+      assert.ok(screen.getByRole("cell", { name: "Applied response" }));
+      assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
+    }
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("backend restart discards old project and preview responses and reloads the shared projection", async () => {
+  const active = sharedEventWorkspace();
+  let listCalls = 0;
+  let finishList: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  let finishPreview: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+  const api = mockApi({ load: ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active }),
+    onProjects: async () => ++listCalls === 1 ? new Promise((resolve) => { finishList = resolve; }) : ok(projectList(active, ["Restarted"], 2)),
+    onWorkspace: async (input) => input.type === "workspace.load"
+      ? ok({ workspaces: [{ workspaceId: active.workspaceId, name: active.name }], activeWorkspace: active })
+      : new Promise((resolve) => { finishPreview = resolve; }) });
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Preview project folders" }));
+  await act(async () => { api.emitStatus("unavailable"); });
+  await act(async () => { api.emitStatus("ready"); });
+  await screen.findByRole("cell", { name: "Restarted" });
+  await act(async () => {
+    finishList?.(ok(projectList(active, ["Old process"], 1)));
+    finishPreview?.(ok(previewResult(active, "expired-token")));
+  });
+  assert.equal(screen.queryByRole("cell", { name: "Old process" }), null);
+  assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
+  cleanup(); assert.equal(api.changeListenerCount(), 0);
+});
+
+test("selection and removal discard delayed discovery list, preview and Apply responses", async () => {
+  for (const phase of ["list", "preview", "apply"] as const) {
+    for (const removed of [false, true]) {
+      const active = eventWorkspace("Old discovery"), other = eventWorkspace("Current discovery");
+      let finish: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+      const api = mockApi({
+        onProjects: async (input) => input.type === "workspace.listProjects" && input.workspaceId === active.workspaceId
+          ? phase === "list" ? new Promise((resolve) => { finish = resolve; }) : ok(projectList(active, ["Old saved"]))
+          : ok(projectList(other, ["Current saved"])),
+        onWorkspace: async (input) => {
+          if (input.type === "workspace.load") return ok(snapshotOf(active, [active, other]));
+          if (input.type === "workspace.previewDiscovery") return phase === "preview"
+            ? new Promise((resolve) => { finish = resolve; }) : ok(previewResult(active));
+          if (input.type === "workspace.applyDiscovery") return new Promise((resolve) => { finish = resolve; });
+          return fail("invalid_input");
+        } });
+      render(<App />);
+      const trigger = await screen.findByRole("button", { name: "Preview project folders" });
+      if (phase !== "list") {
+        await screen.findByRole("cell", { name: "Old saved" });
+        await userEvent.click(trigger);
+        if (phase === "apply") await userEvent.click(await screen.findByRole("button", { name: "Apply reviewed projects" }));
+      }
+      await act(async () => { api.emitChange({ type: "workspace.listChanged", snapshot: snapshotOf(other, removed ? [other] : [active, other]) }); });
+      await screen.findByRole("cell", { name: "Current saved" });
+      await act(async () => { finish?.(ok(phase === "preview" ? previewResult(active) : projectList(active, ["Delayed discovery"]))); });
+      assert.equal(screen.queryByRole("cell", { name: "Delayed discovery" }), null);
+      assert.equal(screen.queryByRole("heading", { name: "Direct project preview" }), null);
+      assert.ok(screen.getByRole("heading", { name: "Current discovery" }));
+      cleanup(); assert.equal(api.changeListenerCount(), 0);
+    }
+  }
+});
+
+test("EN/RU notification reload failures and below-revision replies recover through project Retry", async () => {
+  for (const language of ["en", "ru"] as const) {
+    const active = sharedEventWorkspace();
+    let calls = 0;
+    const api = mockApi({ language, load: ok(snapshotOf(active)), onProjects: async () => {
+      if (++calls === 1) return ok(projectList(active, ["Saved"], 1));
+      if (calls === 2) return fail("storage");
+      if (calls === 3) return ok(projectList(active, ["Outdated reply"], 1));
+      return ok(projectList(active, ["Recovered"], 2));
+    } });
+    render(<App />); await screen.findByRole("cell", { name: "Saved" });
+    await act(async () => { api.emitChange(projectEvent(active, 2)); });
+    await screen.findByRole("heading", { name: translate(language, "projectsError") });
+    assert.equal(screen.queryByRole("cell"), null);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await screen.findByRole("heading", { name: translate(language, "projectsError") });
+    assert.equal(screen.queryByRole("cell", { name: "Outdated reply" }), null);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "projectsRetry") }));
+    await screen.findByRole("cell", { name: "Recovered" });
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
   }
 });

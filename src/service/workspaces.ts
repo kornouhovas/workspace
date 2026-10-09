@@ -147,15 +147,23 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
         const interpretation = interpretProjects(scan, token.projects);
         if (JSON.stringify(interpretation.entries) !== JSON.stringify(token.preview.entries)) return stale();
+        const changed = source.discoveryMode !== "direct" ||
+          source.excludedRelativePaths !== JSON.stringify(token.preview.excludedRelativePaths) ||
+          source.appliedRootIdentity !== JSON.stringify(scan.snapshot.root.identity) ||
+          interpretation.additions.length > 0 ||
+          interpretation.retained.some((row, index) => row.associationState !== token.projects[index].associationState);
+        const committedEvent: WorkspaceChangeEvent = { type: "workspace.projectsChanged", sourceId: source.id,
+          workspaceIds: sourceState(source.id, { canonicalRoot: source.canonicalRoot, sourceAvailable: true }).workspaceIds,
+          revision: source.discoveryRevision + (changed ? 1 : 0) };
         const result = db.transaction((tx) => {
           if (JSON.stringify(workspaceSource(workspaceId)) !== JSON.stringify(source) ||
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects)) throw new StalePreview();
-          tx.update(schema.sources).set({ discoveryMode: "direct", discoveryRevision: source.discoveryRevision + 1,
+          if (changed) tx.update(schema.sources).set({ discoveryMode: "direct", discoveryRevision: source.discoveryRevision + (changed ? 1 : 0),
             excludedRelativePaths: JSON.stringify(token.preview.excludedRelativePaths),
             appliedRootIdentity: JSON.stringify(scan.snapshot!.root.identity),
           }).where(eq(schema.sources.id, source.id)).run();
           // Retire associations before inserting replacements into the unique current-path index.
-          for (const row of interpretation.retained) {
+          for (const row of interpretation.retained.filter((row, index) => row.associationState !== token.projects[index].associationState)) {
             tx.update(schema.projects).set({ associationState: row.associationState })
               .where(eq(schema.projects.id, row.id)).run();
           }
@@ -169,6 +177,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           return projectList(workspaceId, committed, recheck);
         });
         previewTokens.delete(workspaceId);
+        if (changed) {
+          for (const [id, saved] of previewTokens) if (saved.preview.sourceId === source.id) previewTokens.delete(id);
+          publish([committedEvent]);
+        }
         return { ok: true, value: result };
       } catch (error) { return error instanceof StalePreview ? stale() : storageFailure(); }
     },

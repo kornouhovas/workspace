@@ -56,7 +56,11 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
           return <li key={entry.relativePath}>
             <label>
               <input type="checkbox" ref={(element) => {
-                if (element) controls.current.set(entry.relativePath, element); else controls.current.delete(entry.relativePath);
+                if (element) controls.current.set(entry.relativePath, element);
+                else {
+                  if (document.activeElement === controls.current.get(entry.relativePath)) requestedFocus.current = entry.relativePath;
+                  controls.current.delete(entry.relativePath);
+                }
               }} checked={entry.reason !== null} disabled={pending || automatic}
                 onChange={(event) => { requestedFocus.current = entry.relativePath; onExclude(entry.relativePath, event.currentTarget.checked); }} />
               <span>{t("discoveryExclude")}: <span className="discovery-name">{entry.name}</span></span>
@@ -74,8 +78,8 @@ export function DiscoveryPanel({ language, preview, pending, error, applying, ap
   </section>;
 }
 
-export function DiscoveryController({ client, workspaceId, language, disabled, onApplied }: {
-  client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean; onApplied?(projects: ProjectList): void;
+export function DiscoveryController({ client, workspaceId, sourceId, minimumRevision, invalidation, language, disabled, onApplied }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; minimumRevision: { current: number }; invalidation: number; language: Language; disabled: boolean; onApplied?(projects: ProjectList): void;
 }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<DiscoveryPreview | null>(null);
@@ -89,6 +93,15 @@ export function DiscoveryController({ client, workspaceId, language, disabled, o
   const trigger = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
   const exclusions = useRef<string[] | undefined>(undefined);
+  const lastInvalidation = useRef(invalidation);
+  useEffect(() => {
+    if (lastInvalidation.current === invalidation) return;
+    lastInvalidation.current = invalidation;
+    // A committed event can precede our Apply response. Keep that request alive,
+    // but require its result to meet the latest observed source revision.
+    if (!applyingRef.current) { version.current++; setPending(false); }
+    setPreview(null); setStale(true); setError(false); setApplyError(false);
+  }, [invalidation]);
   useEffect(() => () => { version.current++; }, []);
   useEffect(() => {
     if (!open && returnFocus.current) { trigger.current?.focus(); returnFocus.current = false; }
@@ -102,7 +115,8 @@ export function DiscoveryController({ client, workspaceId, language, disabled, o
     try {
       const result = await client.previewDiscovery(workspaceId, draft);
       if (current !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId) {
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
+        result.value.revision >= minimumRevision.current) {
         setPreview(result.value);
         exclusions.current = result.value.excludedRelativePaths;
       } else { setPreview(null); setError(true); }
@@ -110,20 +124,21 @@ export function DiscoveryController({ client, workspaceId, language, disabled, o
     finally { if (current === version.current) setPending(false); }
   };
   const apply = async () => {
-    if (pending || applyingRef.current || !preview?.previewToken) return;
+    if (pending || applyingRef.current || !preview?.previewToken || preview.revision < minimumRevision.current) return;
     const current = ++version.current;
     applyingRef.current = true;
     setApplying(true); setPending(true); setApplyError(false); setStale(false);
     try {
       const result = await client.applyDiscovery(workspaceId, preview.previewToken);
       if (current !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === preview.sourceId) {
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId && result.value.revision >= minimumRevision.current) {
         onApplied?.(result.value);
         returnFocus.current = true; setOpen(false); setPreview(null);
       } else if (!result.ok && result.error.code === "stale_preview") {
         setStale(true);
         await request(exclusions.current);
-      } else setApplyError(true);
+      } else if (result.ok) { setPreview(null); setStale(true); }
+      else setApplyError(true);
     } catch { if (current === version.current) setApplyError(true); }
     finally {
       applyingRef.current = false;
@@ -134,7 +149,7 @@ export function DiscoveryController({ client, workspaceId, language, disabled, o
   return <>
     <button ref={trigger} type="button" className="workspace-button workspace-button--secondary" disabled={disabled || open}
       onClick={() => { setOpen(true); setApplyError(false); setStale(false); void request(); }}>{translate(language, "discoveryAction")}</button>
-    {open && <DiscoveryPanel language={language} preview={preview} pending={pending} error={error} applying={applying} applyError={applyError} stale={stale} onApply={() => void apply()}
+    {open && <DiscoveryPanel language={language} preview={preview && preview.revision >= minimumRevision.current ? preview : null} pending={pending} error={error} applying={applying} applyError={applyError} stale={stale} onApply={() => void apply()}
       onRetry={() => { setApplyError(false); void request(exclusions.current); }}
       onExclude={(name, excluded) => {
         const draft = new Set(exclusions.current ?? []);
@@ -146,13 +161,15 @@ export function DiscoveryController({ client, workspaceId, language, disabled, o
 }
 
 
-export function DiscoveryWorkspace({ client, workspaceId, language, disabled }: {
-  client: WorkspaceServiceClient; workspaceId: string; language: Language; disabled: boolean;
+export function DiscoveryWorkspace({ client, workspaceId, sourceId, language, disabled }: {
+  client: WorkspaceServiceClient; workspaceId: string; sourceId: string; language: Language; disabled: boolean;
 }) {
   const [projects, setProjects] = useState<ProjectList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const version = useRef(0);
+  const minimumRevision = useRef(0);
+  const [invalidation, setInvalidation] = useState(0);
   const t = (key: TranslationKey) => translate(language, key);
   const load = async () => {
     const current = ++version.current;
@@ -160,19 +177,38 @@ export function DiscoveryWorkspace({ client, workspaceId, language, disabled }: 
     try {
       const result = await client.listProjects(workspaceId);
       if (current !== version.current) return;
-      if (result.ok && result.value.workspaceId === workspaceId) setProjects(result.value);
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
+        result.value.revision >= minimumRevision.current) {
+        if (result.value.revision > minimumRevision.current) {
+          minimumRevision.current = result.value.revision;
+          setInvalidation((value) => value + 1);
+        }
+        setProjects(result.value);
+      }
       else setError(true);
     } catch { if (current === version.current) setError(true); }
     finally { if (current === version.current) setLoading(false); }
   };
   useEffect(() => {
+    const unsubscribe = client.onWorkspaceChange((event) => {
+      if (event.type === "workspace.listChanged") return;
+      const affectedSource = event.type === "workspace.projectsChanged" ? event.sourceId : event.source.sourceId;
+      const references = event.type === "workspace.projectsChanged" ? event.workspaceIds : event.source.workspaceIds;
+      if (affectedSource !== sourceId || !references.includes(workspaceId)) return;
+      if (event.type === "workspace.projectsChanged") {
+        if (event.revision <= minimumRevision.current) return;
+        minimumRevision.current = event.revision;
+      }
+      setInvalidation((value) => value + 1);
+      void load();
+    });
     void load();
-    return () => { version.current++; };
-    // A workspace/root change remounts this controller. Cross-source event handling is the next slice.
-  }, [client, workspaceId]);
+    return () => { version.current++; unsubscribe(); };
+  }, [client, workspaceId, sourceId]);
   return <>
-    <DiscoveryController client={client} workspaceId={workspaceId} language={language} disabled={disabled}
-      onApplied={(value) => { version.current++; setProjects(value); setError(false); setLoading(false); }} />
+    <DiscoveryController client={client} workspaceId={workspaceId} sourceId={sourceId} minimumRevision={minimumRevision}
+      invalidation={invalidation} language={language} disabled={disabled}
+      onApplied={(value) => { version.current++; minimumRevision.current = value.revision; setProjects(value); setError(false); setLoading(false); }} />
     <section className="table-view" aria-labelledby="table-title" aria-busy={loading}>
       <div className="table-view__heading"><div>
         <h3 id="table-title">{t("tableViewTitle")}</h3>

@@ -61,7 +61,7 @@ export function App() {
         setRenameDraft((draft) => draft && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === draft.workspaceId) ? null : draft);
         setRemovalTarget((target) => target && !event.snapshot.workspaces.some((workspace) => workspace.workspaceId === target.workspaceId) ? null : target);
         setRefreshError(false);
-      } else {
+      } else if (event.type === "workspace.sourceChanged") {
         sourceVersion.current.set(event.source.sourceId, (sourceVersion.current.get(event.source.sourceId) ?? 0) + 1);
         sourceStates.current.set(event.source.sourceId, event.source);
         setWorkspaceData((current) => {
@@ -560,8 +560,8 @@ export function App() {
                   {t("refreshSourceErrorDescription")}
                 </StatusMessage>
               )}
-              <DiscoveryWorkspace key={`${activeWorkspace.workspaceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
-                client={client} workspaceId={activeWorkspace.workspaceId} language={language}
+              <DiscoveryWorkspace key={`${activeWorkspace.workspaceId}:${activeWorkspace.sourceId}:${activeWorkspace.canonicalRoot}:${activeWorkspace.sourceAvailable}`}
+                client={client} workspaceId={activeWorkspace.workspaceId} sourceId={activeWorkspace.sourceId} language={language}
                 disabled={busy !== null || renameDraft !== null || removalTarget !== null} />
               <button
                 type="button"

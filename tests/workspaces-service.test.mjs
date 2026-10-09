@@ -1266,6 +1266,7 @@ test("apply rolls back configuration/project failures and emits no committed dis
         assert.deepEqual(events, []);
         sql.exec("DROP TRIGGER fail_write");
         assert.equal(applyDiscovery(service, workspace.workspaceId, preview.previewToken).ok, true);
+        events.length = 0;
         // Next iteration must insert a new folder.
         mkdirSync(join(root, `Next-${table}`));
       }
@@ -1546,5 +1547,48 @@ test("a reused native inode with changed birth evidence at the same path retires
       assert.equal(applyDiscovery(service, workspace.workspaceId).value.projects[0].projectId, replacement.projects[0].projectId);
       assert.equal(projectRecords(databasePath).find((row) => row.id === original.projectId).association_state, "replaced");
     } finally { fs.lstatSync = originalLstat; syncBuiltinESMExports(); service.close(); }
+  });
+});
+
+test("committed projects fan out to actual source references, invalidate sibling previews, suppress unchanged applies and retain metadata", () => {
+  withFixture(({ directory, root, databasePath }) => {
+    mkdirSync(join(root, "Project"));
+    const otherRoot = join(directory, "other"); mkdirSync(otherRoot);
+    const service = openSettingsService(databasePath);
+    const create = (name, rootPath) => service.handleCommand({ type: "workspace.create", name, rootPath }).value;
+    const one = create("One", root), two = create("Two", root), other = create("Other", otherRoot);
+    const events = [], secondClient = [];
+    const off = service.workspaces.subscribe((event) => events.push(event));
+    service.workspaces.subscribe((event) => secondClient.push(event));
+    try {
+      const siblingPreview = discoveryPreview(service, two.workspaceId).value;
+      const unrelatedPreview = discoveryPreview(service, other.workspaceId).value;
+      const applied = applyDiscovery(service, one.workspaceId).value;
+      assert.deepEqual(events, [{ type: "workspace.projectsChanged", sourceId: one.sourceId,
+        workspaceIds: [one.workspaceId, two.workspaceId], revision: applied.revision }]);
+      assert.deepEqual(secondClient, events);
+      assert.equal(applyDiscovery(service, two.workspaceId, siblingPreview.previewToken).error.code, "stale_preview");
+      assert.deepEqual(listProjects(service, two.workspaceId).value.projects, applied.projects);
+      assert.notEqual(one.viewId, two.viewId);
+      const unchangedSibling = discoveryPreview(service, two.workspaceId).value;
+      assert.equal(applyDiscovery(service, one.workspaceId).value.revision, applied.revision);
+      assert.equal(applyDiscovery(service, two.workspaceId, unchangedSibling.previewToken).value.revision, applied.revision);
+      assert.equal(events.length, 1);
+      off();
+      assert.equal(applyDiscovery(service, other.workspaceId, unrelatedPreview.previewToken).ok, true);
+      assert.equal(events.length, 1);
+      assert.equal(secondClient.at(-1).sourceId, other.sourceId);
+      const remove = (id) => service.handleCommand({ type: "workspace.remove", workspaceId: id });
+      remove(one.workspaceId); remove(two.workspaceId);
+      const saved = projectRecords(databasePath);
+      const reused = create("Reused", root);
+      assert.equal(reused.sourceId, one.sourceId);
+      assert.notEqual(reused.viewId, two.viewId);
+      assert.deepEqual(listProjects(service, reused.workspaceId).value.projects, applied.projects);
+      assert.deepEqual(projectRecords(databasePath), saved);
+      applyDiscovery(service, reused.workspaceId, discoveryPreview(service, reused.workspaceId, ["Project"]).value.previewToken);
+      assert.deepEqual(secondClient.at(-1), { type: "workspace.projectsChanged", sourceId: one.sourceId,
+        workspaceIds: [reused.workspaceId], revision: applied.revision + 1 });
+    } finally { service.close(); }
   });
 });
