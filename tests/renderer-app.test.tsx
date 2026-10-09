@@ -824,3 +824,26 @@ test("a delayed retry result cannot restore a removed configuration or overwrite
   assert.equal(screen.queryByRole("heading", { name: "Offline" }), null);
   cleanup();
 });
+
+test("long authored names and paths survive language changes and keyboard confirmation cancellation", async () => {
+  const active = eventWorkspace("  " + "LongAuthoredИмя".repeat(12) + "  ");
+  active.canonicalRoot = "/Projects/" + "UnbrokenPathСегмент".repeat(12);
+  const sibling = eventWorkspace("Sibling", active.sourceId);
+  mockApi({ load: ok(snapshotOf(active, [active, sibling])) });
+  render(<App />);
+  for (const language of ["en", "ru"] as const) {
+    const languageSelect = await screen.findByRole("combobox", { name: /Interface language|Язык интерфейса/ });
+    await userEvent.selectOptions(languageSelect, language);
+    await waitFor(() => assert.equal(document.documentElement.lang, language));
+    assert.equal(screen.getByRole("heading", { name: active.name.trim() }).textContent, active.name);
+    assert.equal(screen.getByText(active.canonicalRoot, { exact: true }).textContent, active.canonicalRoot);
+    const remove = screen.getByRole("button", { name: `${translate(language, "removeWorkspaceAction")}: ${active.name.trim()}` });
+    remove.focus();
+    await userEvent.keyboard("{Enter}");
+    assert.ok(screen.getByRole("form", { name: `${translate(language, "removeWorkspaceTitle")}: ${active.name.trim()}` }));
+    await userEvent.keyboard("{Escape}");
+    assert.equal(document.activeElement, remove);
+    assert.equal(screen.queryByRole("form"), null);
+  }
+  cleanup();
+});

@@ -1,3 +1,9 @@
+import { useEffect, useState } from "react";
+import type { Language, ServiceResult } from "../../contracts/settings.js";
+import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
+import type { ActiveWorkspace, WorkspaceChangeEvent, WorkspaceLoad } from "../../contracts/workspaces.js";
+import { App } from "../App.js";
+import "../app.css";
 import type { Story } from "@ladle/react";
 import "./bb-foundation.css";
 import {
@@ -31,3 +37,82 @@ export const Russian: Story = () => (
     <EmptyStatePanel>Проектов пока нет.</EmptyStatePanel>
   </div>
 );
+
+// Preview the production screen through its typed boundary. These disposable
+// in-memory fixtures never access the desktop service or a user's folders.
+function WorkspacePreview({ language, state = "management" }: {
+  language: Language;
+  state?: "management" | "confirmation" | "loading" | "error" | "empty" | "unavailable";
+}) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const previous = window.workspace;
+    let savedLanguage = language;
+    let records: ActiveWorkspace[] = [
+      {
+        workspaceId: "00000000-0000-4000-8000-000000000001", sourceId: "00000000-0000-4000-8000-000000000010",
+        viewId: "00000000-0000-4000-8000-000000000020", name: "  Authored-workspace-" + "long-name-".repeat(8) + "  ",
+        canonicalRoot: "/Projects/" + "long-authored-folder-path-".repeat(8), sourceAvailable: state !== "unavailable",
+      },
+      {
+        workspaceId: "00000000-0000-4000-8000-000000000002", sourceId: "00000000-0000-4000-8000-000000000010",
+        viewId: "00000000-0000-4000-8000-000000000021", name: "Sibling configuration / Свой вид",
+        canonicalRoot: "/Projects/" + "long-authored-folder-path-".repeat(8), sourceAvailable: state !== "unavailable",
+      },
+    ];
+    if (state === "empty") records = [];
+    let selected = records[0]?.workspaceId;
+    const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
+    const snapshot = (): WorkspaceLoad => ({
+      workspaces: records.map(({ workspaceId, name }) => ({ workspaceId, name })),
+      activeWorkspace: records.find((record) => record.workspaceId === selected) ?? null,
+    });
+    const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
+    const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
+      if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (state === "error") return failure;
+      if (input.type === "workspace.reorder") records = input.workspaceIds.map((id) => records.find((record) => record.workspaceId === id)!);
+      else if (input.type === "workspace.rename") records = records.map((record) => record.workspaceId === input.workspaceId ? { ...record, name: input.name } : record);
+      else if (input.type === "workspace.remove") {
+        records = records.filter((record) => record.workspaceId !== input.workspaceId);
+        if (selected === input.workspaceId) selected = records[0]?.workspaceId;
+      } else if (input.type === "workspace.activate") {
+        selected = input.workspaceId;
+        return { ok: true, value: snapshot().activeWorkspace! };
+      } else if (input.type === "workspace.refreshSource") return failure;
+      else return { ok: false, error: { code: "invalid_input", message: "Preview does not create folders" } };
+      const value = snapshot();
+      listeners.forEach((listener) => listener({ type: "workspace.listChanged", snapshot: value }));
+      return { ok: true, value };
+    };
+    window.workspace = {
+      getBackendStatus: async () => ({ state: state === "loading" ? "starting" : "ready" }),
+      onBackendStatus: () => () => {},
+      settings: async (input) => {
+        if (input.type === "settings.setLanguage") savedLanguage = input.language;
+        return { ok: true, value: { language: savedLanguage } };
+      },
+      workspace: workspace as WorkspaceDesktopApi["workspace"],
+      onWorkspaceChange: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+      pickRoot: async () => ({ outcome: "cancelled" }),
+    };
+    const observer = new MutationObserver(() => {
+      const selector = state === "confirmation" ? "button[data-action='remove']" : "button[data-direction='down']:not(:disabled)";
+      const button = document.querySelector<HTMLButtonElement>(selector);
+      if (button) { observer.disconnect(); button.click(); }
+    });
+    if (state === "confirmation" || state === "error") observer.observe(document.body, { childList: true, subtree: true });
+    setReady(true);
+    return () => { observer.disconnect(); window.workspace = previous; };
+  }, [language, state]);
+  return ready ? <App /> : null;
+}
+
+export const ManagementEnglish: Story = () => <WorkspacePreview language="en" />;
+export const ManagementRussian: Story = () => <WorkspacePreview language="ru" />;
+export const ConfirmationEnglish: Story = () => <WorkspacePreview language="en" state="confirmation" />;
+export const ConfirmationRussian: Story = () => <WorkspacePreview language="ru" state="confirmation" />;
+export const ManagementError: Story = () => <WorkspacePreview language="en" state="error" />;
+export const EmptyWorkspace: Story = () => <WorkspacePreview language="ru" state="empty" />;
+export const LoadingWorkspace: Story = () => <WorkspacePreview language="en" state="loading" />;
+export const UnavailableSource: Story = () => <WorkspacePreview language="ru" state="unavailable" />;

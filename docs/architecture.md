@@ -2,7 +2,11 @@
 
 ## Status and accepted foundation
 
-This branch contains a runnable local desktop application with settings and the initial workspace lifecycle. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite. The desktop includes a native directory picker and a localized empty Table screen. Project discovery and editing, properties, Board views, archive/restore and other filesystem operations remain future work. SQLite with Drizzle is the selected persistence foundation.
+This branch contains a runnable local desktop application with settings and workspace management. The service persists canonical sources, named workspaces, one default Table view per workspace and the active workspace/view selection in SQLite.
+
+Workspace names, order and active selection survive restart. Rename/reorder/remove validate IDs and commit snapshots transactionally. Removal deletes only the workspace and its owned views, retains the source even after its last reference, and never deletes external files. Active removal selects the first remaining configuration and its existing Table view; final removal clears selection.
+
+The desktop includes a native directory picker and a localized empty Table screen. Project discovery and editing, properties, Board views, archive/restore and other filesystem operations remain future work. SQLite with Drizzle is the selected persistence foundation.
 
 The product uses selected bb architecture and UI foundations while retaining its own folder/project domain. Adopt useful modules deliberately, with provenance and boundary tests; do not assume a whole bb package is independent of its chat/session model.
 
@@ -14,9 +18,9 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 
 | Boundary | Responsibility | Pending decision |
 | --- | --- | --- |
-| Desktop renderer | React settings, workspace creation and empty Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
-| Typed service boundary | Settings and workspace query/command contracts and normalized errors, exposed through preload and IPC | Additional contracts and event subscriptions as features are added |
-| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, atomic workspace creation, active Table view selection | Discovery policy, properties and future domain capabilities |
+| Desktop renderer | React settings, workspace creation/management, removal confirmation and empty Table screens; interaction, localization and presentation state | Future routing and state needs as features are added |
+| Typed service boundary | Settings/workspace commands, committed snapshots, source refresh and validated change events through preload and IPC | Additional domain contracts as features are added |
+| Local application service | Settings and workspace/source identity persistence in a separate TypeScript process; canonical root validation, transactional workspace creation/rename/order/removal, active Table view selection and observed source state | Discovery policy, properties and future domain capabilities |
 | Machine filesystem adapter | Validated discovery, moves, archive/restore and native integration | Watcher/reconciliation and OS-specific recovery |
 | Persistence | SQLite schema, Drizzle migrations and repositories | Database partitioning and backup strategy |
 | Shared-folder exchange, later | Durable changes, snapshots, identity and conflict handling | Protocol/library, tombstones and compaction |
@@ -24,6 +28,12 @@ The runtime uses Electron `utilityProcess` with message ports, React with Vite, 
 | Agent execution, later | Personal project chats, local Codex/API-key execution, permission modes and parallel runs | Working-file isolation, result integration and exact runtime policy |
 
 The renderer uses a narrow preload/service boundary. It cannot directly read SQLite, call Node filesystem APIs or hold host credentials. Electron uses context isolation, disabled renderer Node integration and sandboxing. Future filesystem mutations must check the selected source and current destination state.
+
+## Implemented change notifications
+
+The service publishes workspace-list snapshots after successful mutations and source-state events after changed availability or committed locator observations. Source events carry source ID, canonical root, availability and the actual referencing workspace IDs. Load/create/activate and the real refresh-source command observe folder state using the existing canonicalization/access rules; unchanged observations and failed transactions do not publish committed changes. Source availability is runtime state, not a new persisted discovery or watcher capability.
+
+Validated event envelopes are separate from responses on utilityProcess message ports. BackendController forwards events to main, narrow preload subscriptions and WorkspaceServiceClient. Unsubscription, renderer unload and backend shutdown release listeners. React applies source changes only to a referencing configuration and guards delayed command results against newer selection/source observations. The unavailable-folder screen exposes an EN/RU retry action. External folder watchers, project/property changes and general view management remain future slices.
 
 ## bb UI reference
 

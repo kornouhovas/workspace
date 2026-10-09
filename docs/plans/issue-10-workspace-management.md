@@ -1,7 +1,9 @@
 # Issue #10: Manage Multiple Workspace Configurations
 
 
-## Overview Complete T03 by adding workspace rename, persistent ordering, safe configuration removal and shared-source notifications to the existing desktop lifecycle. Multiple workspaces over one canonical root keep distinct workspace/view identities and independent presentation records. Removing a workspace retains its source and external files, including after the last reference is removed. Plan destination: docs/plans/issue-10-workspace-management.md.
+## Overview
+
+Complete T03 by adding workspace rename, persistent ordering, safe configuration removal and shared-source notifications to the existing desktop lifecycle. Multiple workspaces over one canonical root keep distinct workspace/view identities and independent presentation records. Removing a workspace retains its source and external files, including after the last reference is removed. Plan destination: docs/plans/issue-10-workspace-management.md.
 
 
 ## Context
@@ -171,17 +173,18 @@ Files:
 - Modify: tests/backend-lifecycle.test.mjs
 - Modify: src/renderer/components/bb-foundation.stories.tsx
 - Modify: README.md
+- Modify: CHANGELOG.md
 - Modify: docs/development.md
 - Modify: docs/architecture.md
 - Modify: docs/reuse.md only if additional bb code is actually copied
 
-- [ ] Extend automated Electron scenarios to create two same-root configurations and a different-root configuration, rename/reorder/select through the UI, restart, remove inactive/active/final configurations, restart empty and recreate over the retained source. Assert workspace/source/view IDs and sentinel file bytes.
-- [ ] Exercise source-change subscription delivery through the actual utilityProcess/preload/client route using temporary-root availability changes and the production refresh action. Preserve strict canonical-root, language, renderer-isolation and bounded shutdown/startup-failure assertions.
-- [ ] Update Ladle previews and focused UI regressions for management, confirmation, loading/error/empty states and long authored names/paths. Capture EN/RU management screens at 1440×960, 1024×720 and narrow width, with automated overflow checks.
-- [ ] Update README.md, docs/development.md and docs/architecture.md to describe only implemented management/notification behavior, retained data, fallback selection and actual verification commands. Preserve notices and provenance when applicable.
-- [ ] Run the full checks, each with PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" explicitly prepended: npm test, npm run lint, npm run typecheck, npm run check:docs, npm run build and npm run build:ladle. Run git diff --check.
-- [ ] Run explicitly PATH-prefixed npm run smoke:runtime -- dev, npm run package:dev:mac and npm run smoke:runtime -- release against a freshly built macOS artifact. Bound packaging waits; if downloads fail, use run-local --config.electronDist=node_modules/electron/dist with installed Electron 44.7.0 without modifying canonical package/CI settings.
-- [ ] Record actual commands, results, screenshots and limitations under ignored work/ralphex/issue-10. Inspect the final diff against dd9c42d880cf312a8a685587920c4c837c6574d6, commit verified task files and leave a clean worktree. Do not add an active-plan link to docs/plans/README.md.
+- [x] Extend automated Electron scenarios to create two same-root configurations and a different-root configuration, rename/reorder/select through the UI, restart, remove inactive/active/final configurations, restart empty and recreate over the retained source. Assert workspace/source/view IDs and sentinel file bytes.
+- [x] Exercise source-change subscription delivery through the actual utilityProcess/preload/client route using temporary-root availability changes and the production refresh action. Preserve strict canonical-root, language, renderer-isolation and bounded shutdown/startup-failure assertions.
+- [x] Update Ladle previews and focused UI regressions for management, confirmation, loading/error/empty states and long authored names/paths. Capture EN/RU management screens at 1440×960, 1024×720 and narrow width, with automated overflow checks.
+- [x] Update README.md, docs/development.md and docs/architecture.md to describe only implemented management/notification behavior, retained data, fallback selection and actual verification commands. Preserve notices and provenance when applicable.
+- [x] Run the full checks, each with PATH="/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH" explicitly prepended: npm test, npm run lint, npm run typecheck, npm run check:docs, npm run build and npm run build:ladle. Run git diff --check.
+- [x] Run explicitly PATH-prefixed npm run smoke:runtime -- dev, npm run package:dev:mac and npm run smoke:runtime -- release against a freshly built macOS artifact. Bound packaging waits; if downloads fail, use run-local --config.electronDist=node_modules/electron/dist with installed Electron 44.7.0 without modifying canonical package/CI settings.
+- [x] Record actual commands, results, screenshots and limitations under ignored work/ralphex/issue-10. Inspect the final diff against dd9c42d880cf312a8a685587920c4c837c6574d6, commit verified task files and leave a clean worktree. Do not add an active-plan link to docs/plans/README.md.
 
 ## Acceptance Mapping
 

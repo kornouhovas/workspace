@@ -53,7 +53,7 @@ Use temporary data for destructive and recovery checks. Never use live user proj
 
 ## Current desktop slice
 
-The repository currently builds and runs an Electron application with settings and the initial workspace lifecycle. Use Node.js 22.12 or newer (the CI matrix pins 22.21.1) and install the committed dependency resolution with `npm ci`.
+The repository currently builds and runs an Electron application with settings and workspace management. Use Node.js 22.12 or newer (the CI matrix pins 22.21.1) and install the committed dependency resolution with `npm ci`.
 
 | Command | Purpose |
 | --- | --- |
@@ -64,7 +64,7 @@ The repository currently builds and runs an Electron application with settings a
 | `npm run build` | Produce desktop, renderer and backend outputs, copy migrations, and verify the product version. |
 | `npm run ladle` | Start the component preview server. |
 | `npm run build:ladle` | Build the component previews. |
-| `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; create a workspace through the UI with a root-picker test seam, check EN/RU and narrow/wide layouts, reopen the saved workspace and Table view, and check isolation, backend shutdown and startup failure. |
+| `npm run smoke:runtime -- dev` | Launch Electron with temporary data through Playwright Core; create same-root and different-root configurations through the UI with a root-picker test seam; rename/reorder/select, restart, remove inactive/active/final configurations, restart empty and reuse retained sources; check notification fanout/unsubscription, retained file bytes, EN/RU layouts, isolation, backend shutdown and startup failure. |
 | `npm run package:dev:mac` | Build and verify a macOS development directory artifact on macOS. |
 | `npm run package:dev:win` | Build and verify a Windows development directory artifact on Windows. |
 | `npm run check:artifact -- release` | Check packaged desktop/backend/renderer resources, SQL migrations, version, native SQLite binary and bb license notice. |
@@ -74,6 +74,14 @@ The app uses `package.json` version `0.1.0` as its product version. The build wr
 
 Electron main owns the window and starts the TypeScript service in a `utilityProcess`. The service communicates through Electron message ports and does not open a listening network socket. It owns SQLite through Drizzle and `better-sqlite3`, and applies the versioned SQL migrations shipped under `dist/service/db/migrations` when it opens the database. The renderer calls only the narrow preload API; it has no direct Node.js, filesystem or database access. Closing the app stops the service process.
 
-The UI exposes the saved interface language, with English as the first-launch default and Russian as the other supported value. Loads and saves go through the service; a failed save does not change the active language. Users can create named workspaces over accessible real directories, activate saved workspaces and reopen the active workspace and default Table view after restart. Each workspace has a distinct view even when workspaces share one canonical source. The Table stays honestly empty until project discovery is implemented. The automated runtime picker seam validates the UI and persistence route; it does not exercise the OS-native dialog by hand. The adapted UI controls retain their upstream MIT notice at `src/renderer/components/bb/LICENSE`; packaging places the notice in the artifact's `licenses` directory.
+The UI exposes the saved interface language, with English as the first-launch default and Russian as the other supported value. Loads and saves go through the service; a failed save does not change the active language. Users can create named workspaces over accessible real directories, activate, rename, reorder and remove saved configurations, and reopen the active workspace and default Table view after restart.
+
+Names retain authored text and duplicates are allowed. Ordering is persisted; stale permutations and invalid IDs fail without changing another configuration. Removing an inactive workspace preserves selection. Removing the active workspace selects the first remaining workspace in saved order and its existing Table view, including an unavailable source. Removing the final workspace clears selection and shows creation. Removal deletes only the configuration and its owned views, retaining source records and external files. Recreating over that root reuses the source identity. Each workspace has a distinct view even when workspaces share one canonical source. The Table stays honestly empty until project discovery is implemented.
+
+Committed workspace-list changes and observed source availability/locator changes travel through utilityProcess message ports, main, preload and the typed client. The localized retry-folder-access action refreshes the actual source; notifications include all referencing workspace IDs and unrelated roots remain isolated. Unchanged observations do not emit events. External folder watching and project discovery are not implemented.
+
+The automated runtime picker seam validates the UI and persistence route; it does not exercise the OS-native dialog by hand. The adapted UI controls retain their upstream MIT notice at `src/renderer/components/bb/LICENSE`; packaging places the notice in the artifact's `licenses` directory.
 
 The desktop CI workflow runs install, tests, lint, type checks, build, Ladle build, Electron runtime smoke checks for the development app and packaged artifact, artifact creation and artifact-content checks on macOS and Windows. The smoke script requires a graphical desktop session. Local verification on macOS does not establish Windows launch or restart behavior; those require an observed Windows runner or a Windows host.
+
+Optional runtime evidence: set `WORKSPACE_SMOKE_EVIDENCE_DIR` to an ignored output directory when running either smoke mode. The script writes identity/event observations and management/removal-confirmation screenshots for EN/RU at 1440×960, 1024×720 and 420×800, and rejects horizontal overflow. It temporarily disconnects disposable roots and uses the production retry action to verify recovery; it never operates on live project folders.

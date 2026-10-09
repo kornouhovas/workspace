@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, realpath, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -75,90 +75,214 @@ async function assertStopped(pids) {
   }
 }
 
+const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR;
+if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
+const observations = [];
+
+async function load(page) {
+  const result = await page.evaluate(() => globalThis.window.workspace.workspace({ type: "workspace.load" }));
+  assert.equal(result.ok, true);
+  return result.value;
+}
+
+const identity = ({ workspaceId, sourceId, viewId }) => ({ workspaceId, sourceId, viewId });
+
+async function create(current, name, rootPath, language = "en") {
+  await current.electron.evaluate((_electron, path) => {
+    process.env.WORKSPACE_TEST_ROOT_PICKER_PATH = path;
+  }, rootPath);
+  const { page } = current;
+  if (await page.locator("#workspace-title").count()) {
+    await page.getByRole("button", { name: language === "en" ? "Create another workspace" : "Создать ещё одно рабочее пространство", exact: true }).click();
+  }
+  await page.getByRole("textbox").fill(name);
+  await page.getByRole("button", { name: language === "en" ? "Choose project folder" : "Выбрать папку проекта", exact: true }).click();
+  await page.getByText(rootPath, { exact: true }).waitFor();
+  await page.getByRole("button", { name: language === "en" ? "Create workspace" : "Создать рабочее пространство", exact: true }).click();
+  await page.getByRole("heading", { name: name.trim(), exact: true }).waitFor();
+  return (await load(page)).activeWorkspace;
+}
+
+async function select(page, workspace) {
+  await page.locator("#workspace-switcher").selectOption(workspace.workspaceId);
+  await page.getByRole("heading", { name: workspace.name.trim(), exact: true }).waitFor();
+  await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+}
+
+async function remove(page, workspace) {
+  await page.getByRole("button", { name: `Удалить рабочее пространство: ${workspace.name.trim()}`, exact: true }).click();
+  await page.getByText("Будут удалены только конфигурация этого рабочего пространства и её представления. Файлы проектов и метаданные источника сохранятся, даже если это последнее рабочее пространство для папки.", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Удалить конфигурацию", exact: true }).press("Enter");
+  await page.locator(".workspace-removal").waitFor({ state: "detached" });
+  await page.waitForFunction(() => !globalThis.document.querySelector("#workspace-switcher")?.disabled);
+  return load(page);
+}
+
+async function captureLayouts(page, language, name) {
+  await page.locator("#interface-language").selectOption(language);
+  await page.waitForFunction((lang) => globalThis.document.documentElement.lang === lang &&
+    !globalThis.document.querySelector("#interface-language")?.disabled, language);
+  const removeLabel = language === "en" ? "Remove workspace" : "Удалить рабочее пространство";
+  for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
+    await page.setViewportSize(size);
+    for (const state of ["management", "confirmation"]) {
+      if (state === "confirmation") {
+        await page.getByRole("button", { name: `${removeLabel}: ${name.trim()}`, exact: true }).click();
+      }
+      const overflow = await page.evaluate(() => ({
+        document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
+        elements: Array.from(globalThis.document.querySelectorAll(".workspace-screen, #workspace-title, .workspace-root, .workspace-management__row, .workspace-removal"))
+          .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.id),
+      }));
+      assert.deepEqual(overflow, { document: false, elements: [] }, `${language} ${state} ${size.width} overflow`);
+      if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
+      if (state === "confirmation") await page.locator(".workspace-removal").press("Escape");
+    }
+  }
+}
+
 let current;
 try {
   const dataDirectory = join(fixture, "normal");
   const projectRoot = join(fixture, `SelectedProjectRoot-${"a".repeat(90)}`);
-  await mkdir(projectRoot, { recursive: true });
+  const otherRoot = join(fixture, "OtherProjectRoot");
+  const sentinel = Buffer.from("Retained project bytes\0through workspace removal\n");
+  for (const path of [projectRoot, otherRoot]) {
+    await mkdir(path, { recursive: true });
+    await writeFile(join(path, "sentinel.txt"), sentinel);
+  }
   const canonicalProjectRoot = await realpath(projectRoot);
+  const canonicalOtherRoot = await realpath(otherRoot);
   current = await launch(dataDirectory, projectRoot);
-  const { page } = current;
+  let { page } = current;
   await page.getByRole("combobox", { name: "Interface language" }).waitFor();
   assert.equal(await page.locator("html").getAttribute("lang"), "en");
   assert.equal(await page.evaluate(() => typeof process), "undefined");
   assert.equal(await page.evaluate(() => typeof require), "undefined");
+  assert.deepEqual(await current.electron.evaluate(({ BrowserWindow }) => {
+    const preferences = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
+    return { contextIsolation: preferences.contextIsolation, nodeIntegration: preferences.nodeIntegration, sandbox: preferences.sandbox };
+  }), { contextIsolation: true, nodeIntegration: false, sandbox: true });
   assert.deepEqual(await page.evaluate(() => globalThis.window.workspace.getBackendStatus()), { state: "ready" });
-  const firstPids = await backendPids(current.electron);
-  console.info("Settings loaded; creating workspace through the UI");
-  assert.ok(firstPids.length > 0, "No owned Node utility process is running");
-  await page.getByRole("textbox").fill(workspaceName);
-  await page.getByRole("button", { name: "Choose project folder" }).click();
-  await page.getByText(projectRoot, { exact: true }).waitFor();
-  await page.getByRole("button", { name: "Create workspace" }).click();
-  await page.getByRole("heading", { name: workspaceName }).waitFor();
-  console.info("Workspace created; checking language and layouts");
-  await page.getByRole("heading", { name: "Table" }).waitFor();
-  console.info("Default Table view is visible");
-  await page.getByText("Project discovery will be available in a future update.").waitFor();
-  console.info("Empty Table guidance is visible");
-  const firstWorkspace = await page.evaluate(() => globalThis.window.workspace.workspace({ type: "workspace.load" }));
-  console.info("Loaded workspace identity through the preload API");
-  assert.equal(firstWorkspace.ok, true);
-  assert.equal(firstWorkspace.value.activeWorkspace.name, workspaceName);
-  assert.equal(firstWorkspace.value.activeWorkspace.canonicalRoot, canonicalProjectRoot);
-  assert.equal(firstWorkspace.value.activeWorkspace.sourceAvailable, true);
-  const persistedIdentity = {
-    workspaceId: firstWorkspace.value.activeWorkspace.workspaceId,
-    sourceId: firstWorkspace.value.activeWorkspace.sourceId,
-    viewId: firstWorkspace.value.activeWorkspace.viewId,
-  };
-  await page.setViewportSize({ width: 420, height: 800 });
-  assert.equal(await page.locator(".workspace-screen").evaluate((node) => node.scrollWidth <= globalThis.innerWidth), true);
-  assert.equal(await page.locator("#workspace-title").evaluate((node) => node.scrollWidth <= node.parentElement.clientWidth), true);
-  assert.equal(await page.locator(".workspace-root").evaluate((node) => node.scrollWidth <= node.clientWidth), true);
-  console.info("Narrow layout fits the viewport");
-  await page.getByRole("combobox", { name: "Interface language" }).selectOption("ru");
-  console.info("Russian language setting selected");
-  await page.getByRole("combobox", { name: "Язык интерфейса" }).waitFor();
-  await page.waitForFunction(() => !globalThis.document.querySelector("#interface-language")?.disabled);
-  await page.getByRole("heading", { name: "Таблица" }).waitFor();
-  await page.getByText("Поиск проектов появится в одном из следующих обновлений.").waitFor();
-  await page.setViewportSize({ width: 1200, height: 800 });
-  assert.equal(await page.locator(".workspace-screen").evaluate((node) => node.scrollWidth <= globalThis.innerWidth), true);
-  assert.equal(await page.locator("#workspace-title").evaluate((node) => node.scrollWidth <= node.parentElement.clientWidth), true);
-  assert.equal(await page.locator(".workspace-root").evaluate((node) => node.scrollWidth <= node.clientWidth), true);
-  assert.equal(await page.locator("html").getAttribute("lang"), "ru");
+  assert.ok((await backendPids(current.electron)).length > 0, "No owned Node utility process is running");
+
+  const first = await create(current, workspaceName, projectRoot);
+  const sibling = await create(current, "Sibling configuration", projectRoot);
+  const other = await create(current, "Different root", otherRoot);
+  assert.equal(first.canonicalRoot, canonicalProjectRoot);
+  assert.equal(sibling.sourceId, first.sourceId);
+  assert.notEqual(sibling.workspaceId, first.workspaceId);
+  assert.notEqual(sibling.viewId, first.viewId);
+  assert.notEqual(other.sourceId, first.sourceId);
+  assert.equal(other.canonicalRoot, canonicalOtherRoot);
+  assert.equal(new Set([first, sibling, other].map((item) => item.viewId)).size, 3);
+  assert.ok([first, sibling, other].every((item) => item.sourceAvailable));
+  await page.getByText("Project discovery will be available in a future update.", { exact: false }).waitFor();
+  await select(page, first);
+  const authoredName = `  Renamed-${workspaceName}  `;
+  await page.getByRole("button", { name: "Rename workspace", exact: true }).click();
+  await page.getByRole("textbox").fill(authoredName);
+  await page.getByRole("textbox").press("Enter");
+  await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
+  first.name = authoredName;
+  assert.equal((await load(page)).activeWorkspace.name, authoredName);
+  for (let index = 0; index < 2; index++) {
+    await page.getByRole("button", { name: `Move up: ${other.name}`, exact: true }).press("Enter");
+    await page.waitForFunction(() => globalThis.document.querySelector(".workspace-management")?.getAttribute("aria-busy") === "false");
+  }
+  const orderedIds = [other, first, sibling].map((item) => item.workspaceId);
+  assert.deepEqual((await load(page)).workspaces.map((item) => item.workspaceId), orderedIds);
+  assert.deepEqual(identity((await load(page)).activeWorkspace), identity(first));
+  await captureLayouts(page, "en", authoredName);
+  await captureLayouts(page, "ru", authoredName);
+  await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
   const savedSettings = await page.evaluate(() => globalThis.window.workspace.settings({ type: "settings.load" }));
   assert.equal(savedSettings.ok && savedSettings.value.language, "ru");
-  console.info("Russian copy and wide layout verified");
-  console.info("Closing the app for restart verification");
-  await closeElectron(current.electron);
-  current = undefined;
-  console.info("App closed; checking backend exit");
-  await assertStopped(firstPids);
+
+  // Observe the real utilityProcess -> main -> preload route. App's client
+  // independently subscribes and must update the visible source state.
+  await page.evaluate(() => {
+    globalThis.smokeChanges = [];
+    globalThis.stopSmokeChanges = globalThis.window.workspace.onWorkspaceChange((change) => globalThis.smokeChanges.push(change));
+  });
+  const disconnectedRoot = join(fixture, "temporarily-disconnected");
+  await rename(projectRoot, disconnectedRoot);
+  await select(page, sibling);
+  await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
+  await page.waitForFunction(() => globalThis.smokeChanges.some((event) => event.type === "workspace.sourceChanged"));
+  const unavailable = await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged"));
+  assert.equal(unavailable.length, 1);
+  assert.deepEqual(unavailable[0].source, {
+    sourceId: first.sourceId, workspaceIds: [first.workspaceId, sibling.workspaceId],
+    canonicalRoot: canonicalProjectRoot, sourceAvailable: false,
+  });
+  await select(page, other);
+  assert.equal(await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).count(), 0);
+  assert.equal((await load(page)).activeWorkspace.sourceAvailable, true);
+  await select(page, first);
+  await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
+  await rename(disconnectedRoot, projectRoot);
+  await page.getByRole("button", { name: "Проверить доступ к папке", exact: true }).press("Enter");
+  await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor({ state: "detached" });
+  await page.waitForFunction(() => globalThis.smokeChanges.some((event) => event.type === "workspace.sourceChanged" && event.source.sourceAvailable));
+  const sourceChanges = await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged"));
+  assert.equal(sourceChanges.length, 2);
+  assert.deepEqual(sourceChanges[1].source, { ...unavailable[0].source, sourceAvailable: true });
+  await select(page, sibling);
+  assert.equal((await load(page)).activeWorkspace.sourceAvailable, true);
+  await select(page, first);
+  await page.evaluate(() => globalThis.stopSmokeChanges());
+  await rename(projectRoot, disconnectedRoot);
+  await select(page, sibling);
+  await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor();
+  await rename(disconnectedRoot, projectRoot);
+  await page.getByRole("button", { name: "Проверить доступ к папке", exact: true }).press("Enter");
+  await page.getByRole("heading", { name: "Папка проекта недоступна", exact: true }).waitFor({ state: "detached" });
+  assert.equal(await page.evaluate(() => globalThis.smokeChanges.filter((event) => event.type === "workspace.sourceChanged").length), 2);
+  await select(page, first);
+  observations.push({ scenario: "management and source notifications", identities: [first, sibling, other], sourceChanges });
+
+  async function closeCurrent() {
+    const pids = await backendPids(current.electron);
+    assert.ok(pids.length > 0, "No owned Node utility process is running");
+    await closeElectron(current.electron);
+    current = undefined;
+    await assertStopped(pids);
+  }
+  await closeCurrent();
   await stat(join(dataDirectory, "workspace.sqlite"));
+  current = await launch(dataDirectory);
+  page = current.page;
+  await page.getByRole("heading", { name: authoredName.trim(), exact: true }).waitFor();
+  assert.equal(await page.locator("#interface-language").inputValue(), "ru");
+  assert.equal(await page.locator("html").getAttribute("lang"), "ru");
+  const reopened = await load(page);
+  assert.deepEqual(identity(reopened.activeWorkspace), identity(first));
+  assert.deepEqual(reopened.workspaces, [other, first, sibling].map(({ workspaceId, name }) => ({ workspaceId, name })));
+  await page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Таблица", exact: true }).waitFor();
+  // Inactive different-root removal, active fallback, and final removal.
+  assert.deepEqual(identity((await remove(page, other)).activeWorkspace), identity(first));
+  assert.deepEqual(identity((await remove(page, first)).activeWorkspace), identity(sibling));
+  assert.deepEqual(await remove(page, sibling), { workspaces: [], activeWorkspace: null });
+  await page.getByRole("heading", { name: "Создать рабочее пространство", exact: true }).waitFor();
+  for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
+  await closeCurrent();
 
   current = await launch(dataDirectory);
-  console.info("Reopened app; checking persisted workspace and language");
-  const languageSelect = current.page.locator("#interface-language");
-  await languageSelect.waitFor();
-  assert.equal(await languageSelect.inputValue(), "ru");
-  assert.equal(await current.page.locator("html").getAttribute("lang"), "ru");
-  await current.page.getByRole("heading", { name: workspaceName }).waitFor();
-  await current.page.getByText(canonicalProjectRoot, { exact: true }).waitFor();
-  await current.page.getByRole("heading", { name: "Таблица" }).waitFor();
-  const reopenedWorkspace = await current.page.evaluate(() => globalThis.window.workspace.workspace({ type: "workspace.load" }));
-  assert.equal(reopenedWorkspace.ok, true);
-  assert.deepEqual({
-    workspaceId: reopenedWorkspace.value.activeWorkspace.workspaceId,
-    sourceId: reopenedWorkspace.value.activeWorkspace.sourceId,
-    viewId: reopenedWorkspace.value.activeWorkspace.viewId,
-  }, persistedIdentity);
-  const secondPids = await backendPids(current.electron);
-  assert.ok(secondPids.length > 0, "No owned Node utility process is running after restart");
-  await closeElectron(current.electron);
-  current = undefined;
-  await assertStopped(secondPids);
+  page = current.page;
+  await page.getByRole("heading", { name: "Создать рабочее пространство", exact: true }).waitFor();
+  assert.deepEqual(await load(page), { workspaces: [], activeWorkspace: null });
+  const recreated = await create(current, "Recreated retained source", projectRoot, "ru");
+  assert.equal(recreated.sourceId, first.sourceId);
+  assert.notEqual(recreated.workspaceId, first.workspaceId);
+  assert.notEqual(recreated.workspaceId, sibling.workspaceId);
+  assert.notEqual(recreated.viewId, first.viewId);
+  assert.notEqual(recreated.viewId, sibling.viewId);
+  assert.equal(recreated.canonicalRoot, canonicalProjectRoot);
+  for (const path of [projectRoot, otherRoot]) assert.deepEqual(await readFile(join(path, "sentinel.txt")), sentinel);
+  observations.push({ scenario: "restart, inactive/active/final removal, empty restart and retained-source reuse", recreated, sentinelBytes: sentinel.length });
+  await closeCurrent();
 
   const failureDirectory = join(fixture, "failed-startup");
   await mkdir(join(failureDirectory, "workspace.sqlite"), { recursive: true });
@@ -168,9 +292,14 @@ try {
     state: "unavailable",
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
   });
+  const failurePids = await backendPids(current.electron);
   await closeElectron(current.electron);
   current = undefined;
-  console.info(`Electron ${mode} runtime verified: isolation, language restart, backend exit, startup failure`);
+  await assertStopped(failurePids);
+  if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
+    mode, platform: process.platform, arch: process.arch, executablePath, observations,
+  }, null, 2) + "\n");
+  console.info(`Electron ${mode} runtime verified: workspace management/restart/removal, retained files/source, source notification fanout/unsubscription, EN/RU layouts, isolation, backend exit, startup failure`);
 } finally {
   try { if (current) await closeElectron(current.electron); }
   finally { await rm(fixture, { recursive: true, force: true }); }

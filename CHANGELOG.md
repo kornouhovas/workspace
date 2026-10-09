@@ -11,6 +11,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Named workspaces rooted at accessible folders, each with a persisted default Table view and active selection that restores after restart.
 - A localized empty Table screen and saved-workspace selector; project discovery remains future work.
 - Development packaging configuration and macOS/Windows CI artifact checks for the desktop application.
+- Rename, persistent ordering and safe removal of workspace configurations, retaining source metadata and project files even after the final configuration is removed.
+- Shared-source availability notifications and an English/Russian retry-folder-access action, with deterministic selection after removal.
 
 ### Fixed
 
