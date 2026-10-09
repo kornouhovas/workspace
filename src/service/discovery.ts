@@ -301,9 +301,9 @@ export function interpretProjects(scan: DiscoveryScan, records: ProjectAssociati
     const current = retained.find((row) => row.relativePath === child.relativePath && row.associationState !== "replaced");
     const reliable = reliableIdentity(child.identity);
     const collision = records.some((row, index) => row.id !== current?.id &&
-      // Retired evidence alone cannot invalidate a continuously verified active
-      // association established by an explicit recovery. New discovery stays conservative.
-      !(row.associationState === "replaced" && current?.associationState === "active" &&
+      // Retired evidence alone cannot invalidate a continuously matching active
+      // or excluded association established by recovery. New discovery stays conservative.
+      !(row.associationState === "replaced" && (current?.associationState === "active" || current?.associationState === "excluded") &&
         sameIdentity(storedIdentity(current), child.identity)) &&
       identities[index].dev === child.identity.dev && identities[index].ino === child.identity.ino &&
       (row.relativePath !== child.relativePath || sameIdentity(identities[index], child.identity))) ||

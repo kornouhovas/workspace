@@ -252,6 +252,40 @@ test("retired native evidence alone does not block an explicit association or ma
   assert.equal(f.query("workspace.listProjects").value.projects[0].projectId, f.project.projectId);
 }));
 
+for (const [mode, excludeCategory] of [["direct", false], ["grouped", false], ["grouped", true]]) {
+  test(`${mode} recovered association survives ${excludeCategory ? "category" : "project"} exclusion and reinclusion over retired evidence`, () => fixture((f) => {
+    const path = (name) => mode === "grouped" ? `Category/${name}` : name;
+    fs.mkdirSync(join(f.root, path("Previous")));
+    const previous = f.apply().projects.find((row) => row.relativePath === path("Previous"));
+    fs.renameSync(join(f.root, path("Previous")), join(f.root, path("Target")));
+    fs.mkdirSync(join(f.root, path("Previous")));
+    f.apply();
+    assert.equal(f.query("workspace.listProjects").value.retainedProjects.find((row) => row.projectId === previous.projectId).associationState, "replaced");
+    fs.renameSync(join(f.root, path("Project")), join(f.directory, "away"));
+    const recovered = recover(f, review(f).value, path("Target"));
+    assert.equal(recovered.ok, true);
+    const categoryId = recovered.value.projects.find((row) => row.projectId === f.project.projectId).categoryId;
+    const files = inventory(f.root);
+    const excluded = f.apply({ excludedRelativePaths: [excludeCategory ? "Category" : path("Target")] });
+    const excludedRow = excluded.retainedProjects.find((row) => row.projectId === f.project.projectId);
+    assert.equal(excludedRow.associationState, "excluded");
+    assert.equal(excludedRow.resolution, "excluded");
+    assert.equal(f.query("workspace.listProjects").value.retainedProjects.find((row) => row.projectId === f.project.projectId).resolution, "excluded");
+    const reincludePreview = f.service.handleQuery({ type: "workspace.previewDiscovery", workspaceId: f.workspace.workspaceId, excludedRelativePaths: [] });
+    assert.equal(reincludePreview.ok, true);
+    assert.equal(reincludePreview.value.entries.find((row) => row.relativePath === path("Target")).reason, null);
+    const reinclude = f.service.handleCommand({ type: "workspace.applyDiscovery", workspaceId: f.workspace.workspaceId, previewToken: reincludePreview.value.previewToken });
+    assert.equal(reinclude.ok, true);
+    const active = reinclude.value.projects.find((row) => row.projectId === f.project.projectId);
+    assert.equal(active.relativePath, path("Target"));
+    assert.equal(active.resolution, "active");
+    assert.equal(active.categoryId, categoryId);
+    assert.equal(f.query("workspace.listProjects").value.projects.find((row) => row.projectId === f.project.projectId).resolution, "active");
+    assert.equal(f.query("workspace.listTextProperties").value.values.find((row) => row.projectId === f.project.projectId).value, f.value);
+    assert.deepEqual(inventory(f.root), files);
+  }, mode));
+}
+
 test("recovery reviews stale on root/target/configuration/record swaps; transactional failures roll back and emit no success", () => {
   for (const failure of ["root", "target", "configuration", "record", "write", "revision_write", "after_write"]) fixture((f) => {
     fs.renameSync(join(f.root, "Project"), join(f.root, "Target"));
