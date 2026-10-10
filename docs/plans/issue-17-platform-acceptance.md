@@ -2,7 +2,7 @@
 
 ## Overview
 
-Repair the confirmed immediate-Reveal feedback defect, Windows fixture failures, owned-fixture cleanup and asynchronous file-manager observation. Repair completed-plan links and record fresh local verification without claiming coordinator acceptance. Write the accepted plan to exactly docs/plans/issue-17-platform-acceptance.md. This draft authorizes no execution. Continuation results are recorded in the [verification report](https://github.com/kornouhovas/workspace/blob/codex/issue-17-create-reveal/docs/verification/issue-17-create-reveal.md#platform-acceptance-continuation); this repository web reference remains valid when the plan moves to completed.
+This accepted continuation plan repairs the confirmed immediate-Reveal feedback defect, Windows fixture failures, owned-fixture cleanup, asynchronous file-manager observation and completed-plan links. Tasks 1–5 and local verification are complete; review repairs and coordinator acceptance remain separate gates. Continuation results are recorded in the [verification report](https://github.com/kornouhovas/workspace/blob/codex/issue-17-create-reveal/docs/verification/issue-17-create-reveal.md#platform-acceptance-continuation); this repository web reference remains valid when the plan moves to completed.
 
 ## Context
 
@@ -336,6 +336,12 @@ Continuation implementation commits: 2d6b562, dc31038, f2aabfd and ae28281. Task
 - Follow-up reviews use only the quality/implementation pair for critical/major findings until clean.
 
 - Any relevant review repair invalidates affected earlier verification; rerun it sequentially and record the tested SHA.
+
+### First-review repairs
+
+All five perspectives completed against 35337db and the fixed base before repairs. One major fixture-ordering finding and three minor documentation findings were confirmed. The real-service delayed-Reveal regression now explicitly covers filesystem changes before observation and reconciled moves before native completion, preserving exact error assertions, logical IDs, revised locators and production safety rules. The architecture native-API name, this plan's accepted status and the user-facing changelog were corrected. The verification report records the retained Windows red CI, deterministic reproduction and affected local checks. Follow-up reviews and coordinator gates remain open; the repair changes tests/documentation only.
+
+Affected verification passed on the repair tree over 35337db: eight focused ordering tests/32 real-folder cases, npm test with production build and 840 passes/zero failures/skips, lint, typecheck, check:docs and working/full fixed-base whitespace checks. The report records the exact test-file digest and preserved red/green logs. No new graphical/package or Windows execution is claimed.
 
 ## Post-Completion: Coordinator Gates
 

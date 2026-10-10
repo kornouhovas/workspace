@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { openSettingsService } from "../src/service/settings.js";
+import { nativeObserverDependencies, type ObserverDependencies } from "../src/service/source-observer.js";
 import { Window } from "happy-dom";
 import { ProjectCreationPanel } from "../src/renderer/components/ProjectCreationPanel.js";
 import { ProjectRevealButton } from "../src/renderer/components/ProjectRevealButton.js";
@@ -259,13 +260,41 @@ for (const language of ["en", "ru"] as const) {
   });
 }
 
-for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
-  test(`${language}: ${mode} delayed real-service Reveal rejects actual folder path and identity changes`, async () => {
-    const changes = ["project-path", "project-identity", "root-path", "root-identity", ...(mode === "grouped" ? ["category-path", "category-identity"] : [])];
+// Keep real probing/reconciliation while choosing which side of native completion
+// receives watch hints. Wall-clock timers must not choose the expected problem.
+function controlledRevealObserver() {
+  const watches = new Map<string, () => void>();
+  const timers = new Set<{ callback(): void; delay: number }>();
+  const dependencies: ObserverDependencies = {
+    ...nativeObserverDependencies,
+    watch(path, hint) { watches.set(path, hint); return { close() { watches.delete(path); } }; },
+    schedule(callback, delay) {
+      const timer = { callback, delay }; timers.add(timer);
+      return { cancel() { timers.delete(timer); } };
+    },
+  };
+  const flush = () => {
+    for (let count = 0; ; count++) {
+      const timer = [...timers].find((entry) => entry.delay < 5000);
+      if (!timer) return;
+      assert.ok(count < 100, "bounded observer scheduling");
+      timers.delete(timer); timer.callback();
+    }
+  };
+  return { dependencies, flush, observe(root: string) {
+    const hint = watches.get(root); assert.ok(hint, "the selected root must have an active watcher");
+    hint(); flush();
+  } };
+}
+
+for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) for (const order of ["before-observation", "after-observation"] as const) {
+  test(`${language}: ${mode} delayed real-service Reveal rejects actual folder changes ${order}`, async () => {
+    const changes = ["project-path", "project-identity", ...(order === "before-observation" ? ["root-path", "root-identity"] : []), ...(mode === "grouped" ? ["category-path", "category-identity"] : [])];
     for (const change of changes) {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "reveal-ui-lifetime-"))), root = join(directory, "root");
       fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
-      const service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations");
+      const observer = controlledRevealObserver();
+      const service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
       const client = new Client(), nativeCompletion = deferred<void>();
       let calls = 0, initialValidation: string | undefined, receipt: ServiceResult<ProjectRevealResult> | undefined;
       let off: (() => void) | undefined;
@@ -277,7 +306,9 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
         const created = value(service.workspaces.createProject({ type: "workspace.createProject", workspaceId, operationId: randomUUID(), name: "Folder", mode, expectedRevision: revision,
           ...(mode === "grouped" ? { categoryId: value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).categories[0].categoryId } : {}) }));
         assert.equal(created.outcome, "completed");
+        observer.flush();
         client.list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+        const original = structuredClone(client.list);
         client.listProjects = async () => service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
         client.listTextProperties = async () => service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId });
         client.revealProject = async () => {
@@ -295,22 +326,35 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
         const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
         render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={false} />);
         const reveal = await screen.findByRole("button", { name: `${t("revealProject")}: Folder` });
+        await act(async () => observer.flush());
         await userEvent.click(reveal); assert.equal(calls, 1); assert.equal(initialValidation, "verified");
         const path = change.startsWith("root") ? root : change.startsWith("category") ? join(root, "Category") : join(root, ...(mode === "grouped" ? ["Category", "Folder"] : ["Folder"]));
         await act(async () => {
           fs.renameSync(path, `${path}-moved`);
           if (change.endsWith("identity")) fs.mkdirSync(path);
-          client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId, workspaceIds: [workspaceId], observationRevision: 1000,
+          if (order === "after-observation") observer.observe(root);
+          else client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId, workspaceIds: [workspaceId], observationRevision: 1000,
             state: change.startsWith("root") ? "unavailable" : "ready", automaticUpdates: "active" }));
         });
+        if (order === "after-observation") {
+          const observed = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+          assert.equal(observed.revision, original.revision + 1, change);
+          assert.equal(observed.projects.length, 1, change);
+          assert.equal(observed.projects[0].projectId, original.projects[0].projectId, change);
+          assert.equal(observed.projects[0].relativePath, change.startsWith("category") ? "Category-moved/Folder"
+            : mode === "grouped" ? "Category/Folder-moved" : "Folder-moved", change);
+          assert.equal(observed.projects[0].associationState, "active", change);
+          assert.equal(observed.projects[0].resolution, "active", change);
+        }
         fireEvent.click(reveal); assert.equal(calls, 1);
         await act(async () => nativeCompletion.resolve());
         assert.ok(receipt?.ok); assert.equal(receipt.value.outcome, "rejected", change);
         if (receipt.value.outcome !== "rejected") throw new Error("Changed target unexpectedly dispatched");
-        const expected = change.startsWith("category") ? "category_unavailable" : change.startsWith("root")
+        const expected = order === "after-observation" ? "unresolved" : change.startsWith("category") ? "category_unavailable" : change.startsWith("root")
           ? change.endsWith("identity") ? "root_replaced" : "root_unavailable" : change.endsWith("identity") ? "replaced" : "missing";
         assert.equal(receipt.value.problem, expected, change);
         assert.equal(screen.queryByText(t("revealDispatched")), null, change);
+        if (order === "after-observation") assert.ok(screen.getByText(t("revealUncertain")), change);
         assert.ok(["revealUncertain", "revealMissing", "revealError"].some((key) => screen.queryByText(t(key as Parameters<typeof translate>[1]))), change);
         assert.equal(calls, 1);
       } finally { cleanup(); off?.(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }

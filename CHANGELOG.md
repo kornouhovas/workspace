@@ -63,7 +63,6 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Unicode case aliases retain interrupted-creation and historical destination reservations, preventing discovery from assigning a second project ID after an alias rename.
 
 - Immediate Reveal after creation preserves localized dispatch acknowledgment when active observation reloads the unchanged authorized project, with stale target/selection/backend responses still rejected.
-- Native verification observes the exact Finder/Explorer selected item within a bounded deadline for one invocation and records owned-fixture cleanup separately, including bounded transient-lock retries after process termination.
 
 ### Planned
 
