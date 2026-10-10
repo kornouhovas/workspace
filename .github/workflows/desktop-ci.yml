@@ -31,7 +31,7 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-windows-product-selection
       - name: Verify selection protocol and isolated orchestration
         if: always()
-        run: node --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs
+        run: node --import tsx --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs
       - name: Preserve strict product selection diagnostic including failures
         if: always()
         uses: actions/upload-artifact@v4

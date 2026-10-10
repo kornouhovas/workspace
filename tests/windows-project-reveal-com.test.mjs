@@ -6,6 +6,25 @@ import { win32 } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 
+function policyProbeSummary(result) {
+  const line = typeof result.stdout === "string" ? result.stdout.trim() : "";
+  const valid = /^(?:LOADED|MANAGED|FAILED:(?:module_import|policy_query|helper_load):(?:SecurityException|CommandNotFoundException|RuntimeException|PSSecurityException|unknown):-?\d{1,10}:(?:Desktop|Core|unknown):\d{1,2}:\d{1,2})$/.test(line);
+  return { marker: valid ? line : "protocol_error", code: Number.isInteger(result.code) ? result.code : null,
+    killed: result.killed === true, stderrEmpty: result.stderr === "" };
+}
+
+test("policy probe failure context retains only finite type/code/runtime markers", () => {
+  const failure = "FAILED:module_import:RuntimeException:-2146233087:Desktop:5:1";
+  assert.deepEqual(policyProbeSummary({ stdout: failure, stderr: "", code: 1 }),
+    { marker: failure, code: 1, killed: false, stderrEmpty: true });
+  for (const stdout of ["LOADED\nprivate path", "FAILED:private:RuntimeException:1:Desktop:5:1", "C:\\private\\module", "x".repeat(5000)]) {
+    assert.deepEqual(policyProbeSummary({ stdout, stderr: "private exception", code: "private" }),
+      { marker: "protocol_error", code: null, killed: false, stderrEmpty: false });
+  }
+  assert.equal(policyProbeSummary({ stdout: "MANAGED\r\n", stderr: "", code: 0 }).marker, "MANAGED");
+  assert.equal(policyProbeSummary({ stdout: "", stderr: "", killed: true }).killed, true);
+});
+
 test("production and diagnostic scripts share the exact binding guards without diagnostic telemetry", async () => {
   const [bridge, binding, view, readyDiagnostic, selectionDiagnostic] = await Promise.all([
     "../src/desktop/native/windows-project-reveal.ps1", "../src/desktop/native/windows-binding.ps1",
@@ -173,6 +192,7 @@ test("Windows production file bridge uses only child-session policy under inheri
   const scriptPath = win32.join(nativeDirectory, "windows-project-reveal.ps1");
   const target = win32.parse(program).root;
   const parentPolicy = process.env.PSExecutionPolicyPreference;
+  const parentModulePath = process.env.PSModulePath;
   const parentTarget = process.env.WORKSPACE_PROJECT_REVEAL_TARGET;
   const restricted = { ...process.env, PSExecutionPolicyPreference: "Restricted", WORKSPACE_PROJECT_REVEAL_TARGET: target };
   const fixedArguments = ["-NoProfile", "-NonInteractive", "-STA"];
@@ -181,23 +201,44 @@ test("Windows production file bridge uses only child-session policy under inheri
   // fixed-file dependency graph loads, not just that inline commands can run.
   const loadProbe = String.raw`
 $ErrorActionPreference = 'Stop'
-if ((Get-ExecutionPolicy) -ne 'Bypass') { [Console]::Out.WriteLine('MANAGED'); exit 0 }
-. $env:WORKSPACE_POLICY_BRIDGE
-foreach ($name in @('Invoke-WorkspaceProjectRevealFromEnvironment','Read-WorkspaceReadyBinding','Read-WorkspaceUiaWindow')) {
-  if ($null -eq (Get-Command $name -CommandType Function -ErrorAction Stop)) { throw 'missing function' }
+$stage = 'module_import'
+try {
+  # Node may inherit PS7 module paths. Select only this actual Windows
+  # PowerShell installation's Security manifest, without changing PSModulePath.
+  Import-Module -Name "$PSHOME\Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1" -ErrorAction Stop
+  $stage = 'policy_query'
+  if ((Microsoft.PowerShell.Security\Get-ExecutionPolicy) -ne 'Bypass') { [Console]::Out.WriteLine('MANAGED'); exit 0 }
+  $stage = 'helper_load'
+  . $env:WORKSPACE_POLICY_BRIDGE
+  foreach ($name in @('Invoke-WorkspaceProjectRevealFromEnvironment','Read-WorkspaceReadyBinding','Read-WorkspaceUiaWindow')) {
+    if ($null -eq (Get-Command $name -CommandType Function -ErrorAction Stop)) { throw 'missing function' }
+  }
+  [Console]::Out.WriteLine('LOADED')
+} catch {
+  $kind = $_.Exception.GetType().Name
+  if ($kind -notin @('SecurityException','CommandNotFoundException','RuntimeException','PSSecurityException')) { $kind = 'unknown' }
+  $edition = $PSVersionTable.PSEdition
+  if ($edition -notin @('Desktop','Core')) { $edition = 'unknown' }
+  $major = [Math]::Min(99, [Math]::Max(0, $PSVersionTable.PSVersion.Major))
+  $minor = [Math]::Min(99, [Math]::Max(0, $PSVersionTable.PSVersion.Minor))
+  [Console]::Out.WriteLine(('FAILED:{0}:{1}:{2}:{3}:{4}:{5}' -f $stage,$kind,[int]$_.Exception.HResult,$edition,$major,$minor))
+  exit 1
 }
-[Console]::Out.WriteLine('LOADED')
 `;
   try {
-    const loaded = await execute(program, [...fixedArguments, "-ExecutionPolicy", "Bypass", "-Command", loadProbe], {
+    const probeResult = await execute(program, [...fixedArguments, "-ExecutionPolicy", "Bypass", "-Command", loadProbe], {
       env: { ...restricted, WORKSPACE_POLICY_BRIDGE: scriptPath }, timeout: 10000, maxBuffer: 4096, windowsHide: true,
-    });
-    assert.equal(loaded.stderr === "", true, "The fixed helper load probe must not emit private errors");
-    if (loaded.stdout.trim() === "MANAGED") {
+    }).then((result) => ({ ...result, code: 0 }), (error) => ({ stdout: error.stdout, stderr: error.stderr,
+      code: error.code, killed: error.killed }));
+    const loaded = policyProbeSummary(probeResult);
+    assert.equal(loaded.killed, false, JSON.stringify(loaded));
+    assert.equal(loaded.code, 0, JSON.stringify(loaded));
+    assert.equal(loaded.stderrEmpty, true, JSON.stringify(loaded));
+    if (loaded.marker === "MANAGED") {
       t.skip("Host Group Policy prevents verifying the child-session Bypass control; actual policy acceptance remains external");
       return;
     }
-    assert.equal(loaded.stdout.trim() === "LOADED", true, "The actual shipped entry and both helpers must load");
+    assert.equal(loaded.marker, "LOADED", JSON.stringify(loaded));
     // Without the authorized process flag, the same actual -File entry is
     // refused under inherited Restricted before it can emit the fixed protocol.
     const refused = await execute(program, [...fixedArguments, "-File", scriptPath], {
@@ -235,6 +276,7 @@ foreach ($name in @('Invoke-WorkspaceProjectRevealFromEnvironment','Read-Workspa
     assert.equal(closeResult?.code === 0 && closeResult?.signal === null, false);
   } finally {
     assert.equal(process.env.PSExecutionPolicyPreference, parentPolicy);
+    assert.equal(process.env.PSModulePath, parentModulePath);
     assert.equal(process.env.WORKSPACE_PROJECT_REVEAL_TARGET, parentTarget);
   }
 });

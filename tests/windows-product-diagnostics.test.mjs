@@ -129,6 +129,9 @@ test('workflow runs independent fresh Windows diagnostics and always uploads exa
   assert.equal(invocation['timeout-minutes'], 3);
   assert.equal(product.filter((s) => /smoke-project-creation/.test(s.run ?? '')).length, 1);
   assert.deepEqual(product.slice(0, product.indexOf(invocation)).filter((s) => s.run).map((s) => s.run), ['npm ci', 'npm run build']);
+  const controlled = product.find((s) => s.name === 'Verify selection protocol and isolated orchestration');
+  assert.equal(controlled.if, 'always()');
+  assert.equal(controlled.run, 'node --import tsx --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs');
   const rename = workflow.jobs['windows-category-rename-diagnostic'].steps;
   assert.deepEqual(rename.filter((s) => s.run).slice(0, 3).map((s) => s.run),
     ['npm ci', 'npm run build:service-test-lib', 'node --import tsx scripts/windows-rename-diagnostics.mjs']);
