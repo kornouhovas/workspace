@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
-import { createPackage } from "@electron/asar";
+import { createPackageWithOptions } from "@electron/asar";
 import test from "node:test";
 import { checkArtifact, normalizeAsarEntry } from "../scripts/check-artifact.mjs";
 
@@ -12,6 +12,8 @@ const packagedFiles = [
   "dist/desktop/main.cjs",
   "dist/desktop/preload.cjs",
   "dist/service/entry.cjs",
+  "dist/service/project-rename-filesystem.cjs",
+  "dist/service/native/project-rename.node",
   "dist/renderer/index.html",
   "dist/version.json",
   "dist/service/db/migrations/0000_settings.sql",
@@ -37,7 +39,9 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     await mkdir(dirname(path), { recursive: true });
     let contents = file.endsWith(".sql") || file.endsWith(".cjs") || file === "dist/renderer/index.html"
       ? await readFile(file, "utf8") : "present";
+    if (file.endsWith(".node")) contents = await readFile(file);
     if (file === corruptFile) contents = file.endsWith(".cjs") ? "missing integration" : contents + "\n-- corrupted shipped file";
+    if (file.endsWith(".node") && file === corruptFile) contents = Buffer.from("corrupt native adapter");
     if (file === "dist/version.json") contents = JSON.stringify({ version: buildVersion });
     if (file === "dist/service/db/migrations/meta/_journal.json") {
       const journal = JSON.parse(await readFile("src/service/db/migrations/meta/_journal.json", "utf8"));
@@ -63,7 +67,8 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     await writeFile(join(resourcesDirectory, relative), relative === corruptFile ? Buffer.from("modified native script") : contents);
   }
   const asarPath = join(resourcesDirectory, "app.asar");
-  await createPackage(appDirectory, asarPath);
+  await createPackageWithOptions(appDirectory, asarPath, { unpack: omittedFiles.includes("packed-rename") ? undefined : "project-rename.node" });
+  if (omittedFiles.includes("unpacked-rename")) await rm(join(`${asarPath}.unpacked`, "dist/service/native/project-rename.node"));
   const nativeModule = join(`${asarPath}.unpacked`, "node_modules/better-sqlite3/prebuilds/darwin-arm64.node");
   await mkdir(dirname(nativeModule), { recursive: true });
   await writeFile(nativeModule, "native module placeholder");
@@ -228,6 +233,11 @@ test("artifact check rejects a package whose journal cannot apply the discovery-
 });
 
 for (const scenario of [
+  { name: "missing rename wrapper", omitted: ["dist/service/project-rename-filesystem.cjs"], error: /missing.*project-rename-filesystem/ },
+  { name: "missing rename adapter", omitted: ["dist/service/native/project-rename.node"], error: /missing.*project-rename.node/ },
+  { name: "packed rename adapter", omitted: ["packed-rename"], error: /must be unpacked/ },
+  { name: "missing unpacked rename adapter", omitted: ["unpacked-rename"], error: /adapter is missing or linked/ },
+  { name: "corrupt rename adapter", corrupt: "dist/service/native/project-rename.node", error: /differs from current runtime build/ },
   { name: "missing renderer assets", omitted: ["renderer-assets"], error: /missing renderer resource/ },
   { name: "missing creation SQL", omitted: ["dist/service/db/migrations/0008_project_creation.sql"], error: /missing.*0008_project_creation/ },
   { name: "missing creation journal entry", omitEntry: 8, error: /journal is missing 0008_project_creation/ },
@@ -264,5 +274,21 @@ for (const file of nativeScripts) test(`artifact check rejects an external ${fil
       throw error;
     }
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /missing external native script/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("artifact check rejects a substituted unpacked project rename adapter", async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-rename-link-"));
+  try {
+    await makeArtifact(root);
+    const binary = join(root, "bundle/resources/app.asar.unpacked/dist/service/native/project-rename.node");
+    const directory = dirname(binary), substitute = join(root, "substitute");
+    await rename(directory, substitute);
+    // Directory junctions work on Windows without file-symlink privileges.
+    await symlink(substitute, directory, process.platform === "win32" ? "junction" : "dir");
+    // lstat of the file alone cannot detect an ancestor link; the byte check
+    // still rejects a substituted module.
+    await writeFile(join(substitute, "project-rename.node"), "substitute binary");
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /differs from current runtime build/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

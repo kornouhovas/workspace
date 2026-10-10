@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir, stat, lstat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractFile, listPackage } from "@electron/asar";
+import { extractFile, listPackage, statFile } from "@electron/asar";
 
 const nativeScripts = ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"];
 const requiredFiles = [
@@ -11,6 +11,8 @@ const requiredFiles = [
   "dist/desktop/main.cjs",
   "dist/desktop/preload.cjs",
   "dist/service/entry.cjs",
+  "dist/service/project-rename-filesystem.cjs",
+  "dist/service/native/project-rename.node",
   "dist/renderer/index.html",
   "dist/service/db/migrations/0000_settings.sql",
   "dist/service/db/migrations/0001_workspaces.sql",
@@ -77,6 +79,12 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     assert.ok((await lstat(unpacked).catch(() => null))?.isFile(), `Packaged app is missing external native script: ${file}`);
     assert.deepEqual(await readFile(unpacked), source, `External native script differs from source: ${file}`);
   }
+  const renameRelative = join("dist", "service", "native", "project-rename.node");
+  assert.equal(statFile(asarPath, renameRelative).unpacked, true, "Project rename adapter must be unpacked from ASAR");
+  const renameBinary = join(`${asarPath}.unpacked`, "dist", "service", "native", "project-rename.node");
+  assert.ok((await lstat(renameBinary).catch(() => null))?.isFile(), "Unpacked project rename adapter is missing or linked");
+  const builtRename = fileURLToPath(new URL("../dist/service/native/project-rename.node", import.meta.url));
+  assert.deepEqual(await readFile(renameBinary), await readFile(builtRename), "Project rename adapter differs from current runtime build");
   const licensePath = join(resourcesDirectory, "licenses/bb-MIT.txt");
   const license = await readFile(licensePath, "utf8");
   assert.match(license, /Copyright \(c\) 2026 Michael Yong/);

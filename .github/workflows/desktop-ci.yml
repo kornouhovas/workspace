@@ -25,6 +25,8 @@ jobs:
       - run: npm run build
       - name: Check creation IPC and Windows bridge before native acceptance
         run: npm run test:windows:early
+        env:
+          WORKSPACE_RENAME_NATIVE_EVIDENCE_DIR: work/ci-windows-rename-native
       - name: Observe one immediate product Reveal with COM and UI Automation
         id: native
         run: node scripts/smoke-project-creation.mjs dev --discovery-mode=direct --checkpoint=after_evidence
@@ -39,6 +41,13 @@ jobs:
           name: issue-17-windows-product-selection-diagnostic
           path: work/ci-windows-product-selection/result.json
           if-no-files-found: error
+      - name: Preserve early rename adapter outcomes including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-18-windows-rename-native
+          path: work/ci-windows-rename-native/native-adapter.json
+          if-no-files-found: warn
 
   windows-category-rename-diagnostic:
     name: Isolated Windows real-service category rename diagnostic

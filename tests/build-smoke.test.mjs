@@ -10,6 +10,10 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/desktop/main.cjs",
     "dist/desktop/preload.cjs",
     "dist/service/entry.cjs",
+    "dist/service/project-rename-filesystem.mjs",
+    "dist/service/project-rename-filesystem.cjs",
+    "dist/service/native/project-rename.node",
+    "dist/service-test-native/project-rename.node",
     "dist/renderer/index.html",
     "dist/version.json",
     "dist/service/db/migrations/0000_settings.sql",
@@ -53,6 +57,9 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
   const manifest = JSON.parse(await readFile("package.json", "utf8"));
   assert.ok(manifest.build.extraResources.some((entry) => entry.from === "dist/desktop/native" && entry.to === "native" &&
     ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"].every((file) => entry.filter.includes(file))));
+
+  assert.ok(manifest.build.asarUnpack.includes("dist/service/native/project-rename.node"));
+  assert.ok(manifest.build.files.includes("!dist/service-test-native/**"));
 
   const rendererHtml = await readFile("dist/renderer/index.html", "utf8");
   assert.match(rendererHtml, /(?:src|href)="\.\/assets\//);

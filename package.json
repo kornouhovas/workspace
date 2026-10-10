@@ -14,7 +14,7 @@
     "check:docs": "node scripts/check-doc-links.mjs",
     "build:renderer": "vite build",
     "build:desktop": "esbuild src/desktop/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/main.cjs && esbuild src/desktop/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/desktop/preload.cjs && esbuild src/desktop/backend-controller.ts --bundle --platform=node --format=esm --outfile=dist/desktop/backend-controller.mjs && esbuild src/desktop/root-picker.ts --bundle --platform=node --format=esm --outfile=dist/desktop/root-picker.mjs && node scripts/copy-native-resources.mjs",
-    "build:service-test-lib": "esbuild src/service/settings.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist/service/settings.mjs",
+    "build:service-test-lib": "npm run build:project-rename-native && esbuild src/service/settings.ts --bundle --platform=node --format=esm --external:better-sqlite3 --outfile=dist/service/settings.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=esm --outfile=dist/service/project-rename-filesystem.mjs && esbuild src/service/project-rename-filesystem.ts --bundle --platform=node --format=cjs --define:import.meta.url=undefined --outfile=dist/service/project-rename-filesystem.cjs",
     "build:backend": "esbuild src/service/entry.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/service/entry.cjs",
     "ladle": "ladle serve",
     "build:ladle": "ladle build --outDir dist/ladle",
@@ -22,7 +22,7 @@
     "dev": "npm run build && electron .",
     "start": "electron .",
     "test": "npm run build && tsx --test tests/*.test.mjs tests/*.test.tsx",
-    "test:windows:early": "node --import tsx --test tests/ralphex-run.test.mjs tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/settings-service.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs",
+    "test:windows:early": "node --import tsx --test tests/ralphex-run.test.mjs tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/settings-service.test.mjs tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs tests/project-rename-native.test.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
@@ -31,7 +31,9 @@
     "package:dir:win": "npm run build && electron-builder --dir --win",
     "check:artifact": "node scripts/check-artifact.mjs",
     "package:dev:mac": "npm run package:dir:mac && npm run check:artifact -- release",
-    "package:dev:win": "npm run package:dir:win && npm run check:artifact -- release"
+    "package:dev:win": "npm run package:dir:win && npm run check:artifact -- release",
+    "build:project-rename-native": "node scripts/build-project-rename-native.mjs",
+    "test:rename:native": "node --test tests/project-rename-native.test.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -68,11 +70,14 @@
     "productName": "Workspace",
     "asar": true,
     "asarUnpack": [
-      "node_modules/better-sqlite3/**"
+      "node_modules/better-sqlite3/**",
+      "dist/service/native/project-rename.node"
     ],
     "files": [
       "dist/**",
-      "package.json"
+      "package.json",
+      "!dist/service-test-native/**",
+      "!dist/service/project-rename-filesystem.mjs"
     ],
     "extraResources": [
       {

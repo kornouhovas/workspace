@@ -186,3 +186,27 @@ File-manager cleanup closes only a window with the exact disposable parent and s
 Owned fixture removal is a separate fixtureCleanup result saved before failure is thrown. It runs only after tracked Electron/seed processes terminate and backend PIDs are absent, using recursive fs.rm with maxRetries 5 and retryDelay 100 ms for transient locks. Exhausted cleanup fails the fixture; an existing scenario failure keeps precedence. Unverified process termination skips removal and fails the fixture. The ten-second normal Electron quit remains unchanged, and forced cleanup remains failure.
 
 Every graphical invocation uses a distinct ignored WORKSPACE_SMOKE_EVIDENCE_DIR; preserve failed/pending/unreached stages and never build/clean while a fixture consumes dist. Fresh macOS packages use CSC_IDENTITY_AUTO_DISCOVERY=false. If Electron download fails, a verified existing pinned cached ZIP may be supplied per command via electron-builder's --config.electronDist; this changes no global config or dependency resolution. No unchanged native retry, normal-quit deadline change, signing or publication is authorized. Actual commands/results and coordinator-owned gates are in [T10 verification](verification/issue-17-create-reveal.md).
+
+## Project rename native adapter checkpoint
+
+The first Issue #18 slice supplies a private synchronous no-replace filesystem primitive, separate Node/Electron builds and real temporary-directory fixtures. The rename service, journal, recovery commands and Name editor remain unimplemented. [ADR 0007](adr/0007-no-replace-project-renames.md) records the coordinator-selected adapter, native responsibilities, unsupported-filesystem behavior and remaining source/ancestor substitution races. Existing project creation and Reveal behavior remains governed by ADR 0006.
+
+Use Node 22.21.1. After npm ci, npm run build:service-test-lib builds the adapter with the installed locked node-gyp 12.4.0 before emitting service test modules. npm run build reaches that same step after clean and before backend consumers. Compilation produces dist/service-test-native/project-rename.node for Node and dist/service/native/project-rename.node for Electron 44.7.0, using the current host architecture. The script fails for missing tools, a different Node version or unsupported platforms; it does not install system tools or add packages. Install Python plus Xcode Command Line Tools/macOS SDK, or Visual Studio C++ Build Tools/Windows SDK, through the contributor's normal approved setup. Version-specific headers and Windows import libraries must already be available or downloadable; cross-compilation/universal/prebuilt output is not supplied.
+
+The wrapper loads only fixed paths relative to its emitted module. Missing, corrupt or incompatible modules reject attempted mutation with native_unavailable while unrelated imports can still succeed. macOS uses renamex_np(RENAME_EXCL); unsupported filesystems fail without ordinary-rename fallback. Windows uses MoveFileExW with flags zero and no copying/replacement/reboot fallback. The runtime binary is unpacked by one exact ASAR rule and checked against the current build; test binaries are excluded from packaging. This establishes destination protection, not atomic source confinement, SQLite/filesystem coordination or power-loss durability.
+
+Focused commands after build (PowerShell syntax for the early Windows host):
+
+```powershell
+npm ci
+npm run build
+$env:WORKSPACE_RENAME_NATIVE_EVIDENCE_DIR = 'work/issue-18-native'
+npm run test:rename:native
+npm run test:windows:early
+```
+
+On macOS, prepend /Users/aleksandersk/.nvm/versions/node/v22.21.1/bin to PATH and run WORKSPACE_RENAME_NATIVE_EVIDENCE_DIR=work/issue-18-native npm run test:rename:native after build. The focused suite uses Node and a real Electron utilityProcess, with no renderer or live project roots. Electron children drop NODE_TEST_CONTEXT inherited from the Node test runner, then acknowledge received results before exiting. Optional evidence contains only finite runtime/platform/scenario outcomes, never fixture paths or exception text. Each invocation should use a separate ignored evidence directory. A missing or unreached result remains pending/failed; a platform skip is not acceptance.
+
+Local macOS arm64 compilation used Apple Clang 21.0.0, Python 3.9.6, Node 22.21.1 headers and Electron 44.7.0 headers. Both runtime binaries loaded, including an Electron ASAR fixture; collisions preserved source/destination identity and sentinel bytes. The actual temporary mount resolved case aliases; the primitive returned renamed for the self-alias with identity/bytes retained. Exact spelling/staging policy belongs to the deferred journal/service. Actual Windows compiler, loading, collisions and mounted-filesystem case behavior remain unperformed locally. CI now includes the focused test in test:windows:early and preserves native-adapter.json alongside the unchanged creation/Reveal path; no push, dispatch or publication has been performed or authorized by this slice.
+
+Task 1 local verification passed npm test (1,134 passed, 16 platform skips, zero failures), lint, typecheck, check:docs and diff --check. The four native checks had no skips. An unsigned macOS directory artifact built with CSC_IDENTITY_AUTO_DISCOVERY=false and the installed Electron distribution also passed check:artifact; this verifies packaging/resources, not full product runtime or Windows acceptance. The plan records exact commands and retained local evidence.
