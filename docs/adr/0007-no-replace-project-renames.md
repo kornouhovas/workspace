@@ -8,7 +8,7 @@ status: accepted
 
 Issue #18 requires rejecting an occupied destination at the filesystem operation, including an empty directory inserted after validation. The coordinator selected a repository-owned synchronous C Node-API addon exposing only renameNoReplace(fromPath, toPath). Repeated existence checks followed by Node rename are insufficient: ordinary rename can replace an empty directory on macOS.
 
-This first slice implements the adapter, typed private wrapper, builds and disposable Node/Electron fixtures. It does not implement the rename command, durable journal, recovery, renderer transport or Name editor. [The stage plan](../plans/issue-18-project-rename-stage-1.md) keeps those later steps deferred. [ADR 0006](0006-recoverable-project-creation.md) remains the creation decision; its Node mkdir adapter is unchanged.
+This first slice implements the adapter, typed private wrapper, builds and disposable Node/Electron fixtures. It does not implement the rename command, durable journal, recovery, renderer transport or Name editor. [The stage plan](../plans/completed/issue-18-project-rename-stage-1.md) keeps those later steps deferred. [ADR 0006](0006-recoverable-project-creation.md) remains the creation decision; its Node mkdir adapter is unchanged.
 
 - macOS calls renamex_np with RENAME_EXCL only. A filesystem that does not support the flag rejects the operation. There is no ordinary-rename fallback.
 - Windows calls MoveFileExW with flags zero, preserving UTF-16. Replacement, cross-volume copying and delayed reboot operations are disabled.
