@@ -75,8 +75,8 @@ void app.whenReady().then(async () => {
       join(appDataDirectory, "workspace.sqlite"),
       port2,
     );
-  } catch {
-    controller.markStartupFailure();
+  } catch (error) {
+    controller.markStartupFailure(error);
   }
   await createWindow();
 });

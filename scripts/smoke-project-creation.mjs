@@ -12,6 +12,7 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
+import { waitForRuntimeInterface } from "./runtime-startup.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -103,7 +104,10 @@ async function launch(data) {
   ownedProcesses.add(electron.process());
   const page = await electron.firstWindow(); current.page = page;
   page.setDefaultTimeout(15000);
-  await page.locator("#interface-language").waitFor();
+  await waitForRuntimeInterface(page, async (startup) => {
+    observations.push({ discoveryMode: activeRun.discoveryMode, checkpoint: activeRun.checkpoint, startup });
+    await save();
+  });
   assert.equal(await page.evaluate(() => typeof process), "undefined");
   assert.equal(await page.evaluate(() => typeof require), "undefined");
   assert.deepEqual(await electron.evaluate(({ BrowserWindow }) => {

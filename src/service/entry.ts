@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { startupDiagnostic, type StartupDiagnostic } from "../contracts/startup-diagnostic.js";
 import { isProjectCreationRequest } from "../contracts/project-creation.js";
 import { isProjectRevealRequest } from "../contracts/project-reveal.js";
 import { openSettingsService, type SettingsService } from "./settings.js";
@@ -64,10 +65,13 @@ export function startServiceProcess(
     }
     if (data.type !== "connect" || service || typeof data.databasePath !== "string") return;
 
+    let startupStage: StartupDiagnostic["stage"] = "service_open";
     try {
       service = openService(data.databasePath, join(__dirname, "db/migrations"));
+      startupStage = "service_port";
       requestPort = event.ports[0];
       if (!requestPort) throw new Error("Missing service message port");
+      startupStage = "service_subscribe";
       unsubscribe = service.workspaces.subscribe((change) => {
         if (!stopping) requestPort?.postMessage({ type: "workspace.change", change });
       });
@@ -103,11 +107,13 @@ export function startServiceProcess(
             : service.handleCommand(request.input);
         requestPort?.postMessage({ id: request.id, result });
       });
+      startupStage = "service_start";
       requestPort.start?.();
       parentPort.postMessage({ type: "ready" });
-    } catch {
-      shutdown();
-      parentPort.postMessage({ type: "startup-error", message: "The local service could not open its database." });
+    } catch (error) {
+      const diagnostic = startupDiagnostic(startupStage, error);
+      try { shutdown(); }
+      finally { parentPort.postMessage({ type: "startup-error", message: "The local service could not open its database.", diagnostic }); }
     }
   });
 }

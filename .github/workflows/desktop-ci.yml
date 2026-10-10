@@ -48,6 +48,8 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-grouped
       - run: npm run smoke:runtime -- dev
         if: ${{ !cancelled() }}
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-dev
       - run: npm run package:dir
         if: ${{ !cancelled() }}
       - run: npm run check:artifact -- release
@@ -69,12 +71,16 @@ jobs:
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-grouped
       - run: npm run smoke:runtime -- release
         if: ${{ !cancelled() }}
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-runtime-release
       - name: Preserve creation/native failures and unreached stages
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: issue-17-${{ matrix.artifact }}-evidence
-          path: work/ci-creation-*/
+          path: |
+            work/ci-creation-*/
+            work/ci-runtime-*/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:

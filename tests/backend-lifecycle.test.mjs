@@ -1583,3 +1583,76 @@ for (const mode of ["direct", "grouped"]) {
     });
   }
 }
+
+test("startup diagnostics retain real database-open failure codes through entry/controller without private details", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "workspace-startup-diagnostic-"));
+  const databasePath = join(directory, "private-workspace.sqlite");
+  const parent = new EventEmitter(), child = new FakeChild(), port = new FakePort();
+  const controller = new BackendController();
+  const ready = controller.start(child, port, databasePath, {}, 1000);
+  parent.postMessage = (message) => child.send(message);
+  startServiceProcess(parent);
+  try {
+    await writeFile(databasePath, "private invalid database bytes");
+    parent.emit("message", { data: { type: "connect", databasePath }, ports: [port] });
+    assert.equal(await ready, false);
+    assert.deepEqual(controller.currentStatus.diagnostic, { stage: "service_open", code: "SQLITE_NOTADB" });
+    child.exit(1);
+    assert.deepEqual(controller.currentStatus.diagnostic, { stage: "service_open", code: "SQLITE_NOTADB" });
+    assert.equal(JSON.stringify(controller.currentStatus).includes(directory), false);
+    assert.equal(JSON.stringify(controller.currentStatus).includes("private"), false);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("startup diagnostics distinguish readiness timeout, process error/exit and sanitized service errors", async () => {
+  for (const cause of ["timeout", "error", "exit", "service", "unknown"]) {
+    const controller = new BackendController(), child = new FakeChild();
+    const ready = controller.start(child, new FakePort(), "/private/database", {}, cause === "timeout" ? 5 : 1000);
+    if (cause === "error") child.emit("error", "private type", "private path", "private report");
+    if (cause === "exit") child.exit(42);
+    if (cause === "service") child.send({ type: "startup-error", diagnostic: { stage: "service_open", code: "SQLITE_BUSY", message: "private path", stack: "private SQL" } });
+    if (cause === "unknown") child.send({ type: "startup-error", diagnostic: { stage: "private path", code: "private SQL" } });
+    assert.equal(await ready, false);
+    assert.deepEqual(controller.currentStatus.diagnostic, cause === "timeout" ? { stage: "readiness_timeout", code: "unknown" } :
+      cause === "error" ? { stage: "process_error", code: "unknown" } :
+      cause === "exit" ? { stage: "process_exit", code: "unknown", exitCode: 42 } :
+      { stage: "service_open", code: cause === "service" ? "SQLITE_BUSY" : "unknown" });
+    assert.equal(JSON.stringify(controller.currentStatus).includes("private"), false);
+    child.exit(1);
+  }
+});
+
+test("service initialization and migration failures report bounded phase/code even if cleanup throws", () => {
+  for (const cause of ["open", "subscribe", "port", "start"]) {
+    const parent = new EventEmitter(), port = new FakePort();
+    const sent = []; parent.postMessage = (message) => sent.push(message);
+    if (cause === "start") port.start = () => { throw Object.assign(new Error("private start path"), { code: "EPERM" }); };
+    startServiceProcess(parent, () => {
+      if (cause === "open") throw Object.assign(new Error("private migration SQL"), { code: "SQLITE_ERROR" });
+      return { workspaces: { subscribe() { if (cause === "subscribe") throw new Error("private subscribe"); return () => {}; } }, close() { throw new Error("private close"); } };
+    });
+    const connect = () => parent.emit("message", { data: { type: "connect", databasePath: "/private/db" }, ports: cause === "port" ? [] : [port] });
+    if (cause === "open") assert.doesNotThrow(connect);
+    else assert.throws(connect, /private close/);
+    assert.deepEqual(sent.at(-1).diagnostic, { stage: `service_${cause === "open" ? "open" : cause}`, code: cause === "open" ? "SQLITE_ERROR" : cause === "start" ? "EPERM" : "unknown" });
+    assert.equal(JSON.stringify(sent).includes("private"), false);
+  }
+});
+
+test("a real SQLite migration failure reaches startup evidence without its SQL or path", async () => {
+  const { openSettingsService } = await import("../dist/service/settings.mjs");
+  const directory = await mkdtemp(join(tmpdir(), "workspace-startup-migration-"));
+  const migration = join(directory, "private-migrations");
+  const parent = new EventEmitter(), sent = [], port = new FakePort();
+  parent.postMessage = (message) => sent.push(message);
+  try {
+    await mkdir(join(migration, "meta"), { recursive: true });
+    await writeFile(join(migration, "meta/_journal.json"), JSON.stringify({ entries: [{ tag: "0000_private", when: 1, breakpoints: true }] }));
+    await writeFile(join(migration, "0000_private.sql"), "CREATE private invalid SQL");
+    startServiceProcess(parent, (path) => openSettingsService(path, migration));
+    parent.emit("message", { data: { type: "connect", databasePath: join(directory, "private.sqlite") }, ports: [port] });
+    assert.deepEqual(sent.at(-1).diagnostic, { stage: "service_open", code: "SQLITE_ERROR" });
+    assert.equal(JSON.stringify(sent).includes("private"), false);
+    assert.equal(JSON.stringify(sent).includes(directory), false);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

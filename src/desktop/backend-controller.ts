@@ -1,4 +1,5 @@
 import { isProjectRevealRequest } from "../contracts/project-reveal.js";
+import { readStartupDiagnostic, startupDiagnostic, type StartupDiagnostic } from "../contracts/startup-diagnostic.js";
 import type { BackendStatus } from "../contracts/desktop-api.js";
 import { isServiceEvent, isServiceResponse, isNativeProjectRevealVerified, isNativeProjectRevealRequest, isNativeProjectRevealCancel, type NativeProjectRevealRequest, type TrustedProjectRevealTarget, type NativeProjectRevealResult, type NativeProjectRevealValidation, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
 import type { WorkspaceChangeEvent } from "../contracts/workspaces.js";
@@ -40,8 +41,8 @@ export class BackendController {
 
   get currentStatus(): BackendStatus { return this.status; }
 
-  markStartupFailure(): void {
-    this.failStartup();
+  markStartupFailure(error?: unknown): void {
+    this.failStartup(undefined, startupDiagnostic("process_start", error));
   }
 
   start(
@@ -64,12 +65,12 @@ export class BackendController {
     port.on("message", ({ data }) => { if (generation === this.generation) this.onResponse(data); });
     port.start?.();
     child.on("message", (message) => { if (generation === this.generation) this.onChildMessage(message); });
-    child.on("exit", () => { if (generation === this.generation) this.onExit(); });
+    child.on("exit", (code) => { if (generation === this.generation) this.onExit(code); });
     child.on("error", () => { if (generation === this.generation) this.onProcessError(); });
     child.on("spawn", () => undefined);
 
     const ready = new Promise<boolean>((resolve) => {
-      const timer = setTimeout(() => this.failStartup(resolve), timeoutMs);
+      const timer = setTimeout(() => this.failStartup(resolve, startupDiagnostic("readiness_timeout")), timeoutMs);
       this.readiness = { resolve, timer };
     });
     child.postMessage({ type: "connect", databasePath }, [transferPort]);
@@ -130,7 +131,7 @@ export class BackendController {
       this.readiness = undefined;
       this.setStatus({ state: "ready" });
     } else if (message.type === "startup-error") {
-      this.failStartup(this.readiness?.resolve);
+      this.failStartup(this.readiness?.resolve, readStartupDiagnostic(message.diagnostic) ?? startupDiagnostic("service_open"));
     }
   }
 
@@ -200,9 +201,9 @@ export class BackendController {
     try { this.port?.postMessage({ type: "project.reveal.cancel", requestId, dispatchId }); } catch { /* Closed transport. */ }
   }
 
-  private onExit(): void {
+  private onExit(code?: number): void {
     this.changeListeners.clear();
-    if (this.readiness) this.failStartup(this.readiness.resolve);
+    if (this.readiness) this.failStartup(this.readiness.resolve, readStartupDiagnostic({ ...startupDiagnostic("process_exit"), exitCode: code }));
     this.rejectPending("The local service exited.");
     if (this.child) {
       const startupFailed = this.status.state === "unavailable";
@@ -216,15 +217,15 @@ export class BackendController {
   }
 
   private onProcessError(): void {
-    if (this.readiness) this.failStartup(this.readiness.resolve);
+    if (this.readiness) this.failStartup(this.readiness.resolve, startupDiagnostic("process_error"));
     else this.onExit();
   }
 
-  private failStartup(resolve = this.readiness?.resolve): void {
+  private failStartup(resolve = this.readiness?.resolve, diagnostic: StartupDiagnostic = startupDiagnostic("process_start")): void {
     if (this.readiness) clearTimeout(this.readiness.timer);
     this.readiness = undefined;
     resolve?.(false);
-    this.setStatus({ state: "unavailable", message: "Workspace could not start its local service. Close and reopen the app to try again." });
+    this.setStatus({ state: "unavailable", message: "Workspace could not start its local service. Close and reopen the app to try again.", diagnostic });
     this.child?.kill();
   }
 

@@ -8,6 +8,7 @@ import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
 import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
+import { measureDiscoveryLayout } from "./runtime-layout.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -178,19 +179,10 @@ async function applyFolders(page, language = "en") {
 async function captureDiscovery(page, language, state) {
   for (const size of [{ width: 1440, height: 960 }, { width: 1024, height: 720 }, { width: 420, height: 800 }]) {
     await page.setViewportSize(size);
-    if (await page.locator(".text-value-editor").count()) await page.locator(".text-value-editor").scrollIntoViewIfNeeded();
-    if (await page.locator(".category-property-header").count()) await page.locator(".category-property-header").scrollIntoViewIfNeeded();
-    const overflow = await page.evaluate(() => ({
-      document: globalThis.document.documentElement.scrollWidth > globalThis.innerWidth,
-      clippedControls: Array.from(globalThis.document.querySelectorAll(".text-value-editor button, .category-property-header button")).filter((node) => {
-        const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
-        return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
-      }).map((node) => node.textContent),
-      elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .workspace-root, .project-table td, .project-table th, .workspace-form-actions, .text-value-button, .text-value-editor"))
-        .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
-    }));
-    assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
+    const { controls, ...overflow } = await measureDiscoveryLayout(page);
+    observations.push({ layout: { language, state, width: size.width, ...overflow, controls } });
     if (evidenceDirectory) await page.screenshot({ path: join(evidenceDirectory, `${mode}-${language}-${size.width}-${state}.png`), fullPage: true });
+    assert.deepEqual(overflow, { document: false, clippedControls: [], elements: [] }, `${language} discovery ${state} ${size.width} overflow`);
   }
 }
 
@@ -748,6 +740,7 @@ try {
   assert.equal(siblingMode.ok, true);
   await page.getByRole("heading", { name: discoveryLabels.ru.stale, exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: discoveryLabels.ru.apply, exact: true }).isDisabled(), true);
+  await page.locator(".category-property-header").waitFor();
   await captureDiscovery(page, "ru", "mode-sibling-stale");
   await settleSourceRefresh(page);
   await page.getByRole("button", { name: "Обновить предпросмотр", exact: true }).press("Enter");
@@ -1212,6 +1205,7 @@ try {
   assert.deepEqual(await current.page.evaluate(() => globalThis.window.workspace.getBackendStatus()), {
     state: "unavailable",
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
+    diagnostic: { stage: "service_open", code: "SQLITE_CANTOPEN" },
   });
   stages.startupFailure = true;
   const failurePids = await backendPids(current.electron);
