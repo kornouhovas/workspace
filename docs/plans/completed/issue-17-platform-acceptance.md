@@ -358,3 +358,8 @@ The bounded review continuation after coordinator CI 38046397144 preserves compl
 - Physical macOS 27 / Electron 44.7.0 issue #44 remains an independent final-release prerequisite.
 
 - Executor handoff reports verified commits, actual checks and remaining limitations in Russian. No unmet acceptance criterion is checked complete.
+
+
+### Subsequent coordinator CI investigations
+
+CI 38047696941/f8d9e90 retained three failures: Windows exact parent/target without observed selection, Windows final recovery-matrix startup failure without its cause, and macOS narrow sibling-mode layout clipping. A new five-perspective review at 488c6a0 confirmed lost startup diagnostics and a Table preparation/readiness race; both were repaired in 07f7966/157c8cc. The actual Electron boundary caught and corrected Promise-valued Playwright polling in the initial repair. Final quality/implementation reviews at 157c8cc found no critical/major issues. Actual local full development, negative-startup and eight-scenario recovery-only checks passed; native branches in the latter were explicitly skipped. See the [verification addendum](../../verification/issue-17-create-reveal.md#bounded-startup-diagnostics-and-runtime-layout-readiness-review) for exact commands, failures and scope. This is bounded diagnostic/readiness work, not completion of any external platform criterion. Explorer selection and the historical Windows startup cause remain unknown; exact-code coordinator CI, integration/trackers and #44 remain gates. Completed Tasks 1–5 and all historical checkboxes stay unchanged.
