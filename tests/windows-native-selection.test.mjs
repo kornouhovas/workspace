@@ -365,7 +365,8 @@ const observedSelected = { ...observedParent, selectedTargetMatch: true };
 // Exercise the real orchestrator and observer with owned filesystem fixtures,
 // substituting only process/COM boundaries. No real selection is performed.
 async function experimentFixture(t, { native = completed, observation = observedSelected,
-  termination = "confirmed", mode = "zero_child", filesystem = {}, commandError = false, cleanupError = false } = {}) {
+  termination = "confirmed", mode = "zero_child", filesystem = {}, commandError = false, cleanupError = false,
+  terminal = undefined, terminalTermination = "confirmed" } = {}) {
   const evidenceDirectory = await fs.mkdtemp(join(tmpdir(), "workspace-native-evidence-test-"));
   const roots = [], calls = [], removed = [];
   let generatedTarget, elapsed = 0;
@@ -374,7 +375,7 @@ async function experimentFixture(t, { native = completed, observation = observed
   });
   const clock = controlledClock();
   const options = {
-    evidenceDirectory, platform: "win32", clock, mode,
+    evidenceDirectory, platform: "win32", clock, mode, terminalDiagnostics: terminal !== undefined,
     env: { WORKSPACE_NATIVE_SELECTION_TARGET: target, WORKSPACE_NATIVE_SELECTION_MODE: "invalid inherited" },
     filesystem: { ...fs,
       mkdtemp: async (prefix) => { const root = await fs.mkdtemp(prefix); roots.push(root); return root; },
@@ -382,6 +383,22 @@ async function experimentFixture(t, { native = completed, observation = observed
       ...filesystem,
     },
     spawnProcess: (_program, args, settings) => {
+      if (args[3].endsWith("windows-native-view-diagnostics.ps1")) {
+        calls.push("terminal");
+        assert.equal(settings.env.WORKSPACE_OBSERVE_TARGET, generatedTarget);
+        assert.equal(elapsed, 10000, "terminal diagnostics run only after the observation deadline");
+        const child = new EventEmitter(); child.stdout = new EventEmitter();
+        child.stdout.destroy = () => {}; child.unref = () => {};
+        child.kill = () => { calls.push("terminal_kill");
+          if (terminalTermination === "confirmed") queueMicrotask(() => child.emit("close", null));
+          else queueMicrotask(() => clock.advance(1000));
+        };
+        queueMicrotask(() => {
+          if (terminal === null) clock.advance(5000);
+          else { child.stdout.emit("data", JSON.stringify(terminal)); child.emit("close", 0); }
+        });
+        return child;
+      }
       calls.push("bridge");
       generatedTarget = settings.env.WORKSPACE_NATIVE_SELECTION_TARGET;
       assert.equal(settings.env.WORKSPACE_NATIVE_SELECTION_MODE, mode);
@@ -504,6 +521,56 @@ test("unselected target exhausts the unchanged controlled ten-second budget with
   assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
   assert.equal(result.windowCleanup.closure, "unverified");
   assert.equal(result.fixtureRemoval.status, "completed");
+});
+
+const terminalSelected = { version: 1, stage: "observed", code: null, snapshot: {
+  comBusy: false, readyState: 4, comVisible: true, windowVisible: true, windowMinimized: false,
+  windowForeground: false, viewEnabled: true, viewOffscreen: false, viewBoundsNonempty: true,
+  itemEnabled: true, itemOffscreen: false, itemBoundsNonempty: true, itemKeyboardFocus: true, itemSelected: true,
+} };
+
+test("post-deadline terminal selection cannot rescue the frozen negative verdict or repeat dispatch", async (t) => {
+  const fixture = await experimentFixture(t, { mode: "electron_absolute", observation: observedParent, terminal: terminalSelected });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "observation", code: "deadline" });
+  assert.equal(result.status, "failed"); assert.equal(result.observation.elapsedMs, 10000);
+  assert.equal(result.terminalView.diagnostic.snapshot.itemSelected, true);
+  assert.equal(result.terminalView.phase, "after_negative_verdict");
+  assert.equal(result.terminalView.deadlineMs, 5000);
+  assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+  assert.deepEqual(fixture.calls.slice(-2), ["terminal", "window_cleanup"]);
+});
+
+test("terminal timeout preserves primary failure and blocks fixture/window cleanup until termination is known", async (t) => {
+  for (const terminalTermination of ["confirmed", "unknown"]) {
+    const fixture = await experimentFixture(t, { mode: "electron_absolute", observation: observedParent, terminal: null, terminalTermination });
+    const result = await fixture.run();
+    assert.deepEqual(result.failure, { stage: "observation", code: "deadline" });
+    assert.equal(result.terminalView.stage, "timeout");
+    assert.equal(result.terminalView.process.termination, terminalTermination);
+    assert.equal(result.fixtureRemoval.status, terminalTermination === "confirmed" ? "completed" : "unverified");
+    assert.equal(fixture.calls.includes("window_cleanup"), terminalTermination === "confirmed");
+    assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+  }
+});
+
+test("successful exact observation skips terminal diagnostics and invalid diagnostic modes never dispatch", async (t) => {
+  const fixture = await experimentFixture(t, { mode: "electron_absolute", terminal: terminalSelected });
+  const result = await fixture.run();
+  assert.equal(result.status, "passed"); assert.equal(result.terminalView.status, "not_attempted");
+  assert.equal(fixture.calls.includes("terminal"), false);
+  const invalid = await experimentFixture(t, { mode: "relative_child", terminal: terminalSelected });
+  const failure = await invalid.run();
+  assert.deepEqual(failure.failure, { stage: "terminal_configuration", code: "unsupported" });
+  assert.deepEqual(invalid.calls, []); assert.deepEqual(invalid.roots, []);
+});
+
+test("early unavailable observation skips terminal reads and preserves the independent observer failure", async (t) => {
+  const fixture = await experimentFixture(t, { mode: "electron_absolute", terminal: terminalSelected, commandError: true });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "observation", code: "unavailable" });
+  assert.equal(result.terminalView.status, "not_attempted");
+  assert.deepEqual(fixture.calls, ["bridge", "observe", "window_cleanup"]);
 });
 
 test("observer unavailability is distinct from a negative native or selection result", async (t) => {

@@ -157,7 +157,26 @@ Task 7 local verification (macOS arm64, Node 22.21.1): four focused native/produ
 
 Stop after the committed Task 7 comparison. The coordinator supplies all three exact-code fresh Windows artifacts and complete controlled logs, plus repaired production-scan/original runtime evidence where applicable. Compare actual HRESULTs, invocation counts, strict selected-target observations and cleanup without substituting a diagnostic pass for product acceptance. No production replacement follows from an occasional pass. Preserve historical f753 normal-quit failure, c8 negative selection, unresolved causes and independent #44. Task 8 stays unchecked until this checkpoint is received.
 
-### Task 8: Verify repairs and update the evidence handoff
+The receipt gate is satisfied by coordinator-supplied exact 36e5587e5cbb4b3a38ec7cacc2c94d03576b480f, CI 38068523263: all three fresh call forms returned S_OK after one invocation, but every completed exact COM read found the owned parent/target unselected. The controlled suites passed 62 tests per job. Exact daab694 CI 38067935441 also supplies the repaired production scanner contrast (4/4 successful parent renames while raw native contrast still reproduces EPERM in 3/4) and original full runtime/category-rename green; Windows product native selection remains negative. Historical f753 normal-quit failure and independent #44 remain preserved.
+
+Coordinator-authorized continuation inserts a bounded evidence milestone before final verification. All five initial perspectives were collected before edits using gpt-6.1-sol high and the fixed base. A reviewed scalar-only terminal snapshot avoids the unresolved DPI/crop privacy complexity of PrintWindow. It can distinguish a busy, minimized, disabled or offscreen terminal view from its opposite; it cannot establish readiness at dispatch or the cause of lost selection.
+
+### Task 8: Inspect exact owned terminal view state after negative selection
+
+**Files:** scripts/windows-native-selection.mjs, new scripts/windows-native-view-diagnostics.mjs/.ps1, connected diagnostic tests, .github/workflows/desktop-ci.yml and docs/verification/issue-17-create-reveal.md.
+
+- [x] Map the supplied exact-code findings, collect all five initial perspectives, verify primary read-only API contracts and review the bounded diagnostic plan before implementation.
+- [x] Add one separate bounded terminal COM/UIA/Win32 state read after a frozen negative ten-second observation. Revalidate exact parent/target, HWND/PID and single-tab/view/item ownership before/after; retain only finite state values. Unsupported properties remain unavailable, no paths/titles/handles/process IDs/images are published, and no selection/input/navigation or product dispatch changes occur.
+- [x] Add meaningful regressions for ownership changes, unavailable properties, finite protocol/privacy, late selection, invocation/order, bounds and cleanup. Use one fresh electron_absolute CI job with unconditional evidence/log preservation instead of repeating all three unchanged call forms.
+- [x] Run focused suites, lint, typecheck, check:docs and working/fixed-base diff checks; obtain clean quality/implementation follow-up reviews, document actual checks/limitations and commit the milestone.
+
+Task 8 local verification (macOS arm64, Node 22.21.1): five focused native/view/product/UIA/file-manager suites reported 105 tests, 97 passed, eight Windows-only skips, zero failures. Lint, typecheck, check:docs (73 files), actual new C# interop compilation using installed .NET 6, and working/fixed-base whitespace checks passed. Three new orchestration regressions failed before implementation and passed afterward. All five initial perspectives preceded edits; final quality/implementation re-reviews found no remaining critical/major actionable issues after correcting early-unavailable ordering, UIA default substitution, nullable runtime identity and controlled PowerShell property matching. No new actual Windows/PowerShell/UIA, graphical/native product, production build, full npm test or package verification is claimed. The original ten-second negative cannot be rescued by the terminal snapshot. Task 9 remains unchecked behind the new exact-code coordinator checkpoint.
+
+## Mandatory coordinator checkpoint before Task 9
+
+Stop after Task 8. Obtain exact-code Windows terminal-state evidence and complete controlled logs. Keep the original negative observation separate from any later selected state. A visible style/Busy=false/ReadyState=4 is not proof of selection readiness or pixel visibility; a snapshot cannot establish conditions at dispatch. No production replacement or final acceptance follows without causal evidence. Coordinator owns push/CI/trackers/integration; #18 remains excluded.
+
+### Task 9: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.

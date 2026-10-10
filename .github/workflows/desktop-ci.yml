@@ -63,11 +63,7 @@ jobs:
           if-no-files-found: error
 
   windows-native-selection:
-    name: Isolated Windows native selection (${{ matrix.mode }})
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: [electron_absolute, relative_child, zero_child]
+    name: Isolated Windows terminal owned-view diagnostic
     runs-on: windows-latest
     timeout-minutes: 5
     steps:
@@ -78,15 +74,16 @@ jobs:
       - name: Invoke one native selection on an owned Unicode fixture
         run: node scripts/windows-native-selection.mjs
         env:
-          WORKSPACE_NATIVE_SELECTION_MODE: ${{ matrix.mode }}
+          WORKSPACE_NATIVE_SELECTION_MODE: electron_absolute
+          WORKSPACE_NATIVE_VIEW_DIAGNOSTIC: '1'
       - name: Verify controlled bridge, protocol, observation and cleanup boundaries
         if: always()
-        run: node --test tests/windows-native-selection.test.mjs tests/file-manager-evidence.test.mjs
+        run: node --test tests/windows-native-selection.test.mjs tests/windows-native-view-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs
       - name: Preserve separate native selection experiment evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-17-windows-native-selection-${{ matrix.mode }}
+          name: issue-17-windows-native-terminal-view
           path: work/windows-native-selection-evidence/result.json
           if-no-files-found: error
 

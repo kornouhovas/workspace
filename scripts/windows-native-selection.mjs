@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
+import { inspectNativeView } from "./windows-native-view-diagnostics.mjs";
 
 const bridgePath = fileURLToPath(new URL("./windows-native-selection.ps1", import.meta.url));
 const maximumOutputBytes = 8192;
@@ -201,6 +202,7 @@ export async function runNativeSelectionExperiment({
   platform = process.platform, filesystem = fs, spawnProcess = spawn, env = process.env,
   clock = { setTimeout, clearTimeout }, runCommand, timing, readCodeRevision,
   mode = env.WORKSPACE_NATIVE_SELECTION_MODE ?? "zero_child",
+  terminalDiagnostics = env.WORKSPACE_NATIVE_VIEW_DIAGNOSTIC === "1",
 } = {}) {
   const evidence = {
     version: 2, mode: selectionModes.includes(mode) ? mode : null,
@@ -211,11 +213,13 @@ export async function runNativeSelectionExperiment({
     native: { status: "not_attempted", invocationCount: 0, native: null,
       process: { termination: "not_started", exitCode: null, signal: null, killAttempted: false } },
     observation: { status: "not_attempted" },
+    terminalView: { status: "not_attempted", phase: "after_negative_verdict", deadlineMs: 5000 },
     windowCleanup: { status: "not_attempted", closure: "unverified", unselectedParentMayRemain: true },
     fixtureRemoval: { status: "not_needed" }, persistence: { status: "not_attempted" },
   };
   const fail = (stage, code) => { evidence.failure ??= { stage, code }; };
   if (!selectionModes.includes(mode)) fail("mode", "unsupported");
+  if (terminalDiagnostics && mode !== "electron_absolute") fail("terminal_configuration", "unsupported");
   if (!evidence.metadata.codeSha) fail("metadata", "revision_unavailable");
   let root, target;
   // Until a returned bridge result proves otherwise, cleanup must assume an
@@ -259,11 +263,25 @@ export async function runNativeSelectionExperiment({
           evidence.observation = { status: "unavailable", completion: "observer_error" };
           fail("observation", "observer_error");
         }
+        // This is new post-verdict evidence, never a retry or an extension of
+        // strict selection acceptance. Late selected=true cannot clear failure.
+        if (terminalDiagnostics && evidence.observation.completion === "deadline" &&
+          Number.isFinite(evidence.observation.elapsedMs) && evidence.observation.elapsedMs >= 10000) {
+          try {
+            const terminal = await inspectNativeView(target, { platform, spawnProcess, env, clock });
+            evidence.terminalView = { ...evidence.terminalView, ...terminal };
+            terminationKnown = ["confirmed", "not_started"].includes(terminal.process.termination);
+          } catch {
+            terminationKnown = false;
+            evidence.terminalView = { ...evidence.terminalView, status: "unavailable", stage: "bridge_error",
+              diagnostic: null, process: { termination: "unknown", killAttempted: null } };
+          }
+        }
         try {
-          const cleanup = await closeDisposableFileManagerTarget(target, platform, runCommand);
+          const cleanup = terminationKnown ? await closeDisposableFileManagerTarget(target, platform, runCommand) : null;
           // The helper cannot confirm closure and its failure reason may contain
           // arbitrary OS error.code text. Retain only its finite status here.
-          evidence.windowCleanup.status = cleanup.status === "completed" ? "completed" : "failed";
+          evidence.windowCleanup.status = !cleanup ? "not_attempted" : cleanup.status === "completed" ? "completed" : "failed";
         } catch { evidence.windowCleanup.status = "failed"; }
         if (evidence.windowCleanup.status === "failed") {
           evidence.windowCleanup.code = "cleanup_unavailable";

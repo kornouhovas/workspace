@@ -109,7 +109,7 @@ test('workflow runs three independent fresh Windows jobs and always uploads exac
   for (const [name, artifact, path] of [
     ['windows-product-selection-diagnostic', 'issue-17-windows-product-selection-diagnostic', 'work/ci-windows-product-selection/result.json'],
     ['windows-category-rename-diagnostic', 'issue-17-windows-category-rename-diagnostic', 'work/ci-windows-category-rename/rename-observations.json'],
-    ['windows-native-selection', 'issue-17-windows-native-selection-${{ matrix.mode }}', 'work/windows-native-selection-evidence/result.json'],
+    ['windows-native-selection', 'issue-17-windows-native-terminal-view', 'work/windows-native-selection-evidence/result.json'],
   ]) {
     const job = workflow.jobs[name];
     assert.equal(job['runs-on'], 'windows-latest'); assert.equal(job.needs, undefined);
@@ -158,21 +158,21 @@ test('failure cleanup and wrong-window evidence cannot complete product acceptan
   assert.equal(JSON.stringify(result).includes(privateText), false);
 });
 
-test('native comparison runs one condition per fresh runner with all outcomes preserved', async () => {
+test('terminal view diagnostic runs one condition on a fresh runner with all outcomes preserved', async () => {
   const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['windows-native-selection'];
-  assert.deepEqual(job.strategy, { 'fail-fast': false,
-    matrix: { mode: ['electron_absolute', 'relative_child', 'zero_child'] } });
+  assert.equal(job.strategy, undefined);
   assert.equal(job.needs, undefined);
   const commands = job.steps.filter((s) => s.run);
   assert.deepEqual(commands.map((s) => s.run), [
     'node scripts/windows-native-selection.mjs',
-    'node --test tests/windows-native-selection.test.mjs tests/file-manager-evidence.test.mjs',
+    'node --test tests/windows-native-selection.test.mjs tests/windows-native-view-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs',
   ]);
-  assert.equal(commands[0].env.WORKSPACE_NATIVE_SELECTION_MODE, '${{ matrix.mode }}');
+  assert.equal(commands[0].env.WORKSPACE_NATIVE_SELECTION_MODE, 'electron_absolute');
+  assert.equal(commands[0].env.WORKSPACE_NATIVE_VIEW_DIAGNOSTIC, '1');
   assert.equal(commands[1].if, 'always()');
   const upload = job.steps.find((s) => s.uses === 'actions/upload-artifact@v4');
-  assert.equal(upload.with.name, 'issue-17-windows-native-selection-${{ matrix.mode }}');
+  assert.equal(upload.with.name, 'issue-17-windows-native-terminal-view');
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
 });
