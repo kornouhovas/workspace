@@ -64,6 +64,8 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 - Immediate Reveal after creation preserves localized dispatch acknowledgment when active observation reloads the unchanged authorized project, with stale target/selection/backend responses still rejected.
 
+- Confirmed project creation remains visible when interrupted-operation loading fails; list errors are shown independently and clear after a fresh successful reload.
+
 ### Planned
 
 - Other property types and definition deletion/hiding/reordering; filtering/grouping/dragging and Board/general view management.

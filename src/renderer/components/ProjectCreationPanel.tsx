@@ -23,6 +23,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const [open, setOpen] = useState(false), [name, setName] = useState(""), [categoryId, setCategoryId] = useState("");
   const [pending, setPending] = useState(false), [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<TranslationKey | null>(null);
+  const [listError, setListError] = useState(false);
   const [operations, setOperations] = useState<ProjectCreationOperation[]>([]);
   const originalRequest = useRef<Parameters<WorkspaceServiceClient["createProject"]>[0] | null>(null);
   const [unknownId, setUnknownId] = useState<string | null>(null);
@@ -41,12 +42,13 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     setLoading(true);
     try {
       const result = await client.listProjectCreations(workspaceId);
-      if (!mounted.current || current !== lists.current || backend !== generation.current) return;
-      if (observed === observationVersion.current && result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
+      if (!mounted.current || current !== lists.current || backend !== generation.current || observed !== observationVersion.current) return;
+      if (result.ok && result.value.workspaceId === workspaceId && result.value.sourceId === sourceId &&
         result.value.operations.every((operation) => operation.sourceId === sourceId)) {
         setOperations(result.value.operations.filter((operation) => operation.stage !== "completed" && operation.stage !== "failed"));
-      } else setMessage("creationListError");
-    } catch { if (mounted.current && current === lists.current && backend === generation.current) setMessage("creationListError"); }
+        setListError(false);
+      } else setListError(true);
+    } catch { if (mounted.current && current === lists.current && backend === generation.current && observed === observationVersion.current) setListError(true); }
     finally { if (mounted.current && current === lists.current && backend === generation.current) setLoading(false); }
   };
   useEffect(() => {
@@ -185,6 +187,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
     {pending && <StatusMessage kind="info" title={t("creationPending")} />}
     {pending && reviewing.current && <button ref={reviewCancel} type="button" className="workspace-button workspace-button--secondary" onClick={dismissReview}>{t("cancelRenameWorkspace")}</button>}
     {message && <StatusMessage kind={message === "creationSaved" || message === "creationRecoverable" ? "info" : "error"} title={t(message)} />}
+    {listError && <StatusMessage kind="error" title={t("creationListError")} />}
     {unknownId && !operations.some((operation) => operation.operationId === unknownId) && <div>
       <p>{t("creationUncertain")}</p><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending}
         onClick={() => void run(unknownId, () => client.getProjectCreation(workspaceId, unknownId))}>{t("creationStatus")}</button>

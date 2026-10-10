@@ -54,8 +54,8 @@ app.on('window-all-closed', () => app.quit());`);
   assert.equal(stories.filter((name) => name.includes("--recovery-")).length, 20, "Expected all ten EN/RU recovery states");
   assert.equal(stories.filter((name) => name.includes("--source-")).length, 14, "Expected all seven EN/RU source observation states");
   assert.equal(stories.filter((name) => name.includes("--mode-")).length, 18, "Expected all nine EN/RU mode-change states");
-  assert.equal(stories.filter((name) => name.includes("--creation-")).length, 32, "Expected all sixteen EN/RU creation and Reveal states");
-  assert.equal(stories.length, 152, "Expected discovery, Text, category and recovery presentation states");
+  assert.equal(stories.filter((name) => name.includes("--creation-")).length, 36, "Expected all eighteen EN/RU creation and Reveal states");
+  assert.equal(stories.length, 156, "Expected discovery, Text, category and recovery presentation states");
   const selectedStories = process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
   for (const story of selectedStories) {
     await page.goto(`${url}/?story=${story}&mode=preview`);
@@ -67,6 +67,11 @@ app.on('window-all-closed', () => app.quit());`);
     const textStory = story.includes("--text-");
     await page.locator(creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
     const creationState = creationStory ? await page.locator("[data-creation-fixture]").getAttribute("data-creation-fixture") : null;
+    if (creationState?.startsWith("success-list")) {
+      const language = await page.locator("[data-creation-fixture]").getAttribute("lang");
+      await page.getByText(language === "ru" ? "Папка проекта создана." : "Project folder created.", { exact: true }).waitFor();
+      assert.equal(await page.locator(".project-creation [role=alert]").count(), creationState === "success-list-error" ? 1 : 0);
+    }
     const modeState = modeStory ? await page.locator("[data-mode-fixture]").getAttribute("data-mode-fixture") : null;
     if (["retained", "category"].includes(modeState)) await page.waitForFunction(() => globalThis.document.querySelector(".text-properties")?.getAttribute("aria-busy") === "false");
     if (modeStory && !["retained", "category"].includes(modeState)) {
@@ -191,7 +196,7 @@ app.on('window-all-closed', () => app.quit());`);
       } else if (creationState === "uncertain") {
         assert.equal(await page.locator("#project-creation-name").isDisabled(), true);
         assert.equal(await page.locator(".project-creation button[type=submit]").isDisabled(), true);
-      } else if (creationState === "success") assert.equal(await page.locator(".project-creation form").count(), 0);
+      } else if (creationState.startsWith("success")) assert.equal(await page.locator(".project-creation form").count(), 0);
       results.interactions ??= []; results.interactions.push({ story, state: creationState, passed: true, native: "typed fixture only" });
     }
     if (modeStory) {

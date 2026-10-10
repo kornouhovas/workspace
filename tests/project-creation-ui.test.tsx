@@ -287,6 +287,123 @@ function controlledRevealObserver() {
   } };
 }
 
+for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
+  test(`${language}: ${mode} real creation feedback survives stale list reads and independent list failure/recovery`, async () => {
+    const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-feedback-"))), root = join(directory, "root");
+    fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
+    const observer = controlledRevealObserver(), service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations", undefined, observer.dependencies);
+    try {
+      const { workspaceId, sourceId } = value(service.workspaces.create({ type: "workspace.create", name: "Feedback", rootPath: root }));
+      const preview = value(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
+      value(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
+      const projects = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      const client = new Client(); client.list = projects;
+      let creates = 0, completions = 0;
+      client.createProject = async (input) => { creates++; return service.workspaces.createProject({ type: "workspace.createProject", ...input }); };
+      const query = () => service.workspaces.listProjectCreations({ type: "workspace.listProjectCreations", workspaceId });
+      client.listHandler = async () => query();
+      const observationVersion = { current: 0 }, t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+      const props = { client, workspaceId, sourceId, language, projects, disabled: false, invalidation: 0,
+        minimumRevision: { current: projects.revision }, observationVersion, onCompleted: () => completions++ };
+      const view = render(<ProjectCreationPanel {...props} />);
+      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.type(screen.getByRole("textbox"), "Created Текст");
+      if (mode === "grouped") await userEvent.selectOptions(screen.getByRole("combobox"), projects.categories[0].categoryId);
+      await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
+      await screen.findByText(t("creationSaved"));
+      const reload = () => screen.getByRole("button", { name: t("creationReload") });
+      const snapshot = query(); assert.deepEqual(value(snapshot).operations, []);
+      const delayed = deferred<typeof snapshot>(); client.listHandler = () => delayed.promise;
+      await userEvent.click(reload());
+      // Reproduce the synchronous counter change before the next invalidation effect.
+      observationVersion.current++;
+      await act(async () => delayed.resolve(snapshot));
+      assert.ok(screen.getByText(t("creationSaved")));
+      assert.equal(screen.queryByText(t("creationListError")), null);
+      assert.equal((reload() as HTMLButtonElement).disabled, false);
+
+      // A real query rejection remains a useful, independent error after success.
+      const failure = service.workspaces.listProjectCreations({ type: "workspace.listProjectCreations", workspaceId: randomUUID() });
+      assert.equal(failure.ok, false);
+      client.listHandler = async () => failure;
+      await userEvent.click(reload()); await screen.findByText(t("creationListError"));
+      assert.ok(screen.getByText(t("creationSaved")));
+
+      // Neither stale successful data nor a stale thrown failure may change list status.
+      const staleSuccess = deferred<typeof snapshot>(); client.listHandler = () => staleSuccess.promise;
+      await userEvent.click(reload()); observationVersion.current++;
+      await act(async () => staleSuccess.resolve(snapshot));
+      assert.ok(screen.getByText(t("creationListError")));
+      client.listHandler = async () => query();
+      view.rerender(<ProjectCreationPanel {...props} invalidation={1} />);
+      await act(async () => {});
+      assert.equal(screen.queryByText(t("creationListError")), null);
+      assert.ok(screen.getByText(t("creationSaved")));
+      const staleFailure = deferred<void>(); client.listHandler = async () => { await staleFailure.promise; throw new Error("Delayed transport failure"); };
+      await userEvent.click(reload()); observationVersion.current++;
+      await act(async () => staleFailure.resolve());
+      assert.equal(screen.queryByText(t("creationListError")), null);
+      assert.ok(screen.getByText(t("creationSaved")));
+      assert.equal(creates, 1); assert.equal(completions, 1);
+      const final = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      assert.equal(final.projects.length, 1); assert.equal(final.projects[0].name, "Created Текст");
+      assert.deepEqual(fs.readdirSync(join(root, final.projects[0].relativePath)), []);
+    } finally { cleanup(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  });
+}
+
+for (const language of ["en", "ru"] as const) for (const change of ["backend", "workspace", "source", "unmount", "command"] as const) {
+  test(`${language}: delayed list failure cannot cross ${change} lifetime`, async () => {
+    const client = new Client(), delayed = deferred<Awaited<ReturnType<Client["listProjectCreations"]>>>();
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const props = { client, workspaceId: "workspace", sourceId: "source", language, projects: client.list, disabled: false,
+      invalidation: 0, minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
+    const view = render(<ProjectCreationPanel {...props} />);
+    await act(async () => {});
+    client.listHandler = () => delayed.promise;
+    await userEvent.click(screen.getByRole("button", { name: t("creationReload") }));
+    client.listHandler = null;
+    if (change === "backend") await act(async () => {
+      client.statuses.forEach((listener) => listener({ state: "unavailable" }));
+      client.statuses.forEach((listener) => listener({ state: "ready" }));
+    });
+    else if (change === "unmount") view.unmount();
+    else if (change === "workspace" || change === "source") {
+      client.list = { ...client.list, ...(change === "workspace" ? { workspaceId: "other" } : { sourceId: "other" }) };
+      view.rerender(<ProjectCreationPanel {...props} workspaceId={client.list.workspaceId} sourceId={client.list.sourceId} projects={client.list} />);
+      await act(async () => {});
+    } else {
+      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.type(screen.getByRole("textbox"), "Folder{Enter}");
+      await screen.findByText(t("creationSaved"));
+    }
+    await act(async () => delayed.resolve({ ok: false, error: { code: "service_unavailable", message: "Old backend" } }));
+    assert.equal(screen.queryByText(t("creationListError")), null);
+    if (change === "command") assert.ok(screen.getByText(t("creationSaved")));
+    else assert.equal(client.creates.length, 0);
+  });
+}
+
+for (const language of ["en", "ru"] as const) test(`${language}: fresh list recovery preserves uncertain command and original retry`, async () => {
+  const client = new Client(), t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  client.handler = async () => { throw new Error("Lost command response"); };
+  render(<ProjectCreationPanel client={client} workspaceId="workspace" sourceId="source" language={language} projects={client.list}
+    disabled={false} invalidation={0} minimumRevision={{ current: 1 }} observationVersion={{ current: 0 }} onCompleted={() => assert.fail("Unknown command cannot complete")} />);
+  await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+  await userEvent.type(screen.getByRole("textbox"), "Original draft{Enter}");
+  await screen.findByRole("button", { name: t("creationRetryRequest") });
+  client.listHandler = async () => ({ ok: false, error: { code: "service_unavailable", message: "List unavailable" } });
+  await userEvent.click(screen.getByRole("button", { name: t("creationReload") })); await screen.findByText(t("creationListError"));
+  client.listHandler = null;
+  await userEvent.click(screen.getByRole("button", { name: t("creationReload") }));
+  assert.equal(screen.queryByText(t("creationListError")), null);
+  assert.ok(screen.getAllByText(t("creationUncertain")).length > 0);
+  assert.ok(screen.getByRole("button", { name: t("creationRetryRequest") }));
+  assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Original draft");
+  assert.equal((screen.getByRole("textbox") as HTMLInputElement).disabled, true);
+  assert.equal(client.creates.length, 1);
+});
+
 for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) for (const order of ["before-observation", "after-observation"] as const) {
   test(`${language}: ${mode} delayed real-service Reveal rejects actual folder changes ${order}`, async () => {
     const changes = ["project-path", "project-identity", ...(order === "before-observation" ? ["root-path", "root-identity"] : []), ...(mode === "grouped" ? ["category-path", "category-identity"] : [])];

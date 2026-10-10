@@ -593,10 +593,11 @@ export const ModeCategoryEnglish: Story = () => <ModeChangePreview language="en"
 export const ModeCategoryRussian: Story = () => <ModeChangePreview language="ru" state="category" />;
 
 // Creation fixtures exercise production components through disposable typed clients.
-type CreationStoryState = "direct" | "grouped" | "unconfigured" | "no-category" | "unavailable" | "pending" | "validation" | "collision" | "failure" | "success" | "uncertain" | "recovery" | "blocked" | "reveal-pending" | "reveal-error" | "reveal-retained";
+type CreationStoryState = "direct" | "grouped" | "unconfigured" | "no-category" | "unavailable" | "pending" | "validation" | "collision" | "failure" | "success" | "success-list-error" | "success-list-recovered" | "uncertain" | "recovery" | "blocked" | "reveal-pending" | "reveal-error" | "reveal-retained";
 function CreationPreview({ language, state }: { language: Language; state: CreationStoryState }) {
   const root = useRef<HTMLElement>(null);
   const [prepared, setPrepared] = useState(false);
+  const [invalidation, setInvalidation] = useState(0);
   const [fixture] = useState(() => {
     const grouped = state === "grouped" || state === "no-category";
     const operation: ProjectCreationOperation = { operationId: "00000000-0000-4000-8000-000000000050", sourceId: textStoryIds.sourceId,
@@ -607,16 +608,24 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
       categories: grouped && state !== "no-category" ? [{ categoryId: "existing-category", name: longCategory, relativePath: longCategory }] : [], categoryProperty: null, categoryPropertyRevision: 0 };
     const result = (input: Parameters<WorkspaceServiceClient["createProject"]>[0]): ProjectCreationResult => {
       const op = { ...operation, ...input, categoryId: "categoryId" in input ? input.categoryId : null };
-      return state === "success" ? { outcome: "completed", operation: { ...op, stage: "completed", completedRevision: 2 }, project: {
+      return state.startsWith("success") ? { outcome: "completed", operation: { ...op, stage: "completed", completedRevision: 2 }, project: {
         operationId: op.operationId, sourceId: op.sourceId, projectId: op.projectId, name: op.name, relativePath: op.relativePath, categoryId: op.categoryId, revision: 2,
       } } : { outcome: "rejected", operation: null, problem: state === "validation" ? "invalid_name" : state === "collision" ? "occupied" : "filesystem_error" };
     };
     const client = new class extends WorkspaceServiceClient {
+      completed = false;
+      listReadsAfterCreation = 0;
       override onBackendStatus() { return () => {}; }
-      override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: ["recovery", "blocked"].includes(state) ? [operation] : [] } }; }
+      override async listProjectCreations() {
+        if (this.completed && state.startsWith("success-list") && ++this.listReadsAfterCreation === 1) {
+          return { ok: false as const, error: { code: "service_unavailable" as const, message: "Disposable list failure" } };
+        }
+        return { ok: true as const, value: { ...textStoryIds, operations: ["recovery", "blocked"].includes(state) ? [operation] : [] } };
+      }
       override async createProject(input: Parameters<WorkspaceServiceClient["createProject"]>[0]) {
         if (state === "pending") return new Promise<ServiceResult<ProjectCreationResult>>(() => {});
         if (state === "uncertain") throw new Error("Disposable lost-response fixture");
+        this.completed = state.startsWith("success");
         return { ok: true as const, value: result(input) };
       }
       override async previewProjectCreationRecovery() { return { ok: true as const, value: { ...textStoryIds, operation, revision: 1,
@@ -630,7 +639,7 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
     return { client, projects };
   });
   useEffect(() => {
-    let opened = false, submitted = false;
+    let opened = false, submitted = false, reloaded = false;
     let submitTimer: ReturnType<typeof setTimeout> | undefined;
     const observer = new MutationObserver(() => {
       const target = root.current; if (!target) return;
@@ -645,6 +654,19 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
         if (target.querySelector(".creation-review")) { setPrepared(true); observer.disconnect(); }
         return;
       }
+      if (submitted && state.startsWith("success-list")) {
+        const saved = [...target.querySelectorAll(".project-creation [role=status]")].some((element) => element.textContent === translate(language, "creationSaved"));
+        const error = target.querySelector(".project-creation [role=alert]");
+        if (!saved) return;
+        if (state === "success-list-error" && error) { setPrepared(true); observer.disconnect(); }
+        if (state === "success-list-recovered") {
+          if (error && !reloaded) {
+            reloaded = true;
+            [...target.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, "creationReload"))?.click();
+          } else if (reloaded && !error) { setPrepared(true); observer.disconnect(); }
+        }
+        return;
+      }
       if (!opened) { const button = target.querySelector<HTMLButtonElement>(".project-creation > button"); if (button && !button.disabled) { opened = true; button.click(); } return; }
       const input = target.querySelector<HTMLInputElement>("#project-creation-name"); if (!input) return;
       if (!submitted) {
@@ -655,7 +677,7 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
         submitted = true;
         submitTimer = setTimeout(() => { if (target.isConnected) input.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); }, 0);
       }
-      if (target.querySelector(".project-creation .bb-status")) { setPrepared(true); observer.disconnect(); }
+      if (!state.startsWith("success-list") && target.querySelector(".project-creation .bb-status")) { setPrepared(true); observer.disconnect(); }
     });
     observer.observe(root.current!, { childList: true, subtree: true, attributes: true });
     // Ensure the same preparation also runs if the first effect's list is already settled.
@@ -664,7 +686,7 @@ function CreationPreview({ language, state }: { language: Language; state: Creat
   }, [language, state]);
   return <main ref={root} className="app-shell" lang={language} data-creation-fixture={state} data-fixture-ready={prepared}>
     <ProjectCreationPanel client={fixture.client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language}
-      projects={fixture.projects} disabled={false} invalidation={0} minimumRevision={{ current: 1 }} observationVersion={{ current: 0 }} onCompleted={() => {}} />
+      projects={fixture.projects} disabled={false} invalidation={invalidation} minimumRevision={{ current: 1 }} observationVersion={{ current: 0 }} onCompleted={() => { if (state.startsWith("success-list")) setInvalidation((value) => value + 1); }} />
     {state.startsWith("reveal-") && <ProjectRevealButton client={fixture.client} workspaceId={textStoryIds.workspaceId} projectId={textStoryIds.projectId} name={recoveryName} language={language} disabled={false} />}
   </main>;
 }
@@ -689,6 +711,10 @@ export const CreationFailureEnglish: Story = () => <CreationPreview language="en
 export const CreationFailureRussian: Story = () => <CreationPreview language="ru" state="failure" />;
 export const CreationSuccessEnglish: Story = () => <CreationPreview language="en" state="success" />;
 export const CreationSuccessRussian: Story = () => <CreationPreview language="ru" state="success" />;
+export const CreationSuccessListErrorEnglish: Story = () => <CreationPreview language="en" state="success-list-error" />;
+export const CreationSuccessListErrorRussian: Story = () => <CreationPreview language="ru" state="success-list-error" />;
+export const CreationSuccessListRecoveredEnglish: Story = () => <CreationPreview language="en" state="success-list-recovered" />;
+export const CreationSuccessListRecoveredRussian: Story = () => <CreationPreview language="ru" state="success-list-recovered" />;
 export const CreationUncertainEnglish: Story = () => <CreationPreview language="en" state="uncertain" />;
 export const CreationUncertainRussian: Story = () => <CreationPreview language="ru" state="uncertain" />;
 export const CreationRecoveryEnglish: Story = () => <CreationPreview language="en" state="recovery" />;
