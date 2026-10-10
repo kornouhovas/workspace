@@ -429,9 +429,10 @@ test("actual populated 0000–0006 upgrade preserves authored data, selection, I
         service = openSettingsService(databasePath);
         const inspected = new Database(databasePath);
         try {
-          assert.deepEqual(databaseInventory(inspected).filter(([table]) => table !== "__drizzle_migrations"), before.map(([table, rows]) =>
+          assert.deepEqual(databaseInventory(inspected).filter(([table]) => table !== "__drizzle_migrations" && table !== "project_creation_operations"), before.map(([table, rows]) =>
             [table, rows.map((row) => table === "projects" || table === "categories" ? { ...row, mode_inactive: 0 } : row)]));
-          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 8);
+          assert.equal(inspected.prepare("SELECT COUNT(*) AS count FROM __drizzle_migrations").get().count, 9);
+          assert.deepEqual(inspected.prepare("SELECT * FROM project_creation_operations").all(), []);
           assert.deepEqual(inspected.pragma("foreign_key_check"), []);
         } finally { inspected.close(); }
         const listed = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });

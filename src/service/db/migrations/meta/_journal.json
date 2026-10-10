@@ -57,6 +57,13 @@
       "when": 1791504007000,
       "tag": "0007_discovery_mode_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791504008000,
+      "tag": "0008_project_creation",
+      "breakpoints": true
     }
   ]
 }

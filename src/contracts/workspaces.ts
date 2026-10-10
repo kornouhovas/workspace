@@ -1,3 +1,4 @@
+import type { WorkspaceCreateProjectCommand, WorkspaceListProjectCreationsQuery, WorkspaceGetProjectCreationQuery, WorkspacePreviewProjectCreationRecoveryQuery, WorkspaceRecoverProjectCreationCommand } from "./project-creation.js";
 import type { WorkspacePreviewProjectRecoveryQuery, WorkspaceReassociateProjectCommand } from "./project-recovery.js";
 import type { WorkspaceListTextPropertiesQuery, WorkspaceCreatePropertyCommand, WorkspaceRenamePropertyCommand, WorkspaceSetTextValueCommand } from "./text-properties.js";
 
@@ -55,8 +56,8 @@ export type WorkspaceSourceObservation = Extract<WorkspaceChangeEvent, { type: "
 export type WorkspaceSourceObservationSnapshot = { observation: WorkspaceSourceObservation | null };
 export type WorkspaceGetSourceObservationQuery = { type: "workspace.getSourceObservation"; workspaceId: string };
 
-export type WorkspaceQuery = WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
-export type WorkspaceCommand = WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
+export type WorkspaceQuery = WorkspaceListProjectCreationsQuery | WorkspaceGetProjectCreationQuery | WorkspacePreviewProjectCreationRecoveryQuery | WorkspaceGetSourceObservationQuery | WorkspacePreviewProjectRecoveryQuery | WorkspaceListTextPropertiesQuery | WorkspaceLoadQuery | WorkspacePreviewDiscoveryQuery | WorkspaceListProjectsQuery;
+export type WorkspaceCommand = WorkspaceCreateProjectCommand | WorkspaceRecoverProjectCreationCommand | WorkspaceReassociateProjectCommand | WorkspaceRenameCategoryPropertyCommand | WorkspaceSetTextValueCommand | WorkspaceCreatePropertyCommand | WorkspaceRenamePropertyCommand | WorkspaceCreateCommand | WorkspaceActivateCommand | WorkspaceRenameCommand | WorkspaceReorderCommand | WorkspaceRemoveCommand | WorkspaceRefreshSourceCommand | WorkspaceApplyDiscoveryCommand;
 
 export interface WorkspaceSummary {
   workspaceId: string;

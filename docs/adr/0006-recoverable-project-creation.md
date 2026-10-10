@@ -1,0 +1,74 @@
+---
+status: accepted
+---
+
+# ADR 0006: Recoverable project creation with a bounded filesystem adapter
+
+## Scope and implementation status
+
+This decision covers creation of one project directory in an applied direct source or an existing valid active grouped category. It extends [local folder identity](0004-local-folder-identity-without-markers.md) and the [local backend](0003-separate-local-backend.md). It does not introduce category creation, a general mutation framework, folder deletion, synchronization or release policy.
+
+The foundation slice implements typed contracts, migration 0008 and the source-owned operation journal. Filesystem execution, discovery reservation integration, explicit recovery and production transport/UI are subsequent slices of [the accepted plan](../plans/issue-17-create-reveal.md); this ADR describes their required contract, not evidence that those features already run.
+
+## Durable intent and identity
+
+The client supplies an operation UUID, initiating workspace UUID, authored basename, expected discovery revision and mode, plus a category UUID only in grouped mode. It supplies no destination path, native evidence or project UUID. Validation rejects altered/extra fields, unauthorized identities and unsafe platform names without trimming or renaming valid authored text.
+
+Before mkdir, the service commits a source-owned project_creation_operations row containing a fresh reserved logical project UUID and immutable request binding: initiating workspace, source, name, mode, revision, category, canonical root, relative parent/destination, full root/parent identity, exclusions and archive designation. No project record or Text value exists for this UUID yet. The initiating workspace ID is historical context, deliberately without a workspace foreign key. Source/category ownership uses foreign keys; deleting a workspace cannot erase the operation. Reusing the source exposes its outstanding history through a referencing workspace, while the original command binding remains immutable. Sibling recovery must validate current same-source authorization; a retry of the original command must match its original binding exactly.
+
+Migration 0008 requires current applied configuration and an active same-source category when inserting intent. It protects the immutable request, retained history, reserved UUID and full serialized evidence. A partial unique source/path index reserves outstanding destinations in intent, evidence_recorded and uncertain stages. Insert guards also reject replacing existing operation IDs, reserved project IDs or outstanding paths through [SQLite REPLACE](https://www.sqlite.org/lang_conflict.html), whose implicit deletion can bypass delete triggers. The service must additionally handle platform aliases, historical path/native reservations and observer/Apply/reassociation/reconciliation conflicts; exact SQLite text uniqueness is not filesystem case equivalence. Completed/failed rows retain the UUID and history, with existing project/history policy supplying completed reservations.
+
+## State machine and recovery
+
+| Persisted stage | Meaning | Allowed next stage |
+| --- | --- | --- |
+| intent | Request committed; mkdir may or may not have happened; no destination evidence recorded | evidence_recorded, uncertain, failed |
+| evidence_recorded | Sufficient destination evidence committed; metadata not completed | completed, uncertain |
+| uncertain | Interrupted or changed outcome requiring explicit review; may retain immutable recorded evidence | evidence_recorded after explicit fresh validation/recovery |
+| completed | Project association, source revision and completion committed together | Terminal |
+| failed | Definitely no owned filesystem effect; useful failure recorded | Terminal |
+
+The database guards stage/evidence consistency and transitions. Once destination evidence is recorded it cannot be replaced or cleared, even on uncertainty. Completion requires the reserved active project at its bound source/path/category/native identity and the committed source discovery revision. The service commits project metadata, completion and one discoveryRevision increment in one transaction and emits actual sibling events only after commit. It preserves workspace views, independent Text/category-label revisions and existing exact values; the new UUID inherits no values.
+
+Same-operation command retries first reconcile the durable record. Completed retries return the stored result fields and completion revision without another mkdir or revision increment, even if the folder subsequently changes. Failed retries return the terminal failure. Changed payloads fail. Queries, startup and reconnection inspect state without replaying mutations. Outstanding reservations must be loaded before observation can enroll a destination under another ID.
+
+Explicit status and recovery distinguish three reviewed actions:
+
+- retry_missing permits exclusive mkdir at a freshly validated absent destination using the reserved UUID. Absence must be established under the unchanged valid source/parent; it is not permission to overwrite a replacement.
+- complete_recorded completes metadata only for sufficient unchanged recorded evidence, with fresh source/parent/destination checks and conflict review.
+- associate_reviewed is an explicit user acceptance of uncertain ownership for an existing freshly reviewed real folder when no sufficient destination evidence was recorded. A service-memory review token binds the observed folder, current revision, operation and workspace; revalidation is mandatory. Neither path nor emptiness proves ownership. A replaced folder with previously recorded evidence must remain unresolved, not acquire new evidence by this action.
+
+Missing, replaced, linked, inaccessible or conflicting destinations remain visible cases when the selected action cannot safely proceed. Operation IDs and reserved UUIDs never change on recovery. A crash after mkdir but before evidence remains uncertain even if the directory is empty; an existing nonempty directory is likewise not adopted silently. UI cancellation stops waiting/review only; it does not reverse an accepted filesystem effect.
+
+## Crash windows
+
+| Interruption point | Durable information | Required behavior |
+| --- | --- | --- |
+| Before intent commit | None | No mkdir; a fresh command can be submitted |
+| After intent, before mkdir | Immutable request and reserved UUID | Visible outstanding operation; status cannot assume mkdir never happened |
+| After mkdir, before evidence commit | Intent only | Ownership uncertain; preserve the folder and require explicit review |
+| After evidence, before final metadata commit | Intent and full destination identity | Fresh unchanged evidence allows explicit completion |
+| During metadata transaction | Evidence; all final writes commit or roll back together | Preserve one reserved ID and expose incomplete state if not committed |
+| After commit, before response | Completed association and result revision | Same-operation retry returns the recorded result without repeating effects |
+
+An exception is not a process-crash test. Later crash fixtures must terminate child processes abruptly at each boundary so cleanup cannot mask the persisted state. A failed attempt to record uncertainty must still leave a visible intent/evidence row from which status derives the unresolved outcome. Never recursively remove directories or remove a folder after third-party content appears. The supported recovery policy retains effects rather than promising filesystem rollback.
+
+## Supported filesystem adapter and limitations
+
+Use the existing Node filesystem APIs: lstat with bigint statistics, realpath and exclusive nonrecursive mkdir (recursive false). Full identity uses lossless dev, ino and positive birthtimeNs, not mutable timestamps. The adapter reuses existing containment/identity rules and introduces no native addon or new dependency.
+
+Validate the applied canonical root, directory kind, full identity and absence of links; validate the grouped category's same-source active/current-mode ownership, relative path, full identity and real directory kind. Check exclusions, archive containment, history and reservations before committing intent. Repeat canonical root/parent/link/full-identity checks immediately before and after mkdir, before recording destination evidence and around the final metadata writes/commit. Observed swaps prevent successful completion; effects already made remain recoverable. Use disposable roots, inventories and sentinels for race tests and separately account for external moves injected by a test.
+
+These path-based calls do not provide atomic filesystem confinement. A concurrent ancestor move or replacement after validation and before mkdir can redirect an effect or leave the new folder outside the expected locator. Subsequent checks may detect the change but cannot guarantee rollback or locate every moved effect. Persist the available evidence and report uncertainty; do not claim a filesystem lock, atomic filesystem/SQLite transaction or guaranteed confinement against an adversarial concurrent writer. Native Reveal has a similar validation-to-path-invocation window and requires its own trusted dispatch checks in a later slice.
+
+[Node 22.21.1 filesystem documentation](https://nodejs.org/download/release/v22.21.1/docs/api/fs.html) defines these APIs, bigint stat evidence and nonrecursive mkdir behavior. Their repeated use is the bounded supported adapter, not a native handle-relative confinement primitive.
+
+## Durability boundary
+
+The current runtime sets SQLite WAL and foreign keys, and leaves synchronous/fullfsync settings at the driver's defaults. A committed operation is the recovery boundary for interruption of the service process. SQLite transaction recovery does not atomically synchronize directory creation with the database. No parent-directory fsync or filesystem durability protocol is introduced by this foundation.
+
+SQLite documents that WAL with synchronous NORMAL can lose recent committed transactions on power loss, while FULL adds a commit synchronization; storage and OS behavior still matter. See [SQLite synchronous](https://www.sqlite.org/pragma.html#pragma_synchronous) and [WAL durability](https://www.sqlite.org/wal.html). Until runtime settings and filesystem flush behavior are explicitly established and verified, this contract claims process-interruption recovery, not coordinated power-loss durability. A machine crash can leave a folder whose intent/evidence is missing; the application must not invent ownership or silently infer its reserved UUID.
+
+## Verification
+
+Foundation tests exercise actual populated migrations 0000–0007, migration 0008, reopen, immutable request/evidence, stage and destination reservations, source reuse after final workspace removal, ownership/category constraints and late migration-failure rollback. Tests preserve existing IDs, selection/views, configuration, exact authored Text including empty strings, independent revisions, dormant history and real filesystem inventories/sentinel bytes. Final filesystem/native behavior, child-process crashes and actual macOS/Windows acceptance remain subsequent implementation and coordinator gates.

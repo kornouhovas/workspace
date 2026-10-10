@@ -71,12 +71,12 @@ Files:
 - Create: docs/adr/0006-recoverable-project-creation.md
 - Create: tests/project-creation-service.test.mjs
 
-- [ ] Define exact typed creation, operation-list/status and explicit recovery requests/results, including useful validation, collision, filesystem and uncertain-outcome states.
-- [ ] Add the source-owned operation journal, immutable request binding, reserved project UUID, stage/evidence constraints and destination reservations. Preserve operation history after workspace removal and source reuse.
-- [ ] Record the bounded recovery state machine, crash windows, request idempotency and process-interruption versus power-loss durability limits in the ADR.
-- [ ] Specify the supported Node filesystem adapter, root/category/full-identity/link checks and concurrent ancestor-move TOCTOU limitation. Report any consequential native dependency before adopting it.
-- [ ] Add populated actual 0000–0007 upgrade, reopen, journal-constraint and migration-failure rollback tests preserving IDs, views, exact values and source configuration.
-- [ ] Run standard task exit checks and PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run check:docs; commit the verified foundation.
+- [x] Define exact typed creation, operation-list/status and explicit recovery requests/results, including useful validation, collision, filesystem and uncertain-outcome states.
+- [x] Add the source-owned operation journal, immutable request binding, reserved project UUID, stage/evidence constraints and destination reservations. Preserve operation history after workspace removal and source reuse.
+- [x] Record the bounded recovery state machine, crash windows, request idempotency and process-interruption versus power-loss durability limits in the ADR.
+- [x] Specify the supported Node filesystem adapter, root/category/full-identity/link checks and concurrent ancestor-move TOCTOU limitation. Report any consequential native dependency before adopting it.
+- [x] Add populated actual 0000–0007 upgrade, reopen, journal-constraint and migration-failure rollback tests preserving IDs, views, exact values and source configuration.
+- [x] Run standard task exit checks and PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run check:docs; commit the verified foundation.
 
 ### Task 2: Create one safely validated direct or grouped project
 
