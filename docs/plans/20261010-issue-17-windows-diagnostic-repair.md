@@ -33,11 +33,13 @@ Deliver a small committed Windows diagnostic stage first. Obtain coordinator-sup
 - Modify: `scripts/file-manager-evidence.mjs`, `scripts/smoke-project-creation.mjs`, `tests/file-manager-evidence.test.mjs`.
 - Create: `scripts/windows-selection-diagnostics.ps1` and `tests/windows-selection-diagnostics.test.mjs`.
 
-- [ ] Add bounded read-only UI Automation evidence for the exact owned Explorer parent and target immediately after one actual product Reveal. Verify the owned window and exact target before inspecting selection; never enumerate or retain unrelated UI content.
-- [ ] Keep COM observation, independent UI selection, dispatch acknowledgment and observation-unavailable results separate. Supplement existing strict acceptance without converting unavailable evidence into success.
-- [ ] Run observation within the existing ten-second budget; bound subprocesses, output and cleanup. No prewarming, second dispatch or input manipulation.
-- [ ] Reproduce controlled COM timeout handling and make its fixture reliable, for example by batching controlled cases in one bounded PowerShell process. Preserve actual observer-script checks and timeout/protocol classification; leave product deadlines unchanged.
-- [ ] Add tests for selected/unselected/disagreeing/unavailable evidence, wrong-window rejection, Unicode transport, privacy, timeout and owned cleanup. Run focused suites and lint; commit verified changes.
+- [x] Add bounded read-only UI Automation evidence for the exact owned Explorer parent and target immediately after one actual product Reveal. Verify the owned window and exact target before inspecting selection; never enumerate or retain unrelated UI content.
+- [x] Keep COM observation, independent UI selection, dispatch acknowledgment and observation-unavailable results separate. Supplement existing strict acceptance without converting unavailable evidence into success.
+- [x] Run observation within the existing ten-second budget; bound subprocesses, output and cleanup. No prewarming, second dispatch or input manipulation.
+- [x] Reproduce controlled COM timeout handling and make its fixture reliable, for example by batching controlled cases in one bounded PowerShell process. Preserve actual observer-script checks and timeout/protocol classification; leave product deadlines unchanged.
+- [x] Add tests for selected/unselected/disagreeing/unavailable evidence, wrong-window rejection, Unicode transport, privacy, timeout and owned cleanup. Run focused suites and lint; commit verified changes.
+
+Task 1 local verification (macOS, Node 22.21.1): the focused `file-manager-evidence`, `windows-selection-diagnostics` and `windows-native-selection` suites reported 56 tests, 50 passed, 6 Windows-only skips, 0 failures. `npm run lint`, `npm run typecheck`, `npm run check:docs`, working diff and fixed-base `git diff --check` passed. The batched controlled COM fixture keeps a separate 30-second test-process bound; product subprocess/observation limits remain five/ten seconds. COM, UIA, agreement/unavailability and interrupted partial COM evidence are retained separately. Cleanup revalidates the exact disposable parent/target and rejects shared tabbed windows before closing.
 
 ### Task 2: Add a bounded real-service category rename diagnostic
 
@@ -89,6 +91,8 @@ The coordinator pushes the diagnostic commit and supplies actual Windows artifac
 - [ ] Commit verified task files and provide a Russian handoff without marking external acceptance complete.
 
 ## Post-Completion: External Coordinator Gates
+
+- Task 1 Windows execution gate: the six Windows-only fixtures were not executed on the local macOS host. Batched COM fixture reliability under Windows suite load, actual Explorer ItemsView/SelectionItemPattern support, owned-window cleanup and exact-code product selection remain unverified until coordinator-supplied Windows artifacts. Local controlled protocol tests are not Windows acceptance; unsupported/ambiguous providers remain unavailable. No native or shutdown cause is established by this diagnostic implementation.
 
 - Coordinator obtains exact-code macOS/Windows acceptance for repaired direct/grouped DEV and packaged selection, external category rename, recovery, normal quit and restart.
 - Failed, skipped and unreached stages remain explicit. Historical Windows shutdown uncertainty and independent issue #44 are preserved.

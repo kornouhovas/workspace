@@ -277,12 +277,12 @@ try {
         await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.showItemInFolder", apiResult: "returned without throwing; no OS success result", target: destination });
         activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
         if (apiPassed) {
-          await record(discoveryMode, "fileManagerOutcome", await waitForFileManagerTarget(destination));
+          await record(discoveryMode, "fileManagerOutcome", await waitForFileManagerTarget(destination, process.platform, undefined, { windowsDiagnostics: true }));
           if (directoryPackage) {
             await assert.rejects(stat(join(destination, "launched")), { code: "ENOENT" });
             observations.push({ directoryPackage: destination, launchMarkerAbsent: true });
           }
-          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination), target: destination });
+          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination, process.platform, undefined, { ownedParent: true }), target: destination });
           nativeTargets.delete(destination);
           activeStage = [discoveryMode, "nativeAcknowledgment"];
           const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
@@ -359,7 +359,7 @@ try {
     try { await closeElectron(closing.electron); observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" }); }
     catch (error) { failure ??= error; observations.push({ cleanup: "failed", error: error.message, forcedCleanup: error.forcedCleanup }); }
   }
-  for (const target of nativeTargets) observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(target), target });
+  for (const target of nativeTargets) observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true }), target });
   const processesStopped = [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
     try { process.kill(pid, 0); return false; }
     catch (error) { return error.code === "ESRCH"; }

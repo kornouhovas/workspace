@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import test from "node:test";
-import { observeFileManagerTarget, waitForFileManagerTarget } from "../scripts/file-manager-evidence.mjs";
+import { observeFileManagerTarget, waitForFileManagerTarget, windowsObservation, windowsObservationResult } from "../scripts/file-manager-evidence.mjs";
 
 const target = "C:\\Disposable\\Folder's 日本語 $value";
 const empty = { exactParentFound: false, targetPresent: false, selectedTargetMatch: false, exactParentCount: 0, errorCount: 0, errors: [] };
@@ -82,6 +82,20 @@ test("Windows per-window errors can resolve during the same bounded single-invoc
   assert.equal(result.deadlineMs, 10000);
 });
 
+test("controlled COM timeout remains a classified timeout without successful selection or exception disclosure", async () => {
+  const result = await observeFileManagerTarget(target, "win32", async (_program, _args, options) => {
+    assert.equal(options.timeout, 5000);
+    assert.equal(options.maxBuffer, 16384);
+    throw Object.assign(new Error("private controlled COM timeout"), { killed: true, stdout: "", stderr: target });
+  });
+  assert.equal(result.status, "pending");
+  assert.equal(result.diagnostics.stage, "timeout");
+  assert.equal(result.unavailable, false); // Same invocation may still be observed within its remaining budget.
+  assert.equal(result.exactTargetObserved, undefined);
+  assert.equal(JSON.stringify(result).includes("private"), false);
+  assert.equal(JSON.stringify(result).includes(target), false);
+});
+
 // Execute the actual PowerShell observer with controlled COM objects on Windows.
 // This verifies script decisions, not real Explorer or native dispatch acceptance.
 test("Windows PowerShell observer classifies controlled COM views and failures", { skip: process.platform !== "win32" }, async () => {
@@ -109,11 +123,22 @@ function New-Object { param([string]$ComObject)
   return $fixtureShell
 }
 `;
-  for (const [mode, stage] of [["parent_absent", "parent_absent"], ["wrong_parent", "parent_absent"], ["target_absent", "target_absent"],
+  const cases = [["parent_absent", "parent_absent"], ["wrong_parent", "parent_absent"], ["target_absent", "target_absent"],
     ["unselected", "target_not_selected"], ["document_error", "observation_error"], ["selection_error", "observation_error"],
-    ["shell_error", "observation_error"], ["exact", "exact_target"]]) {
-    const result = await observeFileManagerTarget(target, "win32", (program, args, options) => execute(program,
-      [...args.slice(0, -1), `${fixture}\n& { ${args.at(-1)} }`], { ...options, env: { ...options.env, WORKSPACE_OBSERVE_FIXTURE: mode } }));
+    ["shell_error", "observation_error"], ["exact", "exact_target"]];
+  // One bounded fixture process avoids eight cold PowerShell startups competing
+  // with the full suite. This fixture budget does NOT change product deadlines.
+  const output = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `
+foreach ($fixtureMode in ($env:WORKSPACE_OBSERVE_CASES | ConvertFrom-Json)) {
+  $env:WORKSPACE_OBSERVE_FIXTURE = $fixtureMode
+  ${fixture}
+  & { ${windowsObservation} }
+}`], { timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env,
+    WORKSPACE_OBSERVE_TARGET: target, WORKSPACE_OBSERVE_CASES: JSON.stringify(cases.map(([mode]) => mode)), WORKSPACE_SELECTION_DIAGNOSTICS: "0" } });
+  const lines = output.stdout.trim().split(/\r?\n/);
+  assert.equal(lines.length, cases.length);
+  for (const [index, [mode, stage]] of cases.entries()) {
+    const result = windowsObservationResult(lines[index]);
     assert.equal(result.diagnostics.stage, stage, mode);
     assert.equal(result.status, mode === "exact" ? "passed" : "pending", mode);
     assert.equal(JSON.stringify(result).includes("private"), false);
