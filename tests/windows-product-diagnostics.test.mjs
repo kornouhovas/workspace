@@ -254,3 +254,30 @@ test('Explorer CLI candidate uses identical fresh OS jobs and never replaces nat
   assert.ok(jobs['windows-native-selection']);
   assert.ok(jobs.verify.strategy.matrix.include.some(({ os }) => os === 'windows-latest'));
 });
+
+
+test('ready-parent command uses matched fresh jobs and keeps API CLI and product gates', async () => {
+  const { jobs } = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = jobs['windows-ready-selection'];
+  assert.ok(job);
+  assert.equal(job.needs, undefined);
+  assert.equal(job['runs-on'], '${{ matrix.os }}');
+  assert.deepEqual(job.strategy, { 'fail-fast': false, matrix: { os: ['windows-latest', 'windows-2022'] } });
+  assert.equal(job['timeout-minutes'], 5);
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
+  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  const runs = job.steps.filter((step) => step.run);
+  assert.deepEqual(runs.map((step) => step.run), [
+    'node scripts/windows-ready-selection.mjs',
+    'node --test tests/windows-ready-selection.test.mjs tests/windows-ready-selection-com.test.mjs tests/file-manager-evidence.test.mjs',
+  ]);
+  assert.equal(runs[0].if, undefined); assert.equal(runs[1].if, 'always()');
+  const upload = job.steps.find((step) => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(upload.if, 'always()');
+  assert.equal(upload.with.name, 'issue-17-windows-ready-select-${{ matrix.os }}');
+  assert.equal(upload.with.path, 'work/windows-ready-selection-evidence/result.json');
+  assert.equal(upload.with['if-no-files-found'], 'error');
+  assert.ok(jobs['windows-native-selection']); assert.ok(jobs['windows-explorer-selection']);
+  assert.ok(jobs.verify.strategy.matrix.include.some(({ os }) => os === 'windows-latest'));
+});

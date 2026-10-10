@@ -241,7 +241,26 @@ Task 11 local verification (macOS arm64, explicitly selected Node 22.21.1): six 
 
 Stop after Task 11. Coordinator supplies both exact-code CLI candidate artifacts and complete controlled logs from fresh windows-latest/windows-2022 jobs. Compare actual launch, literal argument transport, exact parent/selected target, exit/termination and owned cleanup without replacing prior API negatives. CLI-only success is diagnostic evidence; any production adaptation requires a subsequent actual one-dispatch integration comparison preserving authorization, identity and security. No unknown child termination, skipped fixture or unavailable selection is a pass. Latest-image native acceptance, unresolved causes, historical shutdown uncertainty and #44 remain open. No executor push, integration, tracker change or #18 work.
 
-### Task 12: Verify repairs and update the evidence handoff
+The Task 11 receipt is satisfied by exact 004e35c66f2db6ca59fb30678e7ad61af3944286, CI 38072717892. Both CLI candidates launched once, exited 1 with confirmed termination, and retained strict ten-second exact-parent/target-present but unselected observations with zero COM errors. Owned window cleanup/removal completed; both controlled suites passed 18 tests. The same-code API Server2022 comparison passed while latest remained negative. The CLI candidate supplies no production fix or established failure cause.
+
+Coordinator-authorized continuation inserts the bounded intentional native-command diagnostic below before final verification. It uses a fresh fixture, never modifies an already-failed product fixture, and does not change the independent read-only observer or product dispatch. The original final task remains unchecked as Task 13.
+
+### Task 12: Diagnose one deliberate selection in an exactly bound ready parent
+
+**Files:** new scripts/windows-ready-selection.mjs, scripts/windows-ready-selection.ps1 and tests/windows-ready-selection{,-com}.test.mjs; diagnostic workflow/tests and docs/verification/issue-17-create-reveal.md.
+
+- [x] Map both exact 004e35c CLI artifacts/controlled logs; collect all five initial perspectives and verify primary COM selection, navigation, readiness and identity contracts before implementation.
+- [x] Open one fresh owned Unicode parent once, wait read-only for exact unique parent/target/HWND/Explorer process/Document readiness, then issue at most one SelectItem with the captured FolderItem. Revalidate binding before/after, reject missing/ambiguous/swapped/unsupported states and keep one monotonic ten-second navigation/readiness/confirmation budget. Later independent observation cannot rescue a failed phase.
+- [x] Add meaningful actual controlled Windows COM, zero/one invocation, readiness/lifetime/deadline, protocol/privacy/process/cleanup and matched fresh CI regressions. Keep production dispatch and prior API/CLI/full product gates unchanged.
+- [x] Run focused suites, lint, typecheck, check:docs and working/fixed-base diff checks; obtain clean quality/implementation follow-up reviews, record actual limits and commit the diagnostic milestone. Stop for coordinator Windows artifacts.
+
+Task 12 local verification (macOS arm64, explicitly selected Node 22.21.1): eight focused command/Explorer/native/view/product/UIA/file-manager suites reported 131 tests, 121 passes, ten Windows-only skips and zero failures. The new workflow regression failed before the fresh matched job existed and passed afterward. Repository lint, typecheck, check:docs (73 files), working and fixed-base whitespace checks passed. All five initial perspectives preceded implementation; the final independent quality/implementation pair found no critical/major actionable findings, each running four affected suites (36 tests, 34 passes, two Windows-only skips). The supplied exact 004e35c CLI JSON/logs were inspected without relabeling their SHA. No actual Windows PowerShell/COM/UIA/native command, full npm test, production build, graphical/product scenario or packaging was performed locally. Controlled Windows fixtures remain unverified until coordinator execution. Ignored logs: work/ralphex/issue-17/task12-*. The diagnostic revision is the commit containing this receipt, reported in the executor handoff. Stop at the mandatory Task 13 checkpoint; no production selection repair or external acceptance is claimed.
+
+## Mandatory coordinator checkpoint before Task 13
+
+Stop after Task 12. Coordinator supplies both exact-code native-command artifacts and complete controlled Windows logs from fresh latest/2022 jobs. Inspect actual Open/SelectItem counts, exact binding/readiness, command timing, within-budget selected evidence, separate later corroboration and process/owned cleanup. A diagnostic pass is neither a production integration proof nor a diagnosis of historical cold navigation. Negative/unavailable results, latest-image product selection, historical shutdown uncertainty, desktop acceptance and #44 remain explicit. No skipped check is a pass; no executor push, tracker change, integration or Issue #18 work.
+
+### Task 13: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.

@@ -201,3 +201,29 @@ jobs:
           name: workspace-${{ matrix.artifact }}-development
           path: release/
           if-no-files-found: error
+
+  windows-ready-selection:
+    name: Isolated ready-parent native-command diagnostic (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+      - name: Open one owned parent and select once only after exact readiness
+        run: node scripts/windows-ready-selection.mjs
+      - name: Verify controlled command readiness lifetime and cleanup boundaries
+        if: always()
+        run: node --test tests/windows-ready-selection.test.mjs tests/windows-ready-selection-com.test.mjs tests/file-manager-evidence.test.mjs
+      - name: Preserve separate native-command phase and later corroboration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-windows-ready-select-${{ matrix.os }}
+          path: work/windows-ready-selection-evidence/result.json
+          if-no-files-found: error
