@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { EventEmitter } from "node:events";
+import * as fs from "node:fs/promises";
 import { readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
-import { invokeNativeSelection, parseNativeSelectionResponse } from "../scripts/windows-native-selection.mjs";
+import { invokeNativeSelection, parseNativeSelectionResponse, runNativeSelectionExperiment } from "../scripts/windows-native-selection.mjs";
+import { closeDisposableFileManagerTarget } from "../scripts/file-manager-evidence.mjs";
 
 const target = "C:\\Disposable\\Folder's 日本語 $value `quoted` & text";
 const completed = {
@@ -305,4 +309,302 @@ ConvertTo-Json -InputObject @($results) -Depth 5 -Compress
     assert.equal(result.comCleanup, stopsAtInit ? "not_needed" : mode === "uninitialize_exception" ? "failed" : "completed", mode);
     assert.equal(JSON.stringify(result).includes(target), false);
   }
+});
+
+const observedParent = { exactParentFound: true, targetPresent: true, selectedTargetMatch: false,
+  exactParentCount: 1, errorCount: 0, errors: [] };
+const observedSelected = { ...observedParent, selectedTargetMatch: true };
+
+// Exercise the real orchestrator and observer with owned filesystem fixtures,
+// substituting only process/COM boundaries. No real selection is performed.
+async function experimentFixture(t, { native = completed, observation = observedSelected,
+  termination = "confirmed", filesystem = {}, commandError = false, cleanupError = false } = {}) {
+  const evidenceDirectory = await fs.mkdtemp(join(tmpdir(), "workspace-native-evidence-test-"));
+  const roots = [], calls = [], removed = [];
+  let generatedTarget, elapsed = 0;
+  t.after(async () => {
+    for (const root of [...roots, evidenceDirectory]) await fs.rm(root, { recursive: true, force: true });
+  });
+  const clock = controlledClock();
+  const options = {
+    evidenceDirectory, platform: "win32", clock,
+    env: { WORKSPACE_NATIVE_SELECTION_TARGET: target },
+    filesystem: { ...fs,
+      mkdtemp: async (prefix) => { const root = await fs.mkdtemp(prefix); roots.push(root); return root; },
+      rmdir: async (path) => { removed.push(path); await fs.rmdir(path); },
+      ...filesystem,
+    },
+    spawnProcess: (_program, args, settings) => {
+      calls.push("bridge");
+      generatedTarget = settings.env.WORKSPACE_NATIVE_SELECTION_TARGET;
+      assert.notEqual(generatedTarget, target);
+      assert.equal(dirname(generatedTarget), roots[0]);
+      assert.match(basename(generatedTarget), /日本語/);
+      assert.equal(args.join(" ").includes(generatedTarget), false);
+      assert.equal(settings.shell, false);
+      const child = new EventEmitter();
+      child.stdout = new EventEmitter();
+      child.stdout.destroy = () => {};
+      child.unref = () => {};
+      child.kill = () => {
+        calls.push("kill");
+        if (termination === "confirmed") queueMicrotask(() => child.emit("close", null, "SIGKILL"));
+        else queueMicrotask(() => clock.advance(1000));
+      };
+      queueMicrotask(() => {
+        if (native === null) clock.advance(30000);
+        else { child.stdout.emit("data", encode(native)); child.emit("close", 0, null); }
+      });
+      return child;
+    },
+    runCommand: async (program, args, settings) => {
+      assert.equal(program, "powershell.exe");
+      assert.equal(settings.env.WORKSPACE_OBSERVE_TARGET, generatedTarget);
+      assert.equal(args.join(" ").includes(generatedTarget), false);
+      const script = args.at(-1);
+      if (script.includes("$window.Quit()")) {
+        calls.push("window_cleanup");
+        if (cleanupError) throw Object.assign(new Error(target), { code: target });
+        return { stdout: "private cleanup output " + target };
+      }
+      calls.push("observe");
+      assert.equal(script.includes("SelectItem("), false);
+      assert.equal(script.includes("SHOpenFolderAndSelectItems"), false);
+      assert.equal(script.includes(".Quit()"), false);
+      if (commandError) throw Object.assign(new Error(target), { code: target });
+      elapsed += 50;
+      return { stdout: encode({ ...observation, path: target, message: "private observation" }) };
+    },
+    timing: { now: () => elapsed, sleep: async (ms) => { elapsed += ms; } },
+  };
+  const persisted = async () => JSON.parse(await fs.readFile(join(evidenceDirectory, "result.json"), "utf8"));
+  const run = async () => {
+    try {
+      const result = await runNativeSelectionExperiment(options);
+      assert.deepEqual(await persisted(), result);
+      return result;
+    } catch (error) {
+      // Failure must be observable only after its sanitized evidence is saved.
+      assert.deepEqual(await persisted(), error.evidence);
+      assert.equal(error.message.includes(target), false);
+      return error.evidence;
+    }
+  };
+  return { options, run, roots, calls, removed, persisted, clock,
+    get target() { return generatedTarget; } };
+}
+
+test("experiment owns one fresh Unicode fixture, overrides inherited target and persists exact selection", async (t) => {
+  const fixture = await experimentFixture(t);
+  const result = await fixture.run();
+  assert.equal(result.status, "passed");
+  assert.equal(fixture.roots.length, 1);
+  assert.deepEqual(fixture.calls, ["bridge", "observe", "window_cleanup"]);
+  assert.deepEqual(fixture.removed, [fixture.target, fixture.roots[0]]);
+  await assert.rejects(fs.stat(fixture.roots[0]), { code: "ENOENT" });
+  assert.equal(result.fixture.status, "completed");
+  assert.equal(result.native.invocationCount, 1);
+  assert.equal(result.native.native.selectionHresult, 0);
+  assert.equal(result.observation.completion, "exact_target");
+  assert.equal(result.observation.attempts.length, 1);
+  assert.equal(result.windowCleanup.status, "completed");
+  assert.equal(result.windowCleanup.closure, "unverified");
+  assert.equal(result.windowCleanup.unselectedParentMayRemain, true);
+  assert.equal(result.fixtureRemoval.status, "completed");
+  for (const privateValue of [target, fixture.target, fixture.roots[0], "private"]) {
+    assert.equal(encode(result).includes(privateValue), false);
+  }
+});
+
+test("prerequisite failure never observes or retries and still cleans and persists", async (t) => {
+  const native = { ...completed, stage: "initialize", initializeHresult: -2147417850,
+    parseHresult: null, selectionHresult: null, invocationCount: 0, pidlAllocated: false,
+    pidlCleanup: "not_needed", comCleanup: "not_needed" };
+  const fixture = await experimentFixture(t, { native });
+  const result = await fixture.run();
+  assert.equal(result.status, "failed");
+  assert.deepEqual(result.failure, { stage: "native", code: "initialize" });
+  assert.equal(result.native.invocationCount, 0);
+  assert.equal(result.observation.status, "not_attempted");
+  assert.equal(result.windowCleanup.status, "not_attempted");
+  assert.equal(result.fixtureRemoval.status, "completed");
+  assert.deepEqual(fixture.calls, ["bridge"]);
+});
+
+test("selection HRESULT failure cannot pass even when read-only exact selection is observed", async (t) => {
+  const fixture = await experimentFixture(t, { native: { ...completed, stage: "select", selectionHresult: -1 } });
+  const result = await fixture.run();
+  assert.equal(result.status, "failed");
+  assert.deepEqual(result.failure, { stage: "native", code: "select" });
+  assert.equal(result.observation.status, "passed");
+  assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+});
+
+test("unselected target exhausts the unchanged controlled ten-second budget without another dispatch", async (t) => {
+  const fixture = await experimentFixture(t, { observation: observedParent });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "observation", code: "deadline" });
+  assert.equal(result.observation.deadlineMs, 10000);
+  assert.equal(result.observation.elapsedMs, 10000);
+  assert.equal(result.observation.completion, "deadline");
+  assert.ok(result.observation.attempts.length > 1);
+  assert.ok(result.observation.attempts.every((attempt) => attempt.diagnostics.stage === "target_not_selected"));
+  assert.ok(result.observation.attempts.at(-1).timeoutMs <= 100);
+  assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+  assert.equal(result.windowCleanup.closure, "unverified");
+  assert.equal(result.fixtureRemoval.status, "completed");
+});
+
+test("observer unavailability is distinct from a negative native or selection result", async (t) => {
+  const fixture = await experimentFixture(t, { commandError: true });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "observation", code: "unavailable" });
+  assert.equal(result.native.status, "completed");
+  assert.equal(result.observation.attempts.length, 1);
+  assert.equal(result.observation.unavailable, true);
+  assert.equal(encode(result).includes(target), false);
+  assert.deepEqual(fixture.calls, ["bridge", "observe", "window_cleanup"]);
+});
+
+test("timed-out dispatch remains unknown even if later observation finds the exact target", async (t) => {
+  const fixture = await experimentFixture(t, { native: null });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "native", code: "timeout" });
+  assert.equal(result.native.invocationCount, null);
+  assert.equal(result.native.process.termination, "confirmed");
+  assert.equal(result.observation.status, "passed");
+  assert.equal(result.status, "failed");
+  assert.equal(result.fixtureRemoval.status, "completed");
+  assert.deepEqual(fixture.calls, ["bridge", "kill", "observe", "window_cleanup"]);
+});
+
+test("unknown subprocess termination leaves the owned fixture and window cleanup unverified", async (t) => {
+  const fixture = await experimentFixture(t, { native: null, termination: "unknown" });
+  const result = await fixture.run();
+  assert.equal(result.native.process.termination, "unknown");
+  assert.equal(result.fixtureRemoval.status, "unverified");
+  assert.equal(result.fixtureRemoval.code, "process_termination_unknown");
+  assert.equal(result.windowCleanup.status, "not_attempted");
+  assert.equal(result.observation.status, "not_attempted");
+  assert.deepEqual(fixture.removed, []);
+  assert.ok((await fs.stat(fixture.target)).isDirectory());
+  assert.deepEqual(fixture.calls, ["bridge", "kill"]);
+});
+
+test("setup failure saves sanitized evidence, performs no dispatch and removes its partial root", async (t) => {
+  const fixture = await experimentFixture(t, { filesystem: {
+    mkdir: async (path, options) => {
+      if (options?.recursive) return fs.mkdir(path, options);
+      throw Object.assign(new Error(target), { code: "EACCES" });
+    },
+  } });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "fixture", code: "EACCES" });
+  assert.equal(result.fixture.rootCreated, true);
+  assert.equal(result.fixture.targetCreated, false);
+  assert.equal(result.fixtureRemoval.status, "completed");
+  assert.deepEqual(fixture.calls, []);
+  assert.deepEqual(fixture.removed, [fixture.roots[0]]);
+});
+
+test("cleanup failures are independent and preserve the original observation failure", async (t) => {
+  const fixture = await experimentFixture(t, { commandError: true, cleanupError: true,
+    filesystem: { rmdir: async () => { throw Object.assign(new Error(target), { code: "EPERM" }); } } });
+  const result = await fixture.run();
+  assert.deepEqual(result.failure, { stage: "observation", code: "unavailable" });
+  assert.equal(result.windowCleanup.status, "failed");
+  assert.equal(result.windowCleanup.code, "cleanup_unavailable");
+  assert.equal(result.fixtureRemoval.status, "failed");
+  assert.equal(result.fixtureRemoval.code, "EPERM");
+  assert.equal(encode(result).includes(target), false);
+});
+
+test("successful selection does not hide a failed cleanup", async (t) => {
+  const fixture = await experimentFixture(t, { cleanupError: true });
+  const result = await fixture.run();
+  assert.equal(result.observation.status, "passed");
+  assert.equal(result.status, "failed");
+  assert.deepEqual(result.failure, { stage: "window_cleanup", code: "cleanup_unavailable" });
+  assert.equal(result.fixtureRemoval.status, "completed");
+});
+
+test("filesystem cleanup is bounded and reports unresolved removal without masking native failure", async (t) => {
+  let removalStarted;
+  const started = new Promise((resolve) => { removalStarted = resolve; });
+  const fixture = await experimentFixture(t, { native: { ...completed, stage: "select", selectionHresult: -1 },
+    filesystem: { rmdir: () => { removalStarted(); return new Promise(() => {}); } } });
+  const pending = fixture.run();
+  await started;
+  fixture.clock.advance(5000);
+  const result = await pending;
+  assert.deepEqual(result.failure, { stage: "native", code: "select" });
+  assert.equal(result.fixtureRemoval.status, "unverified");
+  assert.equal(result.fixtureRemoval.code, "timeout");
+  assert.equal(fixture.clock.pending, 0);
+});
+
+test("unexpected content in the fixture survives bounded nonrecursive cleanup", async (t) => {
+  const fixture = await experimentFixture(t);
+  const runCommand = fixture.options.runCommand;
+  fixture.options.runCommand = async (...args) => {
+    await fs.writeFile(join(fixture.target, "sentinel.txt"), "retain this content");
+    return runCommand(...args);
+  };
+  const result = await fixture.run();
+  assert.equal(result.fixtureRemoval.status, "failed");
+  assert.equal(result.fixtureRemoval.code, "ENOTEMPTY");
+  assert.equal(await fs.readFile(join(fixture.target, "sentinel.txt"), "utf8"), "retain this content");
+  assert.ok((await fs.stat(fixture.roots[0])).isDirectory());
+});
+
+test("failed evidence persistence rejects with finite diagnostics and preserves the first failure", async (t) => {
+  const fixture = await experimentFixture(t, { commandError: true });
+  fixture.options.filesystem.writeFile = async () => { throw new Error(target); };
+  await assert.rejects(runNativeSelectionExperiment(fixture.options), (error) => {
+    assert.deepEqual(error.evidence.failure, { stage: "observation", code: "unavailable" });
+    assert.equal(error.evidence.persistence.status, "failed");
+    assert.equal(error.message.includes(target), false);
+    assert.equal(encode(error.evidence).includes(target), false);
+    return true;
+  });
+  await assert.rejects(fixture.persisted(), { code: "ENOENT" });
+});
+
+// Run the unchanged production cleanup script against controlled Shell views.
+// No Explorer instance, real window or native selection is used by this test.
+test("Windows cleanup closes only exact parent with exact selected target, preserving other windows", {
+  skip: process.platform !== "win32",
+}, async () => {
+  const execute = promisify(execFile);
+  const fixture = String.raw`
+$expected = $env:WORKSPACE_OBSERVE_TARGET
+$parent = [IO.Path]::GetDirectoryName($expected)
+$closed = [Collections.Generic.List[string]]::new()
+function Make-Window($id, $path, $selectedPath) {
+  $document = [pscustomobject]@{ Folder = [pscustomobject]@{ Self = [pscustomobject]@{ Path = $path } }; selectedPath = $selectedPath }
+  $document | Add-Member ScriptMethod SelectedItems {
+    if ($null -ne $this.selectedPath) { [pscustomobject]@{ Path = $this.selectedPath } }
+  }
+  $window = [pscustomobject]@{ Document = $document; id = $id }
+  $window | Add-Member ScriptMethod Quit { $closed.Add($this.id) }
+  return $window
+}
+$views = @(
+  (Make-Window 'unrelated_parent' 'C:\Other' $expected),
+  (Make-Window 'same_parent_wrong_target' $parent ([IO.Path]::Combine($parent, 'other'))),
+  (Make-Window 'same_parent_unselected' $parent $null),
+  (Make-Window 'exact' $parent $expected)
+)
+$controlledShell = [pscustomobject]@{}
+$controlledShell | Add-Member ScriptMethod Windows { return $views }
+function New-Object { param([string]$ComObject) return $controlledShell }
+`;
+  let closed;
+  const result = await closeDisposableFileManagerTarget(target, "win32", async (program, args, options) => {
+    const output = await execute(program, [...args.slice(0, -1), `${fixture}\n& { ${args.at(-1)} }\nConvertTo-Json -InputObject @($closed.ToArray()) -Compress`], options);
+    closed = JSON.parse(output.stdout);
+    return output;
+  });
+  assert.equal(result.status, "completed");
+  assert.deepEqual(closed, ["exact"]);
 });

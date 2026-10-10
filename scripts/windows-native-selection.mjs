@@ -1,5 +1,9 @@
 import { spawn } from "node:child_process";
+import * as fs from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
 
 const bridgePath = fileURLToPath(new URL("./windows-native-selection.ps1", import.meta.url));
 const maximumOutputBytes = 8192;
@@ -108,4 +112,133 @@ export async function invokeNativeSelection(target, {
       stdout += chunk.toString();
     });
   });
+}
+
+const filesystemCode = (error) => ["EACCES", "EPERM", "ENOENT", "ENOTEMPTY", "EEXIST", "EIO", "ENOSPC", "EBUSY"]
+  .includes(error?.code) ? error.code : "filesystem_error";
+
+// A fixed message and finite evidence replace exception/cause/subprocess text.
+// Callers receive a rejection only after the evidence write has been awaited.
+export class NativeSelectionExperimentError extends Error {
+  constructor(evidence) {
+    super("Windows native selection experiment failed");
+    this.name = "NativeSelectionExperimentError";
+    this.evidence = evidence;
+  }
+}
+
+async function removeOwnedFixture(root, target, targetCreated, filesystem, clock) {
+  let deadline;
+  // Never recursively delete: unexpected contents remain available for diagnosis.
+  // A filesystem syscall cannot be cancelled; on timeout removal is unverified,
+  // and the in-flight call may finish later. No subsequent removal is started.
+  let expired = false;
+  const timeout = new Promise((resolve) => {
+    deadline = clock.setTimeout(() => {
+      expired = true;
+      resolve({ status: "unverified", code: "timeout" });
+    }, 5000);
+  });
+  const removal = (async () => {
+    try {
+      if (targetCreated) await filesystem.rmdir(target);
+      if (expired) return { status: "unverified", code: "timeout" };
+      await filesystem.rmdir(root);
+      return { status: "completed" };
+    } catch (error) { return { status: "failed", code: filesystemCode(error) }; }
+  })();
+  try { return await Promise.race([removal, timeout]); }
+  finally { clock.clearTimeout(deadline); }
+}
+
+// Own the only target internally. Options expose test seams and an artifact
+// destination, never an externally supplied native target or executable script.
+export async function runNativeSelectionExperiment({
+  evidenceDirectory = fileURLToPath(new URL("../work/windows-native-selection-evidence/", import.meta.url)),
+  platform = process.platform, filesystem = fs, spawnProcess = spawn, env = process.env,
+  clock = { setTimeout, clearTimeout }, runCommand, timing,
+} = {}) {
+  const evidence = {
+    version: 1, status: "failed", failure: null,
+    fixture: { status: "not_attempted", rootCreated: false, targetCreated: false },
+    native: { status: "not_attempted", invocationCount: 0, native: null,
+      process: { termination: "not_started", exitCode: null, signal: null, killAttempted: false } },
+    observation: { status: "not_attempted" },
+    windowCleanup: { status: "not_attempted", closure: "unverified", unselectedParentMayRemain: true },
+    fixtureRemoval: { status: "not_needed" }, persistence: { status: "not_attempted" },
+  };
+  const fail = (stage, code) => { evidence.failure ??= { stage, code }; };
+  let root, target;
+  // Until a returned bridge result proves otherwise, cleanup must assume an
+  // owned subprocess could still be alive. Unexpected bridge errors are finite.
+  let terminationKnown = true;
+  if (platform !== "win32") {
+    fail("host", "unsupported");
+  } else {
+    try {
+      root = await filesystem.mkdtemp(join(tmpdir(), "workspace-native-selection-"));
+      evidence.fixture.rootCreated = true;
+      target = join(root, "Native selection 日本語");
+      await filesystem.mkdir(target);
+      evidence.fixture.targetCreated = true;
+      evidence.fixture.status = "completed";
+    } catch (error) {
+      evidence.fixture.status = "failed";
+      evidence.fixture.code = filesystemCode(error);
+      fail("fixture", evidence.fixture.code);
+    }
+    if (!evidence.failure) {
+      terminationKnown = false;
+      try {
+        evidence.native = await invokeNativeSelection(target, { platform, spawnProcess, env, clock });
+        terminationKnown = ["confirmed", "not_started"].includes(evidence.native.process.termination);
+        if (evidence.native.status !== "completed") fail("native", evidence.native.stage);
+      } catch {
+        evidence.native = { status: "failed", stage: "bridge_error", invocationCount: null, native: null,
+          process: { termination: "unknown", exitCode: null, signal: null, killAttempted: null } };
+        fail("native", "bridge_error");
+      }
+      // Observe even an unknown invocation count after confirmed termination:
+      // this can preserve useful evidence but cannot rescue a failed dispatch.
+      if (evidence.native?.process.termination === "confirmed" && evidence.native.invocationCount !== 0) {
+        try {
+          evidence.observation = await waitForFileManagerTarget(target, platform, runCommand, timing);
+          if (evidence.observation.status !== "passed" || evidence.observation.exactTargetObserved !== true) {
+            fail("observation", evidence.observation.completion);
+          }
+        } catch {
+          evidence.observation = { status: "unavailable", completion: "observer_error" };
+          fail("observation", "observer_error");
+        }
+        try {
+          const cleanup = await closeDisposableFileManagerTarget(target, platform, runCommand);
+          // The helper cannot confirm closure and its failure reason may contain
+          // arbitrary OS error.code text. Retain only its finite status here.
+          evidence.windowCleanup.status = cleanup.status === "completed" ? "completed" : "failed";
+        } catch { evidence.windowCleanup.status = "failed"; }
+        if (evidence.windowCleanup.status === "failed") {
+          evidence.windowCleanup.code = "cleanup_unavailable";
+          fail("window_cleanup", "cleanup_unavailable");
+        }
+      }
+    }
+    if (root) {
+      evidence.fixtureRemoval = terminationKnown
+        ? await removeOwnedFixture(root, target, evidence.fixture.targetCreated, filesystem, clock)
+        : { status: "unverified", code: "process_termination_unknown" };
+      if (evidence.fixtureRemoval.status !== "completed") fail("fixture_removal", evidence.fixtureRemoval.code);
+    }
+  }
+  evidence.status = evidence.failure ? "failed" : "passed";
+  try {
+    await filesystem.mkdir(evidenceDirectory, { recursive: true });
+    evidence.persistence.status = "completed";
+    await filesystem.writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(evidence, null, 2) + "\n", "utf8");
+  } catch {
+    evidence.persistence.status = "failed";
+    fail("evidence", "persistence_error");
+    evidence.status = "failed";
+  }
+  if (evidence.status !== "passed") throw new NativeSelectionExperimentError(evidence);
+  return evidence;
 }
