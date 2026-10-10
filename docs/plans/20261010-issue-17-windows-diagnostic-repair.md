@@ -65,11 +65,15 @@ After the service test library build, run the diagnostic with the required Node 
 - Modify: `.github/workflows/desktop-ci.yml`, `scripts/smoke-project-creation.mjs` and diagnostic tests.
 - Modify: `docs/verification/issue-17-create-reveal.md`.
 
-- [ ] Wire independent fresh-runner Windows selection and rename diagnostics after focused scripts/tests work. Use only necessary install/build steps; do not depend on full npm test or prior Explorer scenarios.
-- [ ] Invoke one narrowly selected existing product creation/Reveal scenario. Keep the existing zero-child experiment isolated; any justified comparison uses a separate fresh job/fixture.
-- [ ] Always preserve strict bounded artifacts containing actual checkout SHA, OS/runtime, scenario, invocation count, observation source, result/error and cleanup. Retain negative and unavailable outcomes; keep the full matrix authoritative.
-- [ ] Extend artifact/orchestration tests, inspect workflow isolation and upload behavior, run focused tests, lint, check:docs and working/fixed-base diff checks.
-- [ ] Commit the diagnostic milestone and provide the coordinator its SHA, commands, artifact interpretation and actual local checks before another whole-diff review cycle.
+- [x] Wire independent fresh-runner Windows selection and rename diagnostics after focused scripts/tests work. Use only necessary install/build steps; do not depend on full npm test or prior Explorer scenarios.
+- [x] Invoke one narrowly selected existing product creation/Reveal scenario. Keep the existing zero-child experiment isolated; any justified comparison uses a separate fresh job/fixture.
+- [x] Always preserve strict bounded artifacts containing actual checkout SHA, OS/runtime, scenario, invocation count, observation source, result/error and cleanup. Retain negative and unavailable outcomes; keep the full matrix authoritative.
+- [x] Extend artifact/orchestration tests, inspect workflow isolation and upload behavior, run focused tests, lint, check:docs and working/fixed-base diff checks.
+- [x] Commit the diagnostic milestone and provide the coordinator its SHA, commands, artifact interpretation and actual local checks before another whole-diff review cycle.
+
+Task 3 local verification (macOS arm64, Node 22.21.1): production build and the six focused diagnostic/lifecycle suites passed (104 tests, 97 passed, seven Windows-only skips, zero failures). Lint, typecheck, smoke-script syntax, check:docs and working/fixed-base diff checks passed. The YAML orchestration test verifies independent fresh-runner jobs, one direct DEV/after_evidence product scenario, no prior Explorer scenario, minimal build commands, unsuppressed failures and mandatory always-upload behavior. Targeted product result.json contains only bounded allowlisted metadata/stages, separate COM/UIA/count evidence and cleanup; the rename artifact explicitly distinguishes flags=0 from historical Node flags=1. Commands and interpretation are recorded in docs/verification/issue-17-create-reveal.md. No real Windows, native graphical or packaging verification was performed locally.
+
+External checkpoint remains unmet: coordinator must supply exact-code product COM/UIA selection and real-service rename Windows artifacts, alongside the separately isolated native experiment. Skipped fixtures, pending/missing artifacts and local simulations are not passes. Before causal interpretation of historical EPERM, obtain the exact Node rename/equivalent-flags comparison if needed; no cause or production repair is established here. Latest coordinator-reported a85ce35 macOS grouped DEV UI-acknowledgment failure remains separate and unresolved. Stop after this committed milestone; Tasks 4–5 remain unchecked.
 
 ## Coordinator checkpoint before Task 4
 

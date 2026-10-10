@@ -13,16 +13,22 @@ import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-life
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
 import { waitForRuntimeInterface } from "./runtime-startup.mjs";
+import { collectNativeSelectionMetadata } from "./windows-native-selection.mjs";
+import { productDiagnosticSnapshot, validateProductDiagnostic } from "./windows-product-diagnostics.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
 assert.ok(["dev", "release"].includes(mode));
 const executablePath = mode === "dev" ? createRequire(import.meta.url)("electron") : packagedExecutablePath(root, process.platform, process.arch);
-const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-create-runtime-")));
 const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? join(root, "work", `creation-runtime-${mode}-${Date.now()}`);
 await mkdir(evidenceDirectory, { recursive: true });
 const selectedMode = process.argv.find((arg) => arg.startsWith("--discovery-mode="))?.split("=")[1];
 const selectedCheckpoint = process.argv.find((arg) => arg.startsWith("--checkpoint="))?.split("=")[1];
+const diagnostic = process.env.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === "1";
+validateProductDiagnostic({ enabled: diagnostic, platform: process.platform, mode, selectedMode, selectedCheckpoint, args: process.argv.slice(2) });
+const metadata = diagnostic ? await collectNativeSelectionMetadata() : undefined;
+const fixture = await realpath(await mkdtemp(join(tmpdir(), "workspace-create-runtime-")));
+let runtime, invocationCount = 0, targetMatched = null, fileManagerCleanup, failureCleanup, finished = false;
 const directoryPackage = process.argv.includes("--directory-package");
 if (directoryPackage) assert.equal(process.platform, "darwin", "The harmless app-bundle probe requires macOS");
 assert.ok(!selectedMode || ["direct", "grouped"].includes(selectedMode));
@@ -39,11 +45,17 @@ const ownedProcesses = new Set(), backendPids = new Set();
 let fixtureCleanup = { status: "unreached" };
 let current;
 let failure;
-const save = async () => writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
+const save = async () => {
+  await writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
   runs, checkpointEvidence, observations, fixtureCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
+  if (diagnostic) await writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(productDiagnosticSnapshot({
+    metadata, runtime, evidence, invocationCount, targetMatched, fileManagerCleanup, fixtureCleanup, failureCleanup,
+    shutdowns: runs[0].shutdowns, failed: Boolean(failure), finished,
+  }), null, 2) + "\n");
+};
 const record = async (discoveryMode, stage, result) => { recordCreationEvidence(evidence, discoveryMode, stage, result); await save(); };
 const unwrap = (result) => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 const query = async (page, type, workspaceId, extra = {}) => unwrap(await page.evaluate((input) => globalThis.window.workspace.workspace(input), { type: `workspace.${type}`, workspaceId, ...extra }));
@@ -103,6 +115,7 @@ async function launch(data) {
   current = { electron };
   ownedProcesses.add(electron.process());
   const page = await electron.firstWindow(); current.page = page;
+  if (diagnostic) runtime = await electron.evaluate(() => ({ electron: process.versions.electron, node: process.versions.node }));
   page.setDefaultTimeout(15000);
   await waitForRuntimeInterface(page, async (startup) => {
     observations.push({ discoveryMode: activeRun.discoveryMode, checkpoint: activeRun.checkpoint, startup });
@@ -162,6 +175,7 @@ async function capture(page, discoveryMode, state) {
 }
 try {
   await save();
+  if (diagnostic) assert.ok(metadata.codeSha, "Actual checkout revision is required before dispatch");
   for (const discoveryMode of selectedMode ? [selectedMode] : ["direct", "grouped"]) {
     // All four abrupt boundaries are prepared independently; production UI
     // recovery covers intent, uncertain mkdir and sufficient recorded evidence.
@@ -236,8 +250,10 @@ try {
           const original = shell.showItemInFolder.bind(shell);
           globalThis.creationNativeCalls = [];
           shell.showItemInFolder = (path) => {
+            const call = { path, returned: false };
+            globalThis.creationNativeCalls.push(call);
             const result = original(path);
-            globalThis.creationNativeCalls.push({ path, returned: true });
+            call.returned = true;
             return result;
           };
         });
@@ -271,6 +287,8 @@ try {
           }
           return [];
         })(), 10000, "Real native invocation");
+        invocationCount = calls.length;
+        targetMatched = calls.length === 1 && calls[0].path === destination;
         assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
         assert.equal(calls[0].path, destination);
         const apiPassed = calls[0].returned === true;
@@ -282,7 +300,8 @@ try {
             await assert.rejects(stat(join(destination, "launched")), { code: "ENOENT" });
             observations.push({ directoryPackage: destination, launchMarkerAbsent: true });
           }
-          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination, process.platform, undefined, { ownedParent: true }), target: destination });
+          fileManagerCleanup = await closeDisposableFileManagerTarget(destination, process.platform, undefined, { ownedParent: true });
+          observations.push({ fileManagerCleanup, target: destination });
           nativeTargets.delete(destination);
           activeStage = [discoveryMode, "nativeAcknowledgment"];
           const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
@@ -294,7 +313,8 @@ try {
           assert.equal(feedback, t.dispatched, "A confirmed native dispatch must retain useful UI acknowledgment; source observation stays active");
           await record(discoveryMode, "nativeAcknowledgment", { status: "passed", asserted: true, language, feedback });
           activeStage = undefined;
-          assert.equal((await current.electron.evaluate(() => globalThis.creationNativeCalls)).length, 1, "Observation must not repeat native Reveal");
+          invocationCount = (await current.electron.evaluate(() => globalThis.creationNativeCalls)).length;
+          assert.equal(invocationCount, 1, "Observation must not repeat native Reveal");
           assert.equal(evidence[discoveryMode].fileManagerOutcome.status, "passed", "Exact disposable selected-item observation is required separately from API acknowledgment");
         }
         assert.equal(apiPassed, true, "Native API returned an error");
@@ -345,6 +365,7 @@ try {
       await shutdown(); activeStage = undefined;
     }
   }
+  finished = true;
 } catch (error) {
   failure = error;
   if (activeStage) await record(...activeStage, { status: "failed", reason: error.message });
@@ -353,13 +374,27 @@ try {
 } finally {
   if (current) {
     const closing = current; current = undefined;
+    if (diagnostic) {
+      try {
+        const calls = await withDeadline(closing.electron.evaluate(() => globalThis.creationNativeCalls ?? []), 3000, "Diagnostic invocation count");
+        invocationCount = calls.length;
+      } catch { invocationCount = null; }
+    }
     try {
       for (const pid of await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
     } catch (error) { failure ??= error; }
-    try { await closeElectron(closing.electron); observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" }); }
-    catch (error) { failure ??= error; observations.push({ cleanup: "failed", error: error.message, forcedCleanup: error.forcedCleanup }); }
+    try {
+      await closeElectron(closing.electron); failureCleanup = { status: "passed" };
+      observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" });
+    } catch (error) {
+      failure ??= error; failureCleanup = { status: "failed", forcedCleanup: error.forcedCleanup };
+      observations.push({ cleanup: "failed", error: error.message, forcedCleanup: error.forcedCleanup });
+    }
   }
-  for (const target of nativeTargets) observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true }), target });
+  for (const target of nativeTargets) {
+    fileManagerCleanup = await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true });
+    observations.push({ fileManagerCleanup, target });
+  }
   const processesStopped = [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
     try { process.kill(pid, 0); return false; }
     catch (error) { return error.code === "ESRCH"; }

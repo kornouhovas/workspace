@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import { load } from 'js-yaml';
+import { createCreationEvidence, recordCreationEvidence } from '../scripts/runtime-evidence.mjs';
+import { productDiagnosticSnapshot, validateProductDiagnostic } from '../scripts/windows-product-diagnostics.mjs';
+
+const privateText = 'C:\\private\\秘密\\do-not-record';
+const config = { enabled: true, platform: 'win32', mode: 'dev', selectedMode: 'direct', selectedCheckpoint: 'after_evidence',
+  args: ['dev', '--discovery-mode=direct', '--checkpoint=after_evidence'] };
+const metadata = { codeSha: '4ac402620dd8139bdef9ff03625aae64bf60e132', platform: 'win32',
+  architecture: 'x64', nodeVersion: '22.21.1', osRelease: '10.0.26100', private: privateText };
+const com = (selected) => ({ exactParentFound: true, targetPresent: true, selectedTargetMatch: selected,
+  exactParentCount: 1, errorCount: 0, errors: [], private: privateText });
+const ui = (selected) => ({ stage: selected ? 'selected' : 'unselected', windowVerified: true, targetVerified: true,
+  selected, code: null, private: privateText });
+const snapshot = (evidence, extra = {}) => productDiagnosticSnapshot({ metadata, evidence, runtime: { electron: '44.7.0', node: '24.21.0' }, ...extra });
+
+test('diagnostic opt-in requires exactly one existing native product scenario', () => {
+  assert.doesNotThrow(() => validateProductDiagnostic(config));
+  assert.doesNotThrow(() => validateProductDiagnostic({ enabled: false }));
+  for (const extra of [{ platform: 'darwin' }, { mode: 'release' }, { selectedMode: 'grouped' },
+    { selectedCheckpoint: undefined }, { args: [...config.args, '--skip-native'] }, { args: [...config.args, privateText] }]) {
+    assert.throws(() => validateProductDiagnostic({ ...config, ...extra }), /single direct/);
+  }
+});
+
+for (const [selected, independent, agreement] of [[true, true, 'agree'], [false, false, 'agree'],
+  [false, true, 'disagree'], [true, false, 'disagree'], [false, null, 'unavailable']]) {
+  test(`strict product artifact preserves COM ${selected} and independent ${independent}`, () => {
+    const evidence = createCreationEvidence();
+    recordCreationEvidence(evidence, 'direct', 'nativeInvocation', { status: 'passed', asserted: true, target: privateText });
+    const outcome = { status: selected ? 'passed' : 'pending', asserted: selected, exactTargetObserved: selected,
+      diagnostics: com(selected), independentSelection: independent === null ? { stage: 'pattern_unavailable', windowVerified: true, targetVerified: false, selected: null, code: null } : ui(independent),
+      completion: selected ? 'exact_target' : 'deadline', elapsedMs: 10000, reason: privateText };
+    outcome.attempts = [{ ...outcome, attempt: 1, timeoutMs: 5000 }];
+    recordCreationEvidence(evidence, 'direct', 'fileManagerOutcome', outcome);
+    const result = snapshot(evidence, { invocationCount: 1, targetMatched: true });
+    assert.equal(result.observation.status, outcome.status);
+    assert.equal(result.observation.com.selectedTargetMatch, selected);
+    assert.equal(result.observation.independentSelection.selected, independent);
+    assert.equal(result.observation.selectionAgreement, agreement);
+    assert.equal(result.observation.attempts[0].selectionAgreement, agreement);
+    assert.equal(result.invocation.count, 1);
+    assert.equal(result.acknowledgment.status, 'unreached');
+    assert.equal(result.metadata.codeSha, metadata.codeSha);
+    assert.equal(JSON.stringify(result).includes(privateText), false);
+  });
+}
+
+test('unavailable timeout, unknown invocation, failures and cleanup stay separate and bounded', () => {
+  const evidence = createCreationEvidence();
+  evidence.direct.fileManagerOutcome = { status: 'pending', completion: 'unavailable', diagnostics: { stage: 'timeout' },
+    attempts: Array(101).fill({ diagnostics: { stage: 'timeout' }, private: privateText }) };
+  evidence.normalShutdown = { status: 'failed', reason: privateText };
+  const result = snapshot(evidence, { invocationCount: null, failed: true, finished: true,
+    fileManagerCleanup: { status: 'pending', reason: privateText }, fixtureCleanup: { status: 'skipped', reason: privateText },
+    shutdowns: Array(10).fill({ status: 'failed', reason: privateText }) });
+  assert.equal(result.status, 'failed'); assert.equal(result.invocation.count, null);
+  assert.equal(result.observation.com.stage, 'timeout'); assert.equal(result.observation.com.unavailable, true);
+  assert.equal(result.observation.independentSelection.status, 'unavailable');
+  assert.equal(result.observation.exactTargetObserved, false);
+  assert.equal(result.observation.attempts.length, 100); assert.equal(result.shutdowns.length, 2);
+  assert.equal(result.normalShutdown.status, 'failed'); assert.equal(result.restartPersistence.status, 'unreached');
+  assert.equal(result.windowCleanup.closure, 'unverified'); assert.equal(result.fixtureCleanup.status, 'skipped');
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+  const invalid = snapshot(evidence, { metadata: { codeSha: privateText, osRelease: privateText }, runtime: { node: privateText }, invocationCount: Infinity });
+  assert.equal(invalid.metadata.codeSha, null); assert.equal(invalid.metadata.osRelease, null);
+  assert.equal(invalid.metadata.electronNodeVersion, null); assert.equal(invalid.invocation.count, null);
+});
+
+test('workflow runs three independent fresh Windows jobs and always uploads exact diagnostic files', async () => {
+  const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  for (const [name, artifact, path] of [
+    ['windows-product-selection-diagnostic', 'issue-17-windows-product-selection-diagnostic', 'work/ci-windows-product-selection/result.json'],
+    ['windows-category-rename-diagnostic', 'issue-17-windows-category-rename-diagnostic', 'work/ci-windows-category-rename/rename-observations.json'],
+    ['windows-native-selection', 'issue-17-windows-native-selection-experiment', 'work/windows-native-selection-evidence/result.json'],
+  ]) {
+    const job = workflow.jobs[name];
+    assert.equal(job['runs-on'], 'windows-latest'); assert.equal(job.needs, undefined);
+    assert.ok(job['timeout-minutes'] <= 10);
+    assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+    assert.equal(job.steps.filter((s) => s.run === 'npm test').length, 0);
+    const upload = job.steps.find((s) => s.uses === 'actions/upload-artifact@v4');
+    assert.equal(upload.if, 'always()'); assert.equal(upload.with.name, artifact);
+    assert.equal(upload.with.path, path); assert.equal(upload.with['if-no-files-found'], 'error');
+    assert.equal(job['continue-on-error'], undefined);
+    assert.ok(job.steps.every((s) => s['continue-on-error'] === undefined));
+  }
+  const product = workflow.jobs['windows-product-selection-diagnostic'].steps;
+  const invocation = product.find((s) => s.env?.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === '1');
+  const args = invocation.run.split(' ').slice(2);
+  validateProductDiagnostic({ ...config, args });
+  assert.equal(invocation['timeout-minutes'], 3);
+  assert.equal(product.filter((s) => /smoke-project-creation/.test(s.run ?? '')).length, 1);
+  assert.deepEqual(product.slice(0, product.indexOf(invocation)).filter((s) => s.run).map((s) => s.run), ['npm ci', 'npm run build']);
+  const rename = workflow.jobs['windows-category-rename-diagnostic'].steps;
+  assert.deepEqual(rename.filter((s) => s.run).slice(0, 3).map((s) => s.run),
+    ['npm ci', 'npm run build:service-test-lib', 'node --import tsx scripts/windows-rename-diagnostics.mjs']);
+  // The full platform acceptance matrix keeps its original independent scenarios.
+  assert.deepEqual(workflow.jobs.verify.strategy.matrix.include.map((s) => s.os), ['macos-latest', 'windows-latest']);
+  assert.equal(workflow.jobs.verify.steps.filter((s) => /--creation --discovery-mode=/.test(s.run ?? '')).length, 4);
+});
+
+test('fixture cleanup failure cannot label a completed scenario successful', () => {
+  const evidence = createCreationEvidence();
+  const result = snapshot(evidence, { finished: true, fixtureCleanup: { status: 'failed', code: 'EPERM' },
+    shutdowns: [{ status: 'failed', forcedCleanup: { status: 'failed', processStopped: true, errorCode: 255, private: privateText } }] });
+  assert.equal(result.status, 'failed'); assert.equal(result.errorCode, 'fixture_cleanup_failed');
+  assert.deepEqual(result.shutdowns[0].forcedCleanup, { status: 'failed', processStopped: true, code: 255, exitTimedOut: false });
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+});
+
+test('failure cleanup and wrong-window evidence cannot complete product acceptance', () => {
+  const evidence = createCreationEvidence();
+  evidence.direct.fileManagerOutcome = { status: 'pending', diagnostics: { ...com(false), exactParentCount: 2 }, independentSelection: ui(true) };
+  const result = snapshot(evidence, { failed: true, failureCleanup: { status: 'passed', reason: privateText },
+    fixtureCleanup: { status: 'passed', processesStopped: true } });
+  assert.equal(result.observation.independentSelection.status, 'unavailable');
+  assert.equal(result.observation.exactTargetObserved, false);
+  assert.equal(result.failureCleanup.status, 'passed'); assert.equal(result.normalShutdown.status, 'unreached');
+  assert.equal(result.restartPersistence.status, 'unreached'); assert.equal(result.status, 'failed');
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+});

@@ -257,6 +257,8 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
   if (!evidenceDirectory || !count(operations, 2) || operations < 1) throw new Error('Invalid diagnostic configuration');
   const result = { version: 1, kind: 'real-service-external-category-rename', status: 'failed', metadata: await metadata(),
     limits: renameBounds, handleAttribution: 'owned-resources-only',
+    renameOperation: { api: 'MoveFileExW', flags: 0, replacing: false,
+      historicalOperation: 'Node fs.promises.rename', historicalFlags: 1, equivalentToHistoricalOperation: false },
     scanTiming: 'wall-clock-intervals-not-OS-handle-attribution', operations: [], failure: null };
   if (!result.metadata.codeSha) result.failure = 'revision_unavailable';
   else if (platform !== 'win32') result.failure = 'unsupported_host';

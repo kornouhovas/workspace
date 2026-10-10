@@ -176,6 +176,8 @@ test('bounded orchestration uses distinct fixtures, retains every real failure a
       return { ...processResult(), stdout: JSON.stringify({ ...evidence, private: privateText }) };
     } });
   assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 10);
+  assert.deepEqual(result.renameOperation, { api: 'MoveFileExW', flags: 0, replacing: false,
+    historicalOperation: 'Node fs.promises.rename', historicalFlags: 1, equivalentToHistoricalOperation: false });
   assert.equal(new Set(owned).size, 10); assert.equal(result.realRenameFailures, 6);
   assert.deepEqual(calls, renameScenarios.flatMap((s) => [s, s]));
   assert.ok(result.operations.every((o) => o.cleanup === 'completed'));

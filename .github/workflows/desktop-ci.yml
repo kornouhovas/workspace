@@ -5,6 +5,63 @@ on:
   pull_request:
 
 jobs:
+  windows-product-selection-diagnostic:
+    name: Isolated Windows product selection diagnostic
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Observe one immediate product Reveal with COM and UI Automation
+        run: node scripts/smoke-project-creation.mjs dev --discovery-mode=direct --checkpoint=after_evidence
+        timeout-minutes: 3
+        env:
+          WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC: '1'
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-windows-product-selection
+      - name: Verify selection protocol and isolated orchestration
+        if: always()
+        run: node --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs
+      - name: Preserve strict product selection diagnostic including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-windows-product-selection-diagnostic
+          path: work/ci-windows-product-selection/result.json
+          if-no-files-found: error
+
+  windows-category-rename-diagnostic:
+    name: Isolated Windows real-service category rename diagnostic
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - run: npm run build:service-test-lib
+      - name: Compare distinct idle observed scanning and conflict fixtures
+        run: node --import tsx scripts/windows-rename-diagnostics.mjs
+        timeout-minutes: 5
+        env:
+          WORKSPACE_RENAME_EVIDENCE_DIR: work/ci-windows-category-rename
+      - name: Verify real-service diagnostic and negative-result retention
+        if: always()
+        run: node --import tsx --test tests/windows-rename-diagnostics.test.mjs
+      - name: Preserve strict category rename diagnostic including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-windows-category-rename-diagnostic
+          path: work/ci-windows-category-rename/rename-observations.json
+          if-no-files-found: error
+
   windows-native-selection:
     name: Isolated Windows native selection experiment
     runs-on: windows-latest
