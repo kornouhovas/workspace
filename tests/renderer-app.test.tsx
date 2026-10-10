@@ -1218,6 +1218,54 @@ test("authoritative exclusion refresh keeps checkbox mounted, invalidates Apply 
   cleanup();
 });
 
+test("EN/RU observer before or after stale Apply response preserves rows and requires another explicit Apply", async () => {
+  for (const language of ["en", "ru"] as const) for (const order of ["before", "after"] as const) {
+    const active = sharedEventWorkspace(), saved = projectList(active, ["Saved project"], 1);
+    let previews = 0, applies = 0;
+    let finishApply: ((result: ServiceResult<WorkspaceResponse>) => void) | undefined;
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    const api = mockApi({ language, onProjects: async () => ok(saved), onWorkspace: async (input) => {
+      if (input.type === "workspace.load") return ok(snapshotOf(active));
+      if (input.type === "workspace.previewDiscovery") {
+        previews++;
+        return ok({ ...previewResult(active, `review-${previews}`), revision: 1,
+          entries: [{ kind: "project", categoryPath: null, name: previews === 1 ? "Saved project" : "Late project",
+            relativePath: previews === 1 ? "Saved project" : "Late project", reason: null }] });
+      }
+      if (input.type === "workspace.applyDiscovery") {
+        if (++applies === 1) return new Promise((resolve) => { finishApply = resolve; });
+        return ok(projectList(active, ["Saved project", "Late project"], 2));
+      }
+      return fail("invalid_input");
+    } });
+    render(<App />); await screen.findByRole("cell", { name: "Saved project" });
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryAction") }));
+    await screen.findByRole("checkbox", { name: /Saved project/ });
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryApply") }));
+    const observed: WorkspaceChangeEvent = { type: "workspace.sourceObserved", sourceId: active.sourceId,
+      workspaceIds: [active.workspaceId], observationRevision: 1, state: "ready", automaticUpdates: "active" };
+    if (order === "before") await act(async () => api.emitChange(observed));
+    await act(async () => finishApply?.(fail("stale_preview")));
+    await waitFor(() => assert.equal(previews, 2));
+    if (order === "after") {
+      await act(async () => api.emitChange(observed));
+      assert.equal(screen.queryByRole("checkbox", { name: /Late project/ }), null);
+      assert.equal((screen.getByRole("button", { name: t("discoveryApply") }) as HTMLButtonElement).disabled, true);
+    }
+    assert.ok(screen.getByRole("heading", { name: t("discoveryStale") }));
+    assert.ok(screen.getByRole("cell", { name: "Saved project" }));
+    assert.equal(screen.queryByRole("cell", { name: "Late project" }), null);
+    assert.equal(applies, 1);
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryRefresh") }));
+    await screen.findByRole("checkbox", { name: /Late project/ });
+    assert.equal(previews, 3); assert.equal(applies, 1);
+    await userEvent.click(screen.getByRole("button", { name: t("discoveryApply") }));
+    await screen.findByRole("cell", { name: "Late project" });
+    assert.equal(applies, 2);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
 test("EN/RU stale draft recovery drops vanished unsaved exclusions and preserves remaining exclusions through the real service", async () => {
   for (const language of ["en", "ru"] as const) {
     const directory = mkdtempSync(join(tmpdir(), "workspace-draft-recovery-"));

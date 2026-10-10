@@ -136,8 +136,8 @@ async function shutdown() {
     activeRun.shutdowns.push({ status: "passed", backendStopped: true });
     await record(null, "normalShutdown", { status: "passed", asserted: true, backendStopped: true });
   } catch (error) {
-    activeRun.shutdowns.push({ status: "failed", reason: error.message });
-    await record(null, "normalShutdown", { status: "failed", reason: error.message }); throw error;
+    activeRun.shutdowns.push({ status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup });
+    await record(null, "normalShutdown", { status: "failed", reason: error.message, forcedCleanup: error.forcedCleanup }); throw error;
   }
 }
 const labels = {
@@ -357,7 +357,7 @@ try {
       for (const pid of await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
     } catch (error) { failure ??= error; }
     try { await closeElectron(closing.electron); observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" }); }
-    catch (error) { failure ??= error; observations.push({ cleanup: "failed", error: error.message }); }
+    catch (error) { failure ??= error; observations.push({ cleanup: "failed", error: error.message, forcedCleanup: error.forcedCleanup }); }
   }
   for (const target of nativeTargets) observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(target), target });
   const processesStopped = [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {

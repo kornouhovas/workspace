@@ -368,12 +368,14 @@ try {
   originalBytes = await folderBytes(projectRoot);
   await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).press("Enter");
   await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
-  await page.getByRole("checkbox", { name: "Exclude: Late project", exact: true }).waitFor();
   assert.deepEqual((await projects(page, first.workspaceId)).projects, savedProjects.projects);
-  await captureDiscovery(page, "en", "filesystem-stale");
   // Notification invalidation can arrive after the stale Apply response; review
   // again explicitly after the changed observation, never replay the mutation.
   await settleSourceRefresh(page);
+  await page.getByRole("heading", { name: discoveryLabels.en.stale, exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Apply reviewed projects", exact: true }).isDisabled(), true);
+  assert.deepEqual((await projects(page, first.workspaceId)).projects, savedProjects.projects);
+  await captureDiscovery(page, "en", "filesystem-stale");
   await page.getByRole("button", { name: "Refresh preview", exact: true }).press("Enter");
   await page.getByRole("checkbox", { name: "Exclude: Late project", exact: true }).waitFor();
   await applyFolders(page);
@@ -1062,7 +1064,7 @@ try {
     const closing = current; current = undefined;
     const shutdown = { attempt: shutdowns.length + 1, passed: false }; shutdowns.push(shutdown);
     try { await closeElectron(closing.electron); await assertStopped(pids); shutdown.passed = true; }
-    catch (error) { shutdown.error = error.message; throw error; }
+    catch (error) { shutdown.error = error.message; shutdown.forcedCleanup = error.forcedCleanup; throw error; }
     await recordEvidence("normal quit and backend exit passed");
   }
   const metadataBeforeQuit = await storageMetadata();
@@ -1199,13 +1201,16 @@ try {
   await closeCurrent();
 
   const failureDirectory = join(fixture, "failed-startup");
-  await mkdir(join(failureDirectory, "workspace.sqlite"), { recursive: true });
+  await mkdir(failureDirectory);
+  // Invalid SQLite bytes produce a typed error on both target OSes. Opening a
+  // directory instead can throw an untyped Windows constructor error.
+  await writeFile(join(failureDirectory, "workspace.sqlite"), "invalid SQLite database bytes");
   current = await launch(failureDirectory);
   await current.page.getByRole("heading", { name: "Local service unavailable" }).waitFor();
   assert.deepEqual(await current.page.evaluate(() => globalThis.window.workspace.getBackendStatus()), {
     state: "unavailable",
     message: "Workspace could not start its local service. Close and reopen the app to try again.",
-    diagnostic: { stage: "service_open", code: "SQLITE_CANTOPEN" },
+    diagnostic: { stage: "service_open", code: "SQLITE_NOTADB" },
   });
   stages.startupFailure = true;
   const failurePids = await backendPids(current.electron);
@@ -1229,6 +1234,7 @@ try {
       catch (cleanupError) {
         cleanupFailure = cleanupError;
         shutdown.error = cleanupError.message;
+        shutdown.forcedCleanup = cleanupError.forcedCleanup;
         await recordEvidence("failed", scenarioFailure ?? cleanupError);
       }
       await recordEvidence("failed", scenarioFailure);

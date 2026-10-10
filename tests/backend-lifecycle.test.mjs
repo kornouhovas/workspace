@@ -1622,6 +1622,24 @@ test("startup diagnostics distinguish readiness timeout, process error/exit and 
   }
 });
 
+test("typed and untyped service-open errors retain only their supported diagnostic through the controller", async () => {
+  for (const [error, code] of [
+    [new TypeError("private directory-open details"), "unknown"],
+    [Object.assign(new Error("private SQLite details"), { code: "SQLITE_CANTOPEN" }), "SQLITE_CANTOPEN"],
+  ]) {
+    const parent = new EventEmitter(), child = new FakeChild(), port = new FakePort();
+    const controller = new BackendController();
+    const ready = controller.start(child, port, "/private/database", {}, 1000);
+    parent.postMessage = (message) => child.send(message);
+    startServiceProcess(parent, () => { throw error; });
+    parent.emit("message", { data: { type: "connect", databasePath: "/private/database" }, ports: [port] });
+    assert.equal(await ready, false);
+    assert.deepEqual(controller.currentStatus.diagnostic, { stage: "service_open", code });
+    assert.equal(JSON.stringify(controller.currentStatus).includes("private"), false);
+    child.exit(1);
+  }
+});
+
 test("service initialization and migration failures report bounded phase/code even if cleanup throws", () => {
   for (const cause of ["open", "subscribe", "port", "start"]) {
     const parent = new EventEmitter(), port = new FakePort();

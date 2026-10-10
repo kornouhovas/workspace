@@ -22,16 +22,34 @@ export async function closeElectron(electron, timeoutMs = 10000) {
     await withDeadline(electron.close(), timeoutMs, "Electron shutdown");
   } catch (error) {
     if (child.exitCode === null && child.signalCode === null) {
-      const exited = new Promise((resolve) => child.once("exit", resolve));
-      if (process.platform === "win32") {
-        await promisify(execFile)("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
-          timeout: 5000, windowsHide: true,
-        });
-      } else {
-        // Playwright launches Electron as the leader of a separate process group.
-        process.kill(-child.pid, "SIGKILL");
+      let onExit;
+      const exited = new Promise((resolve) => { onExit = resolve; child.once("exit", onExit); });
+      const cleanup = { status: "passed", processStopped: false };
+      try {
+        try {
+          if (process.platform === "win32") {
+            await promisify(execFile)("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+              timeout: 5000, windowsHide: true,
+            });
+          } else {
+            // Playwright launches Electron as the leader of a separate process group.
+            process.kill(-child.pid, "SIGKILL");
+          }
+        } catch (cleanupError) {
+          cleanup.status = "failed";
+          // Never retain taskkill stdout/stderr or its command text in evidence.
+          const code = cleanupError.code;
+          cleanup.errorCode = Number.isSafeInteger(code) || ["ENOENT", "EPERM", "EACCES", "ESRCH", "ETIMEDOUT"].includes(code) ? code : "unknown";
+        }
+        // taskkill can kill the parent and still fail for an already absent child.
+        // Verify the owned parent's exit independently of the command result.
+        try { await withDeadline(exited, 5000, "Electron forced exit"); }
+        catch { cleanup.status = "failed"; cleanup.exitTimedOut = true; }
+        cleanup.processStopped = child.exitCode !== null || child.signalCode !== null;
+        error.forcedCleanup = cleanup;
+      } finally {
+        child.removeListener("exit", onExit);
       }
-      await withDeadline(exited, 5000, "Electron forced exit");
     }
     throw error;
   }

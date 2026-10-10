@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { once } from "node:events";
+import childProcess, { spawn } from "node:child_process";
+import { EventEmitter, once } from "node:events";
+import { syncBuiltinESMExports } from "node:module";
 import test from "node:test";
 import { closeElectron, withDeadline } from "../scripts/runtime-lifecycle.mjs";
 
@@ -43,6 +44,33 @@ test("stalled runtime shutdown kills the owned process and reports failure withi
     }, 20), /Electron shutdown timed out/);
     assert.ok(child.exitCode !== null || child.signalCode !== null);
   } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
+});
+
+test("Windows forced cleanup errors preserve the original shutdown failure and still await owned exit", async () => {
+  const platform = Object.getOwnPropertyDescriptor(process, "platform");
+  const child = Object.assign(new EventEmitter(), { pid: 12345, exitCode: null, signalCode: null });
+  const primary = new Error("Electron shutdown timed out after 10000ms");
+  Object.defineProperty(process, "platform", { value: "win32" });
+  const originalExecFile = childProcess.execFile;
+  childProcess.execFile = (program, args, options, callback) => {
+    assert.equal(program, "taskkill");
+    assert.deepEqual(args, ["/pid", "12345", "/T", "/F"]);
+    assert.equal(options.timeout, 5000);
+    callback(Object.assign(new Error("private taskkill stderr"), { code: 255 }));
+    setImmediate(() => { child.exitCode = 1; child.emit("exit", 1); });
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(closeElectron({ process: () => child, evaluate: async () => {}, close: async () => { throw primary; } }), (error) => {
+      assert.equal(error, primary);
+      assert.equal(child.exitCode, 1, "Failed taskkill must not skip awaiting owned process termination");
+      assert.deepEqual(error.forcedCleanup, { status: "failed", processStopped: true, errorCode: 255 });
+      assert.equal(JSON.stringify(error.forcedCleanup).includes("private"), false);
+      return true;
+    });
+  } finally {
+    childProcess.execFile = originalExecFile; syncBuiltinESMExports(); Object.defineProperty(process, "platform", platform);
+  }
 });
 
 test("a real configured backend with native root/category watches does not keep its Node process alive", async () => {
