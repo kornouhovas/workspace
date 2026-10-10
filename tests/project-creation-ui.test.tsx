@@ -3,7 +3,7 @@ import test from "node:test";
 import React from "react";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { openSettingsService } from "../src/service/settings.js";
 import { Window } from "happy-dom";
 import { ProjectCreationPanel } from "../src/renderer/components/ProjectCreationPanel.js";
@@ -229,11 +229,18 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).ok, true);
       const projects = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       const calls: Parameters<WorkspaceServiceClient["createProject"]>[0][] = [], statuses = new Set<(status: BackendStatus) => void>();
+      const listResponses: ServiceResult<unknown>[] = [], statusResponses: ServiceResult<unknown>[] = [];
       const gate = deferred<void>(); let receipt: ServiceResult<ProjectCreationResult> | undefined, completions = 0;
       const client = {
         onBackendStatus(listener: (status: BackendStatus) => void) { statuses.add(listener); return () => statuses.delete(listener); },
-        listProjectCreations: async () => service.handleCommand({ type: "workspace.listProjectCreations", workspaceId }),
-        getProjectCreation: async (_id: string, operationId: string) => service.handleCommand({ type: "workspace.getProjectCreation", workspaceId, operationId }),
+        listProjectCreations: async () => {
+          const response = service.handleQuery({ type: "workspace.listProjectCreations", workspaceId });
+          listResponses.push(response); return response;
+        },
+        getProjectCreation: async (_id: string, operationId: string) => {
+          const response = service.handleQuery({ type: "workspace.getProjectCreation", workspaceId, operationId });
+          statusResponses.push(response); return response;
+        },
         createProject: async (input: Parameters<WorkspaceServiceClient["createProject"]>[0]) => {
           calls.push(structuredClone(input));
           if (calls.length === 1) {
@@ -247,13 +254,24 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
       const view = render(<ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} projects={projects} disabled={false} invalidation={0} minimumRevision={{ current: projects.revision }} observationVersion={{ current: 0 }} onCompleted={() => completions++} />);
       await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
-      await userEvent.type(screen.getByRole("textbox"), "  Retry Текст 📝  ");
+      await userEvent.type(screen.getByRole("textbox"), "  Retry Текст 📝");
       if (mode === "grouped") await userEvent.selectOptions(screen.getByRole("combobox"), projects.categories[0].categoryId);
       await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
       const status = await screen.findByRole("button", { name: t("creationStatus") });
+      assert.ok(listResponses.length > 0);
+      for (const response of listResponses) assert.deepEqual(value(response), { workspaceId, sourceId, operations: [] });
       if (delivery === "undelivered") {
         await userEvent.click(status);
-        assert.equal(service.handleCommand({ type: "workspace.getProjectCreation", workspaceId, operationId: calls[0].operationId }).ok, false);
+        assert.equal(statusResponses.length, 1);
+        const missing = statusResponses[0];
+        assert.equal(missing.ok, false);
+        if (missing.ok) throw new Error("Undelivered operation unexpectedly exists");
+        assert.equal(missing.error.code, "invalid_input");
+        assert.deepEqual(value(service.workspaces.listProjectCreations({ type: "workspace.listProjectCreations", workspaceId })).operations, []);
+      } else {
+        assert.ok(receipt?.ok); if (!receipt?.ok) throw new Error("Creation was not accepted");
+        assert.equal(receipt.value.outcome, "completed");
+        assert.deepEqual(await client.getProjectCreation(workspaceId, calls[0].operationId), receipt);
       }
       await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
       await act(async () => { statuses.forEach((listener) => listener({ state: "unavailable" })); statuses.forEach((listener) => listener({ state: "ready" })); });
@@ -266,8 +284,14 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
       await screen.findByText(t("creationSaved")); assert.equal(completions, 1);
       const list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
       assert.equal(list.projects.length, 1);
+      assert.equal(calls[0].name, "  Retry Текст 📝");
+      assert.equal(list.projects[0].name, calls[0].name);
+      assert.equal(basename(list.projects[0].relativePath), calls[0].name);
+      assert.deepEqual(fs.readdirSync(mode === "grouped" ? join(root, "Category") : root), [calls[0].name]);
       assert.deepEqual(fs.readdirSync(join(root, list.projects[0].relativePath)), []);
       const finalReceipt = service.handleCommand({ type: "workspace.createProject", ...calls[0] });
+      assert.deepEqual(await client.getProjectCreation(workspaceId, calls[0].operationId), finalReceipt);
+      assert.deepEqual(value(await client.listProjectCreations(workspaceId)), { workspaceId, sourceId, operations: [] });
       if (receipt) assert.deepEqual(finalReceipt, receipt);
       view.unmount(); assert.equal(statuses.size, 0); service.close(); service = openSettingsService(database, "src/service/db/migrations");
       assert.deepEqual(service.handleCommand({ type: "workspace.createProject", ...calls[0] }), finalReceipt);

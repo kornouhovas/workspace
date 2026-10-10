@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { mkdtempSync, mkdirSync, renameSync, realpathSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -3243,6 +3243,8 @@ test("EN/RU production App creates in both modes, preserves IDs after service re
     const directory = mkdtempSync(join(tmpdir(), "creation-app-ui-")), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     mkdirSync(root); if (mode === "grouped") mkdirSync(join(root, "Existing category"));
     let service = openSettingsService(database), off: (() => void) | undefined, dispatches = 0;
+    const targets: { canonicalRoot: string; relativePath: string; validation: string }[] = [];
+    const creationRequests: WorkspaceRequest[] = [];
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
     try {
       const created = service.workspaces.create({ type: "workspace.create", name: "Real creation workspace", rootPath: root });
@@ -3256,9 +3258,10 @@ test("EN/RU production App creates in both modes, preserves IDs after service re
         const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
           onWorkspace: async (input) => {
             if (input.type === "workspace.revealProject") return service.revealProject(input, async (target, validate) => {
-              assert.equal(target.canonicalRoot, realpathSync(root)); assert.equal(target.relativePath, mode === "grouped" ? "Existing category/Authored folder" : "Authored folder");
-              assert.equal(validate().outcome, "verified"); dispatches++; return { outcome: "dispatched" };
+              targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
+              dispatches++; return { outcome: "dispatched" };
             });
+            if (input.type === "workspace.createProject") creationRequests.push(input);
             return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
           } });
         off = service.workspaces.subscribe(api.emitChange); render(<App />);
@@ -3277,6 +3280,15 @@ test("EN/RU production App creates in both modes, preserves IDs after service re
       assert.equal(before.value.projects.length, 1); const projectId = before.value.projects[0].projectId;
       await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
       await screen.findByText(t("revealDispatched")); assert.equal(dispatches, 1);
+      assert.deepEqual(targets, [{ canonicalRoot: realpathSync.native(root), relativePath: mode === "grouped" ? "Existing category/Authored folder" : "Authored folder", validation: "verified" }]);
+      assert.equal(targets[0].canonicalRoot, created.value.canonicalRoot);
+      assert.equal(creationRequests.length, 1);
+      const request = creationRequests[0];
+      assert.equal(request.type, "workspace.createProject");
+      if (request.type !== "workspace.createProject") throw new Error("Unexpected creation request");
+      assert.equal(request.name, "Authored folder");
+      assert.equal(before.value.projects[0].name, request.name);
+      assert.deepEqual(readdirSync(mode === "grouped" ? join(root, "Existing category") : root), [request.name]);
       cleanup(); off?.(); service.close(); service = openSettingsService(database); setup();
       await screen.findByRole("cell", { name: "Authored folder" });
       const after = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(after.ok); if (!after.ok) throw new Error("Fixture failed");

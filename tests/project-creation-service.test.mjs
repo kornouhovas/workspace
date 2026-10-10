@@ -453,7 +453,7 @@ test("Windows basename rules are simulated on real fixtures without claiming Win
 });
 
 test("actual POSIX creation preserves colon, backslash, whitespace and line breaks", { skip: process.platform === "win32" }, () => emptyFixture("direct", (f) => {
-  for (const name of ["  ", "Authored: name", "Authored\\name", "line\nbreak", "trailing.", "CON.txt"]) {
+  for (const name of ["  ", "  Authored проект 📝  ", "  Retry Текст 📝  ", "  Project  ", "Authored: name", "Authored\\name", "line\nbreak", "trailing.", "CON.txt"]) {
     const result = f.service.workspaces.createProject(command(f, name));
     assert.equal(result.value.outcome, "completed", name); assert.equal(result.value.project.name, name);
     assert.equal(fs.lstatSync(join(f.root, name)).isDirectory(), true);
@@ -723,7 +723,7 @@ for (const mode of ["direct", "grouped"]) {
     service.workspaces.subscribe((event) => { if (event.type === "workspace.projectsChanged") {
       assert.equal(f.sql.prepare("SELECT stage FROM project_creation_operations").get().stage, "completed"); events.push(event);
     } });
-    const request = command(f, "  Authored проект 📝  ");
+    const request = command(f, "  Authored проект 📝");
     const result = service.handleCommand(request);
     assert.equal(result.ok, true); assert.equal(result.value.outcome, "completed");
     const created = result.value.project;
@@ -732,6 +732,9 @@ for (const mode of ["direct", "grouped"]) {
     assert.deepEqual(inventory(join(f.root, created.relativePath)), []);
     const after = records(f.sql);
     assert.equal(after.projects.length, before.projects.length + 1);
+    assert.equal(basename(after.projects.find((p) => p.id === created.projectId).relative_path), request.name);
+    assert.equal(after.project_creation_operations[0].name, request.name);
+    assert.ok(fs.readdirSync(mode === "grouped" ? join(f.root, "Category") : f.root).includes(request.name));
     for (const table of ["settings", "workspaces", "views", "active_workspace", "categories", "category_properties", "property_definitions", "text_property_values"]) assert.deepEqual(after[table], before[table], table);
     assert.deepEqual(after.projects.filter((p) => p.id !== created.projectId), before.projects);
     assert.deepEqual(after.sources, before.sources.map((s) => ({ ...s, discovery_revision: 8 })));

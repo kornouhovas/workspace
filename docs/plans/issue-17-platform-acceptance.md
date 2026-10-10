@@ -62,17 +62,99 @@ Files:
 
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Map all 53 recorded failures to their failing setup/assertion and confirmed cause, including cascades from shared Reveal setup. Retain the original logs.
+- [x] Map all 53 recorded failures to their failing setup/assertion and confirmed cause, including cascades from shared Reveal setup. Retain the original logs.
 
-- [ ] Replace Windows-invalid authored basenames in successful real-folder fixtures with platform-valid names containing meaningful authored whitespace/Unicode. Assert exact request, persisted name and filesystem basename without trimming or renaming.
+- [x] Replace Windows-invalid authored basenames in successful real-folder fixtures with platform-valid names containing meaningful authored whitespace/Unicode. Assert exact request, persisted name and filesystem basename without trimming or renaming.
 
-- [ ] Preserve POSIX-specific exact-name cases and explicit Windows trailing-space/trailing-dot rejection tests. Do not skip Windows suites or make invalid names valid.
+- [x] Preserve POSIX-specific exact-name cases and explicit Windows trailing-space/trailing-dot rejection tests. Do not skip Windows suites or make invalid names valid.
 
-- [ ] Route listProjectCreations and getProjectCreation fixture requests through handleQuery. Assert successful list/status responses for accepted operations and a genuine missing-operation response for undelivered requests.
+- [x] Route listProjectCreations and getProjectCreation fixture requests through handleQuery. Assert successful list/status responses for accepted operations and a genuine missing-operation response for undelivered requests.
 
-- [ ] Retain both-mode EN/RU explicit retry, immutable original payload/ID, pending double-click, one durable project and reopen assertions.
+- [x] Retain both-mode EN/RU explicit retry, immutable original payload/ID, pending double-click, one durable project and reopen assertions.
 
-- [ ] Run affected suites, then standard task exit checks; commit the verified fixture repairs. Local success does not establish Windows acceptance.
+- [x] Run affected suites, then standard task exit checks; commit the verified fixture repairs. Local success does not establish Windows acceptance.
+
+#### Task 1 Windows failure diagnosis
+
+Original evidence is retained unchanged under ignored work/ralphex/issue-17/: ci-38042154474-windows-complete.log, ci-38042154474-windows-test-failures.json and ci-38042154474-windows-evidence.zip. Run 38042154474 tested product SHA 3132bf8011f50428e87318bcc5363c56f6060c69; these historical failures are not results for the continuation. Locations below are from that SHA, before subsequent line shifts.
+
+- C (2 failures): the success request ends in two spaces ("  Authored проект 📝  "); the completed assertion at project-creation-service.test.mjs:678 instead receives rejected under Windows basename rules. Use a valid authored Unicode name with leading whitespace and assert request/receipt/SQLite/directory-entry equality.
+- U (8 failures): the retry success request ends in two spaces ("  Retry Текст 📝  "); all eight completion waits fail after explicit retry. In the full log the form is aria-invalid=true. Independently, both list/status fixture callbacks incorrectly call handleCommand, which rejects read-only queries; the former missing-status assertion therefore could pass for the wrong reason. New list/status assertions failed all eight cases locally before routing repair. Keep both modes/languages/delivery cases and immutable same-ID/payload retry, pending prevention, one project and reopen checks.
+- R (42 failures): every recorded stack reaches the shared fixture's completed assertion at project-reveal.test.mjs:28 before its scenario callback. The shared request is "  Project  ", rejected for trailing spaces. These are setup cascades, not 42 independently demonstrated Reveal-policy defects. Keep every original scenario, repair the shared success name and assert its persisted/exact directory spelling before entering the scenario.
+- A (1 failure): production App reaches the first Reveal feedback wait at renderer-app.test.tsx:3279 with the generic native-error message in the full log. Its name "Authored folder" is already valid. The fixture compares the backend's native canonicalRoot with legacy realpathSync(root) inside a callback whose assertion errors are swallowed as native_error by the service. Align the exact assertion with realpathSync.native and the workspace creation result; collect callback target/validation data and assert outside that catch boundary so future assertion failures are visible. The original swallowed assertion is unavailable in the log; the resolver mismatch is the identified fixture defect, while exact Windows rerun remains a coordinator gate.
+
+POSIX trailing-space/colon/backslash/newline cases and explicit simulated Windows trailing-space/trailing-dot rejections remain. The former success spellings are also exercised explicitly in the POSIX-only real-folder test. No Windows suite or authorization assertion is skipped or relaxed. Local macOS execution and simulated Windows name rules do not establish Windows acceptance.
+
+| Recorded test | Scenario | Original declaration | Diagnosis |
+| --- | --- | --- | --- |
+| 360 | direct real creation commits one fresh durable ID, exact name and sibling event while preserving metadata | project-creation-service.test.mjs:671:3 | C |
+| 362 | grouped real creation commits one fresh durable ID, exact name and sibling event while preserving metadata | project-creation-service.test.mjs:671:3 | C |
+| 426 | en: direct explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 427 | en: direct explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 428 | en: grouped explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 429 | en: grouped explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 430 | ru: direct explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 431 | ru: direct explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 432 | ru: grouped explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 433 | ru: grouped explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 543 | direct Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data | project-reveal.test.mjs:47:3 | R |
+| 544 | direct Reveal rejects malformed/foreign identities before native dispatch | project-reveal.test.mjs:59:3 | R |
+| 545 | direct Reveal reports missing without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 546 | direct Reveal reports replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 547 | direct Reveal reports link without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 548 | direct Reveal reports root_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 549 | direct Reveal reports root_replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 550 | direct Reveal reports excluded without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 551 | direct Reveal reports mode_retained without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 552 | direct delayed native dispatch rejects removed/replaced destination and changed parent evidence | project-reveal.test.mjs:101:3 | R |
+| 553 | direct post-dispatch evidence checks report a folder changed during the native API call | project-reveal.test.mjs:114:3 | R |
+| 554 | direct native errors and unavailable adapters give bounded useful failures without leaking paths | project-reveal.test.mjs:121:3 | R |
+| 555 | grouped Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data | project-reveal.test.mjs:47:3 | R |
+| 556 | grouped Reveal rejects malformed/foreign identities before native dispatch | project-reveal.test.mjs:59:3 | R |
+| 557 | grouped Reveal reports missing without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 558 | grouped Reveal reports replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 559 | grouped Reveal reports link without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 560 | grouped Reveal reports root_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 561 | grouped Reveal reports root_replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 562 | grouped Reveal reports excluded without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 563 | grouped Reveal reports mode_retained without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 564 | grouped Reveal reports category_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 565 | grouped delayed native dispatch rejects removed/replaced destination and changed parent evidence | project-reveal.test.mjs:101:3 | R |
+| 566 | grouped post-dispatch evidence checks report a folder changed during the native API call | project-reveal.test.mjs:114:3 | R |
+| 567 | grouped native errors and unavailable adapters give bounded useful failures without leaking paths | project-reveal.test.mjs:121:3 | R |
+| 568 | direct retained excluded metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 569 | direct retained missing metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 570 | direct retained unresolved metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 571 | direct retained replaced metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 572 | direct archive designation and exact full native identity block native dispatch | project-reveal.test.mjs:140:3 | R |
+| 573 | direct policy changes and service closure during native completion cannot produce stale success | project-reveal.test.mjs:152:3 | R |
+| 574 | direct desktop revalidates delayed root/category/link changes before dispatch | project-reveal.test.mjs:163:3 | R |
+| 575 | direct inaccessible selected directories fail before native dispatch (simulated ACL denial) | project-reveal.test.mjs:179:3 | R |
+| 576 | grouped retained excluded metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 577 | grouped retained missing metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 578 | grouped retained unresolved metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 579 | grouped retained replaced metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 580 | grouped archive designation and exact full native identity block native dispatch | project-reveal.test.mjs:140:3 | R |
+| 581 | grouped policy changes and service closure during native completion cannot produce stale success | project-reveal.test.mjs:152:3 | R |
+| 582 | grouped desktop revalidates delayed root/category/link changes before dispatch | project-reveal.test.mjs:163:3 | R |
+| 583 | grouped inaccessible selected directories fail before native dispatch (simulated ACL denial) | project-reveal.test.mjs:179:3 | R |
+| 584 | private desktop targets reject traversal, unsupported depth, links and identity tampering | project-reveal.test.mjs:190:1 | R |
+| 670 | EN/RU production App creates in both modes, preserves IDs after service reopen and reports verified Reveal outcomes | renderer-app.test.tsx:3241:1 | A |
+
+#### Task 1 local verification
+
+Verified on macOS with Node 22.21.1 against the Task 1 working changes over 97f9cdb (fixed review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132). Every Node/npm/tsx command explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH.
+
+- npm ci: stopped after repeated registry HTTP 502 responses; npm ci --offline then passed using the committed lockfile and cached resolution. No dependency or global configuration changes.
+- Focused query regression before repair: all 8 retry cases failed because list requests used the command route (task1-query-red.log).
+- Initial affected run: 262 passed, 45 failed due to newly added assertions assuming a projects.name column. Corrected to the actual persisted relative_path basename; retained the failed log (task1-affected.log).
+- tsx --test tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/renderer-app.test.tsx: 307 passed, 0 failed (task1-affected-repaired.log).
+- npm test: build succeeded; 821 passed, 0 failed, 0 skipped (task1-npm-test.log).
+- npm run lint: passed (task1-lint-final.log).
+- npm run typecheck: initially caught a missing workspaceId argument in the new list assertion; repaired and passed (task1-typecheck.log and task1-typecheck-repaired.log). The final focused retry rerun passed all 8 cases (task1-query-final.log).
+- git diff --check: passed. All mentioned logs remain under ignored work/ralphex/issue-17/.
+
+Windows execution, native OS acceptance, cleanup acceptance and coordinator final-SHA checks remain external gates. This task repairs fixtures only and does not resolve the immediate-Reveal product defect assigned to Task 2 or the existing documentation links assigned to Task 4.
 
 ### Task 2: Preserve truthful immediate-Reveal acknowledgment
 

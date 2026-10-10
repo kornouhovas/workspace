@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import Database from "better-sqlite3";
@@ -22,11 +22,20 @@ async function fixture(mode, run) {
     const foreign = service.workspaces.create({ type: "workspace.create", name: "Foreign", rootPath: other }).value;
     const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode }).value;
     const list = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: preview.previewToken }).value;
-    const creation = service.workspaces.createProject({ type: "workspace.createProject", workspaceId: workspace.workspaceId,
-      operationId: randomUUID(), name: "  Project  ", expectedRevision: list.revision, mode,
-      ...(mode === "grouped" ? { categoryId: list.categories[0].categoryId } : {}) }).value;
+    const name = "  Project Текст 📝";
+    const request = { type: "workspace.createProject", workspaceId: workspace.workspaceId,
+      operationId: randomUUID(), name, expectedRevision: list.revision, mode,
+      ...(mode === "grouped" ? { categoryId: list.categories[0].categoryId } : {}) };
+    const response = service.handleCommand(request);
+    assert.ok(response.ok, JSON.stringify(response));
+    const creation = response.value;
     assert.equal(creation.outcome, "completed");
     const project = creation.project, path = join(root, project.relativePath);
+    assert.equal(project.name, request.name);
+    assert.equal(creation.operation.name, request.name);
+    assert.equal(basename(sql.prepare("SELECT relative_path FROM projects WHERE id = ?").get(project.projectId).relative_path), request.name);
+    assert.equal(project.relativePath, mode === "grouped" ? `Category/${name}` : name);
+    assert.deepEqual(fs.readdirSync(mode === "grouped" ? join(root, "Category") : root), [name]);
     fs.writeFileSync(join(path, "sentinel"), "untouched bytes");
     await run({ directory, root, other, path, service, sql, workspace, sibling, foreign, project,
       input: { type: "workspace.revealProject", workspaceId: workspace.workspaceId, projectId: project.projectId } });
