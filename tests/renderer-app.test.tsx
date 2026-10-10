@@ -3211,6 +3211,53 @@ test("EN/RU configured mode validation and storage failures retain a review; sta
   }
 });
 
+test("EN/RU initial project list invalidates an early preview and requires explicit Refresh in either reply order", async () => {
+  for (const language of ["en", "ru"] as const) for (const delivery of ["beforePreview", "afterPreview"] as const) {
+    const active = sharedEventWorkspace();
+    let finishList!: (result: ServiceResult<WorkspaceResponse>) => void;
+    let finishPreview!: (result: ServiceResult<WorkspaceResponse>) => void;
+    let previews = 0, applies = 0;
+    const api = mockApi({ language, load: ok(snapshotOf(active)),
+      onProjects: () => new Promise((resolve) => { finishList = resolve; }),
+      onWorkspace: async (input) => {
+        if (input.type === "workspace.load") return ok(snapshotOf(active));
+        if (input.type === "workspace.previewDiscovery") {
+          previews++;
+          if (previews === 1) return new Promise((resolve) => { finishPreview = resolve; });
+          return ok({ ...previewResult(active, "fresh-review"), configured: true, currentMode: "direct" });
+        }
+        if (input.type === "workspace.applyDiscovery") applies++;
+        return fail("invalid_input");
+      } });
+    render(<App />);
+    const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
+    assert.equal((trigger as HTMLButtonElement).disabled, false);
+    await userEvent.click(trigger);
+    assert.equal(previews, 1);
+    const oldPreview: ServiceResult<WorkspaceResponse> = ok({ ...previewResult(active, "early-review"), configured: true, currentMode: "direct" });
+    if (delivery === "afterPreview") {
+      await act(async () => finishPreview(oldPreview));
+      await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
+    }
+    await act(async () => finishList(ok(projectList(active, ["Current"], 1))));
+    await screen.findByRole("cell", { name: "Current" });
+    if (delivery === "beforePreview") await act(async () => finishPreview(oldPreview));
+    await screen.findByRole("heading", { name: translate(language, "discoveryStale") });
+    assert.equal(screen.queryByRole("combobox", { name: translate(language, "discoveryMode") }), null);
+    const apply = screen.getByRole("button", { name: translate(language, "discoveryApply") }) as HTMLButtonElement;
+    assert.equal(apply.disabled, true);
+    await userEvent.click(apply);
+    assert.equal(applies, 0); assert.equal(previews, 1);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "discoveryRefresh") }));
+    const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") }) as HTMLSelectElement;
+    assert.equal(mode.value, "direct"); assert.equal(mode.disabled, false);
+    assert.equal(apply.disabled, false); assert.equal(previews, 2); assert.equal(applies, 0);
+    await userEvent.click(screen.getByRole("button", { name: translate(language, "cancelRenameWorkspace") }));
+    assert.equal(document.activeElement, trigger);
+    cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
 test("EN/RU configured mode selection discards delayed previews after cancellation, selection/removal, source loss, sibling Apply or backend restart", async () => {
   for (const language of ["en", "ru"] as const) for (const transition of ["cancel", "switch", "remove", "sourceLoss", "sibling", "restart"] as const) {
     const active = sharedEventWorkspace(), other = eventWorkspace("Other");
@@ -3225,6 +3272,9 @@ test("EN/RU configured mode selection discards delayed previews after cancellati
       return fail("invalid_input");
     } });
     render(<App />);
+    // Establish the initial source revision before testing later transitions.
+    // A late initial list correctly invalidates a review opened during loading.
+    await screen.findByRole("cell", { name: "Current" });
     const trigger = await screen.findByRole("button", { name: translate(language, "discoveryAction") });
     await userEvent.click(trigger);
     const mode = await screen.findByRole("combobox", { name: translate(language, "discoveryMode") });
