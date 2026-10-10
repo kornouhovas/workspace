@@ -55,7 +55,7 @@ Use temporary data for destructive and recovery checks. Never use live user proj
 
 ## Current desktop slice
 
-The repository currently builds and runs an Electron application with settings, workspace management, direct/grouped project discovery and configured mode changes, read-only categories, shared Text properties, external folder reconciliation, explicit folder reassociation, recoverable project creation and native Reveal. Use Node.js 22.12 or newer (the CI matrix pins 22.21.1) and install the committed dependency resolution with `npm ci`.
+The repository currently builds and runs an Electron application with settings, workspace management, direct/grouped project discovery and configured mode changes, read-only categories, shared Text properties, external folder reconciliation, explicit folder reassociation, recoverable project creation and native Reveal. Use Node.js 22.21.1 on macOS or Windows, matching the native build and CI matrix, and install the committed dependency resolution with `npm ci`. Building also requires Python and the platform C/C++ toolchain; see the [native adapter checkpoint](#project-rename-native-adapter-checkpoint) for SDK and header prerequisites.
 
 | Command | Purpose |
 | --- | --- |
