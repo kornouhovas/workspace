@@ -422,7 +422,7 @@ The original Windows exact-selection failure and underlying packaged normal-quit
 
 ## Isolated Windows single-item native experiment
 
-The [accepted experiment plan](../plans/20261010-issue-17-windows-native-selection-experiment.md) adds a diagnostic job separate from Workspace acceptance. Two recorded product runs found the exact parent and target without observing selection; their cause remains unknown. The experiment tests one documented native form on a wholly owned Unicode folder. It changes no product dispatch, UI, IPC or acceptance predicate. A separate fresh Windows job prevents warming by the product scenarios; it does not prove that the runner starts without Explorer state.
+The [accepted experiment plan](../plans/completed/20261010-issue-17-windows-native-selection-experiment.md) adds a diagnostic job separate from Workspace acceptance. Two recorded product runs found the exact parent and target without observing selection; their cause remains unknown. The experiment tests one documented native form on a wholly owned Unicode folder. It changes no product dispatch, UI, IPC or acceptance predicate. A separate fresh Windows job prevents warming by the product scenarios; it does not prove that the runner starts without Explorer state.
 
 The [PowerShell bridge](../../scripts/windows-native-selection.ps1) uses fixed Add-Type source and a dedicated STA worker. Signatures were checked against Microsoft primary documentation on 2026-10-10:
 
