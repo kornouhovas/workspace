@@ -2,9 +2,11 @@
 
 ## Snapshot and scope
 
-Fixed implementation/review base: 4ac402620dd8139bdef9ff03625aae64bf60e132. Task 7 started from 2804db06ac62c6ff230c17e803592f89fe288a3f (Task 6); the tested working snapshot includes the Task 7 changes committed with this report. Task 7 delivery SHA: d10743f7198a06544613b8bc94220596f62de885. First-review repair SHA: 3132bf8011f50428e87318bcc5363c56f6060c69. Second-review repairs are committed with the addendum below; resolve their SHA with git log -1 --format=%H -- docs/verification/issue-17-create-reveal.md. This report does not claim exact-SHA CI acceptance. Platform: local macOS 27.0 (26A428), arm64; Node 22.21.1, pinned Electron 44.7.0, package version 0.1.0. All Node/npm/npx invocations prepend /Users/aleksandersk/.nvm/versions/node/v22.21.1/bin to PATH. No lockfile/version/global configuration, signing, tracker, push/integration or release change.
+Fixed implementation/review base: 4ac402620dd8139bdef9ff03625aae64bf60e132. Task 7 started from 2804db06ac62c6ff230c17e803592f89fe288a3f (Task 6); the tested working snapshot includes the Task 7 changes committed with this report. Task 7 delivery SHA: d10743f7198a06544613b8bc94220596f62de885. First-review repair SHA: 3132bf8011f50428e87318bcc5363c56f6060c69. Second-review repair SHA: e9ce13546b1850004008aa0e95c8da6713a0ae70. This report does not claim exact-SHA CI acceptance. Platform: local macOS 27.0 (26A428), arm64; Node 22.21.1, pinned Electron 44.7.0, package version 0.1.0. All Node/npm/npx invocations prepend /Users/aleksandersk/.nvm/versions/node/v22.21.1/bin to PATH. No lockfile/version/global configuration, signing, tracker, push/integration or release change.
 
 The source implements configured direct/existing-category grouped creation, durable source-owned operation history, explicit recovery, observer/discovery reservations, production IPC/UI and trusted native Reveal. Creation makes one exclusive empty directory and writes no markers. Project rename/moves, category creation, archive/restore and deletion remain outside scope.
+
+The sections through Limits and separate coordinator gates retain their original milestone results and open-gate status. The appended [platform acceptance continuation](#platform-acceptance-continuation) records subsequent repairs and evidence; neither historical nor continuation local results establish coordinator final acceptance.
 
 ## Second review repairs
 
@@ -111,3 +113,145 @@ At Task 7, the native directory-package semantics watchpoint remained open. Inst
 The immediate-after-create Reveal feedback watchpoint is unresolved: existing UI guards can report uncertainty when a newer source/discovery observation arrives during dispatch. Strict native fixtures explicitly Refresh and await the committed load with observation active. Their success cannot establish immediate-Reveal feedback behavior; no guard/assertion was weakened to hide it.
 
 The required Ralphex five-perspective first review and quality/implementation follow-ups remain separate pending phases. Coordinator owns independent final product verification (including both repair probes), exact-SHA macOS/Windows CI/native acceptance, any required observed Explorer/Finder confirmation, tracker completion and local integration. Issue #44 on physical macOS 27/Electron 44.7.0 remains an independent final-release prerequisite. Normal quit retains its ten-second assertion; forced cleanup is failure. No unmet issue criterion or external gate is marked accepted here.
+
+## Platform acceptance continuation
+
+This addendum records completed continuation Tasks 1–3 and the documentation-only Task 4 over f2aabfd1cc0ae5cd8e13b7ab3019bf04dbbf3a3f. The fixed implementation/review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132. The [accepted continuation plan](https://github.com/kornouhovas/workspace/blob/97f9cdbfb56302b5ec6f401994c02c6bfd20b43e/docs/plans/issue-17-platform-acceptance.md) is pinned to its original accepted commit so its reference survives the eventual completed-plan move. Progress and outcomes below refer to subsequent commits, not that original unchecked plan snapshot.
+
+| Task | Verified change commit | Scope |
+| --- | --- | --- |
+| 1 | 2d6b562e8f0aa9372f65100cbccb4951dd4864d9 | Windows-valid success fixtures, exact authored names and genuine list/status query routing |
+| 2 | dc3103854fa9921b43cf27be600c7e359b0fcfaf | Immediate-Reveal acknowledgment across benign observation, retaining target/request guards |
+| 3 | f2aabfd1cc0ae5cd8e13b7ab3019bf04dbbf3a3f | Immediate graphical scenario, bounded exact-target observation and separate owned-fixture cleanup |
+
+All reused task results below were obtained on local macOS arm64 with Node 22.21.1 and pinned Electron 44.7.0. The working changes were tested before each listed commit; report/plan edits accompanied those commits. Every Node/npm/npx/tsx command explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH. Evidence paths below are under ignored work/ralphex/issue-17/ unless otherwise stated. This documentation task does not rerun or reclassify their tests as fresh Task 4 execution.
+
+### Historical Windows failures and complete mapping
+
+Original evidence is retained unchanged under ignored work/ralphex/issue-17/: ci-38042154474-windows-complete.log, ci-38042154474-windows-test-failures.json and ci-38042154474-windows-evidence.zip. Run 38042154474 tested product SHA 3132bf8011f50428e87318bcc5363c56f6060c69; these historical failures are not results for the continuation. Locations below are from that SHA, before subsequent line shifts.
+
+- C (2 failures): the success request ends in two spaces ("  Authored проект 📝  "); the completed assertion at project-creation-service.test.mjs:678 instead receives rejected under Windows basename rules. Use a valid authored Unicode name with leading whitespace and assert request/receipt/SQLite/directory-entry equality.
+- U (8 failures): the retry success request ends in two spaces ("  Retry Текст 📝  "); all eight completion waits fail after explicit retry. In the full log the form is aria-invalid=true. Independently, both list/status fixture callbacks incorrectly call handleCommand, which rejects read-only queries; the former missing-status assertion therefore could pass for the wrong reason. New list/status assertions failed all eight cases locally before routing repair. Keep both modes/languages/delivery cases and immutable same-ID/payload retry, pending prevention, one project and reopen checks.
+- R (42 failures): every recorded stack reaches the shared fixture's completed assertion at project-reveal.test.mjs:28 before its scenario callback. The shared request is "  Project  ", rejected for trailing spaces. These are setup cascades, not 42 independently demonstrated Reveal-policy defects. Keep every original scenario, repair the shared success name and assert its persisted/exact directory spelling before entering the scenario.
+- A (1 failure): production App reaches the first Reveal feedback wait at renderer-app.test.tsx:3279 with the generic native-error message in the full log. Its name "Authored folder" is already valid. The fixture compares the backend's native canonicalRoot with legacy realpathSync(root) inside a callback whose assertion errors are swallowed as native_error by the service. Align the exact assertion with realpathSync.native and the workspace creation result; collect callback target/validation data and assert outside that catch boundary so future assertion failures are visible. The original swallowed assertion is unavailable in the log; the resolver mismatch is the identified fixture defect, while exact Windows rerun remains a coordinator gate.
+
+POSIX trailing-space/colon/backslash/newline cases and explicit simulated Windows trailing-space/trailing-dot rejections remain. The former success spellings are also exercised explicitly in the POSIX-only real-folder test. No Windows suite or authorization assertion is skipped or relaxed. Local macOS execution and simulated Windows name rules do not establish Windows acceptance.
+
+| Recorded test | Scenario | Original declaration | Diagnosis |
+| --- | --- | --- | --- |
+| 360 | direct real creation commits one fresh durable ID, exact name and sibling event while preserving metadata | project-creation-service.test.mjs:671:3 | C |
+| 362 | grouped real creation commits one fresh durable ID, exact name and sibling event while preserving metadata | project-creation-service.test.mjs:671:3 | C |
+| 426 | en: direct explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 427 | en: direct explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 428 | en: grouped explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 429 | en: grouped explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 430 | ru: direct explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 431 | ru: direct explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 432 | ru: grouped explicit retry reconciles undelivered with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 433 | ru: grouped explicit retry reconciles completed_response_lost with original payload and one durable project | project-creation-ui.test.tsx:221:3 | U |
+| 543 | direct Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data | project-reveal.test.mjs:47:3 | R |
+| 544 | direct Reveal rejects malformed/foreign identities before native dispatch | project-reveal.test.mjs:59:3 | R |
+| 545 | direct Reveal reports missing without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 546 | direct Reveal reports replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 547 | direct Reveal reports link without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 548 | direct Reveal reports root_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 549 | direct Reveal reports root_replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 550 | direct Reveal reports excluded without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 551 | direct Reveal reports mode_retained without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 552 | direct delayed native dispatch rejects removed/replaced destination and changed parent evidence | project-reveal.test.mjs:101:3 | R |
+| 553 | direct post-dispatch evidence checks report a folder changed during the native API call | project-reveal.test.mjs:114:3 | R |
+| 554 | direct native errors and unavailable adapters give bounded useful failures without leaking paths | project-reveal.test.mjs:121:3 | R |
+| 555 | grouped Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data | project-reveal.test.mjs:47:3 | R |
+| 556 | grouped Reveal rejects malformed/foreign identities before native dispatch | project-reveal.test.mjs:59:3 | R |
+| 557 | grouped Reveal reports missing without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 558 | grouped Reveal reports replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 559 | grouped Reveal reports link without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 560 | grouped Reveal reports root_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 561 | grouped Reveal reports root_replaced without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 562 | grouped Reveal reports excluded without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 563 | grouped Reveal reports mode_retained without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 564 | grouped Reveal reports category_unavailable without invoking native integration | project-reveal.test.mjs:71:5 | R |
+| 565 | grouped delayed native dispatch rejects removed/replaced destination and changed parent evidence | project-reveal.test.mjs:101:3 | R |
+| 566 | grouped post-dispatch evidence checks report a folder changed during the native API call | project-reveal.test.mjs:114:3 | R |
+| 567 | grouped native errors and unavailable adapters give bounded useful failures without leaking paths | project-reveal.test.mjs:121:3 | R |
+| 568 | direct retained excluded metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 569 | direct retained missing metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 570 | direct retained unresolved metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 571 | direct retained replaced metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 572 | direct archive designation and exact full native identity block native dispatch | project-reveal.test.mjs:140:3 | R |
+| 573 | direct policy changes and service closure during native completion cannot produce stale success | project-reveal.test.mjs:152:3 | R |
+| 574 | direct desktop revalidates delayed root/category/link changes before dispatch | project-reveal.test.mjs:163:3 | R |
+| 575 | direct inaccessible selected directories fail before native dispatch (simulated ACL denial) | project-reveal.test.mjs:179:3 | R |
+| 576 | grouped retained excluded metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 577 | grouped retained missing metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 578 | grouped retained unresolved metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 579 | grouped retained replaced metadata never opens a folder even with unchanged evidence | project-reveal.test.mjs:132:5 | R |
+| 580 | grouped archive designation and exact full native identity block native dispatch | project-reveal.test.mjs:140:3 | R |
+| 581 | grouped policy changes and service closure during native completion cannot produce stale success | project-reveal.test.mjs:152:3 | R |
+| 582 | grouped desktop revalidates delayed root/category/link changes before dispatch | project-reveal.test.mjs:163:3 | R |
+| 583 | grouped inaccessible selected directories fail before native dispatch (simulated ACL denial) | project-reveal.test.mjs:179:3 | R |
+| 584 | private desktop targets reject traversal, unsupported depth, links and identity tampering | project-reveal.test.mjs:190:1 | R |
+| 670 | EN/RU production App creates in both modes, preserves IDs after service reopen and reports verified Reveal outcomes | renderer-app.test.tsx:3241:1 | A |
+
+
+A second historical run, 38042598935 at e9ce13546b1850004008aa0e95c8da6713a0ae70, reported 820 tests: 761 passed, the same 53-fixture failure family failed and 6 skipped (ci-38042598935-windows-complete.log). Its other native/runtime stages passed, including cleanup on that run. That unchanged success does not explain or clear run 38042154474's EBUSY cleanup failure. Neither historical run tests the continuation repairs.
+
+### Repair behavior and regressions
+
+Task 1 keeps exact authored whitespace/Unicode in platform-valid successful names and checks request, receipt, persisted relative-path basename and directory-entry equality. POSIX trailing-space/colon/backslash/newline cases and explicit Windows trailing-space/trailing-dot rejection remain. All 42 Reveal scenarios still run after the repaired shared setup; no Windows suite is skipped. Retry list/status callbacks now use handleQuery, verify successful reads for accepted operations and a real missing-operation response for undelivered requests. Both modes/languages retain immutable original payload/ID, pending double-click, one durable project and reopen checks. The production-App callback collects native validation data for assertions outside the service's native-error catch and compares native canonical paths.
+
+Task 2's failing production-App regression established the broad observation guard: ready/active sourceObserved events advance observationVersion even when discoveryRevision and the authorized target are unchanged. Reveal now uses sourceLifetime for locator/unsafe availability transitions, the existing discovery-revision guard, and a monotonic row-target version derived from public project/category locators and retained state. A target change away and back still invalidates the older request. Backend/selection/unmount guards, exact response IDs, ID-only requests and backend/main pre/post-native authorization remain. Only Reveal feedback resets for target changes; editors retain drafts and pending requests cannot dispatch twice.
+
+EN/RU actual React plus real SQLite/filesystem regressions create and immediately Reveal in both modes, delay the native response, inject a benign active observation with a verified projection reload, and require one invocation, localized dispatched acknowledgment and durable-ID reopening. Adversarial cases reject selection/removal, backend unavailable-to-ready transitions, changed source/project/category paths, retained state, revisions and foreign IDs. Twenty real-filesystem scenarios verify specific backend rejection reasons for project/root/category path or identity changes after initial authorization. These controlled test seams are not OS observation evidence.
+
+Task 3 presses Reveal as soon as the created row appears, with no Refresh, sibling selection, post-creation query or settling wait beforehand. Observation stays active and the actual native API is invoked exactly once. Read-only observation shares one monotonic ten-second total deadline across attempts and pauses; each subprocess gets at most five seconds and no more than the remaining budget. Attempts, elapsed time, deadline and final completion reason are retained. Only the exact disposable parent plus selected full-path item can pass; title-only matches, native API return and late matches cannot. No unrelated window locations are recorded, and only exact matching fixture windows may close.
+
+Separate fixtureCleanup evidence is saved before throwing. Removal of the owned disposable root requires tracked Electron/crash-seed termination and absence of backend PIDs, then uses recursive fs.rm with maxRetries 5 and retryDelay 100 ms. Exhaustion fails cleanup; an earlier primary scenario failure takes precedence. Unverified termination skips removal and fails the fixture. The unchanged ten-second normal quit and forced-cleanup failure remain. Deterministic tests cover delayed matches, shrinking budgets, deadline exhaustion/late success, unavailable observation, single invocation, confinement/termination gating, simulated transient locks, exhausted cleanup and simultaneous primary failure. Simulations do not establish Windows lock or Explorer behavior.
+
+### Reused local command evidence from Tasks 1–3
+
+| Task and command | Actual result | Retained evidence |
+| --- | --- | --- |
+| 1: npm ci; npm ci --offline | Online install stopped after registry HTTP 502; offline committed resolution passed without dependency/global changes | Task 1 plan evidence |
+| 1: focused retry query regression before repair | All 8 cases failed on command-routed list requests | task1-query-red.log |
+| 1: affected service/UI/Reveal/App suites | Initial 262 passed / 45 failed from a new assertion assuming a nonexistent projects.name column; repaired persisted relative_path assertion, then 307 passed / 0 failed | task1-affected.log; task1-affected-repaired.log |
+| 1: npm test; npm run lint; npm run typecheck | Build and 821 tests passed, zero failures/skips; lint passed; typecheck caught missing workspaceId, then passed after repair; all 8 focused retry cases passed finally | task1-npm-test.log; task1-lint-final.log; task1-typecheck.log; task1-typecheck-repaired.log; task1-query-final.log |
+| 2: focused production-App regression before repair | Failed at missing dispatched acknowledgment in EN/direct; enclosing test stopped before other combinations | task2-immediate-red.log |
+| 2: final affected service/UI/Reveal/App suites | 313 passed, zero failures/skips; four language/mode combinations and exact backend rejection assertions | task2-affected-final.log |
+| 2: npm test; npm run lint; npm run typecheck | Build and 827 tests passed, zero failures/skips; lint passed; initial narrow inferred test-client query types repaired, then typecheck passed | task2-npm-test-final.log; task2-lint.log; task2-typecheck.log; task2-typecheck-repaired.log |
+| 3: focused new regressions before/after implementation | Missing observation/cleanup functions failed first; implemented functions passed | task3-regressions-red.log; task3-regressions-green.log |
+| 3: node --test tests/runtime-lifecycle.test.mjs tests/runtime-executable.test.mjs | 18 passed, zero failures/skips | task3-runtime-tests-final.log |
+| 3: npm test; npm run lint; npm run typecheck | Build and 836 tests passed, zero failures/skips; lint/typecheck passed; earlier 835-test run retained separately | task3-npm-test-final.log; task3-lint.log; task3-typecheck.log; task3-npm-test.log |
+| 3: npx --no-install electron-builder install-app-deps; npm rebuild better-sqlite3 | Pinned Electron native ABI prepared before graphical verification; Node test ABI restored afterward | task3-rebuild-electron.log; task3-rebuild-node.log |
+| 1–3: working and full fixed-base git diff --check | Passed at each milestone | Respective task plan verification sections |
+
+### Local immediate native scenario at Task 3
+
+WORKSPACE_SMOKE_EVIDENCE_DIR=work/ralphex/issue-17/task3-dev-immediate-20261010-1325 npm run smoke:runtime -- dev --creation --checkpoint=after_evidence ran sequentially against the Task 3 working snapshot over dc31038, subsequently committed as f2aabfd. Evidence: task3-dev-immediate.log and task3-dev-immediate-20261010-1325/dev-creation-observations.json. This is development evidence, with no new package or artifact digest claimed.
+
+| Stage | Direct / EN | Grouped / RU |
+| --- | --- | --- |
+| Creation and explicit after_evidence recovery | Passed | Passed |
+| Immediate real shell.showItemInFolder invocation | Passed, exactly once | Passed, exactly once |
+| Localized dispatched acknowledgment | Passed | Passed |
+| Exact Finder parent and selected full-path item | Passed, first attempt, about 331 ms | Passed, first attempt, about 201 ms |
+| Normal shutdown and backend termination | Passed on both closes | Passed on both closes |
+| Restart IDs/Text/inventory persistence | Passed | Passed |
+| Exact matching-window cleanup | Completed for the disposable target | Completed for the disposable target |
+
+The top-level fixtureCleanup separately passed with processesStopped=true and maxRetries=5/retryDelay=100. Non-selected mode branches in each run remain unreached; the other mode's run supplies that mode's evidence. The actual API return, localized acknowledgment, exact Finder selection, normal shutdown, restart and fixture removal are distinct results. dispatched means only that the void API returned without throwing. This local successful grouped restart does not establish the cause of the historical Task 7 failure or rewrite its failed result.
+
+### Remaining continuation and coordinator gates
+
+- Task 5 still owes fresh sequential standard checks, affected EN/RU layouts at all three sizes, full development runtime, focused immediate native scenarios, a fresh unsigned artifact with digest, packaged runtime/native scenarios and the harmless directory-package non-execution check. No current packaged acceptance follows from Task 3's development-only evidence.
+- The coordinator must independently rerun immediate-Reveal using a new evidence directory. Its original d5caea grouped result remains native invocation once/exact Finder pass, UI acknowledgment failed, acceptance shutdown unreached, cleanup shutdown passed separately (coordinator-immediate-dev/observations.json and coordinator-immediate-dev.stderr).
+- The coordinator owns final exact-SHA Windows/macOS CI and native acceptance: all 53 Windows failures, exact Explorer/Finder observation in both modes and successful owned-fixture cleanup. Historical Windows development pending observations and EBUSY remain preserved; local macOS and simulated-lock results do not close them.
+- The original five first-review perspectives and follow-up pair completed for e9ce135; the continuation's prescribed reviews are separate. No final continuation review acceptance is claimed by this documentation task.
+- The historical grouped-development restart failure remains explicitly accounted for with its original scope; a subsequent pass is not a diagnosis or a replacement result.
+- Trackers and verified local integration remain coordinator-owned. Physical macOS 27 / Electron 44.7.0 #44 remains an independent final-release prerequisite. No executor push, merge, release, signing, tags or publication occurred, and no unmet acceptance criterion is checked complete.
+
+### Documentation validation at Task 4
+
+Over f2aabfd, this documentation-only task corrected the ADR/completed-plan links and current development/architecture/README/Unreleased guidance, appended the failure mapping and reused repair evidence, and preserved the original completed plan byte-for-byte except its corrected link. PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run check:docs passed for 71 Markdown files (task4-check-docs.log). One-off local path/anchor inspection, repository-reference survival after the plan move, pinned Git-path resolution and exact comparison of all 53 historical failure IDs/names passed (task4-link-anchor-inspection.log). Working and fixed-base git diff --check passed.
+
+The coordinator's Task 4 clarification requires these documentation checks instead of repeating the full Electron build/test suite for prose alone. No product tests, graphical/native scenario, build or package was rerun in Task 4, and no documentation-phrasing tests were added. Task 5 and the coordinator gates above remain open.

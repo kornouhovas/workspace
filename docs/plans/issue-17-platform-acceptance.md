@@ -2,7 +2,7 @@
 
 ## Overview
 
-Repair the confirmed immediate-Reveal feedback defect, Windows fixture failures, owned-fixture cleanup and asynchronous file-manager observation. Repair completed-plan links and record fresh local verification without claiming coordinator acceptance. Write the accepted plan to exactly docs/plans/issue-17-platform-acceptance.md. This draft authorizes no execution.
+Repair the confirmed immediate-Reveal feedback defect, Windows fixture failures, owned-fixture cleanup and asynchronous file-manager observation. Repair completed-plan links and record fresh local verification without claiming coordinator acceptance. Write the accepted plan to exactly docs/plans/issue-17-platform-acceptance.md. This draft authorizes no execution. Continuation results are recorded in the [verification report](https://github.com/kornouhovas/workspace/blob/codex/issue-17-create-reveal/docs/verification/issue-17-create-reveal.md#platform-acceptance-continuation); this repository web reference remains valid when the plan moves to completed.
 
 ## Context
 
@@ -265,15 +265,29 @@ Files:
 
 - Modify as necessary: README.md and CHANGELOG.md
 
-- [ ] Correct the ADR link to the completed original plan and the completed plan’s verification-addendum link. Preserve original task checkboxes and historical acceptance claims.
+- [x] Correct the ADR link to the completed original plan and the completed plan’s verification-addendum link. Preserve original task checkboxes and historical acceptance claims.
 
-- [ ] Use repository web references for continuation-plan links that must survive Ralphex moving the plan into completed. Verify local relative links against their actual final locations.
+- [x] Use repository web references for continuation-plan links that must survive Ralphex moving the plan into completed. Verify local relative links against their actual final locations.
 
-- [ ] Update guidance for immediate creation→Reveal, bounded observation and separate cleanup evidence. Describe dispatched as API acknowledgment, distinct from exact Finder/Explorer observation.
+- [x] Update guidance for immediate creation→Reveal, bounded observation and separate cleanup evidence. Describe dispatched as API acknowledgment, distinct from exact Finder/Explorer observation.
 
-- [ ] Append the 53-failure mapping, repair/test evidence and remaining platform gates to the verification report. Preserve all original failures and their SHA/scope.
+- [x] Append the 53-failure mapping, repair/test evidence and remaining platform gates to the verification report. Preserve all original failures and their SHA/scope.
 
-- [ ] Run the existing check:docs validator, inspect affected anchors and git diff --check, then standard task exit checks; commit the documentation repair. Add no documentation-phrasing tests.
+- [x] Run the existing check:docs validator, inspect affected anchors and git diff --check, then standard task exit checks; commit the documentation repair. Add no documentation-phrasing tests.
+
+#### Task 4 documentation verification
+
+Documentation-only changes over f2aabfd1cc0ae5cd8e13b7ab3019bf04dbbf3a3f; the fixed implementation/review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132. The coordinator's appended Task 4 verification-scope clarification applies: existing documentation validation, anchor/consistency inspection and whitespace checks replace a repeated full Electron build/test suite for prose alone. No product code, dependency or documentation-phrasing tests changed.
+
+- Repaired ADR 0006's completed-plan link and the completed original plan's verification-addendum link. Exact comparison confirmed the original plan differs only in that link, preserving every historical checkbox and claim.
+- The continuation plan uses a repository web reference to the report; the report pins its accepted-plan reference to 97f9cdb. Both references survive the eventual continuation-plan move. Verified local target paths/anchors and the pinned Git object/path without claiming remote publication.
+- Updated development, architecture, README, ADR and Unreleased guidance for immediate creation-to-Reveal with active observation, unchanged-target acknowledgment, a single invocation's bounded exact-target observation and independently recorded owned-fixture cleanup.
+- Appended all 53 historical Windows failures and Tasks 1–3 repair/test/native evidence to the verification report. Compared every mapped test ID/name with ci-38042154474-windows-test-failures.json: all 53 match, grouped as 2 service / 8 UI / 42 Reveal / 1 App failures. Retained historical failed/pending/unreached outcomes and exact SHA/scope; no platform/coordinator gate was marked accepted.
+- PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run check:docs: passed for 71 Markdown files (work/ralphex/issue-17/task4-check-docs.log).
+- One-off local link/anchor, move-survival, historical-plan preservation and 53-failure mapping inspection: passed (work/ralphex/issue-17/task4-link-anchor-inspection.log). No permanent phrasing tests or validator changes.
+- Working and full fixed-base git diff --check: passed. Inspected all affected documentation changes for current behavior versus explicitly historical evidence.
+
+Fresh automated/layout/development/packaged verification remains Task 5. Continuation reviews, independent coordinator immediate-Reveal verification, final exact-SHA Windows/macOS acceptance, successful Windows owned-fixture cleanup and issue #44 remain separate gates. This task creates no new runtime/package result or artifact digest.
 
 ### Task 5: Verify the continuation and prepare coordinator handoff
 
