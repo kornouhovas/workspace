@@ -117,6 +117,45 @@ test("terminal script contains no dispatch, navigation, input, screenshot or raw
   }
 });
 
+// This report belongs only to the synthetic fixture below, never the real reader.
+// No arbitrary CLR type names or property/runtime-ID values reach the CI log.
+const syntheticKinds = ['null', 'not_supported', 'boolean', 'rect', 'int32', 'int32_array', 'object_array', 'psobject', 'other'];
+function syntheticBindingReport(value) {
+  const shape = (input) => {
+    assert.ok(syntheticKinds.includes(input?.kind));
+    assert.ok(input.count === null || Number.isInteger(input.count) && input.count >= 0 && input.count <= 9);
+    assert.ok(Array.isArray(input.members) && input.members.length <= 8 && input.members.every((kind) => syntheticKinds.includes(kind)));
+    assert.equal(input.members.length, input.count === null ? 0 : Math.min(input.count, 8));
+    assert.equal(['int32_array', 'object_array'].includes(input.kind), input.count !== null);
+    return { kind: input.kind, count: input.count, members: [...input.members] };
+  };
+  const element = (input, item) => {
+    assert.equal(typeof input?.available, 'boolean');
+    assert.equal(typeof input.runtimeIdValid, 'boolean');
+    const fields = ['IsEnabled', 'IsOffscreen', 'BoundingRectangle', ...(item ? ['HasKeyboardFocus', 'IsSelected'] : [])];
+    return { available: input.available, runtimeIdValid: input.runtimeIdValid, runtimeId: shape(input.runtimeId),
+      fields: Object.fromEntries(fields.map((field) => [field, shape(input.fields?.[field])])) };
+  };
+  return { view: element(value?.view, false), item: element(value?.item, true) };
+}
+
+test('synthetic binding reports retain finite field/collection types and exclude values or arbitrary type names', () => {
+  const scalar = { kind: 'boolean', count: null, members: [] };
+  const id = { kind: 'object_array', count: 1, members: ['int32_array'] };
+  const fields = Object.fromEntries(['IsEnabled', 'IsOffscreen', 'BoundingRectangle', 'HasKeyboardFocus', 'IsSelected']
+    .map((field) => [field, { ...scalar, private: target }]));
+  const input = { available: false, runtimeIdValid: false, runtimeId: id, fields, private: target };
+  const value = { view: input, item: input, private: target };
+  const result = syntheticBindingReport(value);
+  assert.equal(JSON.stringify(result).includes(target), false);
+  assert.deepEqual(result.view.runtimeId, id);
+  assert.equal(result.item.available, false);
+  for (const invalid of [{ ...id, kind: target }, { ...id, count: 10 }, { ...id, members: [target] },
+    { ...id, count: 2 }, { ...scalar, count: 0 }, { ...id, members: Array(9).fill('int32') }]) {
+    assert.throws(() => syntheticBindingReport({ ...value, view: { ...input, runtimeId: invalid } }));
+  }
+});
+
 // Actual PowerShell/UIA guards are exercised on Windows with synthetic objects;
 // this test neither opens nor selects a real Explorer window.
 test("Windows terminal owner rejects changed COM/HWND/PID/tab/view binding and unsupported properties", { skip: process.platform !== "win32" }, async () => {
@@ -172,13 +211,51 @@ foreach ($mode in $cases) {
   }
 });
 
-test("Windows terminal binding uses actual UIA conditions and retains disabled/offscreen states", { skip: process.platform !== "win32" }, async () => {
+test("Windows terminal binding uses actual UIA conditions and retains disabled/offscreen states", { skip: process.platform !== "win32" }, async (t) => {
   const script = String.raw`
 . ./scripts/windows-selection-diagnostics.ps1
 . ./scripts/windows-native-view-diagnostics.ps1
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 if ($null -ne (Test-WorkspaceTerminalBounds $null) -or
     $null -ne (Test-WorkspaceTerminalBounds ([pscustomobject]@{ X = 0 }))) { throw 'missing bounds became false' }
+# Synthetic objects only. Record type/collection shapes, not values, names or exception text.
+function Get-SyntheticKind($value) {
+  if ($null -eq $value) { return 'null' }
+  if ([object]::ReferenceEquals($value, [System.Windows.Automation.AutomationElement]::NotSupported)) { return 'not_supported' }
+  switch ($value.GetType().FullName) {
+    'System.Boolean' { return 'boolean' }
+    'System.Windows.Rect' { return 'rect' }
+    'System.Int32' { return 'int32' }
+    'System.Int32[]' { return 'int32_array' }
+    'System.Object[]' { return 'object_array' }
+    'System.Management.Automation.PSObject' { return 'psobject' }
+    default { return 'other' }
+  }
+}
+function Get-SyntheticShape($value) {
+  $kind = Get-SyntheticKind $value
+  $count = $null; $members = @()
+  if ($kind -in @('int32_array', 'object_array')) {
+    $count = [Math]::Min(9, $value.Length)
+    for ($index = 0; $index -lt [Math]::Min(8, $value.Length); $index++) { $members += Get-SyntheticKind $value[$index] }
+  }
+  return [ordered]@{ kind = $kind; count = $count; members = @($members) }
+}
+function Get-SyntheticElementShape($element, $isItem) {
+  $fields = [ordered]@{}
+  $names = @('IsEnabled', 'IsOffscreen', 'BoundingRectangle')
+  if ($isItem) { $names += @('HasKeyboardFocus', 'IsSelected') }
+  foreach ($field in $names) {
+    $property = if ($field -eq 'IsSelected') { [System.Windows.Automation.SelectionItemPattern]::IsSelectedProperty }
+      else { [System.Windows.Automation.AutomationElement]::($field + 'Property') }
+    $value = $element.GetCurrentPropertyValue($property, $true)
+    $fields[$field] = Get-SyntheticShape $value
+  }
+  $runtimeId = $element.GetRuntimeId()
+  $read = Read-WorkspaceTerminalElement $element $isItem
+  return [ordered]@{ fields = $fields; runtimeId = (Get-SyntheticShape $runtimeId);
+    runtimeIdValid = (Test-WorkspaceTerminalRuntimeId $runtimeId); available = ($null -ne $read) }
+}
 function Get-Process { param($Id) return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
 function Get-WorkspaceUiaRoot($handle) { return $root }
 function Read-WorkspaceTerminalNativeWindow($handle) { return @{ stage = 'verified'; processId = $(if ($mode -eq 'native_pid_mismatch') { 999 } else { 456 }); windowVisible = $true; windowMinimized = $false; windowForeground = $false } }
@@ -255,14 +332,24 @@ foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_p
   }
   $result = Read-WorkspaceTerminalBinding 123 $name
   # Raw runtime IDs/PID are internal ownership data, never terminal evidence.
-  [ordered]@{ mode = $mode; stage = $result.stage; snapshot = $result.snapshot; patternReads = $patternReads } | ConvertTo-Json -Depth 4 -Compress
+  $diagnostics = [ordered]@{ view = (Get-SyntheticElementShape $view $false); item = (Get-SyntheticElementShape $item $true) }
+  [ordered]@{ mode = $mode; stage = $result.stage; snapshot = $result.snapshot; patternReads = $patternReads; diagnostics = $diagnostics } | ConvertTo-Json -Depth 7 -Compress
 }
 `;
   const { stdout } = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
-    timeout: 30000, maxBuffer: 32768, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
+    timeout: 30000, maxBuffer: 65536, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
   });
   const results = stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
   assert.equal(results.length, 18);
+  const modes = ['observed','late_selected','unready','wrong_handle','wrong_process','native_pid_mismatch','tabs','view_absent',
+    'duplicate_views','target_absent','duplicate_items','no_pattern','unsupported_bool','unsupported_bounds','unsupported_selected',
+    'null_view_id','empty_item_id','nested_view_id'];
+  assert.deepEqual(results.map(({ mode }) => mode), modes);
+  // Emit every case BEFORE the first strict assertion; a broken observed case
+  // must not hide the unsupported/nested-ID controls needed to diagnose it.
+  for (const { mode, diagnostics } of results) {
+    t.diagnostic(JSON.stringify({ mode, diagnostics: syntheticBindingReport(diagnostics) }));
+  }
   for (const { mode, stage, snapshot, patternReads } of results) {
     const verified = ["observed", "late_selected", "unready"].includes(mode);
     const expected = verified ? "verified" : ["wrong_handle", "wrong_process", "native_pid_mismatch"].includes(mode) ? "wrong_window" :

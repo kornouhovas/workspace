@@ -183,7 +183,32 @@ Task 8 matched-OS CI correction local checks (macOS arm64, Node 22.21.1): five f
 
 The correction’s final quality/implementation pair independently found no remaining critical/major actionable findings. Both reviewed the bounded four-file delta with the fixed base as context and independently passed the 13 product diagnostic tests and working whitespace check. No coordinator platform gate is completed by these reviews.
 
-### Task 9: Verify repairs and update the evidence handoff
+The matched-OS receipt is satisfied by exact bdba4011568d7592b445a1b8be021be86d9a295c, CI 38070047171. Windows-latest (10.0.26100) retains the negative ten-second exact observation and an unavailable ambiguous_view terminal snapshot; windows-2022 (10.0.20348) observed exact selection on its first read at 586.1225ms, with no terminal probe. Both controlled logs contain 91 passes and the same terminal binding failure: observed returns property_unavailable instead of verified. No field/type evidence identifies that failure yet. This is an OS-image differential, not a diagnosed cause or Electron/product acceptance.
+
+Coordinator-authorized continuation inserts bounded synthetic evidence collection and the full Electron OS-image comparison before any repair based on the missing field evidence. The Task 8 initial five perspectives remain applicable. Do not guess a reader/mock correction from a ScriptMethod/Rect/runtime-ID hypothesis; preserve that correction as the dependent unchecked Task 10. The local macOS host cannot execute Windows PowerShell/UIA, and no new tool installation is authorized by this milestone.
+
+### Task 9: Expose controlled binding evidence and prepare full Electron OS comparison
+
+**Files:** tests/windows-native-view-diagnostics.test.mjs, tests/windows-product-diagnostics.test.mjs, .github/workflows/desktop-ci.yml and docs/verification/issue-17-create-reveal.md.
+
+- [x] Map both exact bdba401 artifacts and complete controlled logs; reuse Task 8 initial perspectives without claiming the controlled failure is diagnosed.
+- [x] Add bounded synthetic-only field/runtime-type and collection-shape diagnostics for every controlled binding case before strict assertions. Keep real terminal ambiguous_view/property_unavailable outcomes unchanged, unsupported/default/runtime-ID protections intact, and all original assertions failing on unsupported success cases.
+- [x] Add one full windows-2022 verify leg using identical shared product checks, native calls, normal quit/restart/cleanup and packaging. Preserve windows-latest and matched standalone diagnostics, fail-fast=false, unique evidence/package artifacts and unsuppressed failures; add a workflow regression.
+- [x] Run focused suites, lint, typecheck, check:docs and working/fixed-base diff checks; collect clean focused quality/implementation reviews, document actual local limits and commit the checkpoint.
+
+Task 9 local verification (macOS arm64, explicitly selected Node 22.21.1): five focused native/view/product/UIA/file-manager suites reported 107 tests, 99 passed, eight Windows-only skips and zero failures. The two matrix assertions failed before the added verify leg and passed afterward. Repository lint, typecheck, check:docs (73 files), working and fixed-base whitespace checks passed. The focused quality/implementation pair independently reviewed the five-file delta with fixed base 4ac402620dd8139bdef9ff03625aae64bf60e132 as context and found no critical/major actionable findings; each ran the two changed suites (24 tests, 22 passed, two Windows-only skips). Task 8 initial perspectives were reused under the explicit coordinator continuation. No actual Windows PowerShell/UIA, full npm test, production build, graphical/native run or package verification was performed for this test/workflow/documentation-only checkpoint. The controlled binding defect remains unresolved, and no production correction or external acceptance is claimed. Ignored logs: work/ralphex/issue-17/task9-*. The diagnostic revision is the commit containing this receipt, reported in the executor handoff; historical exact-code evidence retains its original SHA. Stop before Task 10 for coordinator results.
+
+## Mandatory coordinator checkpoint before Task 10
+
+Stop after Task 9. Coordinator supplies exact-code complete controlled Windows logs with the new finite synthetic type/field reports, both standalone artifacts and full windows-2022 Electron results. Controlled failure remains a failure; no skipped Windows check or diagnostic pass is acceptance. Use actual field evidence to choose a minimal reader/mock correction. Full Electron comparison results, negative/unavailable observations, normal quit/restart/cleanup and every unreached stage retain their actual SHA. No production API replacement, tracker change, push or Issue #18 work is authorized.
+
+### Task 10: Repair the controlled binding defect from actual field evidence
+
+- [ ] Diagnose the exact failing field/type/collection from coordinator Windows reports before correcting the mock or reader; retain real owned-window ambiguity and property/runtime-ID safety.
+- [ ] Add a meaningful controlled Windows regression for the established defect without relaxing existing selection/property assertions; run applicable focused checks and clean quality/implementation follow-up reviews.
+- [ ] Record actual exact-code Electron OS comparison outcomes and remaining external gates; commit verified repair files and stop for coordinator validation when needed.
+
+### Task 11: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.

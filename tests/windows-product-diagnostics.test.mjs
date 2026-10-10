@@ -132,7 +132,7 @@ test('workflow runs independent fresh Windows diagnostics and always uploads exa
   assert.deepEqual(rename.filter((s) => s.run).slice(0, 3).map((s) => s.run),
     ['npm ci', 'npm run build:service-test-lib', 'node --import tsx scripts/windows-rename-diagnostics.mjs']);
   // The full platform acceptance matrix keeps its original independent scenarios.
-  assert.deepEqual(workflow.jobs.verify.strategy.matrix.include.map((s) => s.os), ['macos-latest', 'windows-latest']);
+  assert.deepEqual(workflow.jobs.verify.strategy.matrix.include.map((s) => s.os), ['macos-latest', 'windows-latest', 'windows-2022']);
   assert.equal(workflow.jobs.verify.steps.filter((s) => /--creation --discovery-mode=/.test(s.run ?? '')).length, 4);
 });
 
@@ -185,4 +185,46 @@ test('terminal view diagnostic compares one matched condition on two fresh OS ru
   assert.equal(upload.with.path, 'work/windows-native-selection-evidence/result.json');
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
+});
+
+
+test('full product OS comparison retains identical checks and unique evidence/package artifacts', async () => {
+  const { jobs } = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  const job = jobs.verify;
+  assert.equal(job['runs-on'], '${{ matrix.os }}');
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.deepEqual(job.strategy.matrix.include, [
+    { os: 'macos-latest', artifact: 'macos' },
+    { os: 'windows-latest', artifact: 'windows' },
+    { os: 'windows-2022', artifact: 'windows-2022' },
+  ]);
+  assert.equal(job.needs, undefined);
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
+  const runs = job.steps.filter((step) => step.run);
+  assert.deepEqual(runs.map((step) => step.run), [
+    'npm ci', 'npm test', 'npm run lint', 'npm run typecheck', 'npm run build', 'npm run build:ladle',
+    'node scripts/smoke-discovery-layouts.mjs --creation',
+    'npm run smoke:runtime -- dev --creation --skip-native',
+    'npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence',
+    'npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence',
+    'npm run smoke:runtime -- dev', 'npm run package:dir', 'npm run check:artifact -- release',
+    'npm run smoke:runtime -- release --creation --skip-native',
+    'npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence',
+    'npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence',
+    'npm run smoke:runtime -- release',
+  ]);
+  // No OS-dependent skip or alternate command in the shared acceptance sequence.
+  assert.ok(runs.every((step) => step.if === undefined || step.if === '${{ !cancelled() }}'));
+  assert.ok(runs.every((step) => !JSON.stringify(step).includes('matrix.os')));
+  assert.equal(job.steps.find((step) => step.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(uploads.length, 2);
+  const names = job.strategy.matrix.include.flatMap(({ artifact }) => uploads.map((step) =>
+    step.with.name.replace('${{ matrix.artifact }}', artifact)));
+  assert.equal(new Set(names).size, 6);
+  assert.equal(uploads[0].if, 'always()');
+  assert.equal(uploads[0].with.path, 'work/ci-creation-*/\nwork/ci-runtime-*/\n');
+  assert.equal(uploads[1].with.path, 'release/');
+  assert.equal(uploads[1].with['if-no-files-found'], 'error');
 });
