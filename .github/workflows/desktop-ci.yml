@@ -23,17 +23,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Check creation IPC and Windows bridge before native acceptance
+        run: npm run test:windows:early
       - name: Observe one immediate product Reveal with COM and UI Automation
+        id: native
         run: node scripts/smoke-project-creation.mjs dev --discovery-mode=direct --checkpoint=after_evidence
         timeout-minutes: 3
         env:
           WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC: '1'
           WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-windows-product-selection
-      - name: Verify selection protocol and isolated orchestration
-        if: always()
-        run: node --import tsx --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs
       - name: Preserve strict product selection diagnostic including failures
-        if: always()
+        if: ${{ always() && steps.native.outcome != 'skipped' }}
         uses: actions/upload-artifact@v4
         with:
           name: issue-17-windows-product-selection-diagnostic

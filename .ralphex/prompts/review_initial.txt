@@ -1,0 +1,12 @@
+Review {{GOAL}} against {{DEFAULT_BRANCH}}. Read the coordinator snapshot and project rules; inspect git log and git diff from this base. This is the first whole-issue review.
+
+Collect all five independent perspectives before acting on findings (batches 3+2 if thread limits require):
+{{agent:quality}}
+{{agent:implementation}}
+{{agent:testing}}
+{{agent:simplification}}
+{{agent:documentation}}
+
+Verify findings against actual code and accepted scope. Repair confirmed material defects in this task, run relevant checks and commit explicit paths. Record unrelated findings without expanding the task. Reuse passing checks for unchanged inputs. Coordinator owns trackers, CI, integration and publication.
+
+If repairs were committed, report them without a completion marker so the next review checks the repaired delta. If nothing requires repair, emit <<<RALPHEX:REVIEW_DONE>>> as the final line. If an essential repair cannot be completed, emit <<<RALPHEX:TASK_FAILED>>> as the final line.

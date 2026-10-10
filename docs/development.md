@@ -18,23 +18,25 @@ The installed Beads worktree behavior shares the database through the repository
 
 ## Ralphex
 
-Repository defaults are in [.ralphex/config](../.ralphex/config). They select Codex, `docs/plans`, the `new-workspace` base and disabled automatic finalization. Models remain machine configuration; record the actual executor configuration in run evidence when reproducibility matters. Old progress logs and worktrees are not part of the new foundation.
+For phase selection, early Windows feedback and compact continuation state, use [the Ralphex run guide](ralphex.md). Execution uses a tasks-only invocation; review and external waiting are separate phases.
+
+Repository defaults are in [.ralphex/config](../.ralphex/config). They select Codex, `docs/plans`, the `new-workspace` base and disabled automatic finalization. The phase runner creates a run-local gpt-6.1-sol/high profile; direct CLI planning uses the inspected effective configuration. Record the actual executor configuration in run evidence. Old progress logs and worktrees are not part of the new foundation.
 
 For a selected issue:
 
 1. Read its current acceptance criteria and linked Beads state. Create a bounded English task snapshot and plan; include fixtures, tests, completion criteria and exclusions.
 2. Review the plan against settled product decisions. Resolve consequential open questions before the dependent implementation.
-3. Run in an isolated task checkout. Set `--base-ref` explicitly; use `new-workspace` when working on a child branch, or a saved starting SHA when working directly on that branch.
+3. Run in an isolated task checkout. Save the issue's starting commit SHA and initialize the phase runner against that immutable base. Follow-up reviews use the separately recorded successful review SHA.
 4. Inspect the resulting diff and actual test evidence. Update linked execution state and GitHub only to the extent acceptance is satisfied.
 
 Supported planning invocation in the inspected local Ralphex installation:
 
 ```sh
-ralphex --codex --base-ref new-workspace --skip-finalize \
+ralphex --codex --base-ref "<issue-start-sha>" --skip-finalize \
   --plan "Read the task snapshot at /absolute/path/task.md and create an English implementation plan in docs/plans."
 ```
 
-This is a template with a placeholder path, not a command already run. Inspect installed help before execution; planning mode may offer continuation into execution. Continue only within the authorized task scope. For a reviewed plan, pass its actual path to Ralphex with the same deliberate review base. A plan is not authorization to push, merge or release.
+This is a template with placeholder values, not a command already run. Inspect installed help and effective models before planning. Keep planning separate if it offers automatic continuation; inspect the result, then pass the reviewed plan's actual path to the runner's explicit execute phase. A plan is not authorization to push, merge or release.
 
 ## Verification
 
@@ -59,6 +61,7 @@ The repository currently builds and runs an Electron application with settings, 
 | --- | --- |
 | `npm run dev` | Build the renderer, desktop process, backend, migrations and version file, then launch Electron. |
 | `npm test` | Run behavior tests and build smoke checks. |
+| `npm run test:windows:early` | After the build, run focused creation/service/UI/IPC, coordinator and Windows bridge controls before native acceptance. |
 | `npm run lint` | Lint source, scripts and tests. |
 | `npm run typecheck` | Type-check the TypeScript application and tests. |
 | `npm run build` | Produce desktop, renderer and backend outputs, copy migrations, and verify the product version. |

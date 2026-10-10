@@ -117,21 +117,29 @@ test('workflow runs independent fresh Windows diagnostics and always uploads exa
     assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
     assert.equal(job.steps.filter((s) => s.run === 'npm test').length, 0);
     const upload = job.steps.find((s) => s.uses === 'actions/upload-artifact@v4');
-    assert.equal(upload.if, 'always()'); assert.equal(upload.with.name, artifact);
+    assert.equal(upload.if, name === 'windows-product-selection-diagnostic'
+      ? "${{ always() && steps.native.outcome != 'skipped' }}" : 'always()'); assert.equal(upload.with.name, artifact);
     assert.equal(upload.with.path, path); assert.equal(upload.with['if-no-files-found'], 'error');
     assert.equal(job['continue-on-error'], undefined);
     assert.ok(job.steps.every((s) => s['continue-on-error'] === undefined));
   }
   const product = workflow.jobs['windows-product-selection-diagnostic'].steps;
+  const early = product.find((s) => s.run === 'npm run test:windows:early');
+  assert.ok(early, 'real creation/IPC/bridge checks must precede native acceptance');
   const invocation = product.find((s) => s.env?.WORKSPACE_WINDOWS_SELECTION_DIAGNOSTIC === '1');
   const args = invocation.run.split(' ').slice(2);
   validateProductDiagnostic({ ...config, args });
   assert.equal(invocation['timeout-minutes'], 3);
+  assert.equal(invocation.id, 'native');
   assert.equal(product.filter((s) => /smoke-project-creation/.test(s.run ?? '')).length, 1);
-  assert.deepEqual(product.slice(0, product.indexOf(invocation)).filter((s) => s.run).map((s) => s.run), ['npm ci', 'npm run build']);
-  const controlled = product.find((s) => s.name === 'Verify selection protocol and isolated orchestration');
-  assert.equal(controlled.if, 'always()');
-  assert.equal(controlled.run, 'node --import tsx --test tests/windows-product-diagnostics.test.mjs tests/windows-selection-diagnostics.test.mjs tests/file-manager-evidence.test.mjs tests/windows-project-reveal.test.mjs tests/windows-project-reveal-com.test.mjs');
+  assert.deepEqual(product.slice(0, product.indexOf(invocation)).filter((s) => s.run).map((s) => s.run), ['npm ci', 'npm run build', 'npm run test:windows:early']);
+  const manifest = JSON.parse(await readFile('package.json', 'utf8'));
+  const suites = manifest.scripts['test:windows:early'];
+  for (const file of ['project-creation-service.test.mjs', 'project-creation-ui.test.tsx', 'project-reveal.test.mjs',
+    'settings-service.test.mjs', 'windows-project-reveal.test.mjs', 'windows-project-reveal-com.test.mjs']) {
+    assert.ok(suites.includes(`tests/${file}`), `${file} must run in early Windows feedback`);
+  }
+  assert.ok(!suites.includes('npm test'));
   const rename = workflow.jobs['windows-category-rename-diagnostic'].steps;
   assert.deepEqual(rename.filter((s) => s.run).slice(0, 3).map((s) => s.run),
     ['npm ci', 'npm run build:service-test-lib', 'node --import tsx scripts/windows-rename-diagnostics.mjs']);
