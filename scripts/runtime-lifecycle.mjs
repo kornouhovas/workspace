@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { rm } from "node:fs/promises";
 import { promisify } from "node:util";
 
 export async function withDeadline(operation, timeoutMs, label) {
@@ -34,4 +35,27 @@ export async function closeElectron(electron, timeoutMs = 10000) {
     }
     throw error;
   }
+}
+
+// The caller owns this disposable tree and verifies all its processes first.
+// Record cleanup independently, then preserve the original scenario failure.
+export async function cleanupOwnedFixture(fixture, { processesStopped, primaryFailure, record }, remove = rm) {
+  let result, cleanupFailure;
+  if (!processesStopped) {
+    cleanupFailure = new Error("Owned-process termination is unverified; fixture cleanup skipped");
+    result = { status: "skipped", reason: cleanupFailure.message };
+  } else {
+    try {
+      await remove(fixture, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      result = { status: "passed", asserted: true, processesStopped: true, maxRetries: 5, retryDelay: 100 };
+    } catch (error) {
+      cleanupFailure = error;
+      result = { status: "failed", reason: error.message, code: error.code, processesStopped: true };
+    }
+  }
+  try { await record(result); }
+  catch (error) { throw primaryFailure ?? cleanupFailure ?? error; }
+  if (primaryFailure) throw primaryFailure;
+  if (cleanupFailure) throw cleanupFailure;
+  return result;
 }

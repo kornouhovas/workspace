@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
-import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
-import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
-import { observeFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
+import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const mode = process.argv[2] ?? "dev";
@@ -34,12 +34,14 @@ let activeStage;
 const observations = [];
 const checkpointEvidence = [];
 const nativeTargets = new Set();
+const ownedProcesses = new Set(), backendPids = new Set();
+let fixtureCleanup = { status: "unreached" };
 let current;
 let failure;
 const save = async () => writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
-  runs, checkpointEvidence, observations, ...(failure ? { error: failure.message } : {}),
+  runs, checkpointEvidence, observations, fixtureCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
 const record = async (discoveryMode, stage, result) => { recordCreationEvidence(evidence, discoveryMode, stage, result); await save(); };
 const unwrap = (result) => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
@@ -64,6 +66,7 @@ async function seedCrash(data, discoveryMode, checkpoint, projectRoot, otherRoot
     cwd: root, env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` },
     stdio: ["ignore", "pipe", "pipe"],
   });
+  ownedProcesses.add(child);
   let stdout = "", stderr = "", message;
   const exited = once(child, "exit");
   child.stderr.on("data", (bytes) => { stderr += bytes; });
@@ -97,6 +100,7 @@ async function launch(data) {
   const electron = await _electron.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root,
     env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
   current = { electron };
+  ownedProcesses.add(electron.process());
   const page = await electron.firstWindow(); current.page = page;
   page.setDefaultTimeout(15000);
   await page.locator("#interface-language").waitFor();
@@ -106,6 +110,7 @@ async function launch(data) {
     const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
     return { contextIsolation: p.contextIsolation, nodeIntegration: p.nodeIntegration, sandbox: p.sandbox };
   }), { contextIsolation: true, nodeIntegration: false, sandbox: true });
+  for (const pid of await electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
   return page;
 }
 async function select(page, workspace) {
@@ -116,9 +121,11 @@ async function select(page, workspace) {
   await page.waitForFunction(() => globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false" && !globalThis.document.querySelector(".project-creation > button")?.disabled);
 }
 async function shutdown() {
-  const closing = current; current = undefined;
+  const closing = current;
   const pids = await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid));
   assert.ok(pids.length);
+  for (const pid of pids) backendPids.add(pid);
+  current = undefined;
   try {
     await closeElectron(closing.electron); // Unchanged ten-second normal quit; forced cleanup throws.
     for (const pid of pids) assert.throws(() => process.kill(pid, 0), { code: "ESRCH" });
@@ -217,14 +224,24 @@ try {
       await input.fill(name);
       if (discoveryMode === "grouped") await page.locator(".project-creation select").selectOption(seed.request.categoryId);
       await capture(page, discoveryMode, `create-${checkpoint}`);
-      await page.locator(".project-creation button[type=submit]").press("Enter");
-      await page.locator(".project-creation form").waitFor({ state: "detached" });
-      await page.getByText(t.saved, { exact: true }).waitFor();
-      const created = (await projectList(page, workspace.workspaceId)).projects.find((project) => project.name === name);
-      assert.ok(created); assert.notEqual(created.projectId, recovered.projectId);
       const destination = join(parent, name);
-      assert.deepEqual(await readdir(destination), []);
+      const beforeRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
+      if (!process.argv.includes("--skip-native")) {
+        // Wrap, never mock, the actual Electron API used by main's native adapter.
+        await current.electron.evaluate(({ shell }) => {
+          const original = shell.showItemInFolder.bind(shell);
+          globalThis.creationNativeCalls = [];
+          shell.showItemInFolder = (path) => {
+            const result = original(path);
+            globalThis.creationNativeCalls.push({ path, returned: true });
+            return result;
+          };
+        });
+      }
+      await page.locator(".project-creation button[type=submit]").press("Enter");
       if (directoryPackage) {
+        await page.getByRole("cell", { name, exact: true }).waitFor();
+        assert.deepEqual(await readdir(destination), []);
         // A wholly disposable app may only write its owned launch marker and exit.
         // Reveal must select the package in Finder without executing it.
         await mkdir(join(destination, "Contents", "MacOS"), { recursive: true });
@@ -232,7 +249,57 @@ try {
         await writeFile(join(destination, "Contents", "MacOS", "probe"), '#!/bin/sh\nprintf "unexpected launch" > "$(dirname "$0")/../../launched"\n');
         await chmod(join(destination, "Contents", "MacOS", "probe"), 0o755);
       }
-      const createdInventory = await inventory(destination);
+      const createdInventory = directoryPackage ? await inventory(destination) : [];
+      if (process.argv.includes("--skip-native")) {
+        await record(discoveryMode, "nativeInvocation", { status: "skipped", reason: "Explicit recovery-only run; no native API invoked" });
+        await record(discoveryMode, "fileManagerOutcome", { status: "skipped", reason: "Explicit recovery-only run" });
+      } else {
+        activeStage = [discoveryMode, "nativeInvocation"];
+        // The production observer stays active. Press the newly available row's
+        // Reveal directly: no Refresh, sibling switch or settling delay first.
+        nativeTargets.add(destination);
+        await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
+        const calls = await withDeadline((async () => {
+          for (let attempt = 0; attempt < 50; attempt++) {
+            const calls = await current.electron.evaluate(() => globalThis.creationNativeCalls);
+            if (calls.length) return calls;
+            await new Promise((done) => setTimeout(done, 100));
+          }
+          return [];
+        })(), 10000, "Real native invocation");
+        assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
+        assert.equal(calls[0].path, destination);
+        const apiPassed = calls[0].returned === true;
+        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.showItemInFolder", apiResult: "returned without throwing; no OS success result", target: destination });
+        activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
+        if (apiPassed) {
+          await record(discoveryMode, "fileManagerOutcome", await waitForFileManagerTarget(destination));
+          if (directoryPackage) {
+            await assert.rejects(stat(join(destination, "launched")), { code: "ENOENT" });
+            observations.push({ directoryPackage: destination, launchMarkerAbsent: true });
+          }
+          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination), target: destination });
+          nativeTargets.delete(destination);
+          activeStage = [discoveryMode, "nativeAcknowledgment"];
+          const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
+          await page.waitForFunction((name) => Array.from(globalThis.document.querySelectorAll(".project-reveal button")).some((node) => node.getAttribute("aria-label") === name && !node.disabled), `${t.reveal}: ${name}`);
+          const feedback = await revealButton.locator("..").locator(".bb-status").innerText();
+          const afterRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
+          observations.push({ nativeUiFeedback: feedback, beforeRevealObservation, afterRevealObservation });
+          await save();
+          assert.equal(feedback, t.dispatched, "A confirmed native dispatch must retain useful UI acknowledgment; source observation stays active");
+          await record(discoveryMode, "nativeAcknowledgment", { status: "passed", asserted: true, language, feedback });
+          activeStage = undefined;
+          assert.equal((await current.electron.evaluate(() => globalThis.creationNativeCalls)).length, 1, "Observation must not repeat native Reveal");
+          assert.equal(evidence[discoveryMode].fileManagerOutcome.status, "passed", "Exact disposable selected-item observation is required separately from API acknowledgment");
+        }
+        assert.equal(apiPassed, true, "Native API returned an error");
+      }
+      await page.locator(".project-creation form").waitFor({ state: "detached" });
+      await page.getByText(t.saved, { exact: true }).waitFor();
+      const created = (await projectList(page, workspace.workspaceId)).projects.find((project) => project.name === name);
+      assert.ok(created); assert.notEqual(created.projectId, recovered.projectId);
+      assert.deepEqual(await inventory(destination), createdInventory);
       assert.deepEqual(await query(page, "listTextProperties", workspace.workspaceId), properties);
       await select(page, sibling);
       await page.getByRole("cell", { name, exact: true }).waitFor();
@@ -248,59 +315,6 @@ try {
       observations.push({ discoveryMode, checkpoint, workspace, sibling, other, recovered, created, sourceObservation, events });
       await record(discoveryMode, "creation", { status: "passed", asserted: true, checkpoint, projectId: created.projectId });
 
-      if (process.argv.includes("--skip-native")) {
-        await record(discoveryMode, "nativeInvocation", { status: "skipped", reason: "Explicit recovery-only run; no native API invoked" });
-        await record(discoveryMode, "fileManagerOutcome", { status: "skipped", reason: "Explicit recovery-only run" });
-      } else {
-        activeStage = [discoveryMode, "nativeInvocation"];
-        // Wait for the explicitly requested Refresh and its committed UI load.
-        // Observation remains active; lost dispatch feedback still fails below.
-        await page.locator(".source-refresh > button").press("Enter");
-        await page.waitForFunction(() => globalThis.document.querySelector(".source-refresh")?.getAttribute("aria-busy") === "false" && globalThis.document.querySelector(".table-view")?.getAttribute("aria-busy") === "false");
-        await page.evaluate(() => new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
-        const beforeRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
-        // Wrap, never mock, the actual Electron API used by main's native adapter.
-        await current.electron.evaluate(({ shell }, target) => {
-          const original = shell.showItemInFolder.bind(shell);
-          globalThis.creationNativeCalls = [];
-          shell.showItemInFolder = (path) => {
-            const result = original(path);
-            if (path === target) globalThis.creationNativeCalls.push({ path, returned: true });
-            return result;
-          };
-        }, destination);
-        nativeTargets.add(destination);
-        await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
-        const calls = await withDeadline((async () => {
-          for (let attempt = 0; attempt < 50; attempt++) {
-            const calls = await current.electron.evaluate(() => globalThis.creationNativeCalls);
-            if (calls.length) return calls;
-            await new Promise((done) => setTimeout(done, 100));
-          }
-          return [];
-        })(), 10000, "Real native invocation");
-        assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
-        const apiPassed = calls[0].returned === true;
-        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.showItemInFolder", apiResult: "returned without throwing; no OS success result", target: destination });
-        activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
-        if (apiPassed) {
-          await record(discoveryMode, "fileManagerOutcome", await observeFileManagerTarget(destination));
-          if (directoryPackage) {
-            await assert.rejects(stat(join(destination, "launched")), { code: "ENOENT" });
-            observations.push({ directoryPackage: destination, launchMarkerAbsent: true });
-          }
-          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination), target: destination });
-          nativeTargets.delete(destination);
-          const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
-          await page.waitForFunction((name) => Array.from(globalThis.document.querySelectorAll(".project-reveal button")).some((node) => node.getAttribute("aria-label") === name && !node.disabled), `${t.reveal}: ${name}`);
-          const feedback = await revealButton.locator("..").locator(".bb-status").innerText();
-          const afterRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
-          observations.push({ nativeUiFeedback: feedback, beforeRevealObservation, afterRevealObservation });
-          await save();
-          assert.equal(feedback, t.dispatched, "A confirmed native dispatch must retain useful UI acknowledgment; source observation stays active");
-        }
-        assert.equal(apiPassed, true, "Native API returned an error");
-      }
       assert.equal(await readFile(join(parent, "Existing", "sentinel"), "utf8"), "existing bytes\0unchanged");
       assert.equal(await readFile(join(otherRoot, "sentinel"), "utf8"), "unrelated bytes");
       assert.deepEqual(await readdir(join(parent, "Interrupted")), []);
@@ -335,12 +349,21 @@ try {
 } finally {
   if (current) {
     const closing = current; current = undefined;
+    try {
+      for (const pid of await closing.electron.evaluate(({ app }) => app.getAppMetrics().filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node")).map((metric) => metric.pid))) backendPids.add(pid);
+    } catch (error) { failure ??= error; }
     try { await closeElectron(closing.electron); observations.push({ cleanup: "normal quit passed", acceptance: "failure cleanup does not complete the scenario shutdown/restart stages" }); }
     catch (error) { failure ??= error; observations.push({ cleanup: "failed", error: error.message }); }
   }
   for (const target of nativeTargets) observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(target), target });
-  await save();
-  await rm(fixture, { recursive: true, force: true });
+  const processesStopped = [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
+    try { process.kill(pid, 0); return false; }
+    catch (error) { return error.code === "ESRCH"; }
+  });
+  await cleanupOwnedFixture(fixture, { processesStopped, primaryFailure: failure, record: async (outcome) => {
+    fixtureCleanup = outcome;
+    await save();
+  } });
 }
 if (failure) throw failure;
 const nativeStatuses = runs.map((run) => run.evidence[run.discoveryMode].nativeInvocation.status);

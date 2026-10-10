@@ -111,6 +111,7 @@ test("creation evidence never promotes failed/skipped/unreached native or shutdo
   for (const status of ["failed", "skipped", "pending", "unreached"]) {
     recordCreationEvidence(evidence, "direct", "nativeInvocation", { status, reason: "fixture gate" });
     assert.throws(() => recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true, exactTargetObserved: true }), /requires/);
+    assert.throws(() => recordCreationEvidence(evidence, "direct", "nativeAcknowledgment", { status: "passed", asserted: true }), /requires/);
     recordCreationEvidence(evidence, null, "normalShutdown", { status });
     assert.throws(() => recordCreationEvidence(evidence, null, "restartPersistence", { status: "passed", asserted: true }), /normal shutdown/);
   }
@@ -118,6 +119,10 @@ test("creation evidence never promotes failed/skipped/unreached native or shutdo
   recordCreationEvidence(evidence, "direct", "nativeInvocation", { status: "passed", asserted: true, apiResult: "" });
   assert.throws(() => recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true }), /exact target/);
   recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true, exactTargetObserved: true });
+  assert.equal(evidence.direct.fileManagerOutcome.status, "passed");
+  assert.equal(evidence.direct.nativeAcknowledgment.status, "unreached");
+  recordCreationEvidence(evidence, "direct", "nativeAcknowledgment", { status: "failed", reason: "UI feedback lost" });
+  assert.equal(evidence.direct.nativeInvocation.status, "passed");
   assert.equal(evidence.direct.fileManagerOutcome.status, "passed");
   assert.equal(evidence.grouped.nativeInvocation.status, "unreached");
   recordCreationEvidence(evidence, null, "normalShutdown", { status: "failed", forcedCleanup: true });
@@ -163,4 +168,143 @@ test("file-manager cleanup confines window closure to the supplied disposable pa
     else { assert.equal(options.env.WORKSPACE_OBSERVE_TARGET, target); assert.ok(args.at(-1).includes("OrdinalIgnoreCase")); }
   }
   assert.equal((await closeDisposableFileManagerTarget("/tmp/owned", "linux", run)).status, "skipped");
+});
+
+test("bounded observation waits for an asynchronous exact target without another native invocation", async () => {
+  const { waitForFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  let elapsed = 0, reads = 0, nativeCalls = 0;
+  const reveal = () => { nativeCalls++; };
+  reveal();
+  const result = await waitForFileManagerTarget("C:\\Disposable\\selected", "win32", async (_program, _args, options) => {
+    assert.ok(options.timeout <= 10000 - elapsed);
+    elapsed += 50;
+    return { stdout: ++reads === 3 ? "true" : "false" };
+  }, { now: () => elapsed, sleep: async (ms) => { elapsed += ms; } });
+  assert.equal(result.status, "passed");
+  assert.equal(result.exactTargetObserved, true);
+  assert.equal(result.completion, "exact_target");
+  assert.equal(result.attempts.length, 3);
+  assert.equal(result.elapsedMs, elapsed);
+  assert.equal(nativeCalls, 1);
+  assert.equal(result.deadlineMs, 10000);
+});
+
+test("observation exhausts one total deadline and caps each subprocess by the remaining budget", async () => {
+  const { waitForFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  let elapsed = 0;
+  const timeouts = [];
+  const result = await waitForFileManagerTarget("/tmp/disposable", "darwin", async (_program, _args, options) => {
+    timeouts.push(options.timeout);
+    elapsed += options.timeout;
+    throw Object.assign(new Error("private stderr"), { killed: true });
+  }, { now: () => elapsed, sleep: async (ms) => { elapsed += ms; } });
+  assert.equal(result.status, "pending");
+  assert.equal(result.completion, "deadline");
+  assert.equal(result.elapsedMs, 10000);
+  assert.equal(result.attempts.length, 2);
+  assert.deepEqual(timeouts, [5000, 4900]);
+  assert.equal(JSON.stringify(result).includes("private stderr"), false);
+});
+
+test("observation preserves unavailable and unsupported outcomes without claiming OS success", async () => {
+  const { waitForFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  let commands = 0;
+  const run = async () => { commands++; throw Object.assign(new Error("user location"), { code: "EACCES" }); };
+  const result = await waitForFileManagerTarget("/tmp/disposable", "darwin", run);
+  assert.equal(result.status, "pending");
+  assert.equal(result.completion, "unavailable");
+  assert.equal(result.attempts.length, 1);
+  assert.equal(JSON.stringify(result).includes("user location"), false);
+  assert.equal((await waitForFileManagerTarget("/tmp/disposable", "linux", run)).status, "skipped");
+  assert.equal(commands, 1);
+});
+
+test("an exact target returned after the total deadline cannot become passed evidence", async () => {
+  const { waitForFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  let elapsed = 0;
+  const result = await waitForFileManagerTarget("/tmp/disposable", "darwin", async () => {
+    elapsed = 10001;
+    return { stdout: "true" };
+  }, { now: () => elapsed, sleep: async () => {} });
+  assert.equal(result.status, "pending");
+  assert.equal(result.completion, "deadline");
+  assert.notEqual(result.exactTargetObserved, true);
+});
+
+test("owned fixture cleanup removes only the supplied tree after verified termination", async () => {
+  const { cleanupOwnedFixture } = await import("../scripts/runtime-lifecycle.mjs");
+  const { mkdtemp, mkdir, rm, stat } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const parent = await mkdtemp(join(tmpdir(), "owned-cleanup-"));
+  const fixture = join(parent, "fixture"), unrelated = join(parent, "unrelated");
+  await mkdir(fixture); await mkdir(unrelated);
+  const outcomes = [];
+  try {
+    await cleanupOwnedFixture(fixture, { processesStopped: true, record: async (outcome) => outcomes.push(outcome) });
+    await assert.rejects(stat(fixture), { code: "ENOENT" });
+    assert.equal((await stat(unrelated)).isDirectory(), true);
+    assert.equal(outcomes[0].status, "passed");
+    assert.equal(outcomes[0].asserted, true);
+  } finally { await rm(parent, { recursive: true, force: true }); }
+});
+
+test("owned cleanup forwards bounded filesystem retries for transient Windows locks", async () => {
+  const { cleanupOwnedFixture } = await import("../scripts/runtime-lifecycle.mjs");
+  let attempts = 0;
+  const outcomes = [];
+  await cleanupOwnedFixture("owned-fixture", { processesStopped: true, record: async (outcome) => outcomes.push(outcome) }, async (path, options) => {
+    assert.equal(path, "owned-fixture");
+    assert.deepEqual(options, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    // Simulate fs.rm's transient-lock recovery, not an actual Windows OS result.
+    for (let retry = 0; retry <= options.maxRetries; retry++) {
+      attempts++;
+      if (attempts === 3) return;
+    }
+    throw Object.assign(new Error("locked"), { code: "EBUSY" });
+  });
+  assert.equal(attempts, 3);
+  assert.equal(outcomes[0].status, "passed");
+});
+
+test("exhausted cleanup is saved before throwing and cannot hide the primary scenario failure", async () => {
+  const { cleanupOwnedFixture } = await import("../scripts/runtime-lifecycle.mjs");
+  const locked = Object.assign(new Error("owned database remains locked"), { code: "EBUSY" });
+  for (const primaryFailure of [undefined, new Error("Reveal acknowledgment failed")]) {
+    const outcomes = [];
+    await assert.rejects(cleanupOwnedFixture("owned-fixture", {
+      processesStopped: true, primaryFailure, record: async (outcome) => outcomes.push(outcome),
+    }, async () => { throw locked; }), (error) => {
+      assert.equal(outcomes.length, 1, "Cleanup result must be saved before throwing");
+      assert.equal(outcomes[0].status, "failed");
+      assert.equal(outcomes[0].code, "EBUSY");
+      return error === (primaryFailure ?? locked);
+    });
+  }
+});
+
+test("cleanup never removes a fixture while owned-process termination is unverified", async () => {
+  const { cleanupOwnedFixture } = await import("../scripts/runtime-lifecycle.mjs");
+  let removes = 0;
+  const outcomes = [];
+  await assert.rejects(cleanupOwnedFixture("owned-fixture", {
+    processesStopped: false, record: async (outcome) => outcomes.push(outcome),
+  }, async () => { removes++; }), /termination/);
+  assert.equal(removes, 0);
+  assert.equal(outcomes[0].status, "skipped");
+});
+
+
+test("repeated nonmatching observations remain pending at the deadline", async () => {
+  const { waitForFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  let elapsed = 0;
+  const result = await waitForFileManagerTarget("/tmp/disposable", "darwin", async (_program, _args, options) => {
+    elapsed += Math.min(200, options.timeout);
+    return { stdout: "false" };
+  }, { now: () => elapsed, sleep: async (ms) => { elapsed += ms; } });
+  assert.equal(result.status, "pending");
+  assert.equal(result.completion, "deadline");
+  assert.equal(result.elapsedMs, 10000);
+  assert.ok(result.attempts.length > 1);
+  assert.equal(result.attempts.some((attempt) => attempt.status === "passed"), false);
 });

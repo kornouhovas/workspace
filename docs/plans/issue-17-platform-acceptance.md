@@ -216,19 +216,40 @@ Files:
 
 - Modify: tests/runtime-lifecycle.test.mjs
 
-- [ ] Change the permanent graphical scenario to press Reveal as soon as the newly created row is available. Remove preceding Refresh and artificial settling waits; keep production observation active and invoke the real native API exactly once.
+- [x] Change the permanent graphical scenario to press Reveal as soon as the newly created row is available. Remove preceding Refresh and artificial settling waits; keep production observation active and invoke the real native API exactly once.
 
-- [ ] Bound repeated read-only observation of that same invocation to a ten-second total deadline. Cap each subprocess by the remaining budget; record attempts, elapsed time and final exact-target outcome.
+- [x] Bound repeated read-only observation of that same invocation to a ten-second total deadline. Cap each subprocess by the remaining budget; record attempts, elapsed time and final exact-target outcome.
 
-- [ ] Preserve exact parent and selected full-path requirements, safe target-as-data handling and privacy. Title-only matching, API acknowledgment and repeated native Reveal cannot satisfy observation.
+- [x] Preserve exact parent and selected full-path requirements, safe target-as-data handling and privacy. Title-only matching, API acknowledgment and repeated native Reveal cannot satisfy observation.
 
-- [ ] Add deterministic behavioral regressions for delayed observation success, deadline exhaustion, unavailable observation and unchanged single invocation. Keep simulated outcomes distinct from actual OS evidence.
+- [x] Add deterministic behavioral regressions for delayed observation success, deadline exhaustion, unavailable observation and unchanged single invocation. Keep simulated outcomes distinct from actual OS evidence.
 
-- [ ] After verified owned-process termination, apply bounded recursive fs.rm retries to the owned disposable fixture only, using maxRetries 5 and retryDelay 100 ms. Preserve the unchanged ten-second normal Electron quit and forced-cleanup failure.
+- [x] After verified owned-process termination, apply bounded recursive fs.rm retries to the owned disposable fixture only, using maxRetries 5 and retryDelay 100 ms. Preserve the unchanged ten-second normal Electron quit and forced-cleanup failure.
 
-- [ ] Record fixture cleanup separately. Test transient lock recovery, exhausted cleanup, and primary-failure preservation when cleanup also fails. Save cleanup outcomes before throwing; do not report failed cleanup as a pass.
+- [x] Record fixture cleanup separately. Test transient lock recovery, exhausted cleanup, and primary-failure preservation when cleanup also fails. Save cleanup outcomes before throwing; do not report failed cleanup as a pass.
 
-- [ ] Preserve exact matching-window cleanup only. Run affected lifecycle/evidence tests and standard task exit checks; commit.
+- [x] Preserve exact matching-window cleanup only. Run affected lifecycle/evidence tests and standard task exit checks; commit.
+
+#### Task 3 implementation and local verification
+
+The production graphical scenario now instruments the real native API before Create, then presses the newly available row's Reveal without Refresh, sibling selection, post-creation queries or settling waits. The harmless directory-package variant first waits for that row and prepares its owned non-execution probe; it has no artificial settling delay. Sibling/event/Text/inventory assertions still run afterward. Every real native call is counted, its exact destination is asserted, and the count is checked again after observation and localized feedback.
+
+Read-only exact-target observation uses one monotonic ten-second budget for subprocesses and pauses. Each subprocess timeout is capped by its remaining budget; the result retains attempts, per-attempt timeout/elapsed/status, total elapsed time and final completion reason. Parent and selected full-path predicates, target-as-data handling, privacy and exact matching-window cleanup are unchanged. API invocation, localized acknowledgment and exact file-manager outcome have independent evidence stages; pending or unavailable observation cannot complete the native scenario.
+
+Owned fixture removal runs only after tracked crash-seed/Electron processes have exited and tracked backend PIDs are absent. Recursive fs.rm receives maxRetries 5 and retryDelay 100 ms. Its separate top-level fixtureCleanup outcome is saved before throwing, and an existing scenario failure takes precedence over a cleanup failure. Unverified termination skips removal and fails the fixture. The existing ten-second normal quit and forced-cleanup failure remain unchanged.
+
+Verified on macOS arm64 with Node 22.21.1 against Task 3 working changes over dc31038 (fixed implementation/review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132). All Node/npm/npx commands explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH. The committed dependency resolution from Task 1 was reused unchanged.
+
+- Focused new regressions first failed because the bounded observation/cleanup functions did not exist (task3-regressions-red.log), then passed after implementation (task3-regressions-green.log).
+- Deterministic regressions cover delayed exact selection, repeated nonmatches, total deadline exhaustion, shrinking subprocess budgets, late success rejection, unavailable/unsupported observation, one invocation, cleanup confinement/termination gating, simulated transient lock recovery and exhausted cleanup with primary-error preservation. Simulated outcomes do not establish Windows OS behavior.
+- Final node --test tests/runtime-lifecycle.test.mjs tests/runtime-executable.test.mjs: 18 passed, 0 failed, 0 skipped (task3-runtime-tests-final.log).
+- Final npm test: build succeeded; 836 passed, 0 failed, 0 skipped (task3-npm-test-final.log). The earlier passing 835-test run before the final evidence/deadline regression additions remains in task3-npm-test.log.
+- npm run lint and npm run typecheck: passed (task3-lint.log and task3-typecheck.log).
+- npx --no-install electron-builder install-app-deps: rebuilt the native module for pinned Electron 44.7.0; npm rebuild better-sqlite3 restored the Node test ABI after graphical verification (task3-rebuild-electron.log and task3-rebuild-node.log).
+- WORKSPACE_SMOKE_EVIDENCE_DIR=work/ralphex/issue-17/task3-dev-immediate-20261010-1325 npm run smoke:runtime -- dev --creation --checkpoint=after_evidence: passed direct/EN and grouped/RU creation/recovery, immediate single real native invocation, localized acknowledgment, exact Finder selected item, both normal shutdowns per mode, restart persistence and separately successful owned-fixture cleanup. Exact-target predicates passed on their first attempts in approximately 331 ms and 201 ms respectively. Evidence: task3-dev-immediate.log and task3-dev-immediate-20261010-1325/dev-creation-observations.json.
+- Working and full fixed-base git diff --check: passed. All logs and graphical evidence remain under ignored work/ralphex/issue-17/.
+
+This local development run does not establish Windows lock recovery/Explorer acceptance, fresh packaged acceptance or the independent coordinator gates. Historical pending/failed runs and issue #44 remain unchanged. Documentation repairs are Task 4; final sequential development/fresh-package verification and handoff are Task 5.
 
 ### Task 4: Repair completed-plan links and current verification guidance
 

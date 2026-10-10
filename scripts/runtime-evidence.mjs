@@ -21,8 +21,8 @@ export function completeRuntimeStage(stages, stage) {
 // API acknowledgment or failure cleanup cannot establish an observed OS outcome.
 export function createCreationEvidence() {
   const stage = () => ({ status: "unreached" });
-  return { direct: { creation: stage(), interruptionRecovery: stage(), nativeInvocation: stage(), fileManagerOutcome: stage() },
-    grouped: { creation: stage(), interruptionRecovery: stage(), nativeInvocation: stage(), fileManagerOutcome: stage() },
+  return { direct: { creation: stage(), interruptionRecovery: stage(), nativeInvocation: stage(), nativeAcknowledgment: stage(), fileManagerOutcome: stage() },
+    grouped: { creation: stage(), interruptionRecovery: stage(), nativeInvocation: stage(), nativeAcknowledgment: stage(), fileManagerOutcome: stage() },
     normalShutdown: stage(), restartPersistence: stage() };
 }
 export function recordCreationEvidence(evidence, mode, stage, result) {
@@ -31,6 +31,7 @@ export function recordCreationEvidence(evidence, mode, stage, result) {
   if (!["passed", "failed", "skipped", "pending", "unreached"].includes(result.status)) throw new Error("Invalid evidence status");
   if (result.status === "passed") {
     if (result.asserted !== true) throw new Error("Passed evidence requires a completed assertion");
+    if (stage === "nativeAcknowledgment" && target.nativeInvocation.status !== "passed") throw new Error("Dispatch acknowledgment requires a passed native invocation");
     if (stage === "fileManagerOutcome" && (target.nativeInvocation.status !== "passed" || result.exactTargetObserved !== true)) {
       throw new Error("Observed opening requires a passed native invocation and exact target observation");
     }
