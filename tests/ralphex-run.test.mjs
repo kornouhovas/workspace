@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { initialize, phase, checkpoint, resume, readState } from '../scripts/ralphex-run.mjs';
+
+function assertSameFile(actual, expected) {
+  const identity = (path) => { const { dev, ino } = statSync(path, { bigint: true }); return { dev, ino }; };
+  assert.deepEqual(identity(actual), identity(expected));
+}
 
 function fixture(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'workspace-ralphex-')));
@@ -25,7 +30,7 @@ test('execute runs only tasks and a failed executor never advances review eviden
     calls++; captured = { command, args, cwd: options.cwd }; return { status: 1 };
   } });
   assert.equal(captured.command, 'ralphex'); assert.ok(captured.args.includes('--tasks-only')); assert.ok(!captured.args.includes('--review'));
-  assert.equal(captured.args[captured.args.indexOf('--base-ref') + 1], f.state.issueBaseSha); assert.equal(captured.cwd, f.root);
+  assert.equal(captured.args[captured.args.indexOf('--base-ref') + 1], f.state.issueBaseSha); assertSameFile(captured.cwd, f.root);
   assert.equal(result.status, 'failed'); assert.equal(calls, 1);
   assert.equal(readState(f.dir).lastReviewedSha, null);
 });
@@ -57,10 +62,10 @@ test('Ralphex plan archival is retained in the snapshot for the separate review 
     mkdirSync(join(f.root, 'docs/completed')); f.git('mv', 'docs/plan.md', 'docs/completed/plan.md');
     f.git('commit', '-qm', 'archive'); return { status: 0 };
   } });
-  assert.equal(readState(f.dir).plan, join(f.root, 'docs/completed/plan.md'));
+  assertSameFile(readState(f.dir).plan, join(f.root, 'docs/completed/plan.md'));
   let captured;
   phase(f.dir, 'review', { invoke(command, args) { captured = args; return { status: 0 }; } });
-  assert.ok(captured.includes(join(f.root, 'docs/completed/plan.md')));
+  assert.ok(captured.includes(readState(f.dir).plan));
 });
 
 test('a signaled executor or rewritten Git ancestry cannot advance the review receipt', (t) => {
