@@ -47,11 +47,17 @@ Task 1 local verification (macOS, Node 22.21.1): the focused `file-manager-evide
 - Create: `scripts/windows-rename-diagnostics.mjs`, `scripts/windows-rename-diagnostics.ps1` and `tests/windows-rename-diagnostics.test.mjs`.
 - Reuse: `src/service/settings.ts`, `source-observer.ts`, `discovery.ts` and existing SQLite fixture patterns.
 
-- [ ] Compare idle, active production observation/polling and concurrent scan/rename conditions using disposable grouped sources and real SQLite. Use a separate process for external rename so synchronous service scans can overlap it.
-- [ ] Set finite operation counts and wall-clock limits. Each rename uses a distinct owned fixture; record every result/code without retrying a failed operation.
-- [ ] Include an explicitly injected no-delete-sharing handle conflict to prove detection; distinguish injected failures from real reproductions. Record finite owned watcher/process/scan state without claiming complete OS handle attribution.
-- [ ] Verify no overwrite, sentinel bytes, logical IDs, exact Text/history, reconciliation and observer cleanup. Escalate to actual Electron backend runtime only if needed to match the failing environment.
-- [ ] Add tests for scenario orchestration, injected conflict detection, negative-result retention, protocol sanitization, bounds and cleanup. Run focused service/diagnostic checks and lint; commit.
+- [x] Compare idle, active production observation/polling and concurrent scan/rename conditions using disposable grouped sources and real SQLite. Use a separate process for external rename so synchronous service scans can overlap it.
+- [x] Set finite operation counts and wall-clock limits. Each rename uses a distinct owned fixture; record every result/code without retrying a failed operation.
+- [x] Include an explicitly injected no-delete-sharing handle conflict to prove detection; distinguish injected failures from real reproductions. Record finite owned watcher/process/scan state without claiming complete OS handle attribution.
+- [x] Verify no overwrite, sentinel bytes, logical IDs, exact Text/history, reconciliation and observer cleanup. Escalate to actual Electron backend runtime only if needed to match the failing environment.
+- [x] Add tests for scenario orchestration, injected conflict detection, negative-result retention, protocol sanitization, bounds and cleanup. Run focused service/diagnostic checks and lint; commit.
+
+Task 2 local verification (macOS, Node 22.21.1): the diagnostic, source-observer, grouped-discovery-service, discovery-mode-service and settings-service suites reported 115 tests, 114 passed, one Windows-only skip, zero failures. The service test library build, lint, typecheck, check:docs and working/fixed-base diff checks passed. Portable tests use a genuine external Node rename process and real production service/SQLite; controlled negative responses are simulations. The actual PowerShell/Win32 bridge was not executed locally.
+
+The diagnostic runs two distinct fixtures per condition: idle (service closed), active native observation including a five-second health callback, concurrent explicit production scans, injected no-delete-sharing conflict and occupied-destination control. Each worker has a 25-second budget, the PowerShell bridge ten seconds, termination confirmation one second, and concurrent scanning at most 128 scans/six seconds. A readiness signal puts compilation before the concurrent scan comparison; recorded wall-clock scan/rename intervals establish only timing evidence, not complete OS handle attribution. There is one nonreplacing MoveFileExW call per fixture and no failed-operation retry. Unknown worker/descendant termination or invalid worker protocol preserves the fixture and an unverified cleanup result.
+
+After the service test library build, run the diagnostic with the required Node 22.21.1 PATH selection, `WORKSPACE_RENAME_EVIDENCE_DIR` pointing to a fresh ignored evidence directory and entry `node --import tsx scripts/windows-rename-diagnostics.mjs`. The bounded `rename-observations.json` records actual checkout SHA/runtime, per-operation native code, resource counters at rename/after close, timing intervals, invariant results and cleanup. `status: completed` means the probes completed and their safety checks held; it does not require zero real rename failures. Inspect `realRenameFailures` and every operation separately. Neither a clean run nor an injected failure diagnoses historical EPERM. Electron backend escalation remains conditional on coordinator Windows evidence.
 
 ### Task 3: Deliver isolated fast Windows CI and coordinator checkpoint
 
@@ -93,6 +99,8 @@ The coordinator pushes the diagnostic commit and supplies actual Windows artifac
 ## Post-Completion: External Coordinator Gates
 
 - Task 1 Windows execution gate: the six Windows-only fixtures were not executed on the local macOS host. Batched COM fixture reliability under Windows suite load, actual Explorer ItemsView/SelectionItemPattern support, owned-window cleanup and exact-code product selection remain unverified until coordinator-supplied Windows artifacts. Local controlled protocol tests are not Windows acceptance; unsupported/ambiguous providers remain unavailable. No native or shutdown cause is established by this diagnostic implementation.
+
+- Task 2 Windows execution gate: the actual PowerShell/Win32 conflict, occupied-destination and production Windows root-watcher/polling scenarios remain unverified. The Windows-only test was skipped on macOS; no external acceptance was marked complete. Coordinator must obtain exact-code Windows artifacts, inspect negative/unavailable outcomes and scan/rename timing before deciding whether an actual Electron-backend reproduction or repair is warranted.
 
 - Coordinator obtains exact-code macOS/Windows acceptance for repaired direct/grouped DEV and packaged selection, external category rename, recovery, normal quit and restart.
 - Failed, skipped and unreached stages remain explicit. Historical Windows shutdown uncertainty and independent issue #44 are preserved.
