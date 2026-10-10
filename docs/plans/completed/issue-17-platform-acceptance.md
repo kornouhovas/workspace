@@ -345,6 +345,8 @@ Affected verification passed on the repair tree over 35337db: eight focused orde
 
 ## Post-Completion: Coordinator Gates
 
+The bounded review continuation after coordinator CI 38046397144 preserves completed Tasks 1–5. All five perspectives were collected against dfe1afc before repairs; quality/implementation/testing identified one shared Windows observer diagnostic gap, while simplification/documentation found no issues. Structured read-only Windows diagnostics and deterministic regressions address that gap without claiming a native repair or completing platform acceptance. The [verification addendum](../../verification/issue-17-create-reveal.md#bounded-windows-observation-diagnostics-after-completed-plan-handoff) preserves the failing SHA, evidence, primary-source investigation and actual validation. Required follow-up quality/implementation review and new coordinator Windows evidence remain gates; no task or acceptance checkbox is advanced by instrumentation.
+
 - Coordinator independently reruns its immediate-Reveal harness in a new evidence directory.
 
 - Coordinator owns final exact-SHA Windows/macOS CI and native acceptance, including all 53 Windows failures, exact Explorer/Finder observation and successful owned-fixture cleanup.

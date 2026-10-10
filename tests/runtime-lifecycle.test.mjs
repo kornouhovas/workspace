@@ -133,8 +133,11 @@ test("native observation records only exact-target booleans and keeps unavailabl
   const { observeFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
   const target = "C:\\Disposable\\Folder's name $value";
   let call;
-  const run = async (...args) => { call = args; return { stdout: "true\n" }; };
-  assert.deepEqual(await observeFileManagerTarget(target, "win32", run), { status: "passed", asserted: true, exactTargetObserved: true });
+  const run = async (...args) => { call = args; return { stdout: args[0] === "powershell.exe" ? JSON.stringify({
+    exactParentFound: true, targetPresent: true, selectedTargetMatch: true, exactParentCount: 1, errorCount: 0, errors: [],
+  }) : "true\n" }; };
+  const windows = await observeFileManagerTarget(target, "win32", run);
+  assert.equal(windows.status, "passed"); assert.equal(windows.exactTargetObserved, true);
   assert.equal(call[2].env.WORKSPACE_OBSERVE_TARGET, target);
   assert.equal(call[1].join(" ").includes(target), false, "Target must remain data, never PowerShell code");
   assert.deepEqual(await observeFileManagerTarget("/tmp/disposable", "darwin", run), { status: "passed", asserted: true, exactTargetObserved: true });
@@ -178,7 +181,9 @@ test("bounded observation waits for an asynchronous exact target without another
   const result = await waitForFileManagerTarget("C:\\Disposable\\selected", "win32", async (_program, _args, options) => {
     assert.ok(options.timeout <= 10000 - elapsed);
     elapsed += 50;
-    return { stdout: ++reads === 3 ? "true" : "false" };
+    const matched = ++reads === 3;
+    return { stdout: JSON.stringify({ exactParentFound: matched, targetPresent: matched, selectedTargetMatch: matched,
+      exactParentCount: matched ? 1 : 0, errorCount: 0, errors: [] }) };
   }, { now: () => elapsed, sleep: async (ms) => { elapsed += ms; } });
   assert.equal(result.status, "passed");
   assert.equal(result.exactTargetObserved, true);
