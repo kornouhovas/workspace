@@ -11,7 +11,7 @@ export const renameFixtureNames = Object.freeze({
   target: 'Renamed 文-' + 'long-category-'.repeat(14),
 });
 const allowedCodes = ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY', 'EINVAL', 'ENAMETOOLONG', 'UNKNOWN'];
-export const renameStressModes = Object.freeze({ stress_idle: 'idle', stress_native: 'native', stress_legacy: 'legacy' });
+export const renameStressModes = Object.freeze({ stress_idle: 'idle', stress_native: 'native', stress_legacy: 'legacy', stress_scan: 'scan' });
 export const renameStressBounds = Object.freeze({ stressMs: 1000, stressIterations: 100000, stressOperationsPerScenario: 4 });
 const nodeScenarios = ['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control',
   'child_injected_conflict', 'child_delete_shared_control', ...Object.keys(renameStressModes)];

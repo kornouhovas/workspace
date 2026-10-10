@@ -21,14 +21,17 @@ const count = (n, max = 100000) => Number.isInteger(n) && n >= 0 && n <= max;
 const timestamp = (n) => Number.isSafeInteger(n) && n >= 0 && n <= 8640000000000000;
 const code = (error) => ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY'].includes(error?.code) ? error.code : 'unknown';
 const serviceClosed = scenario => scenario === 'idle' || Object.hasOwn(renameStressModes, scenario);
-const conflictControl = scenario => ['injected_conflict', 'child_injected_conflict'].includes(scenario);
-const sharedControl = scenario => ['delete_shared_control', 'child_delete_shared_control'].includes(scenario);
+// Sharing DELETE on a child does not grant rename of its parent (exact c8
+// Windows evidence). Keep this blocked-parent comparison distinct from the
+// category DELETE-sharing success contrast.
+const conflictControl = scenario => ['injected_conflict', 'child_injected_conflict', 'child_delete_shared_control'].includes(scenario);
+const sharedControl = scenario => scenario === 'delete_shared_control';
 
 export function parseRealpathResponse(text, scenario) {
   if (typeof text !== 'string' || Buffer.byteLength(text) > 4096 || !Object.hasOwn(renameStressModes, scenario)) return null;
   try {
     const v = JSON.parse(text), keys = ['ENOENT', 'EPERM', 'EACCES', 'EBUSY', 'ENOTDIR', 'unknown'];
-    if (!v || v.version !== 1 || v.mode !== renameStressModes[scenario] || v.target !== 'child' || v.stage !== 'completed' ||
+    if (!v || v.version !== 1 || v.mode !== renameStressModes[scenario] || v.target !== (v.mode === 'scan' ? 'grouped_source' : 'child') || v.stage !== 'completed' ||
       !count(v.iterations, renameBounds.stressIterations) || !count(v.successes, v.iterations) ||
       !keys.every(key => count(v.errors?.[key], v.iterations)) ||
       v.successes + keys.reduce((sum, key) => sum + v.errors[key], 0) !== v.iterations ||
@@ -37,9 +40,18 @@ export function parseRealpathResponse(text, scenario) {
       ![v.startedUnixMs, v.readyUnixMs, v.endedUnixMs].every(timestamp) || v.readyUnixMs < v.startedUnixMs ||
       v.endedUnixMs < v.readyUnixMs || v.endedUnixMs - v.startedUnixMs > renameBounds.bridgeMs ||
       (v.mode === 'idle' ? v.iterations !== 0 : v.iterations === 0 || v.successes === 0)) return null;
-    return { version: 1, mode: v.mode, target: 'child', stage: 'completed', iterations: v.iterations, successes: v.successes,
+    let scanStates = null;
+    if (v.mode === 'scan') {
+      const states = ['ready', 'empty', 'changed', 'unavailable', 'unreadable', 'root_identity_conflict'];
+      if (!states.every(key => count(v.scanStates?.[key], v.iterations)) ||
+        states.reduce((sum, key) => sum + v.scanStates[key], 0) !== v.iterations ||
+        v.successes !== v.scanStates.ready + v.scanStates.empty || v.errors.unknown !== v.iterations - v.successes ||
+        keys.filter(key => key !== 'unknown').some(key => v.errors[key] !== 0)) return null;
+      scanStates = Object.fromEntries(states.map(key => [key, v.scanStates[key]]));
+    } else if (v.scanStates != null) return null;
+    return { version: 1, mode: v.mode, target: v.target, stage: 'completed', iterations: v.iterations, successes: v.successes,
       errors: Object.fromEntries(keys.map(key => [key, v.errors[key]])), afterRenameSignalEnoent: v.afterRenameSignalEnoent,
-      renameCompletedSignal: v.renameCompletedSignal, startedUnixMs: v.startedUnixMs, readyUnixMs: v.readyUnixMs, endedUnixMs: v.endedUnixMs };
+      renameCompletedSignal: v.renameCompletedSignal, scanStates, startedUnixMs: v.startedUnixMs, readyUnixMs: v.readyUnixMs, endedUnixMs: v.endedUnixMs };
   } catch { return null; }
 }
 
@@ -127,7 +139,7 @@ export async function invokeExternalRename(directory, scenario, { onReady, runPr
     readyMarker: scenario === 'concurrent_scan' ? 'WORKSPACE_RENAME_READY' : undefined, onReady, env });
   if (Object.hasOwn(renameStressModes, scenario)) {
     let nodePending;
-    const stress = await runProcess(process.execPath, [realpathWorker], { timeoutMs: renameBounds.bridgeMs, maxBytes: 4096, env,
+    const stress = await runProcess(process.execPath, ['--import', 'tsx', realpathWorker], { timeoutMs: renameBounds.bridgeMs, maxBytes: 4096, env,
       readyMarker: 'WORKSPACE_REALPATH_READY', readyInput: 'finished\n', waitForReadyCallback: true,
       onReady: async () => { nodePending = invokeNode(); await nodePending; } });
     const node = await nodePending;
@@ -170,7 +182,8 @@ const validProcess = value => value && ['not_started', 'confirmed', 'unknown'].i
   ['completed', 'timeout', 'output_limit', 'launch_error', 'process_error', 'not_attempted'].includes(value.status) &&
   (value.exitCode === null || (Number.isInteger(value.exitCode) && Math.abs(value.exitCode) <= 2147483648));
 const controlDetected = (scenario, response) => conflictControl(scenario)
-  ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && !response.renamed && ['EPERM', 'EACCES', 'EBUSY'].includes(response.nodeCode)
+  ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && !response.renamed &&
+    (scenario.startsWith('child_') ? response.nodeCode === 'EPERM' : ['EPERM', 'EACCES', 'EBUSY'].includes(response.nodeCode))
   : sharedControl(scenario) ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && response.renamed
   : scenario === 'collision_control' ? response.api === 'move_file_ex' && !response.renamed && response.win32Code > 0
     : response.api === 'node_fs_rename' && !response.lockOpened && !response.lockReleased;
@@ -356,7 +369,7 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
     collisionOperation: { api: 'MoveFileExW', flags: 0, replacing: false },
     handleControls: { access: 'GENERIC_READ', conflictShare: 'READ|WRITE', contrastShare: 'READ|WRITE|DELETE', holder: 'separate-powershell-process', targets: ['category', 'child'] },
     realpathStress: { target: 'child', modes: renameStressModes, serviceState: 'closed', worker: 'separate-node-process',
-      enoent: 'afterRenameSignalEnoent-is-separate-from-the-rename-result', timing: 'interval-overlap-not-OS-handle-attribution' },
+      enoent: 'afterRenameSignalEnoent-is-separate-from-the-rename-result', timing: 'interval-overlap-not-OS-handle-attribution', scan: 'production-scanGroupedSource-no-injected-resolver' },
     pathShape: 'historical-long-unicode-category-and-project',
     scanTiming: 'wall-clock-intervals-not-OS-handle-attribution', operations: [], failure: null };
   if (!result.metadata.codeSha) result.failure = 'revision_unavailable';

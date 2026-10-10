@@ -341,3 +341,107 @@ test("repeated nonmatching observations remain pending at the deadline", async (
   assert.ok(result.attempts.length > 1);
   assert.equal(result.attempts.some((attempt) => attempt.status === "passed"), false);
 });
+
+test('runtime fixture cleanup checks recorded parents/backends after the active UI session is cleared', async () => {
+  const { ownedProcessesStopped, cleanupOwnedFixture } = await import('../scripts/runtime-lifecycle.mjs');
+  const primary = new Error('Electron shutdown timed out after 10000ms');
+  const child = { exitCode: null, signalCode: null };
+  const children = new Set([child]), pids = new Set([23456]);
+  const outcomes = []; let removes = 0;
+  const gone = () => { throw Object.assign(new Error('gone'), { code: 'ESRCH' }); };
+  async function cleanup() {
+    return cleanupOwnedFixture('owned-fixture', {
+      processesStopped: ownedProcessesStopped(children, pids, { probe: gone }), primaryFailure: primary,
+      record: async outcome => outcomes.push(outcome),
+    }, async () => { removes++; throw Object.assign(new Error('journal locked'), { code: 'EBUSY' }); });
+  }
+  await assert.rejects(cleanup(), error => error === primary);
+  assert.equal(removes, 0); assert.equal(outcomes.at(-1).status, 'skipped');
+  child.exitCode = 1;
+  assert.equal(ownedProcessesStopped(children, pids, { probe: () => {} }), false, 'live utility process must block removal');
+  assert.equal(ownedProcessesStopped(children, pids, { probe: () => { throw Object.assign(new Error('denied'), { code: 'EPERM' }); } }), false);
+  assert.equal(ownedProcessesStopped(children, pids, { probe: gone, launchUnverified: true }), false);
+  assert.equal(ownedProcessesStopped(children, pids, { probe: gone }), true);
+  await assert.rejects(cleanup(), error => error === primary);
+  assert.equal(removes, 1); assert.equal(outcomes.at(-1).code, 'EBUSY');
+});
+
+test('full runtime wiring retains launch ownership and uses guarded cleanup rather than unconditional removal', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../scripts/smoke-runtime.mjs', import.meta.url), 'utf8');
+  assert.ok(source.indexOf('ownedProcesses.add(electron.process())') < source.indexOf('electron.firstWindow('));
+  assert.match(source, /for \(const pid of pids\) ownedBackendPids.add\(pid\)/);
+  assert.match(source, /await cleanupOwnedFixture\(fixture, \{\s*processesStopped: ownedProcessesStopped\(ownedProcesses, ownedBackendPids, \{ launchUnverified \}\), primaryFailure/);
+  assert.match(source, /fixtureCleanup = outcome/);
+  assert.match(source, /closeCurrent\(\{ kind: "failed-startup", requireBackend: false \}\)/);
+  assert.doesNotMatch(source, /await rm\(fixture/);
+  const launchSource = source.slice(source.indexOf('async function launch('), source.indexOf('async function backendPids('));
+  assert.ok(launchSource.indexOf('launchUnverified = false') > launchSource.indexOf('await backendPids(electron)'));
+  assert.match(source, /await closeRuntimeSession\(closing.electron/);
+});
+
+test('runtime close still attempts quit when backend metrics or pre-close evidence fails', async () => {
+  const { closeRuntimeSession } = await import('../scripts/runtime-lifecycle.mjs');
+  for (const failingStep of ['metrics', 'evidence']) {
+    const primary = new Error(`${failingStep} failed`), shutdown = { passed: false };
+    let closes = 0, verified = 0;
+    const electron = {};
+    await assert.rejects(closeRuntimeSession(electron, {
+      shutdown,
+      readBackendPids: async () => { if (failingStep === 'metrics') throw primary; return [12345]; },
+      beforeClose: async () => { if (failingStep === 'evidence') throw primary; },
+      assertBackendsStopped: async pids => { assert.deepEqual(pids, failingStep === 'metrics' ? [] : [12345]); verified++; },
+    }, async app => { assert.equal(app, electron); closes++; }), error => error === primary);
+    assert.equal(closes, 1); assert.equal(verified, 1); assert.equal(shutdown.passed, false);
+    assert.equal(shutdown[failingStep === 'metrics' ? 'ownershipError' : 'evidenceError'], primary.message);
+  }
+});
+
+test('runtime close keeps shutdown timeout separate from unavailable metrics and cleanup cannot promote it', async () => {
+  const { closeRuntimeSession } = await import('../scripts/runtime-lifecycle.mjs');
+  const timeout = Object.assign(new Error('Electron shutdown timed out after 10000ms'), {
+    forcedCleanup: { status: 'failed', processStopped: false },
+  });
+  const shutdown = { passed: false };
+  await assert.rejects(closeRuntimeSession({}, {
+    shutdown, readBackendPids: async () => { throw new Error('metrics unavailable'); }, beforeClose: async () => {},
+    assertBackendsStopped: async () => { assert.fail('normal exit is not established'); },
+  }, async () => { throw timeout; }), error => error === timeout);
+  assert.equal(shutdown.passed, false);
+  assert.equal(shutdown.error, timeout.message);
+  assert.equal(shutdown.ownershipError, 'metrics unavailable');
+  assert.deepEqual(shutdown.forcedCleanup, timeout.forcedCleanup);
+});
+
+test('actual runtime launch keeps early window/path failures unverified after owned parent exits', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { ownedProcessesStopped } = await import('../scripts/runtime-lifecycle.mjs');
+  const source = await readFile(new URL('../scripts/smoke-runtime.mjs', import.meta.url), 'utf8');
+  const launchSource = source.slice(source.indexOf('async function launch('), source.indexOf('async function backendPids('));
+  const invoke = new Function('dependencies', `return (async () => {
+    const { mkdir, console, _electron, mode, executablePath, root, process, ownedProcesses,
+      withDeadline, assert, backendPids, closeElectron } = dependencies;
+    let launchUnverified = false;
+    ${launchSource}
+    try { await launch('owned-data'); throw new Error('Expected launch failure'); }
+    catch (error) { return { error, launchUnverified }; }
+  })()`);
+  for (const step of ['window', 'paths']) {
+    const primary = new Error(`${step} unavailable`);
+    const child = { exitCode: null, signalCode: null }, ownedProcesses = new Set();
+    let closes = 0;
+    const page = { setDefaultTimeout() {}, setDefaultNavigationTimeout() {}, on() {} };
+    const result = await invoke({
+      mkdir: async () => {}, console: { info() {} }, mode: 'dev', executablePath: 'electron', root: 'owned-root', process: { env: {} },
+      ownedProcesses, withDeadline, assert, backendPids: async () => { assert.fail('backend capture was not reached'); },
+      _electron: { launch: async () => ({ process: () => child,
+        firstWindow: async () => { if (step === 'window') throw primary; return page; },
+        evaluate: async () => { throw primary; },
+      }) },
+      closeElectron: async () => { closes++; child.exitCode = 1; },
+    });
+    assert.equal(result.error, primary); assert.equal(closes, 1);
+    assert.equal(ownedProcesses.has(child), true); assert.equal(result.launchUnverified, true);
+    assert.equal(ownedProcessesStopped(ownedProcesses, [], { launchUnverified: result.launchUnverified }), false);
+  }
+});

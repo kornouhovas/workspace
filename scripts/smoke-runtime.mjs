@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readdir, readFile, readlink, realpath, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { _electron } from "playwright-core";
 import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { createRuntimeStages, completeRuntimeStage } from "./runtime-evidence.mjs";
-import { closeElectron, withDeadline } from "./runtime-lifecycle.mjs";
+import { cleanupOwnedFixture, closeElectron, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { measureDiscoveryLayout } from "./runtime-layout.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,11 +25,14 @@ if (process.argv.includes("--creation")) {
 
 await stat(executablePath);
 const fixture = await mkdtemp(join(tmpdir(), "workspace-runtime-"));
+const ownedProcesses = new Set(), ownedBackendPids = new Set();
+let launchUnverified = false;
 const workspaceName = "Runtime-workspace-with-a-very-long-unbroken-name-for-layout-verification";
 
 async function launch(dataDirectory, rootPickerPath) {
   await mkdir(dataDirectory, { recursive: true });
   console.info(`Launching Electron ${mode}`);
+  launchUnverified = true;
   const electron = await _electron.launch({
     executablePath,
     args: mode === "dev" ? [root] : [],
@@ -41,6 +44,7 @@ async function launch(dataDirectory, rootPickerPath) {
     },
     timeout: 30000,
   });
+  ownedProcesses.add(electron.process());
   try {
     console.info("Electron launched; waiting for the first window");
     const page = await electron.firstWindow({ timeout: 30000 });
@@ -53,6 +57,8 @@ async function launch(dataDirectory, rootPickerPath) {
       sessionData: app.getPath("sessionData"),
     })), 10000, "Electron data paths");
     assert.deepEqual(paths, { userData: dataDirectory, sessionData: dataDirectory });
+    await backendPids(electron);
+    launchUnverified = false;
     return { electron, page };
   } catch (error) {
     try { await closeElectron(electron); }
@@ -62,9 +68,16 @@ async function launch(dataDirectory, rootPickerPath) {
 }
 
 async function backendPids(electron) {
-  return withDeadline(electron.evaluate(({ app }) => app.getAppMetrics()
-    .filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node"))
-    .map((metric) => metric.pid)), 10000, "Electron backend metrics");
+  try {
+    const pids = await withDeadline(electron.evaluate(({ app }) => app.getAppMetrics()
+      .filter((metric) => metric.type === "Utility" && metric.serviceName?.includes("Node"))
+      .map((metric) => metric.pid)), 10000, "Electron backend metrics");
+    for (const pid of pids) ownedBackendPids.add(pid);
+    return pids;
+  } catch (error) {
+    launchUnverified = true;
+    throw error;
+  }
 }
 
 async function assertStopped(pids) {
@@ -86,10 +99,11 @@ if (evidenceDirectory) await mkdir(evidenceDirectory, { recursive: true });
 const observations = [];
 const stages = createRuntimeStages();
 const shutdowns = [];
+let fixtureCleanup;
 
 async function recordEvidence(status, error) {
   if (evidenceDirectory) await writeFile(join(evidenceDirectory, `${mode}-observations.json`), JSON.stringify({
-    mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns,
+    mode, platform: process.platform, arch: process.arch, executablePath, status, stages, shutdowns, fixtureCleanup,
     ...(error ? { error: error.message } : {}), observations,
   }, null, 2) + "\n");
 }
@@ -251,6 +265,22 @@ async function captureLayouts(page, language, name) {
 let current;
 let scenarioFailure;
 let cleanupFailure;
+async function closeCurrent({ kind = "normal", requireBackend = true } = {}) {
+  const closing = current; current = undefined;
+  const shutdown = { attempt: shutdowns.length + 1, kind, passed: false }; shutdowns.push(shutdown);
+  await closeRuntimeSession(closing.electron, {
+    shutdown,
+    readBackendPids: async electron => {
+      const pids = await backendPids(electron);
+      if (requireBackend) assert.ok(pids.length > 0, "No owned Node utility process is running");
+      return pids;
+    },
+    beforeClose: () => recordEvidence("feature assertions before quit"),
+    assertBackendsStopped: assertStopped,
+  });
+  await recordEvidence("normal quit and backend exit passed");
+}
+
 try {
   const dataDirectory = join(fixture, "normal");
   const projectRoot = join(fixture, `SelectedProjectRoot-${"a".repeat(90)}`);
@@ -1057,16 +1087,6 @@ try {
   stages.recoveryFeatures = true;
   await select(page, first);
 
-  async function closeCurrent() {
-    const pids = await backendPids(current.electron);
-    assert.ok(pids.length > 0, "No owned Node utility process is running");
-    await recordEvidence("feature assertions before quit");
-    const closing = current; current = undefined;
-    const shutdown = { attempt: shutdowns.length + 1, passed: false }; shutdowns.push(shutdown);
-    try { await closeElectron(closing.electron); await assertStopped(pids); shutdown.passed = true; }
-    catch (error) { shutdown.error = error.message; shutdown.forcedCleanup = error.forcedCleanup; throw error; }
-    await recordEvidence("normal quit and backend exit passed");
-  }
   const metadataBeforeQuit = await storageMetadata();
   stages.preQuitFeatures = true;
   await closeCurrent();
@@ -1213,11 +1233,8 @@ try {
     diagnostic: { stage: "service_open", code: "SQLITE_NOTADB" },
   });
   stages.startupFailure = true;
-  const failurePids = await backendPids(current.electron);
   await recordEvidence("startup failure asserted before quit");
-  const closing = current; current = undefined;
-  await closeElectron(closing.electron);
-  await assertStopped(failurePids);
+  await closeCurrent({ kind: "failed-startup", requireBackend: false });
   await recordEvidence("passed");
   console.info(`Electron ${mode} runtime verified: configured-mode round trip/recovery/discovery/exclusions/cancel/Apply, metadata-only category label, persistent project IDs/Text definitions and values/Table, stale preview, shared-source notifications, unavailable-root retention, restart/removal/reuse, unchanged bytes, EN/RU layouts, isolation, backend exit, startup failure`);
 } catch (error) {
@@ -1225,24 +1242,20 @@ try {
   if (current && evidenceDirectory) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
   await recordEvidence("failed", error);
 } finally {
-  try {
-    if (current) {
-      const closing = current; current = undefined;
-      const shutdown = { attempt: shutdowns.length + 1, kind: "failure cleanup", passed: false };
-      shutdowns.push(shutdown);
-      try { await closeElectron(closing.electron); shutdown.passed = true; }
-      catch (cleanupError) {
-        cleanupFailure = cleanupError;
-        shutdown.error = cleanupError.message;
-        shutdown.forcedCleanup = cleanupError.forcedCleanup;
-        await recordEvidence("failed", scenarioFailure ?? cleanupError);
-      }
-      await recordEvidence("failed", scenarioFailure);
-    }
-  } finally { await rm(fixture, { recursive: true, force: true }); }
+  if (current) {
+    try { await closeCurrent({ kind: "failure cleanup", requireBackend: false }); }
+    catch (error) { cleanupFailure = error; }
+  }
+  const primaryFailure = scenarioFailure && cleanupFailure
+    ? new AggregateError([scenarioFailure, cleanupFailure], "Runtime scenario and cleanup failed")
+    : scenarioFailure ?? cleanupFailure;
+  await cleanupOwnedFixture(fixture, {
+    processesStopped: ownedProcessesStopped(ownedProcesses, ownedBackendPids, { launchUnverified }), primaryFailure,
+    record: async outcome => {
+      fixtureCleanup = outcome;
+      await recordEvidence(primaryFailure || outcome.status !== "passed" ? "failed" : "passed", primaryFailure);
+    },
+  });
 }
-if (scenarioFailure && cleanupFailure) throw new AggregateError([scenarioFailure, cleanupFailure], "Runtime scenario and cleanup failed");
-if (scenarioFailure) throw scenarioFailure;
-if (cleanupFailure) throw cleanupFailure;
 
 }

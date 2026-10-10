@@ -65,6 +65,14 @@ function changed(before: DirectoryObservation, after: DirectoryObservation): boo
 class ScanChanged extends Error {}
 class RootConflict extends Error {}
 
+// Windows native realpath briefly opens the descendant without sharing, which
+// can block an external rename of its parent. Entry spelling comes from the
+// verified directory enumeration; legacy realpath still resolves ancestor links.
+// Keep source-root canonicalization native and all identity/path checks intact.
+function descendantRealpath(path: string): string {
+  return process.platform === "win32" ? realpathSync(path) : realpathSync.native(path);
+}
+
 function automaticDirectoryReason(name: string, archiveChild: string | null): ExcludedObservation["reason"] | null {
   return name.startsWith(".") ? "hidden"
     : ["$recycle.bin", "system volume information"].includes(name.toLowerCase()) ? "service"
@@ -96,7 +104,7 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
       const child = observation(entry.name, lstatSync(path, { bigint: true }));
       // Links/junctions are never resolved, opened or enumerated. Project contents are never read.
       if (child.kind === "directory") {
-        const resolved = realpathSync.native(path);
+        const resolved = descendantRealpath(path);
         if (relative(canonicalRoot, resolved) !== entry.name || resolved !== path) throw new ScanChanged();
         if (changed(child, observation(entry.name, lstatSync(path, { bigint: true })))) throw new ScanChanged();
       }
@@ -159,7 +167,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     const path = join(canonicalRoot, parent.relativePath);
     // lstat first: a swapped link must never be resolved or traversed.
     if (changed(parent, observation(parent.relativePath, lstatSync(path, { bigint: true }))) ||
-      realpathSync.native(path) !== path) throw new ScanChanged();
+      (parent.relativePath === "" ? realpathSync.native(path) : descendantRealpath(path)) !== path) throw new ScanChanged();
   };
   const readLevel = (parent: DirectoryObservation, archiveName: string | null) => {
     verify(root); verify(parent);
@@ -211,7 +219,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     const path = join(canonicalRoot, relativePath);
     const child = observation(relativePath, lstatSync(path, { bigint: true }));
     if (child.kind === "directory") {
-      if (realpathSync.native(path) !== path) throw new ScanChanged();
+      if (descendantRealpath(path) !== path) throw new ScanChanged();
       verify(root); verify(parent); verify(child);
     }
     children.push(child);
