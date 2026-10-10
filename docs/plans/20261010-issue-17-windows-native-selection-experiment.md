@@ -2,7 +2,7 @@
 
 ## Overview
 
-Prepare one isolated Windows diagnostic experiment using the documented single-item SHOpenFolderAndSelectItems form. Preserve positive, negative and unavailable results separately from Workspace acceptance. Implementation begins only after coordinator review of this draft.
+This coordinator-reviewed plan defines one isolated Windows diagnostic experiment using the documented single-item SHOpenFolderAndSelectItems form. Positive, negative and unavailable results remain separate from Workspace acceptance. Local implementation and verification milestones are complete; actual Windows execution and product acceptance remain external coordinator gates.
 
 ## Context
 
@@ -15,7 +15,7 @@ Prepare one isolated Windows diagnostic experiment using the documented single-i
 - Create scripts/windows-native-selection.mjs, scripts/windows-native-selection.ps1 and tests/windows-native-selection.test.mjs.
 - Extend .github/workflows/desktop-ci.yml with an independent Windows job; append evidence guidance to docs/verification/issue-17-create-reveal.md.
 - Dependencies: Node 22.21.1, system Windows PowerShell, Add-Type/PInvoke and Node built-ins. No npm installation, Electron build or new dependency is needed for the experiment.
-- Proposed accepted-plan path: docs/plans/20261010-issue-17-windows-native-selection-experiment.md.
+- Accepted-plan path: docs/plans/20261010-issue-17-windows-native-selection-experiment.md.
 
 ## Native contract and sources
 
