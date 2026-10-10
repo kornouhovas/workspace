@@ -5,12 +5,17 @@ $ErrorActionPreference = 'Stop'
 # CoInitializeEx and ILFree/CoTaskMemFree documentation linked in the plan.
 $bridgeSource = @'
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace WorkspaceNativeSelection {
     public sealed class Result {
-        public int version = 1;
+        public int version = 2;
+        public string mode;
+        public int? parentParseHresult;
+        public bool parentPidlAllocated = false;
+        public string parentPidlCleanup = "not_needed";
         public string stage = "input";
         public bool exception = false;
         public int? initializeHresult;
@@ -32,7 +37,8 @@ namespace WorkspaceNativeSelection {
     public sealed class NativeCalls {
         public Func<IntPtr, uint, int> Initialize;
         public ParseCall Parse;
-        public Func<IntPtr, uint, IntPtr, uint, int> Select;
+        public Func<IntPtr, uint, IntPtr[], uint, int> Select;
+        public Func<IntPtr, IntPtr> LastId;
         public Action<IntPtr> Free;
         public Action Uninitialize;
 
@@ -41,6 +47,7 @@ namespace WorkspaceNativeSelection {
                 Initialize = Native.CoInitializeEx,
                 Parse = Native.SHParseDisplayName,
                 Select = Native.SHOpenFolderAndSelectItems,
+                LastId = Native.ILFindLastID,
                 Free = Native.CoTaskMemFree,
                 Uninitialize = Native.CoUninitialize
             };
@@ -60,19 +67,27 @@ namespace WorkspaceNativeSelection {
             out IntPtr pidl, uint requestedAttributes, out uint attributes);
         [DllImport("shell32.dll", ExactSpelling = true, PreserveSig = true)]
         internal static extern int SHOpenFolderAndSelectItems(
-            IntPtr absoluteTarget, uint count, IntPtr children, uint flags);
+            IntPtr absoluteTarget, uint count,
+            [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] children, uint flags);
+        [DllImport("shell32.dll", ExactSpelling = true)]
+        internal static extern IntPtr ILFindLastID(IntPtr pidl);
     }
 
     public static class Bridge {
-        public static Result Run(string target) {
-            return Run(target, NativeCalls.SystemCalls());
+        public static Result Run(string target, string mode) {
+            return Run(target, mode, NativeCalls.SystemCalls());
         }
 
-        public static Result Run(string target, NativeCalls calls) {
+        public static Result Run(string target, string mode, NativeCalls calls) {
             var result = new Result();
+            if (mode != "electron_absolute" && mode != "relative_child" && mode != "zero_child") return result;
+            result.mode = mode;
             if (String.IsNullOrEmpty(target) || target.IndexOf('\0') >= 0) return result;
+            string parent;
+            try { parent = Path.GetDirectoryName(target); } catch { return result; }
+            if (String.IsNullOrEmpty(parent)) return result;
             // All native operations and cleanup run on this same dedicated STA.
-            var worker = new Thread(delegate() { Execute(target, calls, result); });
+            var worker = new Thread(delegate() { Execute(parent, target, mode, calls, result); });
             worker.IsBackground = true;
             worker.SetApartmentState(ApartmentState.STA);
             worker.Start();
@@ -80,8 +95,8 @@ namespace WorkspaceNativeSelection {
             return result;
         }
 
-        private static void Execute(string target, NativeCalls calls, Result result) {
-            IntPtr pidl = IntPtr.Zero;
+        private static void Execute(string parent, string target, string mode, NativeCalls calls, Result result) {
+            IntPtr pidl = IntPtr.Zero, parentPidl = IntPtr.Zero;
             bool initialized = false;
             try {
                 result.stage = "initialize";
@@ -89,16 +104,29 @@ namespace WorkspaceNativeSelection {
                 initialized = result.initializeHresult.Value >= 0;
                 if (!initialized) return; // Includes RPC_E_CHANGED_MODE: no parse/select/uninitialize.
 
-                result.stage = "parse";
+                // Matched preparation for all conditions, including zero_child.
+                result.stage = "parse_parent";
                 uint attributes;
+                result.parentParseHresult = calls.Parse(parent, IntPtr.Zero, out parentPidl, 0, out attributes);
+                if (result.parentParseHresult.Value != 0 || parentPidl == IntPtr.Zero) return;
+
+                result.stage = "parse";
                 result.parseHresult = calls.Parse(target, IntPtr.Zero, out pidl, 0, out attributes);
                 if (result.parseHresult.Value != 0 || pidl == IntPtr.Zero) return;
 
+                IntPtr child = pidl;
+                if (mode == "relative_child") {
+                    result.stage = "child";
+                    child = calls.LastId(pidl); // Borrowed interior storage; never separately freed.
+                    if (child == IntPtr.Zero) return;
+                }
+                var children = mode == "zero_child" ? null : new IntPtr[] { child };
                 result.stage = "select";
                 result.invocationCount++;
-                // The documented single-item form opens the parent and selects
-                // absoluteTarget. No child array, flags, fallback or second call.
-                result.selectionHresult = calls.Select(pidl, 0, IntPtr.Zero, 0);
+                // Exactly one call. The managed pointer array lives through P/Invoke;
+                // both owned PIDLs remain alive until finally. No fallback or retry.
+                result.selectionHresult = calls.Select(mode == "zero_child" ? pidl : parentPidl,
+                    mode == "zero_child" ? 0U : 1U, children, 0);
                 if (result.selectionHresult.Value == 0) result.stage = "completed";
             } catch {
                 result.exception = true; // Never export exception messages or paths.
@@ -107,6 +135,11 @@ namespace WorkspaceNativeSelection {
                 if (result.pidlAllocated) {
                     result.pidlCleanup = "failed";
                     try { calls.Free(pidl); result.pidlCleanup = "completed"; } catch { }
+                }
+                result.parentPidlAllocated = parentPidl != IntPtr.Zero;
+                if (result.parentPidlAllocated) {
+                    result.parentPidlCleanup = "failed";
+                    try { calls.Free(parentPidl); result.parentPidlCleanup = "completed"; } catch { }
                 }
                 if (initialized) {
                     result.comCleanup = "failed";
@@ -122,14 +155,15 @@ try {
     Add-Type -TypeDefinition $bridgeSource
 } catch {
     # Compilation precedes any worker/native call. Do not emit compiler output.
-    [ordered]@{ version = 1; stage = 'compile'; exception = $true;
+    [ordered]@{ version = 2; mode = $env:WORKSPACE_NATIVE_SELECTION_MODE; stage = 'compile'; exception = $true;
+        parentParseHresult = $null; parentPidlAllocated = $false; parentPidlCleanup = 'not_needed';
         initializeHresult = $null; parseHresult = $null; selectionHresult = $null;
         invocationCount = 0; pidlAllocated = $false; pidlCleanup = 'not_needed'; comCleanup = 'not_needed'
     } | ConvertTo-Json -Compress
     exit 0
 }
 try {
-    $result = [WorkspaceNativeSelection.Bridge]::Run($env:WORKSPACE_NATIVE_SELECTION_TARGET)
+    $result = [WorkspaceNativeSelection.Bridge]::Run($env:WORKSPACE_NATIVE_SELECTION_TARGET, $env:WORKSPACE_NATIVE_SELECTION_MODE)
     $result | ConvertTo-Json -Compress
 } catch {
     # A worker/serialization failure cannot establish an invocation count.

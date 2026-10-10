@@ -8,6 +8,7 @@ import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./fi
 
 const bridgePath = fileURLToPath(new URL("./windows-native-selection.ps1", import.meta.url));
 const maximumOutputBytes = 8192;
+const selectionModes = ["electron_absolute", "relative_child", "zero_child"];
 const signedHresult = (value) => Number.isInteger(value) && value >= -2147483648 && value <= 2147483647;
 const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -43,16 +44,28 @@ export function parseNativeSelectionResponse(stdout) {
   try {
     const value = JSON.parse(stdout);
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-    const { version, stage, exception, initializeHresult, parseHresult, selectionHresult,
+    const { version, mode, parentParseHresult, parentPidlAllocated, parentPidlCleanup,
+      stage, exception, initializeHresult, parseHresult, selectionHresult,
       invocationCount, pidlAllocated, pidlCleanup, comCleanup } = value;
-    const stages = ["input", "compile", "initialize", "parse", "select", "completed"];
+    const stages = ["input", "compile", "initialize", "parse_parent", "parse", "child", "select", "completed"];
     const cleanups = ["not_needed", "completed", "failed"];
-    if (version !== 1 || !stages.includes(stage) || typeof exception !== "boolean" ||
-      ![initializeHresult, parseHresult, selectionHresult].every((code) => code === null || signedHresult(code)) ||
+    if (version !== 2 || !selectionModes.includes(mode) || typeof parentPidlAllocated !== "boolean" ||
+      !cleanups.includes(parentPidlCleanup) || !stages.includes(stage) || typeof exception !== "boolean" ||
+      ![initializeHresult, parentParseHresult, parseHresult, selectionHresult].every((code) => code === null || signedHresult(code)) ||
       ![0, 1].includes(invocationCount) || typeof pidlAllocated !== "boolean" ||
       ![pidlCleanup, comCleanup].every((cleanup) => cleanups.includes(cleanup))) return null;
     const initialized = initializeHresult !== null && initializeHresult >= 0;
     if ((pidlCleanup !== "not_needed") !== pidlAllocated || (comCleanup !== "not_needed") !== initialized) return null;
+    if ((parentPidlCleanup !== "not_needed") !== parentPidlAllocated) return null;
+    if (parentParseHresult !== null && !initialized) return null;
+    if (["input", "compile", "initialize"].includes(stage) && (parentParseHresult !== null || parentPidlAllocated)) return null;
+    if (["parse", "child", "select", "completed"].includes(stage) && (parentParseHresult !== 0 || !parentPidlAllocated)) return null;
+    if (stage === "parse_parent" && (!initialized || parseHresult !== null || pidlAllocated ||
+      selectionHresult !== null || invocationCount !== 0 ||
+      (exception ? parentParseHresult !== null : parentParseHresult === null) ||
+      (!exception && parentParseHresult === 0 && parentPidlAllocated))) return null;
+    if (stage === "child" && (mode !== "relative_child" || parseHresult !== 0 || !pidlAllocated ||
+      invocationCount !== 0 || selectionHresult !== null)) return null;
     if (parseHresult !== null && !initialized) return null;
     if (invocationCount === 1 && (!initialized || parseHresult !== 0 || !pidlAllocated)) return null;
     if (selectionHresult !== null && invocationCount !== 1) return null;
@@ -67,7 +80,8 @@ export function parseNativeSelectionResponse(stdout) {
     if (stage === "select" && (invocationCount !== 1 ||
       (exception ? selectionHresult !== null : selectionHresult === null || selectionHresult === 0))) return null;
     if (stage === "completed" && (exception || invocationCount !== 1 || selectionHresult !== 0)) return null;
-    return { version, stage, exception, initializeHresult, parseHresult, selectionHresult,
+    return { version, mode, parentParseHresult, parentPidlAllocated, parentPidlCleanup,
+      stage, exception, initializeHresult, parseHresult, selectionHresult,
       invocationCount, pidlAllocated, pidlCleanup, comCleanup };
   } catch { return null; }
 }
@@ -75,11 +89,12 @@ export function parseNativeSelectionResponse(stdout) {
 // Internal bridge boundary. The experiment orchestrator will own the generated
 // target; this module has no caller-target CLI and importing it does not dispatch.
 export async function invokeNativeSelection(target, {
-  platform = process.platform, spawnProcess = spawn, env = process.env,
+  platform = process.platform, mode = "zero_child", spawnProcess = spawn, env = process.env,
   clock = { setTimeout, clearTimeout },
 } = {}) {
   const notStarted = (stage) => ({ status: "unavailable", stage, invocationCount: 0, native: null,
     process: { termination: "not_started", exitCode: null, signal: null, killAttempted: false } });
+  if (!selectionModes.includes(mode)) return notStarted("mode");
   if (platform !== "win32") return notStarted("unsupported");
   if (typeof target !== "string" || !target || target.includes("\0")) return notStarted("input");
 
@@ -97,9 +112,10 @@ export async function invokeNativeSelection(target, {
         child.unref();
         child.stdout.destroy();
       }
-      const native = stopReason || launchError ? null : parseNativeSelectionResponse(stdout);
+      const parsed = stopReason || launchError ? null : parseNativeSelectionResponse(stdout);
+      const native = parsed?.mode === mode ? parsed : null;
       const stage = stopReason ?? (launchError ? "launch_error" : exitCode !== 0 ? "process_error" : native ? native.stage : "protocol_error");
-      resolve({ status: stage === "completed" && native?.pidlCleanup === "completed" && native?.comCleanup === "completed" ? "completed" : "failed",
+      resolve({ status: stage === "completed" && native?.pidlCleanup === "completed" && native?.parentPidlCleanup === "completed" && native?.comCleanup === "completed" ? "completed" : "failed",
         stage, invocationCount: native?.invocationCount ?? null, native,
         process: { termination, exitCode: signedHresult(exitCode) ? exitCode : null,
           signal: ["SIGKILL", "SIGTERM"].includes(signal) ? signal : null, killAttempted } });
@@ -119,7 +135,7 @@ export async function invokeNativeSelection(target, {
     try {
       child = spawnProcess("powershell.exe", ["-NoProfile", "-NonInteractive", "-File", bridgePath], {
         windowsHide: true, shell: false, stdio: ["ignore", "pipe", "ignore"],
-        env: { ...env, WORKSPACE_NATIVE_SELECTION_TARGET: target },
+        env: { ...env, WORKSPACE_NATIVE_SELECTION_TARGET: target, WORKSPACE_NATIVE_SELECTION_MODE: mode },
       });
     } catch {
       clock.clearTimeout(deadline);
@@ -184,9 +200,12 @@ export async function runNativeSelectionExperiment({
   evidenceDirectory = fileURLToPath(new URL("../work/windows-native-selection-evidence/", import.meta.url)),
   platform = process.platform, filesystem = fs, spawnProcess = spawn, env = process.env,
   clock = { setTimeout, clearTimeout }, runCommand, timing, readCodeRevision,
+  mode = env.WORKSPACE_NATIVE_SELECTION_MODE ?? "zero_child",
 } = {}) {
   const evidence = {
-    version: 1, status: "failed", failure: null,
+    version: 2, mode: selectionModes.includes(mode) ? mode : null,
+    source: "os_native_call_form", parser: "SHParseDisplayName", apartment: "STA",
+    status: "failed", failure: null,
     metadata: await collectNativeSelectionMetadata({ env, readCodeRevision }),
     fixture: { status: "not_attempted", rootCreated: false, targetCreated: false },
     native: { status: "not_attempted", invocationCount: 0, native: null,
@@ -196,6 +215,7 @@ export async function runNativeSelectionExperiment({
     fixtureRemoval: { status: "not_needed" }, persistence: { status: "not_attempted" },
   };
   const fail = (stage, code) => { evidence.failure ??= { stage, code }; };
+  if (!selectionModes.includes(mode)) fail("mode", "unsupported");
   if (!evidence.metadata.codeSha) fail("metadata", "revision_unavailable");
   let root, target;
   // Until a returned bridge result proves otherwise, cleanup must assume an
@@ -219,7 +239,7 @@ export async function runNativeSelectionExperiment({
     if (!evidence.failure) {
       terminationKnown = false;
       try {
-        evidence.native = await invokeNativeSelection(target, { platform, spawnProcess, env, clock });
+        evidence.native = await invokeNativeSelection(target, { platform, mode, spawnProcess, env, clock });
         terminationKnown = ["confirmed", "not_started"].includes(evidence.native.process.termination);
         if (evidence.native.status !== "completed") fail("native", evidence.native.stage);
       } catch {

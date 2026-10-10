@@ -13,7 +13,8 @@ import { closeDisposableFileManagerTarget } from "../scripts/file-manager-eviden
 
 const target = "C:\\Disposable\\Folder's 日本語 $value `quoted` & text";
 const completed = {
-  version: 1, stage: "completed", exception: false,
+  version: 2, mode: "zero_child", parentParseHresult: 0, parentPidlAllocated: true, parentPidlCleanup: "completed",
+  stage: "completed", exception: false,
   initializeHresult: 0, parseHresult: 0, selectionHresult: 0,
   invocationCount: 1, pidlAllocated: true, pidlCleanup: "completed", comCleanup: "completed",
 };
@@ -75,7 +76,7 @@ test("native protocol retains only finite fields and signed 32-bit HRESULTs", ()
 });
 
 test("malformed, oversized and contradictory native telemetry never establishes an invocation", () => {
-  const invalid = ["", "private output", "null", "[]", "true", encode({}), encode({ ...completed, version: 2 }),
+  const invalid = ["", "private output", "null", "[]", "true", encode({}), encode({ ...completed, version: 1 }),
     encode({ ...completed, stage: "C:\\private" }), encode({ ...completed, invocationCount: 2 }),
     encode({ ...completed, invocationCount: 0 }), encode({ ...completed, initializeHresult: -2147417850 }),
     encode({ ...completed, parseHresult: -1 }), encode({ ...completed, pidlAllocated: false }),
@@ -88,9 +89,9 @@ test("malformed, oversized and contradictory native telemetry never establishes 
 });
 
 test("prerequisite failures and exceptions preserve zero/one attempts and cleanup outcomes", () => {
-  const initial = { ...completed, stage: "initialize", initializeHresult: -2147417850, parseHresult: null,
+  const initial = { ...completed, stage: "initialize", parentParseHresult: null, parentPidlAllocated: false, parentPidlCleanup: "not_needed", initializeHresult: -2147417850, parseHresult: null,
     selectionHresult: null, invocationCount: 0, pidlAllocated: false, pidlCleanup: "not_needed", comCleanup: "not_needed" };
-  const parseFailure = { ...initial, stage: "parse", initializeHresult: 1, parseHresult: -2147467259, comCleanup: "completed" };
+  const parseFailure = { ...initial, stage: "parse", parentParseHresult: 0, parentPidlAllocated: true, parentPidlCleanup: "completed", initializeHresult: 1, parseHresult: -2147467259, comCleanup: "completed" };
   const selectException = { ...completed, stage: "select", exception: true, selectionHresult: null };
   for (const value of [initial, parseFailure, selectException, { ...completed, pidlCleanup: "failed" }, { ...completed, comCleanup: "failed" }]) {
     assert.deepEqual(parseNativeSelectionResponse(encode(value)), value);
@@ -110,9 +111,9 @@ test("bridge dispatch uses a fixed file and environment-only Unicode target, onc
 });
 
 test("negative native results and cleanup failures remain failures with their own counts", async () => {
-  const initial = { ...completed, stage: "initialize", initializeHresult: -2147417850, parseHresult: null,
+  const initial = { ...completed, stage: "initialize", parentParseHresult: null, parentPidlAllocated: false, parentPidlCleanup: "not_needed", initializeHresult: -2147417850, parseHresult: null,
     selectionHresult: null, invocationCount: 0, pidlAllocated: false, pidlCleanup: "not_needed", comCleanup: "not_needed" };
-  for (const payload of [initial, { ...initial, stage: "parse", initializeHresult: 1, parseHresult: -1, comCleanup: "completed" },
+  for (const payload of [initial, { ...initial, stage: "parse", parentParseHresult: 0, parentPidlAllocated: true, parentPidlCleanup: "completed", initializeHresult: 1, parseHresult: -1, comCleanup: "completed" },
     { ...completed, stage: "select", selectionHresult: -2147467259 }, { ...completed, pidlCleanup: "failed" },
     { ...completed, comCleanup: "failed" }]) {
     const fixture = processFixture((child) => {
@@ -221,93 +222,138 @@ test("unsupported host, invalid target and failed spawn never dispatch", async (
   assert.equal(calls, 1);
 });
 
-// Compile the production C# on Windows, replacing every native function with
-// controlled delegates. These tests never invoke COM or Shell selection APIs.
-test("compiled STA bridge balances COM/PIDL lifetime and preserves single-call ordering", { skip: process.platform !== "win32" }, async () => {
+// Compile the actual worker with controlled delegates: no real COM or Shell calls.
+// The same fixture is also compiled locally to catch C# errors without claiming STA execution.
+test("compiled STA bridge verifies all call forms, partial failures and borrowed ownership", { skip: process.platform !== "win32" }, async () => {
   const script = await readFile(new URL("../scripts/windows-native-selection.ps1", import.meta.url), "utf8");
   const source = script.match(/\$bridgeSource = @'\r?\n([\s\S]*?)\r?\n'@/)[1];
   const fixtureSource = String.raw`
 public static class ControlledNativeSelection {
-  public static object Run(string mode, string expected) {
+  public static object Run(string fault, string form, string expected) {
     var events = new System.Collections.Generic.List<string>();
     int origin = System.Threading.Thread.CurrentThread.ManagedThreadId;
+    int worker = 0;
+    bool targetFreed = false, parentFreed = false;
+    var parent = new System.IntPtr(1000);
+    var target = new System.IntPtr(2000);
+    var borrowed = new System.IntPtr(2008);
     System.Action<string> record = delegate(string step) {
-      if (System.Threading.Thread.CurrentThread.ManagedThreadId == origin ||
+      int current = System.Threading.Thread.CurrentThread.ManagedThreadId;
+      if (current == origin || (worker != 0 && current != worker) ||
           System.Threading.Thread.CurrentThread.GetApartmentState() != System.Threading.ApartmentState.STA)
         throw new System.Exception("wrong thread");
+      worker = current;
       events.Add(step);
     };
+    var method = typeof(WorkspaceNativeSelection.Bridge).Assembly.GetType("WorkspaceNativeSelection.Native")
+      .GetMethod("SHOpenFolderAndSelectItems", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+    var parameter = method.GetParameters()[2];
+    var marshal = (System.Runtime.InteropServices.MarshalAsAttribute)System.Attribute.GetCustomAttribute(parameter,
+      typeof(System.Runtime.InteropServices.MarshalAsAttribute));
+    if (parameter.ParameterType != typeof(System.IntPtr[]) || !parameter.IsIn || marshal == null ||
+        marshal.Value != System.Runtime.InteropServices.UnmanagedType.LPArray || marshal.SizeParamIndex != 1)
+      throw new System.Exception("pointer-array marshalling");
     var api = new WorkspaceNativeSelection.NativeCalls();
     api.Initialize = delegate(System.IntPtr reserved, uint flags) {
       record("initialize");
       if (reserved != System.IntPtr.Zero || flags != 2) throw new System.Exception("init arguments");
-      if (mode == "initialize_exception") throw new System.Exception(expected);
-      return mode == "changed_mode" ? -2147417850 : mode == "s_false" ? 1 : 0;
+      if (fault == "initialize_exception") throw new System.Exception(expected);
+      return fault == "changed_mode" ? -2147417850 : fault == "s_false" ? 1 : 0;
     };
     api.Parse = delegate(string path, System.IntPtr context, out System.IntPtr pidl, uint flags, out uint attributes) {
-      record("parse");
-      pidl = mode == "parse_failure" || mode == "null_pidl" ? System.IntPtr.Zero : new System.IntPtr(1234);
+      bool isParent = path == System.IO.Path.GetDirectoryName(expected);
+      string step = isParent ? "parent" : "target";
+      record(step);
+      pidl = fault == step + "_failure" || fault == step + "_null" ? System.IntPtr.Zero : isParent ? parent : target;
       attributes = 0;
-      if (path != expected || context != System.IntPtr.Zero || flags != 0) throw new System.Exception("parse arguments");
-      if (mode == "parse_exception") throw new System.Exception(expected);
-      return mode == "parse_failure" || mode == "parse_failure_allocated" ? -2147467259 : 0;
+      if ((!isParent && path != expected) || context != System.IntPtr.Zero || flags != 0)
+        throw new System.Exception("parse arguments");
+      if (fault == step + "_exception") throw new System.Exception(expected);
+      return fault == step + "_failure" || fault == step + "_failure_allocated" ? -2147467259 : 0;
     };
-    api.Select = delegate(System.IntPtr pidl, uint count, System.IntPtr children, uint flags) {
+    api.LastId = delegate(System.IntPtr pidl) {
+      record("child");
+      if (pidl != target || targetFreed) throw new System.Exception("borrow arguments");
+      if (fault == "child_exception") throw new System.Exception(expected);
+      return fault == "child_null" ? System.IntPtr.Zero : borrowed;
+    };
+    api.Select = delegate(System.IntPtr pidl, uint count, System.IntPtr[] children, uint flags) {
       record("select");
-      if (pidl != new System.IntPtr(1234) || count != 0 || children != System.IntPtr.Zero || flags != 0)
-        throw new System.Exception("selection arguments");
-      if (mode == "select_exception") throw new System.Exception(expected);
-      return mode == "select_failure" ? -2147467259 : 0;
+      if (targetFreed || parentFreed || flags != 0) throw new System.Exception("selection lifetime");
+      if (form == "zero_child") {
+        if (pidl != target || count != 0 || children != null) throw new System.Exception("zero arguments");
+      } else if (pidl != parent || count != 1 || children == null || children.Length != 1 ||
+          children[0] != (form == "relative_child" ? borrowed : target)) throw new System.Exception("child array arguments");
+      if (fault == "select_exception") throw new System.Exception(expected);
+      return fault == "select_failure" ? -2147467259 : 0;
     };
     api.Free = delegate(System.IntPtr pidl) {
-      record("free");
-      if (pidl != new System.IntPtr(1234)) throw new System.Exception("free argument");
-      if (mode == "free_exception") throw new System.Exception(expected);
+      if (pidl != target && pidl != parent) throw new System.Exception("borrowed pointer freed");
+      bool isParent = pidl == parent;
+      string step = isParent ? "parent" : "target";
+      record("free_" + step);
+      if (isParent ? parentFreed : targetFreed) throw new System.Exception("double free");
+      if (isParent) parentFreed = true; else targetFreed = true;
+      if (fault == "free_" + step + "_exception") throw new System.Exception(expected);
     };
     api.Uninitialize = delegate() {
       record("uninitialize");
-      if (mode == "uninitialize_exception") throw new System.Exception(expected);
+      if (fault == "uninitialize_exception") throw new System.Exception(expected);
     };
-    var result = WorkspaceNativeSelection.Bridge.Run(expected, api);
-    return new { result = result, events = events.ToArray() };
+    var result = WorkspaceNativeSelection.Bridge.Run(expected, form, api);
+    return new { result = result, events = events.ToArray(), fault = fault, form = form };
   }
 }
 `;
   const execute = promisify(execFile);
-  const modes = ["s_ok", "s_false", "changed_mode", "parse_failure", "parse_failure_allocated", "null_pidl", "select_failure",
-    "initialize_exception", "parse_exception", "select_exception", "free_exception", "uninitialize_exception"];
+  const faults = ["s_ok", "s_false", "changed_mode", "initialize_exception", "parent_failure", "parent_failure_allocated",
+    "parent_null", "parent_exception", "target_failure", "target_failure_allocated", "target_null", "target_exception",
+    "child_null", "child_exception", "select_failure", "select_exception", "free_target_exception", "free_parent_exception", "uninitialize_exception"];
+  const forms = ["electron_absolute", "relative_child", "zero_child"];
   const { stdout } = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", String.raw`
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition ($env:WORKSPACE_CONTROLLED_BRIDGE + [Environment]::NewLine + $env:WORKSPACE_CONTROLLED_FIXTURE)
-$results = foreach ($mode in $env:WORKSPACE_CONTROLLED_MODES.Split(',')) {
-  [ControlledNativeSelection]::Run($mode, $env:WORKSPACE_NATIVE_SELECTION_TARGET)
+$results = foreach ($form in $env:WORKSPACE_CONTROLLED_FORMS.Split(',')) {
+  foreach ($fault in $env:WORKSPACE_CONTROLLED_FAULTS.Split(',')) {
+    [ControlledNativeSelection]::Run($fault, $form, $env:WORKSPACE_NATIVE_SELECTION_TARGET)
+  }
 }
 ConvertTo-Json -InputObject @($results) -Depth 5 -Compress
-`], { timeout: 30000, windowsHide: true, env: { ...process.env,
+`], { timeout: 30000, maxBuffer: 128 * 1024, windowsHide: true, env: { ...process.env,
     WORKSPACE_CONTROLLED_BRIDGE: source, WORKSPACE_CONTROLLED_FIXTURE: fixtureSource,
-    WORKSPACE_CONTROLLED_MODES: modes.join(","), WORKSPACE_NATIVE_SELECTION_TARGET: target } });
+    WORKSPACE_CONTROLLED_FORMS: forms.join(","), WORKSPACE_CONTROLLED_FAULTS: faults.join(","), WORKSPACE_NATIVE_SELECTION_TARGET: target } });
   const results = JSON.parse(stdout);
-  assert.equal(results.length, modes.length);
-  for (const [index, mode] of modes.entries()) {
-    const { result, events } = results[index];
-    assert.deepEqual(parseNativeSelectionResponse(encode(result)), result, mode);
-    const stopsAtInit = ["changed_mode", "initialize_exception"].includes(mode);
-    const stopsAtParse = ["parse_failure", "parse_failure_allocated", "parse_exception", "null_pidl"].includes(mode);
-    const hasPidl = !stopsAtInit && !["parse_failure", "null_pidl"].includes(mode);
-    assert.deepEqual(events, ["initialize", ...(!stopsAtInit ? ["parse"] : []),
-      ...(!stopsAtInit && !stopsAtParse ? ["select"] : []), ...(hasPidl ? ["free"] : []),
-      ...(!stopsAtInit ? ["uninitialize"] : [])], mode);
-    assert.equal(result.invocationCount, stopsAtInit || stopsAtParse ? 0 : 1, mode);
-    assert.equal(result.initializeHresult, mode === "initialize_exception" ? null : mode === "changed_mode" ? -2147417850 : mode === "s_false" ? 1 : 0, mode);
-    assert.equal(result.parseHresult, stopsAtInit || mode === "parse_exception" ? null :
-      ["parse_failure", "parse_failure_allocated"].includes(mode) ? -2147467259 : 0, mode);
-    assert.equal(result.selectionHresult, stopsAtInit || stopsAtParse || mode === "select_exception" ? null :
-      mode === "select_failure" ? -2147467259 : 0, mode);
-    assert.equal(result.stage, stopsAtInit ? "initialize" : stopsAtParse ? "parse" :
-      ["select_failure", "select_exception"].includes(mode) ? "select" : "completed", mode);
-    assert.equal(result.exception, ["initialize_exception", "parse_exception", "select_exception"].includes(mode), mode);
-    assert.equal(result.pidlCleanup, !hasPidl ? "not_needed" : mode === "free_exception" ? "failed" : "completed", mode);
-    assert.equal(result.comCleanup, stopsAtInit ? "not_needed" : mode === "uninitialize_exception" ? "failed" : "completed", mode);
+  assert.equal(results.length, forms.length * faults.length);
+  for (const { result, events, fault, form } of results) {
+    const label = `${form}/${fault}`;
+    assert.deepEqual(parseNativeSelectionResponse(encode(result)), result, label);
+    assert.equal(result.mode, form);
+    const initStop = ["changed_mode", "initialize_exception"].includes(fault);
+    const parentStop = fault.startsWith("parent_");
+    const targetStop = fault.startsWith("target_");
+    const childStop = form === "relative_child" && fault.startsWith("child_");
+    const selected = !initStop && !parentStop && !targetStop && !childStop;
+    const hasParent = !initStop && !["parent_failure", "parent_null"].includes(fault);
+    const hasTarget = !initStop && !parentStop && !["target_failure", "target_null"].includes(fault);
+    assert.deepEqual(events, ["initialize", ...(!initStop ? ["parent"] : []),
+      ...(!initStop && !parentStop ? ["target"] : []),
+      ...(!initStop && !parentStop && !targetStop && form === "relative_child" ? ["child"] : []),
+      ...(selected ? ["select"] : []), ...(hasTarget ? ["free_target"] : []),
+      ...(hasParent ? ["free_parent"] : []), ...(!initStop ? ["uninitialize"] : [])], label);
+    assert.equal(result.invocationCount, selected ? 1 : 0, label);
+    assert.equal(result.initializeHresult, fault === "initialize_exception" ? null : fault === "changed_mode" ? -2147417850 : fault === "s_false" ? 1 : 0, label);
+    assert.equal(result.parentParseHresult, initStop || fault === "parent_exception" ? null :
+      ["parent_failure", "parent_failure_allocated"].includes(fault) ? -2147467259 : 0, label);
+    assert.equal(result.parseHresult, initStop || parentStop || fault === "target_exception" ? null :
+      ["target_failure", "target_failure_allocated"].includes(fault) ? -2147467259 : 0, label);
+    assert.equal(result.selectionHresult, !selected || fault === "select_exception" ? null : fault === "select_failure" ? -2147467259 : 0, label);
+    assert.equal(result.stage, initStop ? "initialize" : parentStop ? "parse_parent" : targetStop ? "parse" : childStop ? "child" :
+      ["select_failure", "select_exception"].includes(fault) ? "select" : "completed", label);
+    assert.equal(result.exception, ["initialize_exception", "parent_exception", "target_exception", "select_exception"].includes(fault) ||
+      (form === "relative_child" && fault === "child_exception"), label);
+    assert.equal(result.pidlCleanup, !hasTarget ? "not_needed" : fault === "free_target_exception" ? "failed" : "completed", label);
+    assert.equal(result.parentPidlCleanup, !hasParent ? "not_needed" : fault === "free_parent_exception" ? "failed" : "completed", label);
+    assert.equal(result.comCleanup, initStop ? "not_needed" : fault === "uninitialize_exception" ? "failed" : "completed", label);
     assert.equal(JSON.stringify(result).includes(target), false);
   }
 });
@@ -319,7 +365,7 @@ const observedSelected = { ...observedParent, selectedTargetMatch: true };
 // Exercise the real orchestrator and observer with owned filesystem fixtures,
 // substituting only process/COM boundaries. No real selection is performed.
 async function experimentFixture(t, { native = completed, observation = observedSelected,
-  termination = "confirmed", filesystem = {}, commandError = false, cleanupError = false } = {}) {
+  termination = "confirmed", mode = "zero_child", filesystem = {}, commandError = false, cleanupError = false } = {}) {
   const evidenceDirectory = await fs.mkdtemp(join(tmpdir(), "workspace-native-evidence-test-"));
   const roots = [], calls = [], removed = [];
   let generatedTarget, elapsed = 0;
@@ -328,8 +374,8 @@ async function experimentFixture(t, { native = completed, observation = observed
   });
   const clock = controlledClock();
   const options = {
-    evidenceDirectory, platform: "win32", clock,
-    env: { WORKSPACE_NATIVE_SELECTION_TARGET: target },
+    evidenceDirectory, platform: "win32", clock, mode,
+    env: { WORKSPACE_NATIVE_SELECTION_TARGET: target, WORKSPACE_NATIVE_SELECTION_MODE: "invalid inherited" },
     filesystem: { ...fs,
       mkdtemp: async (prefix) => { const root = await fs.mkdtemp(prefix); roots.push(root); return root; },
       rmdir: async (path) => { removed.push(path); await fs.rmdir(path); },
@@ -338,6 +384,7 @@ async function experimentFixture(t, { native = completed, observation = observed
     spawnProcess: (_program, args, settings) => {
       calls.push("bridge");
       generatedTarget = settings.env.WORKSPACE_NATIVE_SELECTION_TARGET;
+      assert.equal(settings.env.WORKSPACE_NATIVE_SELECTION_MODE, mode);
       assert.notEqual(generatedTarget, target);
       assert.equal(dirname(generatedTarget), roots[0]);
       assert.match(basename(generatedTarget), /日本語/);
@@ -354,7 +401,7 @@ async function experimentFixture(t, { native = completed, observation = observed
       };
       queueMicrotask(() => {
         if (native === null) clock.advance(30000);
-        else { child.stdout.emit("data", encode(native)); child.emit("close", 0, null); }
+        else { child.stdout.emit("data", encode({ ...native, mode })); child.emit("close", 0, null); }
       });
       return child;
     },
@@ -421,7 +468,7 @@ test("experiment owns one fresh Unicode fixture, overrides inherited target and 
 });
 
 test("prerequisite failure never observes or retries and still cleans and persists", async (t) => {
-  const native = { ...completed, stage: "initialize", initializeHresult: -2147417850,
+  const native = { ...completed, stage: "initialize", parentParseHresult: null, parentPidlAllocated: false, parentPidlCleanup: "not_needed", initializeHresult: -2147417850,
     parseHresult: null, selectionHresult: null, invocationCount: 0, pidlAllocated: false,
     pidlCleanup: "not_needed", comCleanup: "not_needed" };
   const fixture = await experimentFixture(t, { native });
@@ -728,3 +775,100 @@ function New-Object { param([string]$ComObject) return $controlledShell }
   assert.equal(result.status, "completed");
   assert.deepEqual(closed, ["exact"]);
 });
+
+for (const mode of ["electron_absolute", "relative_child", "zero_child"]) {
+  test(`mode ${mode} is explicit environment data and bound to v2 native evidence`, async () => {
+    const payload = { ...completed, version: 2, mode, parentParseHresult: 0,
+      parentPidlAllocated: true, parentPidlCleanup: "completed" };
+    const fixture = processFixture((child) => {
+      child.stdout.emit("data", encode(payload)); child.emit("close", 0, null);
+    });
+    const result = await invokeNativeSelection(target, { platform: "win32", mode,
+      env: { WORKSPACE_NATIVE_SELECTION_MODE: "inherited invalid" },
+      spawnProcess: (program, args, options) => {
+        assert.equal(options.env.WORKSPACE_NATIVE_SELECTION_MODE, mode);
+        assert.equal(args.includes(mode), false);
+        return fixture.spawnProcess(program, args, options);
+      } });
+    assert.equal(result.status, "completed");
+    assert.equal(result.native.mode, mode);
+    assert.equal(fixture.calls, 1);
+  });
+}
+
+test("unknown modes cannot create fixtures or dispatch and cannot leak their value", async (t) => {
+  const fixture = await experimentFixture(t);
+  const result = await runNativeSelectionExperiment({ ...fixture.options, mode: target }).catch((error) => error.evidence);
+  assert.deepEqual(result.failure, { stage: "mode", code: "unsupported" });
+  assert.deepEqual(fixture.roots, []);
+  assert.deepEqual(fixture.calls, []);
+  assert.equal(encode(result).includes(target), false);
+});
+
+test("echoed condition mismatch is unavailable protocol, never a successful comparison", async () => {
+  const fixture = processFixture();
+  const result = await invokeNativeSelection(target, { platform: "win32", mode: "relative_child", spawnProcess: fixture.spawnProcess });
+  assert.equal(result.stage, "protocol_error");
+  assert.equal(result.invocationCount, null);
+});
+
+test("v2 rejects missing/unknown modes and contradictory parent or child ownership", async () => {
+  const invalid = [
+    { ...completed, mode: undefined }, { ...completed, mode: target },
+    { ...completed, parentParseHresult: null }, { ...completed, parentParseHresult: -1 },
+    { ...completed, parentPidlAllocated: false }, { ...completed, parentPidlCleanup: "not_needed" },
+    { ...completed, parentParseHresult: 0.5 },
+    { ...completed, stage: "parse_parent", invocationCount: 0, selectionHresult: null },
+    { ...completed, mode: "electron_absolute", stage: "child", invocationCount: 0, selectionHresult: null },
+    { ...completed, mode: "relative_child", stage: "child", selectionHresult: null },
+    { ...completed, mode: "relative_child", stage: "child", invocationCount: 0, selectionHresult: -1 },
+  ];
+  for (const value of invalid) assert.equal(parseNativeSelectionResponse(encode(value)), null);
+  const cases = [
+    { ...completed, stage: "parse_parent", parentParseHresult: -1, parentPidlAllocated: false,
+      parentPidlCleanup: "not_needed", parseHresult: null, invocationCount: 0, selectionHresult: null,
+      pidlAllocated: false, pidlCleanup: "not_needed" },
+    { ...completed, mode: "relative_child", stage: "child", invocationCount: 0, selectionHresult: null },
+    { ...completed, mode: "relative_child", stage: "child", exception: true, invocationCount: 0, selectionHresult: null },
+    { ...completed, parentPidlCleanup: "failed" },
+  ];
+  for (const value of cases) {
+    assert.deepEqual(parseNativeSelectionResponse(encode(value)), value);
+    const fixture = processFixture((child) => { child.stdout.emit("data", encode(value)); child.emit("close", 0, null); });
+    const result = await invokeNativeSelection(target, { platform: "win32", mode: value.mode, spawnProcess: fixture.spawnProcess });
+    assert.equal(result.status, "failed");
+    assert.equal(result.invocationCount, value.invocationCount);
+    assert.equal(fixture.calls, 1);
+  }
+  const neverSpawn = () => { assert.fail("invalid mode must not spawn"); };
+  const result = await invokeNativeSelection(target, { platform: "win32", mode: target, spawnProcess: neverSpawn });
+  assert.equal(result.invocationCount, 0);
+  assert.equal(encode(result).includes(target), false);
+});
+
+for (const mode of ["electron_absolute", "relative_child", "zero_child"]) {
+  for (const scenario of ["selected", "unselected", "unavailable", "timeout", "termination_unknown"]) {
+    test(`${mode} retains owned-fixture and failure semantics for ${scenario}`, async (t) => {
+      const fixture = await experimentFixture(t, { mode,
+        observation: scenario === "unselected" ? observedParent : observedSelected,
+        commandError: scenario === "unavailable",
+        native: ["timeout", "termination_unknown"].includes(scenario) ? null : completed,
+        termination: scenario === "termination_unknown" ? "unknown" : "confirmed" });
+      const result = await fixture.run();
+      assert.equal(result.mode, mode);
+      assert.equal(result.source, "os_native_call_form");
+      assert.equal(result.parser, "SHParseDisplayName");
+      assert.equal(result.apartment, "STA");
+      assert.equal(result.status, scenario === "selected" ? "passed" : "failed");
+      assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+      assert.equal(result.native.invocationCount, ["timeout", "termination_unknown"].includes(scenario) ? null : 1);
+      assert.equal(result.fixtureRemoval.status, scenario === "termination_unknown" ? "unverified" : "completed");
+      if (scenario === "unselected") {
+        assert.deepEqual(result.failure, { stage: "observation", code: "deadline" });
+        assert.equal(result.observation.elapsedMs, 10000);
+      }
+      if (scenario === "unavailable") assert.deepEqual(result.failure, { stage: "observation", code: "unavailable" });
+      for (const privateValue of [target, fixture.target, fixture.roots[0]]) assert.equal(encode(result).includes(privateValue), false);
+    });
+  }
+}
