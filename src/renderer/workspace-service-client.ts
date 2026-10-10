@@ -1,3 +1,5 @@
+import type { WorkspaceCreateProjectCommand, ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, ProjectCreationRecoveryAction } from "../contracts/project-creation.js";
+import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import type { BackendStatus, WorkspaceDesktopApi } from "../contracts/desktop-api.js";
@@ -24,6 +26,25 @@ export class WorkspaceServiceClient {
       if (active && isWorkspaceChangeEvent(event)) listener(event);
     });
     return () => { active = false; unsubscribe(); };
+  }
+
+  createProject(input: Omit<Extract<WorkspaceCreateProjectCommand, { mode: "direct" }>, "type"> | Omit<Extract<WorkspaceCreateProjectCommand, { mode: "grouped" }>, "type">): Promise<ServiceResult<ProjectCreationResult>> {
+    return this.api.workspace({ ...input, type: "workspace.createProject" });
+  }
+  listProjectCreations(workspaceId: string): Promise<ServiceResult<ProjectCreationList>> {
+    return this.api.workspace({ type: "workspace.listProjectCreations", workspaceId });
+  }
+  getProjectCreation(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectCreationResult>> {
+    return this.api.workspace({ type: "workspace.getProjectCreation", workspaceId, operationId });
+  }
+  previewProjectCreationRecovery(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectCreationRecoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewProjectCreationRecovery", workspaceId, operationId });
+  }
+  recoverProjectCreation(workspaceId: string, operationId: string, previewToken: string, action: ProjectCreationRecoveryAction): Promise<ServiceResult<ProjectCreationResult>> {
+    return this.api.workspace({ type: "workspace.recoverProjectCreation", workspaceId, operationId, previewToken, action });
+  }
+  revealProject(workspaceId: string, projectId: string): Promise<ServiceResult<ProjectRevealResult>> {
+    return this.api.workspace({ type: "workspace.revealProject", workspaceId, projectId });
   }
 
   listTextProperties(workspaceId: string): Promise<ServiceResult<TextPropertySnapshot>> {

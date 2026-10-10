@@ -1,5 +1,6 @@
+import { isProjectRevealRequest } from "../contracts/project-reveal.js";
 import type { BackendStatus } from "../contracts/desktop-api.js";
-import { isServiceEvent, isServiceResponse, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
+import { isServiceEvent, isServiceResponse, isNativeProjectRevealVerified, isNativeProjectRevealRequest, isNativeProjectRevealCancel, type NativeProjectRevealRequest, type TrustedProjectRevealTarget, type NativeProjectRevealResult, type NativeProjectRevealValidation, type ServicePayload, type ServicePort } from "../contracts/service-protocol.js";
 import type { WorkspaceChangeEvent } from "../contracts/workspaces.js";
 import type { ServiceResult } from "../contracts/settings.js";
 
@@ -24,11 +25,16 @@ export class BackendController {
   private port?: ServicePort;
   private status: BackendStatus = { state: "starting" };
   private nextId = 1;
-  private pending = new Map<number, { resolve: (value: ServiceResult<ServicePayload>) => void; timer: Timer }>();
+  private generation = 0;
+  private nativeActive = new Map<number, string>();
+  private nativeVerifications = new Map<string, { requestId: number; resolve(value: NativeProjectRevealValidation): void }>();
+  private pending = new Map<number, { input: unknown; nativeStarted: boolean; resolve: (value: ServiceResult<ServicePayload>) => void; timer: Timer }>();
   private readiness?: { resolve: (ready: boolean) => void; timer: Timer };
   private onStatus: (status: BackendStatus) => void;
 
-  constructor(onStatus: (status: BackendStatus) => void = () => undefined) {
+  constructor(onStatus: (status: BackendStatus) => void = () => undefined,
+    private readonly nativeReveal?: (target: TrustedProjectRevealTarget, isCurrent: () => boolean, authorize: () => Promise<NativeProjectRevealValidation>) => Promise<NativeProjectRevealResult>,
+  ) {
     this.onStatus = onStatus;
   }
 
@@ -45,14 +51,21 @@ export class BackendController {
     transferPort: unknown,
     timeoutMs = 8000,
   ): Promise<boolean> {
+    const generation = ++this.generation;
+    this.rejectPending("The local service was replaced.");
+    this.nativeActive.clear();
+    if (this.readiness) {
+      clearTimeout(this.readiness.timer); this.readiness.resolve(false); this.readiness = undefined;
+    }
+    this.port?.close();
     this.child = child;
     this.port = port;
     this.setStatus({ state: "starting" });
-    port.on("message", ({ data }) => this.onResponse(data));
+    port.on("message", ({ data }) => { if (generation === this.generation) this.onResponse(data); });
     port.start?.();
-    child.on("message", (message) => this.onChildMessage(message));
-    child.on("exit", () => this.onExit());
-    child.on("error", () => this.onProcessError());
+    child.on("message", (message) => { if (generation === this.generation) this.onChildMessage(message); });
+    child.on("exit", () => { if (generation === this.generation) this.onExit(); });
+    child.on("error", () => { if (generation === this.generation) this.onProcessError(); });
     child.on("spawn", () => undefined);
 
     const ready = new Promise<boolean>((resolve) => {
@@ -70,10 +83,11 @@ export class BackendController {
     const id = this.nextId++;
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
+        this.cancelNative(id);
         this.pending.delete(id);
         resolve({ ok: false, error: { code: "service_unavailable", message: "The local service did not respond." } });
       }, timeoutMs);
-      this.pending.set(id, { resolve, timer });
+      this.pending.set(id, { input, nativeStarted: false, resolve, timer });
       try {
         this.port?.postMessage({ id, input });
       } catch {
@@ -86,6 +100,8 @@ export class BackendController {
 
   async stop(timeoutMs = 1500): Promise<void> {
     this.changeListeners.clear();
+    this.rejectPending("The local service is stopping.");
+    this.nativeActive.clear();
     const child = this.child;
     if (!child) return;
     if (this.status.state === "ready") {
@@ -120,6 +136,18 @@ export class BackendController {
 
   private onResponse(value: unknown): void {
     if (!this.port || this.status.state !== "ready") return;
+    if (isNativeProjectRevealVerified(value)) {
+      const pending = this.nativeVerifications.get(value.dispatchId);
+      if (pending?.requestId === value.requestId && this.nativeActive.get(value.requestId) === value.dispatchId) {
+        this.nativeVerifications.delete(value.dispatchId); pending.resolve(value.result);
+      }
+      return;
+    }
+    if (isNativeProjectRevealRequest(value)) { void this.onNativeReveal(value); return; }
+    if (isNativeProjectRevealCancel(value)) {
+      if (this.nativeActive.get(value.requestId) === value.dispatchId) this.cancelNative(value.requestId, false);
+      return;
+    }
     if (isServiceEvent(value)) {
       for (const listener of [...this.changeListeners]) {
         try { listener(value.change); } catch { /* Isolate subscribers from request routing. */ }
@@ -130,8 +158,46 @@ export class BackendController {
     const pending = this.pending.get(value.id);
     if (!pending) return;
     clearTimeout(pending.timer);
+    this.cancelNative(value.id);
     this.pending.delete(value.id);
     pending.resolve(value.result);
+  }
+
+  private async onNativeReveal(message: NativeProjectRevealRequest): Promise<void> {
+    const pending = this.pending.get(message.requestId);
+    if (!pending || !isProjectRevealRequest(pending.input) || pending.nativeStarted) return;
+    pending.nativeStarted = true;
+    const generation = this.generation, port = this.port;
+    this.nativeActive.set(message.requestId, message.dispatchId);
+    const isCurrent = () => generation === this.generation && this.status.state === "ready" && this.port === port &&
+      this.pending.get(message.requestId) === pending && this.nativeActive.get(message.requestId) === message.dispatchId;
+    const authorize = (): Promise<NativeProjectRevealValidation> => {
+      if (!isCurrent()) return Promise.resolve({ outcome: "rejected", problem: "request_expired" });
+      return new Promise((resolve) => {
+        this.nativeVerifications.set(message.dispatchId, { requestId: message.requestId, resolve });
+        try { port?.postMessage({ type: "project.reveal.verify", requestId: message.requestId, dispatchId: message.dispatchId }); }
+        catch {
+          this.nativeVerifications.delete(message.dispatchId); resolve({ outcome: "rejected", problem: "native_unavailable" });
+        }
+      });
+    };
+    let result: NativeProjectRevealResult;
+    try { result = this.nativeReveal ? await this.nativeReveal(message.target, isCurrent, authorize) : { outcome: "rejected", problem: "native_unavailable" }; }
+    catch { result = { outcome: "rejected", problem: "native_error" }; }
+    if (!isCurrent()) return;
+    this.cancelNative(message.requestId, false);
+    try { port?.postMessage({ type: "project.reveal.reply", requestId: message.requestId, dispatchId: message.dispatchId, result }); }
+    catch { /* Request timeout/exit settles the caller if the port closed. */ }
+  }
+
+  private cancelNative(requestId: number, notifyService = true): void {
+    const dispatchId = this.nativeActive.get(requestId);
+    if (!dispatchId) return;
+    this.nativeActive.delete(requestId);
+    const verification = this.nativeVerifications.get(dispatchId);
+    this.nativeVerifications.delete(dispatchId); verification?.resolve({ outcome: "rejected", problem: "request_expired" });
+    if (!notifyService) return;
+    try { this.port?.postMessage({ type: "project.reveal.cancel", requestId, dispatchId }); } catch { /* Closed transport. */ }
   }
 
   private onExit(): void {
@@ -165,6 +231,7 @@ export class BackendController {
   private rejectPending(message: string): void {
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timer);
+      this.cancelNative(id);
       pending.resolve({ ok: false, error: { code: "service_unavailable", message } });
       this.pending.delete(id);
     }

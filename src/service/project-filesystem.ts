@@ -1,5 +1,7 @@
-import { lstatSync, mkdirSync, readdirSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import type { ProjectRevealProblem } from "../contracts/project-reveal.js";
+import { isTrustedProjectRevealTarget, type TrustedProjectRevealTarget } from "../contracts/service-protocol.js";
+import { accessSync, constants, lstatSync, mkdirSync, opendirSync, readdirSync, realpathSync } from "node:fs";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { reliableIdentity, sameIdentity, type NativeIdentity } from "./discovery.js";
 import type { ProjectCreationProblem } from "../contracts/project-creation.js";
 
@@ -9,10 +11,15 @@ export interface ProjectFilesystem {
   realpath(path: string): string;
   names(path: string): string[];
   mkdir(path: string): void;
+  assertAccessible?(path: string): void;
 }
 
 export const nativeProjectFilesystem: ProjectFilesystem = {
   platform: process.platform,
+  assertAccessible(path) {
+    accessSync(path, constants.R_OK | constants.X_OK);
+    const directory = opendirSync(path); directory.closeSync();
+  },
   inspect(path) {
     const stat = lstatSync(path, { bigint: true });
     return { kind: stat.isSymbolicLink() ? "link" : stat.isDirectory() ? "directory" : "other",
@@ -82,4 +89,36 @@ export function assertCreationDestinationFree(filesystem: ProjectFilesystem, par
   try { filesystem.inspect(join(parent, name)); }
   catch (error) { if (filesystemCode(error) === "ENOENT") return; throw error; }
   throw new CreationFailure("occupied");
+}
+
+export class RevealFailure extends Error {
+  constructor(readonly problem: ProjectRevealProblem) { super(problem); }
+}
+// Shared evidence checks, with no SQLite access and no project-content enumeration.
+export function verifyTrustedProjectRevealTarget(target: TrustedProjectRevealTarget, filesystem: ProjectFilesystem = nativeProjectFilesystem): string {
+  if (!isTrustedProjectRevealTarget(target) || !isAbsolute(target.canonicalRoot)) throw new RevealFailure("unresolved");
+  const components = target.relativePath.split("/");
+  if (components.length !== (target.parentRelativePath === "" ? 1 : 2) || !components.every((name) => validProjectBasename(name, filesystem.platform)) ||
+    (target.parentRelativePath !== "" && target.parentRelativePath !== components[0])) throw new RevealFailure("unresolved");
+  const path = join(target.canonicalRoot, ...components), parent = join(target.canonicalRoot, target.parentRelativePath);
+  const rel = relative(target.canonicalRoot, path);
+  if (isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`) || path === target.canonicalRoot) throw new RevealFailure("unresolved");
+  const verify = (path: string, identity: string, missing: ProjectRevealProblem, changed: ProjectRevealProblem) => {
+    try {
+      const expected = JSON.parse(identity), before = filesystem.inspect(path);
+      if (before.kind !== "directory" || !reliableIdentity(expected) || !sameIdentity(before.identity, expected) || filesystem.realpath(path) !== path) throw new RevealFailure(changed);
+      filesystem.assertAccessible?.(path);
+      const after = filesystem.inspect(path);
+      if (after.kind !== "directory" || !sameIdentity(after.identity, expected)) throw new RevealFailure(changed);
+    } catch (error) {
+      if (error instanceof RevealFailure) throw error;
+      throw new RevealFailure(["ENOENT", "ENOTDIR"].includes(String(filesystemCode(error))) ? missing : "unavailable");
+    }
+  };
+  const root = () => verify(target.canonicalRoot, target.rootIdentity, "root_unavailable", "root_replaced");
+  const category = () => verify(parent, target.parentIdentity, "category_unavailable", "category_unavailable");
+  root(); if (target.parentRelativePath) category();
+  verify(path, target.nativeIdentity, "missing", "replaced");
+  if (target.parentRelativePath) category(); root();
+  return path;
 }

@@ -142,12 +142,14 @@ Files:
 - Create: tests/project-reveal.test.mjs
 - Modify: package.json build scripts only if a separate test bundle is needed
 
-- [ ] Route creation/status/recovery and Reveal through the typed client, narrow preload, controller and actual service entry with exact request validation.
-- [ ] Accept logical workspace/project IDs for Reveal. Backend policy validates ownership, current source/root/category evidence, selected real-folder identity, containment and eligibility; return useful missing/replaced/unavailable/mode-retained failures.
-- [ ] Add a private backend-to-desktop native request/reply route bound to the current request and backend generation. Keep validated paths/evidence private and expose no arbitrary renderer path, file URL or shell-command API.
-- [ ] Recheck trusted root/category/destination evidence immediately before native dispatch and after completion where useful. Use Electron shell.openPath for the verified directory and handle its returned error. Distinguish dispatch acknowledgment from observed Finder/Explorer opening; document the remaining path-based invocation race.
-- [ ] Add service and real entry/controller/ports/preload/client tests for malformed/foreign IDs, delayed dispatch, destination removal/replacement, stale generations, timeouts, native errors and pending-request/listener cleanup. Preserve contextIsolation:true, nodeIntegration:false and sandbox:true.
-- [ ] Run standard task exit checks; commit the verified transport/native slice.
+- [x] Route creation/status/recovery and Reveal through the typed client, narrow preload, controller and actual service entry with exact request validation.
+- [x] Accept logical workspace/project IDs for Reveal. Backend policy validates ownership, current source/root/category evidence, selected real-folder identity, containment and eligibility; return useful missing/replaced/unavailable/mode-retained failures.
+- [x] Add a private backend-to-desktop native request/reply route bound to the current request and backend generation. Keep validated paths/evidence private and expose no arbitrary renderer path, file URL or shell-command API.
+- [x] Recheck trusted root/category/destination evidence immediately before native dispatch and after completion where useful. Use Electron shell.openPath for the verified directory and handle its returned error. Distinguish dispatch acknowledgment from observed Finder/Explorer opening; document the remaining path-based invocation race.
+- [x] Add service and real entry/controller/ports/preload/client tests for malformed/foreign IDs, delayed dispatch, destination removal/replacement, stale generations, timeouts, native errors and pending-request/listener cleanup. Preserve contextIsolation:true, nodeIntegration:false and sandbox:true.
+- [x] Run standard task exit checks; commit the verified transport/native slice.
+
+Task 4 local evidence (macOS, Node 22.21.1): npm test passed 718 tests with no failures/skips; lint, typecheck, check:docs and working/fixed-base diff whitespace checks passed. The focused Reveal/production-boundary suites passed all 96 tests. Compiled service entry/controller/ports/preload/client fixtures exercise creation, source-scoped status and explicit recovery in both modes, private native request/reply and reauthorization, queued policy/destination changes, foreign/malformed envelopes, timeouts, native errors, stale generations and subscription/request cleanup. The existing narrow preload command surface required no additional privileged API. main.ts wires the trusted adapter to Electron shell.openPath; injected openPath results in these automated tests are not actual Finder/Explorer invocation or observed opening. ADR 0006 records dispatch acknowledgment, cancellation limits and the remaining policy/filesystem-to-native path race. UI/graphical evidence and coordinator target-OS gates remain open; issue #44 is unchanged.
 
 ### Task 5: Add EN/RU creation, recovery and Reveal interactions
 

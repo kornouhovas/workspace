@@ -1,11 +1,12 @@
 import type { ProjectCreationResult, ProjectCreationOperation, ProjectCreationList, ProjectCreationRecoveryPreview } from "./project-creation.js";
+import type { ProjectRevealResult, ProjectRevealProblem } from "./project-reveal.js";
 import type { ProjectRecoveryPreview } from "./project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "./text-properties.js";
 import type { ServiceResult } from "./settings.js";
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState, WorkspaceChangeEvent } from "./workspaces.js";
 import type { Settings } from "./settings.js";
 
-export type ServicePayload = ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
+export type ServicePayload = ProjectRevealResult | ProjectCreationResult | ProjectCreationOperation | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | CategoryPropertySnapshot | TextPropertySnapshot | TextPropertyMutation | ProjectList | DiscoveryPreview | Settings | WorkspaceLoad | WorkspaceCreated | ActiveWorkspace | WorkspaceSourceState;
 
 export type ServiceRequest = {
   id: number;
@@ -97,4 +98,69 @@ function uuid(value: unknown): value is string {
 }
 function ids(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(uuid) && new Set(value).size === value.length;
+}
+
+// Private service/main protocol. Never forward these messages to the renderer.
+export interface TrustedProjectRevealTarget {
+  canonicalRoot: string;
+  parentRelativePath: string;
+  relativePath: string;
+  rootIdentity: string;
+  parentIdentity: string;
+  nativeIdentity: string;
+}
+export type NativeProjectRevealResult = { outcome: "dispatched" } | { outcome: "rejected"; problem: ProjectRevealProblem };
+export type NativeProjectRevealValidation = { outcome: "verified" } | { outcome: "rejected"; problem: ProjectRevealProblem };
+export type NativeProjectReveal = (target: TrustedProjectRevealTarget, revalidate: () => NativeProjectRevealValidation) => Promise<NativeProjectRevealResult>;
+export type NativeProjectRevealVerify = { type: "project.reveal.verify"; requestId: number; dispatchId: string };
+export type NativeProjectRevealVerified = { type: "project.reveal.verified"; requestId: number; dispatchId: string; result: NativeProjectRevealValidation };
+export type NativeProjectRevealRequest = {
+  type: "project.reveal.native"; requestId: number; dispatchId: string; target: TrustedProjectRevealTarget;
+};
+export type NativeProjectRevealReply = {
+  type: "project.reveal.reply"; requestId: number; dispatchId: string; result: NativeProjectRevealResult;
+};
+export type NativeProjectRevealCancel = { type: "project.reveal.cancel"; requestId: number; dispatchId: string };
+export function isTrustedProjectRevealTarget(value: unknown): value is TrustedProjectRevealTarget {
+  if (!record(value) || !exact(value, ["canonicalRoot", "parentRelativePath", "relativePath", "rootIdentity", "parentIdentity", "nativeIdentity"]) ||
+    ![value.canonicalRoot, value.parentRelativePath, value.relativePath].every((path) => typeof path === "string" && !path.includes("\0")) ||
+    value.canonicalRoot === "" || value.relativePath === "") return false;
+  return [value.rootIdentity, value.parentIdentity, value.nativeIdentity].every((encoded) => {
+    if (typeof encoded !== "string") return false;
+    try {
+      const identity: unknown = JSON.parse(encoded);
+      return record(identity) && exact(identity, ["dev", "ino", "birthtimeNs"]) &&
+        typeof identity.dev === "string" && /^[0-9]+$/.test(identity.dev) &&
+        typeof identity.ino === "string" && /^[0-9]+$/.test(identity.ino) && BigInt(identity.ino) > 0n &&
+        typeof identity.birthtimeNs === "string" && /^[0-9]+$/.test(identity.birthtimeNs) && BigInt(identity.birthtimeNs) > 0n;
+    } catch { return false; }
+  });
+}
+function nativeBinding(value: Record<string, unknown>) {
+  return typeof value.requestId === "number" && Number.isSafeInteger(value.requestId) && value.requestId > 0 && uuid(value.dispatchId);
+}
+export function isNativeProjectRevealRequest(value: unknown): value is NativeProjectRevealRequest {
+  return record(value) && exact(value, ["type", "requestId", "dispatchId", "target"]) && value.type === "project.reveal.native" &&
+    nativeBinding(value) && isTrustedProjectRevealTarget(value.target);
+}
+export function isNativeProjectRevealReply(value: unknown): value is NativeProjectRevealReply {
+  if (!record(value) || !exact(value, ["type", "requestId", "dispatchId", "result"]) || value.type !== "project.reveal.reply" ||
+    !nativeBinding(value) || !record(value.result)) return false;
+  return value.result.outcome === "dispatched" ? exact(value.result, ["outcome"]) :
+    value.result.outcome === "rejected" && exact(value.result, ["outcome", "problem"]) &&
+    ["unconfigured", "mode_retained", "excluded", "missing", "replaced", "unresolved", "root_unavailable", "root_replaced", "category_unavailable",
+      "unavailable", "native_unavailable", "native_error", "request_expired"].includes(String(value.result.problem));
+}
+export function isNativeProjectRevealCancel(value: unknown): value is NativeProjectRevealCancel {
+  return record(value) && exact(value, ["type", "requestId", "dispatchId"]) && value.type === "project.reveal.cancel" && nativeBinding(value);
+}
+
+export function isNativeProjectRevealVerify(value: unknown): value is NativeProjectRevealVerify {
+  return record(value) && exact(value, ["type", "requestId", "dispatchId"]) && value.type === "project.reveal.verify" && nativeBinding(value);
+}
+export function isNativeProjectRevealVerified(value: unknown): value is NativeProjectRevealVerified {
+  if (!record(value) || !exact(value, ["type", "requestId", "dispatchId", "result"]) || value.type !== "project.reveal.verified" ||
+    !nativeBinding(value) || !record(value.result)) return false;
+  return value.result.outcome === "verified" ? exact(value.result, ["outcome"]) :
+    isNativeProjectRevealReply({ ...value, type: "project.reveal.reply" });
 }

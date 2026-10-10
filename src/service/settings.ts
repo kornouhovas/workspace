@@ -1,3 +1,5 @@
+import type { NativeProjectReveal } from "../contracts/service-protocol.js";
+import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import type { ObserverDependencies } from "./source-observer.js";
 import type { ProjectFilesystem } from "./project-filesystem.js";
 import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
@@ -22,6 +24,7 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
+  revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   handleQuery(input: unknown): ServiceResult<ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
@@ -73,6 +76,7 @@ export function openSettingsService(
   const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem);
   return {
     workspaces,
+    revealProject: workspaces.revealProject,
     handleQuery(input) {
       if (isRecord(input) && input.type === "workspace.listProjectCreations") return workspaces.listProjectCreations(input);
       if (isRecord(input) && input.type === "workspace.getProjectCreation") return workspaces.getProjectCreation(input);

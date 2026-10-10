@@ -1,8 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain, MessageChannelMain, utilityProcess } from "electron";
+import { app, BrowserWindow, dialog, shell, ipcMain, MessageChannelMain, utilityProcess } from "electron";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { BackendController } from "./backend-controller.js";
+import { createNativeProjectReveal } from "./project-reveal.js";
 import { createRootPicker } from "./root-picker.js";
 
 const appDataDirectory = process.env.WORKSPACE_USER_DATA_DIR ??
@@ -15,7 +16,7 @@ const controller = new BackendController((status) => {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) window.webContents.send("workspace:backend-status", status);
   }
-});
+}, createNativeProjectReveal((path) => shell.openPath(path)));
 
 controller.onWorkspaceChange((change) => {
   for (const window of BrowserWindow.getAllWindows()) {

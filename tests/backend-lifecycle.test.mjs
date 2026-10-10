@@ -1318,3 +1318,269 @@ test("late preload/client reads startup degraded observation through production 
     assert.equal(timers.size, 0); assert.equal(ipc.listenerCount("workspace:change"), 0);
   } finally { off?.(); relay(); unload.dispatchEvent(new Event("unload")); parent.emit("message", { data: { type: "shutdown" }, ports: [] }); await rm(directory, { recursive: true, force: true }); }
 });
+
+for (const mode of ["direct", "grouped"]) {
+  test(`${mode} creation, status, reviewed recovery and Reveal traverse actual entry/controller/ports/preload/client`, async () => {
+    const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-reveal-transport-")));
+    const root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+    fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
+    const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+    servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+    desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
+    parent.postMessage = (message) => child.send(message);
+    child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+    const { openSettingsService } = await import("../dist/service/settings.mjs");
+    const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
+    const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
+    const { randomUUID } = await import("node:crypto");
+    // Deterministic evidence-write interruption using the real database/service.
+    let interrupt = false;
+    startServiceProcess(parent, (path, folder) => openSettingsService(path, folder, undefined, undefined, {
+      ...nativeProjectFilesystem,
+      mkdir(path) { nativeProjectFilesystem.mkdir(path); if (interrupt) throw new Error("response lost after mkdir"); },
+    }), () => child.exit());
+    const nativeCalls = [];
+    const controller = new BackendController(undefined, createNativeProjectReveal(async (path) => { nativeCalls.push(path); return ""; }));
+    const ipc = new EventEmitter();
+    ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
+    controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
+    const preload = await readFile(new URL("../dist/desktop/preload.cjs", import.meta.url), "utf8");
+    const unload = new EventTarget(); let api;
+    runInNewContext(preload, { window: unload, require: () => ({ ipcRenderer: ipc, contextBridge: { exposeInMainWorld: (_key, value) => { api = value; } } }) });
+    const client = new WorkspaceServiceClient(api), events = [];
+    const off = client.onWorkspaceChange((event) => events.push(event));
+    try {
+      assert.equal(await controller.start(child, desktopPort, database, {}, 100), true);
+      const one = (await client.createWorkspace("One", root)).value, sibling = (await client.createWorkspace("Sibling", root)).value;
+      const preview = (await client.previewDiscovery(one.workspaceId, undefined, mode)).value;
+      const list = (await client.applyDiscovery(one.workspaceId, preview.previewToken)).value;
+      servicePort.sent.length = 0; events.length = 0;
+      const input = { workspaceId: one.workspaceId, operationId: randomUUID(), name: "Authored project", mode, expectedRevision: list.revision,
+        ...(mode === "grouped" ? { categoryId: list.categories[0].categoryId } : {}) };
+      const created = await client.createProject(input);
+      assert.equal(created.value.outcome, "completed");
+      assert.equal(servicePort.sent[0].change.type, "workspace.projectsChanged");
+      assert.deepEqual(new Set(events[0].workspaceIds), new Set([one.workspaceId, sibling.workspaceId]));
+      assert.equal((await client.getProjectCreation(sibling.workspaceId, input.operationId)).value.project.projectId, created.value.project.projectId);
+      assert.deepEqual((await client.listProjectCreations(one.workspaceId)).value.operations, []);
+      const revealed = await client.revealProject(sibling.workspaceId, created.value.project.projectId);
+      assert.equal(revealed.value.outcome, "dispatched");
+      assert.deepEqual(nativeCalls, [join(root, created.value.project.relativePath)]);
+      // Renderer receives normalized replies only, never private native targets.
+      assert.equal(servicePort.sent.some((message) => message.type === "project.reveal.native"), true);
+      assert.equal(desktopPort.sent.some((message) => message.type === "project.reveal.reply"), true);
+      assert.equal(Object.keys(api).some((key) => /native|shell|path|url/i.test(key)), false);
+      interrupt = true;
+      const uncertainInput = { ...input, operationId: randomUUID(), name: "Interrupted project", expectedRevision: created.value.project.revision };
+      const uncertain = await client.createProject(uncertainInput);
+      assert.equal(uncertain.value.outcome, "recoverable");
+      assert.equal((await client.listProjectCreations(sibling.workspaceId)).value.operations[0].operationId, uncertainInput.operationId);
+      const review = (await client.previewProjectCreationRecovery(sibling.workspaceId, uncertainInput.operationId)).value;
+      assert.deepEqual(review.actions, ["associate_reviewed"]);
+      const recovered = await client.recoverProjectCreation(sibling.workspaceId, uncertainInput.operationId, review.previewToken, "associate_reviewed");
+      assert.equal(recovered.value.outcome, "completed");
+      assert.equal(recovered.value.project.projectId, uncertain.value.operation.projectId);
+      assert.equal((await client.createProject({ ...input, name: "Altered retry" })).error.code, "invalid_input");
+      for (const request of [
+        { type: "workspace.createProject", ...input, path: "/outside" },
+        { type: "workspace.listProjectCreations", workspaceId: one.workspaceId, extra: true },
+        { type: "workspace.getProjectCreation", workspaceId: one.workspaceId, operationId: "bad" },
+        { type: "workspace.previewProjectCreationRecovery", workspaceId: one.workspaceId, operationId: input.operationId, nativeIdentity: "bad" },
+        { type: "workspace.recoverProjectCreation", workspaceId: one.workspaceId, operationId: input.operationId, action: "automatic", previewToken: randomUUID() },
+        { type: "workspace.revealProject", workspaceId: one.workspaceId, projectId: created.value.project.projectId, url: "file:///outside" },
+        { type: "project.reveal.native", path: "/outside" },
+      ]) assert.equal((await api.workspace(request)).error.code, "invalid_input");
+      off(); unload.dispatchEvent(new Event("unload")); assert.equal(ipc.listenerCount("workspace:change"), 0);
+      await controller.stop(100);
+      assert.equal(servicePort.closed && desktopPort.closed, true);
+    } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); fs.rmSync(directory, { recursive: true, force: true }); }
+  });
+}
+
+const revealCommand = () => ({ type: "workspace.revealProject", workspaceId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", projectId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" });
+const trustedTarget = () => ({ canonicalRoot: "/fixture/root", parentRelativePath: "", relativePath: "Project",
+  rootIdentity: '{"dev":"1","ino":"2","birthtimeNs":"3"}', parentIdentity: '{"dev":"1","ino":"2","birthtimeNs":"3"}',
+  nativeIdentity: '{"dev":"1","ino":"4","birthtimeNs":"5"}' });
+const nativeMessage = (requestId = 1) => ({ type: "project.reveal.native", requestId,
+  dispatchId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", target: trustedTarget() });
+
+async function readyNativeController(native) {
+  const child = new FakeChild(), port = new FakePort(), controller = new BackendController(undefined, native);
+  const ready = controller.start(child, port, "/fixture/db.sqlite", {}, 100); child.send({ type: "ready" });
+  assert.equal(await ready, true);
+  return { child, port, controller };
+}
+
+test("private native requests require an outstanding Reveal, exact evidence/envelope and single dispatch", async () => {
+  let calls = 0;
+  const f = await readyNativeController(async () => { calls++; return { outcome: "dispatched" }; });
+  f.port.receive(nativeMessage()); assert.equal(calls, 0);
+  const ordinary = f.controller.request({ type: "settings.load" });
+  f.port.receive(nativeMessage()); assert.equal(calls, 0);
+  f.port.receive({ id: 1, result: { ok: true, value: { language: "en" } } }); await ordinary;
+  const pending = f.controller.request(revealCommand());
+  const message = nativeMessage(2);
+  for (const invalid of [{ ...message, requestId: 900 }, { ...message, path: "/outside" },
+    { ...message, dispatchId: "bad" }, { ...message, target: { ...message.target, nativeIdentity: '{}' } },
+    { ...message, target: { ...message.target, nativeIdentity: '{"dev":"1","ino":"0","birthtimeNs":"5"}' } },
+    { ...message, target: { ...message.target, url: "file:///outside" } }]) f.port.receive(invalid);
+  assert.equal(calls, 0);
+  f.port.receive(message); f.port.receive(message); await Promise.resolve();
+  assert.equal(calls, 1);
+  assert.deepEqual(f.port.sent.at(-1), { type: "project.reveal.reply", requestId: 2, dispatchId: message.dispatchId, result: { outcome: "dispatched" } });
+  f.port.receive({ id: 2, result: { ok: true, value: { outcome: "dispatched", workspaceId: revealCommand().workspaceId, projectId: revealCommand().projectId } } });
+  await pending; f.child.exit();
+});
+
+for (const cause of ["timeout", "exit", "restart", "stop", "service_cancel"]) {
+  test(`native dispatch lifetime rejects delayed completion after ${cause} and isolates backend generations`, async () => {
+    let finish, current;
+    const f = await readyNativeController(async (_target, isCurrent) => { current = isCurrent;
+      await new Promise((resolve) => { finish = resolve; });
+      return { outcome: "dispatched" };
+    });
+    const pending = f.controller.request(revealCommand(), cause === "timeout" ? 5 : 100);
+    f.port.receive(nativeMessage()); assert.equal(current(), true);
+    let newPort, next;
+    if (cause === "exit") f.child.exit();
+    if (cause === "restart") {
+      const child = new FakeChild(); newPort = new FakePort();
+      const ready = f.controller.start(child, newPort, "/fixture/new.sqlite", {}, 100); child.send({ type: "ready" }); await ready;
+      // Old responses, native messages, readiness and exit cannot reach the new generation.
+      next = f.controller.request(revealCommand(), 100);
+      f.port.receive(nativeMessage(2)); f.child.send({ type: "startup-error" }); f.child.exit();
+      assert.equal(f.controller.currentStatus.state, "ready");
+    }
+    if (cause === "stop") { f.child.postMessage = () => setImmediate(() => f.child.exit()); await f.controller.stop(100); }
+    if (cause === "service_cancel") {
+      f.port.receive({ type: "project.reveal.cancel", requestId: 1, dispatchId: nativeMessage().dispatchId });
+      f.port.receive({ id: 1, result: { ok: false, error: { code: "service_unavailable", message: "Native timeout" } } });
+    }
+    assert.equal((await pending).ok, false); assert.equal(current(), false);
+    finish(); await Promise.resolve(); await Promise.resolve();
+    assert.equal(f.port.sent.some((message) => message.type === "project.reveal.reply"), false);
+    f.port.receive(nativeMessage()); assert.equal(current(), false);
+    if (cause === "restart") {
+      assert.equal(newPort.sent.some((message) => message.type === "project.reveal.reply"), false);
+      newPort.receive({ id: 2, result: { ok: true, value: { outcome: "rejected", ...revealCommand(), problem: "native_unavailable" } } });
+      assert.equal((await next).ok, true);
+    }
+    f.child.exit();
+  });
+}
+
+test("service native reply bindings reject foreign IDs/evidence and time out without retry or leaked pending requests", async () => {
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-reply-lifetime-")));
+  const root = join(directory, "root"); fs.mkdirSync(join(root, "Project"), { recursive: true });
+  const parent = new EventEmitter(), port = new FakePort(); parent.postMessage = () => {};
+  startServiceProcess(parent, undefined, undefined, 10);
+  parent.emit("message", { data: { type: "connect", databasePath: join(directory, "data.sqlite") }, ports: [port] });
+  let id = 0;
+  const request = (input) => { const requestId = ++id; port.receive({ id: requestId, input }); return port.sent.find((message) => message.id === requestId)?.result; };
+  try {
+    const one = request({ type: "workspace.create", name: "One", rootPath: root }).value;
+    const preview = request({ type: "workspace.previewDiscovery", workspaceId: one.workspaceId }).value;
+    const list = request({ type: "workspace.applyDiscovery", workspaceId: one.workspaceId, previewToken: preview.previewToken }).value;
+    const input = { type: "workspace.revealProject", workspaceId: one.workspaceId, projectId: list.projects[0].projectId };
+    request(input); const firstId = id, message = port.sent.at(-1);
+    assert.equal(message.type, "project.reveal.native");
+    for (const reply of [
+      { type: "project.reveal.reply", requestId: firstId + 1, dispatchId: message.dispatchId, result: { outcome: "dispatched" } },
+      { type: "project.reveal.reply", requestId: firstId, dispatchId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", result: { outcome: "dispatched" } },
+      { type: "project.reveal.reply", requestId: firstId, dispatchId: message.dispatchId, result: { outcome: "dispatched", path: "/outside" } },
+    ]) port.receive(reply);
+    assert.equal(port.sent.some((row) => row.id === firstId), false);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    assert.equal(port.sent.find((row) => row.id === firstId).result.value.problem, "native_unavailable");
+    port.receive({ type: "project.reveal.reply", requestId: firstId, dispatchId: message.dispatchId, result: { outcome: "dispatched" } });
+    request(input); const secondId = id, second = port.sent.at(-1);
+    assert.notEqual(second.dispatchId, message.dispatchId);
+    port.receive({ type: "project.reveal.reply", requestId: secondId, dispatchId: second.dispatchId, result: { outcome: "dispatched" } });
+    await Promise.resolve(); await Promise.resolve();
+    assert.equal(port.sent.find((row) => row.id === secondId).result.value.outcome, "dispatched");
+    request(input); const thirdId = id;
+    parent.emit("message", { data: { type: "shutdown" }, ports: [] });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(port.closed, true); assert.equal(port.sent.some((row) => row.id === thirdId), false);
+  } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("pending backend reauthorization rejects foreign/late verification replies and cleans up on request timeout", async () => {
+  let authorization;
+  const f = await readyNativeController(async (_target, _current, authorize) => {
+    authorization = await authorize(); return authorization.outcome === "verified" ? { outcome: "dispatched" } : authorization;
+  });
+  const pending = f.controller.request(revealCommand(), 10); f.port.receive(nativeMessage());
+  assert.equal(f.port.sent.at(-1).type, "project.reveal.verify");
+  for (const reply of [
+    { type: "project.reveal.verified", requestId: 2, dispatchId: nativeMessage().dispatchId, result: { outcome: "verified" } },
+    { type: "project.reveal.verified", requestId: 1, dispatchId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", result: { outcome: "verified" } },
+    { type: "project.reveal.verified", requestId: 1, dispatchId: nativeMessage().dispatchId, result: { outcome: "verified", extra: true } },
+  ]) f.port.receive(reply);
+  assert.equal(authorization, undefined); assert.equal((await pending).ok, false);
+  await Promise.resolve(); assert.deepEqual(authorization, { outcome: "rejected", problem: "request_expired" });
+  f.port.receive({ type: "project.reveal.verified", requestId: 1, dispatchId: nativeMessage().dispatchId, result: { outcome: "verified" } });
+  assert.equal(f.port.sent.some((message) => message.type === "project.reveal.reply"), false); f.child.exit();
+});
+
+for (const mode of ["direct", "grouped"]) {
+  for (const scenario of ["metadata_exclusion", "destination_missing", "destination_replaced", "native_error", "native_throw", "native_timeout"]) {
+    test(`${mode} actual entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
+      const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-dispatch-race-")));
+      const root = join(directory, "root"), relativePath = mode === "direct" ? "Project" : "Category/Project", path = join(root, relativePath);
+      fs.mkdirSync(path, { recursive: true }); fs.writeFileSync(join(path, "keep"), "sentinel");
+      const parent = new EventEmitter(), child = new FakeChild(), servicePort = new FakePort(), desktopPort = new FakePort();
+      servicePort.postMessage = (message) => { servicePort.sent.push(message); desktopPort.receive(message); };
+      desktopPort.postMessage = (message) => { desktopPort.sent.push(message); servicePort.receive(message); };
+      parent.postMessage = (message) => child.send(message);
+      child.postMessage = (data) => parent.emit("message", { data, ports: [servicePort] });
+      startServiceProcess(parent, undefined, () => child.exit(), scenario === "native_timeout" ? 15 : 1000);
+      const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
+      const calls = []; let finish, delayed = true, entered;
+      const hasEntered = new Promise((resolve) => { entered = resolve; });
+      const native = createNativeProjectReveal(async (target) => {
+        calls.push(target);
+        if (scenario === "native_error") return "OS returned an error with private path";
+        if (scenario === "native_throw") throw new Error(path);
+        return "";
+      });
+      const controller = new BackendController(undefined, async (target, current, authorize) => {
+        if (delayed) { entered(); await new Promise((resolve) => { finish = resolve; }); }
+        return native(target, current, authorize);
+      });
+      const client = new WorkspaceServiceClient({ workspace: (input) => controller.request(input, 1000) });
+      try {
+        assert.equal(await controller.start(child, desktopPort, join(directory, "db.sqlite"), {}, 100), true);
+        const one = (await client.createWorkspace("One", root)).value;
+        const preview = (await client.previewDiscovery(one.workspaceId, undefined, mode)).value;
+        const list = (await client.applyDiscovery(one.workspaceId, preview.previewToken)).value;
+        const pending = client.revealProject(one.workspaceId, list.projects[0].projectId);
+        await hasEntered;
+        if (scenario === "metadata_exclusion") {
+          const excluded = (await client.previewDiscovery(one.workspaceId, [relativePath])).value;
+          assert.equal((await client.applyDiscovery(one.workspaceId, excluded.previewToken)).ok, true);
+        }
+        if (scenario === "destination_missing" || scenario === "destination_replaced") {
+          fs.renameSync(path, `${path}-moved`); if (scenario === "destination_replaced") fs.mkdirSync(path);
+        }
+        if (scenario === "native_timeout") {
+          const result = await pending; assert.equal(result.value.problem, "native_unavailable");
+          finish(); await Promise.resolve(); await Promise.resolve();
+        } else {
+          finish();
+          const result = await pending;
+          assert.equal(result.value.problem, scenario === "metadata_exclusion" ? "excluded" : scenario === "destination_missing" ? "missing" : scenario === "destination_replaced" ? "replaced" : "native_error");
+        }
+        assert.equal(calls.length, scenario.startsWith("native_") && scenario !== "native_timeout" ? 1 : 0);
+        if (scenario.startsWith("destination_")) {
+          fs.rmSync(path, { recursive: true, force: true }); fs.renameSync(`${path}-moved`, path);
+        }
+        delayed = false;
+        assert.equal((await client.listProjects(one.workspaceId)).ok, true);
+        assert.equal(fs.readFileSync(join(path, "keep"), "utf8"), "sentinel");
+        await controller.stop(100);
+        assert.equal(servicePort.closed && desktopPort.closed, true);
+      } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); fs.rmSync(directory, { recursive: true, force: true }); }
+    });
+  }
+}

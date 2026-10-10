@@ -1,3 +1,6 @@
+import { createProjectRevealService } from "./project-reveal.js";
+import type { NativeProjectReveal } from "../contracts/service-protocol.js";
+import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import { createSourceObserver, nativeObserverDependencies, type ObserverDependencies, type SourceObservation } from "./source-observer.js";
 import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
@@ -41,6 +44,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
   listProjectCreations(input: unknown): ServiceResult<ProjectCreationList>;
   getProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
   previewProjectCreationRecovery(input: unknown): ServiceResult<ProjectCreationRecoveryPreview>;
@@ -124,7 +128,9 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.request(sourceId);
     },
   }, projectFilesystem);
+  const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    revealProject: reveal.revealProject,
     createProject: creation.createProject,
     listProjectCreations: creation.listProjectCreations,
     getProjectCreation: creation.getProjectCreation,
@@ -172,7 +178,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||

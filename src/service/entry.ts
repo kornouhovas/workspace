@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { isProjectCreationRequest } from "../contracts/project-creation.js";
+import { isProjectRevealRequest } from "../contracts/project-reveal.js";
 import { openSettingsService, type SettingsService } from "./settings.js";
-import { isServiceRequest, type ServicePort } from "../contracts/service-protocol.js";
+import { isServiceRequest, isNativeProjectRevealVerify, isNativeProjectRevealReply, isNativeProjectRevealCancel, type TrustedProjectRevealTarget, type NativeProjectRevealResult, type NativeProjectRevealValidation, type ServicePort } from "../contracts/service-protocol.js";
 import { join } from "node:path";
 
 type ParentPort = {
@@ -11,16 +14,39 @@ export function startServiceProcess(
   parentPort: ParentPort,
   openService: (databasePath: string, migrationFolder?: string) => SettingsService = openSettingsService,
   exitProcess: (code: number) => void = () => undefined,
+  nativeTimeoutMs = 8000,
 ): void {
   let service: SettingsService | undefined;
   let requestPort: ServicePort | undefined;
   let stopping = false;
   let unsubscribe: (() => void) | undefined;
+  const activeRequests = new Set<number>();
+  const nativePending = new Map<string, { requestId: number; verify(): NativeProjectRevealValidation; timer: ReturnType<typeof setTimeout>; resolve(result: NativeProjectRevealResult): void }>();
+  function settleNative(dispatchId: string, result: NativeProjectRevealResult) {
+    const pending = nativePending.get(dispatchId);
+    if (!pending) return;
+    clearTimeout(pending.timer); nativePending.delete(dispatchId); pending.resolve(result);
+  }
+  function dispatchNative(requestId: number, target: TrustedProjectRevealTarget, verify: () => NativeProjectRevealValidation): Promise<NativeProjectRevealResult> {
+    if (stopping || !requestPort || !activeRequests.has(requestId)) return Promise.resolve({ outcome: "rejected", problem: "request_expired" });
+    const dispatchId = randomUUID();
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        settleNative(dispatchId, { outcome: "rejected", problem: "native_unavailable" });
+        try { requestPort?.postMessage({ type: "project.reveal.cancel", requestId, dispatchId }); } catch { /* Closed transport. */ }
+      }, nativeTimeoutMs);
+      nativePending.set(dispatchId, { requestId, verify, timer, resolve });
+      try { requestPort?.postMessage({ type: "project.reveal.native", requestId, dispatchId, target }); }
+      catch { settleNative(dispatchId, { outcome: "rejected", problem: "native_unavailable" }); }
+    });
+  }
 
   const shutdown = () => {
     if (stopping) return;
     stopping = true;
     unsubscribe?.();
+    for (const dispatchId of nativePending.keys()) settleNative(dispatchId, { outcome: "rejected", problem: "request_expired" });
+    activeRequests.clear();
     requestPort?.close();
     service?.close();
   };
@@ -46,7 +72,30 @@ export function startServiceProcess(
         if (!stopping) requestPort?.postMessage({ type: "workspace.change", change });
       });
       requestPort.on("message", ({ data: request }) => {
-        if (stopping || !service || !isServiceRequest(request)) return;
+        if (stopping || !service) return;
+        if (isNativeProjectRevealVerify(request)) {
+          const pending = nativePending.get(request.dispatchId);
+          if (pending?.requestId === request.requestId) {
+            requestPort?.postMessage({ type: "project.reveal.verified", requestId: request.requestId, dispatchId: request.dispatchId, result: pending.verify() });
+          }
+          return;
+        }
+        if (isNativeProjectRevealReply(request) || isNativeProjectRevealCancel(request)) {
+          if (nativePending.get(request.dispatchId)?.requestId === request.requestId) {
+            settleNative(request.dispatchId, request.type === "project.reveal.reply" ? request.result : { outcome: "rejected", problem: "request_expired" });
+          }
+          return;
+        }
+        if (!isServiceRequest(request) || activeRequests.has(request.id)) return;
+        if (isProjectRevealRequest(request.input)) {
+          activeRequests.add(request.id);
+          void service.revealProject(request.input, (target, verify) => dispatchNative(request.id, target, verify)).then((result) => {
+            if (!stopping) {
+              try { requestPort?.postMessage({ id: request.id, result }); } catch { /* Request port closed. */ }
+            }
+          }).finally(() => { activeRequests.delete(request.id); });
+          return;
+        }
         const result = isMalformedWorkspaceRequest(request.input)
           ? { ok: false, error: { code: "invalid_input", message: "The workspace request is invalid." } }
           : isLoadQuery(request.input)
@@ -64,11 +113,13 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery");
+  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if (["workspace.createProject", "workspace.listProjectCreations", "workspace.getProjectCreation", "workspace.previewProjectCreationRecovery", "workspace.recoverProjectCreation"].includes(input.type)) return !isProjectCreationRequest(input);
+  if (input.type === "workspace.revealProject") return !isProjectRevealRequest(input);
   if (input.type === "workspace.previewProjectRecovery" || input.type === "workspace.reassociateProject") {
     const keys = ["type", "workspaceId", "projectId", ...(input.type === "workspace.reassociateProject" ? ["previewToken", "relativePath"] : [])];
     return !hasExactKeys(input, keys) || keys.some((key) => typeof input[key] !== "string");
