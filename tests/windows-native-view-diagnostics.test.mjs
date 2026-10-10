@@ -213,9 +213,12 @@ foreach ($mode in $cases) {
 
 test("Windows terminal binding uses actual UIA conditions and retains disabled/offscreen states", { skip: process.platform !== "win32" }, async (t) => {
   const script = String.raw`
+$ErrorActionPreference = 'Stop'
 . ./scripts/windows-selection-diagnostics.ps1
 . ./scripts/windows-native-view-diagnostics.ps1
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+# Rect belongs to WindowsBase. Load it before the FIRST synthetic construction,
+# rather than depending on a later UIA query to load the referenced assembly.
+Add-Type -AssemblyName WindowsBase, UIAutomationClient, UIAutomationTypes -ErrorAction Stop
 if ($null -ne (Test-WorkspaceTerminalBounds $null) -or
     $null -ne (Test-WorkspaceTerminalBounds ([pscustomobject]@{ X = 0 }))) { throw 'missing bounds became false' }
 # Synthetic objects only. Record type/collection shapes, not values, names or exception text.
@@ -260,10 +263,13 @@ function Get-Process { param($Id) return @{ ProcessName = $(if ($mode -eq 'wrong
 function Get-WorkspaceUiaRoot($handle) { return $root }
 function Read-WorkspaceTerminalNativeWindow($handle) { return @{ stage = 'verified'; processId = $(if ($mode -eq 'native_pid_mismatch') { 999 } else { 456 }); windowVisible = $true; windowMinimized = $false; windowForeground = $false } }
 $name = [IO.Path]::GetFileName($env:WORKSPACE_OBSERVE_TARGET)
-foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_process','native_pid_mismatch','tabs','view_absent','duplicate_views','target_absent','duplicate_items','no_pattern','unsupported_bool','unsupported_bounds','unsupported_selected','null_view_id','empty_item_id','nested_view_id')) {
+foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_process','native_pid_mismatch','tabs','view_absent','duplicate_views','target_absent','duplicate_items','no_pattern','unsupported_bool','unsupported_bounds','unsupported_selected','null_view_bounds','null_item_bounds','null_view_id','empty_item_id','nested_view_id')) {
   $patternReads = 0
   $bounds = [System.Windows.Rect]::new(-50.5,0,$(if ($mode -eq 'unready') { 0 } else { 100 }),50)
+  # This runs in a fresh -NoProfile process, before any reader/query invocation.
+  if ($bounds -isnot [System.Windows.Rect]) { throw 'synthetic bounds initialization failed' }
   $item = [pscustomobject]@{ Current = [pscustomobject]@{ IsEnabled = ($mode -ne 'unready'); IsOffscreen = ($mode -eq 'unready'); BoundingRectangle = $bounds; HasKeyboardFocus = $false } }
+  if ($mode -eq 'null_item_bounds') { $item.Current.BoundingRectangle = $null }
   $item | Add-Member ScriptMethod GetRuntimeId { if ($mode -eq 'empty_item_id') { return ,([int[]]@()) }; return ,([int[]]@(4,5)) }
   $item | Add-Member ScriptMethod GetCurrentPropertyValue { param($property, $ignoreDefault)
     if ($ignoreDefault -ne $true) { throw 'private defaults not ignored' }
@@ -287,6 +293,7 @@ foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_p
     return $true
   }
   $view = [pscustomobject]@{ Current = [pscustomobject]@{ IsEnabled = $true; IsOffscreen = $false; BoundingRectangle = $bounds } }
+  if ($mode -eq 'null_view_bounds') { $view.Current.BoundingRectangle = $null }
   $view | Add-Member ScriptMethod GetRuntimeId {
     if ($mode -eq 'null_view_id') { return $null }
     if ($mode -eq 'nested_view_id') { return ,@(,@(2,3)) }
@@ -336,32 +343,40 @@ foreach ($mode in @('observed','late_selected','unready','wrong_handle','wrong_p
   [ordered]@{ mode = $mode; stage = $result.stage; snapshot = $result.snapshot; patternReads = $patternReads; diagnostics = $diagnostics } | ConvertTo-Json -Depth 7 -Compress
 }
 `;
-  const { stdout } = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+  const { stdout, stderr } = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
     timeout: 30000, maxBuffer: 65536, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
   });
+  assert.equal(stderr.trim().length, 0, 'controlled binding fixture emitted PowerShell errors');
   const results = stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
-  assert.equal(results.length, 18);
+  assert.equal(results.length, 20);
   const modes = ['observed','late_selected','unready','wrong_handle','wrong_process','native_pid_mismatch','tabs','view_absent',
     'duplicate_views','target_absent','duplicate_items','no_pattern','unsupported_bool','unsupported_bounds','unsupported_selected',
-    'null_view_id','empty_item_id','nested_view_id'];
+    'null_view_bounds','null_item_bounds','null_view_id','empty_item_id','nested_view_id'];
   assert.deepEqual(results.map(({ mode }) => mode), modes);
   // Emit every case BEFORE the first strict assertion; a broken observed case
   // must not hide the unsupported/nested-ID controls needed to diagnose it.
   for (const { mode, diagnostics } of results) {
     t.diagnostic(JSON.stringify({ mode, diagnostics: syntheticBindingReport(diagnostics) }));
   }
-  for (const { mode, stage, snapshot, patternReads } of results) {
+  for (const { mode, stage, snapshot, patternReads, diagnostics } of results) {
     const verified = ["observed", "late_selected", "unready"].includes(mode);
     const expected = verified ? "verified" : ["wrong_handle", "wrong_process", "native_pid_mismatch"].includes(mode) ? "wrong_window" :
       mode === "tabs" ? "ambiguous_parent" : ["view_absent", "duplicate_views"].includes(mode) ? "ambiguous_view" :
-      mode === "duplicate_items" ? "ambiguous_target" : mode === "no_pattern" || mode.startsWith("unsupported_") || mode.endsWith("_id") ? "property_unavailable" : mode;
+      mode === "duplicate_items" ? "ambiguous_target" : mode === "no_pattern" || mode.startsWith("unsupported_") || mode.startsWith("null_") || mode.endsWith("_id") ? "property_unavailable" : mode;
     assert.equal(stage, expected, mode);
-    assert.equal(patternReads, verified || mode === "no_pattern" || mode.startsWith("unsupported_") || mode.endsWith("_id") ? 1 : 0, mode);
+    assert.equal(patternReads, verified || mode === "no_pattern" || mode.startsWith("unsupported_") || mode.startsWith("null_") || mode.endsWith("_id") ? 1 : 0, mode);
+    assert.equal(diagnostics.view.fields.BoundingRectangle.kind,
+      mode === 'unsupported_bounds' ? 'not_supported' : mode === 'null_view_bounds' ? 'null' : 'rect', mode);
+    assert.equal(diagnostics.item.fields.BoundingRectangle.kind, mode === 'null_item_bounds' ? 'null' : 'rect', mode);
+    if (mode === 'null_view_bounds') assert.equal(diagnostics.view.available, false, mode);
+    if (mode === 'null_item_bounds') assert.equal(diagnostics.item.available, false, mode);
     if (verified) {
+      assert.equal(diagnostics.view.available, true, mode);
+      assert.equal(diagnostics.item.available, true, mode);
       assert.equal(snapshot.itemSelected, mode === "late_selected", mode);
       assert.equal(snapshot.itemEnabled, mode !== "unready", mode);
       assert.equal(snapshot.itemOffscreen, mode === "unready", mode);
       assert.equal(snapshot.itemBoundsNonempty, mode !== "unready", mode);
-    }
+    } else assert.equal(snapshot ?? null, null, mode);
   }
 });
