@@ -170,15 +170,37 @@ Files:
 
 - Modify: tests/renderer-app.test.tsx
 
-- [ ] Trace the confirmed grouped failure through sourceObserved events, discovery revisions, projection reloads and Reveal response guards.
+- [x] Trace the confirmed grouped failure through sourceObserved events, discovery revisions, projection reloads and Reveal response guards.
 
-- [ ] Add EN/RU actual React regressions for immediate creation followed by Reveal in both modes, including a benign active observation arriving while the response is pending. A confirmed dispatched response for the current authorized project must retain the localized acknowledgment.
+- [x] Add EN/RU actual React regressions for immediate creation followed by Reveal in both modes, including a benign active observation arriving while the response is pending. A confirmed dispatched response for the current authorized project must retain the localized acknowledgment.
 
-- [ ] Add delayed-response adversarial cases for selection/removal, backend replacement and actual project/root/category path or identity changes. Preserve useful rejection/uncertainty and prevent stale acknowledgment or duplicate dispatch.
+- [x] Add delayed-response adversarial cases for selection/removal, backend replacement and actual project/root/category path or identity changes. Preserve useful rejection/uncertainty and prevent stale acknowledgment or duplicate dispatch.
 
-- [ ] Implement the smallest correction that distinguishes benign observation from invalidated request/target lifetimes. Do not blanket-remove guards or alter the public ID-only request.
+- [x] Implement the smallest correction that distinguishes benign observation from invalidated request/target lifetimes. Do not blanket-remove guards or alter the public ID-only request.
 
-- [ ] Preserve Text/category drafts, pending controls and keyboard behavior. Run affected real-service/UI and existing Reveal authorization regressions, then standard task exit checks; commit.
+- [x] Preserve Text/category drafts, pending controls and keyboard behavior. Run affected real-service/UI and existing Reveal authorization regressions, then standard task exit checks; commit.
+
+#### Task 2 diagnosis and bounded correction
+
+The retained coordinator grouped run confirmed one native invocation and exact Finder selection, followed by unknown UI feedback. Its evidence contains no event timeline. Code inspection and a failing deterministic production-App regression establish the overly broad guard: sourceObservation includes topology/project/category projection changes after creation; workspace.sourceObserved advances observationVersion even for ready/active observations, independently of persisted discoveryRevision. DiscoveryWorkspace reloads the project projection, but ProjectRevealButton previously rejected the eventual verified response solely because that observation counter advanced.
+
+Reveal now uses the existing sourceLifetime (locator changes and unavailable/unsafe source transitions), the unchanged discovery-revision guard, and a monotonic per-row target version derived from the public project/category locator and retained state. Benign ready observations can reload the same target without losing dispatched feedback. Changed targets, including a change away and back, cannot acknowledge an older request. Only the Reveal message resets on a changed target; the pending request remains blocked until its response. Text/category editors retain their component lifetimes. Backend/selection/unmount guards, exact response IDs and the public ID-only request remain; backend/main filesystem authorization and post-native revalidation are unchanged.
+
+EN/RU production-App tests use real SQLite/filesystem creation in both modes, no Refresh or settling delay, keyboard Reveal, a delayed native adapter, an active observation with a verified projection reload, one invocation, localized acknowledgment and durable-ID reopening. Additional actual React tests preserve simultaneous Text/category drafts and focus; reject changed source, target/category paths, retained state, discovery revisions, foreign IDs, selection/removal and a backend unavailable-to-ready cycle; and block pending repeat clicks. Twenty real-filesystem adversarial scenarios (both languages, project/root path and identity changes in both modes, plus grouped category changes) verify initial authorization and specific backend rejection reasons after native completion. Native adapters and event timing in these regressions are controlled test seams, not OS acceptance evidence.
+
+#### Task 2 local verification
+
+Verified on macOS with Node 22.21.1 against the Task 2 working changes over 2d6b562e8f0aa9372f65100cbccb4951dd4864d9. Fixed implementation/review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132. Every Node/npm/tsx invocation explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH. The committed dependency resolution installed during Task 1 was reused unchanged.
+
+- Before repair, the focused production-App regression failed at the expected missing dispatched acknowledgment (task2-immediate-red.log); its first EN/direct iteration stopped the enclosing test before the other combinations.
+- Initial affected UI/Reveal run: 200 passed, 0 failed (task2-affected.log).
+- Initial typecheck detected overly narrow inferred test-client query return types; explicit client-contract return types repaired them (task2-typecheck.log and task2-typecheck-repaired.log).
+- Final tsx --test tests/project-creation-service.test.mjs tests/project-creation-ui.test.tsx tests/project-reveal.test.mjs tests/renderer-app.test.tsx: 313 passed, 0 failed, 0 skipped, including all four production-App language/mode combinations and exact backend rejection assertions (task2-affected-final.log).
+- Final npm test: build succeeded; 827 passed, 0 failed, 0 skipped (task2-npm-test-final.log). The earlier passing full run is retained as task2-npm-test.log.
+- npm run lint and npm run typecheck: passed (task2-lint.log and task2-typecheck-repaired.log).
+- Working and fixed-base git diff --check: passed.
+
+All logs remain under ignored work/ralphex/issue-17/. No new graphical, packaged, Windows or coordinator acceptance is claimed by this task. Permanent graphical immediate-Reveal coverage, bounded native observation and owned-fixture cleanup remain Task 3; documentation repairs remain Task 4; fresh sequential graphical/platform handoff verification remains Task 5 and the separate coordinator gates. Historical failures and issue #44 remain preserved.
 
 ### Task 3: Repair native observation and owned-fixture cleanup
 

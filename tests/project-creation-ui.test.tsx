@@ -4,6 +4,7 @@ import React from "react";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { openSettingsService } from "../src/service/settings.js";
 import { Window } from "happy-dom";
 import { ProjectCreationPanel } from "../src/renderer/components/ProjectCreationPanel.js";
@@ -37,8 +38,8 @@ class Client extends WorkspaceServiceClient {
   revealHandler: () => Promise<ServiceResult<ProjectRevealResult>> = async () => ({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } });
   override onBackendStatus(listener: (status: BackendStatus) => void) { this.statuses.add(listener); return () => { this.statuses.delete(listener); }; }
   override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { this.events.add(listener); return () => { this.events.delete(listener); }; }
-  override async listProjects() { return { ok: true as const, value: this.list }; }
-  override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 1, definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }], values: [{ projectId: "project", propertyId: "notes", value: "Exact text" }] } }; }
+  override async listProjects(): ReturnType<WorkspaceServiceClient["listProjects"]> { return { ok: true as const, value: this.list }; }
+  override async listTextProperties(): ReturnType<WorkspaceServiceClient["listTextProperties"]> { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 1, definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }], values: [{ projectId: "project", propertyId: "notes", value: "Exact text" }] } }; }
   override async listProjectCreations() { return this.listHandler ? this.listHandler() : { ok: true as const, value: { workspaceId: this.list.workspaceId, sourceId: this.list.sourceId, operations: this.operations } }; }
   override async createProject(input: Parameters<WorkspaceServiceClient["createProject"]>[0]) { this.creates.push(input); return this.handler(); }
   override async getProjectCreation(_workspace: string, id: string) { this.statusesRequested.push(id); return { ok: true as const, value: { outcome: "recoverable" as const, operation: { ...operation, operationId: id } } }; }
@@ -139,13 +140,17 @@ for (const language of ["en", "ru"] as const) {
     }
   });
   test(`${language}: Reveal ignores foreign IDs and stale backend/removal responses`, async () => {
-    for (const change of ["foreign", "backend", "removal"] as const) {
+    for (const change of ["foreign", "foreign-project", "backend", "selection", "removal"] as const) {
       const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(); client.revealHandler = () => response.promise;
       const view = render(<ProjectRevealButton client={client} workspaceId="workspace" projectId="project" name="Folder" language={language} disabled={false} />);
       await userEvent.click(screen.getByRole("button"));
-      if (change === "backend") await act(async () => { client.statuses.forEach((listener) => listener({ state: "unavailable" })); });
+      if (change === "backend") await act(async () => {
+        client.statuses.forEach((listener) => listener({ state: "unavailable" }));
+        client.statuses.forEach((listener) => listener({ state: "ready" }));
+      });
+      if (change === "selection") view.rerender(<ProjectRevealButton client={client} workspaceId="other" projectId="other-project" name="Other" language={language} disabled={false} />);
       if (change === "removal") view.unmount();
-      await act(async () => response.resolve({ ok: true, value: { workspaceId: change === "foreign" ? "other" : "workspace", projectId: "project", outcome: "dispatched" } }));
+      await act(async () => response.resolve({ ok: true, value: { workspaceId: change === "foreign" ? "other" : "workspace", projectId: change === "foreign-project" ? "other-project" : "project", outcome: "dispatched" } }));
       assert.equal(screen.queryByText(t("revealDispatched")), null); cleanup(); assert.equal(client.statuses.size, 0);
     }
   });
@@ -197,13 +202,50 @@ for (const language of ["en", "ru"] as const) {
     view.rerender(<ProjectCreationPanel {...p} projects={{ ...client.list, revision: 2, categories: [] }} invalidation={1} />);
     assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Authored folder"); assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true); assert.equal(client.creates.length, 0);
   });
-  test(`${language}: Reveal treats a newer source observation or discovery revision as an uncertain response`, async () => {
-    for (const change of ["revision", "observation"] as const) {
-      const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(), revision = { current: 1 }, observation = { current: 0 }; client.revealHandler = () => response.promise;
-      render(<ProjectRevealButton client={client} workspaceId="workspace" projectId="project" name="Folder" language={language} disabled={false} minimumRevision={revision} observationVersion={observation} />);
-      await userEvent.click(screen.getByRole("button")); if (change === "revision") revision.current++; else observation.current++;
+  test(`${language}: Reveal rejects changed source, discovery and target lifetimes without another pending dispatch`, async () => {
+    for (const change of ["revision", "source", "target", "target-roundtrip"] as const) {
+      const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(), revision = { current: 1 }, source = { current: 0 }; client.revealHandler = () => response.promise;
+      const props = { client, workspaceId: "workspace", projectId: "project", name: "Folder", language, disabled: false, minimumRevision: revision, sourceLifetime: source, targetKey: "original" };
+      const view = render(<ProjectRevealButton {...props} />);
+      await userEvent.click(screen.getByRole("button"));
+      if (change === "revision") revision.current++;
+      else if (change === "source") source.current++;
+      else view.rerender(<ProjectRevealButton {...props} targetKey="changed" />);
+      if (change === "target-roundtrip") view.rerender(<ProjectRevealButton {...props} />);
+      fireEvent.click(screen.getByRole("button")); assert.equal(client.reveals, 1);
       await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } }));
       assert.ok(screen.getByText(t("revealUncertain"))); assert.equal(screen.queryByText(t("revealDispatched")), null); cleanup();
+    }
+  });
+  test(`${language}: active observation preserves Reveal, Text and category drafts while changed project projection rejects a delayed acknowledgment`, async () => {
+    for (const change of ["benign", "path", "category", "retained", "source"] as const) {
+      const client = new Client(), response = deferred<ServiceResult<ProjectRevealResult>>(); client.revealHandler = () => response.promise;
+      client.list = { ...initial, mode: "grouped", state: "ready", categories: [{ categoryId: "category", name: "Existing", relativePath: "Existing" }],
+        categoryProperty: { propertyId: "label", sourceId: "source", name: "Category" },
+        projects: [{ projectId: "project", name: "Folder", relativePath: "Existing/Folder", categoryId: "category", categoryName: "Existing", associationState: "active", resolution: "active" }] };
+      render(<DiscoveryWorkspace client={client} workspaceId="workspace" sourceId="source" language={language} disabled={false} />);
+      await userEvent.click(await screen.findByRole("button", { name: `${t("editTextValue")}: Folder / Notes` }));
+      const text = screen.getByRole("textbox", { name: `${t("editTextValue")}: Folder / Notes` });
+      await userEvent.clear(text); await userEvent.type(text, "Unsaved Text");
+      await userEvent.click(screen.getByRole("button", { name: `${t("renameCategoryProperty")}: Category` }));
+      const label = screen.getByRole("textbox", { name: t("categoryPropertyName") });
+      await userEvent.clear(label); await userEvent.type(label, "Unsaved label");
+      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Folder` }));
+      text.focus();
+      await act(async () => {
+        if (change === "path") client.list = { ...client.list, projects: [{ ...client.list.projects[0], relativePath: "Existing/Moved" }] };
+        if (change === "category") client.list = { ...client.list, categories: [{ ...client.list.categories[0], relativePath: "Moved" }] };
+        if (change === "retained") client.list = { ...client.list, projects: [], retainedProjects: [{ ...client.list.projects[0], resolution: "replaced" }], retainedCount: 1 };
+        client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId: "source", workspaceIds: ["workspace"], observationRevision: 1,
+          state: change === "source" ? "unavailable" : "ready", automaticUpdates: change === "source" ? "degraded" : "active" }));
+      });
+      assert.equal(screen.getByRole("textbox", { name: `${t("editTextValue")}: Folder / Notes` }), text);
+      assert.equal((text as HTMLTextAreaElement).value, "Unsaved Text");
+      assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.equal(document.activeElement, text);
+      assert.equal((screen.getByRole("button", { name: `${t("revealProject")}: Folder` }) as HTMLButtonElement).disabled, true);
+      await act(async () => response.resolve({ ok: true, value: { workspaceId: "workspace", projectId: "project", outcome: "dispatched" } }));
+      assert.ok(screen.getByText(t(change === "benign" ? "revealDispatched" : "revealUncertain")));
+      assert.equal(client.reveals, 1); cleanup();
     }
   });
   test(`${language}: grouped creation and sibling changes preserve category-label draft and focus`, async () => {
@@ -214,6 +256,65 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(screen.getByRole("combobox"), "category");
     label.focus(); await act(async () => { client.list = { ...client.list, revision: 2 }; client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 })); });
     assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.ok(document.activeElement === label); assert.equal((screen.getByRole("textbox", { name: t("creationName") }) as HTMLInputElement).value, "Authored folder");
+  });
+}
+
+for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
+  test(`${language}: ${mode} delayed real-service Reveal rejects actual folder path and identity changes`, async () => {
+    const changes = ["project-path", "project-identity", "root-path", "root-identity", ...(mode === "grouped" ? ["category-path", "category-identity"] : [])];
+    for (const change of changes) {
+      const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "reveal-ui-lifetime-"))), root = join(directory, "root");
+      fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
+      const service = openSettingsService(join(directory, "workspace.sqlite"), "src/service/db/migrations");
+      const client = new Client(), nativeCompletion = deferred<void>();
+      let calls = 0, initialValidation: string | undefined, receipt: ServiceResult<ProjectRevealResult> | undefined;
+      let off: (() => void) | undefined;
+      try {
+        const { workspaceId, sourceId } = value(service.workspaces.create({ type: "workspace.create", name: "Reveal", rootPath: root }));
+        const preview = value(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
+        value(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
+        const revision = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).revision;
+        const created = value(service.workspaces.createProject({ type: "workspace.createProject", workspaceId, operationId: randomUUID(), name: "Folder", mode, expectedRevision: revision,
+          ...(mode === "grouped" ? { categoryId: value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).categories[0].categoryId } : {}) }));
+        assert.equal(created.outcome, "completed");
+        client.list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+        client.listProjects = async () => service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId });
+        client.listTextProperties = async () => service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId });
+        client.revealProject = async () => {
+          calls++;
+          receipt = await service.revealProject({ type: "workspace.revealProject", workspaceId, projectId: client.list.projects[0].projectId }, async (_target, validate) => {
+            initialValidation = validate().outcome;
+            await nativeCompletion.promise;
+            // The backend must also reject changes made during an acknowledged
+            // native call, independently of the renderer's projection guards.
+            return { outcome: "dispatched" };
+          });
+          return receipt;
+        };
+        off = service.workspaces.subscribe((event) => client.events.forEach((listener) => listener(event)));
+        const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+        render(<DiscoveryWorkspace client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} disabled={false} />);
+        const reveal = await screen.findByRole("button", { name: `${t("revealProject")}: Folder` });
+        await userEvent.click(reveal); assert.equal(calls, 1); assert.equal(initialValidation, "verified");
+        const path = change.startsWith("root") ? root : change.startsWith("category") ? join(root, "Category") : join(root, ...(mode === "grouped" ? ["Category", "Folder"] : ["Folder"]));
+        await act(async () => {
+          fs.renameSync(path, `${path}-moved`);
+          if (change.endsWith("identity")) fs.mkdirSync(path);
+          client.events.forEach((listener) => listener({ type: "workspace.sourceObserved", sourceId, workspaceIds: [workspaceId], observationRevision: 1000,
+            state: change.startsWith("root") ? "unavailable" : "ready", automaticUpdates: "active" }));
+        });
+        fireEvent.click(reveal); assert.equal(calls, 1);
+        await act(async () => nativeCompletion.resolve());
+        assert.ok(receipt?.ok); assert.equal(receipt.value.outcome, "rejected", change);
+        if (receipt.value.outcome !== "rejected") throw new Error("Changed target unexpectedly dispatched");
+        const expected = change.startsWith("category") ? "category_unavailable" : change.startsWith("root")
+          ? change.endsWith("identity") ? "root_replaced" : "root_unavailable" : change.endsWith("identity") ? "replaced" : "missing";
+        assert.equal(receipt.value.problem, expected, change);
+        assert.equal(screen.queryByText(t("revealDispatched")), null, change);
+        assert.ok(["revealUncertain", "revealMissing", "revealError"].some((key) => screen.queryByText(t(key as Parameters<typeof translate>[1]))), change);
+        assert.equal(calls, 1);
+      } finally { cleanup(); off?.(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+    }
   });
 }
 

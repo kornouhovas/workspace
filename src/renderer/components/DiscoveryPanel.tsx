@@ -411,7 +411,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         {projects.categories.length > 0 ? <ul>{projects.categories.map((category) => <li key={category.categoryId}>{category.name}</li>)}</ul>
           : <p>{t("savedCategoriesEmpty")}</p>}
       </div>}
-      <TextPropertiesTable observationVersion={observationVersion} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
+      <TextPropertiesTable sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
         locateDisabled={recoveryProject !== null}
         onLocate={projects?.configured ? (project, trigger) => {

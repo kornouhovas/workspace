@@ -25,7 +25,7 @@ interface Props {
   categories?: CategorySummary[];
   discoveryRevision?: number;
   minimumDiscoveryRevision?: { current: number };
-  observationVersion?: { current: number };
+  sourceLifetime?: { current: number };
   categoryPropertyRevision?: number;
   minimumCategoryPropertyRevision?: { current: number };
   onCategoryPropertyCommitted?(snapshot: CategoryPropertySnapshot): void;
@@ -35,7 +35,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, observationVersion, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -184,7 +184,9 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
         </td>)}
-        <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} observationVersion={observationVersion} /></td>
+        <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} sourceLifetime={sourceLifetime}
+          targetKey={JSON.stringify([project.relativePath, project.categoryId, categories.find((category) => category.categoryId === project.categoryId)?.relativePath,
+            retained?.associationState, retained?.resolution, retained?.retentionReason])} /></td>
       </tr>; })}</tbody></table>
     </div>
   </div>;

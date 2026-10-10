@@ -28,7 +28,7 @@ Object.assign(globalThis, {
 });
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: browser.navigator });
 
-const { act, cleanup, render, screen, waitFor, within } = await import("@testing-library/react");
+const { act, cleanup, render, screen, waitFor, within, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 
 const ok = <T,>(value: T): ServiceResult<T> => ({ ok: true, value });
@@ -3238,11 +3238,13 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
   }
 });
 
-test("EN/RU production App creates in both modes, preserves IDs after service reopen and reports verified Reveal outcomes", async () => {
+test("EN/RU production App immediately Reveals creation through an active observation, preserves IDs after reopen and reports verified outcomes", async () => {
   for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
     const directory = mkdtempSync(join(tmpdir(), "creation-app-ui-")), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
     mkdirSync(root); if (mode === "grouped") mkdirSync(join(root, "Existing category"));
     let service = openSettingsService(database), off: (() => void) | undefined, dispatches = 0;
+    let finishNative!: () => void, projectionReads = 0, observationRevision = 0;
+    const nativeCompletion = new Promise<void>((resolve) => { finishNative = resolve; });
     const targets: { canonicalRoot: string; relativePath: string; validation: string }[] = [];
     const creationRequests: WorkspaceRequest[] = [];
     const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
@@ -3254,19 +3256,26 @@ test("EN/RU production App creates in both modes, preserves IDs after service re
       assert.ok(preview.ok); if (!preview.ok) throw new Error("Fixture failed");
       assert.ok(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken }).ok);
       const setup = () => {
-        const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+        const query = async (input: WorkspaceRequest) => {
+          if (input.type === "workspace.listProjects") projectionReads++;
+          return service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+        };
         const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
           onWorkspace: async (input) => {
             if (input.type === "workspace.revealProject") return service.revealProject(input, async (target, validate) => {
               targets.push({ canonicalRoot: target.canonicalRoot, relativePath: target.relativePath, validation: validate().outcome });
-              dispatches++; return { outcome: "dispatched" };
+              dispatches++; await nativeCompletion; return { outcome: "dispatched" };
             });
             if (input.type === "workspace.createProject") creationRequests.push(input);
             return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
           } });
-        off = service.workspaces.subscribe(api.emitChange); render(<App />);
+        off = service.workspaces.subscribe((event) => {
+          if (event.type === "workspace.sourceObserved") observationRevision = Math.max(observationRevision, event.observationRevision);
+          api.emitChange(event);
+        }); render(<App />);
+        return api;
       };
-      setup(); const trigger = await screen.findByRole("button", { name: t("createProject") });
+      const api = setup(); const trigger = await screen.findByRole("button", { name: t("createProject") });
       await waitFor(() => assert.equal((trigger as HTMLButtonElement).disabled, false)); await userEvent.click(trigger);
       await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder");
       if (mode === "grouped") {
@@ -3278,7 +3287,18 @@ test("EN/RU production App creates in both modes, preserves IDs after service re
       await screen.findByText(t("creationSaved")); await screen.findByRole("cell", { name: "Authored folder" });
       const before = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(before.ok); if (!before.ok) throw new Error("Fixture failed");
       assert.equal(before.value.projects.length, 1); const projectId = before.value.projects[0].projectId;
-      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
+      const reveal = screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` });
+      reveal.focus(); await userEvent.keyboard("{Enter}");
+      assert.equal(dispatches, 1);
+      const readsBeforeObservation = projectionReads;
+      // Deterministic event delivery around a delayed native adapter, with the
+      // actual service, filesystem and production observer still active.
+      await act(async () => api.emitChange({ type: "workspace.sourceObserved", sourceId: created.value.sourceId,
+        workspaceIds: [workspaceId], observationRevision: ++observationRevision, state: "ready", automaticUpdates: "active" }));
+      assert.ok(projectionReads > readsBeforeObservation);
+      assert.equal((reveal as HTMLButtonElement).disabled, true);
+      fireEvent.click(reveal); assert.equal(dispatches, 1);
+      await act(async () => finishNative());
       await screen.findByText(t("revealDispatched")); assert.equal(dispatches, 1);
       assert.deepEqual(targets, [{ canonicalRoot: realpathSync.native(root), relativePath: mode === "grouped" ? "Existing category/Authored folder" : "Authored folder", validation: "verified" }]);
       assert.equal(targets[0].canonicalRoot, created.value.canonicalRoot);
