@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
 import { createPackage } from "@electron/asar";
 import test from "node:test";
 import { checkArtifact, normalizeAsarEntry } from "../scripts/check-artifact.mjs";
 
+const nativeScripts = ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"];
 const packagedFiles = [
   "dist/desktop/main.cjs",
   "dist/desktop/preload.cjs",
@@ -54,6 +55,13 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
   }
   await writeFile(join(appDirectory, "package.json"), JSON.stringify({ version: "0.1.0" }));
   await writeFile(join(resourcesDirectory, "licenses/bb-MIT.txt"), "MIT License\nCopyright (c) 2026 Michael Yong");
+  for (const file of nativeScripts) {
+    const relative = `native/${file}`;
+    if (omittedFiles.includes(relative)) continue;
+    await mkdir(join(resourcesDirectory, "native"), { recursive: true });
+    const contents = await readFile(`dist/desktop/native/${file}`);
+    await writeFile(join(resourcesDirectory, relative), relative === corruptFile ? Buffer.from("modified native script") : contents);
+  }
   const asarPath = join(resourcesDirectory, "app.asar");
   await createPackage(appDirectory, asarPath);
   const nativeModule = join(`${asarPath}.unpacked`, "node_modules/better-sqlite3/prebuilds/darwin-arm64.node");
@@ -227,10 +235,34 @@ for (const scenario of [
   { name: "missing native integration", corrupt: "dist/desktop/main.cjs", error: /missing native showItemInFolder/ },
   { name: "missing backend routing", corrupt: "dist/service/entry.cjs", error: /missing private Reveal routing/ },
   { name: "modified prior SQL", corrupt: "dist/service/db/migrations/0000_settings.sql", error: /migration differs from source/ },
+  ...nativeScripts.flatMap((file) => [
+    { name: `missing external ${file}`, omitted: [`native/${file}`], error: /missing external native script/ },
+    { name: `modified external ${file}`, corrupt: `native/${file}`, error: /External native script differs from source/ },
+  ]),
 ]) test(`artifact check rejects ${scenario.name}`, async () => {
   const root = await mkdtemp(join(tmpdir(), "workspace-artifact-creation-"));
   try {
     await makeArtifact(root, "0.1.0", scenario.omitted, scenario.omitEntry, scenario.corrupt);
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), scenario.error);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+for (const file of nativeScripts) test(`artifact check rejects an external ${file} symlink`, async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-native-link-"));
+  try {
+    await makeArtifact(root);
+    const external = join(root, "bundle", "resources", "native", file);
+    const substitute = join(root, file);
+    await writeFile(substitute, await readFile(external));
+    await rm(external);
+    try { await symlink(substitute, external, "file"); }
+    catch (error) {
+      if (process.platform === "win32" && ["EPERM", "EACCES"].includes(error.code)) {
+        t.skip("Windows file symlink creation is unavailable without the required host privilege");
+        return;
+      }
+      throw error;
+    }
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /missing external native script/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

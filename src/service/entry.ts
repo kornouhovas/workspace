@@ -15,7 +15,7 @@ export function startServiceProcess(
   parentPort: ParentPort,
   openService: (databasePath: string, migrationFolder?: string) => SettingsService = openSettingsService,
   exitProcess: (code: number) => void = () => undefined,
-  nativeTimeoutMs = 8000,
+  nativeTimeoutMs = process.platform === "win32" ? 15000 : 8000,
 ): void {
   let service: SettingsService | undefined;
   let requestPort: ServicePort | undefined;

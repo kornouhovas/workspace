@@ -53,6 +53,52 @@ test("Reveal accepts exact logical IDs and rejects renderer paths, URLs, command
 });
 
 for (const mode of ["direct", "grouped"]) {
+  for (const scenario of ["success", "excluded", "missing", "link", "native_identity", "mode_retained", "cancelled", ...(mode === "grouped" ? ["category_unavailable"] : [])]) {
+    test(`${mode} ready adapter reauthorizes ${scenario} at its permit after asynchronous readiness`, async () => fixture(mode, async (f) => {
+      let ready, release;
+      const entered = new Promise((resolve) => { ready = resolve; });
+      const gate = new Promise((resolve) => { release = resolve; });
+      let selections = 0, authorizations = 0;
+      const abort = new AbortController();
+      const native = createNativeProjectReveal(async (_path, context) => {
+        ready(); await gate;
+        await context.permit(() => { selections++; });
+      });
+      const pending = f.service.revealProject(f.input, (target, revalidate) =>
+        native(target, () => !abort.signal.aborted, async () => { authorizations++; return revalidate(); }, abort.signal));
+      await entered;
+      let restore = () => {};
+      try {
+        if (scenario === "excluded") f.sql.prepare("UPDATE sources SET excluded_relative_paths = ? WHERE id = ?").run(JSON.stringify([f.project.relativePath]), f.workspace.sourceId);
+        if (scenario === "mode_retained") f.sql.prepare("UPDATE projects SET mode_inactive = 1 WHERE id = ?").run(f.project.projectId);
+        if (scenario === "native_identity") {
+          const original = f.sql.prepare("SELECT native_identity FROM projects WHERE id = ?").get(f.project.projectId).native_identity;
+          const identity = JSON.parse(original); identity.birthtimeNs = String(BigInt(identity.birthtimeNs) + 1n);
+          f.sql.prepare("UPDATE projects SET native_identity = ? WHERE id = ?").run(JSON.stringify(identity), f.project.projectId);
+        }
+        if (scenario === "missing" || scenario === "link" || scenario === "category_unavailable") {
+          const path = scenario === "category_unavailable" ? join(f.root, "Category") : f.path;
+          const moved = `${path}-moved`;
+          fs.renameSync(path, moved);
+          if (scenario === "link") fs.symlinkSync(moved, path, "dir");
+          if (scenario === "category_unavailable") fs.mkdirSync(path);
+          restore = () => { fs.rmSync(path, { force: true, recursive: true }); fs.renameSync(moved, path); };
+        }
+        if (scenario === "cancelled") abort.abort();
+        release();
+        const result = await pending;
+        assert.equal(result.ok, true);
+        assert.equal(selections, scenario === "success" ? 1 : 0);
+        assert.equal(authorizations, scenario === "cancelled" ? 1 : 2);
+        assert.equal(result.value.outcome, scenario === "success" ? "dispatched" : "rejected");
+        if (scenario !== "success") assert.equal(result.value.problem,
+          scenario === "native_identity" || scenario === "link" ? "replaced" : scenario === "cancelled" ? "request_expired" : scenario);
+      } finally { restore(); }
+    }));
+  }
+}
+
+for (const mode of ["direct", "grouped"]) {
   test(`${mode} Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data`, async () => fixture(mode, async (f) => {
     const before = f.sql.prepare("SELECT * FROM sources").all(), calls = [];
     const native = createNativeProjectReveal(async (path) => { calls.push(path); });
@@ -217,3 +263,32 @@ if (process.platform !== "win32") test("Reveal preserves valid POSIX colon/backs
   const result = await f.service.revealProject({ ...f.input, projectId: created.project.projectId }, (target) => native(target, () => true));
   assert.equal(result.value.outcome, "dispatched"); assert.deepEqual(calls, [join(f.root, name)]);
 }));
+
+for (const swapTiming of ["before-validation", "after-validation", "unchanged"]) {
+  test(`native permit dispatch is synchronous with final identity validation: ${swapTiming}`, async () => {
+    const identity = { dev: "1", ino: "2", birthtimeNs: "3" };
+    const root = join(tmpdir(), "synthetic-owned-root"), project = join(root, "project");
+    const target = { canonicalRoot: root, parentRelativePath: "", relativePath: "project",
+      rootIdentity: JSON.stringify(identity), parentIdentity: JSON.stringify(identity), nativeIdentity: JSON.stringify(identity) };
+    let replaced = false, authorizations = 0, dispatches = 0, dispatchedAfterSwap = false;
+    const filesystem = { platform: process.platform, realpath: (path) => path,
+      inspect: (path) => ({ kind: "directory", identity: replaced && path === project ? { ...identity, ino: "9" } : identity }) };
+    const reveal = createNativeProjectReveal(async (_path, context) => {
+      await context.permit(() => { dispatches++; dispatchedAfterSwap = replaced; });
+    }, filesystem);
+    const result = await reveal(target, () => true, () => {
+      authorizations++;
+      if (authorizations === 1 || swapTiming === "unchanged") return Promise.resolve({ outcome: "verified" });
+      return new Promise((resolve) => queueMicrotask(() => {
+        if (swapTiming === "before-validation") replaced = true;
+        resolve({ outcome: "verified" });
+        if (swapTiming === "after-validation") queueMicrotask(() => { replaced = true; });
+      }));
+    });
+    assert.equal(authorizations, 2);
+    assert.equal(dispatches, swapTiming === "before-validation" ? 0 : 1);
+    assert.equal(dispatchedAfterSwap, false, "a queued identity swap must never run between validation and dispatch");
+    // A later swap still fails the existing post-dispatch check; it must not precede dispatch.
+    assert.deepEqual(result, swapTiming === "unchanged" ? { outcome: "dispatched" } : { outcome: "rejected", problem: "replaced" });
+  });
+}

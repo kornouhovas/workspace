@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
@@ -216,7 +215,7 @@ test("owned-parent cleanup has finite sanitized counts and retains errors", asyn
 // reads, not Explorer. One bounded process covers every controlled fixture case.
 test("Windows controlled UIA ownership rejects wrong views before reading and detects changed views", { skip: process.platform !== "win32" }, async () => {
   const scriptPath = fileURLToPath(new URL("../scripts/windows-selection-diagnostics.ps1", import.meta.url));
-  const source = await readFile(scriptPath, "utf8");
+  const source = ". $env:WORKSPACE_CONTROL_DIAGNOSTICS_SCRIPT";
   const execute = promisify(execFile);
   const fixture = String.raw`
 $target = $env:WORKSPACE_OBSERVE_TARGET
@@ -247,7 +246,7 @@ foreach ($mode in $cases) {
 }
 `;
   const output = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", source + "\n" + fixture], {
-    timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
+    timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target, WORKSPACE_CONTROL_DIAGNOSTICS_SCRIPT: scriptPath },
   });
   const lines = output.stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
   assert.equal(lines.length, 12);
@@ -301,7 +300,8 @@ function Read-WorkspaceUiaWindow($handle) { if ($handle -eq 999) { return @{ sta
 // https://github.com/dotnet/wpf/blob/main/src/Microsoft.DotNet.Wpf/src/UIAutomation/UIAutomationClient/System/Windows/Automation/PropertyCondition.cs
 // The exact f753 Windows red log failed at tabs before any pattern read.
 test("Windows UIA reader validates HWND/process/tab/view/item before reading SelectionItemPattern", { skip: process.platform !== "win32" }, async (t) => {
-  const source = await readFile(new URL("../scripts/windows-selection-diagnostics.ps1", import.meta.url), "utf8");
+  const scriptPath = fileURLToPath(new URL("../scripts/windows-selection-diagnostics.ps1", import.meta.url));
+  const source = ". $env:WORKSPACE_CONTROL_DIAGNOSTICS_SCRIPT";
   const execute = promisify(execFile);
   const fixture = String.raw`
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -405,7 +405,7 @@ foreach ($mode in $cases) {
 }
 `;
   const output = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", source + "\n" + fixture], {
-    timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
+    timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target, WORKSPACE_CONTROL_DIAGNOSTICS_SCRIPT: scriptPath },
   });
   const results = output.stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
   // Report every bounded synthetic case before the first assertion, so a

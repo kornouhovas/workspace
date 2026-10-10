@@ -13,6 +13,7 @@ import { cleanupOwnedFixture, closeElectron, withDeadline } from "./runtime-life
 import { createCreationEvidence, recordCreationEvidence } from "./runtime-evidence.mjs";
 import { waitForFileManagerTarget, closeDisposableFileManagerTarget } from "./file-manager-evidence.mjs";
 import { waitForRuntimeInterface } from "./runtime-startup.mjs";
+import { nativeBridgeCleanupEvidence } from "./native-bridge-evidence.mjs";
 import { collectNativeSelectionMetadata } from "./windows-native-selection.mjs";
 import { productDiagnosticSnapshot, validateProductDiagnostic } from "./windows-product-diagnostics.mjs";
 
@@ -43,16 +44,17 @@ const checkpointEvidence = [];
 const nativeTargets = new Set();
 const ownedProcesses = new Set(), backendPids = new Set();
 let fixtureCleanup = { status: "unreached" };
+let nativeBridgesStopped = true, nativeBridgeCleanup = { status: "not_required" };
 let current;
 let failure;
 const save = async () => {
   await writeFile(join(evidenceDirectory, `${mode}-creation-observations.json`), JSON.stringify({
   mode, platform: process.platform, arch: process.arch, executablePath, fixedBase: "4ac402620dd8139bdef9ff03625aae64bf60e132",
   scope: "production UI/IPC/native adapter; interruption seeded by terminated real-service child, not an Electron backend crash",
-  runs, checkpointEvidence, observations, fixtureCleanup, ...(failure ? { error: failure.message } : {}),
+  runs, checkpointEvidence, observations, fixtureCleanup, nativeBridgeCleanup, ...(failure ? { error: failure.message } : {}),
 }, null, 2) + "\n");
   if (diagnostic) await writeFile(join(evidenceDirectory, "result.json"), JSON.stringify(productDiagnosticSnapshot({
-    metadata, runtime, evidence, invocationCount, targetMatched, fileManagerCleanup, fixtureCleanup, failureCleanup,
+    metadata, runtime, evidence, invocationCount, targetMatched, fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup,
     shutdowns: runs[0].shutdowns, failed: Boolean(failure), finished,
   }), null, 2) + "\n");
 };
@@ -247,16 +249,36 @@ try {
       if (!process.argv.includes("--skip-native")) {
         // Wrap, never mock, the actual Electron API used by main's native adapter.
         await current.electron.evaluate(({ shell }) => {
-          const original = shell.showItemInFolder.bind(shell);
           globalThis.creationNativeCalls = [];
-          shell.showItemInFolder = (path) => {
-            const call = { path, returned: false };
-            globalThis.creationNativeCalls.push(call);
-            const result = original(path);
-            call.returned = true;
-            return result;
-          };
+          globalThis.creationNativeOpens = [];
+          globalThis.creationNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false };
+          if (process.platform === "win32") {
+            // Main-only instrumentation of actual production bridge messages.
+            // No dispatch replacement, path setter or selection manipulation.
+            process.on("workspace:native-reveal", ({ stage, path }) => {
+              const bridge = globalThis.creationNativeBridge;
+              if (stage === "started") { bridge.started++; bridge.active++; }
+              if (stage === "stopped") { bridge.stopped++; bridge.active--; }
+              if (stage === "unknown") bridge.unknown = true;
+              if (stage === "open") globalThis.creationNativeOpens.push(path);
+              if (stage === "select") globalThis.creationNativeCalls.push({ path, returned: false });
+              if (stage === "done") {
+                const call = globalThis.creationNativeCalls.at(-1);
+                if (call?.path === path) call.returned = true;
+              }
+            });
+          } else {
+            const original = shell.showItemInFolder.bind(shell);
+            shell.showItemInFolder = (path) => {
+              const call = { path, returned: false };
+              globalThis.creationNativeCalls.push(call);
+              const result = original(path);
+              call.returned = true;
+              return result;
+            };
+          }
         });
+        if (process.platform === "win32") current.nativeTracking = true;
       }
       await page.locator(".project-creation button[type=submit]").press("Enter");
       if (directoryPackage) {
@@ -280,19 +302,30 @@ try {
         nativeTargets.add(destination);
         await page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true }).press("Enter");
         const calls = await withDeadline((async () => {
-          for (let attempt = 0; attempt < 50; attempt++) {
+          for (let attempt = 0; attempt < (process.platform === "win32" ? 150 : 50); attempt++) {
             const calls = await current.electron.evaluate(() => globalThis.creationNativeCalls);
-            if (calls.length) return calls;
+            if (calls.some((call) => call.returned) || calls.length > 1) return calls;
             await new Promise((done) => setTimeout(done, 100));
           }
           return [];
-        })(), 10000, "Real native invocation");
+        })(), process.platform === "win32" ? 17000 : 10000, "Real native invocation");
         invocationCount = calls.length;
         targetMatched = calls.length === 1 && calls[0].path === destination;
         assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
         assert.equal(calls[0].path, destination);
+        const opens = await current.electron.evaluate(() => globalThis.creationNativeOpens);
+        if (process.platform === "win32") assert.deepEqual(opens, [destination], "One actual parent navigation per Reveal intent");
+        if (current.nativeTracking) {
+          nativeBridgeCleanup = nativeBridgeCleanupEvidence(await current.electron.evaluate(() => globalThis.creationNativeBridge));
+          nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";
+          await save();
+          assert.equal(nativeBridgesStopped, true, "Unknown native bridge termination forbids owned cleanup");
+        }
         const apiPassed = calls[0].returned === true;
-        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.showItemInFolder", apiResult: "returned without throwing; no OS success result", target: destination });
+        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed,
+          api: process.platform === "win32" ? "Windows ready FolderView.SelectItem" : "Electron shell.showItemInFolder",
+          apiResult: "returned without throwing; exact selected-item observation remains separate", target: destination,
+          ...(process.platform === "win32" ? { navigationCount: opens.length, selectionCount: calls.length } : {}) });
         activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
         if (apiPassed) {
           await record(discoveryMode, "fileManagerOutcome", await waitForFileManagerTarget(destination, process.platform, undefined, { windowsDiagnostics: true }));
@@ -374,6 +407,14 @@ try {
 } finally {
   if (current) {
     const closing = current; current = undefined;
+    if (closing.nativeTracking) {
+      try {
+        const snapshot = await withDeadline(closing.electron.evaluate(() => globalThis.creationNativeBridge), 3000, "Native bridge termination evidence");
+        nativeBridgeCleanup = nativeBridgeCleanupEvidence(snapshot);
+      } catch { nativeBridgeCleanup = nativeBridgeCleanupEvidence(null); }
+      nativeBridgesStopped &&= nativeBridgeCleanup.status === "passed";
+      await save();
+    }
     if (diagnostic) {
       try {
         const calls = await withDeadline(closing.electron.evaluate(() => globalThis.creationNativeCalls ?? []), 3000, "Diagnostic invocation count");
@@ -392,10 +433,12 @@ try {
     }
   }
   for (const target of nativeTargets) {
-    fileManagerCleanup = await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true });
+    fileManagerCleanup = nativeBridgesStopped
+      ? await closeDisposableFileManagerTarget(target, process.platform, undefined, { ownedParent: true })
+      : { status: "skipped", reason: "native_bridge_termination_unverified" };
     observations.push({ fileManagerCleanup, target });
   }
-  const processesStopped = [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
+  const processesStopped = nativeBridgesStopped && [...ownedProcesses].every((child) => child.exitCode !== null || child.signalCode !== null) && [...backendPids].every((pid) => {
     try { process.kill(pid, 0); return false; }
     catch (error) { return error.code === "ESRCH"; }
   });

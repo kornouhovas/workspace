@@ -1674,3 +1674,24 @@ test("a real SQLite migration failure reaches startup evidence without its SQL o
     assert.equal(JSON.stringify(sent).includes(directory), false);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+
+test("backend stop aborts and awaits its owned native bridge without granting late permission", async () => {
+  let signal, finished = false, currentAtCancel;
+  const f = await readyNativeController(async (_target, isCurrent, _authorize, abortSignal) => {
+    signal = abortSignal;
+    await new Promise((resolve) => abortSignal.addEventListener("abort", () => {
+      currentAtCancel = isCurrent();
+      setTimeout(() => { finished = true; resolve(); }, 5);
+    }, { once: true }));
+    return { outcome: "rejected", problem: "request_expired" };
+  });
+  const pending = f.controller.request(revealCommand(), 1000);
+  f.port.receive(nativeMessage());
+  assert.equal(signal.aborted, false);
+  f.child.postMessage = () => setImmediate(() => f.child.exit());
+  await f.controller.stop(100);
+  assert.equal(signal.aborted, true); assert.equal(currentAtCancel, false); assert.equal(finished, true);
+  assert.equal((await pending).ok, false);
+  assert.equal(f.port.sent.some((row) => row.type === "project.reveal.reply"), false);
+});

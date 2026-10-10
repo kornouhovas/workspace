@@ -42,9 +42,17 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
   }
   const main = await readFile("dist/desktop/main.cjs", "utf8");
   assert.match(main, /shell\.showItemInFolder/);
+  assert.match(main, /windows-project-reveal\.ps1/);
   assert.doesNotMatch(main, /shell\.openPath/);
   assert.match(main, /project\.reveal\.native/);
   assert.match(await readFile("dist/service/entry.cjs", "utf8"), /project\.reveal\.native/);
+
+  for (const file of ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"]) {
+    assert.deepEqual(await readFile(`dist/desktop/native/${file}`), await readFile(`src/desktop/native/${file}`));
+  }
+  const manifest = JSON.parse(await readFile("package.json", "utf8"));
+  assert.ok(manifest.build.extraResources.some((entry) => entry.from === "dist/desktop/native" && entry.to === "native" &&
+    ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"].every((file) => entry.filter.includes(file))));
 
   const rendererHtml = await readFile("dist/renderer/index.html", "utf8");
   assert.match(rendererHtml, /(?:src|href)="\.\/assets\//);

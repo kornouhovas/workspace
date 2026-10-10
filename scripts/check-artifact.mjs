@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat, lstat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractFile, listPackage } from "@electron/asar";
 
+const nativeScripts = ["windows-view.ps1", "windows-binding.ps1", "windows-project-reveal.ps1"];
 const requiredFiles = [
   "package.json",
   "dist/version.json",
@@ -59,6 +60,7 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
   }
   const main = (await extractFile(asarPath, join("dist", "desktop", "main.cjs"))).toString();
   assert.match(main, /shell\.showItemInFolder/, "Packaged desktop is missing native showItemInFolder integration");
+  assert.match(main, /windows-project-reveal\.ps1/, "Packaged desktop is missing Windows native Reveal integration");
   assert.match(main, /project\.reveal\.native/, "Packaged desktop is missing private Reveal routing");
   assert.match((await extractFile(asarPath, join("dist", "service", "entry.cjs"))).toString(),
     /project\.reveal\.native/, "Packaged backend is missing private Reveal routing");
@@ -68,6 +70,13 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
   assert.equal(buildVersion, packaged.version, "Packaged build and package versions differ");
 
   const resourcesDirectory = dirname(asarPath);
+  const sourceNativeDirectory = fileURLToPath(new URL("../src/desktop/native/", import.meta.url));
+  for (const file of nativeScripts) {
+    const source = await readFile(join(sourceNativeDirectory, file));
+    const unpacked = join(resourcesDirectory, "native", file);
+    assert.ok((await lstat(unpacked).catch(() => null))?.isFile(), `Packaged app is missing external native script: ${file}`);
+    assert.deepEqual(await readFile(unpacked), source, `External native script differs from source: ${file}`);
+  }
   const licensePath = join(resourcesDirectory, "licenses/bb-MIT.txt");
   const license = await readFile(licensePath, "utf8");
   assert.match(license, /Copyright \(c\) 2026 Michael Yong/);

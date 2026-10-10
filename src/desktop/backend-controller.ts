@@ -28,13 +28,15 @@ export class BackendController {
   private nextId = 1;
   private generation = 0;
   private nativeActive = new Map<number, string>();
+  private nativeAbort = new Map<number, AbortController>();
+  private nativeTasks = new Set<Promise<void>>();
   private nativeVerifications = new Map<string, { requestId: number; resolve(value: NativeProjectRevealValidation): void }>();
   private pending = new Map<number, { input: unknown; nativeStarted: boolean; resolve: (value: ServiceResult<ServicePayload>) => void; timer: Timer }>();
   private readiness?: { resolve: (ready: boolean) => void; timer: Timer };
   private onStatus: (status: BackendStatus) => void;
 
   constructor(onStatus: (status: BackendStatus) => void = () => undefined,
-    private readonly nativeReveal?: (target: TrustedProjectRevealTarget, isCurrent: () => boolean, authorize: () => Promise<NativeProjectRevealValidation>) => Promise<NativeProjectRevealResult>,
+    private readonly nativeReveal?: (target: TrustedProjectRevealTarget, isCurrent: () => boolean, authorize: () => Promise<NativeProjectRevealValidation>, signal?: AbortSignal) => Promise<NativeProjectRevealResult>,
   ) {
     this.onStatus = onStatus;
   }
@@ -104,7 +106,7 @@ export class BackendController {
     this.rejectPending("The local service is stopping.");
     this.nativeActive.clear();
     const child = this.child;
-    if (!child) return;
+    if (!child) { await this.waitForNativeTasks(); return; }
     if (this.status.state === "ready") {
       try {
         child.postMessage({ type: "shutdown" });
@@ -116,10 +118,24 @@ export class BackendController {
       const timer = setTimeout(() => { child.kill(); resolve(); }, timeoutMs);
       child.on("exit", () => { clearTimeout(timer); resolve(); });
     });
+    // Cancellation stops only owned native bridges. Their bounded termination
+    // confirmation participates in shutdown before app.quit may exit main.
+    await this.waitForNativeTasks();
     this.port?.close();
     this.port = undefined;
     this.child = undefined;
     this.rejectPending("The local service stopped.");
+  }
+
+  private async waitForNativeTasks(): Promise<void> {
+    if (this.nativeTasks.size === 0) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.allSettled([...this.nativeTasks]),
+        new Promise<void>((resolve) => { timer = setTimeout(resolve, 1200); }),
+      ]);
+    } finally { if (timer) clearTimeout(timer); }
   }
 
   private onChildMessage(message: unknown): void {
@@ -144,7 +160,12 @@ export class BackendController {
       }
       return;
     }
-    if (isNativeProjectRevealRequest(value)) { void this.onNativeReveal(value); return; }
+    if (isNativeProjectRevealRequest(value)) {
+      const task = this.onNativeReveal(value);
+      this.nativeTasks.add(task);
+      void task.finally(() => this.nativeTasks.delete(task));
+      return;
+    }
     if (isNativeProjectRevealCancel(value)) {
       if (this.nativeActive.get(value.requestId) === value.dispatchId) this.cancelNative(value.requestId, false);
       return;
@@ -170,6 +191,8 @@ export class BackendController {
     pending.nativeStarted = true;
     const generation = this.generation, port = this.port;
     this.nativeActive.set(message.requestId, message.dispatchId);
+    const abort = new AbortController();
+    this.nativeAbort.set(message.requestId, abort);
     const isCurrent = () => generation === this.generation && this.status.state === "ready" && this.port === port &&
       this.pending.get(message.requestId) === pending && this.nativeActive.get(message.requestId) === message.dispatchId;
     const authorize = (): Promise<NativeProjectRevealValidation> => {
@@ -183,7 +206,7 @@ export class BackendController {
       });
     };
     let result: NativeProjectRevealResult;
-    try { result = this.nativeReveal ? await this.nativeReveal(message.target, isCurrent, authorize) : { outcome: "rejected", problem: "native_unavailable" }; }
+    try { result = this.nativeReveal ? await this.nativeReveal(message.target, isCurrent, authorize, abort.signal) : { outcome: "rejected", problem: "native_unavailable" }; }
     catch { result = { outcome: "rejected", problem: "native_error" }; }
     if (!isCurrent()) return;
     this.cancelNative(message.requestId, false);
@@ -195,6 +218,8 @@ export class BackendController {
     const dispatchId = this.nativeActive.get(requestId);
     if (!dispatchId) return;
     this.nativeActive.delete(requestId);
+    this.nativeAbort.get(requestId)?.abort();
+    this.nativeAbort.delete(requestId);
     const verification = this.nativeVerifications.get(dispatchId);
     this.nativeVerifications.delete(dispatchId); verification?.resolve({ outcome: "rejected", problem: "request_expired" });
     if (!notifyService) return;

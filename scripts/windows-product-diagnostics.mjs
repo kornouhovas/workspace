@@ -35,7 +35,7 @@ function observation(value = {}) {
 // Reconstruct finite data rather than serializing runtime assertions/messages,
 // paths, environment or UI text. Unknown, negative and unavailable stay distinct.
 export function productDiagnosticSnapshot({ metadata, runtime, evidence, invocationCount, targetMatched,
-  fileManagerCleanup, fixtureCleanup, failureCleanup, shutdowns = [], failed = false, finished = false }) {
+  fileManagerCleanup, fixtureCleanup, failureCleanup, nativeBridgeCleanup, shutdowns = [], failed = false, finished = false }) {
   const native = evidence.direct;
   const outcome = native.fileManagerOutcome;
   const observed = observation(outcome);
@@ -53,8 +53,16 @@ export function productDiagnosticSnapshot({ metadata, runtime, evidence, invocat
     status: failed || cleanupFailed ? 'failed' : finished && fixtureCleanup?.status === 'passed' ? 'completed' : 'pending',
     errorCode: failed ? 'scenario_failed' : cleanupFailed ? 'fixture_cleanup_failed' : null,
     creation: stage(native.creation), recovery: stage(native.interruptionRecovery),
-    invocation: { ...stage(native.nativeInvocation), api: 'Electron shell.showItemInFolder',
+    invocation: { ...stage(native.nativeInvocation),
+      api: allowed(native.nativeInvocation.api, ['Electron shell.showItemInFolder', 'Windows ready FolderView.SelectItem'], 'unknown'),
+      navigationCount: count(native.nativeInvocation.navigationCount, 1),
+      selectionCount: count(native.nativeInvocation.selectionCount, 1),
       count: count(invocationCount), exactOwnedTarget: typeof targetMatched === 'boolean' ? targetMatched : null },
+    nativeBridgeCleanup: {
+      status: allowed(nativeBridgeCleanup?.status, ['passed', 'unverified', 'not_required'], 'unverified'),
+      started: count(nativeBridgeCleanup?.started, 1), stopped: count(nativeBridgeCleanup?.stopped, 1),
+      active: count(nativeBridgeCleanup?.active, 1), unknown: nativeBridgeCleanup?.unknown !== false,
+    },
     acknowledgment: stage(native.nativeAcknowledgment),
     observation: { status: status(outcome), exactTargetObserved: outcome.exactTargetObserved === true,
       completion: allowed(outcome.completion, ['exact_target', 'deadline', 'unavailable', 'unsupported'], 'unreached'),

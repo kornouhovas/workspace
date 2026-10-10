@@ -426,9 +426,12 @@ for (const scenario of ['stress_idle', 'stress_native', 'stress_legacy', 'stress
   assert.equal(result.atRename.liveWatches, 0); assert.equal(result.atRename.liveTimers, 0);
   assert.equal(result.rename.response.invocationCount, 1);
   const response = result.rename.response;
+  // Only the finite allowlisted protocol enters failure context, never raw
+  // worker output, filesystem paths or native exception text.
+  const diagnostic = JSON.stringify(parseRenameResponse(JSON.stringify(response)));
   if (process.platform === 'win32' && scenario === 'stress_native' && !response.renamed) {
-    assert.equal(response.nodeCode, 'EPERM'); assert.equal(response.syscall, 'rename');
-  } else { assert.equal(response.renamed, true); assert.equal(response.nodeCode, null); }
+    assert.equal(response.nodeCode, 'EPERM', diagnostic); assert.equal(response.syscall, 'rename', diagnostic);
+  } else { assert.equal(response.renamed, true, diagnostic); assert.equal(response.nodeCode, null, diagnostic); }
   assert.ok(Object.values(result.invariants).every(Boolean));
   const stress = result.rename.stress;
   assert.equal(stress.process.termination, 'confirmed');

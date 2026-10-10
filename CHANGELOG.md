@@ -46,6 +46,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Durable migration 0008 creation journal and visible interrupted operations, explicit reviewed recovery and same-operation receipt reconciliation without duplicate folders/IDs or inherited Text.
 - Per-project file-manager-directed native Reveal, including directory packages, through trusted backend/main validation with localized pending, missing/unavailable, retained and dispatch acknowledgment feedback.
 - Real process-crash, production IPC, EN/RU retry and graphical/package regressions; documented filesystem/native race and process-interruption durability limits.
+- A bounded Windows Reveal adapter with fixed shipped resources, one ready-parent navigation and one selection after fresh backend and filesystem authorization; exact-code Windows platform acceptance remains pending.
 
 ### Fixed
 

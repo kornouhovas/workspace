@@ -281,3 +281,24 @@ test('ready-parent command uses matched fresh jobs and keeps API CLI and product
   assert.ok(jobs['windows-native-selection']); assert.ok(jobs['windows-explorer-selection']);
   assert.ok(jobs.verify.strategy.matrix.include.some(({ os }) => os === 'windows-latest'));
 });
+
+
+test('product artifact distinguishes actual Windows command counts from negative and unavailable observation', () => {
+  for (const status of ['passed', 'failed', 'pending']) {
+    const evidence = createCreationEvidence();
+    evidence.direct.nativeInvocation = { status, api: 'Windows ready FolderView.SelectItem',
+      navigationCount: 1, selectionCount: 1, rawError: privateText };
+    evidence.direct.fileManagerOutcome = { status: 'pending', diagnostics: com(false) };
+    const result = snapshot(evidence);
+    assert.equal(result.invocation.api, 'Windows ready FolderView.SelectItem');
+    assert.equal(result.invocation.status, status);
+    assert.equal(result.invocation.navigationCount, 1); assert.equal(result.invocation.selectionCount, 1);
+    assert.equal(result.observation.exactTargetObserved, false);
+    assert.equal(JSON.stringify(result).includes(privateText), false);
+  }
+  const evidence = createCreationEvidence();
+  evidence.direct.nativeInvocation = { status: 'failed', api: privateText, navigationCount: 2, selectionCount: 1.5 };
+  const result = snapshot(evidence);
+  assert.equal(result.invocation.api, 'unknown');
+  assert.equal(result.invocation.navigationCount, null); assert.equal(result.invocation.selectionCount, null);
+});
