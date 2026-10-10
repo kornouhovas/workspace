@@ -28,6 +28,8 @@ const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", rev
 const committed: ProjectList = { ...initial, revision: 2, projects: [{ ...retained, relativePath: preview.entries[0].relativePath, name: preview.entries[0].name, associationState: "active", resolution: "active" }],
   retainedProjects: [initial.retainedProjects[1]], retainedCount: 1 };
 class RecoveryClient extends WorkspaceServiceClient {
+  override onBackendStatus() { return () => {}; }
+  override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
   projects = initial;
   recoveryPreview = preview;
   previews = 0;

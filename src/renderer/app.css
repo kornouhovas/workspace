@@ -333,3 +333,13 @@ body {
 .discovery-effects h4, .discovery-effects p { margin-block: 0.25rem; overflow-wrap: anywhere; }
 .discovery-effects ul { padding-inline-start: 1.5rem; margin-block: 0.25rem; }
 .discovery-effects li { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.project-creation { display: grid; gap: .75rem; margin-block: 1rem; min-width: 0; }
+.project-creation form, .creation-review { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--border-color, #d5d9df); border-radius: .5rem; min-width: 0; }
+.project-creation label { display: grid; gap: .5rem; }
+.project-creation select { width: 100%; min-width: 0; padding: .6rem; }
+.project-creation ul { padding-inline-start: 1.25rem; }
+.project-creation li { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; overflow-wrap: anywhere; }
+.project-creation button, .project-reveal button { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.project-creation p, .project-reveal { overflow-wrap: anywhere; }
+.project-reveal { display: grid; gap: .5rem; margin-block: .5rem; white-space: normal; }

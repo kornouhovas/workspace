@@ -1,3 +1,7 @@
+import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
+import { ProjectRevealButton } from "./ProjectRevealButton.js";
+import type { ProjectCreationOperation, ProjectCreationResult } from "../../contracts/project-creation.js";
+import type { ProjectRevealResult } from "../../contracts/project-reveal.js";
 import { useEffect, useRef, useState } from "react";
 import type { Language, ServiceResult } from "../../contracts/settings.js";
 import type { WorkspaceDesktopApi, WorkspaceRequest, WorkspaceResponse } from "../../contracts/desktop-api.js";
@@ -79,6 +83,7 @@ function WorkspacePreview({ language, state = "management" }: {
     const failure: ServiceResult<never> = { ok: false, error: { code: "storage", message: "Preview storage failure" } };
     const workspace = async (input: WorkspaceRequest): Promise<ServiceResult<WorkspaceResponse>> => {
       if (input.type === "workspace.load") return { ok: true, value: snapshot() };
+      if (input.type === "workspace.listProjectCreations") return { ok: true, value: { workspaceId: input.workspaceId, sourceId: records[0].sourceId, operations: [] } };
       if (input.type === "workspace.listProjects") return { ok: true, value: {
         workspaceId: input.workspaceId, sourceId: records[0].sourceId, revision: state.startsWith("applied") ? 1 : 0,
         mode: state.startsWith("applied") ? "direct" : null, categories: [], categoryProperty: null, categoryPropertyRevision: 0,
@@ -395,6 +400,8 @@ function RecoveryPreview({ language, state }: { language: Language; state: Recov
   const returnFocus = useRef(false);
   useEffect(() => { if (closed && returnFocus.current) { trigger.current?.focus(); returnFocus.current = false; } }, [closed]);
   const [client] = useState(() => new class extends WorkspaceServiceClient {
+    override onBackendStatus() { return () => {}; }
+    override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     override onWorkspaceChange() { return () => {}; }
     override async listTextProperties() { return { ok: true as const, value: { ...textStoryIds, revision: 7,
       definitions: [{ propertyId: textStoryIds.propertyId, sourceId: textStoryIds.sourceId, name: longCategoryLabel, propertyType: "text" as const }],
@@ -462,6 +469,8 @@ function SourceObservationPreview({ language, state }: { language: Language; sta
       categories: grouped ? [{ categoryId: "needed-category", name: longCategory, relativePath: "Needed" }, { categoryId: "old-category", name: "Old empty category", relativePath: "Old" }] : [],
       categoryProperty: grouped ? { propertyId: "category-label", sourceId: textStoryIds.sourceId, name: longCategoryLabel } : null, categoryPropertyRevision: grouped ? 7 : 0 };
     const client = new class extends WorkspaceServiceClient {
+    override onBackendStatus() { return () => {}; }
+    override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
       override onWorkspaceChange(listener: (event: WorkspaceChangeEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
       override async listProjects() { return { ok: true as const, value: list }; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: textStoryIds.workspaceId, sourceId: textStoryIds.sourceId, revision: 7,
@@ -518,6 +527,8 @@ function ModeChangePreview({ language, state }: { language: Language; state: Mod
     name: "Mode-retained 日本語", relativePath: `${path}/Historical project`, associationState: state === "retained" ? "excluded" : "active",
     resolution: state === "retained" ? "unresolved" : "active", retentionReason: "mode_change" };
   const [client] = useState(() => new class extends WorkspaceServiceClient {
+    override onBackendStatus() { return () => {}; }
+    override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: textStoryIds.sourceId, operations: [] } }; }
     private value: string | null = longTextValue;
     private revision = 1;
     override onWorkspaceChange() { return () => {}; }
@@ -580,3 +591,113 @@ export const ModeRetainedRussian: Story = () => <ModeChangePreview language="ru"
 
 export const ModeCategoryEnglish: Story = () => <ModeChangePreview language="en" state="category" />;
 export const ModeCategoryRussian: Story = () => <ModeChangePreview language="ru" state="category" />;
+
+// Creation fixtures exercise production components through disposable typed clients.
+type CreationStoryState = "direct" | "grouped" | "unconfigured" | "no-category" | "unavailable" | "pending" | "validation" | "collision" | "failure" | "success" | "uncertain" | "recovery" | "blocked" | "reveal-pending" | "reveal-error" | "reveal-retained";
+function CreationPreview({ language, state }: { language: Language; state: CreationStoryState }) {
+  const root = useRef<HTMLElement>(null);
+  const [prepared, setPrepared] = useState(false);
+  const [fixture] = useState(() => {
+    const grouped = state === "grouped" || state === "no-category";
+    const operation: ProjectCreationOperation = { operationId: "00000000-0000-4000-8000-000000000050", sourceId: textStoryIds.sourceId,
+      initiatingWorkspaceId: textStoryIds.workspaceId, projectId: textStoryIds.projectId, name: recoveryName, relativePath: grouped ? `${longCategory}/${recoveryName}` : recoveryName,
+      mode: grouped ? "grouped" : "direct", categoryId: grouped ? "existing-category" : null, expectedRevision: 1, stage: "uncertain", evidenceRecorded: false, problem: "ownership_uncertain", completedRevision: null };
+    const projects: ProjectList = { ...textStoryIds, revision: 1, mode: state === "unconfigured" ? null : grouped ? "grouped" : "direct",
+      configured: state !== "unconfigured", state: state === "unavailable" ? "unavailable" : "empty", projects: [], retainedProjects: [], retainedCount: 0,
+      categories: grouped && state !== "no-category" ? [{ categoryId: "existing-category", name: longCategory, relativePath: longCategory }] : [], categoryProperty: null, categoryPropertyRevision: 0 };
+    const result = (input: Parameters<WorkspaceServiceClient["createProject"]>[0]): ProjectCreationResult => {
+      const op = { ...operation, ...input, categoryId: "categoryId" in input ? input.categoryId : null };
+      return state === "success" ? { outcome: "completed", operation: { ...op, stage: "completed", completedRevision: 2 }, project: {
+        operationId: op.operationId, sourceId: op.sourceId, projectId: op.projectId, name: op.name, relativePath: op.relativePath, categoryId: op.categoryId, revision: 2,
+      } } : { outcome: "rejected", operation: null, problem: state === "validation" ? "invalid_name" : state === "collision" ? "occupied" : "filesystem_error" };
+    };
+    const client = new class extends WorkspaceServiceClient {
+      override onBackendStatus() { return () => {}; }
+      override async listProjectCreations() { return { ok: true as const, value: { ...textStoryIds, operations: ["recovery", "blocked"].includes(state) ? [operation] : [] } }; }
+      override async createProject(input: Parameters<WorkspaceServiceClient["createProject"]>[0]) {
+        if (state === "pending") return new Promise<ServiceResult<ProjectCreationResult>>(() => {});
+        if (state === "uncertain") throw new Error("Disposable lost-response fixture");
+        return { ok: true as const, value: result(input) };
+      }
+      override async previewProjectCreationRecovery() { return { ok: true as const, value: { ...textStoryIds, operation, revision: 1,
+        destinationState: state === "blocked" ? "replaced" as const : "unverified" as const, problem: "ownership_uncertain" as const,
+        actions: state === "blocked" ? [] : ["associate_reviewed" as const], previewToken: state === "blocked" ? null : "disposable-reviewed-folder" } }; }
+      override async revealProject(workspaceId: string, projectId: string): Promise<ServiceResult<ProjectRevealResult>> {
+        if (state === "reveal-pending") return new Promise(() => {});
+        return { ok: true, value: { workspaceId, projectId, outcome: "rejected", problem: state === "reveal-retained" ? "mode_retained" : "missing" } };
+      }
+    }();
+    return { client, projects };
+  });
+  useEffect(() => {
+    let opened = false, submitted = false;
+    let submitTimer: ReturnType<typeof setTimeout> | undefined;
+    const observer = new MutationObserver(() => {
+      const target = root.current; if (!target) return;
+      if (["unconfigured", "no-category", "unavailable"].includes(state)) { setPrepared(true); observer.disconnect(); return; }
+      if (state.startsWith("reveal-")) {
+        if (!submitted) { submitted = true; target.querySelector<HTMLButtonElement>(".project-reveal button")?.click(); }
+        if (target.querySelector(".project-reveal .bb-status") || target.querySelector<HTMLButtonElement>(".project-reveal button")?.disabled) { setPrepared(true); observer.disconnect(); }
+        return;
+      }
+      if (["recovery", "blocked"].includes(state)) {
+        if (!opened) { const button = [...target.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === translate(language, "creationReview")); if (button) { opened = true; button.click(); } }
+        if (target.querySelector(".creation-review")) { setPrepared(true); observer.disconnect(); }
+        return;
+      }
+      if (!opened) { const button = target.querySelector<HTMLButtonElement>(".project-creation > button"); if (button && !button.disabled) { opened = true; button.click(); } return; }
+      const input = target.querySelector<HTMLInputElement>("#project-creation-name"); if (!input) return;
+      if (!submitted) {
+        // Native setter plus input event goes through React's production onChange.
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, recoveryTarget);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        if (["direct", "grouped"].includes(state)) { setPrepared(true); observer.disconnect(); return; }
+        submitted = true;
+        submitTimer = setTimeout(() => { if (target.isConnected) input.closest("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); }, 0);
+      }
+      if (target.querySelector(".project-creation .bb-status")) { setPrepared(true); observer.disconnect(); }
+    });
+    observer.observe(root.current!, { childList: true, subtree: true, attributes: true });
+    // Ensure the same preparation also runs if the first effect's list is already settled.
+    root.current?.setAttribute("data-preparing", "true");
+    return () => { observer.disconnect(); clearTimeout(submitTimer); };
+  }, [language, state]);
+  return <main ref={root} className="app-shell" lang={language} data-creation-fixture={state} data-fixture-ready={prepared}>
+    <ProjectCreationPanel client={fixture.client} workspaceId={textStoryIds.workspaceId} sourceId={textStoryIds.sourceId} language={language}
+      projects={fixture.projects} disabled={false} invalidation={0} minimumRevision={{ current: 1 }} observationVersion={{ current: 0 }} onCompleted={() => {}} />
+    {state.startsWith("reveal-") && <ProjectRevealButton client={fixture.client} workspaceId={textStoryIds.workspaceId} projectId={textStoryIds.projectId} name={recoveryName} language={language} disabled={false} />}
+  </main>;
+}
+
+export const CreationDirectEnglish: Story = () => <CreationPreview language="en" state="direct" />;
+export const CreationDirectRussian: Story = () => <CreationPreview language="ru" state="direct" />;
+export const CreationGroupedEnglish: Story = () => <CreationPreview language="en" state="grouped" />;
+export const CreationGroupedRussian: Story = () => <CreationPreview language="ru" state="grouped" />;
+export const CreationUnconfiguredEnglish: Story = () => <CreationPreview language="en" state="unconfigured" />;
+export const CreationUnconfiguredRussian: Story = () => <CreationPreview language="ru" state="unconfigured" />;
+export const CreationNoCategoryEnglish: Story = () => <CreationPreview language="en" state="no-category" />;
+export const CreationNoCategoryRussian: Story = () => <CreationPreview language="ru" state="no-category" />;
+export const CreationUnavailableEnglish: Story = () => <CreationPreview language="en" state="unavailable" />;
+export const CreationUnavailableRussian: Story = () => <CreationPreview language="ru" state="unavailable" />;
+export const CreationPendingEnglish: Story = () => <CreationPreview language="en" state="pending" />;
+export const CreationPendingRussian: Story = () => <CreationPreview language="ru" state="pending" />;
+export const CreationValidationEnglish: Story = () => <CreationPreview language="en" state="validation" />;
+export const CreationValidationRussian: Story = () => <CreationPreview language="ru" state="validation" />;
+export const CreationCollisionEnglish: Story = () => <CreationPreview language="en" state="collision" />;
+export const CreationCollisionRussian: Story = () => <CreationPreview language="ru" state="collision" />;
+export const CreationFailureEnglish: Story = () => <CreationPreview language="en" state="failure" />;
+export const CreationFailureRussian: Story = () => <CreationPreview language="ru" state="failure" />;
+export const CreationSuccessEnglish: Story = () => <CreationPreview language="en" state="success" />;
+export const CreationSuccessRussian: Story = () => <CreationPreview language="ru" state="success" />;
+export const CreationUncertainEnglish: Story = () => <CreationPreview language="en" state="uncertain" />;
+export const CreationUncertainRussian: Story = () => <CreationPreview language="ru" state="uncertain" />;
+export const CreationRecoveryEnglish: Story = () => <CreationPreview language="en" state="recovery" />;
+export const CreationRecoveryRussian: Story = () => <CreationPreview language="ru" state="recovery" />;
+export const CreationBlockedEnglish: Story = () => <CreationPreview language="en" state="blocked" />;
+export const CreationBlockedRussian: Story = () => <CreationPreview language="ru" state="blocked" />;
+export const CreationRevealPendingEnglish: Story = () => <CreationPreview language="en" state="reveal-pending" />;
+export const CreationRevealPendingRussian: Story = () => <CreationPreview language="ru" state="reveal-pending" />;
+export const CreationRevealErrorEnglish: Story = () => <CreationPreview language="en" state="reveal-error" />;
+export const CreationRevealErrorRussian: Story = () => <CreationPreview language="ru" state="reveal-error" />;
+export const CreationRevealRetainedEnglish: Story = () => <CreationPreview language="en" state="reveal-retained" />;
+export const CreationRevealRetainedRussian: Story = () => <CreationPreview language="ru" state="reveal-retained" />;

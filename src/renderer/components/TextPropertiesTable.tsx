@@ -5,6 +5,7 @@ import type { TextPropertySnapshot } from "../../contracts/text-properties.js";
 import { WorkspaceServiceClient } from "../workspace-service-client.js";
 import { translate, type TranslationKey } from "../localization.js";
 import { CategoryPropertyHeader, type CategoryLabelDraft } from "./CategoryPropertyHeader.js";
+import { ProjectRevealButton } from "./ProjectRevealButton.js";
 import { TextPropertyCell } from "./TextPropertyCell.js";
 import { StatusMessage } from "./bb-foundation.js";
 
@@ -24,6 +25,7 @@ interface Props {
   categories?: CategorySummary[];
   discoveryRevision?: number;
   minimumDiscoveryRevision?: { current: number };
+  observationVersion?: { current: number };
   categoryPropertyRevision?: number;
   minimumCategoryPropertyRevision?: { current: number };
   onCategoryPropertyCommitted?(snapshot: CategoryPropertySnapshot): void;
@@ -33,7 +35,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, observationVersion, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -146,7 +148,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
     {message && <StatusMessage kind={message === "propertyValidation" || message === "propertySaveError" ? "error" : "info"} title={t(message)} />}
     {snapshot && snapshot.definitions.length === 0 && <p>{t("propertiesEmpty")}</p>}
     <div className="project-table-scroll">
-      <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 1 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
+      <table className="project-table" style={{ minWidth: `${Math.max(1, (snapshot?.definitions.length ?? 0) + 2 + (categoryProperty ? 1 : 0)) * 14}rem` }}><thead><tr><th scope="col">{t("projectName")}</th>
         {categoryProperty && <th key={categoryProperty.propertyId} scope="col" aria-label={categoryProperty.name ?? t("discoveryCategory")}>
           {onCategoryPropertyCommitted && minimumCategoryPropertyRevision ? <CategoryPropertyHeader client={client} workspaceId={workspaceId} sourceId={sourceId} property={categoryProperty}
             discoveryRevision={discoveryRevision} minimumDiscoveryRevision={minimumDiscoveryRevision} revision={categoryPropertyRevision} minimumRevision={minimumCategoryPropertyRevision}
@@ -161,6 +163,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             className="workspace-button workspace-button--secondary property-rename" aria-label={`${t("renameProperty")}: ${property.name}`}
             disabled={disabled || draft !== null} onClick={() => { setMessage(null); setDraft({ propertyId: property.propertyId, name: property.name, originalName: property.name }); }}>{t("renameProperty")}</button>
         </th>)}
+        <th scope="col">{t("revealProject")}</th>
       </tr></thead><tbody>{[...projects, ...retainedProjects].map((project) => {
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
@@ -181,6 +184,7 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
             value={snapshot.values.find((entry) => entry.projectId === project.projectId && entry.propertyId === property.propertyId)?.value ?? null}
             onSave={(value) => saveValue(project.projectId, property.propertyId, value)} />
         </td>)}
+        <td key="project-actions"><ProjectRevealButton client={client} workspaceId={workspaceId} projectId={project.projectId} name={project.name} language={language} disabled={disabled} minimumRevision={minimumDiscoveryRevision} observationVersion={observationVersion} /></td>
       </tr>; })}</tbody></table>
     </div>
   </div>;

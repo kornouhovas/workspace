@@ -156,6 +156,7 @@ Task 4 local evidence (macOS, Node 22.21.1): npm test passed 718 tests with no f
 Files:
 
 - Create: src/renderer/components/ProjectCreationPanel.tsx
+- Create: src/renderer/components/ProjectRevealButton.tsx
 - Modify: src/renderer/components/DiscoveryPanel.tsx
 - Modify: src/renderer/components/TextPropertiesTable.tsx
 - Modify: src/renderer/App.tsx
@@ -164,13 +165,19 @@ Files:
 - Modify: src/renderer/components/bb-foundation.stories.tsx
 - Modify: tests/renderer-app.test.tsx
 - Create: tests/project-creation-ui.test.tsx
+- Modify: tests/components.test.tsx
+- Modify: tests/project-recovery-ui.test.tsx
 
-- [ ] Add authored-name creation controls for configured direct/grouped sources and existing-category selection. Explain empty, unconfigured and no-valid-category states without implicit category creation.
-- [ ] Present pending, validation, collision, unavailable, failure, success and recoverable interruption states. Retain the operation ID across uncertain responses, load outstanding operations after reconnect/reopen and require explicit status/retry/recovery.
-- [ ] Add per-project Reveal pending/error feedback and useful retained-folder explanations. Do not report successful opening for missing or unvalidated folders.
-- [ ] Guard lists/results by workspace/source selection, request/operation lifetime, backend generation, discovery revision and observation version. Preserve Text/category-label drafts and focus during creation and sibling updates; never automatically replay uncertain mutations.
-- [ ] Add actual React EN/RU tests for keyboard submission/category selection, Escape/cancel semantics, focus restoration, double-submit prevention, uncertain outcomes, explicit recovery, selection/removal/backend changes and stale/sibling responses. Cancellation must not imply reversal of an accepted filesystem effect.
-- [ ] Add permanent EN/RU Ladle fixtures for both modes and relevant states; run standard task exit checks and PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run build:ladle; commit the verified UI slice.
+- [x] Add authored-name creation controls for configured direct/grouped sources and existing-category selection. Explain empty, unconfigured and no-valid-category states without implicit category creation.
+- [x] Present pending, validation, collision, unavailable, failure, success and recoverable interruption states. Retain the operation ID across uncertain responses, load outstanding operations after reconnect/reopen and require explicit status/retry/recovery.
+- [x] Add per-project Reveal pending/error feedback and useful retained-folder explanations. Do not report successful opening for missing or unvalidated folders.
+- [x] Guard lists/results by workspace/source selection, request/operation lifetime, backend generation, discovery revision and observation version. Preserve Text/category-label drafts and focus during creation and sibling updates; never automatically replay uncertain mutations.
+- [x] Add actual React EN/RU tests for keyboard submission/category selection, Escape/cancel semantics, focus restoration, double-submit prevention, uncertain outcomes, explicit recovery, selection/removal/backend changes and stale/sibling responses. Cancellation must not imply reversal of an accepted filesystem effect.
+- [x] Add permanent EN/RU Ladle fixtures for both modes and relevant states; run standard task exit checks and PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run build:ladle; commit the verified UI slice.
+
+Task 5 local evidence (macOS 27.0 arm64, Node 22.21.1): npm test passed all 763 tests without failures/skips; lint, typecheck, check:docs, build:ladle and working/fixed-base whitespace checks passed. The 44 focused EN/RU React tests cover both modes, authored text/category choice, empty/unconfigured/unavailable/no-category states, duplicate-submit prevention, Escape and pending cancellation, status/review and all three explicit recovery actions, uncertain responses, foreign/stale lists, selection/removal/backend changes, observation/revision guards and Text/category-label draft/focus preservation. An additional production App test exercises real disposable SQLite/filesystem creation in EN/RU and both modes, service reopen with the same logical ID, injected verified Reveal acknowledgment and missing-folder rejection. Existing App backend/workspace/source keys remain the production selection boundary. There is no automatic mutation replay or folder rollback promise.
+
+The 32 permanent EN/RU Ladle creation/recovery/Reveal fixtures were built and captured through headless Chrome at 1440×960, 1024×720 and 420×800: 96 final screenshots, reachable in-width controls, no document overflow and no page errors. Final disposable capture harness/evidence: work/issue17-task5-layouts-final; earlier capture setup failure (incorrect root MIME type) and corrected earlier evidence remain in work/issue17-task5-layouts. Failed intermediate test logs and final successful logs are retained with the final ignored evidence. These component fixtures and injected native callbacks do not establish Electron runtime, actual native invocation, observed Finder/Explorer opening or Windows acceptance. Tasks 6–7 and coordinator platform gates remain open. Coordinator finding 1 (completed-operation reservation of a vacated path) remains open for scoped repair before full review/acceptance; this UI slice does not mark it resolved. Issue #44 is unchanged. No additional bb code, dependencies or lockfile changes were introduced.
 
 ### Task 6: Extend permanent runtime, crash and native evidence
 

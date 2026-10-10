@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { mkdtempSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, renameSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -91,6 +91,7 @@ interface MockOptions {
   picker?: WorkspaceDesktopApi["pickRoot"];
   onWorkspace?: (input: WorkspaceRequest) => Promise<ServiceResult<WorkspaceResponse>>;
   onProjects?: MockOptions["onWorkspace"];
+  onCreations?: MockOptions["onWorkspace"];
   onProperties?: MockOptions["onWorkspace"];
   onObservation?: MockOptions["onWorkspace"];
   onSettings?: WorkspaceDesktopApi["settings"];
@@ -100,7 +101,7 @@ interface MockOptions {
 function mockApi(options: MockOptions = {}) {
   cleanup();
   const changeListeners = new Set<(event: WorkspaceChangeEvent) => void>();
-  let statusListener: ((status: BackendStatus) => void) | undefined;
+  const statusListeners = new Set<(status: BackendStatus) => void>();
   const onSettings = options.onSettings ?? (async (input) => input.type === "settings.load"
     ? options.settingsResult ?? settings(options.language ?? "en")
     : settings(input.language));
@@ -110,15 +111,17 @@ function mockApi(options: MockOptions = {}) {
   window.workspace = {
     getBackendStatus: async () => ({ state: options.backend ?? "ready" }),
     onBackendStatus: (listener) => {
-      statusListener = listener;
-      return () => { statusListener = undefined; };
+      statusListeners.add(listener);
+      return () => { statusListeners.delete(listener); };
     },
     onWorkspaceChange: (listener) => {
       changeListeners.add(listener);
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.getSourceObservation"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjectCreations"
+      ? options.onCreations?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
+      : input.type === "workspace.getSourceObservation"
       ? options.onObservation?.(input) ?? Promise.resolve(ok({ observation: null }))
       : input.type === "workspace.listTextProperties"
       ? options.onProperties?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: `source-${input.workspaceId}`, revision: 0, definitions: [], values: [] }))
@@ -128,7 +131,7 @@ function mockApi(options: MockOptions = {}) {
         projects: [], retainedProjects: [], retainedCount: 0 })) : onWorkspace(input)) as WorkspaceDesktopApi["workspace"],
     pickRoot: options.picker ?? (async () => ({ outcome: "cancelled" })),
   };
-  return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListener?.({ state: nextState }) };
+  return { changeListenerCount: () => changeListeners.size, emitChange: (event: WorkspaceChangeEvent) => changeListeners.forEach((listener) => listener(event)), emitStatus: (nextState: BackendStatus["state"]) => statusListeners.forEach((listener) => listener({ state: nextState })) };
 }
 
 test("loads English settings and preserves the language only after a successful save", async () => {
@@ -1146,7 +1149,7 @@ test("EN/RU keyboard Apply prevents duplicate submission and displays committed 
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryApplying") }));
     assert.equal(calls.filter((input) => input.type === "workspace.applyDiscovery").length, 1);
     await act(async () => { finish?.(ok(projectList(active, ["  Authored project  "]))); });
-    assert.equal(screen.getByRole("cell").textContent, "  Authored project  ");
+    assert.equal(screen.getByRole("cell", { name: "Authored project" }).textContent, "  Authored project  ");
     assert.ok(screen.getByRole("heading", { name: translate(language, "tableViewTitle") }));
     assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
     assert.equal(document.activeElement, trigger);
@@ -3232,5 +3235,55 @@ test("EN/RU configured mode Apply keeps confirmed delayed success and never over
       assert.equal(document.activeElement, trigger);
     }
     assert.equal(applies, 1); cleanup(); assert.equal(api.changeListenerCount(), 0);
+  }
+});
+
+test("EN/RU production App creates in both modes, preserves IDs after service reopen and reports verified Reveal outcomes", async () => {
+  for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
+    const directory = mkdtempSync(join(tmpdir(), "creation-app-ui-")), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+    mkdirSync(root); if (mode === "grouped") mkdirSync(join(root, "Existing category"));
+    let service = openSettingsService(database), off: (() => void) | undefined, dispatches = 0;
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    try {
+      const created = service.workspaces.create({ type: "workspace.create", name: "Real creation workspace", rootPath: root });
+      assert.ok(created.ok); if (!created.ok) throw new Error("Fixture failed");
+      const workspaceId = created.value.workspaceId;
+      const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode });
+      assert.ok(preview.ok); if (!preview.ok) throw new Error("Fixture failed");
+      assert.ok(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.value.previewToken }).ok);
+      const setup = () => {
+        const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+        const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query,
+          onWorkspace: async (input) => {
+            if (input.type === "workspace.revealProject") return service.revealProject(input, async (target, validate) => {
+              assert.equal(target.canonicalRoot, realpathSync(root)); assert.equal(target.relativePath, mode === "grouped" ? "Existing category/Authored folder" : "Authored folder");
+              assert.equal(validate().outcome, "verified"); dispatches++; return { outcome: "dispatched" };
+            });
+            return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+          } });
+        off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      };
+      setup(); const trigger = await screen.findByRole("button", { name: t("createProject") });
+      await waitFor(() => assert.equal((trigger as HTMLButtonElement).disabled, false)); await userEvent.click(trigger);
+      await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder");
+      if (mode === "grouped") {
+        const select = screen.getByRole("combobox", { name: t("creationCategory") });
+        const option = within(select).getByRole("option", { name: "Existing category" }) as HTMLOptionElement;
+        await userEvent.selectOptions(select, option.value);
+      }
+      screen.getByRole("textbox", { name: t("creationName") }).focus(); await userEvent.keyboard("{Enter}");
+      await screen.findByText(t("creationSaved")); await screen.findByRole("cell", { name: "Authored folder" });
+      const before = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(before.ok); if (!before.ok) throw new Error("Fixture failed");
+      assert.equal(before.value.projects.length, 1); const projectId = before.value.projects[0].projectId;
+      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
+      await screen.findByText(t("revealDispatched")); assert.equal(dispatches, 1);
+      cleanup(); off?.(); service.close(); service = openSettingsService(database); setup();
+      await screen.findByRole("cell", { name: "Authored folder" });
+      const after = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }); assert.ok(after.ok); if (!after.ok) throw new Error("Fixture failed");
+      assert.equal(after.value.projects[0].projectId, projectId);
+      rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
+      await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
+      await screen.findByText(t("revealMissing")); assert.equal(screen.queryByText(t("revealDispatched")), null); assert.equal(dispatches, 1);
+    } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });

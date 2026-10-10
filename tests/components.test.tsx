@@ -79,6 +79,8 @@ test("EN/RU retained rows explain exclusion and recovery, display historical cat
       definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }],
       values: rows.map((row) => ({ projectId: row.projectId, propertyId: "notes", value: `Authored ${row.name}` })) };
     const client = new class extends WorkspaceServiceClient {
+      override onBackendStatus() { return () => {}; }
+      override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
       override async listTextProperties() { return { ok: true as const, value: snapshot }; }
       override onWorkspaceChange() { return () => {}; }
       override async setTextValue(workspaceId: string, projectId: string, propertyId: string, value: string | null) {
@@ -115,6 +117,8 @@ test("EN/RU source-level unavailable observations retain exact authored Text wit
   const { translate } = await import("../src/renderer/localization.js");
   const value = "  Authored 日本語\n" + "long-text-".repeat(24) + "  ";
   const client = new class extends WorkspaceServiceClient {
+    override onBackendStatus() { return () => {}; }
+    override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
     override onWorkspaceChange() { return () => {}; }
     override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: 4,
       definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }],
@@ -199,6 +203,8 @@ test("EN/RU mode-retained rows keep exact Text editable without a direct-mode ca
   for (const language of ["en", "ru"] as const) {
     let value = "  Exact retained 日本語\n  ", saves = 0;
     const client = new class extends WorkspaceServiceClient {
+      override onBackendStatus() { return () => {}; }
+      override async listProjectCreations(workspaceId: string) { return { ok: true as const, value: { workspaceId, sourceId: "source", operations: [] } }; }
       override onWorkspaceChange() { return () => {}; }
       override async listTextProperties() { return { ok: true as const, value: { workspaceId: "workspace", sourceId: "source", revision: saves,
         definitions: [{ propertyId: "notes", sourceId: "source", name: "Notes", propertyType: "text" as const }], values: [{ projectId: "historical", propertyId: "notes", value }] } }; }
