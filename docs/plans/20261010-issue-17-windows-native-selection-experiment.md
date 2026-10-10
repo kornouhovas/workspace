@@ -43,12 +43,14 @@ Files:
 - Create: scripts/windows-native-selection.mjs
 - Create: tests/windows-native-selection.test.mjs
 
-- [ ] Add failing tests for environment-only Unicode/path transport, malformed responses, signed 32-bit HRESULT validation and exclusion of paths, exception text and raw subprocess output.
-- [ ] Implement the fixed PowerShell/Add-Type bridge on a dedicated STA worker thread. Preserve HRESULTs as signed integers; use pointer-sized PIDL values and the documented native signatures.
-- [ ] Implement COM initialization, target parsing, exactly one selection call after successful prerequisites, and finally-based PIDL/COM cleanup. Initialization or parsing failure performs zero selection calls.
-- [ ] Bound the owned PowerShell process to 30 seconds, including compilation. A timeout or missing protocol reports invocation count as unknown; it cannot establish success or trigger another invocation.
-- [ ] Add controlled bridge tests for S_OK/S_FALSE, changed apartment, parsing failure, selection failure and exceptions: verify call ordering, at-most-one selection, one PIDL free and correctly balanced uninitialization. Windows-only compiled-bridge checks must use controlled native delegates.
-- [ ] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH node --test tests/windows-native-selection.test.mjs and lint. Record platform skips separately; commit only verified task files.
+- [x] Add failing tests for environment-only Unicode/path transport, malformed responses, signed 32-bit HRESULT validation and exclusion of paths, exception text and raw subprocess output.
+- [x] Implement the fixed PowerShell/Add-Type bridge on a dedicated STA worker thread. Preserve HRESULTs as signed integers; use pointer-sized PIDL values and the documented native signatures.
+- [x] Implement COM initialization, target parsing, exactly one selection call after successful prerequisites, and finally-based PIDL/COM cleanup. Initialization or parsing failure performs zero selection calls.
+- [x] Bound the owned PowerShell process to 30 seconds, including compilation. A timeout or missing protocol reports invocation count as unknown; it cannot establish success or trigger another invocation.
+- [x] Add controlled bridge tests for S_OK/S_FALSE, changed apartment, parsing failure, selection failure and exceptions: verify call ordering, at-most-one selection, one PIDL free and correctly balanced uninitialization. Windows-only compiled-bridge checks must use controlled native delegates.
+- [x] Run PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH node --test tests/windows-native-selection.test.mjs and lint. Record platform skips separately; commit only verified task files.
+
+Task 1 local verification (macOS, 2026-10-10): Node 22.21.1 focused suite: 11 passed, 0 failed, 1 Windows-only compiled-bridge test skipped. Repository lint passed. The production C# bridge and controlled delegate fixture also compiled together with the already installed .NET 6 compiler in a disposable temporary directory. This compile check does not verify Windows PowerShell Add-Type, STA runtime behavior or real native selection. Windows execution remains an unverified external coordinator gate; the skip is not a pass. No real selection call or product acceptance scenario was run.
 
 ### Task 2: Add the owned fixture, strict observation and failure-safe evidence
 
