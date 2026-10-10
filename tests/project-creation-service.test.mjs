@@ -715,3 +715,146 @@ for (const mode of ["direct", "grouped"]) {
     assert.deepEqual(inventory(f.root), files);
   }));
 }
+
+function creationQuery(f, type, operationId, workspaceId = f.workspaceId) {
+  return { type: `workspace.${type}`, workspaceId, ...(operationId ? { operationId } : {}) };
+}
+function recoveryPreview(f, operationId, workspaceId = f.workspaceId) {
+  const result = f.service.handleQuery(creationQuery(f, "previewProjectCreationRecovery", operationId, workspaceId));
+  assert.equal(result.ok, true, JSON.stringify(result)); return result.value;
+}
+function recoveryCommand(f, preview, action = preview.actions[0]) {
+  return { type: "workspace.recoverProjectCreation", workspaceId: preview.workspaceId, operationId: preview.operation.operationId,
+    previewToken: preview.previewToken, action };
+}
+function seedOutstanding(f, name = "Reserved", stage = "intent") {
+  const source = f.sql.prepare("SELECT * FROM sources WHERE id = ?").get(f.sourceId);
+  const parent = f.categoryId ? join(f.root, "Category") : f.root;
+  const operationId = randomUUID(), projectId = randomUUID(), path = f.categoryId ? `Category/${name}` : name;
+  f.sql.prepare(`INSERT INTO project_creation_operations (operation_id, source_id, initiating_workspace_id, project_id, name,
+    mode, expected_revision, category_id, canonical_root, parent_relative_path, relative_path, root_identity, parent_identity,
+    excluded_relative_paths, archive_relative_path, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'intent')`)
+    .run(operationId, f.sourceId, f.workspaceId, projectId, name, source.discovery_mode, source.discovery_revision, f.categoryId ?? null,
+      f.root, f.categoryId ? "Category" : "", path, source.applied_root_identity, identity(parent), source.excluded_relative_paths, source.archive_relative_path);
+  if (stage !== "intent") {
+    fs.mkdirSync(join(f.root, path));
+    f.sql.prepare("UPDATE project_creation_operations SET stage = 'evidence_recorded', native_identity = ? WHERE operation_id = ?").run(identity(join(f.root, path)), operationId);
+  }
+  return { operationId, projectId, path, destination: join(f.root, path) };
+}
+for (const mode of ["direct", "grouped"]) {
+  test(`${mode} creation status/list/recovery reject malformed, missing and foreign identities without journal changes`, () => emptyFixture(mode, (f) => {
+    const op = seedOutstanding(f), before = records(f.sql);
+    const otherRoot = join(f.directory, "other"); fs.mkdirSync(otherRoot);
+    const other = f.service.workspaces.create({ type: "workspace.create", name: "Other", rootPath: otherRoot }).value;
+    for (const type of ["getProjectCreation", "previewProjectCreationRecovery"]) {
+      for (const request of [creationQuery(f, type, op.operationId, other.workspaceId), creationQuery(f, type, randomUUID()),
+        { ...creationQuery(f, type, op.operationId), destination: op.destination }, creationQuery(f, type, "bad")]) {
+        assert.equal(f.service.handleQuery(request).error.code, "invalid_input");
+      }
+    }
+    for (const request of [{ ...creationQuery(f, "listProjectCreations"), operationId: op.operationId },
+      creationQuery(f, "listProjectCreations", undefined, randomUUID())]) assert.equal(f.service.handleQuery(request).ok, false);
+    const preview = recoveryPreview(f, op.operationId);
+    assert.deepEqual(preview.actions, ["retry_missing"]);
+    for (const request of [{ ...recoveryCommand(f, preview), workspaceId: other.workspaceId },
+      { ...recoveryCommand(f, preview), action: "delete" }, { ...recoveryCommand(f, preview), path: op.destination }]) {
+      assert.equal(f.service.handleCommand(request).ok, false);
+    }
+    assert.deepEqual(records(f.sql).project_creation_operations, before.project_creation_operations);
+    assert.equal(fs.existsSync(op.destination), false);
+  }));
+
+  test(`${mode} Apply/Refresh protect pending paths, aliases and recorded native evidence without enrolling another ID`, () => emptyFixture(mode, (f) => {
+    const reviewedBeforeIntent = f.service.workspaces.previewDiscovery(creationQuery(f, "previewDiscovery")).value;
+    const op = seedOutstanding(f); fs.mkdirSync(op.destination);
+    assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspaceId, previewToken: reviewedBeforeIntent.previewToken }).error.code, "stale_preview");
+    for (let n = 0; n < 3; n++) assert.equal(f.service.workspaces.refreshSource(creationQuery(f, "refreshSource")).ok, true);
+    const preview = f.service.workspaces.previewDiscovery(creationQuery(f, "previewDiscovery")).value;
+    assert.equal(preview.entries.find((row) => row.relativePath === op.path).reason, "unresolved");
+    assert.deepEqual(preview.projectEffects.added, []);
+    assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspaceId, previewToken: preview.previewToken }).ok, true);
+    assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0);
+    const reviewed = recoveryPreview(f, op.operationId);
+    assert.equal(reviewed.destinationState, "unverified"); assert.deepEqual(reviewed.actions, ["associate_reviewed"]);
+    // Query objects are snapshots, not references to the private review.
+    reviewed.actions.push("complete_recorded");
+    assert.equal(f.service.handleCommand(recoveryCommand(f, reviewed, "complete_recorded")).error.code, "stale_preview");
+    assert.equal(f.service.handleCommand(recoveryCommand(f, reviewed, "associate_reviewed")).value.project.projectId, op.projectId);
+  }));
+
+  test(`${mode} recovery survives unrelated discovery revisions but consumes only a fresh current review`, () => emptyFixture(mode, (f) => {
+    const op = seedOutstanding(f), old = recoveryPreview(f, op.operationId);
+    assert.equal(f.service.workspaces.createProject(command(f, "Other")).value.outcome, "completed");
+    assert.equal(f.service.handleCommand(recoveryCommand(f, old)).error.code, "stale_preview");
+    const current = recoveryPreview(f, op.operationId);
+    assert.equal(current.revision, old.revision + 1);
+    const completed = f.service.handleCommand(recoveryCommand(f, current));
+    assert.equal(completed.value.project.projectId, op.projectId); assert.equal(completed.value.project.revision, current.revision + 1);
+    assert.deepEqual(f.service.handleCommand(recoveryCommand(f, current)).value, completed.value);
+    assert.deepEqual(f.service.handleQuery(creationQuery(f, "listProjectCreations")).value.operations, []);
+  }));
+
+  test(`${mode} stale recovery cannot overwrite a new occupant or silently accept changed recorded evidence`, () => emptyFixture(mode, (f) => {
+    const op = seedOutstanding(f), missing = recoveryPreview(f, op.operationId);
+    fs.mkdirSync(op.destination); fs.writeFileSync(join(op.destination, "sentinel"), "third-party");
+    assert.equal(f.service.handleCommand(recoveryCommand(f, missing)).error.code, "stale_preview");
+    const unverified = recoveryPreview(f, op.operationId);
+    const displaced = `${op.destination}-displaced`; fs.renameSync(op.destination, displaced); fs.mkdirSync(op.destination);
+    assert.equal(f.service.handleCommand(recoveryCommand(f, unverified)).error.code, "stale_preview");
+    assert.equal(fs.readFileSync(join(displaced, "sentinel"), "utf8"), "third-party");
+    assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0);
+    assert.equal(f.sql.prepare("SELECT native_identity FROM project_creation_operations").get().native_identity, null);
+  }));
+
+  test(`${mode} recovery final-write failures roll metadata/revision back and retain evidence for explicit completion`, () => {
+    for (const failure of ["project", "revision", "completion"]) emptyFixture(mode, (f) => {
+      const op = seedOutstanding(f), reviewed = recoveryPreview(f, op.operationId), revision = reviewed.revision;
+      const trigger = failure === "project" ? "BEFORE INSERT ON projects" : failure === "revision" ? "BEFORE UPDATE OF discovery_revision ON sources" : "BEFORE UPDATE ON project_creation_operations WHEN NEW.stage = 'completed'";
+      f.sql.exec(`CREATE TRIGGER fail_recovery ${trigger} BEGIN SELECT RAISE(ABORT, 'injected recovery failure'); END`);
+      const failed = f.service.handleCommand(recoveryCommand(f, reviewed));
+      assert.equal(failed.ok, true); assert.equal(failed.value.outcome, "recoverable"); assert.equal(failed.value.operation.evidenceRecorded, true);
+      assert.equal(failed.value.operation.problem, "storage_error");
+      assert.equal(f.sql.prepare("SELECT discovery_revision FROM sources").get().discovery_revision, revision);
+      assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0); assert.deepEqual(inventory(op.destination), []);
+      assert.equal(f.service.handleCommand(recoveryCommand(f, reviewed)).error.code, "stale_preview");
+      f.sql.exec("DROP TRIGGER fail_recovery");
+      const fresh = recoveryPreview(f, op.operationId); assert.deepEqual(fresh.actions, ["complete_recorded"]);
+      assert.equal(f.service.handleCommand(recoveryCommand(f, fresh)).value.project.projectId, op.projectId);
+    });
+  });
+
+  test(`${mode} discovery Apply and reassociation cannot consume intent inserted through a second SQLite connection`, () => emptyFixture(mode, (f) => {
+    const op = seedOutstanding(f); fs.mkdirSync(op.destination);
+    const before = records(f.sql);
+    const preview = f.service.workspaces.previewDiscovery(creationQuery(f, "previewDiscovery")).value;
+    // The outstanding operation may have no filesystem entry. Reservation-only
+    // changes still invalidate a reviewed Apply, independently of scan stamps.
+    const another = seedOutstanding(f, "Absent");
+    assert.equal(f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspaceId, previewToken: preview.previewToken }).error.code, "stale_preview");
+    assert.equal(fs.existsSync(another.destination), false);
+    assert.deepEqual(records(f.sql).projects, before.projects);
+    // Create a retained record whose explicit reassociation must not claim Reserved.
+    const old = f.categoryId ? "Category/Old" : "Old", oldPath = join(f.root, old), projectId = randomUUID();
+    fs.mkdirSync(oldPath);
+    f.sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'missing', ?)")
+      .run(projectId, f.sourceId, old, identity(oldPath), f.categoryId ?? null);
+    fs.rmdirSync(oldPath);
+    const recovery = f.service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspaceId, projectId }).value;
+    assert.notEqual(recovery.entries.find((row) => row.relativePath === op.path)?.status, "selectable");
+    assert.equal(f.service.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: f.workspaceId, projectId, previewToken: recovery.previewToken, relativePath: op.path }).ok, false);
+    assert.equal(f.sql.prepare("SELECT id FROM projects").get().id, projectId);
+  }));
+
+  test(`${mode} pending native/path reservations prevent external reconciliation into an interrupted destination`, () => emptyFixture(mode, (f) => {
+    const created = f.service.workspaces.createProject(command(f, "Original")).value.project;
+    const original = join(f.root, created.relativePath);
+    const pending = seedOutstanding(f, "Reserved");
+    fs.renameSync(original, pending.destination);
+    assert.equal(f.service.workspaces.refreshSource(creationQuery(f, "refreshSource")).ok, true);
+    assert.equal(f.sql.prepare("SELECT relative_path FROM projects WHERE id = ?").get(created.projectId).relative_path, created.relativePath);
+    const review = recoveryPreview(f, pending.operationId);
+    assert.equal(review.destinationState, "conflicting"); assert.equal(review.problem, "native_conflict"); assert.deepEqual(review.actions, []);
+    assert.deepEqual(inventory(pending.destination), []);
+  }));
+}

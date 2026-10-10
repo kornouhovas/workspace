@@ -406,10 +406,29 @@ export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssocia
     categories: categoryInterpretation, projects: projectInterpretation };
 }
 
+// Outstanding creation intent reserves placement even without native evidence.
+// Preserve the raw snapshot for watch topology and complete scan revalidation.
+export interface CreationReservation { relativePath: string; nativeIdentity: string | null }
+export function reserveCreationDestinations(scan: DiscoveryScan, reservations: CreationReservation[]): DiscoveryScan {
+  const alias = (path: string) => path.normalize("NFD").toLowerCase();
+  return { ...scan, entries: scan.entries.map((entry) => {
+    const child = scan.snapshot?.children.find((child) => child.relativePath === entry.relativePath);
+    const blocked = reservations.some((row) => {
+      const path = alias(entry.relativePath), reserved = alias(row.relativePath);
+      const evidence: NativeIdentity | null = row.nativeIdentity ? JSON.parse(row.nativeIdentity) : null;
+      return path === reserved || path.startsWith(`${reserved}/`) ||
+        entry.kind === "project" && reserved.startsWith(`${path}/`) ||
+        evidence && child && child.kind !== "excluded" && evidence.dev === child.identity.dev && evidence.ino === child.identity.ino;
+    });
+    return blocked && entry.reason === null ? { ...entry, reason: "unresolved" as const } : { ...entry };
+  }) };
+}
+
 // Interpret each folder in its target role. Historical project evidence reserves
 // project enrollment, but does not turn that same folder into a project category
 // identity or transfer its metadata to a newly discovered child.
-export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[]) {
+export function planDiscovery(scan: DiscoveryScan, categories: ProjectAssociation[], projects: GroupedProjectAssociation[], reservations: CreationReservation[] = []) {
+  scan = reserveCreationDestinations(scan, reservations);
   if (!scan.snapshot) throw new Error("Cannot plan an incomplete scan");
   const mode = scan.snapshot.mode;
   const compatible = projects.filter((row) => !row.modeInactive && (mode === "grouped"

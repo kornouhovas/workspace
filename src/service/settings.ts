@@ -1,6 +1,6 @@
 import type { ObserverDependencies } from "./source-observer.js";
 import type { ProjectFilesystem } from "./project-filesystem.js";
-import type { ProjectCreationResult } from "../contracts/project-creation.js";
+import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import Database from "better-sqlite3";
@@ -22,7 +22,7 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
-  handleQuery(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
   handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
@@ -74,6 +74,9 @@ export function openSettingsService(
   return {
     workspaces,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listProjectCreations") return workspaces.listProjectCreations(input);
+      if (isRecord(input) && input.type === "workspace.getProjectCreation") return workspaces.getProjectCreation(input);
+      if (isRecord(input) && input.type === "workspace.previewProjectCreationRecovery") return workspaces.previewProjectCreationRecovery(input);
       if (isRecord(input) && input.type === "workspace.getSourceObservation") return workspaces.getSourceObservation(input);
       if (isRecord(input) && input.type === "workspace.previewProjectRecovery") return workspaces.previewProjectRecovery(input);
       if (isRecord(input) && input.type === "workspace.listTextProperties") return workspaces.listTextProperties(input);
@@ -94,6 +97,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.recoverProjectCreation") return workspaces.recoverProjectCreation(input);
       if (isRecord(input) && input.type === "workspace.createProject") return workspaces.createProject(input);
       if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
       if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);

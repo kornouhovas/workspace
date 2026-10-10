@@ -3,7 +3,7 @@ import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
 import { createProjectCreationService } from "./project-creation.js";
 import type { ProjectFilesystem } from "./project-filesystem.js";
-import type { ProjectCreationResult } from "../contracts/project-creation.js";
+import type { ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
@@ -41,6 +41,10 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  listProjectCreations(input: unknown): ServiceResult<ProjectCreationList>;
+  getProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
+  previewProjectCreationRecovery(input: unknown): ServiceResult<ProjectCreationRecoveryPreview>;
+  recoverProjectCreation(input: unknown): ServiceResult<ProjectCreationResult>;
   createProject(input: unknown): ServiceResult<ProjectCreationResult>;
   getSourceObservation(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot>;
   previewProjectRecovery(input: unknown): ServiceResult<ProjectRecoveryPreview>;
@@ -85,6 +89,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     projects: typeof schema.projects.$inferSelect[];
     categories: typeof schema.categories.$inferSelect[];
     interpretation: ReturnType<typeof planDiscovery>;
+    reservations: ReturnType<typeof readCreationReservations>;
   }>();
   const listeners = new Set<(event: WorkspaceChangeEvent) => void>();
   const observationEvents = new Map<string, Extract<WorkspaceChangeEvent, { type: "workspace.sourceObserved" }>>();
@@ -108,17 +113,23 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   });
   function invalidateSourceReviews(sourceId: string) {
     recovery.invalidateSource(sourceId);
+    creation.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
+  const creation = createProjectCreationService(db, {
+    invalidateSourceReviews,
+    committed(sourceId, revision, workspaceIds) {
+      invalidateSourceReviews(sourceId);
+      publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+      observer.request(sourceId);
+    },
+  }, projectFilesystem);
   const service: WorkspaceService = {
-    ...createProjectCreationService(db, {
-      invalidateSourceReviews,
-      committed(sourceId, revision, workspaceIds) {
-        invalidateSourceReviews(sourceId);
-        publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
-        observer.request(sourceId);
-      },
-    }, projectFilesystem),
+    createProject: creation.createProject,
+    listProjectCreations: creation.listProjectCreations,
+    getProjectCreation: creation.getProjectCreation,
+    previewProjectCreationRecovery: creation.previewProjectCreationRecovery,
+    recoverProjectCreation: creation.recoverProjectCreation,
     getSourceObservation(input) {
       if (!isRecord(input) || input.type !== "workspace.getSourceObservation" || !isUuid(input.workspaceId) ||
         Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId")) return invalid("Choose a saved workspace.");
@@ -161,7 +172,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -202,7 +213,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!snapshot) invalidateSourceReviews(source.id);
         const projects = readProjects(source.id);
         const categories = readCategories(source.id);
-        const interpretation = snapshot ? planDiscovery(scan, categories, projects) : null;
+        const interpretation = snapshot ? planDiscovery(scan, categories, projects, readCreationReservations(source.id)) : null;
         const interpreted = interpretation?.entries ?? [];
         const property = db.select().from(schema.categoryProperties).where(eq(schema.categoryProperties.sourceId, source.id)).get();
         if (snapshot) state = interpreted.some((entry) => entry.reason === null) ? "ready" : "empty";
@@ -216,7 +227,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           previewToken: snapshot ? randomUUID() : null,
         };
         // Keep the reviewed draft/configuration independent of the caller's response object.
-        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation) });
+        if (snapshot && interpretation) previewTokens.set(workspaceId, { preview: structuredClone(preview), snapshot, source, projects, categories, interpretation: structuredClone(interpretation), reservations: readCreationReservations(source.id) });
         return { ok: true, value: preview };
       } catch { return storageFailure(); }
     },
@@ -243,13 +254,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         if (!token || token.preview.previewToken !== input.previewToken ||
           discoverySourceState(token.source) !== discoverySourceState(source) ||
           JSON.stringify(token.projects) !== JSON.stringify(readProjects(source.id)) ||
-          JSON.stringify(token.categories) !== JSON.stringify(readCategories(source.id))) return stale();
+          JSON.stringify(token.categories) !== JSON.stringify(readCategories(source.id)) ||
+          JSON.stringify(token.reservations) !== JSON.stringify(readCreationReservations(source.id))) return stale();
         const mode = token.preview.mode;
         const scanner = mode === "grouped" ? scanGroupedSource : scanDirectSource;
         const scan = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
         if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(token.snapshot) ||
           !reliableIdentity(scan.snapshot.root.identity)) return stale();
-        const planned = planDiscovery(scan, token.categories, token.projects);
+        const planned = planDiscovery(scan, token.categories, token.projects, readCreationReservations(source.id));
         const interpretation = planned.projects;
         if (JSON.stringify(planned) !== JSON.stringify(token.interpretation)) return stale();
         const changed = source.discoveryMode !== mode ||
@@ -266,7 +278,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const { result, observation } = db.transaction((tx) => {
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(source) ||
             JSON.stringify(readProjects(source.id)) !== JSON.stringify(token.projects) ||
-            JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories)) throw new StalePreview();
+            JSON.stringify(readCategories(source.id)) !== JSON.stringify(token.categories) ||
+            JSON.stringify(readCreationReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
           // Revalidate again inside the transaction, before making any persistent change.
           const beforeWrites = scanner(source.canonicalRoot, source.archiveRelativePath, token.preview.effectiveExcludedRelativePaths);
           if (!beforeWrites.snapshot || JSON.stringify(beforeWrites.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
@@ -323,7 +336,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
           if (!recheck.snapshot || JSON.stringify(recheck.snapshot) !== JSON.stringify(token.snapshot)) throw new StalePreview();
           if (discoverySourceState(workspaceSource(workspaceId)) !== discoverySourceState(expectedSource) ||
             !sameAssociations(readProjects(source.id), expectedProjects) ||
-            !sameAssociations(readCategories(source.id), expectedCategories)) throw new StalePreview();
+            !sameAssociations(readCategories(source.id), expectedCategories) ||
+            JSON.stringify(readCreationReservations(source.id)) !== JSON.stringify(token.reservations)) throw new StalePreview();
           const committed = tx.select().from(schema.sources).where(eq(schema.sources.id, source.id)).get()!;
           const result = projectList(workspaceId, committed, recheck);
           return { result, observation: sourceObservation(committed, recheck, result) };
@@ -332,8 +346,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
         const observationVersion = (observationVersions.get(source.id) ?? 0) + 1;
         observationVersions.set(source.id, observationVersion);
         if (changed) {
-          recovery.invalidateSource(source.id);
-          for (const [id, saved] of previewTokens) if (saved.preview.sourceId === source.id) previewTokens.delete(id);
+          invalidateSourceReviews(source.id);
           publish([committedEvent]);
         }
         syncObserverReferences();
@@ -564,6 +577,10 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
   function readProjects(sourceId: string) {
     return db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   }
+  function readCreationReservations(sourceId: string) {
+    return db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, sourceId))
+      .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => !["completed", "failed"].includes(row.stage));
+  }
   function readCategories(sourceId: string) {
     return db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
   }
@@ -584,7 +601,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       !sameIdentity(JSON.parse(source.appliedRootIdentity), currentScan.snapshot.root.identity))) state = "root_identity_conflict";
     const verified = currentScan.snapshot && state !== "root_identity_conflict";
     if (!verified) invalidateSourceReviews(source.id);
-    const planned = verified ? planDiscovery(currentScan, categories, projects) : null;
+    const planned = verified ? planDiscovery(currentScan, categories, projects, readCreationReservations(source.id)) : null;
     const interpretation = planned?.projects;
     const projection = projects.map((row) => {
       const category = categories.find((category) => category.id === row.categoryId && !category.modeInactive && category.associationState === "active");
@@ -738,7 +755,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); }
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),

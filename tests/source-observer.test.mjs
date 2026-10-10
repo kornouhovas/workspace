@@ -3,10 +3,12 @@ import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { syncBuiltinESMExports } from "node:module";
 import Database from "better-sqlite3";
 import { openSettingsService } from "../dist/service/settings.mjs";
+import { nativeProjectFilesystem } from "../src/service/project-filesystem.ts";
 import { createSourceObserver, nativeObserverDependencies } from "../src/service/source-observer.ts";
 
 function harness(probe = nativeObserverDependencies.probe) {
@@ -207,12 +209,13 @@ for (const failure of ["setup", "synchronous", "asynchronous"]) test(`repeated $
   assert.equal(passes, count); assert.equal(h.live().length, 0); assert.equal(h.timers.size, 0);
 });
 
-function fixture(grouped, run) {
+function fixture(grouped, run, projectFilesystem, pollCategories = false) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "source-observer-")));
   const root = join(directory, "root"), path = grouped ? "Category/Project" : "Project";
   fs.mkdirSync(join(root, path, "contents"), { recursive: true }); fs.writeFileSync(join(root, path, "contents/data"), "exact bytes");
-  const h = harness(), databasePath = join(directory, "workspace.sqlite");
-  let service = openSettingsService(databasePath, undefined, undefined, h.dependencies);
+  const h = harness(); h.dependencies.pollCategories = pollCategories;
+  const databasePath = join(directory, "workspace.sqlite");
+  let service = openSettingsService(databasePath, undefined, undefined, h.dependencies, projectFilesystem);
   const sqlite = new Database(databasePath);
   const one = service.workspaces.create({ type: "workspace.create", name: "One", rootPath: root }).value;
   const two = service.workspaces.create({ type: "workspace.create", name: "Two", rootPath: root }).value;
@@ -230,7 +233,7 @@ function fixture(grouped, run) {
     .map((table) => [table, sqlite.prepare(`SELECT * FROM ${table} ORDER BY 1`).all()]));
   const restart = () => {
     service.close(); assert.equal(h.live().length, 0); assert.equal(h.timers.size, 0);
-    service = openSettingsService(databasePath, undefined, undefined, h.dependencies);
+    service = openSettingsService(databasePath, undefined, undefined, h.dependencies, projectFilesystem);
     service.workspaces.subscribe((event) => events.push(event));
   };
   try { run({ h, root, path, directory, sqlite, databasePath, one, two, initial, projectId, propertyId, query, command, records, events, restart,
@@ -509,3 +512,110 @@ test("mode observation belongs to the source when a subscriber removes the initi
   f.h.advance(200);
   assert.deepEqual(f.events.filter((event) => event.type === "workspace.sourceObserved").at(-1).workspaceIds, [f.two.workspaceId]);
 }));
+
+for (const grouped of [false, true]) test(`active observation and startup reserve interrupted creations before Apply (${grouped ? "grouped" : "direct"})`, () => fixture(grouped, (f) => {
+  const initial = f.records(), operationId = randomUUID(), projectId = randomUUID();
+  const name = "Interrupted", path = grouped ? `Category/${name}` : name, parent = grouped ? "Category" : "";
+  const source = initial.sources[0];
+  const evidence = (path) => {
+    const stat = fs.lstatSync(path, { bigint: true });
+    return JSON.stringify({ dev: String(stat.dev), ino: String(stat.ino), birthtimeNs: String(stat.birthtimeNs) });
+  };
+  const old = f.query("workspace.previewDiscovery").value;
+  f.sqlite.prepare(`INSERT INTO project_creation_operations (operation_id, source_id, initiating_workspace_id, project_id, name, mode,
+    expected_revision, category_id, canonical_root, parent_relative_path, relative_path, root_identity, parent_identity,
+    excluded_relative_paths, archive_relative_path, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'intent')`)
+    .run(operationId, source.id, f.one.workspaceId, projectId, name, source.discovery_mode, source.discovery_revision,
+      grouped ? initial.categories[0].id : null, f.root, parent, path, source.applied_root_identity, evidence(join(f.root, parent)),
+      source.excluded_relative_paths, source.archive_relative_path);
+  fs.mkdirSync(join(f.root, path)); fs.writeFileSync(join(f.root, path, "sentinel"), "third-party");
+  f.h.hint(grouped ? join(f.root, "Category") : f.root); f.h.advance(200);
+  assert.equal(f.events.at(-1).type, "workspace.sourceObserved");
+  assert.equal(f.events.at(-1).automaticUpdates, "active");
+  assert.deepEqual(f.records(), initial);
+  assert.equal(f.command("workspace.applyDiscovery", { previewToken: old.previewToken }).error.code, "stale_preview");
+  const outstanding = f.query("workspace.listProjectCreations").value.operations;
+  assert.equal(outstanding.length, 1); assert.equal(outstanding[0].projectId, projectId);
+  const reviewed = f.query("workspace.previewProjectCreationRecovery", { operationId }).value;
+  assert.equal(reviewed.problem, "ownership_uncertain");
+  f.restart(); f.h.advance(200);
+  assert.deepEqual(f.records(), initial);
+  assert.equal(f.query("workspace.listProjectCreations").value.operations[0].projectId, projectId);
+  assert.equal(f.command("workspace.recoverProjectCreation", { operationId, action: "associate_reviewed", previewToken: reviewed.previewToken }).error.code, "stale_preview");
+  const discovery = f.query("workspace.previewDiscovery").value;
+  assert.equal(discovery.entries.find((row) => row.relativePath === path).reason, "unresolved");
+  assert.equal(f.command("workspace.applyDiscovery", { previewToken: discovery.previewToken }).ok, true);
+  assert.deepEqual(f.records(), initial);
+  const review = f.query("workspace.previewProjectCreationRecovery", { operationId }).value;
+  let responseReturned = false, sawCommittedBeforeResponse = false;
+  const dispose = f.subscribe((event) => {
+    if (event.type !== "workspace.projectsChanged") return;
+    sawCommittedBeforeResponse = !responseReturned;
+    assert.equal(f.sqlite.prepare("SELECT stage FROM project_creation_operations WHERE operation_id = ?").get(operationId).stage, "completed");
+    assert.deepEqual(event.workspaceIds, [f.one.workspaceId, f.two.workspaceId]);
+    assert.equal(f.query("workspace.listProjects").value.projects.some((row) => row.projectId === projectId), true);
+  });
+  const recovered = f.command("workspace.recoverProjectCreation", { operationId, action: "associate_reviewed", previewToken: review.previewToken });
+  responseReturned = true; dispose();
+  assert.equal(recovered.value.project.projectId, projectId); assert.equal(sawCommittedBeforeResponse, true);
+  f.h.advance(200);
+  assert.equal(f.query("workspace.listProjects").value.projects.length, 2);
+  assert.deepEqual(f.records().text_property_values, initial.text_property_values);
+  assert.deepEqual(f.records().views, initial.views);
+  assert.equal(fs.readFileSync(join(f.root, path, "sentinel"), "utf8"), "third-party");
+  const stale = f.h.live()[0], count = f.events.length; f.close();
+  stale.hint(); stale.failed(); f.h.advance(10000); assert.equal(f.events.length, count);
+}));
+
+for (const grouped of [false, true]) test(`observation, explicit Refresh and Apply during mkdir preserve the pending creation UUID (${grouped ? "grouped" : "direct"})`, () => {
+  let f, reserved;
+  fixture(grouped, (value) => {
+    f = value;
+    const before = f.records();
+    const operationId = randomUUID();
+    const result = f.command("workspace.createProject", { operationId, name: "During",
+      mode: grouped ? "grouped" : "direct", expectedRevision: before.sources[0].discovery_revision,
+      ...(grouped ? { categoryId: before.categories[0].id } : {}) });
+    assert.equal(result.ok, true); assert.equal(result.value.outcome, "completed"); assert.equal(result.value.project.projectId, reserved);
+    f.h.advance(200);
+    assert.equal(f.query("workspace.listProjects").value.projects.length, 2);
+    assert.deepEqual(f.records().text_property_values, before.text_property_values);
+    assert.deepEqual(f.records().views, before.views);
+    assert.equal(f.records().sources[0].discovery_revision, before.sources[0].discovery_revision + 1);
+    assert.equal(f.sqlite.prepare("SELECT count(*) AS n FROM projects WHERE id = ?").get(reserved).n, 1);
+  }, { ...nativeProjectFilesystem, mkdir(path) {
+    nativeProjectFilesystem.mkdir(path);
+    const pending = f.sqlite.prepare("SELECT * FROM project_creation_operations").get();
+    reserved = pending.project_id; assert.equal(pending.stage, "intent");
+    f.h.hint(grouped ? join(f.root, "Category") : f.root); f.h.advance(200);
+    assert.equal(f.command("workspace.refreshSource").ok, true);
+    const preview = f.query("workspace.previewDiscovery").value;
+    assert.equal(preview.entries.find((entry) => entry.relativePath === pending.relative_path).reason, "unresolved");
+    assert.equal(preview.projectEffects.added.length, 0);
+    assert.equal(f.command("workspace.applyDiscovery", { previewToken: preview.previewToken }).ok, true);
+    assert.equal(f.sqlite.prepare("SELECT count(*) AS n FROM projects").get().n, 1);
+  } });
+});
+
+test("Windows root-only topology retains five-second grouped polling during pending creation (simulated scheduler)", () => {
+  fixture(true, (f) => {
+    f.h.advance(0); // Deliver the already subscribed startup observation first.
+    assert.deepEqual(f.h.live().map((watch) => watch.path), [f.root]);
+    const source = f.records().sources[0], category = f.records().categories[0], operationId = randomUUID(), projectId = randomUUID();
+    f.sqlite.prepare(`INSERT INTO project_creation_operations (operation_id, source_id, initiating_workspace_id, project_id, name, mode,
+      expected_revision, category_id, canonical_root, parent_relative_path, relative_path, root_identity, parent_identity,
+      excluded_relative_paths, archive_relative_path, stage) VALUES (?, ?, ?, ?, 'Pending', 'grouped', ?, ?, ?, 'Category', 'Category/Pending', ?, ?, ?, ?, 'intent')`)
+      .run(operationId, source.id, f.one.workspaceId, projectId, source.discovery_revision, category.id, f.root,
+        source.applied_root_identity, category.native_identity, source.excluded_relative_paths, source.archive_relative_path);
+    const review = f.query("workspace.previewProjectCreationRecovery", { operationId }).value;
+    fs.mkdirSync(join(f.root, "Category/Pending"));
+    const count = f.events.length;
+    f.h.advance(4700); assert.equal(f.events.length, count);
+    f.h.advance(200); assert.equal(f.events.at(-1).type, "workspace.sourceObserved");
+    assert.equal(f.events.at(-1).automaticUpdates, "active"); assert.deepEqual(f.h.live().map((watch) => watch.path), [f.root]);
+    assert.equal(f.command("workspace.recoverProjectCreation", { operationId, action: "retry_missing", previewToken: review.previewToken }).error.code, "stale_preview");
+    assert.equal(f.query("workspace.previewDiscovery").value.projectEffects.added.length, 0);
+    assert.equal(f.query("workspace.listProjectCreations").value.operations[0].projectId, projectId);
+    assert.equal(f.records().projects.length, 1);
+  }, undefined, true);
+});

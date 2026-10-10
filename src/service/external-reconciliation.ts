@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import { isChildName, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { isChildName, reserveCreationDestinations, projectExclusions, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DirectoryObservation, type DiscoveryScan, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -154,7 +154,11 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
   if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
     source.discoveryRevision < 0 || source.appliedRootIdentity === null) throw new Error("Invalid configured source");
   const appliedRoot: NativeIdentity = JSON.parse(source.appliedRootIdentity);
-  const scanSource = () => (grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot, source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective);
+  const readReservations = () => db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, source.id))
+    .orderBy(asc(schema.projectCreationOperations.operationId)).all().filter((row) => !["completed", "failed"].includes(row.stage));
+  const reservations = readReservations();
+  const scanSource = () => reserveCreationDestinations((grouped ? scanGroupedSource : scanDirectSource)(source.canonicalRoot,
+    source.archiveRelativePath, projectExclusions(exclusions, grouped ? "grouped" : "direct").effective), reservations);
   const scan = scanSource();
   if (!scan.snapshot) return { changed: false, scan };
   if (!reliableIdentity(appliedRoot) || !reliableIdentity(scan.snapshot.root.identity) || !sameIdentity(appliedRoot, scan.snapshot.root.identity)) {
@@ -188,7 +192,7 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
     if (!current.snapshot || !same(current.snapshot, scan.snapshot)) throw new Error("Reconciliation observation changed");
   };
   db.transaction((tx) => {
-    if (!same(readSource(), source) || !same(readProjects(), records) || !same(readCategories(), categories) || !same(readProperty(), property)) throw new Error("Reconciliation configuration changed");
+    if (!same(readSource(), source) || !same(readProjects(), records) || !same(readCategories(), categories) || !same(readProperty(), property) || !same(readReservations(), reservations)) throw new Error("Reconciliation configuration changed");
     verifyScan();
     // Release only participating path reservations, transaction-locally. All
     // final active states are restored before commit; triggers/indexes stay on.
@@ -202,7 +206,7 @@ export function reconcileSource(db: Database, source: Source): { changed: boolea
     const expected = records.map((row) => mappings.has(row.id) ? { ...row, ...mappings.get(row.id)! } : row);
     const expectedCategories = [...categories.map((row) => categoryMappings.has(row.id) ? { ...row, relativePath: categoryMappings.get(row.id)! } : row),
       ...insertedCategories].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-    if (!same(readCategories(), expectedCategories) || !same(readProperty(), property) || !same(readSource(), { ...source, discoveryRevision: source.discoveryRevision + 1 }) || !same(readProjects(), expected)) {
+    if (!same(readCategories(), expectedCategories) || !same(readProperty(), property) || !same(readSource(), { ...source, discoveryRevision: source.discoveryRevision + 1 }) || !same(readProjects(), expected) || !same(readReservations(), reservations)) {
       throw new Error("Reconciliation stored state changed");
     }
   });

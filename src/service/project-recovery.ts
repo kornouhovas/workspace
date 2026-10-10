@@ -4,7 +4,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type { ProjectRecoveryCandidate, ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import type { ProjectList } from "../contracts/workspaces.js";
-import { modeRetainedResolution, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
+import { modeRetainedResolution, reserveCreationDestinations, planDiscovery, projectExclusions, isChildName, reliableIdentity, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions,
   type DiscoveryScan, type DiscoverySnapshot, type NativeIdentity } from "./discovery.js";
 import * as schema from "./db/schema.js";
 
@@ -18,6 +18,7 @@ interface Review {
   projects: Project[];
   categories: Category[];
   snapshot: DiscoverySnapshot;
+  reservations: typeof schema.projectCreationOperations.$inferSelect[];
 }
 
 export function createProjectRecoveryService(db: Database, integration: {
@@ -33,6 +34,9 @@ export function createProjectRecoveryService(db: Database, integration: {
   }
   const projectsFor = (sourceId: string) => db.select().from(schema.projects).where(eq(schema.projects.sourceId, sourceId)).orderBy(asc(schema.projects.id)).all();
   const categoriesFor = (sourceId: string) => db.select().from(schema.categories).where(eq(schema.categories.sourceId, sourceId)).orderBy(asc(schema.categories.id)).all();
+  const reservationsFor = (sourceId: string) => db.select().from(schema.projectCreationOperations)
+    .where(eq(schema.projectCreationOperations.sourceId, sourceId)).orderBy(asc(schema.projectCreationOperations.operationId)).all()
+    .filter((row) => !["completed", "failed"].includes(row.stage));
   function scanSource(source: Source) {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath) || !Number.isSafeInteger(source.discoveryRevision) ||
@@ -44,7 +48,7 @@ export function createProjectRecoveryService(db: Database, integration: {
       return { state: "root_identity_conflict" as const, entries: [], snapshot: null };
     }
     if (!scan.snapshot) integration.invalidateSourceReviews(source.id);
-    return scan;
+    return reserveCreationDestinations(scan, reservationsFor(source.id));
   }
   function eligible(project: Project, scan: DiscoveryScan, projects: Project[], categories: Category[], source: Source) {
     if (project.modeInactive) return modeRetainedResolution(scan, project, JSON.parse(source.excludedRelativePaths), source.archiveRelativePath) !== "excluded";
@@ -105,7 +109,7 @@ export function createProjectRecoveryService(db: Database, integration: {
         const preview: ProjectRecoveryPreview = { workspaceId: input.workspaceId, sourceId: source.id, projectId: project.id,
           mode: source.discoveryMode, revision: source.discoveryRevision, state: scan.state,
           previewToken: scan.snapshot ? randomUUID() : null, entries: candidates(scan, project, projects, categories) };
-        if (scan.snapshot) reviews.set(reviewKey, { preview: structuredClone(preview), snapshot: scan.snapshot, source, projects, categories });
+        if (scan.snapshot) reviews.set(reviewKey, { preview: structuredClone(preview), snapshot: scan.snapshot, source, projects, categories, reservations: reservationsFor(source.id) });
         return { ok: true, value: preview };
       } catch { return storage(); }
     },
@@ -128,7 +132,8 @@ export function createProjectRecoveryService(db: Database, integration: {
           const current = sourceFor(input.workspaceId);
           if (!current || configuration(current) !== configuration(review.source) || current.discoveryMode !== review.preview.mode ||
             JSON.stringify(projectsFor(source.id)) !== JSON.stringify(review.projects) ||
-            JSON.stringify(categoriesFor(source.id)) !== JSON.stringify(review.categories)) throw new StaleReview();
+            JSON.stringify(categoriesFor(source.id)) !== JSON.stringify(review.categories) ||
+            JSON.stringify(reservationsFor(source.id)) !== JSON.stringify(review.reservations)) throw new StaleReview();
           const scan = scanSource(current);
           if (!scan.snapshot || JSON.stringify(scan.snapshot) !== JSON.stringify(review.snapshot)) throw new StaleReview();
           const project = review.projects.find((row) => row.id === input.projectId)!;
@@ -169,7 +174,8 @@ export function createProjectRecoveryService(db: Database, integration: {
             .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
           if (configuration(committed) !== configuration({ ...review.source, discoveryRevision: source.discoveryRevision + 1 }) ||
             JSON.stringify(projectsFor(source.id)) !== JSON.stringify(expectedProjects) ||
-            JSON.stringify(categoriesFor(source.id)) !== JSON.stringify(expectedCategories)) throw new StaleReview();
+            JSON.stringify(categoriesFor(source.id)) !== JSON.stringify(expectedCategories) ||
+            JSON.stringify(reservationsFor(source.id)) !== JSON.stringify(review.reservations)) throw new StaleReview();
           return integration.projectList(input.workspaceId, committed, after);
         });
         invalidateSource(source.id);
