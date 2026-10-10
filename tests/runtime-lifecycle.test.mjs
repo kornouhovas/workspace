@@ -103,3 +103,59 @@ test("mode feature evidence survives failed normal quit without claiming restart
     assert.equal(stages.modeChangeSourceReuse, true);
   } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
 });
+
+test("creation evidence never promotes failed/skipped/unreached native or shutdown gates", async () => {
+  const { createCreationEvidence, recordCreationEvidence } = await import("../scripts/runtime-evidence.mjs");
+  const evidence = createCreationEvidence();
+  assert.equal(evidence.direct.creation.status, "unreached");
+  for (const status of ["failed", "skipped", "pending", "unreached"]) {
+    recordCreationEvidence(evidence, "direct", "nativeInvocation", { status, reason: "fixture gate" });
+    assert.throws(() => recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true, exactTargetObserved: true }), /requires/);
+    recordCreationEvidence(evidence, null, "normalShutdown", { status });
+    assert.throws(() => recordCreationEvidence(evidence, null, "restartPersistence", { status: "passed", asserted: true }), /normal shutdown/);
+  }
+  assert.throws(() => recordCreationEvidence(evidence, "direct", "creation", { status: "passed" }), /completed assertion/);
+  recordCreationEvidence(evidence, "direct", "nativeInvocation", { status: "passed", asserted: true, apiResult: "" });
+  assert.throws(() => recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true }), /exact target/);
+  recordCreationEvidence(evidence, "direct", "fileManagerOutcome", { status: "passed", asserted: true, exactTargetObserved: true });
+  assert.equal(evidence.direct.fileManagerOutcome.status, "passed");
+  assert.equal(evidence.grouped.nativeInvocation.status, "unreached");
+  recordCreationEvidence(evidence, null, "normalShutdown", { status: "failed", forcedCleanup: true });
+  assert.equal(JSON.parse(JSON.stringify(evidence)).restartPersistence.status, "unreached");
+});
+
+test("native observation records only exact-target booleans and keeps unavailable OS checks pending", async () => {
+  const { observeFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  const target = "C:\\Disposable\\Folder's name $value";
+  let call;
+  const run = async (...args) => { call = args; return { stdout: "true\n" }; };
+  assert.deepEqual(await observeFileManagerTarget(target, "win32", run), { status: "passed", asserted: true, exactTargetObserved: true });
+  assert.equal(call[2].env.WORKSPACE_OBSERVE_TARGET, target);
+  assert.equal(call[1].join(" ").includes(target), false, "Target must remain data, never PowerShell code");
+  assert.deepEqual(await observeFileManagerTarget("/tmp/disposable", "darwin", run), { status: "passed", asserted: true, exactTargetObserved: true });
+  assert.equal(call[1].at(-1), "/tmp/disposable");
+  for (const stdout of ["false", "", "some unrelated window"]) {
+    const result = await observeFileManagerTarget("/tmp/disposable", "darwin", async () => ({ stdout }));
+    assert.equal(result.status, "pending");
+    assert.equal(JSON.stringify(result).includes("unrelated window"), false);
+  }
+  const denied = await observeFileManagerTarget("/tmp/disposable", "darwin", async () => { throw Object.assign(new Error("private user location"), { code: "EACCES" }); });
+  assert.equal(denied.status, "pending"); assert.equal(JSON.stringify(denied).includes("private user"), false);
+  assert.equal((await observeFileManagerTarget("/tmp/disposable", "linux")).status, "skipped");
+});
+
+test("file-manager cleanup confines window closure to the supplied disposable path", async () => {
+  const { closeDisposableFileManagerTarget } = await import("../scripts/file-manager-evidence.mjs");
+  const calls = [];
+  const run = async (...args) => { calls.push(args); return { stdout: "" }; };
+  for (const platform of ["darwin", "win32"]) {
+    const target = platform === "darwin" ? "/tmp/owned-fixture" : "C:\\owned-fixture";
+    assert.equal((await closeDisposableFileManagerTarget(target, platform, run)).status, "completed");
+    const [program, args, options] = calls.at(-1);
+    assert.ok(["osascript", "powershell.exe"].includes(program));
+    assert.equal(args.join(" ").includes("kill"), false);
+    if (platform === "darwin") { assert.equal(args.at(-1), target); assert.ok(args[1].includes("is expectedTarget then close candidate")); }
+    else { assert.equal(options.env.WORKSPACE_OBSERVE_TARGET, target); assert.ok(args.at(-1).includes("OrdinalIgnoreCase")); }
+  }
+  assert.equal((await closeDisposableFileManagerTarget("/tmp/owned", "linux", run)).status, "skipped");
+});

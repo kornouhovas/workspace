@@ -27,10 +27,55 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run build:ladle
+      - name: Capture creation/recovery/Reveal layouts
+        run: node scripts/smoke-discovery-layouts.mjs --creation
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-layouts
+      - name: Development creation crash/recovery matrix
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- dev --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-crash-matrix
+      - name: Direct development creation/native evidence
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-direct
+      - name: Grouped development creation/native evidence
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- dev --creation --discovery-mode=grouped --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-dev-grouped
       - run: npm run smoke:runtime -- dev
+        if: ${{ !cancelled() }}
       - run: npm run package:dir
+        if: ${{ !cancelled() }}
       - run: npm run check:artifact -- release
+        if: ${{ !cancelled() }}
+      - name: Packaged creation crash/recovery matrix
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- release --creation --skip-native
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-crash-matrix
+      - name: Direct packaged creation/native evidence
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- release --creation --discovery-mode=direct --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-direct
+      - name: Grouped packaged creation/native evidence
+        if: ${{ !cancelled() }}
+        run: npm run smoke:runtime -- release --creation --discovery-mode=grouped --checkpoint=after_evidence
+        env:
+          WORKSPACE_SMOKE_EVIDENCE_DIR: work/ci-creation-release-grouped
       - run: npm run smoke:runtime -- release
+        if: ${{ !cancelled() }}
+      - name: Preserve creation/native failures and unreached stages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-${{ matrix.artifact }}-evidence
+          path: work/ci-creation-*/
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
           name: workspace-${{ matrix.artifact }}-development

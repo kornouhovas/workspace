@@ -49,21 +49,24 @@ app.on('window-all-closed', () => app.quit());`);
   }
   page.setDefaultTimeout(15000);
   const meta = JSON.parse(await readFile(join(built, "meta.json"), "utf8"));
-  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-|source-|mode-)/.test(name));
+  const stories = Object.keys(meta.stories).filter((name) => /--(discovery-|applied-|text-|grouped-|category-|recovery-|source-|mode-|creation-)/.test(name));
   assert.equal(stories.filter((name) => name.includes("--text-")).length, 18, "Expected all nine EN/RU Text states");
   assert.equal(stories.filter((name) => name.includes("--recovery-")).length, 20, "Expected all ten EN/RU recovery states");
   assert.equal(stories.filter((name) => name.includes("--source-")).length, 14, "Expected all seven EN/RU source observation states");
   assert.equal(stories.filter((name) => name.includes("--mode-")).length, 18, "Expected all nine EN/RU mode-change states");
-  assert.equal(stories.length, 120, "Expected discovery, Text, category and recovery presentation states");
-  const selectedStories = process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : stories;
+  assert.equal(stories.filter((name) => name.includes("--creation-")).length, 32, "Expected all sixteen EN/RU creation and Reveal states");
+  assert.equal(stories.length, 152, "Expected discovery, Text, category and recovery presentation states");
+  const selectedStories = process.argv.includes("--mode-changes") ? stories.filter((name) => name.includes("--mode-")) : process.argv.includes("--creation") ? stories.filter((name) => name.includes("--creation-")) : stories;
   for (const story of selectedStories) {
     await page.goto(`${url}/?story=${story}&mode=preview`);
+    const creationStory = story.includes("--creation-");
     const modeStory = story.includes("--mode-");
     const sourceStory = story.includes("--source-");
     const recoveryStory = story.includes("--recovery-");
     const categoryStory = story.includes("--category-");
     const textStory = story.includes("--text-");
-    await page.locator(modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    await page.locator(creationStory ? "[data-creation-fixture][data-fixture-ready=true]" : modeStory ? "[data-mode-fixture]" : sourceStory ? "[data-source-fixture]" : recoveryStory ? "[data-recovery-fixture]" : categoryStory ? "[data-category-fixture][data-fixture-ready=true]" : textStory ? "[data-text-fixture][data-fixture-ready=true]" : ".discovery-panel, .table-view").waitFor();
+    const creationState = creationStory ? await page.locator("[data-creation-fixture]").getAttribute("data-creation-fixture") : null;
     const modeState = modeStory ? await page.locator("[data-mode-fixture]").getAttribute("data-mode-fixture") : null;
     if (["retained", "category"].includes(modeState)) await page.waitForFunction(() => globalThis.document.querySelector(".text-properties")?.getAttribute("aria-busy") === "false");
     if (modeStory && !["retained", "category"].includes(modeState)) {
@@ -122,7 +125,7 @@ app.on('window-all-closed', () => app.quit());`);
           const bounds = node.getBoundingClientRect(), scroll = node.closest(".project-table-scroll").getBoundingClientRect();
           return bounds.left < scroll.left - 1 || bounds.right > scroll.right + 1;
         }).map((node) => node.textContent),
-        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status"))
+        elements: Array.from(globalThis.document.querySelectorAll(".discovery-panel, .discovery-effects, .discovery-effects li, .discovery-entries li, .project-table td, .project-table th, .workspace-root, .workspace-form-actions, .text-value-button, .text-value-editor, .category-property-header, .recovery-review dd, .recovery-candidates, .recovery-path, .source-refresh, .source-refresh .bb-status, .project-creation, .project-creation .bb-status, .project-creation .workspace-form-actions, .creation-review, .project-reveal .bb-status"))
           .filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className || node.tagName),
         wrapped: Array.from(globalThis.document.querySelectorAll(".discovery-name, .property-authored, .text-value-button:not([hidden]), .project-table td, .saved-categories li, .workspace-root, .recovery-review dd, .recovery-path"))
           .filter((node) => node.textContent.length > 150).every((node) => {
@@ -130,9 +133,12 @@ app.on('window-all-closed', () => app.quit());`);
             return new Set(Array.from(range.getClientRects(), (rect) => Math.round(rect.top))).size > 1;
           }),
       }));
-      if (recoveryStory || modeStory) {
-        for (const button of await page.locator(recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
-          await button.scrollIntoViewIfNeeded();
+      if (recoveryStory || modeStory || creationStory) {
+        for (const button of await page.locator(creationStory ? ".project-creation button, .project-reveal button" : recoveryStory ? ".recovery-panel button" : ".workspace-form-actions button, [data-mode-fixture] > button").all()) {
+          await button.evaluate(async (node) => {
+            node.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+            await new Promise((done) => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done)));
+          });
           assert.equal(await button.evaluate((node) => {
             const rect = node.getBoundingClientRect();
             return rect.left >= 0 && rect.right <= globalThis.innerWidth && rect.top >= 0 && rect.bottom <= globalThis.innerHeight;
@@ -142,7 +148,7 @@ app.on('window-all-closed', () => app.quit());`);
       assert.deepEqual(layout.clippedControls, [], `${story} ${size.width} editing controls clipped after scrolling`);
       assert.equal(layout.overflow, false, `${story} ${size.width} document overflow`);
       assert.deepEqual(layout.elements, [], `${story} ${size.width} element overflow`);
-      if (size.width === 420 || recoveryStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
+      if (size.width === 420 || recoveryStory || creationStory) assert.equal(layout.wrapped, true, `${story} long authored text did not wrap`);
       const screenshot = `${story}-${size.width}x${size.height}.png`;
       // Chromium uses exact viewport captures; native Electron retains the
       // existing full-page evidence. DOM checks above still cover long content.
@@ -150,6 +156,44 @@ app.on('window-all-closed', () => app.quit());`);
       results.screenshots.push({ story, ...size, screenshot, layout });
     }
     // Exercise the actual fixture controls after recording the requested state.
+    if (creationStory) {
+      const trigger = page.locator(".project-creation > button").first();
+      if (["direct", "grouped", "validation", "collision", "failure"].includes(creationState)) {
+        const input = page.locator("#project-creation-name");
+        await input.focus(); await input.press("Escape");
+        await input.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+        await trigger.press("Enter");
+        await input.waitFor();
+        assert.equal(await input.evaluate((node) => node === globalThis.document.activeElement), true);
+        if (creationState === "grouped") {
+          const category = page.locator(".project-creation select");
+          await category.selectOption("existing-category");
+          assert.equal(await category.inputValue(), "existing-category");
+        }
+      } else if (["unconfigured", "no-category", "unavailable", "pending"].includes(creationState)) {
+        assert.equal(await trigger.isDisabled(), true);
+        if (creationState === "pending") {
+          assert.equal(await page.locator("#project-creation-name").isDisabled(), true);
+          await page.locator(".project-creation form").press("Escape");
+          assert.equal(await page.locator(".project-creation form").count(), 0);
+          assert.equal(await trigger.isDisabled(), true, "Closing a pending form cannot authorize another creation");
+        }
+      } else if (["recovery", "blocked"].includes(creationState)) {
+        const review = page.locator(".creation-review");
+        assert.equal(await review.locator("button").count(), creationState === "blocked" ? 1 : 2);
+        await review.getByRole("button").last().press("Enter");
+        await review.waitFor({ state: "detached" });
+        assert.equal(await trigger.evaluate((node) => node === globalThis.document.activeElement), true);
+      } else if (creationState.startsWith("reveal-")) {
+        assert.equal(await page.locator(".project-reveal button").isDisabled(), creationState === "reveal-pending");
+        if (creationState !== "reveal-pending") await page.locator(".project-reveal [role=alert]").waitFor();
+      } else if (creationState === "uncertain") {
+        assert.equal(await page.locator("#project-creation-name").isDisabled(), true);
+        assert.equal(await page.locator(".project-creation button[type=submit]").isDisabled(), true);
+      } else if (creationState === "success") assert.equal(await page.locator(".project-creation form").count(), 0);
+      results.interactions ??= []; results.interactions.push({ story, state: creationState, passed: true, native: "typed fixture only" });
+    }
     if (modeStory) {
       if (modeState === "category") {
         await page.locator(".category-property-header > button").press("Enter");

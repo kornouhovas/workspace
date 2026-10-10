@@ -141,3 +141,38 @@ for (const mode of ["direct", "grouped"]) {
     });
   });
 }
+
+for (const mode of ["direct", "grouped"]) test(`${mode} runtime crash seed preserves existing Text/sentinels and emits a recoverable reserved identity`, async () => {
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-runtime-seed-")));
+  const root = join(directory, "root"), otherRoot = join(directory, "other"), database = join(directory, "workspace.sqlite"), marker = join(directory, "cleanup");
+  const parent = mode === "grouped" ? join(root, "Category") : root;
+  fs.mkdirSync(join(parent, "Existing"), { recursive: true }); fs.mkdirSync(otherRoot);
+  fs.writeFileSync(join(parent, "Existing", "sentinel"), "existing bytes");
+  fs.writeFileSync(join(otherRoot, "sentinel"), "unrelated bytes");
+  let child, service;
+  try {
+    const message = await new Promise((resolve, reject) => {
+      child = fork("tests/fixtures/project-creation-crash-worker.mjs", [database, "after_evidence", JSON.stringify({ type: "workspace.createProject", operationId: randomUUID(), name: "Interrupted" }), marker, JSON.stringify({ mode, root, otherRoot })], {
+        execArgv: [], env: { ...process.env, PATH: `/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:${process.env.PATH}` }, stdio: ["ignore", "ignore", "pipe", "ipc"],
+      });
+      let result, stderr = "";
+      child.stderr.on("data", (bytes) => { stderr += bytes; });
+      const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new Error(`Seed timed out: ${stderr}`)); }, 10000);
+      child.on("message", (message) => { result = message; child.kill("SIGKILL"); });
+      child.on("error", (error) => { clearTimeout(timer); reject(error); });
+      child.on("exit", () => { clearTimeout(timer); if (result?.checkpoint === "after_evidence") resolve(result); else reject(new Error(`Unexpected seed exit: ${stderr}`)); });
+    });
+    assert.equal(fs.existsSync(marker), false);
+    service = openSettingsService(database, "src/service/db/migrations");
+    const { workspace, sibling, other, properties } = message.setup;
+    const list = service.handleQuery({ type: "workspace.listProjectCreations", workspaceId: sibling.workspaceId });
+    assert.equal(list.ok, true); assert.equal(list.value.operations[0].projectId, message.operation.project_id);
+    assert.equal(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: workspace.workspaceId }).value.projects.length, 1);
+    assert.deepEqual(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId: workspace.workspaceId }).value, properties);
+    assert.equal(properties.values[0].value, "  Retained 日本語\n  ");
+    assert.equal(service.handleQuery({ type: "workspace.listProjectCreations", workspaceId: other.workspaceId }).value.operations.length, 0);
+    assert.deepEqual(fs.readdirSync(join(parent, "Interrupted")), []);
+    assert.equal(fs.readFileSync(join(parent, "Existing", "sentinel"), "utf8"), "existing bytes");
+    assert.equal(fs.readFileSync(join(otherRoot, "sentinel"), "utf8"), "unrelated bytes");
+  } finally { service?.close(); if (child && child.exitCode === null && child.signalCode === null) { const ended = new Promise((done) => child.once("exit", done)); child.kill("SIGKILL"); await ended; } fs.rmSync(directory, { recursive: true, force: true }); }
+});

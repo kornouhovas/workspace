@@ -18,6 +18,10 @@ const executablePath = mode === "dev"
   ? require("electron")
   : packagedExecutablePath(root, process.platform, process.arch);
 
+if (process.argv.includes("--creation")) {
+  await import("./smoke-project-creation.mjs");
+} else {
+
 await stat(executablePath);
 const fixture = await mkdtemp(join(tmpdir(), "workspace-runtime-"));
 const workspaceName = "Runtime-workspace-with-a-very-long-unbroken-name-for-layout-verification";
@@ -1240,3 +1244,5 @@ try {
 if (scenarioFailure && cleanupFailure) throw new AggregateError([scenarioFailure, cleanupFailure], "Runtime scenario and cleanup failed");
 if (scenarioFailure) throw scenarioFailure;
 if (cleanupFailure) throw cleanupFailure;
+
+}
