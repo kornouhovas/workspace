@@ -58,7 +58,7 @@ if ($env:WORKSPACE_SELECTION_DIAGNOSTICS -eq '1') {
   $diagnostic | ConvertTo-Json -Depth 4 -Compress
   $diagnostic['independentSelection'] = Get-WorkspaceSelectionDiagnostic $ownedWindows $expected
 }
-$diagnostic | ConvertTo-Json -Depth 4 -Compress
+$diagnostic | ConvertTo-Json -Depth 6 -Compress
 `;
 
 export function windowsObservationResult(stdout, independent = false) {
@@ -103,20 +103,49 @@ export function windowsObservationResult(stdout, independent = false) {
   } catch { return invalid(); }
 }
 
+function selectionQueryShape(value) {
+  const count = (n) => Number.isSafeInteger(n) && n >= 0 && n <= 100000;
+  const code = (n) => Number.isInteger(n) && n >= -2147483648 && n <= 2147483647;
+  if (!value || !["observed", "read_error"].includes(value.stage) || !count(value.viewCount) ||
+    !(value.itemCount === null || (count(value.itemCount) && value.viewCount === 1)) ||
+    !Array.isArray(value.candidates) || value.candidates.length > 8) return null;
+  if (value.stage === "observed" ? (!count(value.candidateCount) || value.candidateCount < value.viewCount ||
+    value.candidates.length !== Math.min(8, value.candidateCount) || value.code !== null) :
+    (value.candidateCount !== null || value.candidates.length !== 0 || !code(value.code))) return null;
+  const candidates = [];
+  for (const marker of value.candidates) {
+    if (!marker || !["List", "DataGrid", "Pane", "Custom", "Table", "other"].includes(marker.controlType) ||
+      !["UIItemsView", "other"].includes(marker.className) || !["ItemsView", "other"].includes(marker.automationId) ||
+      (marker.className === "other" && marker.automationId === "other")) return null;
+    candidates.push({ controlType: marker.controlType, className: marker.className, automationId: marker.automationId });
+  }
+  return { stage: value.stage, viewCount: value.viewCount, itemCount: value.itemCount,
+    candidateCount: value.candidateCount, candidates, code: value.code };
+}
+
 export function independentSelectionResult(value, comSelected) {
   const unavailable = { source: "ui_automation", status: "unavailable", stage: "protocol_error", windowVerified: false, targetVerified: false, selected: null, code: null };
-  const stages = ["selected", "unselected", "parent_absent", "ambiguous_parent", "target_absent", "wrong_window", "ambiguous_target", "pattern_unavailable", "read_error", "view_changed", "timeout", "command_error", "output_limit"];
+  const stages = ["selected", "unselected", "parent_absent", "ambiguous_parent", "target_absent", "wrong_window", "view_absent", "ambiguous_view", "ambiguous_target", "pattern_unavailable", "read_error", "view_changed", "timeout", "command_error", "output_limit"];
   let result = unavailable;
+  const hasShape = value && Object.hasOwn(value, "queryShape");
+  const queryShape = hasShape ? selectionQueryShape(value.queryShape) : undefined;
+  const shapeValid = (!hasShape && !["view_absent", "ambiguous_view"].includes(value?.stage)) || (queryShape && value.windowVerified &&
+    (value.stage !== "view_absent" || queryShape.viewCount === 0) &&
+    (value.stage !== "ambiguous_view" || queryShape.viewCount > 1) &&
+    (value.stage !== "target_absent" || (queryShape.viewCount === 1 && queryShape.itemCount === 0)) &&
+    (value.stage !== "ambiguous_target" || (queryShape.viewCount === 1 && queryShape.itemCount > 0)) &&
+    (!["selected", "unselected", "pattern_unavailable"].includes(value.stage) || (queryShape.viewCount === 1 && queryShape.itemCount === 1)));
   if (value && stages.includes(value.stage) && typeof value.windowVerified === "boolean" && typeof value.targetVerified === "boolean" &&
-    (value.code === null || (Number.isInteger(value.code) && value.code >= -2147483648 && value.code <= 2147483647))) {
+    shapeValid && (value.code === null || (Number.isInteger(value.code) && value.code >= -2147483648 && value.code <= 2147483647))) {
     const observed = value.stage === "selected" || value.stage === "unselected";
     if ((observed && value.windowVerified && value.targetVerified && value.selected === (value.stage === "selected") && value.code === null) ||
       (!observed && value.selected === null && !value.targetVerified &&
         (value.stage === "read_error" ? value.code !== null : value.code === null) &&
-        (!["ambiguous_target", "pattern_unavailable", "view_changed"].includes(value.stage) || value.windowVerified) &&
+        (!["view_absent", "ambiguous_view", "ambiguous_target", "pattern_unavailable", "view_changed"].includes(value.stage) || value.windowVerified) &&
         (!["parent_absent", "wrong_window", "timeout", "command_error", "output_limit"].includes(value.stage) || !value.windowVerified))) {
       result = { source: "ui_automation", status: observed ? "observed" : "unavailable", stage: value.stage,
-        windowVerified: value.windowVerified, targetVerified: value.targetVerified, selected: value.selected, code: value.code };
+        windowVerified: value.windowVerified, targetVerified: value.targetVerified, selected: value.selected, code: value.code,
+        ...(hasShape ? { queryShape } : {}) };
     }
   }
   return { independentSelection: result, selectionAgreement: result.status !== "observed" || comSelected === null ? "unavailable" :

@@ -11,6 +11,7 @@ export function validateProductDiagnostic({ enabled, platform, mode, selectedMod
 
 const allowed = (value, values, fallback = 'unknown') => values.includes(value) ? value : fallback;
 const count = (value, max = 100000) => Number.isInteger(value) && value >= 0 && value <= max ? value : null;
+const duration = (value) => Number.isFinite(value) && value >= 0 && value <= 60000 ? value : null;
 const status = (value) => allowed(value?.status, ['passed', 'failed', 'skipped', 'pending', 'unreached'], 'unreached');
 const stage = (value) => ({ status: status(value) });
 const version = (value) => typeof value === 'string' && /^\d{1,10}(?:\.\d{1,10}){1,3}$/.test(value) ? value : null;
@@ -57,9 +58,9 @@ export function productDiagnosticSnapshot({ metadata, runtime, evidence, invocat
     acknowledgment: stage(native.nativeAcknowledgment),
     observation: { status: status(outcome), exactTargetObserved: outcome.exactTargetObserved === true,
       completion: allowed(outcome.completion, ['exact_target', 'deadline', 'unavailable', 'unsupported'], 'unreached'),
-      deadlineMs: 10000, elapsedMs: count(outcome.elapsedMs, 60000), ...observed,
+      deadlineMs: 10000, elapsedMs: duration(outcome.elapsedMs), ...observed,
       attempts: (outcome.attempts ?? []).slice(0, 100).map((attempt) => ({
-        attempt: count(attempt.attempt, 100), elapsedMs: count(attempt.elapsedMs, 60000),
+        attempt: count(attempt.attempt, 100), elapsedMs: duration(attempt.elapsedMs),
         timeoutMs: count(attempt.timeoutMs, 5000), ...observation(attempt),
       })) },
     normalShutdown: stage(evidence.normalShutdown), restartPersistence: stage(evidence.restartPersistence),

@@ -33,19 +33,53 @@ function Read-WorkspaceUiaSelection($handle, $name) {
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ItemsView'),
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))
     $views = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $viewCondition)
-    if ($views.Count -ne 1) { return @{ stage = 'ambiguous_target'; selected = $null } }
+    # Shape evidence is diagnostic only. The original exact view query remains
+    # the only route to item/pattern reads; candidates never authorize selection.
+    $shape = Get-WorkspaceUiaQueryShape $root $views.Count
+    if ($views.Count -eq 0) { return @{ stage = 'view_absent'; selected = $null; queryShape = $shape } }
+    if ($views.Count -ne 1) { return @{ stage = 'ambiguous_view'; selected = $null; queryShape = $shape } }
     $itemCondition = [System.Windows.Automation.AndCondition]::new(
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $name),
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem))
     $items = $views[0].FindAll([System.Windows.Automation.TreeScope]::Children, $itemCondition)
-    if ($items.Count -eq 0) { return @{ stage = 'target_absent'; selected = $null } }
-    if ($items.Count -ne 1 -or $items[0].Current.IsOffscreen) { return @{ stage = 'ambiguous_target'; selected = $null } }
+    $shape.itemCount = [int]$items.Count
+    if ($items.Count -eq 0) { return @{ stage = 'target_absent'; selected = $null; queryShape = $shape } }
+    if ($items.Count -ne 1 -or $items[0].Current.IsOffscreen) { return @{ stage = 'ambiguous_target'; selected = $null; queryShape = $shape } }
     $pattern = $null
     if (-not $items[0].TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) {
-        return @{ stage = 'pattern_unavailable'; selected = $null }
+        return @{ stage = 'pattern_unavailable'; selected = $null; queryShape = $shape }
     }
     $selected = [bool]$pattern.Current.IsSelected
-    return @{ stage = $(if ($selected) { 'selected' } else { 'unselected' }); selected = $selected }
+    return @{ stage = $(if ($selected) { 'selected' } else { 'unselected' }); selected = $selected; queryShape = $shape }
+}
+
+function Get-WorkspaceUiaQueryShape($root, $viewCount) {
+    $shape = [ordered]@{ stage = 'observed'; viewCount = [int]$viewCount; itemCount = $null; candidateCount = $null; candidates = @(); code = $null }
+    try {
+        # Search only the already verified owned HWND, using two finite provider
+        # markers. Never record names, raw IDs/classes, paths or desktop content.
+        $condition = [System.Windows.Automation.OrCondition]::new(
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ItemsView'),
+            [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ClassNameProperty, 'UIItemsView'))
+        $candidates = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        $shape.candidateCount = [int]$candidates.Count
+        $markers = [Collections.Generic.List[object]]::new()
+        for ($index = 0; $index -lt [Math]::Min(8, $candidates.Count); $index++) {
+            $current = $candidates[$index].Current
+            $controlType = 'other'
+            foreach ($type in @('List', 'DataGrid', 'Pane', 'Custom', 'Table')) {
+                if ($current.ControlType -eq [System.Windows.Automation.ControlType]::$type) { $controlType = $type; break }
+            }
+            $markers.Add([ordered]@{ controlType = $controlType; className = $(if ($current.ClassName -ceq 'UIItemsView') { 'UIItemsView' } else { 'other' }); automationId = $(if ($current.AutomationId -ceq 'ItemsView') { 'ItemsView' } else { 'other' }) })
+        }
+        $shape.candidates = @($markers.ToArray())
+    } catch {
+        $shape.stage = 'read_error'
+        $shape.candidateCount = $null
+        $shape.candidates = @()
+        $shape.code = [int]$_.Exception.HResult
+    }
+    return $shape
 }
 
 function Test-WorkspaceExactView($window, $expected) {
@@ -75,6 +109,7 @@ function Get-WorkspaceSelectionDiagnostic($ownedWindows, $expected) {
         $result.stage = 'view_changed'
         if (-not (Test-WorkspaceExactView $window $expected) -or [long]$window.HWND -ne $handle) { return $result }
         $result.stage = $read.stage
+        if ($read.ContainsKey('queryShape')) { $result['queryShape'] = $read.queryShape }
         if ($read.stage -eq 'selected' -or $read.stage -eq 'unselected') {
             $result.targetVerified = $true
             $result.selected = $read.selected

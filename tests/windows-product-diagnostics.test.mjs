@@ -69,6 +69,41 @@ test('unavailable timeout, unknown invocation, failures and cleanup stay separat
   assert.equal(invalid.metadata.electronNodeVersion, null); assert.equal(invalid.invocation.count, null);
 });
 
+test('fractional observation durations survive snapshots while invalid timings and fractional counts do not', () => {
+  for (const elapsedMs of [0, 5123.75, 10000.125, 60000, NaN, Infinity, -1, 60000.001, '5000']) {
+    const evidence = createCreationEvidence();
+    evidence.direct.fileManagerOutcome = { status: 'pending', elapsedMs,
+      attempts: [{ elapsedMs, attempt: 1.5, timeoutMs: 4999.5 }] };
+    const result = snapshot(evidence, { invocationCount: 1.5 });
+    const expected = typeof elapsedMs === 'number' && Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 60000 ? elapsedMs : null;
+    assert.equal(result.observation.elapsedMs, expected);
+    assert.equal(result.observation.attempts[0].elapsedMs, expected);
+    assert.equal(result.observation.attempts[0].attempt, null);
+    assert.equal(result.observation.attempts[0].timeoutMs, null);
+    assert.equal(result.invocation.count, null);
+    assert.equal(result.observation.deadlineMs, 10000);
+    assert.equal(result.observation.status, 'pending');
+  }
+});
+
+test('published product snapshot retains sanitized unavailable owned-view counts without implying selection', () => {
+  const evidence = createCreationEvidence();
+  const queryShape = { stage: 'observed', viewCount: 0, itemCount: null, candidateCount: 1,
+    candidates: [{ controlType: 'DataGrid', className: 'UIItemsView', automationId: 'other', name: privateText }], code: null };
+  evidence.direct.fileManagerOutcome = { status: 'pending', diagnostics: com(false),
+    independentSelection: { stage: 'view_absent', windowVerified: true, targetVerified: false, selected: null, code: null, queryShape } };
+  const result = snapshot(evidence);
+  assert.equal(result.observation.com.selectedTargetMatch, false);
+  assert.equal(result.observation.independentSelection.stage, 'view_absent');
+  assert.equal(result.observation.independentSelection.status, 'unavailable');
+  assert.equal(result.observation.independentSelection.queryShape.viewCount, 0);
+  assert.deepEqual(result.observation.independentSelection.queryShape.candidates,
+    [{ controlType: 'DataGrid', className: 'UIItemsView', automationId: 'other' }]);
+  assert.equal(result.observation.selectionAgreement, 'unavailable');
+  assert.equal(result.observation.exactTargetObserved, false);
+  assert.equal(JSON.stringify(result).includes(privateText), false);
+});
+
 test('workflow runs three independent fresh Windows jobs and always uploads exact diagnostic files', async () => {
   const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const [name, artifact, path] of [

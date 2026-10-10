@@ -6,11 +6,13 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { collectNativeSelectionMetadata } from './windows-native-selection.mjs';
+import { renameFixtureNames } from './windows-rename-node-worker.mjs';
 
 const script = fileURLToPath(import.meta.url);
+const nodeWorker = fileURLToPath(new URL('./windows-rename-node-worker.mjs', import.meta.url));
 const bridge = fileURLToPath(new URL('./windows-rename-diagnostics.ps1', import.meta.url));
 const migrations = fileURLToPath(new URL('../src/service/db/migrations', import.meta.url));
-export const renameScenarios = Object.freeze(['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'collision_control']);
+export const renameScenarios = Object.freeze(['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control', 'collision_control']);
 export const renameBounds = Object.freeze({ operationsPerScenario: 2, workerMs: 25000, bridgeMs: 10000,
   terminationMs: 1000, outputBytes: 65536, scanCount: 128, scanMs: 6000 });
 const count = (n, max = 100000) => Number.isInteger(n) && n >= 0 && n <= max;
@@ -22,25 +24,32 @@ export function parseRenameResponse(text) {
   try {
     const v = JSON.parse(text);
     if (!v || v.version !== 1 || !['input', 'compile', 'lock', 'rename', 'completed'].includes(v.stage) ||
+      !['node_fs_rename', 'move_file_ex'].includes(v.api) ||
       ![0, 1].includes(v.invocationCount) || typeof v.renamed !== 'boolean' ||
       !(v.win32Code === null || count(v.win32Code, 4294967295)) ||
+      !(v.nodeCode === null || ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY', 'EINVAL', 'ENAMETOOLONG', 'UNKNOWN', 'unknown'].includes(v.nodeCode)) ||
+      !(v.syscall === null || v.syscall === 'rename') ||
       typeof v.lockOpened !== 'boolean' || typeof v.lockReleased !== 'boolean' || (v.lockReleased && !v.lockOpened) ||
       ![v.startedUnixMs, v.endedUnixMs].every((n) => n === null || timestamp(n))) return null;
+    if (v.api === 'node_fs_rename' && v.invocationCount === 1 && v.win32Code !== null) return null;
+    if (v.api === 'move_file_ex' && (v.nodeCode !== null || v.syscall !== null)) return null;
     if (v.stage === 'completed') {
-      if (v.invocationCount !== 1 || !timestamp(v.startedUnixMs) || !timestamp(v.endedUnixMs) ||
-        v.endedUnixMs < v.startedUnixMs || v.win32Code === null || v.renamed !== (v.win32Code === 0)) return null;
+      if (v.invocationCount !== 1 || !timestamp(v.startedUnixMs) || !timestamp(v.endedUnixMs) || v.endedUnixMs < v.startedUnixMs) return null;
+      if (v.api === 'move_file_ex' ? v.win32Code === null || v.renamed !== (v.win32Code === 0)
+        : v.renamed ? v.nodeCode !== null || v.syscall !== null : v.nodeCode === null || v.syscall !== 'rename') return null;
     } else if (v.stage === 'rename' && v.invocationCount === 1) {
-      if (v.renamed || v.win32Code !== null || !timestamp(v.startedUnixMs) || v.endedUnixMs !== null) return null;
-    } else if (v.invocationCount !== 0 || v.renamed || v.startedUnixMs !== null || v.endedUnixMs !== null) return null;
+      if (v.renamed || v.win32Code !== null || v.nodeCode !== null || v.syscall !== null || !timestamp(v.startedUnixMs) || v.endedUnixMs !== null) return null;
+    } else if (v.invocationCount !== 0 || v.renamed || v.nodeCode !== null || v.syscall !== null || v.startedUnixMs !== null || v.endedUnixMs !== null) return null;
     if (['input', 'compile', 'lock'].includes(v.stage) && v.lockOpened) return null;
-    return Object.fromEntries(['version', 'stage', 'invocationCount', 'renamed', 'win32Code', 'lockOpened', 'lockReleased', 'startedUnixMs', 'endedUnixMs'].map((k) => [k, v[k]]));
+    return Object.fromEntries(['version', 'api', 'stage', 'invocationCount', 'renamed', 'win32Code', 'nodeCode', 'syscall',
+      'lockOpened', 'lockReleased', 'startedUnixMs', 'endedUnixMs'].map((k) => [k, v[k]]));
   } catch { return null; }
 }
 
 // Bounded stdout/stderr, explicit process termination evidence; no raw exception
 // or subprocess output escapes this boundary. PowerShell never starts children.
 export function runBoundedProcess(program, args, { env = process.env, timeoutMs, maxBytes = renameBounds.outputBytes,
-  spawnProcess = spawn, clock = { setTimeout, clearTimeout }, tree = false, readyMarker, onReady = () => {} } = {}) {
+  spawnProcess = spawn, clock = { setTimeout, clearTimeout }, tree = false, readyMarker, readyInput = 'rename\n', waitForReadyCallback = false, onReady = () => {} } = {}) {
   return new Promise((resolveResult) => {
     let child, timer, killTimer, settled = false, reason = null, bytes = 0, stdout = '', ready = false;
     const finish = (termination, exitCode = null) => {
@@ -76,7 +85,9 @@ export function runBoundedProcess(program, args, { env = process.env, timeoutMs,
         stdout += data.toString('utf8');
         if (readyMarker && !ready && (stdout.startsWith(`${readyMarker}\n`) || stdout.startsWith(`${readyMarker}\r\n`))) {
           ready = true; stdout = stdout.slice(stdout.indexOf('\n') + 1);
-          child.stdin.end('rename\n'); onReady();
+          if (waitForReadyCallback) {
+            Promise.resolve().then(onReady).then(() => { if (!settled && !reason) child.stdin.end(readyInput); }, () => stop('process_error'));
+          } else { child.stdin.end(readyInput); onReady(); }
         }
       }
     });
@@ -84,21 +95,45 @@ export function runBoundedProcess(program, args, { env = process.env, timeoutMs,
   });
 }
 
-export async function invokeExternalRename(directory, scenario, { onReady } = {}) {
-  const processResult = await runBoundedProcess('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', bridge], {
-    timeoutMs: renameBounds.bridgeMs, maxBytes: 4096,
-    readyMarker: scenario === 'concurrent_scan' ? 'WORKSPACE_RENAME_READY' : undefined, onReady,
-    env: { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario },
+export async function invokeExternalRename(directory, scenario, { onReady, runProcess = runBoundedProcess } = {}) {
+  const env = { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario,
+    WORKSPACE_RENAME_CATEGORY: renameFixtureNames.category, WORKSPACE_RENAME_DESTINATION: renameFixtureNames.target };
+  const invokeNode = () => runProcess(process.execPath, [nodeWorker], { timeoutMs: renameBounds.bridgeMs, maxBytes: 4096,
+    readyMarker: scenario === 'concurrent_scan' ? 'WORKSPACE_RENAME_READY' : undefined, onReady, env });
+  const held = ['injected_conflict', 'delete_shared_control'].includes(scenario);
+  if (scenario !== 'collision_control' && !held) {
+    const result = await invokeNode();
+    return { process: withoutOutput(result), response: result.status === 'completed' ? parseRenameResponse(result.stdout) : null };
+  }
+  let nodePending;
+  const holder = await runProcess('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', bridge], {
+    timeoutMs: renameBounds.bridgeMs, maxBytes: 4096, env,
+    ...(held ? { readyMarker: 'WORKSPACE_RENAME_LOCKED', readyInput: 'release\n', waitForReadyCallback: true,
+      onReady: async () => { nodePending = invokeNode(); await nodePending; } } : {}),
   });
-  return { process: withoutOutput(processResult), response: processResult.status === 'completed' ? parseRenameResponse(processResult.stdout) : null };
+  const holderResponse = holder.status === 'completed' ? parseRenameResponse(holder.stdout) : null;
+  if (!held) return { process: withoutOutput(holder), response: holderResponse };
+  // Await the Node process even if the holder exhausted its deadline. Its handle
+  // lifetime is then unverified and must not qualify as a completed control.
+  const node = await nodePending;
+  const response = node?.status === 'completed' ? parseRenameResponse(node.stdout) : null;
+  if (holderResponse?.stage === 'rename' && holderResponse.invocationCount === 0 && response) {
+    response.lockOpened = holderResponse.lockOpened;
+    response.lockReleased = holderResponse.lockReleased;
+  }
+  const processEvidence = withoutOutput(holder.status === 'completed' && node ? node : holder);
+  if (holder.termination === 'unknown' || node?.termination === 'unknown') processEvidence.termination = 'unknown';
+  if (holder.status === 'completed' && !node) processEvidence.status = 'process_error';
+  return { process: processEvidence, response: response ?? holderResponse };
 }
 const withoutOutput = ({ status, termination, exitCode }) => ({ status, termination, exitCode });
 const invariantNames = ['controlDetected', 'sentinels', 'inventory', 'logicalIds', 'exactText', 'history', 'reconciliation', 'restart', 'observerCleanup'];
 const resourceNames = ['watchesOpened', 'watchesClosed', 'liveWatches', 'peakWatches', 'timersScheduled', 'liveTimers', 'healthCallbacks', 'probes', 'explicitScans'];
 const controlDetected = (scenario, response) => scenario === 'injected_conflict'
-  ? response.lockOpened && response.lockReleased && !response.renamed && [5, 32, 33].includes(response.win32Code)
-  : scenario === 'collision_control' ? !response.renamed && response.win32Code > 0
-    : !response.lockOpened && !response.lockReleased;
+  ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && !response.renamed && ['EPERM', 'EACCES', 'EBUSY'].includes(response.nodeCode)
+  : scenario === 'delete_shared_control' ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && response.renamed
+  : scenario === 'collision_control' ? response.api === 'move_file_ex' && !response.renamed && response.win32Code > 0
+    : response.api === 'node_fs_rename' && !response.lockOpened && !response.lockReleased;
 
 export function parseFixtureResponse(text, scenario) {
   if (typeof text !== 'string' || Buffer.byteLength(text) > renameBounds.outputBytes) return null;
@@ -160,7 +195,7 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
       return { cancel() { if (active) { active = false; r.liveTimers--; timer.cancel(); } } };
     },
   };
-  const root = join(directory, 'root'), category = 'Категория Ω', target = 'Renamed 文', project = 'Project 文';
+  const root = join(directory, 'root'), { category, target, project } = renameFixtureNames;
   const bytes = Buffer.from([0, 255, 42, 10]), text = '  Exact\nТекст 文  ', historyText = '\n Historical  ';
   let service, sqlite, pendingRename;
   try {
@@ -257,8 +292,11 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
   if (!evidenceDirectory || !count(operations, 2) || operations < 1) throw new Error('Invalid diagnostic configuration');
   const result = { version: 1, kind: 'real-service-external-category-rename', status: 'failed', metadata: await metadata(),
     limits: renameBounds, handleAttribution: 'owned-resources-only',
-    renameOperation: { api: 'MoveFileExW', flags: 0, replacing: false,
-      historicalOperation: 'Node fs.promises.rename', historicalFlags: 1, equivalentToHistoricalOperation: false },
+    renameOperation: { api: 'Node fs.promises.rename', historicalOperation: 'Node fs.promises.rename',
+      equivalentToHistoricalOperation: true, destinationInitiallyAbsent: true },
+    collisionOperation: { api: 'MoveFileExW', flags: 0, replacing: false },
+    handleControls: { access: 'GENERIC_READ', conflictShare: 'READ|WRITE', contrastShare: 'READ|WRITE|DELETE', holder: 'separate-powershell-process' },
+    pathShape: 'historical-long-unicode-category-and-project',
     scanTiming: 'wall-clock-intervals-not-OS-handle-attribution', operations: [], failure: null };
   if (!result.metadata.codeSha) result.failure = 'revision_unavailable';
   else if (platform !== 'win32') result.failure = 'unsupported_host';

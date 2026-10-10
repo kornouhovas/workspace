@@ -73,23 +73,45 @@ After the service test library build, run the diagnostic with the required Node 
 
 Task 3 local verification (macOS arm64, Node 22.21.1): production build and the six focused diagnostic/lifecycle suites passed (104 tests, 97 passed, seven Windows-only skips, zero failures). Lint, typecheck, smoke-script syntax, check:docs and working/fixed-base diff checks passed. The YAML orchestration test verifies independent fresh-runner jobs, one direct DEV/after_evidence product scenario, no prior Explorer scenario, minimal build commands, unsuppressed failures and mandatory always-upload behavior. Targeted product result.json contains only bounded allowlisted metadata/stages, separate COM/UIA/count evidence and cleanup; the rename artifact explicitly distinguishes flags=0 from historical Node flags=1. Commands and interpretation are recorded in docs/verification/issue-17-create-reveal.md. No real Windows, native graphical or packaging verification was performed locally.
 
-External checkpoint remains unmet: coordinator must supply exact-code product COM/UIA selection and real-service rename Windows artifacts, alongside the separately isolated native experiment. Skipped fixtures, pending/missing artifacts and local simulations are not passes. Before causal interpretation of historical EPERM, obtain the exact Node rename/equivalent-flags comparison if needed; no cause or production repair is established here. Latest coordinator-reported a85ce35 macOS grouped DEV UI-acknowledgment failure remains separate and unresolved. Stop after this committed milestone; Tasks 4–5 remain unchecked.
+At the Task 3 handoff, the external checkpoint was unmet. The coordinator subsequently supplied exact 7031665 fast Windows artifacts from CI 38062987376. The receipt gate is satisfied; product cause and acceptance are not. The results require diagnostic correctness/fidelity work before dependent repairs. Skipped fixtures and local simulations remain unverified. Latest coordinator-reported a85ce35 macOS grouped DEV UI-acknowledgment failure remains separate and unresolved.
 
 ## Coordinator checkpoint before Task 4
 
-The coordinator pushes the diagnostic commit and supplies actual Windows artifacts. Stop execution here if evidence is unavailable; Tasks 4–5 remain unchecked. Record the concrete missing result. No elapsed time, local simulation or isolated API success satisfies this gate.
+Satisfied by coordinator-supplied CI 38062987376, exact code 7031665fbe5e10ffe1a6063de4bf8a714052c82c, Windows 10.0.26100 x64, Node 22.21.1, Electron 44.7.0 / embedded Node 24.21.0. One product dispatch/exact owned target and localized acknowledgment passed; COM repeatedly found parent/target but not selection, with zero errors. Independent UIA first timed out, then returned ambiguous_target with windowVerified=true. The controlled selected-reader test threw an unidentified exception. All elapsedMs values were null. Scenario normal shutdown/restart were unreached; failure/fixture cleanup passed, and one window-close request completed without verified closure.
 
-### Task 4: Review evidence and repair established causes
+All six real-service non-control renames passed, including IDs/Text/history/reconciliation/restart/cleanup. Each concurrent fixture recorded only two scans and broad interval overlap. Both injected metadata-handle controls failed to block rename; occupied-destination controls returned code 183 without overwrite. realRenameFailures=0 does not establish historical Node EPERM sensitivity or cause. The flags=0 bridge differs from historical Node flags=1.
+
+Coordinator-authorized adjustment: split the original Task 4 into a locally verifiable diagnostic correction milestone and a subsequent evidence-dependent repair task. Original production-cause and final acceptance requirements are retained below; none is completed by a diagnostic pass.
+
+### Task 4: Correct diagnostic evidence and historical-operation fidelity
+
+**Files:**
+- Modify: scripts/windows-selection-diagnostics.ps1, scripts/file-manager-evidence.mjs, scripts/windows-product-diagnostics.mjs and their focused tests.
+- Modify: scripts/windows-rename-diagnostics.mjs, scripts/windows-rename-diagnostics.ps1, connected bounded worker/tests and docs/verification/issue-17-create-reveal.md.
+
+- [x] Map supplied exact-code findings and collect all five initial perspectives (quality, implementation, testing, simplification and documentation) against the fixed base before changes.
+- [x] Expose bounded synthetic-only UIA exception/collection diagnostics and distinguish exact-owned-window view/item query outcomes using finite counts/allowlisted provider markers. Preserve unknown/ambiguous results and original selection assertions; defer unsupported targeting adaptations until actual provider evidence.
+- [x] Preserve bounded finite fractional elapsed timings with a red-before/green-after regression; retain integer-only counts and unchanged observation deadlines.
+- [x] Add exact external Node fs.promises.rename fidelity with the historical long Unicode fixture shape and a documented explicit-access sharing-control candidate. Keep occupied-destination nonreplacing control, negative results, ownership, IDs/Text/history, process bounds and cleanup. Actual Windows control validity remains a separate coordinator gate.
+- [x] Run focused diagnostic/service suites, lint, typecheck, check:docs and working/fixed-base diff checks. Collect quality/implementation follow-up reviews until no critical/major actionable findings remain; commit the bounded diagnostic milestone and record actual checks/limitations.
+
+Task 4 local verification (macOS arm64, Node 22.21.1): service test-library build; six focused diagnostic/lifecycle suites (114 tests, 106 passed, eight Windows-only skips, zero failures); four connected service suites (95 passed, zero failures/skips); repository lint, typecheck, check:docs and working/fixed-base whitespace checks passed. The timing regression failed before repair and passed afterward. All five initial perspectives preceded changes; the final quality/implementation pair found no remaining critical/major actionable issues after the unsigned PowerShell access-argument correction. No actual Windows, graphical product, package or full npm test/build verification is claimed. The synthetic UIA failure/provider query and stronger sharing controls still require the new coordinator checkpoint; this completed diagnostic milestone does not complete the product-cause or external acceptance requirements.
+
+## New coordinator checkpoint before Task 5
+
+The coordinator pushes the corrected diagnostic milestone and supplies exact-code Windows artifacts and complete controlled-test logs from the isolated fresh jobs. Stop before Task 5 until these arrive. In particular, inspect the synthetic reader's finite exception/collection diagnostics, exact owned provider counts/markers, exact Node operation codes and whether the stronger sharing controls actually block rename. A candidate control or a skipped Windows fixture is not a verified repair. If the faithful baseline remains negative, assess bounded distinct-fixture stress or Electron-backend escalation from those results; do not change production canonicalization/watchers or native dispatch speculatively.
+
+### Task 5: Review corrected Windows evidence and repair established product causes
 
 **Files:**
 - Modify only evidence-implicated files among `src/desktop/project-reveal.ts`, `src/service/source-observer.ts`, `discovery.ts`, `workspaces.ts`, `scripts/file-manager-evidence.mjs` and connected diagnostic/runtime tests.
 
-- [ ] Map coordinator artifacts to confirmed findings and unresolved hypotheses. Obtain all five initial perspectives—quality, implementation, testing, simplification and documentation—before repairs, using gpt-6.1-sol high and the fixed base; batches 3+2 are permitted.
+- [ ] Map corrected coordinator artifacts to confirmed findings and unresolved hypotheses. Obtain all five initial perspectives—quality, implementation, testing, simplification and documentation—before new product repairs, using gpt-6.1-sol high and the fixed base; batches 3+2 are permitted.
 - [ ] Implement the smallest supported repair at the native, resource-ownership, filesystem or fixture boundary. Verify primary native documentation before any justified API adaptation. An occasional experimental pass alone authorizes no replacement.
 - [ ] Add focused red-before/green-after regressions for each repair. Preserve one user-intent dispatch, useful errors, live observation and rename/reconciliation invariants.
 - [ ] Run affected suites, then quality/implementation critical-major follow-up reviews until clean. Commit verified repairs. If evidence remains insufficient, retain the unresolved gate instead of speculative changes.
 
-### Task 5: Verify repairs and update the evidence handoff
+### Task 6: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.
@@ -102,9 +124,9 @@ The coordinator pushes the diagnostic commit and supplies actual Windows artifac
 
 ## Post-Completion: External Coordinator Gates
 
-- Task 1 Windows execution gate: the six Windows-only fixtures were not executed on the local macOS host. Batched COM fixture reliability under Windows suite load, actual Explorer ItemsView/SelectionItemPattern support, owned-window cleanup and exact-code product selection remain unverified until coordinator-supplied Windows artifacts. Local controlled protocol tests are not Windows acceptance; unsupported/ambiguous providers remain unavailable. No native or shutdown cause is established by this diagnostic implementation.
+- Task 1 local execution limitation: the six Windows-only fixtures were not executed on the local macOS host. Subsequent exact 7031665 Windows evidence is recorded at the checkpoint above, including the failed controlled UIA reader and unavailable real provider results. Corrected-instrument Windows execution and exact-code product selection remain required. Local controlled protocol tests are not Windows acceptance; unsupported/ambiguous providers remain unavailable. No native or shutdown cause is established by this diagnostic implementation.
 
-- Task 2 Windows execution gate: the actual PowerShell/Win32 conflict, occupied-destination and production Windows root-watcher/polling scenarios remain unverified. The Windows-only test was skipped on macOS; no external acceptance was marked complete. Coordinator must obtain exact-code Windows artifacts, inspect negative/unavailable outcomes and scan/rename timing before deciding whether an actual Electron-backend reproduction or repair is warranted.
+- Task 2 local execution limitation: the Windows-only test was skipped on macOS. Subsequent exact 7031665 Windows evidence records successful non-control/collision probes and failed injected controls, without historical EPERM sensitivity or attribution. Corrected exact-Node/explicit-access control execution remains a new coordinator gate. Inspect every negative/unavailable outcome and scan/rename timing before deciding whether bounded stress, actual Electron-backend reproduction or repair is warranted. No external acceptance was marked complete.
 
 - Coordinator obtains exact-code macOS/Windows acceptance for repaired direct/grouped DEV and packaged selection, external category rename, recovery, normal quit and restart.
 - Failed, skipped and unreached stages remain explicit. Historical Windows shutdown uncertainty and independent issue #44 are preserved.

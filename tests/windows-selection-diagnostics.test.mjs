@@ -42,6 +42,58 @@ test("absent, wrong, ambiguous and unavailable UIA evidence never implies select
   }
 });
 
+const marker = { controlType: "List", className: "UIItemsView", automationId: "ItemsView" };
+const shape = { stage: "observed", viewCount: 1, itemCount: 1, candidateCount: 1, candidates: [marker], code: null };
+
+test("exact-window query shape keeps only finite counts and allowlisted provider markers", async () => {
+  for (const [stage, queryShape] of [["selected", shape],
+    ["view_absent", { ...shape, viewCount: 0, itemCount: null }],
+    ["ambiguous_view", { ...shape, viewCount: 2, itemCount: null, candidateCount: 2, candidates: [marker, marker] }],
+    ["selected", { ...shape, stage: "read_error", candidateCount: null, candidates: [], code: -2147467259 }]]) {
+    const observed = stage === "selected";
+    const result = await read(com, { ...uia, stage, targetVerified: observed, selected: observed ? true : null,
+      queryShape: { ...queryShape, rawTitle: target, candidates: queryShape.candidates.map((value) => ({ ...value, path: target })) } });
+    assert.deepEqual(result.independentSelection.queryShape, queryShape);
+    assert.equal(result.independentSelection.stage, stage);
+    assert.equal(JSON.stringify(result).includes(target), false);
+    assert.equal(result.status, "pending");
+  }
+  for (const controlType of ["List", "DataGrid", "Pane", "Custom", "Table", "other"]) {
+    for (const [className, automationId] of [["UIItemsView", "ItemsView"], ["other", "ItemsView"], ["UIItemsView", "other"]]) {
+      const candidates = [{ controlType, className, automationId }];
+      const result = await read(com, { ...uia, queryShape: { ...shape, candidates } });
+      assert.deepEqual(result.independentSelection.queryShape.candidates, candidates);
+    }
+  }
+});
+
+test("malformed or ownership-inconsistent query shape cannot assert independent selection", async () => {
+  for (const queryShape of [null, {}, { ...shape, stage: "private" }, { ...shape, viewCount: -1 },
+    { ...shape, itemCount: 1.5 }, { ...shape, candidateCount: Infinity }, { ...shape, candidateCount: 100001 },
+    { ...shape, candidates: [] }, { ...shape, candidates: Array(9).fill(marker) },
+    { ...shape, candidates: [{ ...marker, className: target }] },
+    { ...shape, candidates: [{ ...marker, controlType: target }] },
+    { ...shape, candidates: [{ ...marker, automationId: target }] },
+    { ...shape, candidates: [{ ...marker, className: "other", automationId: "other" }] },
+    { ...shape, viewCount: 2 }, { ...shape, stage: "read_error", candidateCount: null, candidates: [], code: null }]) {
+    const result = await read(com, { ...uia, queryShape });
+    assert.equal(result.independentSelection.stage, "protocol_error");
+    assert.equal(JSON.stringify(result).includes(target), false);
+  }
+  for (const [stage, queryShape] of [["view_absent", shape], ["ambiguous_view", shape],
+    ["selected", { ...shape, itemCount: 0 }]]) {
+    const result = await read(com, { ...uia, stage, selected: stage === "selected" ? true : null,
+      targetVerified: stage === "selected", queryShape });
+    assert.equal(result.independentSelection.stage, "protocol_error");
+  }
+  const result = await read(com, { ...uia, windowVerified: false, queryShape: shape });
+  assert.equal(result.independentSelection.stage, "protocol_error");
+  for (const stage of ["view_absent", "ambiguous_view"]) {
+    const missing = await read(com, { ...uia, stage, targetVerified: false, selected: null });
+    assert.equal(missing.independentSelection.stage, "protocol_error");
+  }
+});
+
 test("malformed UIA protocol cannot assert selection; only allowlisted fields survive", async () => {
   for (const value of [null, {}, { ...uia, stage: "private" }, { ...uia, windowVerified: false },
     { ...uia, targetVerified: false }, { ...uia, selected: false }, { ...uia, code: 2147483648 },
@@ -245,18 +297,20 @@ function Read-WorkspaceUiaWindow($handle) { if ($handle -eq 999) { return @{ sta
 
 // Real UIA condition/pattern types with controlled provider objects exercise the
 // actual reader without opening, selecting or enumerating any desktop window.
-test("Windows UIA reader validates HWND/process/tab/view/item before reading SelectionItemPattern", { skip: process.platform !== "win32" }, async () => {
+test("Windows UIA reader validates HWND/process/tab/view/item before reading SelectionItemPattern", { skip: process.platform !== "win32" }, async (t) => {
   const source = await readFile(new URL("../scripts/windows-selection-diagnostics.ps1", import.meta.url), "utf8");
   const execute = promisify(execFile);
   const fixture = String.raw`
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-function Get-Process { param($Id) if ($Id -ne 456) { throw 'private process' }; return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
-function Get-WorkspaceUiaRoot($handle) { if ($handle -ne 123) { throw 'private handle' }; return $root }
-$cases = @('selected', 'unselected', 'wrong_handle', 'wrong_process', 'tabs', 'view_absent', 'target_absent', 'duplicates', 'offscreen', 'no_pattern', 'read_error')
+function Get-Process { param($Id) $script:step = 'process'; if ($Id -ne 456) { throw 'private process' }; return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
+function Get-WorkspaceUiaRoot($handle) { $script:step = 'root'; if ($handle -ne 123) { throw 'private handle' }; return $root }
+$cases = @('selected', 'unselected', 'wrong_handle', 'wrong_process', 'tabs', 'view_absent', 'duplicate_views', 'target_absent', 'duplicates', 'offscreen', 'no_pattern', 'read_error')
 foreach ($mode in $cases) {
   $patternReads = 0
+  $step = 'setup'
   $item = [pscustomobject]@{ Current = [pscustomobject]@{ IsOffscreen = ($mode -eq 'offscreen') } }
   $item | Add-Member ScriptMethod TryGetCurrentPattern { param($pattern, $output)
+    $script:step = 'pattern'
     if ($pattern -ne [System.Windows.Automation.SelectionItemPattern]::Pattern) { throw 'private pattern' }
     $script:patternReads++
     if ($mode -eq 'read_error') { throw 'private provider failure' }
@@ -266,6 +320,7 @@ foreach ($mode in $cases) {
   }
   $view = [pscustomobject]@{}
   $view | Add-Member ScriptMethod FindAll { param($scope, $condition)
+    $script:step = 'items'
     if ($scope -ne [System.Windows.Automation.TreeScope]::Children) { throw 'private scope' }
     $conditions = $condition.GetConditions()
     if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::NameProperty -or
@@ -275,34 +330,81 @@ foreach ($mode in $cases) {
     if ($mode -eq 'duplicates') { return ,@($item, $item) }
     return ,@($item)
   }
+  $view | Add-Member NoteProperty Current ([pscustomobject]@{ ControlType = [System.Windows.Automation.ControlType]::List; ClassName = 'UIItemsView'; AutomationId = 'ItemsView' })
   $root = [pscustomobject]@{ Current = [pscustomobject]@{ NativeWindowHandle = $(if ($mode -eq 'wrong_handle') { 999 } else { 123 }); ProcessId = 456; ControlType = [System.Windows.Automation.ControlType]::Window } }
   $root | Add-Member ScriptMethod FindAll { param($scope, $condition)
+    $script:step = 'views'
     if ($scope -ne [System.Windows.Automation.TreeScope]::Descendants) { throw 'private scope' }
     if ($condition -is [System.Windows.Automation.PropertyCondition]) {
+      $script:step = 'tabs'
       if ($condition.Value -ne [System.Windows.Automation.ControlType]::TabItem) { throw 'private tab query' }
       return ,$(if ($mode -eq 'tabs') { @(1, 2) } else { @() })
     }
     $conditions = $condition.GetConditions()
+    if ($condition -is [System.Windows.Automation.OrCondition]) {
+      $script:step = 'shape'
+      if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::AutomationIdProperty -or
+          $conditions[0].Value -ne 'ItemsView' -or $conditions[1].Property -ne [System.Windows.Automation.AutomationElement]::ClassNameProperty -or
+          $conditions[1].Value -ne 'UIItemsView') { throw 'private shape query' }
+      if ($mode -eq 'view_absent') { return ,@() }
+      if ($mode -eq 'duplicate_views') { return ,@($view, $view) }
+      return ,@($view)
+    }
     if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::AutomationIdProperty -or
         $conditions[0].Value -ne 'ItemsView' -or $conditions[1].Value -ne [System.Windows.Automation.ControlType]::List) { throw 'private view query' }
     if ($mode -eq 'view_absent') { return ,@() }
+    if ($mode -eq 'duplicate_views') { return ,@($view, $view) }
     return ,@($view)
   }
   $stage = 'exception'
   $result = $null
-  try { $result = Read-WorkspaceUiaSelection 123 ([IO.Path]::GetFileName($env:WORKSPACE_OBSERVE_TARGET)); $stage = $result.stage } catch {}
-  [ordered]@{ mode = $mode; stage = $stage; patternReads = $patternReads; selected = $result.selected } | ConvertTo-Json -Compress
+  $syntheticError = $null
+  $collectionShape = $null
+  try {
+    $result = Read-WorkspaceUiaSelection 123 ([IO.Path]::GetFileName($env:WORKSPACE_OBSERVE_TARGET))
+    $stage = $result.stage
+  } catch {
+    # Only synthetic providers run here. Retain finite failure detail, never the
+    # exception message/stack, which is inappropriate for real OS observation.
+    $type = switch ($_.Exception.GetType().FullName) {
+      'System.Management.Automation.MethodInvocationException' { 'method_invocation' }
+      'System.Management.Automation.RuntimeException' { 'runtime' }
+      'System.ArgumentException' { 'argument' }
+      'System.InvalidOperationException' { 'invalid_operation' }
+      'System.Runtime.InteropServices.COMException' { 'com' }
+      default { 'other' }
+    }
+    $syntheticError = [ordered]@{ type = $type; hresult = [int]$_.Exception.HResult; sourceLine = [int]$_.InvocationInfo.ScriptLineNumber }
+  }
+  # Check the mock's actual method-return collection contract independently of
+  # the reader outcome, including empty and duplicate collections. Do not fix
+  # or normalize a failing mock without the Windows failure evidence.
+  $readerStep = $step
+  try {
+    $condition = [System.Windows.Automation.AndCondition]::new(
+      [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ItemsView'),
+      [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))
+    $collection = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    $collectionShape = [ordered]@{ count = [int]$collection.Count; firstIsView = ($collection.Count -gt 0 -and [object]::ReferenceEquals($collection[0], $view)) }
+  } catch { $collectionShape = [ordered]@{ count = $null; firstIsView = $false } }
+  [ordered]@{ mode = $mode; stage = $stage; patternReads = $patternReads; selected = $result.selected; step = $readerStep; syntheticError = $syntheticError; collectionShape = $collectionShape } | ConvertTo-Json -Depth 4 -Compress
 }
 `;
   const output = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", source + "\n" + fixture], {
     timeout: 30000, maxBuffer: 16384, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
   });
   const results = output.stdout.trim().split(/\r?\n/).map((line) => JSON.parse(line));
+  // Report every bounded synthetic case before the first assertion, so a
+  // selected-mode failure does not hide later collection/provider diagnostics.
+  assert.ok(Buffer.byteLength(output.stdout, "utf8") <= 16384);
+  for (const result of results) t.diagnostic(JSON.stringify(result));
   const expected = { selected: "selected", unselected: "unselected", wrong_handle: "wrong_window", wrong_process: "wrong_window",
-    tabs: "ambiguous_parent", view_absent: "ambiguous_target", target_absent: "target_absent", duplicates: "ambiguous_target",
+    tabs: "ambiguous_parent", view_absent: "view_absent", duplicate_views: "ambiguous_view", target_absent: "target_absent", duplicates: "ambiguous_target",
     offscreen: "ambiguous_target", no_pattern: "pattern_unavailable", read_error: "exception" };
   assert.equal(results.length, Object.keys(expected).length);
   for (const result of results) {
+    assert.deepEqual(result.collectionShape, { count: result.mode === "view_absent" ? 0 : result.mode === "duplicate_views" ? 2 : 1,
+      firstIsView: result.mode !== "view_absent" }, result.mode);
     assert.equal(result.stage, expected[result.mode], result.mode);
     assert.equal(result.patternReads, ["selected", "unselected", "no_pattern", "read_error"].includes(result.mode) ? 1 : 0, result.mode);
     assert.equal(result.selected, result.mode === "selected" ? true : result.mode === "unselected" ? false : null, result.mode);

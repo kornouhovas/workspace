@@ -1,26 +1,30 @@
 # Disposable diagnostic only. Paths are environment data, never script code.
-# CreateFileW sharing/ownership and directory flags:
+# Candidate GENERIC_READ/no FILE_SHARE_DELETE control expects a sharing failure;
+# actual Windows verification remains required. Directory
+# handles require FILE_FLAG_BACKUP_SEMANTICS. Attributes-only access is exempt:
 # https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew
-# MoveFileExW with flags=0 never replaces an existing destination:
+# Collision control alone calls MoveFileExW(flags=0); noncontrols use Node rename.
 # https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-$result = [ordered]@{ version = 1; stage = 'input'; invocationCount = 0; renamed = $false;
-  win32Code = $null; lockOpened = $false; lockReleased = $false; startedUnixMs = $null; endedUnixMs = $null }
+$scenario = $env:WORKSPACE_RENAME_SCENARIO
+$result = [ordered]@{ version = 1; api = $(if ($scenario -eq 'collision_control') { 'move_file_ex' } else { 'node_fs_rename' });
+  stage = 'input'; invocationCount = 0; renamed = $false; win32Code = $null; nodeCode = $null; syscall = $null;
+  lockOpened = $false; lockReleased = $false; startedUnixMs = $null; endedUnixMs = $null }
 $handle = [IntPtr]::Zero
 try {
   $root = $env:WORKSPACE_RENAME_FIXTURE
-  $scenario = $env:WORKSPACE_RENAME_SCENARIO
   if ([string]::IsNullOrEmpty($root) -or -not [IO.Path]::IsPathRooted($root) -or
-      $scenario -notin @('idle', 'observation', 'concurrent_scan', 'injected_conflict', 'collision_control')) { throw 'input' }
-  # ASCII script also works with Windows PowerShell 5's legacy file encoding.
-  $category = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('0JrQsNGC0LXQs9C+0YDQuNGPIM6p'))
-  $renamed = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('UmVuYW1lZCDmloc='))
-  $source = [IO.Path]::Combine($root, 'root', $category)
-  $destination = [IO.Path]::Combine($root, 'root', $(if ($scenario -eq 'collision_control') { 'Occupied' } else { $renamed }))
-  if (-not [IO.Directory]::Exists($source)) { throw 'input' }
-  # Reject junctions/reparse ancestors before opening the owned category.
-  foreach ($path in @($root, [IO.Path]::Combine($root, 'root'), $source)) {
+      [IO.Path]::GetFileName($root) -notmatch '^workspace-rename-diagnostic-[A-Za-z0-9]{6}$' -or
+      $scenario -notin @('injected_conflict', 'delete_shared_control', 'collision_control')) { throw 'input' }
+  # Explicit long-path form avoids relying on global Win32 long-path policy.
+  $nativeRoot = $(if ($root.StartsWith('\\')) { '\\?\UNC\' + $root.Substring(2) } else { '\\?\' + $root })
+  $source = [IO.Path]::Combine($nativeRoot, 'root', $env:WORKSPACE_RENAME_CATEGORY)
+  $destination = [IO.Path]::Combine($nativeRoot, 'root', 'Occupied')
+  if ([string]::IsNullOrEmpty($env:WORKSPACE_RENAME_CATEGORY) -or
+      $env:WORKSPACE_RENAME_CATEGORY.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0 -or
+      -not [IO.Directory]::Exists($source)) { throw 'input' }
+  foreach ($path in @($nativeRoot, [IO.Path]::Combine($nativeRoot, 'root'), $source)) {
     if (([IO.File]::GetAttributes($path) -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'input' }
   }
   $result.stage = 'compile'
@@ -38,29 +42,29 @@ public static class WorkspaceRenameDiagnostic {
   public static extern bool CloseHandle(IntPtr handle);
 }
 '@
-  if ($scenario -eq 'injected_conflict') {
+  if ($scenario -ne 'collision_control') {
     $result.stage = 'lock'
-    # FILE_READ_ATTRIBUTES, FILE_SHARE_READ|FILE_SHARE_WRITE (no DELETE),
-    # OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS. No privilege changes.
-    $handle = [WorkspaceRenameDiagnostic]::CreateFileW($source, 0x80, 3, [IntPtr]::Zero, 3, 0x02000000, [IntPtr]::Zero)
+    # GENERIC_READ; READ|WRITE sharing, plus DELETE only in the contrast.
+    # OPEN_EXISTING + BACKUP_SEMANTICS. No privileges or content reads.
+    $share = $(if ($scenario -eq 'delete_shared_control') { 7 } else { 3 })
+    $handle = [WorkspaceRenameDiagnostic]::CreateFileW($source, [uint32]2147483648, $share, [IntPtr]::Zero, 3, 0x02000000, [IntPtr]::Zero)
     if ($handle -eq [IntPtr]::new(-1)) { $result.win32Code = [Runtime.InteropServices.Marshal]::GetLastWin32Error(); $handle = [IntPtr]::Zero; throw 'lock' }
     $result.lockOpened = $true
-  }
-  if ($scenario -eq 'concurrent_scan') {
-    # Compilation is outside the scan/rename comparison. Start exactly once
-    # after Node can begin its real synchronous scan in the other process.
-    [Console]::Out.WriteLine('WORKSPACE_RENAME_READY')
+    $result.stage = 'rename'
+    [Console]::Out.WriteLine('WORKSPACE_RENAME_LOCKED')
     [Console]::Out.Flush()
-    if ([Console]::In.ReadLine() -ne 'rename') { throw 'input' }
+    # Node performs its one rename in another process while this handle lives.
+    if ([Console]::In.ReadLine() -ne 'release') { throw 'input' }
+  } else {
+    $result.stage = 'rename'
+    $result.startedUnixMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $result.invocationCount = 1
+    $result.renamed = [WorkspaceRenameDiagnostic]::MoveFileExW($source, $destination, 0)
+    $result.win32Code = $(if ($result.renamed) { 0 } else { [Runtime.InteropServices.Marshal]::GetLastWin32Error() })
+    $result.endedUnixMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $result.stage = 'completed'
   }
-  $result.stage = 'rename'
-  $result.startedUnixMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-  $result.invocationCount = 1
-  $result.renamed = [WorkspaceRenameDiagnostic]::MoveFileExW($source, $destination, 0)
-  $result.win32Code = $(if ($result.renamed) { 0 } else { [Runtime.InteropServices.Marshal]::GetLastWin32Error() })
-  $result.endedUnixMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-  $result.stage = 'completed'
-} catch { # Keep only the finite stage/code; exception text is private.
+} catch { # Only finite stage/code crosses the protocol boundary.
 } finally {
   if ($handle -ne [IntPtr]::Zero) { $result.lockReleased = [WorkspaceRenameDiagnostic]::CloseHandle($handle) }
 }

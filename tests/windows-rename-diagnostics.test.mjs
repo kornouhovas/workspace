@@ -3,46 +3,33 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { renameFixtureNames, runExternalNodeRename } from '../scripts/windows-rename-node-worker.mjs';
 import test from 'node:test';
 import { invokeExternalRename, parseFixtureResponse, parseRenameResponse, renameBounds, renameScenarios,
   runBoundedProcess, runRenameCli, runRenameDiagnostics, runRenameFixture } from '../scripts/windows-rename-diagnostics.mjs';
 
 const privateText = 'C:\\private\\秘密\\do-not-record';
-const nativeResponse = (extra = {}) => ({ version: 1, stage: 'completed', invocationCount: 1, renamed: true,
-  win32Code: 0, lockOpened: false, lockReleased: false, startedUnixMs: 100, endedUnixMs: 101, ...extra });
+const nativeResponse = (extra = {}) => ({ version: 1, api: 'node_fs_rename', stage: 'completed', invocationCount: 1, renamed: true,
+  win32Code: null, nodeCode: null, syscall: null, lockOpened: false, lockReleased: false, startedUnixMs: 100, endedUnixMs: 101, ...extra });
 const processResult = (extra = {}) => ({ status: 'completed', termination: 'confirmed', exitCode: 0, ...extra });
 const metadata = async () => ({ codeSha: '4ac402620dd8139bdef9ff03625aae64bf60e132', platform: process.platform });
 function fixture(t) {
-  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'rename-diagnostic-test-')));
+  const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'workspace-rename-diagnostic-')));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   return directory;
 }
-// Genuine separate-process rename for portable orchestration/service coverage.
-// Windows API-specific conflict/collision codes are exercised separately below.
-async function portableRename(directory, scenario, { onReady } = {}) {
-  const r = await runBoundedProcess(process.execPath, ['--input-type=module', '--eval', `
-    import fs from 'node:fs';
-    import { join } from 'node:path';
-    const root = join(process.env.WORKSPACE_RENAME_FIXTURE, 'root');
-    if (process.env.WORKSPACE_RENAME_SCENARIO === 'concurrent_scan') {
-      process.stdout.write('WORKSPACE_RENAME_READY\\n');
-      await new Promise(resolve => process.stdin.once('data', resolve));
-    }
-    const start = Date.now();
-    let renamed = false, win32Code = 0;
-    try { fs.renameSync(join(root, 'Категория Ω'), join(root, process.env.WORKSPACE_RENAME_SCENARIO === 'collision_control' ? 'Occupied' : 'Renamed 文')); renamed = true; }
-    catch (e) { win32Code = ['EEXIST', 'ENOTEMPTY'].includes(e.code) ? 183 : 5; }
-    process.stdout.write(JSON.stringify({ version: 1, stage: 'completed', invocationCount: 1, renamed, win32Code,
-      lockOpened: false, lockReleased: false, startedUnixMs: start, endedUnixMs: Date.now() }));
-  `], { timeoutMs: 5000, readyMarker: scenario === 'concurrent_scan' ? 'WORKSPACE_RENAME_READY' : undefined, onReady,
-    env: { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario } });
-  return { process: processResult({ status: r.status, termination: r.termination, exitCode: r.exitCode }), response: parseRenameResponse(r.stdout) };
+// The real external Node worker is portable; the flags0 native collision control
+// is simulated here and executed only by the actual Windows bridge test below.
+async function portableRename(directory, scenario, options = {}) {
+  if (scenario === 'collision_control') return { process: processResult(), response: nativeResponse({
+    api: 'move_file_ex', renamed: false, win32Code: 183 }) };
+  return invokeExternalRename(directory, scenario, options);
 }
 
-test('native protocol retains negative Win32 codes and only finite fields', () => {
-  const response = nativeResponse({ renamed: false, win32Code: 32, lockOpened: true, lockReleased: true, exception: privateText });
-  assert.deepEqual(parseRenameResponse(JSON.stringify(response)), nativeResponse({ renamed: false, win32Code: 32, lockOpened: true, lockReleased: true }));
-  for (const extra of [{ renamed: true, win32Code: 5 }, { invocationCount: 2 }, { win32Code: -1 }, { stage: privateText },
+test('protocol separates actual Node code/syscall from native Win32 codes and strips private fields', () => {
+  const response = nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename', lockOpened: true, lockReleased: true, exception: privateText });
+  assert.deepEqual(parseRenameResponse(JSON.stringify(response)), nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename', lockOpened: true, lockReleased: true }));
+  for (const extra of [{ renamed: true, nodeCode: 'EPERM', syscall: 'rename' }, { invocationCount: 2 }, { win32Code: -1 }, { win32Code: 5 }, { syscall: privateText }, { nodeCode: privateText }, { renamed: false, nodeCode: 'EPERM', syscall: null }, { stage: privateText },
     { lockReleased: true }, { startedUnixMs: null }, { endedUnixMs: 99 }, { renamed: 'true' }]) {
     assert.equal(parseRenameResponse(JSON.stringify(nativeResponse(extra))), null);
   }
@@ -78,19 +65,19 @@ test('controlled negative response is retained without retry or fabricated recon
   let calls = 0;
   const result = await runRenameFixture(fixture(t), 'concurrent_scan', { rename: async (directory, scenario, { onReady }) => {
     onReady(); await new Promise(resolve => setTimeout(resolve, 30));
-    calls++; return { process: processResult(), response: nativeResponse({ renamed: false, win32Code: 5 }) };
+    calls++; return { process: processResult(), response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' }) };
   } });
   assert.equal(calls, 1); assert.equal(result.status, 'completed');
-  assert.equal(result.rename.response.renamed, false); assert.equal(result.rename.response.win32Code, 5);
+  assert.equal(result.rename.response.renamed, false); assert.equal(result.rename.response.nodeCode, 'EPERM');
   assert.equal(result.invariants.logicalIds, true); assert.equal(result.invariants.history, true);
 });
 
 test('injected conflict requires an opened/released handle and blocked operation', async (t) => {
   const good = await runRenameFixture(fixture(t), 'injected_conflict', { rename: async () => ({ process: processResult(),
-    response: nativeResponse({ renamed: false, win32Code: 32, lockOpened: true, lockReleased: true }) }) });
+    response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename', lockOpened: true, lockReleased: true }) }) });
   assert.equal(good.status, 'completed'); assert.equal(good.invariants.controlDetected, true);
   const missing = await runRenameFixture(fixture(t), 'injected_conflict', { rename: async () => ({ process: processResult(),
-    response: nativeResponse({ renamed: false, win32Code: 32 }) }) });
+    response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' }) }) });
   assert.equal(missing.status, 'failed'); assert.equal(missing.invariants.controlDetected, false);
 });
 
@@ -158,7 +145,7 @@ test('readiness split across chunks sends one start signal and keeps only final 
 
 async function sampleEvidence(t) {
   return runRenameFixture(fixture(t), 'idle', { rename: async () => ({ process: processResult(),
-    response: nativeResponse({ renamed: false, win32Code: 5 }) }) });
+    response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' }) }) });
 }
 
 test('bounded orchestration uses distinct fixtures, retains every real failure and separates controls', async (t) => {
@@ -171,14 +158,17 @@ test('bounded orchestration uses distinct fixtures, retains every real failure a
       if (scenario !== 'idle') evidence.atRename.liveWatches = 1;
       if (scenario === 'observation') evidence.atRename.healthCallbacks = 1;
       if (scenario === 'concurrent_scan') { evidence.scans = [[100, 101]]; evidence.resources.explicitScans = 1; }
-      if (scenario === 'injected_conflict') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true, win32Code: 32 });
-      if (scenario === 'collision_control') evidence.rename.response.win32Code = 183;
+      if (scenario === 'injected_conflict') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true });
+      if (scenario === 'delete_shared_control') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true, renamed: true, nodeCode: null, syscall: null });
+      if (scenario === 'collision_control') Object.assign(evidence.rename.response, { api: 'move_file_ex', win32Code: 183, nodeCode: null, syscall: null });
       return { ...processResult(), stdout: JSON.stringify({ ...evidence, private: privateText }) };
     } });
-  assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 10);
-  assert.deepEqual(result.renameOperation, { api: 'MoveFileExW', flags: 0, replacing: false,
-    historicalOperation: 'Node fs.promises.rename', historicalFlags: 1, equivalentToHistoricalOperation: false });
-  assert.equal(new Set(owned).size, 10); assert.equal(result.realRenameFailures, 6);
+  assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 12);
+  assert.deepEqual(result.renameOperation, { api: 'Node fs.promises.rename', historicalOperation: 'Node fs.promises.rename',
+    equivalentToHistoricalOperation: true, destinationInitiallyAbsent: true });
+  assert.deepEqual(result.collisionOperation, { api: 'MoveFileExW', flags: 0, replacing: false });
+  assert.equal(result.handleControls.access, 'GENERIC_READ');
+  assert.equal(new Set(owned).size, 12); assert.equal(result.realRenameFailures, 6);
   assert.deepEqual(calls, renameScenarios.flatMap((s) => [s, s]));
   assert.ok(result.operations.every((o) => o.cleanup === 'completed'));
   assert.ok(owned.every((path) => !fs.existsSync(path)));
@@ -240,7 +230,8 @@ test('CLI uses finite output, rejects caller targets and does not claim platform
 });
 
 test('actual internal worker entry rejects a caller path without writing fixtures', async (t) => {
-  const directory = fixture(t);
+  const directory = fs.mkdtempSync(join(tmpdir(), 'caller-owned-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const result = await runBoundedProcess(process.execPath, ['scripts/windows-rename-diagnostics.mjs', '--fixture'], {
     timeoutMs: 5000, env: { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'idle' },
   });
@@ -252,20 +243,124 @@ test('actual Windows bridge detects no-delete-sharing and occupied target withou
   for (const scenario of renameScenarios) {
     const result = await runRenameFixture(fixture(t), scenario);
     assert.equal(result.status, 'completed', JSON.stringify(result));
-    if (scenario === 'injected_conflict') {
+    if (['injected_conflict', 'delete_shared_control'].includes(scenario)) {
+      assert.equal(result.rename.response.api, 'node_fs_rename');
       assert.equal(result.rename.response.lockOpened, true); assert.equal(result.rename.response.lockReleased, true);
-      assert.equal(result.rename.response.renamed, false);
+      assert.equal(result.rename.response.renamed, scenario === 'delete_shared_control');
     }
   }
 });
 
-test('bridge contract is one nonreplacing native rename, environment-only paths and explicit handle cleanup', () => {
+test('bridge uses GENERIC_READ holder with DELETE-shared contrast and explicit native collision API', () => {
   const script = fs.readFileSync(new URL('../scripts/windows-rename-diagnostics.ps1', import.meta.url), 'utf8');
   assert.ok([...script].every(c => c.charCodeAt(0) < 128));
   assert.match(script, /MoveFileExW\(\$source, \$destination, 0\)/);
-  assert.match(script, /CreateFileW\(\$source, 0x80, 3,/); assert.match(script, /CloseHandle\(\$handle\)/);
-  assert.equal(Buffer.from('0JrQsNGC0LXQs9C+0YDQuNGPIM6p', 'base64').toString('utf8'), 'Категория Ω');
-  assert.equal(Buffer.from('UmVuYW1lZCDmloc=', 'base64').toString('utf8'), 'Renamed 文');
+  assert.match(script, /CreateFileW\(\$source, \[uint32\]2147483648, \$share,/);
+  assert.match(script, /'delete_shared_control'\) \{ 7 \} else \{ 3 \}/);
+  assert.match(script, /CloseHandle\(\$handle\)/);
+  assert.equal(renameFixtureNames.category, 'Категория-' + 'long-category-'.repeat(14));
+  assert.equal(renameFixtureNames.project, '日本語-проект-' + 'long-project-'.repeat(14));
   assert.equal(script.includes('Start-Process'), false); assert.equal(script.includes('Invoke-Expression'), false);
-  assert.equal(typeof invokeExternalRename, 'function');
+});
+
+test('external Node worker preserves real rename error codes/syscall without guessed native codes', async (t) => {
+  const directory = fixture(t), root = join(directory, 'root');
+  fs.mkdirSync(join(root, renameFixtureNames.category, renameFixtureNames.project), { recursive: true });
+  fs.writeFileSync(join(root, renameFixtureNames.category, renameFixtureNames.project, 'sentinel'), 'retain');
+  const result = await runBoundedProcess(process.execPath, ['scripts/windows-rename-node-worker.mjs'], {
+    timeoutMs: 5000, readyMarker: 'WORKSPACE_RENAME_READY', waitForReadyCallback: true,
+    onReady: () => { fs.mkdirSync(join(root, renameFixtureNames.target)); fs.writeFileSync(join(root, renameFixtureNames.target, 'occupied'), 'retain destination'); },
+    env: { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'concurrent_scan' },
+  });
+  assert.equal(result.status, 'completed');
+  const response = parseRenameResponse(result.stdout);
+  assert.equal(response.api, 'node_fs_rename'); assert.equal(response.invocationCount, 1);
+  assert.equal(response.renamed, false); assert.equal(response.win32Code, null);
+  assert.ok(['ENOTEMPTY', 'EEXIST', 'EPERM', 'EACCES'].includes(response.nodeCode), JSON.stringify(response));
+  assert.equal(response.syscall, 'rename');
+  assert.equal(fs.readFileSync(join(root, renameFixtureNames.category, renameFixtureNames.project, 'sentinel'), 'utf8'), 'retain');
+  assert.equal(fs.readFileSync(join(root, renameFixtureNames.target, 'occupied'), 'utf8'), 'retain destination');
+});
+
+test('external Node worker rejects caller paths, reparse source and preoccupied noncontrol destinations before invocation', async (t) => {
+  const caller = await runExternalNodeRename({ WORKSPACE_RENAME_FIXTURE: privateText, WORKSPACE_RENAME_SCENARIO: 'idle' });
+  assert.equal(caller.invocationCount, 0); assert.equal(JSON.stringify(caller).includes(privateText), false);
+  const directory = fixture(t), root = join(directory, 'root');
+  fs.mkdirSync(join(root, renameFixtureNames.category), { recursive: true });
+  fs.mkdirSync(join(root, renameFixtureNames.target));
+  const env = { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'idle' };
+  assert.equal((await runExternalNodeRename(env)).invocationCount, 0);
+  fs.rmSync(join(root, renameFixtureNames.target), { recursive: true });
+  fs.rmSync(join(root, renameFixtureNames.category), { recursive: true });
+  fs.symlinkSync(root, join(root, renameFixtureNames.category), process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal((await runExternalNodeRename(env)).invocationCount, 0);
+  assert.equal(fs.lstatSync(join(root, renameFixtureNames.category)).isSymbolicLink(), true);
+});
+
+const holderResponse = (extra = {}) => nativeResponse({ stage: 'rename', invocationCount: 0, renamed: false,
+  startedUnixMs: null, endedUnixMs: null, lockOpened: true, lockReleased: true, ...extra });
+
+test('holder and Node are separate processes and handle release follows the one rename', async (t) => {
+  const directory = fixture(t); let nodeCompleted = false, starts = 0;
+  const response = await invokeExternalRename(directory, 'injected_conflict', { runProcess: async (program, args, options) => {
+    assert.equal(options.env.WORKSPACE_RENAME_FIXTURE, directory); assert.equal(args.includes(directory), false);
+    assert.equal(options.timeoutMs, renameBounds.bridgeMs);
+    if (program === 'powershell.exe') {
+      assert.equal(options.readyInput, 'release\n'); assert.equal(options.waitForReadyCallback, true);
+      await options.onReady(); assert.equal(nodeCompleted, true);
+      return { ...processResult(), stdout: JSON.stringify(holderResponse()) };
+    }
+    starts++; assert.equal(program, process.execPath);
+    nodeCompleted = true;
+    return { ...processResult(), stdout: JSON.stringify(nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename' })) };
+  } });
+  assert.equal(starts, 1); assert.equal(response.process.termination, 'confirmed');
+  assert.equal(response.response.lockOpened, true); assert.equal(response.response.lockReleased, true);
+  assert.equal(response.response.nodeCode, 'EPERM'); assert.equal(response.response.win32Code, null);
+});
+
+test('holder timeout awaits late Node completion and keeps unknown ownership from either process', async (t) => {
+  for (const [holderTermination, nodeTermination] of [['unknown', 'confirmed'], ['confirmed', 'unknown']]) {
+    let finishNode, returned = false;
+    const nodePending = new Promise(resolve => { finishNode = resolve; });
+    const pending = invokeExternalRename(fixture(t), 'injected_conflict', { runProcess: async (program, args, options) => {
+      if (program !== 'powershell.exe') return nodePending;
+      void options.onReady();
+      return { ...processResult({ status: 'timeout', termination: holderTermination }), stdout: '' };
+    } });
+    void pending.then(() => { returned = true; });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(returned, false);
+    finishNode({ ...processResult({ termination: nodeTermination }), stdout: JSON.stringify(nativeResponse()) });
+    const result = await pending;
+    assert.equal(result.process.status, 'timeout'); assert.equal(result.process.termination, 'unknown');
+    assert.equal(result.response.lockOpened, false); assert.equal(result.response.lockReleased, false);
+  }
+});
+
+test('DELETE-shared contrast requires actual rename plus verified handle lifetime', async (t) => {
+  const good = await runRenameFixture(fixture(t), 'delete_shared_control', { rename: async (...args) => {
+    const response = await invokeExternalRename(...args.slice(0, 2), { runProcess: async (program, nativeArgs, options) => {
+      if (program !== 'powershell.exe') return runBoundedProcess(program, nativeArgs, options);
+      await options.onReady(); return { ...processResult(), stdout: JSON.stringify(holderResponse()) };
+    } });
+    return response;
+  } });
+  assert.equal(good.status, 'completed'); assert.equal(good.invariants.controlDetected, true);
+  const negative = await runRenameFixture(fixture(t), 'delete_shared_control', { rename: async () => ({ process: processResult(),
+    response: nativeResponse({ renamed: false, nodeCode: 'EPERM', syscall: 'rename', lockOpened: true, lockReleased: true }) }) });
+  assert.equal(negative.status, 'failed'); assert.equal(negative.invariants.controlDetected, false);
+});
+
+test('Windows PowerShell binds positive GENERIC_READ to a managed uint argument', { skip: process.platform !== 'win32' }, async () => {
+  const script = `
+$ErrorActionPreference = 'Stop'
+Add-Type -TypeDefinition 'public static class WorkspaceAccessArgument { public static bool Accept(uint access) { return access == 2147483648U; } }'
+[WorkspaceAccessArgument]::Accept([uint32]2147483648)
+`;
+  const result = await runBoundedProcess('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    timeoutMs: renameBounds.bridgeMs, maxBytes: 4096,
+  });
+  assert.equal(result.status, 'completed'); assert.equal(result.termination, 'confirmed');
+  assert.equal(result.stdout.trim(), 'True');
 });
