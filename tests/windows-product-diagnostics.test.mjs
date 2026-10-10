@@ -104,12 +104,11 @@ test('published product snapshot retains sanitized unavailable owned-view counts
   assert.equal(JSON.stringify(result).includes(privateText), false);
 });
 
-test('workflow runs three independent fresh Windows jobs and always uploads exact diagnostic files', async () => {
+test('workflow runs independent fresh Windows diagnostics and always uploads exact diagnostic files', async () => {
   const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   for (const [name, artifact, path] of [
     ['windows-product-selection-diagnostic', 'issue-17-windows-product-selection-diagnostic', 'work/ci-windows-product-selection/result.json'],
     ['windows-category-rename-diagnostic', 'issue-17-windows-category-rename-diagnostic', 'work/ci-windows-category-rename/rename-observations.json'],
-    ['windows-native-selection', 'issue-17-windows-native-terminal-view', 'work/windows-native-selection-evidence/result.json'],
   ]) {
     const job = workflow.jobs[name];
     assert.equal(job['runs-on'], 'windows-latest'); assert.equal(job.needs, undefined);
@@ -158,11 +157,17 @@ test('failure cleanup and wrong-window evidence cannot complete product acceptan
   assert.equal(JSON.stringify(result).includes(privateText), false);
 });
 
-test('terminal view diagnostic runs one condition on a fresh runner with all outcomes preserved', async () => {
+test('terminal view diagnostic compares one matched condition on two fresh OS runners with all outcomes preserved', async () => {
   const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = workflow.jobs['windows-native-selection'];
-  assert.equal(job.strategy, undefined);
+  assert.equal(job['runs-on'], '${{ matrix.os }}');
+  assert.equal(job.strategy['fail-fast'], false);
+  assert.deepEqual(job.strategy.matrix, { os: ['windows-latest', 'windows-2022'] });
   assert.equal(job.needs, undefined);
+  assert.equal(job['timeout-minutes'], 5);
+  assert.equal(job.steps.find((s) => s.uses === 'actions/setup-node@v4').with['node-version'], '22.21.1');
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(job.steps.every((s) => s['continue-on-error'] === undefined));
   const commands = job.steps.filter((s) => s.run);
   assert.deepEqual(commands.map((s) => s.run), [
     'node scripts/windows-native-selection.mjs',
@@ -172,7 +177,12 @@ test('terminal view diagnostic runs one condition on a fresh runner with all out
   assert.equal(commands[0].env.WORKSPACE_NATIVE_VIEW_DIAGNOSTIC, '1');
   assert.equal(commands[1].if, 'always()');
   const upload = job.steps.find((s) => s.uses === 'actions/upload-artifact@v4');
-  assert.equal(upload.with.name, 'issue-17-windows-native-terminal-view');
+  assert.equal(upload.with.name, 'issue-17-windows-native-terminal-view-${{ matrix.os }}');
+  const artifactNames = job.strategy.matrix.os.map((os) => upload.with.name.replace('${{ matrix.os }}', os));
+  assert.equal(new Set(artifactNames).size, 2);
+  assert.deepEqual(artifactNames, ['issue-17-windows-native-terminal-view-windows-latest',
+    'issue-17-windows-native-terminal-view-windows-2022']);
+  assert.equal(upload.with.path, 'work/windows-native-selection-evidence/result.json');
   assert.equal(upload.if, 'always()');
   assert.equal(upload.with['if-no-files-found'], 'error');
 });

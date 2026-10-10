@@ -63,8 +63,12 @@ jobs:
           if-no-files-found: error
 
   windows-native-selection:
-    name: Isolated Windows terminal owned-view diagnostic
-    runs-on: windows-latest
+    name: Isolated Windows terminal owned-view diagnostic (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: issue-17-windows-native-terminal-view
+          name: issue-17-windows-native-terminal-view-${{ matrix.os }}
           path: work/windows-native-selection-evidence/result.json
           if-no-files-found: error
 
