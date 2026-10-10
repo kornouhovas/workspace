@@ -1,6 +1,9 @@
 import { createSourceObserver, nativeObserverDependencies, type ObserverDependencies, type SourceObservation } from "./source-observer.js";
 import { reconcileSource } from "./external-reconciliation.js";
 import { createProjectRecoveryService } from "./project-recovery.js";
+import { createProjectCreationService } from "./project-creation.js";
+import type { ProjectFilesystem } from "./project-filesystem.js";
+import type { ProjectCreationResult } from "../contracts/project-creation.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import { createCategoryPropertyService } from "./category-properties.js";
 import { createTextPropertyService } from "./text-properties.js";
@@ -38,6 +41,7 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  createProject(input: unknown): ServiceResult<ProjectCreationResult>;
   getSourceObservation(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot>;
   previewProjectRecovery(input: unknown): ServiceResult<ProjectRecoveryPreview>;
   reassociateProject(input: unknown): ServiceResult<ProjectList>;
@@ -73,7 +77,7 @@ export interface WorkspaceService {
     | { ok: false; error: { code: "invalid_input" | "storage"; message: string } };
 }
 
-export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies): WorkspaceService {
+export function createWorkspaceService(db: Database, filesystem = nativeFilesystem, observerDependencies?: ObserverDependencies, projectFilesystem?: ProjectFilesystem): WorkspaceService {
   const previewTokens = new Map<string, {
     preview: DiscoveryPreview;
     snapshot: DiscoverySnapshot;
@@ -107,6 +111,14 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const service: WorkspaceService = {
+    ...createProjectCreationService(db, {
+      invalidateSourceReviews,
+      committed(sourceId, revision, workspaceIds) {
+        invalidateSourceReviews(sourceId);
+        publish([{ type: "workspace.projectsChanged", sourceId, revision, workspaceIds }]);
+        observer.request(sourceId);
+      },
+    }, projectFilesystem),
     getSourceObservation(input) {
       if (!isRecord(input) || input.type !== "workspace.getSourceObservation" || !isUuid(input.workspaceId) ||
         Object.keys(input).length !== 2 || !Object.hasOwn(input, "workspaceId")) return invalid("Choose a saved workspace.");

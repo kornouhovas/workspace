@@ -88,12 +88,14 @@ Files:
 - Modify: src/service/settings.ts
 - Modify: tests/project-creation-service.test.mjs
 
-- [ ] Validate exact payloads, UUIDs, ownership and authored platform basenames. Reject traversal, invalid/reserved names and conflicting aliases without silent trimming or renaming; preserve valid platform-specific names.
-- [ ] Revalidate applied canonical root/full identity, discovery mode/revision, category ownership/path/full identity/active state, exclusions, archive containment and historical reservations before durable intent and filesystem effects.
-- [ ] Perform exclusive nonrecursive mkdir through the focused Node adapter. Check canonical parents, full evidence and no links immediately before and after mkdir; persist sufficient destination evidence and recheck around metadata writes/commit. Observed changes prevent successful completion and leave an explicit recoverable outcome when necessary.
-- [ ] Atomically persist the fresh project association and completed operation, increment discoveryRevision once and publish actual source-sibling fanout after commit. Preserve view IDs and independent property/category-label revisions.
-- [ ] Add real-fixture tests for both modes, empty roots/categories, unconfigured/no-category states, invalid platform names, case aliases, occupied files/directories, concurrent requests, permission failures, exclusions/archive, stale categories, mode/root changes, foreign IDs and observed root/category/link/ancestor swaps. Verify inventories and sentinels; distinguish simulated platform rules from actual OS behavior and record the residual race limitation.
-- [ ] Run standard task exit checks; commit the verified creation slice.
+- [x] Validate exact payloads, UUIDs, ownership and authored platform basenames. Reject traversal, invalid/reserved names and conflicting aliases without silent trimming or renaming; preserve valid platform-specific names.
+- [x] Revalidate applied canonical root/full identity, discovery mode/revision, category ownership/path/full identity/active state, exclusions, archive containment and historical reservations before durable intent and filesystem effects.
+- [x] Perform exclusive nonrecursive mkdir through the focused Node adapter. Check canonical parents, full evidence and no links immediately before and after mkdir; persist sufficient destination evidence and recheck around metadata writes/commit. Observed changes prevent successful completion and leave an explicit recoverable outcome when necessary.
+- [x] Atomically persist the fresh project association and completed operation, increment discoveryRevision once and publish actual source-sibling fanout after commit. Preserve view IDs and independent property/category-label revisions.
+- [x] Add real-fixture tests for both modes, empty roots/categories, unconfigured/no-category states, invalid platform names, case aliases, occupied files/directories, concurrent requests, permission failures, exclusions/archive, stale categories, mode/root changes, foreign IDs and observed root/category/link/ancestor swaps. Verify inventories and sentinels; distinguish simulated platform rules from actual OS behavior and record the residual race limitation.
+- [x] Run standard task exit checks; commit the verified creation slice.
+
+Task 2 local evidence (macOS, Node 22.21.1): npm test passed 621 tests with no failures/skips; lint, typecheck, check:docs and git diff --check passed. The focused creation suite passed all 73 tests. Initial network npm ci encountered repeated registry HTTP 502 responses and was stopped; npm ci --offline --no-audit installed the committed resolution successfully without lockfile/global changes. Windows naming/errno simulations do not establish Windows acceptance. ADR 0006 records the demonstrated ancestor-redirection race and the remaining unobserved destination-substitution window. Discovery/recovery integration and coordinator platform gates remain open.
 
 ### Task 3: Recover interrupted operations and coordinate discovery
 

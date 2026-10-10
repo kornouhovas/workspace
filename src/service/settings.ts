@@ -1,4 +1,6 @@
 import type { ObserverDependencies } from "./source-observer.js";
+import type { ProjectFilesystem } from "./project-filesystem.js";
+import type { ProjectCreationResult } from "../contracts/project-creation.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
 import type { TextPropertySnapshot, TextPropertyMutation } from "../contracts/text-properties.js";
 import Database from "better-sqlite3";
@@ -21,7 +23,7 @@ import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWor
 
 export interface SettingsService {
   handleQuery(input: unknown): ServiceResult<WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -47,6 +49,7 @@ export function openSettingsService(
   migrationFolder = resolve(process.cwd(), "src/service/db/migrations"),
   workspaceFilesystem?: WorkspaceFilesystem,
   observerDependencies?: ObserverDependencies,
+  projectFilesystem?: ProjectFilesystem,
 ): SettingsService {
   mkdirSync(dirname(databasePath), { recursive: true });
   const sqlite = new Database(databasePath);
@@ -67,7 +70,7 @@ export function openSettingsService(
     }
   })();
 
-  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies);
+  const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem);
   return {
     workspaces,
     handleQuery(input) {
@@ -91,6 +94,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.createProject") return workspaces.createProject(input);
       if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
       if (isRecord(input) && input.type === "workspace.renameCategoryProperty") return workspaces.renameCategoryProperty(input);
       if (isRecord(input) && input.type === "workspace.createProperty") return workspaces.createProperty(input);
