@@ -3,6 +3,12 @@ name: Desktop development artifacts
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      legacy_windows_diagnostics:
+        description: Run historical unused Windows API and CLI comparisons (known negative outcomes)
+        type: boolean
+        default: false
 
 jobs:
   windows-product-selection-diagnostic:
@@ -63,7 +69,8 @@ jobs:
           if-no-files-found: error
 
   windows-native-selection:
-    name: Isolated Windows terminal owned-view diagnostic (${{ matrix.os }})
+    name: Historical manual Windows API owned-view diagnostic (${{ matrix.os }})
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.legacy_windows_diagnostics == true }}
     strategy:
       fail-fast: false
       matrix:
@@ -92,7 +99,8 @@ jobs:
           if-no-files-found: error
 
   windows-explorer-selection:
-    name: Isolated Explorer select command-line diagnostic (${{ matrix.os }})
+    name: Historical manual Explorer command-line diagnostic (${{ matrix.os }})
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.legacy_windows_diagnostics == true }}
     strategy:
       fail-fast: false
       matrix:

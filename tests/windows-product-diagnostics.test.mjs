@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { load } from 'js-yaml';
 import { createCreationEvidence, recordCreationEvidence } from '../scripts/runtime-evidence.mjs';
 import { productDiagnosticSnapshot, validateProductDiagnostic } from '../scripts/windows-product-diagnostics.mjs';
@@ -256,7 +257,7 @@ test('Explorer CLI candidate uses identical fresh OS jobs and never replaces nat
 });
 
 
-test('ready-parent command uses matched fresh jobs and keeps API CLI and product gates', async () => {
+test('ready-parent command uses matched fresh jobs and preserves historical comparisons and product gates', async () => {
   const { jobs } = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
   const job = jobs['windows-ready-selection'];
   assert.ok(job);
@@ -280,6 +281,42 @@ test('ready-parent command uses matched fresh jobs and keeps API CLI and product
   assert.equal(upload.with['if-no-files-found'], 'error');
   assert.ok(jobs['windows-native-selection']); assert.ok(jobs['windows-explorer-selection']);
   assert.ok(jobs.verify.strategy.matrix.include.some(({ os }) => os === 'windows-latest'));
+});
+
+test('only historical Windows API and CLI comparisons require explicit manual boolean opt-in', async () => {
+  const workflow = load(await readFile('.github/workflows/desktop-ci.yml', 'utf8'));
+  assert.ok(Object.hasOwn(workflow.on, 'push'));
+  assert.ok(Object.hasOwn(workflow.on, 'pull_request'));
+  const input = workflow.on.workflow_dispatch.inputs.legacy_windows_diagnostics;
+  assert.equal(input.type, 'boolean');
+  assert.equal(input.default, false);
+  const historical = ['windows-native-selection', 'windows-explorer-selection'];
+  assert.deepEqual(Object.entries(workflow.jobs).filter(([, job]) => job.if !== undefined).map(([name]) => name), historical);
+  for (const name of historical) {
+    const job = workflow.jobs[name];
+    assert.match(job.name, /Historical manual/);
+    assert.equal(job.if, "${{ github.event_name == 'workflow_dispatch' && inputs.legacy_windows_diagnostics == true }}");
+    const expression = job.if.slice(3, -2).trim();
+    for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+      for (const value of [undefined, false, true]) {
+        // This expression uses the same boolean/equality subset in Actions and JS.
+        const enabled = runInNewContext(expression, { github: { event_name: event },
+          inputs: { legacy_windows_diagnostics: value } }, { timeout: 1000 });
+        assert.equal(enabled, event === 'workflow_dispatch' && value === true, `${name}: ${event}/${value}`);
+      }
+    }
+  }
+  for (const name of ['windows-product-selection-diagnostic', 'windows-category-rename-diagnostic',
+    'windows-ready-selection', 'verify']) {
+    const job = workflow.jobs[name];
+    assert.ok(job);
+    assert.equal(job.if, undefined);
+    assert.equal(job.needs, undefined);
+    assert.equal(job['continue-on-error'], undefined);
+    assert.ok(job.steps.every((step) => step['continue-on-error'] === undefined));
+    assert.ok(job.steps.every((step) => !JSON.stringify(step).includes('legacy_windows_diagnostics')));
+  }
+  assert.equal(workflow.jobs.verify.steps.some((step) => step.run === 'npm test' && step.if === undefined), true);
 });
 
 

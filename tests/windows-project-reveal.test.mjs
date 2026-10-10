@@ -3,11 +3,14 @@ import { EventEmitter } from "node:events";
 import { realpathSync, statSync } from "node:fs";
 import { win32 } from "node:path";
 import { PassThrough, Writable } from "node:stream";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { createWindowsProjectReveal, resolveWindowsPowerShell, runWindowsProjectReveal } from "../src/desktop/windows-project-reveal.ts";
 
 const program = "D:\\Operating System\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
 const target = "D:\\Owned 日本語\\Category, & literal\\Project $()";
+const nativeDirectory = fileURLToPath(new URL("../fixed native/", import.meta.url));
+const nativeScript = fileURLToPath(new URL("../fixed native/windows-project-reveal.ps1", import.meta.url));
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function fixture({ permit = async (dispatch) => dispatch(), autoClose = true, timeoutMs = 5000, killConfirmationMs = 15, spawnProcess, onEvent } = {}) {
@@ -18,7 +21,7 @@ function fixture({ permit = async (dispatch) => dispatch(), autoClose = true, ti
   child.kill = (signal) => { calls.push(signal); if (autoClose) queueMicrotask(() => child.emit("close", null, signal)); return autoClose; };
   const launched = [];
   const context = { isCurrent: () => current, signal: abort.signal, permit };
-  const options = { nativeDirectory: "/fixed/native", program, timeoutMs, killConfirmationMs, pollMs: 2,
+  const options = { nativeDirectory, program, timeoutMs, killConfirmationMs, pollMs: 2,
     spawnProcess: spawnProcess ?? ((...args) => { launched.push(args); return child; }),
     onEvent: onEvent ?? ((event) => events.push(event)), };
   return { child, writes, calls, events, abort, launched, context, options,
@@ -67,7 +70,7 @@ test("one valid split protocol waits for fresh permit, sends one GO and requires
   assert.equal(f.launched.length, 1);
   const [executable, args, settings] = f.launched[0];
   assert.equal(executable, program);
-  assert.deepEqual(args, ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-File", "/fixed/native/windows-project-reveal.ps1"]);
+  assert.deepEqual(args, ["-NoProfile", "-NonInteractive", "-STA", "-ExecutionPolicy", "Bypass", "-File", nativeScript]);
   assert.equal(settings.shell, false); assert.equal(settings.env.WORKSPACE_PROJECT_REVEAL_TARGET, target);
   assert.ok(!args.some((arg) => arg.includes(target)));
   assert.equal(f.child.stdout.listenerCount("data"), 0);
