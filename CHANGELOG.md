@@ -60,6 +60,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 - Completed creation receipts no longer reserve vacated old paths after verified external moves or explicit reassociation; original receipt retries remain idempotent.
 - An undelivered creation request can be explicitly retried with its exact original payload and operation ID after transport loss, without automatic replay or permanently locked editing.
+- Unicode case aliases retain interrupted-creation and historical destination reservations, preventing discovery from assigning a second project ID after an alias rename.
 
 ### Planned
 

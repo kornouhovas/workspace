@@ -6,9 +6,10 @@ import { isProjectCreationRequest, type ProjectCreationOperation, type ProjectCr
   type WorkspaceCreateProjectCommand, type ProjectCreationList, type ProjectCreationRecoveryPreview } from "../contracts/project-creation.js";
 import type { ServiceResult } from "../contracts/settings.js";
 import { isChildName, reliableIdentity, sameIdentity, validArchive, validExclusions, type NativeIdentity } from "./discovery.js";
-import { assertCreationDestinationFree, creationAlias, CreationFailure, filesystemCode, filesystemProblem,
+import { assertCreationDestinationFree, CreationFailure, filesystemCode, filesystemProblem,
   nativeProjectFilesystem, validProjectBasename, verifyCreationDirectory, verifyCreationParents, type ProjectFilesystem } from "./project-filesystem.js";
 import * as schema from "./db/schema.js";
+import { filesystemAlias } from "./path-alias.js";
 
 type Database = BetterSQLite3Database<typeof schema>;
 type Source = typeof schema.sources.$inferSelect;
@@ -54,13 +55,13 @@ export function createProjectCreationService(db: Database, integration: {
     const exclusions: unknown = JSON.parse(source.excludedRelativePaths);
     if (!validExclusions(exclusions, "grouped") || !validArchive(source.archiveRelativePath)) throw new Error("Invalid source configuration");
     const parts = relativePath.split("/");
-    if (parts.some((name) => name.startsWith(".") || ["$recycle.bin", "system volume information"].includes(creationAlias(name))) ||
-      exclusions.some((path) => creationAlias(path) === creationAlias(relativePath) ||
-        parentRelativePath && creationAlias(path) === creationAlias(parentRelativePath))) throw new CreationFailure("excluded");
+    if (parts.some((name) => name.startsWith(".") || ["$RECYCLE.BIN", "SYSTEM VOLUME INFORMATION"].includes(filesystemAlias(name))) ||
+      exclusions.some((path) => filesystemAlias(path) === filesystemAlias(relativePath) ||
+        parentRelativePath && filesystemAlias(path) === filesystemAlias(parentRelativePath))) throw new CreationFailure("excluded");
     // Discovery suppresses the containing project, or an archive category.
     const archive = source.archiveRelativePath?.split("/");
-    if (archive && (source.discoveryMode === "direct" ? creationAlias(parts[0]) === creationAlias(archive[0])
-      : creationAlias(parts[0]) === creationAlias(archive[0]) && (archive.length === 1 || creationAlias(parts[1]) === creationAlias(archive[1])))) {
+    if (archive && (source.discoveryMode === "direct" ? filesystemAlias(parts[0]) === filesystemAlias(archive[0])
+      : filesystemAlias(parts[0]) === filesystemAlias(archive[0]) && (archive.length === 1 || filesystemAlias(parts[1]) === filesystemAlias(archive[1])))) {
       throw new CreationFailure("archive");
     }
   }
@@ -76,11 +77,11 @@ export function createProjectCreationService(db: Database, integration: {
     const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all();
     const operations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, row.sourceId)).all();
     for (const record of [...projects.filter((p) => !completed || p.id !== row.projectId), ...categories]) {
-      if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
+      if (filesystemAlias(record.relativePath) === filesystemAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
     for (const record of operations.filter((o) => o.operationId !== row.operationId && o.stage !== "failed" && o.stage !== "completed")) {
-      if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
+      if (filesystemAlias(record.relativePath) === filesystemAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (record.nativeIdentity && nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
   }
@@ -154,7 +155,7 @@ export function createProjectCreationService(db: Database, integration: {
       } else {
         evidence = destination.identity;
         verifyDestination(row, evidence, revision, workspaceId); assertReservations(row, evidence);
-        if (filesystem.names(parent).some((name) => name !== row.name && creationAlias(name) === creationAlias(row.name))) throw new CreationFailure("case_alias");
+        if (filesystem.names(parent).some((name) => name !== row.name && filesystemAlias(name) === filesystemAlias(row.name))) throw new CreationFailure("case_alias");
         preview.destinationState = row.nativeIdentity ? "recorded" : "unverified";
         preview.problem = row.nativeIdentity ? null : "ownership_uncertain";
         preview.actions = [row.nativeIdentity ? "complete_recorded" : "associate_reviewed"];

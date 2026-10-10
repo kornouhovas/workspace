@@ -4,6 +4,7 @@ import { accessSync, constants, lstatSync, mkdirSync, opendirSync, readdirSync, 
 import { isAbsolute, join, relative, sep } from "node:path";
 import { reliableIdentity, sameIdentity, type NativeIdentity } from "./discovery.js";
 import type { ProjectCreationProblem } from "../contracts/project-creation.js";
+import { filesystemAlias } from "./path-alias.js";
 
 export interface ProjectFilesystem {
   platform: NodeJS.Platform;
@@ -33,10 +34,6 @@ export const nativeProjectFilesystem: ProjectFilesystem = {
 export class CreationFailure extends Error {
   constructor(readonly problem: ProjectCreationProblem) { super(problem); }
 }
-
-// Conservatively reject colliding case/Unicode spellings on every supported
-// filesystem. Do not normalize the authored name used in mkdir or persistence.
-export const creationAlias = (path: string) => path.normalize("NFD").toLowerCase();
 
 export function validProjectBasename(name: string, platform: NodeJS.Platform): boolean {
   if (!name || name === "." || name === ".." || name.includes("/") || name.includes("\0") ||
@@ -85,7 +82,7 @@ export function verifyCreationParents(filesystem: ProjectFilesystem, binding: {
 export function assertCreationDestinationFree(filesystem: ProjectFilesystem, parent: string, name: string) {
   const names = filesystem.names(parent);
   if (names.includes(name)) throw new CreationFailure("occupied");
-  if (names.some((entry) => creationAlias(entry) === creationAlias(name))) throw new CreationFailure("case_alias");
+  if (names.some((entry) => filesystemAlias(entry) === filesystemAlias(name))) throw new CreationFailure("case_alias");
   try { filesystem.inspect(join(parent, name)); }
   catch (error) { if (filesystemCode(error) === "ENOENT") return; throw error; }
   throw new CreationFailure("occupied");

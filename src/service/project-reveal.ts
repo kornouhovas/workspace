@@ -6,6 +6,7 @@ import type { NativeProjectReveal, NativeProjectRevealValidation, TrustedProject
 import { isChildName, planDiscovery, projectExclusions, sameIdentity, scanDirectSource, scanGroupedSource, validArchive, validExclusions } from "./discovery.js";
 import { nativeProjectFilesystem, verifyTrustedProjectRevealTarget, RevealFailure, type ProjectFilesystem } from "./project-filesystem.js";
 import * as schema from "./db/schema.js";
+import { filesystemAlias } from "./path-alias.js";
 
 export function createProjectRevealService(db: BetterSQLite3Database<typeof schema>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
   let closed = false;
@@ -41,7 +42,7 @@ export function createProjectRevealService(db: BetterSQLite3Database<typeof sche
     // Outstanding intents/evidence cannot be opened through another logical ID.
     const reservations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, source.id)).all();
     if (reservations.some((row) => !["completed", "failed"].includes(row.stage) &&
-      (row.relativePath.normalize("NFD").toLowerCase() === project.relativePath.normalize("NFD").toLowerCase() ||
+      (filesystemAlias(row.relativePath) === filesystemAlias(project.relativePath) ||
         row.nativeIdentity && sameIdentity(JSON.parse(row.nativeIdentity), JSON.parse(project.nativeIdentity))))) throw new RevealFailure("unresolved");
     const projects = db.select().from(schema.projects).where(eq(schema.projects.sourceId, source.id)).all();
     const identity = JSON.parse(project.nativeIdentity);

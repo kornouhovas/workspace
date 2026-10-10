@@ -1,5 +1,6 @@
 import { lstatSync, opendirSync, realpathSync, type BigIntStats } from "node:fs";
 import { basename, isAbsolute, join, relative } from "node:path";
+import { filesystemAlias } from "./path-alias.js";
 import type { DiscoveryEntry, DiscoveryMode, DiscoveryPreview, DiscoveryProjectEffects, DiscoveryExclusionReason, ProjectAssociationState } from "../contracts/workspaces.js";
 
 // Native evidence is lossless and local to this machine. It is never a logical ID.
@@ -106,7 +107,7 @@ function scanOnce(canonicalRoot: string, archiveRelativePath: string | null, exc
     changed(root, observation("", lstatSync(canonicalRoot, { bigint: true })))) throw new ScanChanged();
   // Resolve non-exact archive casing only with verified identity evidence, never by guessing names.
   const suppressedArchiveAlias = archiveChild && children.some((child) => child.kind === "excluded" &&
-    child.relativePath.normalize("NFD").toLowerCase() === archiveChild!.normalize("NFD").toLowerCase());
+    filesystemAlias(child.relativePath) === filesystemAlias(archiveChild!));
   if (archiveChild && !suppressedArchiveAlias && !automaticDirectoryReason(archiveChild, null) &&
     !children.some((child) => child.relativePath === archiveChild)) {
     try {
@@ -177,7 +178,7 @@ function scanGroupedOnce(canonicalRoot: string, archiveRelativePath: string | nu
     verify(root); verify(parent);
     let designated = archiveName;
     const excludedAlias = designated && entries.some((entry) =>
-      entry.name.normalize("NFD").toLowerCase() === designated!.normalize("NFD").toLowerCase() &&
+      filesystemAlias(entry.name) === filesystemAlias(designated!) &&
       (entry.isSymbolicLink() || automaticDirectoryReason(entry.name, null) ||
         exclusions.includes(parent.relativePath ? `${parent.relativePath}/${entry.name}` : entry.name)));
     if (designated && !excludedAlias && !entries.some((entry) => entry.name === designated) && !automaticDirectoryReason(designated, null)) {
@@ -410,11 +411,10 @@ export function interpretGrouped(scan: DiscoveryScan, categories: ProjectAssocia
 // Preserve the raw snapshot for watch topology and complete scan revalidation.
 export interface CreationReservation { relativePath: string; nativeIdentity: string | null }
 export function reserveCreationDestinations(scan: DiscoveryScan, reservations: CreationReservation[]): DiscoveryScan {
-  const alias = (path: string) => path.normalize("NFD").toLowerCase();
   return { ...scan, entries: scan.entries.map((entry) => {
     const child = scan.snapshot?.children.find((child) => child.relativePath === entry.relativePath);
     const blocked = reservations.some((row) => {
-      const path = alias(entry.relativePath), reserved = alias(row.relativePath);
+      const path = filesystemAlias(entry.relativePath), reserved = filesystemAlias(row.relativePath);
       const evidence: NativeIdentity | null = row.nativeIdentity ? JSON.parse(row.nativeIdentity) : null;
       return path === reserved || path.startsWith(`${reserved}/`) ||
         entry.kind === "project" && reserved.startsWith(`${path}/`) ||

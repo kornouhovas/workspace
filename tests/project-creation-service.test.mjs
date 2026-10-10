@@ -244,6 +244,56 @@ function assertRejected(f, request, problem) {
 }
 
 for (const mode of ["direct", "grouped"]) {
+  for (const [original, alias] of [["ſ", "S"], ["Σ", "ς"], ["ﬀ", "FF"], ["ẞ", "ss"], ["ΟΣ", "οσ"]]) {
+    test(`${mode} interrupted ${original}/${alias} alias rename cannot acquire a second UUID through discovery`, () => {
+      let renamed;
+      emptyFixture(mode, (f) => {
+        const request = command(f, original), result = f.service.workspaces.createProject(request);
+        assert.equal(result.value.outcome, "recoverable");
+        assert.equal(result.value.operation.evidenceRecorded, false);
+        const journal = f.sql.prepare("SELECT * FROM project_creation_operations").all(), files = inventory(f.root);
+        const preview = f.service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: f.workspaceId }).value;
+        assert.equal(preview.entries.find((entry) => entry.name === alias).reason, "unresolved");
+        assert.deepEqual(preview.projectEffects.added, []);
+        const applied = f.service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: f.workspaceId, previewToken: preview.previewToken });
+        assert.equal(applied.ok, true); assert.deepEqual(applied.value.projects, []);
+        assertRejected(f, command(f, alias), "reserved_destination");
+        assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0);
+        assert.deepEqual(f.sql.prepare("SELECT * FROM project_creation_operations").all(), journal);
+        assert.deepEqual(f.service.workspaces.createProject(request), result);
+        f.service.close();
+        const reopened = openSettingsService(f.databasePath);
+        try {
+          assert.deepEqual(reopened.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId }).value.projects, []);
+          const outstanding = reopened.handleQuery(creationQuery(f, "listProjectCreations")).value.operations;
+          assert.equal(outstanding.length, 1); assert.equal(outstanding[0].projectId, result.value.operation.projectId);
+          assert.deepEqual(reopened.workspaces.createProject(request), result);
+        } finally { reopened.close(); }
+        assert.deepEqual(inventory(f.root), files);
+        assert.equal(fs.readFileSync(join(renamed, "sentinel"), "utf8"), "third-party content");
+      }, { ...nativeProjectFilesystem, mkdir(path) {
+        nativeProjectFilesystem.mkdir(path);
+        renamed = join(path, "..", alias);
+        fs.renameSync(path, renamed); fs.writeFileSync(join(renamed, "sentinel"), "third-party content");
+        throw new Error("Interrupted after external alias rename, before evidence recording");
+      } });
+    });
+
+    test(`${mode} ${original}/${alias} aliases cannot bypass missing historical reservations`, () => emptyFixture(mode, (f) => {
+      const request = command(f, original), created = f.service.workspaces.createProject(request);
+      assert.equal(created.value.outcome, "completed");
+      const path = join(f.root, created.value.project.relativePath), outside = join(f.directory, "moved");
+      fs.writeFileSync(join(path, "sentinel"), "original content"); fs.renameSync(path, outside);
+      const before = records(f.sql), files = inventory(f.root);
+      assertRejected(f, command(f, alias), "reserved_destination");
+      assert.deepEqual(records(f.sql), before); assert.deepEqual(inventory(f.root), files);
+      assert.equal(fs.readFileSync(join(outside, "sentinel"), "utf8"), "original content");
+      assert.deepEqual(f.service.workspaces.createProject(request), created);
+    }));
+  }
+}
+
+for (const mode of ["direct", "grouped"]) {
   test(`${mode} creation works in an applied empty root/category with no implicit category or Text`, () => emptyFixture(mode, (f) => {
     const before = records(f.sql);
     const result = f.service.workspaces.createProject(command(f, "First"));
