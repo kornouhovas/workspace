@@ -1,5 +1,35 @@
 # T10 / GitHub #17: Project creation and native Reveal verification
 
+## Current acceptance receipt — Task 16
+
+Tested code/test/workflow revision: c1f540d4c55d6120a3951cb51d7700a0eb40d099. [CI 38077622578](https://github.com/kornouhovas/workspace/actions/runs/38077622578) completed successfully. The coordinator authenticated job outcomes/logs and CRC-validated the extracted artifacts. This executor independently inspected the supplied complete macOS/latest Windows/Windows2022 logs, all twelve extracted Windows JSON reports and the coordinator receipt. Seven automatic jobs succeeded; two unused historical API/CLI comparison jobs were skipped under their default-false manual input. Those skips are not product acceptance or repairs of their historical negatives.
+
+| Exact c1f540d check | Passed | Failed | Skipped | Scope |
+| --- | --- | --- | --- | --- |
+| Full macOS tests | 1118 / 1134 | 0 | 16 | Windows-only fixtures |
+| Full windows-latest tests | 1211 / 1217 | 0 | 6 | POSIX-only fixtures |
+| Full windows-2022 tests | 1211 / 1217 | 0 | 6 | POSIX-only fixtures |
+| Fast latest Windows product/bridge controls | 133 / 133 | 0 | 0 | Includes actual inherited-Restricted policy control |
+
+All three full verify legs completed lint, typecheck, production build, Ladle build, 108 EN/RU creation-layout captures, development/packaged recovery matrices, four native creation/Reveal scenarios, full DEV/packaged runtimes, packaging, artifact checks and uploads. Both Windows inherited-Restricted controls executed successfully, without a managed-policy skip. Each recovery-only matrix explicitly records zero native passes and eight native skips; selection evidence comes from the separate direct/grouped DEV/packaged scenarios. In each single-mode JSON, the other mode remains unreached and is evidenced by its own scenario. The macOS checks here are supported by the supplied complete log; no new macOS artifact subset was inspected.
+
+All eight Windows product scenarios recorded one parent Open, one completed SelectItem, truthful EN/direct or RU/grouped acknowledgment and exact COM/UIA selected-target agreement on the first independent read. Observation remained inside the unchanged ten-second deadline:
+
+| Scenario | Latest Windows, ms | Windows2022, ms |
+| --- | --- | --- |
+| DEV direct | 769.48 | 723.31 |
+| DEV grouped | 790.76 | 718.06 |
+| Packaged direct | 704.79 | 1063.96 |
+| Packaged grouped | 720.84 | 744.28 |
+
+Each selected scenario passed creation/recovery, two normal shutdowns with backend termination, restart persistence and owned fixture cleanup; its bridge started/stopped once with zero active or unknown children. All four Windows full-runtime JSONs passed all 15 stages, including external category rename/reconciliation and restart, three normal shutdowns plus the intentional-bad-startup shutdown, and cleanup with processesStopped=true. Current production stress_scan and raw stress_legacy tests passed on both images. A later raw-legacy pass does not recover the missing native code or establish the cause of the exact 53ba460 Windows2022 failure.
+
+Production integration revision 4c83ba58278bdf14ce75e871e7d54a3ffd6aff51 and the subsequent test/workflow corrections 8fdd0ce9b74fcec6f2036f88d17360d676392b9d and c1f540d retain their separate evidence. Product source/build inputs are unchanged from 4c83; c1f additionally validates the corrected fixtures and workflow. Earlier diagnostic/repair SHAs, failed assertions, skipped standards, API/CLI negatives and unresolved historical causes remain in the history below. Open-gate statements there describe their original milestones; this receipt supplies the later hosted-platform results without relabeling earlier evidence.
+
+This establishes the tested hosted macOS and Windows Server 2025/Server 2022 outcomes, not physical Office/client Windows 11 or enforced-GPO/AppLocker/ConstrainedLanguage acceptance. The successful child-session policy control changes no parent or persistent policy and does not establish enforced-policy support. The Office probe remains unverified. Historical Windows shutdown uncertainty and independent [#44](https://github.com/kornouhovas/workspace/issues/44), the physical macOS 27/Electron 44.7 release gate, remain; current normal quits do not explain their causes. No release, signing, tracker closure or integration is claimed. Coordinator owns final tracking, push and integration; Issue #18 remains excluded.
+
+Task 16 changes documentation only. Its final documentation commit follows tested c1f540d and must not be labeled as a new product/platform run. Local evidence inspection is retained in ignored work/ralphex/issue-17/task16-inspected-platform-summary.json; complete logs, artifact manifests and coordinator-final-c1f-platform-receipt.json remain alongside it. Local check:docs passed for 73 Markdown files, working/staged/fixed-base whitespace checks passed, and the entire delta from c1f contains only the three authorized documents. The focused quality/implementation reviewers found no critical/major actionable findings, reusing applicable prior initial perspectives. No new tests, build, graphical/native scenario or package run was performed for this receipt. Its documentation revision is the commit containing this receipt, reported in the Russian handoff; platform evidence remains exact c1f540d.
+
 ## Snapshot and scope
 
 Fixed implementation/review base: 4ac402620dd8139bdef9ff03625aae64bf60e132. Task 7 started from 2804db06ac62c6ff230c17e803592f89fe288a3f (Task 6); the tested working snapshot includes the Task 7 changes committed with this report. Task 7 delivery SHA: d10743f7198a06544613b8bc94220596f62de885. First-review repair SHA: 3132bf8011f50428e87318bcc5363c56f6060c69. Second-review repair SHA: e9ce13546b1850004008aa0e95c8da6713a0ae70. This report does not claim exact-SHA CI acceptance. Platform: local macOS 27.0 (26A428), arm64; Node 22.21.1, pinned Electron 44.7.0, package version 0.1.0. All Node/npm/npx invocations prepend /Users/aleksandersk/.nvm/versions/node/v22.21.1/bin to PATH. No lockfile/version/global configuration, signing, tracker, push/integration or release change.

@@ -8,7 +8,7 @@ Use an isolated task branch based on `new-workspace` for implementation. Preserv
 
 ## GitHub and Beads
 
-The private [kornouhovas/workspace](https://github.com/kornouhovas/workspace) repository is the primary issue tracker. Each implementation issue should describe the user outcome, scope, acceptance criteria, dependencies and relevant document links. Check for an existing issue before creating another. Verify repository visibility before the first write to a new repository.
+The public [kornouhovas/workspace](https://github.com/kornouhovas/workspace) repository is the primary issue tracker. Each implementation issue should describe the user outcome, scope, acceptance criteria, dependencies and relevant document links. Check for an existing issue before creating another. Verify repository visibility before the first write to a new repository.
 
 Beads records linked execution steps, blockers and continuation notes for a GitHub issue. Use the GitHub URL/number in each new task's description. For substantial work, maintain an epic or grouping for `new-workspace`; avoid importing the previous backlog automatically. Requirement changes and final product completion belong in GitHub; closing a Beads step does not close its GitHub issue.
 
