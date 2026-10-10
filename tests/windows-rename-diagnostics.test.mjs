@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { renameFixtureNames, runExternalNodeRename } from '../scripts/windows-rename-node-worker.mjs';
 import test from 'node:test';
-import { invokeExternalRename, parseFixtureResponse, parseRenameResponse, renameBounds, renameScenarios,
+import { invokeExternalRename, parseFixtureResponse, parseRealpathResponse, parseRenameResponse, renameBounds, renameScenarios,
   runBoundedProcess, runRenameCli, runRenameDiagnostics, runRenameFixture } from '../scripts/windows-rename-diagnostics.mjs';
 
 const privateText = 'C:\\private\\秘密\\do-not-record';
@@ -13,6 +13,10 @@ const nativeResponse = (extra = {}) => ({ version: 1, api: 'node_fs_rename', sta
   win32Code: null, nodeCode: null, syscall: null, lockOpened: false, lockReleased: false, startedUnixMs: 100, endedUnixMs: 101, ...extra });
 const processResult = (extra = {}) => ({ status: 'completed', termination: 'confirmed', exitCode: 0, ...extra });
 const metadata = async () => ({ codeSha: '4ac402620dd8139bdef9ff03625aae64bf60e132', platform: process.platform });
+const stressResponse = (scenario, extra = {}) => ({ version: 1, target: 'child', stage: 'completed', mode: scenario.slice(7),
+  iterations: scenario === 'stress_idle' ? 0 : 1, successes: scenario === 'stress_idle' ? 0 : 1,
+  errors: { ENOENT: 0, EPERM: 0, EACCES: 0, EBUSY: 0, ENOTDIR: 0, unknown: 0 },
+  afterRenameSignalEnoent: 0, renameCompletedSignal: true, startedUnixMs: 99, readyUnixMs: 100, endedUnixMs: 1100, ...extra });
 function fixture(t) {
   const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'workspace-rename-diagnostic-')));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -155,21 +159,23 @@ test('bounded orchestration uses distinct fixtures, retains every real failure a
     worker: async (directory, scenario) => {
       owned.push(directory); calls.push(scenario);
       const evidence = structuredClone(sample); evidence.scenario = scenario;
-      if (scenario !== 'idle') evidence.atRename.liveWatches = 1;
+      evidence.serviceState = scenario === 'idle' || scenario.startsWith('stress_') ? 'closed' : 'active';
+      if (evidence.serviceState === 'active') evidence.atRename.liveWatches = 1;
       if (scenario === 'observation') evidence.atRename.healthCallbacks = 1;
       if (scenario === 'concurrent_scan') { evidence.scans = [[100, 101]]; evidence.resources.explicitScans = 1; }
-      if (scenario === 'injected_conflict') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true });
-      if (scenario === 'delete_shared_control') Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true, renamed: true, nodeCode: null, syscall: null });
+      if (['injected_conflict', 'child_injected_conflict'].includes(scenario)) Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true });
+      if (['delete_shared_control', 'child_delete_shared_control'].includes(scenario)) Object.assign(evidence.rename.response, { lockOpened: true, lockReleased: true, renamed: true, nodeCode: null, syscall: null });
       if (scenario === 'collision_control') Object.assign(evidence.rename.response, { api: 'move_file_ex', win32Code: 183, nodeCode: null, syscall: null });
+      if (scenario.startsWith('stress_')) evidence.rename.stress = { process: processResult(), response: stressResponse(scenario) };
       return { ...processResult(), stdout: JSON.stringify({ ...evidence, private: privateText }) };
     } });
-  assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 12);
+  assert.equal(result.status, 'completed'); assert.equal(result.operations.length, 28);
   assert.deepEqual(result.renameOperation, { api: 'Node fs.promises.rename', historicalOperation: 'Node fs.promises.rename',
     equivalentToHistoricalOperation: true, destinationInitiallyAbsent: true });
   assert.deepEqual(result.collisionOperation, { api: 'MoveFileExW', flags: 0, replacing: false });
   assert.equal(result.handleControls.access, 'GENERIC_READ');
-  assert.equal(new Set(owned).size, 12); assert.equal(result.realRenameFailures, 6);
-  assert.deepEqual(calls, renameScenarios.flatMap((s) => [s, s]));
+  assert.equal(new Set(owned).size, 28); assert.equal(result.realRenameFailures, 18);
+  assert.deepEqual(calls, renameScenarios.flatMap((s) => Array(s.startsWith('stress_') ? 4 : 2).fill(s)));
   assert.ok(result.operations.every((o) => o.cleanup === 'completed'));
   assert.ok(owned.every((path) => !fs.existsSync(path)));
   const saved = fs.readFileSync(join(evidenceDirectory, 'rename-observations.json'), 'utf8');
@@ -243,10 +249,10 @@ test('actual Windows bridge detects no-delete-sharing and occupied target withou
   for (const scenario of renameScenarios) {
     const result = await runRenameFixture(fixture(t), scenario);
     assert.equal(result.status, 'completed', JSON.stringify(result));
-    if (['injected_conflict', 'delete_shared_control'].includes(scenario)) {
+    if (['injected_conflict', 'delete_shared_control', 'child_injected_conflict', 'child_delete_shared_control'].includes(scenario)) {
       assert.equal(result.rename.response.api, 'node_fs_rename');
       assert.equal(result.rename.response.lockOpened, true); assert.equal(result.rename.response.lockReleased, true);
-      assert.equal(result.rename.response.renamed, scenario === 'delete_shared_control');
+      assert.equal(result.rename.response.renamed, ['delete_shared_control', 'child_delete_shared_control'].includes(scenario));
     }
   }
 });
@@ -255,8 +261,8 @@ test('bridge uses GENERIC_READ holder with DELETE-shared contrast and explicit n
   const script = fs.readFileSync(new URL('../scripts/windows-rename-diagnostics.ps1', import.meta.url), 'utf8');
   assert.ok([...script].every(c => c.charCodeAt(0) < 128));
   assert.match(script, /MoveFileExW\(\$source, \$destination, 0\)/);
-  assert.match(script, /CreateFileW\(\$source, \[uint32\]2147483648, \$share,/);
-  assert.match(script, /'delete_shared_control'\) \{ 7 \} else \{ 3 \}/);
+  assert.match(script, /CreateFileW\(\$heldPath, \[uint32\]2147483648, \$share,/);
+  assert.match(script, /'delete_shared_control', 'child_delete_shared_control'\)\) \{ 7 \} else \{ 3 \}/);
   assert.match(script, /CloseHandle\(\$handle\)/);
   assert.equal(renameFixtureNames.category, 'Категория-' + 'long-category-'.repeat(14));
   assert.equal(renameFixtureNames.project, '日本語-проект-' + 'long-project-'.repeat(14));
@@ -286,7 +292,7 @@ test('external Node worker rejects caller paths, reparse source and preoccupied 
   const caller = await runExternalNodeRename({ WORKSPACE_RENAME_FIXTURE: privateText, WORKSPACE_RENAME_SCENARIO: 'idle' });
   assert.equal(caller.invocationCount, 0); assert.equal(JSON.stringify(caller).includes(privateText), false);
   const directory = fixture(t), root = join(directory, 'root');
-  fs.mkdirSync(join(root, renameFixtureNames.category), { recursive: true });
+  fs.mkdirSync(join(root, renameFixtureNames.category, renameFixtureNames.project), { recursive: true });
   fs.mkdirSync(join(root, renameFixtureNames.target));
   const env = { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'idle' };
   assert.equal((await runExternalNodeRename(env)).invocationCount, 0);
@@ -363,4 +369,164 @@ Add-Type -TypeDefinition 'public static class WorkspaceAccessArgument { public s
   });
   assert.equal(result.status, 'completed'); assert.equal(result.termination, 'confirmed');
   assert.equal(result.stdout.trim(), 'True');
+});
+
+test('child sharing controls hold only the fixed child while the category is renamed once', async (t) => {
+  for (const scenario of ['child_injected_conflict', 'child_delete_shared_control']) {
+    let starts = 0;
+    const result = await invokeExternalRename(fixture(t), scenario, { runProcess: async (program, args, options) => {
+      if (program === 'powershell.exe') {
+        assert.equal(options.env.WORKSPACE_RENAME_HOLD_TARGET, 'child');
+        assert.equal(options.env.WORKSPACE_RENAME_PROJECT, renameFixtureNames.project);
+        assert.equal(options.readyInput, 'release\n');
+        await options.onReady();
+        assert.equal(starts, 1);
+        return { ...processResult(), stdout: JSON.stringify(holderResponse()) };
+      }
+      starts++;
+      return { ...processResult(), stdout: JSON.stringify(nativeResponse(scenario === 'child_injected_conflict'
+        ? { renamed: false, nodeCode: 'EBUSY', syscall: 'rename' } : {})) };
+    } });
+    assert.equal(starts, 1);
+    assert.equal(result.response.lockOpened, true);
+    assert.equal(result.response.lockReleased, true);
+    assert.equal(result.response.renamed, scenario === 'child_delete_shared_control');
+  }
+});
+
+test('stress modes are distinct from real service scans and use a fixed four-fixture budget', () => {
+  assert.ok(['child_injected_conflict', 'child_delete_shared_control', 'stress_idle', 'stress_native', 'stress_legacy']
+    .every(scenario => renameScenarios.includes(scenario)));
+  assert.equal(renameBounds.stressOperationsPerScenario, 4);
+  assert.equal(renameBounds.stressMs, 1000);
+});
+
+test('realpath protocol keeps bounded child counters and strips paths without converting ENOENT to a rename result', () => {
+  const sample = stressResponse('stress_native', { iterations: 5, successes: 2,
+    errors: { ENOENT: 3, EPERM: 0, EACCES: 0, EBUSY: 0, ENOTDIR: 0, unknown: 0 }, afterRenameSignalEnoent: 2 });
+  assert.deepEqual(parseRealpathResponse(JSON.stringify({ ...sample, path: privateText,
+    errors: { ...sample.errors, private: privateText } }), 'stress_native'), sample);
+  for (const mutate of [value => { value.mode = 'legacy'; }, value => { value.target = privateText; },
+    value => { value.stage = 'input'; }, value => { value.iterations = renameBounds.stressIterations + 1; },
+    value => { value.successes = 1; }, value => { value.errors.ENOENT = -1; },
+    value => { value.afterRenameSignalEnoent = 4; }, value => { value.renameCompletedSignal = false; },
+    value => { value.readyUnixMs = 98; }, value => { value.endedUnixMs = 99; },
+    value => { value.endedUnixMs = value.startedUnixMs + renameBounds.bridgeMs + 1; }]) {
+    const value = structuredClone(sample); mutate(value);
+    assert.equal(parseRealpathResponse(JSON.stringify(value), 'stress_native'), null);
+  }
+  assert.equal(parseRealpathResponse(JSON.stringify(sample), 'toString'), null);
+  assert.equal(parseRealpathResponse('x'.repeat(4097), 'stress_native'), null);
+});
+
+for (const scenario of ['stress_idle', 'stress_native', 'stress_legacy']) test(`real external child worker overlaps one rename with identical closed-service invariants: ${scenario}`, async (t) => {
+  const result = await runRenameFixture(fixture(t), scenario);
+  assert.equal(result.status, 'completed', JSON.stringify(result));
+  assert.equal(result.serviceState, 'closed');
+  assert.equal(result.atRename.liveWatches, 0); assert.equal(result.atRename.liveTimers, 0);
+  assert.equal(result.rename.response.invocationCount, 1);
+  assert.equal(result.rename.response.renamed, true); assert.equal(result.rename.response.nodeCode, null);
+  assert.ok(Object.values(result.invariants).every(Boolean));
+  const stress = result.rename.stress;
+  assert.equal(stress.process.termination, 'confirmed');
+  assert.equal(stress.response.renameCompletedSignal, true);
+  assert.ok(stress.response.iterations <= renameBounds.stressIterations);
+  if (scenario !== 'stress_idle') {
+    assert.ok(stress.response.successes > 0);
+    assert.ok(stress.response.errors.ENOENT > 0);
+    assert.ok(stress.response.afterRenameSignalEnoent > 0);
+  } else assert.equal(stress.response.iterations, 0);
+  const sanitized = parseFixtureResponse(JSON.stringify(result), scenario);
+  assert.ok(sanitized, JSON.stringify(result));
+  assert.equal(sanitized.rename.response.nodeCode, null);
+});
+
+test('stress evidence requires correct service state, true overlap and descendant termination before cleanup', async (t) => {
+  const sample = await sampleEvidence(t);
+  sample.scenario = 'stress_native'; sample.serviceState = 'closed';
+  sample.rename.stress = { process: processResult(), response: stressResponse('stress_native') };
+  assert.ok(parseFixtureResponse(JSON.stringify(sample), 'stress_native'));
+  for (const mutate of [value => { value.serviceState = 'active'; },
+    value => { value.atRename.liveWatches = 1; }, value => { value.rename.stress.response.readyUnixMs = 102; },
+    value => { value.rename.stress.response.endedUnixMs = 100; },
+    value => { value.rename.stress.process.termination = 'unknown'; },
+    value => { value.rename.stress.process.status = 'timeout'; },
+    value => { value.rename.stress.response.renameCompletedSignal = false; }]) {
+    const value = structuredClone(sample); mutate(value);
+    assert.equal(parseFixtureResponse(JSON.stringify(value), 'stress_native'), null);
+  }
+  for (const [stressTermination, renameTermination] of [['unknown', 'confirmed'], ['confirmed', 'unknown']]) {
+    let starts = 0;
+    const result = await invokeExternalRename(fixture(t), 'stress_native', { runProcess: async (_program, args, options) => {
+      if (args[0].endsWith('windows-rename-realpath-worker.mjs')) {
+        assert.equal(options.timeoutMs, renameBounds.bridgeMs); assert.equal(options.readyInput, 'finished\n');
+        assert.equal(options.waitForReadyCallback, true); await options.onReady();
+        return { ...processResult({ status: 'timeout', termination: stressTermination }), stdout: '' };
+      }
+      starts++; return { ...processResult({ termination: renameTermination }), stdout: JSON.stringify(nativeResponse()) };
+    } });
+    assert.equal(starts, 1); assert.equal(result.process.termination, 'unknown');
+  }
+});
+
+test('real child stress worker rejects caller paths, unknown modes and child reparses without reads', async (t) => {
+  const directory = fixture(t), root = join(directory, 'root'), category = join(root, renameFixtureNames.category);
+  const child = join(category, renameFixtureNames.project);
+  fs.mkdirSync(child, { recursive: true });
+  for (const env of [{ WORKSPACE_RENAME_FIXTURE: privateText, WORKSPACE_RENAME_SCENARIO: 'stress_native' },
+    { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'toString' },
+    { WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'stress_legacy' }]) {
+    if (env.WORKSPACE_RENAME_SCENARIO === 'stress_legacy') {
+      fs.rmSync(child, { recursive: true });
+      fs.symlinkSync(root, child, process.platform === 'win32' ? 'junction' : 'dir');
+    }
+    const result = await runBoundedProcess(process.execPath, ['scripts/windows-rename-realpath-worker.mjs'], {
+      timeoutMs: 5000, env: { ...process.env, ...env },
+    });
+    assert.equal(result.status, 'completed');
+    const response = JSON.parse(result.stdout);
+    assert.equal(response.stage, 'input'); assert.equal(response.iterations, 0);
+    assert.equal(response.startedUnixMs, null); assert.equal(response.renameCompletedSignal, false);
+    assert.equal(result.stdout.includes(privateText), false);
+  }
+});
+
+test('a stress cap reached before completion retains its counters and the single actual rename as failed evidence', async (t) => {
+  const reading = stressResponse('stress_native', { iterations: renameBounds.stressIterations,
+    successes: renameBounds.stressIterations, renameCompletedSignal: false });
+  assert.deepEqual(parseRealpathResponse(JSON.stringify(reading), 'stress_native'), reading);
+  let calls = 0;
+  const result = await runRenameFixture(fixture(t), 'stress_native', { rename: async () => {
+    calls++;
+    return { process: processResult(), response: nativeResponse(), stress: { process: processResult(), response: reading } };
+  } });
+  assert.equal(calls, 1); assert.equal(result.status, 'failed');
+  assert.equal(result.rename.response.invocationCount, 1);
+  assert.equal(result.rename.response.renamed, true);
+  const parsed = parseFixtureResponse(JSON.stringify(result), 'stress_native');
+  assert.ok(parsed); assert.equal(parsed.rename.stress.response.iterations, renameBounds.stressIterations);
+  assert.equal(parsed.rename.stress.response.renameCompletedSignal, false);
+  assert.equal(parsed.invariants.observerCleanup, true);
+});
+
+test('Windows child holder rejects files, reparses and mismatched fixed target kinds before opening a handle', { skip: process.platform !== 'win32' }, async (t) => {
+  const directory = fixture(t), root = join(directory, 'root'), category = join(root, renameFixtureNames.category);
+  const child = join(category, renameFixtureNames.project);
+  fs.mkdirSync(category, { recursive: true }); fs.writeFileSync(child, 'retain');
+  const invoke = async (extra = {}) => {
+    const process = await runBoundedProcess('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', 'scripts/windows-rename-diagnostics.ps1'], {
+      timeoutMs: renameBounds.bridgeMs, maxBytes: 4096, env: { ...globalThis.process.env,
+        WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: 'child_injected_conflict',
+        WORKSPACE_RENAME_CATEGORY: renameFixtureNames.category, WORKSPACE_RENAME_PROJECT: renameFixtureNames.project,
+        WORKSPACE_RENAME_HOLD_TARGET: 'child', ...extra },
+    });
+    assert.equal(process.status, 'completed');
+    const response = parseRenameResponse(process.stdout);
+    assert.equal(response.stage, 'input'); assert.equal(response.invocationCount, 0); assert.equal(response.lockOpened, false);
+  };
+  await invoke(); assert.equal(fs.readFileSync(child, 'utf8'), 'retain');
+  fs.rmSync(child); fs.symlinkSync(root, child, 'junction');
+  await invoke(); assert.equal(fs.lstatSync(child).isSymbolicLink(), true);
+  fs.rmSync(child); fs.mkdirSync(child);
+  await invoke({ WORKSPACE_RENAME_HOLD_TARGET: 'category' });
 });

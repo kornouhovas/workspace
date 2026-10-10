@@ -297,6 +297,9 @@ function Read-WorkspaceUiaWindow($handle) { if ($handle -eq 999) { return @{ sta
 
 // Real UIA condition/pattern types with controlled provider objects exercise the
 // actual reader without opening, selecting or enumerating any desktop window.
+// PropertyCondition stores ControlType as its integer Id (not the CLR object):
+// https://github.com/dotnet/wpf/blob/main/src/Microsoft.DotNet.Wpf/src/UIAutomation/UIAutomationClient/System/Windows/Automation/PropertyCondition.cs
+// The exact f753 Windows red log failed at tabs before any pattern read.
 test("Windows UIA reader validates HWND/process/tab/view/item before reading SelectionItemPattern", { skip: process.platform !== "win32" }, async (t) => {
   const source = await readFile(new URL("../scripts/windows-selection-diagnostics.ps1", import.meta.url), "utf8");
   const execute = promisify(execFile);
@@ -304,9 +307,10 @@ test("Windows UIA reader validates HWND/process/tab/view/item before reading Sel
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 function Get-Process { param($Id) $script:step = 'process'; if ($Id -ne 456) { throw 'private process' }; return @{ ProcessName = $(if ($mode -eq 'wrong_process') { 'other' } else { 'explorer' }) } }
 function Get-WorkspaceUiaRoot($handle) { $script:step = 'root'; if ($handle -ne 123) { throw 'private handle' }; return $root }
-$cases = @('selected', 'unselected', 'wrong_handle', 'wrong_process', 'tabs', 'view_absent', 'duplicate_views', 'target_absent', 'duplicates', 'offscreen', 'no_pattern', 'read_error')
+$cases = @('selected', 'unselected', 'wrong_handle', 'wrong_process', 'tabs', 'view_absent', 'wrong_view_class', 'wrong_view_type', 'duplicate_views', 'target_absent', 'duplicates', 'offscreen', 'no_pattern', 'read_error')
 foreach ($mode in $cases) {
   $patternReads = 0
+  $itemReads = 0
   $step = 'setup'
   $item = [pscustomobject]@{ Current = [pscustomobject]@{ IsOffscreen = ($mode -eq 'offscreen') } }
   $item | Add-Member ScriptMethod TryGetCurrentPattern { param($pattern, $output)
@@ -321,23 +325,31 @@ foreach ($mode in $cases) {
   $view = [pscustomobject]@{}
   $view | Add-Member ScriptMethod FindAll { param($scope, $condition)
     $script:step = 'items'
+    $script:itemReads++
     if ($scope -ne [System.Windows.Automation.TreeScope]::Children) { throw 'private scope' }
     $conditions = $condition.GetConditions()
     if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::NameProperty -or
         $conditions[0].Value -ne [IO.Path]::GetFileName($env:WORKSPACE_OBSERVE_TARGET) -or
-        $conditions[1].Value -ne [System.Windows.Automation.ControlType]::ListItem) { throw 'private item query' }
+        $conditions[1].Property -ne [System.Windows.Automation.AutomationElement]::ControlTypeProperty -or
+        $conditions[1].Value -ne [System.Windows.Automation.ControlType]::ListItem.Id) { throw 'private item query' }
     if ($mode -eq 'target_absent') { return ,@() }
     if ($mode -eq 'duplicates') { return ,@($item, $item) }
     return ,@($item)
   }
-  $view | Add-Member NoteProperty Current ([pscustomobject]@{ ControlType = [System.Windows.Automation.ControlType]::List; ClassName = 'UIItemsView'; AutomationId = 'ItemsView' })
+  # Exact f753 Explorer evidence had a List/UIItemsView with a different ID.
+  $view | Add-Member NoteProperty Current ([pscustomobject]@{
+    ControlType = $(if ($mode -eq 'wrong_view_type') { [System.Windows.Automation.ControlType]::Pane } else { [System.Windows.Automation.ControlType]::List })
+    ClassName = $(if ($mode -eq 'wrong_view_class') { 'other' } else { 'UIItemsView' })
+    AutomationId = $(if ($mode -eq 'wrong_view_class') { 'ItemsView' } else { 'other' })
+  })
   $root = [pscustomobject]@{ Current = [pscustomobject]@{ NativeWindowHandle = $(if ($mode -eq 'wrong_handle') { 999 } else { 123 }); ProcessId = 456; ControlType = [System.Windows.Automation.ControlType]::Window } }
   $root | Add-Member ScriptMethod FindAll { param($scope, $condition)
     $script:step = 'views'
     if ($scope -ne [System.Windows.Automation.TreeScope]::Descendants) { throw 'private scope' }
     if ($condition -is [System.Windows.Automation.PropertyCondition]) {
       $script:step = 'tabs'
-      if ($condition.Value -ne [System.Windows.Automation.ControlType]::TabItem) { throw 'private tab query' }
+      if ($condition.Property -ne [System.Windows.Automation.AutomationElement]::ControlTypeProperty -or
+          $condition.Value -ne [System.Windows.Automation.ControlType]::TabItem.Id) { throw 'private tab query' }
       return ,$(if ($mode -eq 'tabs') { @(1, 2) } else { @() })
     }
     $conditions = $condition.GetConditions()
@@ -350,9 +362,11 @@ foreach ($mode in $cases) {
       if ($mode -eq 'duplicate_views') { return ,@($view, $view) }
       return ,@($view)
     }
-    if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::AutomationIdProperty -or
-        $conditions[0].Value -ne 'ItemsView' -or $conditions[1].Value -ne [System.Windows.Automation.ControlType]::List) { throw 'private view query' }
-    if ($mode -eq 'view_absent') { return ,@() }
+    if ($conditions[0].Property -ne [System.Windows.Automation.AutomationElement]::ClassNameProperty -or
+        $conditions[0].Value -ne 'UIItemsView' -or $conditions[1].Property -ne [System.Windows.Automation.AutomationElement]::ControlTypeProperty -or
+        $conditions[1].Value -ne [System.Windows.Automation.ControlType]::List.Id) { throw 'private view query' }
+    if ($mode -eq 'view_absent' -or $view.Current.ClassName -cne $conditions[0].Value -or
+        $view.Current.ControlType.Id -ne $conditions[1].Value) { return ,@() }
     if ($mode -eq 'duplicate_views') { return ,@($view, $view) }
     return ,@($view)
   }
@@ -382,12 +396,12 @@ foreach ($mode in $cases) {
   $readerStep = $step
   try {
     $condition = [System.Windows.Automation.AndCondition]::new(
-      [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ItemsView'),
+      [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ClassNameProperty, 'UIItemsView'),
       [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))
     $collection = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
     $collectionShape = [ordered]@{ count = [int]$collection.Count; firstIsView = ($collection.Count -gt 0 -and [object]::ReferenceEquals($collection[0], $view)) }
   } catch { $collectionShape = [ordered]@{ count = $null; firstIsView = $false } }
-  [ordered]@{ mode = $mode; stage = $stage; patternReads = $patternReads; selected = $result.selected; step = $readerStep; syntheticError = $syntheticError; collectionShape = $collectionShape } | ConvertTo-Json -Depth 4 -Compress
+  [ordered]@{ mode = $mode; stage = $stage; itemReads = $itemReads; patternReads = $patternReads; selected = $result.selected; step = $readerStep; syntheticError = $syntheticError; collectionShape = $collectionShape } | ConvertTo-Json -Depth 4 -Compress
 }
 `;
   const output = await execute("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", source + "\n" + fixture], {
@@ -399,13 +413,14 @@ foreach ($mode in $cases) {
   assert.ok(Buffer.byteLength(output.stdout, "utf8") <= 16384);
   for (const result of results) t.diagnostic(JSON.stringify(result));
   const expected = { selected: "selected", unselected: "unselected", wrong_handle: "wrong_window", wrong_process: "wrong_window",
-    tabs: "ambiguous_parent", view_absent: "view_absent", duplicate_views: "ambiguous_view", target_absent: "target_absent", duplicates: "ambiguous_target",
+    tabs: "ambiguous_parent", view_absent: "view_absent", wrong_view_class: "view_absent", wrong_view_type: "view_absent", duplicate_views: "ambiguous_view", target_absent: "target_absent", duplicates: "ambiguous_target",
     offscreen: "ambiguous_target", no_pattern: "pattern_unavailable", read_error: "exception" };
   assert.equal(results.length, Object.keys(expected).length);
   for (const result of results) {
-    assert.deepEqual(result.collectionShape, { count: result.mode === "view_absent" ? 0 : result.mode === "duplicate_views" ? 2 : 1,
-      firstIsView: result.mode !== "view_absent" }, result.mode);
+    assert.deepEqual(result.collectionShape, { count: ["view_absent", "wrong_view_class", "wrong_view_type"].includes(result.mode) ? 0 : result.mode === "duplicate_views" ? 2 : 1,
+      firstIsView: !["view_absent", "wrong_view_class", "wrong_view_type"].includes(result.mode) }, result.mode);
     assert.equal(result.stage, expected[result.mode], result.mode);
+    assert.equal(result.itemReads, ["selected", "unselected", "target_absent", "duplicates", "offscreen", "no_pattern", "read_error"].includes(result.mode) ? 1 : 0, result.mode);
     assert.equal(result.patternReads, ["selected", "unselected", "no_pattern", "read_error"].includes(result.mode) ? 1 : 0, result.mode);
     assert.equal(result.selected, result.mode === "selected" ? true : result.mode === "unselected" ? false : null, result.mode);
   }

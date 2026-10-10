@@ -101,7 +101,28 @@ Task 4 local verification (macOS arm64, Node 22.21.1): service test-library buil
 
 The coordinator pushes the corrected diagnostic milestone and supplies exact-code Windows artifacts and complete controlled-test logs from the isolated fresh jobs. Stop before Task 5 until these arrive. In particular, inspect the synthetic reader's finite exception/collection diagnostics, exact owned provider counts/markers, exact Node operation codes and whether the stronger sharing controls actually block rename. A candidate control or a skipped Windows fixture is not a verified repair. If the faithful baseline remains negative, assess bounded distinct-fixture stress or Electron-backend escalation from those results; do not change production canonicalization/watchers or native dispatch speculatively.
 
-### Task 5: Review corrected Windows evidence and repair established product causes
+The receipt gate above is satisfied by exact f753e5b8f440f9bd4a1fe8d715376f2859b24556, CI 38064260689 attempt 2, both isolated jobs and complete controlled logs. Selection still fails: COM exact parent/target are present but unselected; UIA finds no AutomationId ItemsView view but exactly one List/UIItemsView/other candidate. Synthetic tests fail at PropertyCondition.Value comparisons. All six real Node renames pass with only one scan per concurrent fixture. Category sharing controls now block with EBUSY, DELETE-shared contrasts pass, collisions return 183. This validates the category control, not historical EPERM causality.
+
+Coordinator-authorized Task 5 adjustment: complete a bounded diagnostic correction/child-comparison milestone before another mandatory Windows checkpoint. The original product-cause Task 5 and final-verification Task 6 are retained as Tasks 6 and 7 below, with their requirements unchecked. No product acceptance is completed by this split.
+
+### Task 5: Correct owned-provider diagnostics and sharpen child rename comparisons
+
+**Files:**
+- Modify: scripts/windows-selection-diagnostics.ps1 and tests/windows-selection-diagnostics.test.mjs.
+- Modify: scripts/windows-rename-diagnostics.mjs, scripts/windows-rename-diagnostics.ps1, connected bounded workers/tests and docs/verification/issue-17-create-reveal.md.
+
+- [x] Map exact f753 coordinator selection/rename artifacts and complete logs to confirmed defects and unresolved hypotheses. Collect all five initial perspectives against the fixed base before changes.
+- [x] Correct the exact owned-HWND view query to List plus ClassName UIItemsView and synthetic PropertyCondition.Value assertions to documented ControlType.Id. Preserve strict COM acceptance, collection assertions, single view/item, privacy and unchanged dispatch/deadlines; extend controlled regressions using actual Windows red evidence.
+- [x] Add bounded distinct-fixture category/child sharing comparisons and native/legacy/idle child realpath stress with one exact external Node rename per fixture. Retain every code, finite counts/timing, identical stress service state, invariant checks and verified process/observer cleanup; no speculative production repair.
+- [x] Run focused diagnostic/service tests, lint, typecheck, check:docs and working/fixed-base diff checks. Collect quality/implementation follow-up reviews until no critical/major actionable findings remain; commit the diagnostic milestone and document actual local checks and external gates.
+
+Task 5 local verification (macOS arm64, Node 22.21.1): service test-library build passed; six diagnostic/lifecycle suites reported 124 tests, 115 passed, nine Windows-only skips, zero failures. Four connected service suites reported 95 passed, no failures/skips. Lint, typecheck, check:docs and working/fixed-base diff checks passed. Two new orchestration regressions failed before implementation and passed afterward; exact f753 logs remain the Windows UIA red evidence. All five initial perspectives preceded changes, and the final quality/implementation pair found no remaining critical/major actionable issues. No new actual Windows, graphical/native, packaged artifact, full npm test or production build verification is claimed. The diagnostic milestone does not complete product causes or external acceptance; stop at the mandatory checkpoint below.
+
+## Mandatory coordinator checkpoint before Task 6
+
+Stop after Task 5. The coordinator supplies new exact-code Windows selection/rename artifacts and complete controlled logs. Verify the actual UIA fixture/query results, exact-owned item/pattern evidence, category/child control outcomes, native/legacy/idle iteration/error counts and rename timing/codes. Local macOS skips are unverified; broad stress intervals are not proof of a child handle at rename. Negative stress cannot close historical EPERM, and a diagnostic selection pass cannot close product acceptance. No production native dispatch, canonicalization or watcher replacement without supported causal red/green and safety regressions. Preserve macOS acknowledgment, normal-quit/restart and #44 gates separately.
+
+### Task 6: Repair established product causes after the child/provider checkpoint
 
 **Files:**
 - Modify only evidence-implicated files among `src/desktop/project-reveal.ts`, `src/service/source-observer.ts`, `discovery.ts`, `workspaces.ts`, `scripts/file-manager-evidence.mjs` and connected diagnostic/runtime tests.
@@ -111,7 +132,7 @@ The coordinator pushes the corrected diagnostic milestone and supplies exact-cod
 - [ ] Add focused red-before/green-after regressions for each repair. Preserve one user-intent dispatch, useful errors, live observation and rename/reconciliation invariants.
 - [ ] Run affected suites, then quality/implementation critical-major follow-up reviews until clean. Commit verified repairs. If evidence remains insufficient, retain the unresolved gate instead of speculative changes.
 
-### Task 6: Verify repairs and update the evidence handoff
+### Task 7: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.

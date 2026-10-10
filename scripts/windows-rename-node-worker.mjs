@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { realpathSync } from 'node:fs';
+import { lstatSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -11,6 +11,27 @@ export const renameFixtureNames = Object.freeze({
   target: 'Renamed 文-' + 'long-category-'.repeat(14),
 });
 const allowedCodes = ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY', 'EINVAL', 'ENAMETOOLONG', 'UNKNOWN'];
+export const renameStressModes = Object.freeze({ stress_idle: 'idle', stress_native: 'native', stress_legacy: 'legacy' });
+export const renameStressBounds = Object.freeze({ stressMs: 1000, stressIterations: 100000, stressOperationsPerScenario: 4 });
+const nodeScenarios = ['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control',
+  'child_injected_conflict', 'child_delete_shared_control', ...Object.keys(renameStressModes)];
+
+// Fixed descendants only; a caller path, alias or reparse component cannot
+// authorize either the rename or the child realpath worker.
+export function ownedRenamePaths(directory) {
+  if (!directory || dirname(directory) !== realpathSync.native(tmpdir()) ||
+    !/^workspace-rename-diagnostic-[A-Za-z0-9]{6}$/.test(basename(directory)) || realpathSync.native(directory) !== directory) throw new Error('input');
+  const root = join(directory, 'root'), source = join(root, renameFixtureNames.category);
+  const child = join(source, renameFixtureNames.project), destination = join(root, renameFixtureNames.target);
+  for (const path of [directory, root, source, child]) {
+    const stat = lstatSync(path);
+    // Match the previous external worker: canonicalize its owned fixture root,
+    // then lstat fixed descendants. A realpath(source/child) here would add a
+    // competing native open while a sharing-control holder is already alive.
+    if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('input');
+  }
+  return { root, source, child, destination };
+}
 
 // One external Node operation; no retries or Win32-code guesses. Only this
 // generated disposable fixture's fixed paths can reach fs.promises.rename.
@@ -20,15 +41,8 @@ export async function runExternalNodeRename(env = process.env) {
     startedUnixMs: null, endedUnixMs: null };
   try {
     const directory = env.WORKSPACE_RENAME_FIXTURE;
-    if (!directory || dirname(directory) !== realpathSync.native(tmpdir()) ||
-      !/^workspace-rename-diagnostic-[A-Za-z0-9]{6}$/.test(basename(directory)) ||
-      realpathSync.native(directory) !== directory ||
-      !['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control'].includes(env.WORKSPACE_RENAME_SCENARIO)) return result;
-    const root = join(directory, 'root'), source = join(root, renameFixtureNames.category), destination = join(root, renameFixtureNames.target);
-    for (const path of [directory, root, source]) {
-      const stat = await fs.lstat(path);
-      if (!stat.isDirectory() || stat.isSymbolicLink()) return result;
-    }
+    if (!nodeScenarios.includes(env.WORKSPACE_RENAME_SCENARIO)) return result;
+    const { source, destination } = ownedRenamePaths(directory);
     try { await fs.lstat(destination); return result; } catch (error) { if (error.code !== 'ENOENT') return result; }
     if (env.WORKSPACE_RENAME_SCENARIO === 'concurrent_scan') {
       process.stdout.write('WORKSPACE_RENAME_READY\n');

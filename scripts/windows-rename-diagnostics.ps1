@@ -16,15 +16,23 @@ try {
   $root = $env:WORKSPACE_RENAME_FIXTURE
   if ([string]::IsNullOrEmpty($root) -or -not [IO.Path]::IsPathRooted($root) -or
       [IO.Path]::GetFileName($root) -notmatch '^workspace-rename-diagnostic-[A-Za-z0-9]{6}$' -or
-      $scenario -notin @('injected_conflict', 'delete_shared_control', 'collision_control')) { throw 'input' }
+      -not [string]::Equals([IO.Path]::GetDirectoryName($root), [IO.Path]::GetTempPath().TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase) -or
+      $scenario -notin @('injected_conflict', 'delete_shared_control', 'child_injected_conflict', 'child_delete_shared_control', 'collision_control')) { throw 'input' }
   # Explicit long-path form avoids relying on global Win32 long-path policy.
   $nativeRoot = $(if ($root.StartsWith('\\')) { '\\?\UNC\' + $root.Substring(2) } else { '\\?\' + $root })
-  $source = [IO.Path]::Combine($nativeRoot, 'root', $env:WORKSPACE_RENAME_CATEGORY)
+  $category = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('0JrQsNGC0LXQs9C+0YDQuNGPLQ==')) + ('long-category-' * 14)
+  $project = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('5pel5pys6KqeLdC/0YDQvtC10LrRgi0=')) + ('long-project-' * 14)
+  if ($env:WORKSPACE_RENAME_CATEGORY -cne $category -or $env:WORKSPACE_RENAME_PROJECT -cne $project) { throw 'input' }
+  $source = [IO.Path]::Combine($nativeRoot, 'root', $category)
+  $child = [IO.Path]::Combine($source, $project)
+  $holdTarget = $(if ($scenario.StartsWith('child_')) { 'child' } else { 'category' })
+  if ($env:WORKSPACE_RENAME_HOLD_TARGET -cne $holdTarget) { throw 'input' }
+  $heldPath = $(if ($holdTarget -eq 'child') { $child } else { $source })
   $destination = [IO.Path]::Combine($nativeRoot, 'root', 'Occupied')
   if ([string]::IsNullOrEmpty($env:WORKSPACE_RENAME_CATEGORY) -or
       $env:WORKSPACE_RENAME_CATEGORY.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0 -or
-      -not [IO.Directory]::Exists($source)) { throw 'input' }
-  foreach ($path in @($nativeRoot, [IO.Path]::Combine($nativeRoot, 'root'), $source)) {
+      -not [IO.Directory]::Exists($source) -or -not [IO.Directory]::Exists($child)) { throw 'input' }
+  foreach ($path in @($nativeRoot, [IO.Path]::Combine($nativeRoot, 'root'), $source, $child)) {
     if (([IO.File]::GetAttributes($path) -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'input' }
   }
   $result.stage = 'compile'
@@ -46,8 +54,8 @@ public static class WorkspaceRenameDiagnostic {
     $result.stage = 'lock'
     # GENERIC_READ; READ|WRITE sharing, plus DELETE only in the contrast.
     # OPEN_EXISTING + BACKUP_SEMANTICS. No privileges or content reads.
-    $share = $(if ($scenario -eq 'delete_shared_control') { 7 } else { 3 })
-    $handle = [WorkspaceRenameDiagnostic]::CreateFileW($source, [uint32]2147483648, $share, [IntPtr]::Zero, 3, 0x02000000, [IntPtr]::Zero)
+    $share = $(if ($scenario -in @('delete_shared_control', 'child_delete_shared_control')) { 7 } else { 3 })
+    $handle = [WorkspaceRenameDiagnostic]::CreateFileW($heldPath, [uint32]2147483648, $share, [IntPtr]::Zero, 3, 0x02000000, [IntPtr]::Zero)
     if ($handle -eq [IntPtr]::new(-1)) { $result.win32Code = [Runtime.InteropServices.Marshal]::GetLastWin32Error(); $handle = [IntPtr]::Zero; throw 'lock' }
     $result.lockOpened = $true
     $result.stage = 'rename'

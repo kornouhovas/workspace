@@ -6,18 +6,42 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { collectNativeSelectionMetadata } from './windows-native-selection.mjs';
-import { renameFixtureNames } from './windows-rename-node-worker.mjs';
+import { renameFixtureNames, renameStressBounds, renameStressModes } from './windows-rename-node-worker.mjs';
 
 const script = fileURLToPath(import.meta.url);
 const nodeWorker = fileURLToPath(new URL('./windows-rename-node-worker.mjs', import.meta.url));
+const realpathWorker = fileURLToPath(new URL('./windows-rename-realpath-worker.mjs', import.meta.url));
 const bridge = fileURLToPath(new URL('./windows-rename-diagnostics.ps1', import.meta.url));
 const migrations = fileURLToPath(new URL('../src/service/db/migrations', import.meta.url));
-export const renameScenarios = Object.freeze(['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control', 'collision_control']);
+export const renameScenarios = Object.freeze(['idle', 'observation', 'concurrent_scan', 'injected_conflict', 'delete_shared_control', 'collision_control',
+  'child_injected_conflict', 'child_delete_shared_control', ...Object.keys(renameStressModes)]);
 export const renameBounds = Object.freeze({ operationsPerScenario: 2, workerMs: 25000, bridgeMs: 10000,
-  terminationMs: 1000, outputBytes: 65536, scanCount: 128, scanMs: 6000 });
+  terminationMs: 1000, outputBytes: 65536, scanCount: 128, scanMs: 6000, ...renameStressBounds });
 const count = (n, max = 100000) => Number.isInteger(n) && n >= 0 && n <= max;
 const timestamp = (n) => Number.isSafeInteger(n) && n >= 0 && n <= 8640000000000000;
 const code = (error) => ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY'].includes(error?.code) ? error.code : 'unknown';
+const serviceClosed = scenario => scenario === 'idle' || Object.hasOwn(renameStressModes, scenario);
+const conflictControl = scenario => ['injected_conflict', 'child_injected_conflict'].includes(scenario);
+const sharedControl = scenario => ['delete_shared_control', 'child_delete_shared_control'].includes(scenario);
+
+export function parseRealpathResponse(text, scenario) {
+  if (typeof text !== 'string' || Buffer.byteLength(text) > 4096 || !Object.hasOwn(renameStressModes, scenario)) return null;
+  try {
+    const v = JSON.parse(text), keys = ['ENOENT', 'EPERM', 'EACCES', 'EBUSY', 'ENOTDIR', 'unknown'];
+    if (!v || v.version !== 1 || v.mode !== renameStressModes[scenario] || v.target !== 'child' || v.stage !== 'completed' ||
+      !count(v.iterations, renameBounds.stressIterations) || !count(v.successes, v.iterations) ||
+      !keys.every(key => count(v.errors?.[key], v.iterations)) ||
+      v.successes + keys.reduce((sum, key) => sum + v.errors[key], 0) !== v.iterations ||
+      !count(v.afterRenameSignalEnoent, v.errors.ENOENT) || typeof v.renameCompletedSignal !== 'boolean' ||
+      (!v.renameCompletedSignal && v.afterRenameSignalEnoent !== 0) ||
+      ![v.startedUnixMs, v.readyUnixMs, v.endedUnixMs].every(timestamp) || v.readyUnixMs < v.startedUnixMs ||
+      v.endedUnixMs < v.readyUnixMs || v.endedUnixMs - v.startedUnixMs > renameBounds.bridgeMs ||
+      (v.mode === 'idle' ? v.iterations !== 0 : v.iterations === 0 || v.successes === 0)) return null;
+    return { version: 1, mode: v.mode, target: 'child', stage: 'completed', iterations: v.iterations, successes: v.successes,
+      errors: Object.fromEntries(keys.map(key => [key, v.errors[key]])), afterRenameSignalEnoent: v.afterRenameSignalEnoent,
+      renameCompletedSignal: v.renameCompletedSignal, startedUnixMs: v.startedUnixMs, readyUnixMs: v.readyUnixMs, endedUnixMs: v.endedUnixMs };
+  } catch { return null; }
+}
 
 export function parseRenameResponse(text) {
   if (typeof text !== 'string' || Buffer.byteLength(text) > 2048) return null;
@@ -97,10 +121,23 @@ export function runBoundedProcess(program, args, { env = process.env, timeoutMs,
 
 export async function invokeExternalRename(directory, scenario, { onReady, runProcess = runBoundedProcess } = {}) {
   const env = { ...process.env, WORKSPACE_RENAME_FIXTURE: directory, WORKSPACE_RENAME_SCENARIO: scenario,
-    WORKSPACE_RENAME_CATEGORY: renameFixtureNames.category, WORKSPACE_RENAME_DESTINATION: renameFixtureNames.target };
+    WORKSPACE_RENAME_CATEGORY: renameFixtureNames.category, WORKSPACE_RENAME_PROJECT: renameFixtureNames.project,
+    WORKSPACE_RENAME_HOLD_TARGET: scenario.startsWith('child_') ? 'child' : 'category' };
   const invokeNode = () => runProcess(process.execPath, [nodeWorker], { timeoutMs: renameBounds.bridgeMs, maxBytes: 4096,
     readyMarker: scenario === 'concurrent_scan' ? 'WORKSPACE_RENAME_READY' : undefined, onReady, env });
-  const held = ['injected_conflict', 'delete_shared_control'].includes(scenario);
+  if (Object.hasOwn(renameStressModes, scenario)) {
+    let nodePending;
+    const stress = await runProcess(process.execPath, [realpathWorker], { timeoutMs: renameBounds.bridgeMs, maxBytes: 4096, env,
+      readyMarker: 'WORKSPACE_REALPATH_READY', readyInput: 'finished\n', waitForReadyCallback: true,
+      onReady: async () => { nodePending = invokeNode(); await nodePending; } });
+    const node = await nodePending;
+    const processEvidence = withoutOutput(stress.status === 'completed' && node ? node : stress);
+    if (stress.termination === 'unknown' || node?.termination === 'unknown') processEvidence.termination = 'unknown';
+    if (stress.status === 'completed' && !node) processEvidence.status = 'process_error';
+    return { process: processEvidence, response: node?.status === 'completed' ? parseRenameResponse(node.stdout) : null,
+      stress: { process: withoutOutput(stress), response: stress.status === 'completed' ? parseRealpathResponse(stress.stdout, scenario) : null } };
+  }
+  const held = conflictControl(scenario) || sharedControl(scenario);
   if (scenario !== 'collision_control' && !held) {
     const result = await invokeNode();
     return { process: withoutOutput(result), response: result.status === 'completed' ? parseRenameResponse(result.stdout) : null };
@@ -129,9 +166,12 @@ export async function invokeExternalRename(directory, scenario, { onReady, runPr
 const withoutOutput = ({ status, termination, exitCode }) => ({ status, termination, exitCode });
 const invariantNames = ['controlDetected', 'sentinels', 'inventory', 'logicalIds', 'exactText', 'history', 'reconciliation', 'restart', 'observerCleanup'];
 const resourceNames = ['watchesOpened', 'watchesClosed', 'liveWatches', 'peakWatches', 'timersScheduled', 'liveTimers', 'healthCallbacks', 'probes', 'explicitScans'];
-const controlDetected = (scenario, response) => scenario === 'injected_conflict'
+const validProcess = value => value && ['not_started', 'confirmed', 'unknown'].includes(value.termination) &&
+  ['completed', 'timeout', 'output_limit', 'launch_error', 'process_error', 'not_attempted'].includes(value.status) &&
+  (value.exitCode === null || (Number.isInteger(value.exitCode) && Math.abs(value.exitCode) <= 2147483648));
+const controlDetected = (scenario, response) => conflictControl(scenario)
   ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && !response.renamed && ['EPERM', 'EACCES', 'EBUSY'].includes(response.nodeCode)
-  : scenario === 'delete_shared_control' ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && response.renamed
+  : sharedControl(scenario) ? response.api === 'node_fs_rename' && response.lockOpened && response.lockReleased && response.renamed
   : scenario === 'collision_control' ? response.api === 'move_file_ex' && !response.renamed && response.win32Code > 0
     : response.api === 'node_fs_rename' && !response.lockOpened && !response.lockReleased;
 
@@ -140,6 +180,7 @@ export function parseFixtureResponse(text, scenario) {
   try {
     const v = JSON.parse(text);
     if (!v || v.version !== 1 || v.scenario !== scenario || !renameScenarios.includes(scenario) ||
+      v.serviceState !== (serviceClosed(scenario) ? 'closed' : 'active') ||
       !['completed', 'failed'].includes(v.status) || !['setup', 'rename', 'verification', 'completed'].includes(v.stage) ||
       !(v.errorCode === null || ['EPERM', 'EACCES', 'ENOENT', 'ENOTEMPTY', 'EEXIST', 'EBUSY', 'unknown'].includes(v.errorCode)) ||
       !invariantNames.every((k) => typeof v.invariants?.[k] === 'boolean') ||
@@ -153,15 +194,25 @@ export function parseFixtureResponse(text, scenario) {
       !(v.rename.process.exitCode === null || (Number.isInteger(v.rename.process.exitCode) && Math.abs(v.rename.process.exitCode) <= 2147483648))) return null;
     const response = v.rename.response === null ? null : parseRenameResponse(JSON.stringify(v.rename.response));
     if (v.rename.response !== null && response === null) return null;
+    let stress = null;
+    if (Object.hasOwn(renameStressModes, scenario)) {
+      if (!validProcess(v.rename.stress?.process)) return null;
+      const reading = v.rename.stress.response === null ? null : parseRealpathResponse(JSON.stringify(v.rename.stress.response), scenario);
+      if ((v.rename.stress.response !== null && reading === null) ||
+        (v.rename.stress.process.termination === 'unknown' && v.rename.process.termination !== 'unknown')) return null;
+      stress = { process: withoutOutput(v.rename.stress.process), response: reading };
+      if (v.status === 'completed' && (stress.process.status !== 'completed' || stress.process.termination !== 'confirmed' || !reading?.renameCompletedSignal ||
+        response?.startedUnixMs < reading.readyUnixMs || response?.endedUnixMs > reading.endedUnixMs)) return null;
+    } else if (v.rename.stress != null) return null;
     if (v.status === 'completed' && (v.stage !== 'completed' || v.errorCode !== null || !Object.values(v.invariants).every((n) => n === true) ||
       response?.stage !== 'completed' || v.rename.process.status !== 'completed' || v.rename.process.termination !== 'confirmed' ||
       !controlDetected(scenario, response) || v.resources.liveWatches !== 0 || v.resources.liveTimers !== 0 ||
       v.resources.watchesOpened !== v.resources.watchesClosed || v.resources.explicitScans !== v.scans.length ||
-      (scenario === 'idle' ? v.atRename.liveWatches !== 0 || v.atRename.liveTimers !== 0 : v.atRename.liveWatches < 1) ||
+      (serviceClosed(scenario) ? v.atRename.liveWatches !== 0 || v.atRename.liveTimers !== 0 : v.atRename.liveWatches < 1) ||
       (scenario === 'observation' && v.atRename.healthCallbacks < 1) ||
       (scenario === 'concurrent_scan' && v.scans.length === 0))) return null;
-    return { version: 1, scenario, status: v.status, stage: v.stage, errorCode: v.errorCode,
-      rename: { process: withoutOutput(v.rename.process), response },
+    return { version: 1, scenario, serviceState: v.serviceState, status: v.status, stage: v.stage, errorCode: v.errorCode,
+      rename: { process: withoutOutput(v.rename.process), response, ...(stress ? { stress } : {}) },
       invariants: Object.fromEntries(invariantNames.map((k) => [k, v.invariants[k]])),
       resources: Object.fromEntries([...resourceNames, 'pollCategories'].map((k) => [k, v.resources[k]])),
       atRename: Object.fromEntries(['liveWatches', 'liveTimers', 'healthCallbacks'].map((k) => [k, v.atRename[k]])), scans: v.scans };
@@ -172,7 +223,7 @@ export function parseFixtureResponse(text, scenario) {
 // count owned native resources; they do not change scheduling/watch policy.
 export async function runRenameFixture(directory, scenario, { rename = invokeExternalRename } = {}) {
   if (!renameScenarios.includes(scenario)) throw new Error('Invalid diagnostic scenario');
-  const result = { version: 1, scenario, status: 'failed', stage: 'setup', errorCode: null,
+  const result = { version: 1, scenario, serviceState: serviceClosed(scenario) ? 'closed' : 'active', status: 'failed', stage: 'setup', errorCode: null,
     rename: { process: { status: 'not_attempted', termination: 'not_started', exitCode: null }, response: null },
     invariants: Object.fromEntries(invariantNames.map((k) => [k, false])),
     resources: Object.fromEntries(resourceNames.map((k) => [k, 0])),
@@ -227,7 +278,7 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     const rows = (table, where = '') => sqlite.prepare(`SELECT * FROM ${table} ${where} ORDER BY 1`).all();
     const values = rows('text_property_values'), history = rows('projects', 'WHERE mode_inactive = 1');
     const metadata = ['property_definitions', 'category_properties', 'workspaces', 'views'].map((t) => rows(t));
-    if (scenario === 'idle') { service.close(); service = null; }
+    if (serviceClosed(scenario)) { service.close(); service = null; }
     if (scenario === 'observation') { await delay(5200); assert.ok(r.healthCallbacks >= 1); }
     result.stage = 'rename';
     result.atRename = { liveWatches: r.liveWatches, liveTimers: r.liveTimers, healthCallbacks: r.healthCallbacks };
@@ -250,7 +301,15 @@ export async function runRenameFixture(directory, scenario, { rename = invokeExt
     result.rename = await pendingRename;
     const response = result.rename.response;
     assert.equal(result.rename.process.termination, 'confirmed'); assert.equal(response?.stage, 'completed');
+    assert.equal(result.rename.process.status, 'completed');
     assert.equal(response.invocationCount, 1);
+    if (Object.hasOwn(renameStressModes, scenario)) {
+      const stress = result.rename.stress;
+      assert.equal(stress?.process.status, 'completed'); assert.equal(stress.process.termination, 'confirmed');
+      assert.ok(stress.response);
+      assert.equal(stress.response.renameCompletedSignal, true);
+      assert.ok(response.startedUnixMs >= stress.response.readyUnixMs && response.endedUnixMs <= stress.response.endedUnixMs);
+    }
     if (scenario === 'concurrent_scan') assert.ok(result.scans.length > 0);
     result.invariants.controlDetected = controlDetected(scenario, response);
     result.stage = 'verification';
@@ -295,13 +354,16 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
     renameOperation: { api: 'Node fs.promises.rename', historicalOperation: 'Node fs.promises.rename',
       equivalentToHistoricalOperation: true, destinationInitiallyAbsent: true },
     collisionOperation: { api: 'MoveFileExW', flags: 0, replacing: false },
-    handleControls: { access: 'GENERIC_READ', conflictShare: 'READ|WRITE', contrastShare: 'READ|WRITE|DELETE', holder: 'separate-powershell-process' },
+    handleControls: { access: 'GENERIC_READ', conflictShare: 'READ|WRITE', contrastShare: 'READ|WRITE|DELETE', holder: 'separate-powershell-process', targets: ['category', 'child'] },
+    realpathStress: { target: 'child', modes: renameStressModes, serviceState: 'closed', worker: 'separate-node-process',
+      enoent: 'afterRenameSignalEnoent-is-separate-from-the-rename-result', timing: 'interval-overlap-not-OS-handle-attribution' },
     pathShape: 'historical-long-unicode-category-and-project',
     scanTiming: 'wall-clock-intervals-not-OS-handle-attribution', operations: [], failure: null };
   if (!result.metadata.codeSha) result.failure = 'revision_unavailable';
   else if (platform !== 'win32') result.failure = 'unsupported_host';
   else {
-    for (const scenario of renameScenarios) for (let attempt = 0; attempt < operations; attempt++) {
+    for (const scenario of renameScenarios) for (let attempt = 0;
+      attempt < (Object.hasOwn(renameStressModes, scenario) ? renameBounds.stressOperationsPerScenario : operations); attempt++) {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), 'workspace-rename-diagnostic-')));
       const operation = { scenario, index: attempt + 1, process: null, evidence: null, cleanup: 'unverified', cleanupCode: null };
       result.operations.push(operation);
@@ -317,7 +379,8 @@ export async function runRenameDiagnostics({ evidenceDirectory = process.env.WOR
       if (!operation.evidence || operation.evidence.status !== 'completed' || operation.cleanup !== 'completed') result.failure ??= 'operation_failed';
     }
   }
-  result.realRenameFailures = result.operations.filter((o) => ['idle', 'observation', 'concurrent_scan'].includes(o.scenario) && o.evidence?.rename.response?.renamed === false).length;
+  result.realRenameFailures = result.operations.filter((o) => !conflictControl(o.scenario) && !sharedControl(o.scenario) &&
+    o.scenario !== 'collision_control' && o.evidence?.rename.response?.renamed === false).length;
   if (!result.failure) result.status = 'completed';
   fs.mkdirSync(evidenceDirectory, { recursive: true });
   fs.writeFileSync(join(evidenceDirectory, 'rename-observations.json'), JSON.stringify(result, null, 2));

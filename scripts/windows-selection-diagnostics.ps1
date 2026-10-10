@@ -29,12 +29,16 @@ function Read-WorkspaceUiaSelection($handle, $name) {
     if ($binding.stage -ne 'verified') { return @{ stage = $binding.stage; selected = $null } }
     $root = $binding.root
     # No desktop root, tree dump, title capture or navigation-pane item matching.
+    # Exact f753 Windows evidence identifies one owned List/UIItemsView whose
+    # AutomationId is not ItemsView. Match only this observed provider class,
+    # never a fallback tree search. ClassName is provider-specific:
+    # https://learn.microsoft.com/dotnet/api/system.windows.automation.automationelement.classnameproperty
     $viewCondition = [System.Windows.Automation.AndCondition]::new(
-        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'ItemsView'),
+        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ClassNameProperty, 'UIItemsView'),
         [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::List))
     $views = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $viewCondition)
-    # Shape evidence is diagnostic only. The original exact view query remains
-    # the only route to item/pattern reads; candidates never authorize selection.
+    # Shape evidence is diagnostic only. Only the exact class/type query above
+    # authorizes item/pattern reads; candidates never authorize selection.
     $shape = Get-WorkspaceUiaQueryShape $root $views.Count
     if ($views.Count -eq 0) { return @{ stage = 'view_absent'; selected = $null; queryShape = $shape } }
     if ($views.Count -ne 1) { return @{ stage = 'ambiguous_view'; selected = $null; queryShape = $shape } }
