@@ -14,7 +14,8 @@ function fixture() {
   const page = {
     async waitForFunction(callback) {
       while (++attempts < 1000) {
-        const result = await runInNewContext(`(${callback.toString()})()`, context);
+        const result = runInNewContext(`(${callback.toString()})()`, context);
+        assert.equal(typeof result?.then, "undefined", "Playwright waitForFunction does not await Promise predicates");
         firstAttempt();
         if (result) return { jsonValue: async () => result, dispose: async () => {} };
         await nextTurn();
@@ -83,6 +84,7 @@ test("stable genuine clipping is returned immediately with geometry, never retri
 test("runtime startup distinguishes terminal backend failure and records bounded diagnostics before throwing", async () => {
   const f = fixture(); const outcomes = [];
   try {
+    f.browser.document.body.innerHTML = '<main class="workspace-screen"><section class="bb-status--error"></section></main>';
     f.browser.workspace = { getBackendStatus: async () => ({ state: "unavailable", diagnostic: { stage: "service_open", code: "SQLITE_BUSY" }, message: "private path and SQL" }) };
     await assert.rejects(waitForRuntimeInterface(f.page, async (outcome) => outcomes.push(outcome)), /startup failed/);
     assert.deepEqual(JSON.parse(JSON.stringify(outcomes)), [{ state: "unavailable", diagnostic: { stage: "service_open", code: "SQLITE_BUSY" } }]);
