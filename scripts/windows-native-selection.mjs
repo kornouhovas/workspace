@@ -171,7 +171,7 @@ export class NativeSelectionExperimentError extends Error {
   }
 }
 
-async function removeOwnedFixture(root, target, targetCreated, filesystem, clock) {
+export async function removeOwnedFixture(root, target, targetCreated, filesystem, clock) {
   let deadline;
   // Never recursively delete: unexpected contents remain available for diagnosis.
   // A filesystem syscall cannot be cancelled; on timeout removal is unverified,

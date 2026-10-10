@@ -91,6 +91,32 @@ jobs:
           path: work/windows-native-selection-evidence/result.json
           if-no-files-found: error
 
+  windows-explorer-selection:
+    name: Isolated Explorer select command-line diagnostic (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+      - name: Launch Explorer once on an owned literal Unicode target
+        run: node scripts/windows-explorer-selection.mjs
+      - name: Verify controlled argument transport lifecycle and exact observer
+        if: always()
+        run: node --test tests/windows-explorer-selection.test.mjs tests/file-manager-evidence.test.mjs
+      - name: Preserve CLI candidate evidence including negative and unavailable outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-windows-explorer-select-${{ matrix.os }}
+          path: work/windows-explorer-selection-evidence/result.json
+          if-no-files-found: error
+
   verify:
     strategy:
       fail-fast: false

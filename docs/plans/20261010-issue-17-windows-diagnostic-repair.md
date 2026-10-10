@@ -220,7 +220,28 @@ Task 10 local verification (macOS arm64, explicitly selected Node 22.21.1): five
 
 Stop after the Task 10 commit. Coordinator supplies corrected exact-code Windows controlled logs from both images; the completed exact 43f0e79 full Windows2022 artifact receipt is recorded above. Require the first observed Rect case and null/unsupported/runtime-ID controls to pass without weakening assertions. Retain Windows-latest native negatives, skipped/unreached checks, historical shutdown uncertainty and #44. A locally skipped fixture or successful Windows2022 runtime step does not complete the failed full matrix, desktop Windows acceptance or causal native diagnosis. Task 11 remains unchecked.
 
-### Task 11: Verify repairs and update the evidence handoff
+The Task 10 corrected receipt is satisfied by exact f51242d01f6af7e0c5c22894cace15672bc5a02d, CI 38071517969: both complete controlled logs report 93 passes, zero failures/skips and 20 finite reports. The first observed bounds are genuine Rect values; null/unsupported/runtime-identity controls pass. The fixture correction is causally confirmed on both images. Server2022 standalone selection passes; latest-image selection remains negative. Receipt-only commit 7e7fd828ae2248f8c86b3e1e298bf59a5eb402bb preserves the published repair linearly.
+
+Coordinator-authorized continuation inserts the alternative-dispatch diagnostic below before final verification. A CLI candidate outcome cannot replace product acceptance or establish a production fix.
+
+Latest coordinator receipt: exact f51242d / CI 38071517969 full Windows2022 job 114269711807 and macOS job 114269711803 completed green, including standards/build/layout/native/recovery/runtime/package checks and uploads. Latest Windows retains four native failures; its full release runtime was still running. The complete Windows2022 log download remains coordinator-owned. The CLI comparison uses the identical API basename Native selection 日本語 and workspace-native-selection- root prefix in a fresh fixture, preserving rich-path transport in the separate safe-process control. No desktop acceptance or latest-image repair is inferred.
+
+### Task 11: Compare one owned Explorer select launch across Windows images
+
+**Files:** new scripts/windows-explorer-selection.mjs, scripts/windows-explorer-directory.ps1 and tests/windows-explorer-selection.test.mjs; shared fixture-removal export, diagnostic workflow/tests and verification handoff.
+
+- [x] Map the corrected Windows receipt, collect all five initial perspectives on process/argument/resource boundaries and review primary contracts and the bounded design before implementation.
+- [x] Launch genuine system Explorer once per internally owned Unicode fixture with one quoted /select argument, no shell/fallback/input/prewarming and unchanged strict ten-second observer starting at launch acknowledgment. Bound trusted directory resolution, keep process exit separate from selection, never kill Explorer, close only the exact owned view and preserve fixtures when direct-child termination is unknown.
+- [x] Add meaningful literal-path/raw Windows argument transport, resolver, negative/unavailable observation, lifecycle/race, cleanup/privacy and matched fresh CI regressions. Keep the original native comparison and full product gates unchanged.
+- [x] Run focused suites, lint, typecheck, check:docs and working/fixed-base diff checks, collect clean quality/implementation reviews, document actual limits and commit the diagnostic milestone. Stop for coordinator artifacts.
+
+Task 11 local verification (macOS arm64, explicitly selected Node 22.21.1): six focused Explorer/native/view/product/UIA/file-manager suites reported 118 tests, 109 passed, nine Windows-only skips, zero failures. The new workflow regression failed before the separate matrix existed and passed afterward. Lint, typecheck, check:docs (73 files) and working/fixed-base whitespace checks passed. All five initial perspectives (quality, implementation, testing, simplification, documentation) preceded implementation, and the focused quality/implementation pair found no critical/major actionable findings. No actual Windows resolver/raw-argument/Explorer execution, graphical/native product, full npm test, production build or packaging was performed locally. The new Windows-only transport fixture remains unverified until coordinator execution. Ignored logs: work/ralphex/issue-17/task11-*. This diagnostic revision is the commit containing this receipt, reported in the executor handoff. Original product/native gates remain open; Task 12 stays unchecked behind the coordinator checkpoint.
+
+## Mandatory coordinator checkpoint before Task 12
+
+Stop after Task 11. Coordinator supplies both exact-code CLI candidate artifacts and complete controlled logs from fresh windows-latest/windows-2022 jobs. Compare actual launch, literal argument transport, exact parent/selected target, exit/termination and owned cleanup without replacing prior API negatives. CLI-only success is diagnostic evidence; any production adaptation requires a subsequent actual one-dispatch integration comparison preserving authorization, identity and security. No unknown child termination, skipped fixture or unavailable selection is a pass. Latest-image native acceptance, unresolved causes, historical shutdown uncertainty and #44 remain open. No executor push, integration, tracker change or #18 work.
+
+### Task 12: Verify repairs and update the evidence handoff
 
 **Files:**
 - Modify: affected regression tests and `docs/verification/issue-17-create-reveal.md`.
