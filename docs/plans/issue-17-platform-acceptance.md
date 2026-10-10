@@ -297,19 +297,33 @@ Files:
 
 - Update task progress only: docs/plans/issue-17-platform-acceptance.md
 
-- [ ] Run separately with the required PATH prefix: npm test, npm run lint, npm run typecheck, npm run check:docs, npm run build and npm run build:ladle.
+- [x] Run separately with the required PATH prefix: npm test, npm run lint, npm run typecheck, npm run check:docs, npm run build and npm run build:ladle.
 
-- [ ] Run the affected EN/RU creation/Reveal layout checks at 1440×960, 1024×720 and 420×800 with node scripts/smoke-discovery-layouts.mjs --creation.
+- [x] Run the affected EN/RU creation/Reveal layout checks at 1440×960, 1024×720 and 420×800 with node scripts/smoke-discovery-layouts.mjs --creation.
 
-- [ ] Run local production development verification first: npm run smoke:runtime -- dev, then the focused real native both-mode scenario with --creation --checkpoint=after_evidence. Require immediate Reveal, one native invocation, truthful localized acknowledgment, exact target observation, normal quit, restart persistence and separately successful cleanup.
+- [x] Run local production development verification first: npm run smoke:runtime -- dev, then the focused real native both-mode scenario with --creation --checkpoint=after_evidence. Require immediate Reveal, one native invocation, truthful localized acknowledgment, exact target observation, normal quit, restart persistence and separately successful cleanup.
 
-- [ ] Only after development fixtures terminate, create a fresh unsigned local macOS artifact with CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac. If necessary, use the verified pinned cached Electron ZIP through the existing per-command electronDist override and run check:artifact separately.
+- [x] Only after development fixtures terminate, create a fresh unsigned local macOS artifact with CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac. If necessary, use the verified pinned cached Electron ZIP through the existing per-command electronDist override and run check:artifact separately.
 
-- [ ] Run fresh-package full runtime and focused native scenarios using the corresponding --release mode. Retain the harmless --directory-package non-execution check on macOS.
+- [x] Run fresh-package full runtime and focused native scenarios using the corresponding --release mode. Retain the harmless --directory-package non-execution check on macOS. The actual runtime syntax uses positional release mode.
 
-- [ ] Use a distinct ignored WORKSPACE_SMOKE_EVIDENCE_DIR for every graphical invocation. Diagnose failures before any changed rerun; do not blindly replay native failures.
+- [x] Use a distinct ignored WORKSPACE_SMOKE_EVIDENCE_DIR for every graphical invocation. Diagnose failures before any changed rerun; do not blindly replay native failures.
 
-- [ ] Inspect working and full fixed-base diffs, whitespace checks and commit history. Record commands, tested SHA/artifact digest, platform and every actual stage result; commit the verified report with explicit staging.
+- [x] Inspect working and full fixed-base diffs, whitespace checks and commit history. Record commands, tested SHA/artifact digest, platform and every actual stage result; commit the verified report with explicit staging.
+
+#### Task 5 local verification and handoff
+
+Tested clean source SHA ae2828187b4b45440ab8ccd3f38dde682b987846 on 2026-10-10, physical macOS 27.0 (26A428), arm64, Node 22.21.1 and pinned Electron 44.7.0. Fixed implementation/review base remains 4ac402620dd8139bdef9ff03625aae64bf60e132. Every Node/npm/npx/tsx invocation explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH. This task changes only the report and plan after verification, reusing Task 1's committed dependency resolution.
+
+- Separate npm test, lint, typecheck, check:docs, build and build:ladle passed. npm test built production output and passed 836 tests, zero failures/skips. Documentation validation passed for 71 Markdown files and was repeated after report/plan edits.
+- Electron creation/Reveal layouts passed all 32 EN/RU stories at the three required sizes (96 captures), interactions/overflow assertions and normal quit. Visually inspected grouped English desktop and uncertain Russian narrow layouts.
+- Full development runtime passed all 15 stage flags, lifecycle shutdowns and startup-failure handling. The following focused both-mode after_evidence native run passed immediate Reveal without Refresh or settling waits, one API invocation, localized acknowledgment, exact Finder selection, both normal shutdowns per mode, restart and separate owned-fixture cleanup.
+- Standard unsigned package:dev:mac failed HTTP 502 during Electron download (task5-package.log retained). Diagnosed the network failure, then fresh package:dir:mac with the existing per-command electronDist ZIP override and separate check:artifact passed; signing was skipped. Cache SHA-256 e04e411b58a0a14375dd21b0ab4a378fd38930a702e4e20e322fee4849404c0b matches the pinned dependency checksum. Fresh app.asar SHA-256: 147b42c5701a4d0263a17f53ac940517dadea8af77b859499c69eb4f39a8ee7e.
+- Fresh packaged full runtime, immediate both-mode native and harmless --directory-package scenarios all passed sequentially. Both .app launch markers remained absent. Each focused mode run recorded exact observation on its first attempt, one native invocation, truthful acknowledgment, two normal quits/backend exits and restart persistence. Each scenario separately recorded successful fixture cleanup after verified process termination, using maxRetries=5/retryDelay=100. No actual Windows lock recovery is inferred.
+- Distinct ignored evidence directories: task5-layouts-electron-20261010, task5-dev-runtime-20261010, task5-dev-immediate-20261010, task5-release-runtime-20261010, task5-release-immediate-20261010 and task5-release-directory-package-20261010 under work/ralphex/issue-17/. Commands, logs and per-stage results are recorded in the report's Fresh continuation verification at Task 5 section and task5-graphical-summary.json. Non-selected mode/checkpoint branches remain unreached; none were marked passed.
+- Rebuilt native SQLite for Electron before runtime, then restored and verified the Node ABI after graphical checks. Inspected working/full fixed-base diffs and commit history; working/full fixed-base git diff --check passed. Explicit staging includes only this plan and docs/verification/issue-17-create-reveal.md.
+
+Continuation implementation commits: 2d6b562, dc31038, f2aabfd and ae28281. Task 5 completes local verification/reporting only. The prescribed continuation review phase, independent coordinator immediate-Reveal harness, final exact-SHA Windows/macOS CI/native acceptance, actual Windows cleanup, trackers/integration and #44 remain separate gates. Historical failed/pending/unreached evidence and the unexplained grouped-development restart failure retain their original scope. No external acceptance criterion is checked complete and no executor push, integration, signing, release, tag or publication occurred.
 
 ## Review Protocol
 

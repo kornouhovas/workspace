@@ -243,7 +243,7 @@ The top-level fixtureCleanup separately passed with processesStopped=true and ma
 
 ### Remaining continuation and coordinator gates
 
-- Task 5 still owes fresh sequential standard checks, affected EN/RU layouts at all three sizes, full development runtime, focused immediate native scenarios, a fresh unsigned artifact with digest, packaged runtime/native scenarios and the harmless directory-package non-execution check. No current packaged acceptance follows from Task 3's development-only evidence.
+- At the Task 4 checkpoint, Task 5 still owed fresh standard/layout/development/package verification. Its subsequent local results are recorded below; Task 3's development-only evidence did not establish packaged acceptance.
 - The coordinator must independently rerun immediate-Reveal using a new evidence directory. Its original d5caea grouped result remains native invocation once/exact Finder pass, UI acknowledgment failed, acceptance shutdown unreached, cleanup shutdown passed separately (coordinator-immediate-dev/observations.json and coordinator-immediate-dev.stderr).
 - The coordinator owns final exact-SHA Windows/macOS CI and native acceptance: all 53 Windows failures, exact Explorer/Finder observation in both modes and successful owned-fixture cleanup. Historical Windows development pending observations and EBUSY remain preserved; local macOS and simulated-lock results do not close them.
 - The original five first-review perspectives and follow-up pair completed for e9ce135; the continuation's prescribed reviews are separate. No final continuation review acceptance is claimed by this documentation task.
@@ -255,3 +255,49 @@ The top-level fixtureCleanup separately passed with processesStopped=true and ma
 Over f2aabfd, this documentation-only task corrected the ADR/completed-plan links and current development/architecture/README/Unreleased guidance, appended the failure mapping and reused repair evidence, and preserved the original completed plan byte-for-byte except its corrected link. PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH npm run check:docs passed for 71 Markdown files (task4-check-docs.log). One-off local path/anchor inspection, repository-reference survival after the plan move, pinned Git-path resolution and exact comparison of all 53 historical failure IDs/names passed (task4-link-anchor-inspection.log). Working and fixed-base git diff --check passed.
 
 The coordinator's Task 4 clarification requires these documentation checks instead of repeating the full Electron build/test suite for prose alone. No product tests, graphical/native scenario, build or package was rerun in Task 4, and no documentation-phrasing tests were added. Task 5 and the coordinator gates above remain open.
+
+### Fresh continuation verification at Task 5
+
+Tested source SHA: ae2828187b4b45440ab8ccd3f38dde682b987846, with an initially clean checkout. Fixed implementation/review base: 4ac402620dd8139bdef9ff03625aae64bf60e132. Executed on 2026-10-10, physical macOS 27.0 (26A428), arm64, Node 22.21.1, Electron 44.7.0 and product version 0.1.0. This task changes only this report and the continuation plan after verification; product code and dependency resolution are unchanged. The committed resolution installed in Task 1 was reused. Every Node/npm/npx/tsx invocation explicitly prepended PATH=/Users/aleksandersk/.nvm/versions/node/v22.21.1/bin:$PATH.
+
+All logs and evidence in this section are below ignored work/ralphex/issue-17/. Each graphical invocation used its own WORKSPACE_SMOKE_EVIDENCE_DIR, named in the table. Layout, development runtime, development native, packaging, packaged runtime, packaged native and packaged directory-package checks ran strictly sequentially; no build or clean overlapped a graphical fixture. release is the positional runtime mode, not a CLI flag.
+
+| Command after the PATH prefix | Actual result | Log / evidence directory |
+| --- | --- | --- |
+| npm test | Production build passed; 836 passed, 0 failed, 0 skipped | task5-npm-test.log |
+| npm run lint | Passed | task5-lint.log |
+| npm run typecheck | Passed | task5-typecheck.log |
+| npm run check:docs | Passed, 71 Markdown files; repeated after report/plan edits | task5-check-docs.log; task5-check-docs-final.log |
+| npm run build | Passed; version 0.1.0 matched | task5-build.log |
+| npm run build:ladle | Passed | task5-build-ladle.log |
+| node scripts/smoke-discovery-layouts.mjs --creation | Passed all 32 EN/RU stories at 1440×960, 1024×720 and 420×800: 96 captures, interactions/layout assertions and normal Electron shutdown | task5-layouts-electron.log; task5-layouts-electron-20261010 |
+| npx --no-install electron-builder install-app-deps | Passed; prepared native SQLite for Electron before development runtime | task5-rebuild-electron.log |
+| npm run smoke:runtime -- dev | Passed all 15 runtime stage flags, recorded lifecycle shutdowns, startup-failure handling and final quit | task5-dev-runtime.log; task5-dev-runtime-20261010 |
+| npm run smoke:runtime -- dev --creation --checkpoint=after_evidence | Passed both modes, immediate native Reveal and separate cleanup | task5-dev-immediate.log; task5-dev-immediate-20261010 |
+| CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dev:mac | Failed with HTTP 502 during Electron download; no artifact accepted from this attempt | task5-package.log |
+| CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:dir:mac -- --config.electronDist=/Users/aleksandersk/Library/Caches/electron/5a625dfd3df3efc3971556afe64989f9aa6ea0f4cd6e33889c1951789041498f/electron-v44.7.0-darwin-arm64.zip | Passed fresh build/package using the verified pinned cache; macOS signing explicitly skipped | task5-package-cached.log |
+| npm run check:artifact -- release | Passed packaged version, migrations/journal, renderer/backend/private native route, native SQLite and bb notice checks | task5-check-artifact.log |
+| npm run smoke:runtime -- release | Passed the same full 15-stage lifecycle matrix, recorded shutdowns, startup-failure handling and final quit | task5-release-runtime.log; task5-release-runtime-20261010 |
+| npm run smoke:runtime -- release --creation --checkpoint=after_evidence | Passed both modes, immediate native Reveal and separate cleanup | task5-release-immediate.log; task5-release-immediate-20261010 |
+| npm run smoke:runtime -- release --creation --checkpoint=after_evidence --directory-package | Passed both modes, exact Finder selection, harmless .app non-execution, normal quit/restart and separate cleanup | task5-release-directory-package.log; task5-release-directory-package-20261010 |
+| npm rebuild better-sqlite3 | Passed after all graphical fixtures terminated; restored the Node test ABI, then verified a real in-memory SQLite query under Node 22.21.1 | task5-rebuild-node.log; task5-node-abi.log |
+
+The failed network attempt was diagnosed before the changed packaging command; it was not a native failure replay. The cached Electron ZIP SHA-256 is e04e411b58a0a14375dd21b0ab4a378fd38930a702e4e20e322fee4849404c0b, matching node_modules/electron/checksums.json for the pinned version. Fresh release/mac-arm64/Workspace.app/Contents/Resources/app.asar SHA-256 is 147b42c5701a4d0263a17f53ac940517dadea8af77b859499c69eb4f39a8ee7e (task5-artifact.sha256); it remained unchanged through packaged verification. task5-run-metadata.json records host/cache/source metadata, and task5-graphical-summary.json records assertions against the actual saved stage results.
+
+The native scenarios use direct/EN and grouped/RU. In each of the six mode/scenario combinations, creation, after_evidence interruption recovery, one real shell.showItemInFolder invocation, truthful localized dispatch acknowledgment, exact parent plus selected full-path observation, two normal shutdowns with backend exit, restart persistence and exact matching-window cleanup passed. The ordinary-folder scenarios press Reveal as soon as its newly created row is available, without Refresh or settling waits and with production observation active. The package variant prepares only its harmless disposable probe before Reveal. The two package probes retained launchMarkerAbsent=true; this demonstrates local non-execution of those probes, not arbitrary package behavior on other OSes.
+
+| Scenario | Direct/EN exact observation | Grouped/RU exact observation | Owned fixture cleanup |
+| --- | --- | --- | --- |
+| Development immediate Reveal | First attempt, 215 ms | First attempt, 200 ms | Passed after verified process termination |
+| Fresh packaged immediate Reveal | First attempt, 247 ms | First attempt, 230 ms | Passed after verified process termination |
+| Fresh packaged directory-package | First attempt, 323 ms | First attempt, 233 ms | Passed after verified process termination |
+
+Each observation used the unchanged ten-second total budget; each fixtureCleanup independently recorded processesStopped=true, maxRetries=5 and retryDelay=100. No transient lock occurred locally, so these runs do not prove actual Windows lock recovery. Opposite-mode branches in each run remain unreached; its companion run supplies that mode's evidence. Only after_evidence was selected for these focused graphical runs; the 836-test suite separately exercises all four process-interruption boundaries. Native invocation, dispatched UI feedback, exact OS selection, shutdown, restart and owned-tree removal remain distinct assertions, and no skipped/unreached result was promoted to a pass.
+
+Visually inspected the grouped English 1440×960 and uncertain Russian 420×800 layout captures, including category controls, wrapping and explicit original-request retry. Inspected working changes, the full fixed-base diff scope and service/desktop/renderer/fixture boundaries, and commit history. Working/full fixed-base git diff --check passed. The retained full diff and history are task5-fixed-base.diff and task5-commit-history.log; this inspection does not replace the prescribed independent continuation reviews. No product change or new test code was necessary in this verification/reporting task.
+
+### Coordinator handoff after Task 5
+
+Continuation implementation commits are 2d6b562 (Windows fixture/query repair), dc31038 (immediate-Reveal acknowledgment), f2aabfd (bounded native observation/owned cleanup) and ae28281 (documentation). The final Task 5 commit adds only verified report/progress documentation over the tested ae28281 snapshot. Local sequential continuation verification is complete; continuation's five first-review perspectives and any required quality/implementation follow-up pair remain for the review phase.
+
+The independent coordinator immediate-Reveal harness, final exact-SHA Windows/macOS CI/native acceptance, actual Windows Explorer observation and successful Windows owned-fixture cleanup remain coordinator gates. Historical Windows failures/pending observations/EBUSY, the original grouped immediate-feedback failure and the unexplained historical grouped-development restart failure retain their original results and SHA/scope. New local passes do not diagnose or erase those failures. Trackers and verified integration remain coordinator-owned; physical macOS 27 / Electron 44.7.0 #44 remains an independent final-release prerequisite despite these normal local quits. No executor push, tracker write, integration, signing, release, tag or publication occurred, and no external acceptance criterion was checked complete.
