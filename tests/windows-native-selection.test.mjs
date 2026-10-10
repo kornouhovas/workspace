@@ -7,7 +7,8 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
-import { invokeNativeSelection, parseNativeSelectionResponse, runNativeSelectionExperiment } from "../scripts/windows-native-selection.mjs";
+import { collectNativeSelectionMetadata, invokeNativeSelection, parseNativeSelectionResponse,
+  runNativeSelectionCli, runNativeSelectionExperiment } from "../scripts/windows-native-selection.mjs";
 import { closeDisposableFileManagerTarget } from "../scripts/file-manager-evidence.mjs";
 
 const target = "C:\\Disposable\\Folder's 日本語 $value `quoted` & text";
@@ -403,6 +404,9 @@ test("experiment owns one fresh Unicode fixture, overrides inherited target and 
   assert.deepEqual(fixture.removed, [fixture.target, fixture.roots[0]]);
   await assert.rejects(fs.stat(fixture.roots[0]), { code: "ENOENT" });
   assert.equal(result.fixture.status, "completed");
+  assert.match(result.metadata.codeSha, /^[a-f0-9]{40}$/);
+  assert.equal(result.metadata.nodeVersion, process.versions.node);
+  assert.equal(result.metadata.platform, process.platform);
   assert.equal(result.native.invocationCount, 1);
   assert.equal(result.native.native.selectionHresult, 0);
   assert.equal(result.observation.completion, "exact_target");
@@ -568,6 +572,122 @@ test("failed evidence persistence rejects with finite diagnostics and preserves 
     return true;
   });
   await assert.rejects(fixture.persisted(), { code: "ENOENT" });
+});
+
+function cliOutput() {
+  const output = { stdout: "", stderr: "" };
+  return { output, stdout: { write: (text) => { output.stdout += text; } },
+    stderr: { write: (text) => { output.stderr += text; } } };
+}
+
+test("CLI preserves negative selection evidence before returning sanitized failure", async (t) => {
+  const fixture = await experimentFixture(t, { observation: observedParent });
+  const streams = cliOutput();
+  const exitCode = await runNativeSelectionCli({ ...streams, args: [],
+    experiment: () => runNativeSelectionExperiment(fixture.options) });
+  assert.equal(exitCode, 1);
+  assert.equal(streams.output.stdout, "");
+  assert.equal(streams.output.stderr, "Windows native selection experiment failed.\n");
+  const evidence = await fixture.persisted();
+  assert.deepEqual(evidence.failure, { stage: "observation", code: "deadline" });
+  assert.equal(evidence.native.invocationCount, 1);
+  assert.equal(evidence.persistence.status, "completed");
+  assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+  for (const value of [target, fixture.target, fixture.roots[0]]) {
+    assert.equal(encode(streams.output).includes(value), false);
+    assert.equal(encode(evidence).includes(value), false);
+  }
+});
+
+test("CLI unsupported host persists unavailable evidence without fixtures or subprocesses", async (t) => {
+  const fixture = await experimentFixture(t);
+  const streams = cliOutput();
+  const exitCode = await runNativeSelectionCli({ ...streams, args: [],
+    experiment: () => runNativeSelectionExperiment({ ...fixture.options, platform: "linux" }) });
+  assert.equal(exitCode, 1);
+  const evidence = await fixture.persisted();
+  assert.deepEqual(evidence.failure, { stage: "host", code: "unsupported" });
+  assert.equal(evidence.native.invocationCount, 0);
+  assert.equal(evidence.fixture.status, "not_attempted");
+  assert.deepEqual(fixture.calls, []);
+  assert.deepEqual(fixture.roots, []);
+  assert.equal(streams.output.stderr, "Windows native selection experiment failed.\n");
+});
+
+test("CLI rejects target arguments and never emits arbitrary exception or subprocess output", async () => {
+  const streams = cliOutput();
+  let calls = 0;
+  const experiment = async () => { calls++; throw new Error(target + " private stdout/stderr"); };
+  assert.equal(await runNativeSelectionCli({ ...streams, args: [target], experiment }), 1);
+  assert.equal(calls, 0);
+  assert.equal(await runNativeSelectionCli({ ...streams, args: [], experiment }), 1);
+  assert.equal(calls, 1);
+  assert.equal(streams.output.stdout, "");
+  assert.equal(streams.output.stderr,
+    "Windows native selection experiment failed (arguments).\nWindows native selection experiment failed.\n");
+});
+
+test("CLI reports a controlled successful experiment without another invocation", async (t) => {
+  const fixture = await experimentFixture(t);
+  const streams = cliOutput();
+  assert.equal(await runNativeSelectionCli({ ...streams, args: [],
+    experiment: () => runNativeSelectionExperiment(fixture.options) }), 0);
+  assert.equal(streams.output.stdout, "Windows native selection experiment passed.\n");
+  assert.equal(streams.output.stderr, "");
+  assert.equal(fixture.calls.filter((call) => call === "bridge").length, 1);
+});
+
+test("actual CLI entry rejects arbitrary arguments without performing native selection", async () => {
+  const execute = promisify(execFile);
+  await assert.rejects(execute(process.execPath, ["scripts/windows-native-selection.mjs", target]), (error) => {
+    assert.equal(error.code, 1);
+    assert.equal(error.stdout, "");
+    assert.equal(error.stderr, "Windows native selection experiment failed (arguments).\n");
+    return true;
+  });
+});
+
+test("metadata uses the checked-out code SHA and only finite runner/OS/Node fields", async () => {
+  const sha = "4ac402620dd8139bdef9ff03625aae64bf60e132";
+  const metadata = await collectNativeSelectionMetadata({
+    readCodeRevision: async () => ({ stdout: sha + "\n", stderr: target }),
+    env: { GITHUB_SHA: "f".repeat(40), RUNNER_OS: "Windows", RUNNER_ARCH: "X64",
+      RUNNER_ENVIRONMENT: "github-hosted", ImageOS: "win25", ImageVersion: "20261001.1.0",
+      RUNNER_NAME: target, SECRET: target },
+  });
+  assert.equal(metadata.codeSha, sha);
+  assert.equal(metadata.nodeVersion, process.versions.node);
+  assert.equal(metadata.platform, process.platform);
+  assert.deepEqual(metadata.runner, { os: "Windows", architecture: "X64", environment: "github-hosted",
+    image: "win25", imageVersion: "20261001.1.0" });
+  assert.equal(encode(metadata).includes(target), false);
+  const privateMetadata = await collectNativeSelectionMetadata({
+    readCodeRevision: async () => ({ stdout: target }),
+    env: { RUNNER_OS: target, RUNNER_ARCH: target, RUNNER_ENVIRONMENT: target,
+      ImageOS: target, ImageVersion: target },
+  });
+  assert.equal(privateMetadata.codeSha, null);
+  assert.ok(Object.values(privateMetadata.runner).every((value) => value === null));
+  assert.equal(encode(privateMetadata).includes(target), false);
+  const unavailable = await collectNativeSelectionMetadata({ readCodeRevision: async () => { throw new Error(target); } });
+  assert.equal(unavailable.codeSha, null);
+  assert.equal(encode(unavailable).includes(target), false);
+});
+
+test("missing code revision persists finite failure before any fixture or native dispatch", async (t) => {
+  const fixture = await experimentFixture(t);
+  await assert.rejects(runNativeSelectionExperiment({ ...fixture.options,
+    readCodeRevision: async () => { throw new Error(target); },
+  }), (error) => {
+    assert.deepEqual(error.evidence.failure, { stage: "metadata", code: "revision_unavailable" });
+    return true;
+  });
+  const evidence = await fixture.persisted();
+  assert.equal(evidence.metadata.codeSha, null);
+  assert.equal(evidence.persistence.status, "completed");
+  assert.deepEqual(fixture.calls, []);
+  assert.deepEqual(fixture.roots, []);
+  assert.equal(encode(evidence).includes(target), false);
 });
 
 // Run the unchanged production cleanup script against controlled Shell views.

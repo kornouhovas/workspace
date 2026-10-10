@@ -5,6 +5,28 @@ on:
   pull_request:
 
 jobs:
+  windows-native-selection:
+    name: Isolated Windows native selection experiment
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+      - name: Invoke one native selection on an owned Unicode fixture
+        run: node scripts/windows-native-selection.mjs
+      - name: Verify controlled bridge, protocol, observation and cleanup boundaries
+        if: always()
+        run: node --test tests/windows-native-selection.test.mjs tests/file-manager-evidence.test.mjs
+      - name: Preserve separate native selection experiment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-17-windows-native-selection-experiment
+          path: work/windows-native-selection-evidence/result.json
+          if-no-files-found: error
+
   verify:
     strategy:
       fail-fast: false

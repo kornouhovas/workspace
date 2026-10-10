@@ -1,13 +1,40 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { arch, release, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
 
 const bridgePath = fileURLToPath(new URL("./windows-native-selection.ps1", import.meta.url));
 const maximumOutputBytes = 8192;
 const signedHresult = (value) => Number.isInteger(value) && value >= -2147483648 && value <= 2147483647;
+const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+
+export async function collectNativeSelectionMetadata({ env = process.env,
+  readCodeRevision = () => promisify(execFile)("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot, timeout: 5000, maxBuffer: 1024, windowsHide: true,
+  }),
+} = {}) {
+  let codeSha = null;
+  try {
+    const { stdout } = await readCodeRevision();
+    if (typeof stdout === "string" && /^[a-f0-9]{40}\s*$/.test(stdout)) codeSha = stdout.trim();
+  } catch { /* Unavailable revision is finite; no command output is retained. */ }
+  const allowed = (value, values) => values.includes(value) ? value : null;
+  const version = (value) => typeof value === "string" && /^\d{1,10}(?:\.\d{1,10}){1,3}$/.test(value) ? value : null;
+  return {
+    codeSha, platform: allowed(process.platform, ["win32", "darwin", "linux"]),
+    architecture: allowed(arch(), ["x64", "arm64", "ia32"]), osRelease: version(release()),
+    nodeVersion: version(process.versions.node),
+    runner: {
+      os: allowed(env.RUNNER_OS, ["Windows", "macOS", "Linux"]),
+      architecture: allowed(env.RUNNER_ARCH, ["X64", "ARM64", "X86", "ARM"]),
+      environment: allowed(env.RUNNER_ENVIRONMENT, ["github-hosted", "self-hosted"]),
+      image: allowed(env.ImageOS, ["win19", "win22", "win25"]), imageVersion: version(env.ImageVersion),
+    },
+  };
+}
 
 // Return only validated scalar fields. Raw output, target paths, exception text
 // and additional subprocess fields never become experiment evidence.
@@ -156,10 +183,11 @@ async function removeOwnedFixture(root, target, targetCreated, filesystem, clock
 export async function runNativeSelectionExperiment({
   evidenceDirectory = fileURLToPath(new URL("../work/windows-native-selection-evidence/", import.meta.url)),
   platform = process.platform, filesystem = fs, spawnProcess = spawn, env = process.env,
-  clock = { setTimeout, clearTimeout }, runCommand, timing,
+  clock = { setTimeout, clearTimeout }, runCommand, timing, readCodeRevision,
 } = {}) {
   const evidence = {
     version: 1, status: "failed", failure: null,
+    metadata: await collectNativeSelectionMetadata({ env, readCodeRevision }),
     fixture: { status: "not_attempted", rootCreated: false, targetCreated: false },
     native: { status: "not_attempted", invocationCount: 0, native: null,
       process: { termination: "not_started", exitCode: null, signal: null, killAttempted: false } },
@@ -168,13 +196,14 @@ export async function runNativeSelectionExperiment({
     fixtureRemoval: { status: "not_needed" }, persistence: { status: "not_attempted" },
   };
   const fail = (stage, code) => { evidence.failure ??= { stage, code }; };
+  if (!evidence.metadata.codeSha) fail("metadata", "revision_unavailable");
   let root, target;
   // Until a returned bridge result proves otherwise, cleanup must assume an
   // owned subprocess could still be alive. Unexpected bridge errors are finite.
   let terminationKnown = true;
   if (platform !== "win32") {
     fail("host", "unsupported");
-  } else {
+  } else if (!evidence.failure) {
     try {
       root = await filesystem.mkdtemp(join(tmpdir(), "workspace-native-selection-"));
       evidence.fixture.rootCreated = true;
@@ -241,4 +270,27 @@ export async function runNativeSelectionExperiment({
   }
   if (evidence.status !== "passed") throw new NativeSelectionExperimentError(evidence);
   return evidence;
+}
+
+// CLI accepts no target, script or output-path arguments. Exceptions and raw
+// subprocess output stay out of both streams; detailed finite results are on disk.
+export async function runNativeSelectionCli({ args = process.argv.slice(2),
+  stdout = process.stdout, stderr = process.stderr, experiment = runNativeSelectionExperiment,
+} = {}) {
+  if (args.length !== 0) {
+    stderr.write("Windows native selection experiment failed (arguments).\n");
+    return 1;
+  }
+  try {
+    await experiment();
+    stdout.write("Windows native selection experiment passed.\n");
+    return 0;
+  } catch {
+    stderr.write("Windows native selection experiment failed.\n");
+    return 1;
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  process.exitCode = await runNativeSelectionCli();
 }

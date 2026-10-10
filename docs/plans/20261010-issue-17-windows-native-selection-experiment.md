@@ -73,17 +73,20 @@ Task 2 local verification (macOS, 2026-10-10): The initial new-suite run failed 
 
 Files:
 - Modify: .github/workflows/desktop-ci.yml
+- Modify: scripts/windows-native-selection.mjs (CLI entry and sanitized provenance)
 - Modify: tests/windows-native-selection.test.mjs
 - Modify: docs/verification/issue-17-create-reveal.md
 - Update accepted plan progress only
 
-- [ ] Add CLI boundary tests for unsupported hosts, sanitized failure output and persisted negative evidence. Test execution must not perform additional real native selection.
-- [ ] Add one independent windows-latest job with checkout, setup-node 22.21.1 and one invocation of scripts/windows-native-selection.mjs. Do not depend on the product job or run npm installation, Electron, Explorer preflight or native warmup.
-- [ ] Run the focused built-in test suites after the experiment, including controlled Windows bridge checks. Preserve experiment artifacts with if: always(); negative or unavailable selection must remain a failed experiment.
-- [ ] Include exact code SHA, runner/OS/Node metadata and separate native, observation and cleanup outcomes in the artifact. Keep output under a distinct ignored evidence directory and exclude arbitrary paths or command output.
-- [ ] Append English documentation covering purpose, verified signatures, invocation and cleanup limits, artifact interpretation and still-unmet coordinator gates. Record local checks truthfully; do not predict a Windows result.
-- [ ] Run focused tests, npm run lint, npm run check:docs, local link/anchor inspection and working/fixed-base git diff --check with the required PATH prefix for Node/npm. Inspect job isolation and always-upload behavior; no repeated full Electron build is required for this diagnostic-only change.
-- [ ] Inspect and explicitly stage task paths; commit the verified CI/documentation milestone and prepare a Russian handoff identifying the commit, actual checks, skips and limitations.
+- [x] Add CLI boundary tests for unsupported hosts, sanitized failure output and persisted negative evidence. Test execution must not perform additional real native selection.
+- [x] Add one independent windows-latest job with checkout, setup-node 22.21.1 and one invocation of scripts/windows-native-selection.mjs. Do not depend on the product job or run npm installation, Electron, Explorer preflight or native warmup.
+- [x] Configure the focused built-in test suites to run after the experiment, including controlled Windows bridge checks. Preserve experiment artifacts with if: always(); negative or unavailable selection must remain a failed experiment. Actual Windows execution remains the external coordinator gate below.
+- [x] Include exact code SHA, runner/OS/Node metadata and separate native, observation and cleanup outcomes in the artifact. Keep output under a distinct ignored evidence directory and exclude arbitrary paths or command output.
+- [x] Append English documentation covering purpose, verified signatures, invocation and cleanup limits, artifact interpretation and still-unmet coordinator gates. Record local checks truthfully; do not predict a Windows result.
+- [x] Run focused tests, npm run lint, npm run check:docs, local link/anchor inspection and working/fixed-base git diff --check with the required PATH prefix for Node/npm. Inspect job isolation and always-upload behavior; no repeated full Electron build is required for this diagnostic-only change.
+- [x] Inspect and explicitly stage task paths; commit the verified CI/documentation milestone and prepare a Russian handoff identifying the commit, actual checks, skips and limitations.
+
+Task 3 local verification (macOS, 2026-10-10): The new CLI/metadata tests initially failed because their exports were absent. The final focused suites passed 37 tests with 0 failures and 3 Windows-only skips. Lint and check:docs passed (72 Markdown files); all 7 local links/anchors in this plan and the verification report resolved. The workflow parsed with the installed Ruby YAML parser; inspection confirmed a separate windows-latest job, Node 22.21.1, exactly one experiment command, no needs/install/build/warmup or continue-on-error, post-experiment controlled tests and always-upload with missing evidence treated as an error. The artifact destination is ignored. Working and fixed-base whitespace checks passed. CLI tests cover persisted negative and unsupported-host evidence, fixed failure streams, argument rejection, a controlled success and missing-revision failure before native dispatch. Metadata tests reject arbitrary runner values and use the actual checkout SHA rather than GITHUB_SHA. No real selection, Windows runtime check, dependency installation, Electron build or product acceptance run occurred. The CI checklist records implemented wiring; all three skipped Windows checks, the actual one-call experiment and platform acceptance remain unverified external coordinator gates, not completed acceptance. Logs: work/ralphex/issue-17/native-task3-tests.log and native-task3-lint.log.
 
 ## Review Protocol
 
