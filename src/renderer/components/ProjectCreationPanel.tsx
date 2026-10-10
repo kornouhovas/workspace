@@ -102,8 +102,14 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       setOperations((current) => [...current.filter((operation) => operation.operationId !== operationId),
         ...(["completed", "failed"].includes(value.operation!.stage) ? [] : [value.operation!])]);
     }
-    originalRequest.current = null; setUnknownId(null); setPreview(null);
-    if (value.outcome === "completed") { setMessage("creationSaved"); setName(""); close(restoreFocus.current || !!root.current?.contains(document.activeElement)); onCompleted(); }
+    const resolvesDraft = !originalRequest.current || originalRequest.current.operationId === operationId;
+    if (originalRequest.current?.operationId === operationId) originalRequest.current = null;
+    setUnknownId((current) => current === operationId ? null : current); setPreview(null);
+    if (value.outcome === "completed") {
+      setMessage("creationSaved");
+      if (resolvesDraft) { setName(""); close(restoreFocus.current || !!root.current?.contains(document.activeElement)); }
+      onCompleted();
+    }
     else if (value.outcome === "recoverable") setMessage("creationRecoverable");
     else setMessage(value.problem === "invalid_name" ? "creationInvalid" :
       ["occupied", "case_alias", "reserved_destination", "native_conflict"].includes(value.problem) ? "creationCollision" :
@@ -113,7 +119,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const run = async (operationId: string, command: () => ReturnType<WorkspaceServiceClient["getProjectCreation"]>) => {
     if (busy.current || disabled || !ready.current) return;
     pendingFocus.current = !!root.current?.contains(document.activeElement);
-    busy.current = true; setPending(true); setMessage(null); setUnknownId(operationId);
+    busy.current = true; setPending(true); setMessage(null); setUnknownId((current) => current ?? operationId);
     const current = ++request.current, backend = generation.current;
     try {
       const result = await command();

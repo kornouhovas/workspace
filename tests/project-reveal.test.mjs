@@ -46,7 +46,7 @@ test("Reveal accepts exact logical IDs and rejects renderer paths, URLs, command
 for (const mode of ["direct", "grouped"]) {
   test(`${mode} Reveal verifies the real folder, allows source siblings, exposes only dispatch acknowledgment and preserves data`, async () => fixture(mode, async (f) => {
     const before = f.sql.prepare("SELECT * FROM sources").all(), calls = [];
-    const native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; });
+    const native = createNativeProjectReveal(async (path) => { calls.push(path); });
     for (const workspaceId of [f.workspace.workspaceId, f.sibling.workspaceId]) {
       const result = await f.service.revealProject({ ...f.input, workspaceId }, (target) => native(target, () => true));
       assert.deepEqual(result, { ok: true, value: { outcome: "dispatched", workspaceId, projectId: f.project.projectId } });
@@ -100,7 +100,7 @@ for (const mode of ["direct", "grouped"]) {
 
   test(`${mode} delayed native dispatch rejects removed/replaced destination and changed parent evidence`, async () => fixture(mode, async (f) => {
     let target;
-    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; });
+    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); });
     const pending = f.service.revealProject(f.input, async (value) => { target = value; await Promise.resolve();
       fs.renameSync(f.path, `${f.path}-moved`); fs.mkdirSync(f.path);
       return native(value, () => true);
@@ -112,14 +112,14 @@ for (const mode of ["direct", "grouped"]) {
   }));
 
   test(`${mode} post-dispatch evidence checks report a folder changed during the native API call`, async () => fixture(mode, async (f) => {
-    const native = createNativeProjectReveal(async () => { fs.renameSync(f.path, `${f.path}-moved`); return ""; });
+    const native = createNativeProjectReveal(async () => { fs.renameSync(f.path, `${f.path}-moved`); });
     const result = await f.service.revealProject(f.input, (target) => native(target, () => true));
     assert.equal(result.value.outcome, "rejected"); assert.equal(result.value.problem, "missing");
     fs.renameSync(`${f.path}-moved`, f.path);
   }));
 
   test(`${mode} native errors and unavailable adapters give bounded useful failures without leaking paths`, async () => fixture(mode, async (f) => {
-    for (const open of [async () => "OS failed for a private path", async () => { throw new Error(f.path); }]) {
+    for (const open of [() => { throw new Error(f.path); }, async () => { throw new Error(f.path); }]) {
       const result = await f.service.revealProject(f.input, (target) => createNativeProjectReveal(open)(target, () => true));
       assert.equal(result.value.problem, "native_error"); assert.doesNotMatch(JSON.stringify(result), /private path|root/);
     }
@@ -161,7 +161,7 @@ for (const mode of ["direct", "grouped"]) {
   }));
 
   test(`${mode} desktop revalidates delayed root/category/link changes before dispatch`, async () => fixture(mode, async (f) => {
-    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; });
+    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); });
     for (const scenario of ["root", "destination_link", ...(mode === "grouped" ? ["category_link"] : [])]) {
       const original = scenario === "root" ? f.root : scenario === "category_link" ? join(f.root, "Category") : f.path;
       const moved = `${original}-moved`;
@@ -178,7 +178,7 @@ for (const mode of ["direct", "grouped"]) {
 
   test(`${mode} inaccessible selected directories fail before native dispatch (simulated ACL denial)`, async () => fixture(mode, async (f) => {
     const { nativeProjectFilesystem } = await import("../src/service/project-filesystem.ts");
-    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; }, {
+    const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); }, {
       ...nativeProjectFilesystem,
       assertAccessible(path) { if (path === f.path) throw Object.assign(new Error("ACL denied"), { code: "EACCES" }); nativeProjectFilesystem.assertAccessible(path); },
     });
@@ -190,7 +190,7 @@ for (const mode of ["direct", "grouped"]) {
 test("private desktop targets reject traversal, unsupported depth, links and identity tampering", async () => fixture("direct", async (f) => {
   let target;
   await f.service.revealProject(f.input, async (value) => { target = value; return { outcome: "dispatched" }; });
-  const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; });
+  const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); });
   for (const changed of [
     { ...target, relativePath: "../other" }, { ...target, relativePath: "/outside" },
     { ...target, relativePath: "Category/Nested/Project" }, { ...target, parentRelativePath: "../other" },
@@ -204,7 +204,7 @@ if (process.platform !== "win32") test("Reveal preserves valid POSIX colon/backs
   const name = "scheme:project\\..\\name", created = f.service.workspaces.createProject({ type: "workspace.createProject", mode: "direct",
     workspaceId: f.workspace.workspaceId, operationId: randomUUID(), name, expectedRevision: f.project.revision }).value;
   assert.equal(created.outcome, "completed");
-  const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); return ""; });
+  const calls = [], native = createNativeProjectReveal(async (path) => { calls.push(path); });
   const result = await f.service.revealProject({ ...f.input, projectId: created.project.projectId }, (target) => native(target, () => true));
   assert.equal(result.value.outcome, "dispatched"); assert.deepEqual(calls, [join(f.root, name)]);
 }));

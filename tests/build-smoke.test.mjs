@@ -41,7 +41,8 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     assert.equal(await readFile(`dist/${relativePath}`, "utf8"), await readFile(`src/${relativePath}`, "utf8"));
   }
   const main = await readFile("dist/desktop/main.cjs", "utf8");
-  assert.match(main, /shell\.openPath/);
+  assert.match(main, /shell\.showItemInFolder/);
+  assert.doesNotMatch(main, /shell\.openPath/);
   assert.match(main, /project\.reveal\.native/);
   assert.match(await readFile("dist/service/entry.cjs", "utf8"), /project\.reveal\.native/);
 

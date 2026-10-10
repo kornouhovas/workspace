@@ -58,7 +58,7 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
       `Packaged migration differs from source: ${entry.tag}`);
   }
   const main = (await extractFile(asarPath, join("dist", "desktop", "main.cjs"))).toString();
-  assert.match(main, /shell\.openPath/, "Packaged desktop is missing native openPath integration");
+  assert.match(main, /shell\.showItemInFolder/, "Packaged desktop is missing native showItemInFolder integration");
   assert.match(main, /project\.reveal\.native/, "Packaged desktop is missing private Reveal routing");
   assert.match((await extractFile(asarPath, join("dist", "service", "entry.cjs"))).toString(),
     /project\.reveal\.native/, "Packaged backend is missing private Reveal routing");

@@ -224,7 +224,7 @@ for (const scenario of [
   { name: "missing creation SQL", omitted: ["dist/service/db/migrations/0008_project_creation.sql"], error: /missing.*0008_project_creation/ },
   { name: "missing creation journal entry", omitEntry: 8, error: /journal is missing 0008_project_creation/ },
   { name: "modified creation SQL", corrupt: "dist/service/db/migrations/0008_project_creation.sql", error: /migration differs from source/ },
-  { name: "missing native integration", corrupt: "dist/desktop/main.cjs", error: /missing native openPath/ },
+  { name: "missing native integration", corrupt: "dist/desktop/main.cjs", error: /missing native showItemInFolder/ },
   { name: "missing backend routing", corrupt: "dist/service/entry.cjs", error: /missing private Reveal routing/ },
   { name: "modified prior SQL", corrupt: "dist/service/db/migrations/0000_settings.sql", error: /migration differs from source/ },
 ]) test(`artifact check rejects ${scenario.name}`, async () => {

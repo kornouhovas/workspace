@@ -2,7 +2,7 @@ import type { ProjectRevealProblem } from "../contracts/project-reveal.js";
 import type { NativeProjectRevealResult, NativeProjectRevealValidation, TrustedProjectRevealTarget } from "../contracts/service-protocol.js";
 import { nativeProjectFilesystem, verifyTrustedProjectRevealTarget, RevealFailure, type ProjectFilesystem } from "../service/project-filesystem.js";
 
-export function createNativeProjectReveal(openPath: (path: string) => Promise<string>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
+export function createNativeProjectReveal(showItemInFolder: (path: string) => void | Promise<void>, filesystem: ProjectFilesystem = nativeProjectFilesystem) {
   return async (target: TrustedProjectRevealTarget, isCurrent: () => boolean,
     authorize?: () => Promise<NativeProjectRevealValidation>,
   ): Promise<NativeProjectRevealResult> => {
@@ -18,9 +18,8 @@ export function createNativeProjectReveal(openPath: (path: string) => Promise<st
       if (!isCurrent()) return rejected("request_expired");
       // No await between evidence validation and this path-based native invocation.
       // A concurrent filesystem writer can still replace/move a path in that window.
-      const error = await openPath(path);
+      await showItemInFolder(path);
       if (!isCurrent()) return rejected("request_expired");
-      if (error !== "") return rejected("native_error");
       verifyTrustedProjectRevealTarget(target, filesystem);
       return { outcome: "dispatched" };
     } catch (error) { return rejected(error instanceof RevealFailure ? error.problem : "native_error"); }

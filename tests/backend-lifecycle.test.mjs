@@ -1340,7 +1340,7 @@ for (const mode of ["direct", "grouped"]) {
       mkdir(path) { nativeProjectFilesystem.mkdir(path); if (interrupt) throw new Error("response lost after mkdir"); },
     }), () => child.exit());
     const nativeCalls = [];
-    const controller = new BackendController(undefined, createNativeProjectReveal(async (path) => { nativeCalls.push(path); return ""; }));
+    const controller = new BackendController(undefined, createNativeProjectReveal(async (path) => { nativeCalls.push(path); }));
     const ipc = new EventEmitter();
     ipc.invoke = async (channel, input) => { assert.equal(channel, "workspace:command"); return controller.request(input); };
     controller.onWorkspaceChange((event) => ipc.emit("workspace:change", {}, event));
@@ -1524,7 +1524,7 @@ test("pending backend reauthorization rejects foreign/late verification replies 
 });
 
 for (const mode of ["direct", "grouped"]) {
-  for (const scenario of ["metadata_exclusion", "destination_missing", "destination_replaced", "native_error", "native_throw", "native_timeout"]) {
+  for (const scenario of ["metadata_exclusion", "destination_missing", "destination_replaced", "native_sync_throw", "native_rejection", "native_timeout"]) {
     test(`${mode} actual entry/controller native route blocks delayed ${scenario} and remains usable`, async () => {
       const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "native-dispatch-race-")));
       const root = join(directory, "root"), relativePath = mode === "direct" ? "Project" : "Category/Project", path = join(root, relativePath);
@@ -1538,11 +1538,10 @@ for (const mode of ["direct", "grouped"]) {
       const { createNativeProjectReveal } = await import("../src/desktop/project-reveal.ts");
       const calls = []; let finish, delayed = true, entered;
       const hasEntered = new Promise((resolve) => { entered = resolve; });
-      const native = createNativeProjectReveal(async (target) => {
+      const native = createNativeProjectReveal((target) => {
         calls.push(target);
-        if (scenario === "native_error") return "OS returned an error with private path";
-        if (scenario === "native_throw") throw new Error(path);
-        return "";
+        if (scenario === "native_sync_throw") throw new Error(path);
+        if (scenario === "native_rejection") return Promise.reject(new Error(path));
       });
       const controller = new BackendController(undefined, async (target, current, authorize) => {
         if (delayed) { entered(); await new Promise((resolve) => { finish = resolve; }); }

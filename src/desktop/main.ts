@@ -16,7 +16,7 @@ const controller = new BackendController((status) => {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) window.webContents.send("workspace:backend-status", status);
   }
-}, createNativeProjectReveal((path) => shell.openPath(path)));
+}, createNativeProjectReveal((path) => shell.showItemInFolder(path)));
 
 controller.onWorkspaceChange((change) => {
   for (const window of BrowserWindow.getAllWindows()) {

@@ -278,6 +278,36 @@ for (const language of ["en", "ru"] as const) for (const mode of ["direct", "gro
 
 for (const language of ["en", "ru"] as const) {
   const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  for (const action of ["status", "recover"] as const) test(`${language}: ${action} of another operation preserves an uncertain original request`, async () => {
+    const client = new Client(); client.operations = [operation];
+    client.handler = async () => client.creates.length === 1
+      ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } }
+      : { ok: true, value: completed({ ...operation, operationId: client.creates[0].operationId }) };
+    const props = { client, workspaceId: "workspace", sourceId: "source", projects: client.list, language, disabled: false, invalidation: 0,
+      minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
+    render(<ProjectCreationPanel {...props} />);
+    await screen.findByText(operation.relativePath);
+    await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+    await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
+    await screen.findByRole("button", { name: t("creationRetryRequest") });
+    if (action === "status") {
+      // The outstanding-operation row is independent from the unknown-request status.
+      await userEvent.click(screen.getByText(operation.relativePath).closest("li")!.querySelector("button")!);
+      await screen.findAllByText(t("creationRecoverable"));
+    } else {
+      client.recoverProjectCreation = async () => ({ ok: true, value: completed(operation) });
+      await userEvent.click(screen.getByRole("button", { name: t("creationReview") }));
+      await userEvent.click(await screen.findByRole("button", { name: t("creationAssociateReviewed") }));
+      await screen.findByText(t("creationSaved"));
+    }
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    assert.equal(input.value, "Original"); assert.equal(input.disabled, true);
+    assert.equal((screen.getByRole("button", { name: t("creationSubmit") }) as HTMLButtonElement).disabled, true);
+    await userEvent.click(screen.getByRole("button", { name: t("creationRetryRequest") }));
+    await screen.findByText(t("creationSaved"));
+    assert.equal(client.creates.length, 2); assert.deepEqual(client.creates[1], client.creates[0]);
+    assert.equal(screen.queryByRole("button", { name: t("creationRetryRequest") }), null);
+  });
   for (const change of ["selection", "removal", "backend"] as const) test(`${language}: explicit retry discards delayed ${change} response`, async () => {
     const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>();
     client.handler = async () => client.creates.length === 1 ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } } : response.promise;

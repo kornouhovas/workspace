@@ -553,7 +553,7 @@ for (const mode of ["direct", "grouped"]) {
     } });
   });
 
-  test(`${mode} native conflict with a retained logical project leaves the created directory recoverable`, () => {
+  for (const reused of [false, true]) test(`${mode} ${reused ? "reused dev/ino" : "full native"} conflict with a retained project leaves creation recoverable`, () => {
     let f;
     emptyFixture(mode, (fixture) => {
       f = fixture;
@@ -562,10 +562,16 @@ for (const mode of ["direct", "grouped"]) {
       assert.equal(result.value.operation.evidenceRecorded, false);
       assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 1);
       assert.deepEqual(inventory(join(f.root, result.value.operation.relativePath)), []);
+      const preview = recoveryPreview(f, result.value.operation.operationId);
+      assert.equal(preview.destinationState, "conflicting"); assert.equal(preview.problem, "native_conflict");
+      assert.deepEqual(preview.actions, []);
+      assert.equal(f.service.workspaces.createProject(command(f, "Fresh", { operationId: result.value.operation.operationId })).value.outcome, "recoverable");
     }, { ...nativeProjectFilesystem, mkdir(path) {
       nativeProjectFilesystem.mkdir(path);
+      const native = JSON.parse(identity(path));
+      if (reused) native.birthtimeNs = String(BigInt(native.birthtimeNs) + 1n);
       f.sql.prepare("INSERT INTO projects (id, source_id, relative_path, native_identity, association_state, category_id) VALUES (?, ?, ?, ?, 'missing', ?)")
-        .run(randomUUID(), f.sourceId, mode === "direct" ? "History" : "Category/History", identity(path), mode === "direct" ? null : f.categoryId);
+        .run(randomUUID(), f.sourceId, mode === "direct" ? "History" : "Category/History", JSON.stringify(native), mode === "direct" ? null : f.categoryId);
     } });
   });
 

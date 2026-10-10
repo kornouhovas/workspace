@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -22,6 +22,8 @@ const evidenceDirectory = process.env.WORKSPACE_SMOKE_EVIDENCE_DIR ?? join(root,
 await mkdir(evidenceDirectory, { recursive: true });
 const selectedMode = process.argv.find((arg) => arg.startsWith("--discovery-mode="))?.split("=")[1];
 const selectedCheckpoint = process.argv.find((arg) => arg.startsWith("--checkpoint="))?.split("=")[1];
+const directoryPackage = process.argv.includes("--directory-package");
+if (directoryPackage) assert.equal(process.platform, "darwin", "The harmless app-bundle probe requires macOS");
 assert.ok(!selectedMode || ["direct", "grouped"].includes(selectedMode));
 assert.ok(!selectedCheckpoint || ["after_intent", "after_mkdir", "after_evidence", "after_commit"].includes(selectedCheckpoint));
 const runs = (selectedMode ? [selectedMode] : ["direct", "grouped"]).flatMap((discoveryMode) =>
@@ -43,6 +45,15 @@ const record = async (discoveryMode, stage, result) => { recordCreationEvidence(
 const unwrap = (result) => { assert.equal(result.ok, true, JSON.stringify(result)); return result.value; };
 const query = async (page, type, workspaceId, extra = {}) => unwrap(await page.evaluate((input) => globalThis.window.workspace.workspace(input), { type: `workspace.${type}`, workspaceId, ...extra }));
 const projectList = (page, workspaceId) => query(page, "listProjects", workspaceId);
+async function inventory(path) {
+  const entries = await readdir(path, { withFileTypes: true });
+  return Promise.all(entries.sort((a, b) => a.name.localeCompare(b.name)).map(async (entry) => {
+    const child = join(path, entry.name);
+    if (entry.isDirectory()) return [entry.name, await inventory(child)];
+    assert.equal(entry.isFile(), true, "Disposable project inventory contains an unexpected entry kind");
+    return [entry.name, (await readFile(child)).toString("hex"), (await stat(child)).mode & 0o777];
+  }));
+}
 
 async function seedCrash(data, discoveryMode, checkpoint, projectRoot, otherRoot) {
   await mkdir(data, { recursive: true });
@@ -199,7 +210,7 @@ try {
       // Creation goes through keyboard-operated production form, typed preload,
       // controller and live observed service. New projects inherit no Text.
       activeStage = [discoveryMode, "creation"];
-      const name = `Created-${checkpoint}-日本語`;
+      const name = `Created-${checkpoint}-日本語${directoryPackage ? ".app" : ""}`;
       await page.getByRole("button", { name: t.create, exact: true }).click();
       const input = page.locator("#project-creation-name"); await input.waitFor();
       assert.equal(await input.evaluate((node) => node === globalThis.document.activeElement), true);
@@ -213,6 +224,15 @@ try {
       assert.ok(created); assert.notEqual(created.projectId, recovered.projectId);
       const destination = join(parent, name);
       assert.deepEqual(await readdir(destination), []);
+      if (directoryPackage) {
+        // A wholly disposable app may only write its owned launch marker and exit.
+        // Reveal must select the package in Finder without executing it.
+        await mkdir(join(destination, "Contents", "MacOS"), { recursive: true });
+        await writeFile(join(destination, "Contents", "Info.plist"), `<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>probe</string><key>CFBundleIdentifier</key><string>dev.workspace.disposable.${randomUUID()}</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>`);
+        await writeFile(join(destination, "Contents", "MacOS", "probe"), '#!/bin/sh\nprintf "unexpected launch" > "$(dirname "$0")/../../launched"\n');
+        await chmod(join(destination, "Contents", "MacOS", "probe"), 0o755);
+      }
+      const createdInventory = await inventory(destination);
       assert.deepEqual(await query(page, "listTextProperties", workspace.workspaceId), properties);
       await select(page, sibling);
       await page.getByRole("cell", { name, exact: true }).waitFor();
@@ -241,11 +261,11 @@ try {
         const beforeRevealObservation = await query(page, "getSourceObservation", workspace.workspaceId);
         // Wrap, never mock, the actual Electron API used by main's native adapter.
         await current.electron.evaluate(({ shell }, target) => {
-          const original = shell.openPath.bind(shell);
+          const original = shell.showItemInFolder.bind(shell);
           globalThis.creationNativeCalls = [];
-          shell.openPath = async (path) => {
-            const result = await original(path);
-            if (path === target) globalThis.creationNativeCalls.push({ path, result });
+          shell.showItemInFolder = (path) => {
+            const result = original(path);
+            if (path === target) globalThis.creationNativeCalls.push({ path, returned: true });
             return result;
           };
         }, destination);
@@ -260,11 +280,17 @@ try {
           return [];
         })(), 10000, "Real native invocation");
         assert.equal(calls.length, 1, "Reveal must invoke the real native API exactly once");
-        const apiPassed = calls[0].result === "";
-        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.openPath", apiResult: calls[0].result, target: destination });
+        const apiPassed = calls[0].returned === true;
+        await record(discoveryMode, "nativeInvocation", { status: apiPassed ? "passed" : "failed", asserted: apiPassed, api: "Electron shell.showItemInFolder", apiResult: "returned without throwing; no OS success result", target: destination });
         activeStage = undefined; // Retain actual API results even if a later UI assertion fails.
         if (apiPassed) {
           await record(discoveryMode, "fileManagerOutcome", await observeFileManagerTarget(destination));
+          if (directoryPackage) {
+            await assert.rejects(stat(join(destination, "launched")), { code: "ENOENT" });
+            observations.push({ directoryPackage: destination, launchMarkerAbsent: true });
+          }
+          observations.push({ fileManagerCleanup: await closeDisposableFileManagerTarget(destination), target: destination });
+          nativeTargets.delete(destination);
           const revealButton = page.getByRole("button", { name: `${t.reveal}: ${name}`, exact: true });
           await page.waitForFunction((name) => Array.from(globalThis.document.querySelectorAll(".project-reveal button")).some((node) => node.getAttribute("aria-label") === name && !node.disabled), `${t.reveal}: ${name}`);
           const feedback = await revealButton.locator("..").locator(".bb-status").innerText();
@@ -292,7 +318,7 @@ try {
       assert.equal(persisted.projects.find((project) => project.name === "Interrupted").projectId, recovered.projectId);
       assert.deepEqual(await query(reopened, "listTextProperties", workspace.workspaceId), properties);
       assert.equal((await query(reopened, "listProjectCreations", workspace.workspaceId)).operations.length, 0);
-      assert.deepEqual(await readdir(destination), []);
+      assert.deepEqual(await inventory(destination), createdInventory);
       assert.deepEqual(await readdir(join(parent, "Interrupted")), []);
       assert.equal(await readFile(join(parent, "Existing", "sentinel"), "utf8"), "existing bytes\0unchanged");
       assert.equal(await readFile(join(otherRoot, "sentinel"), "utf8"), "unrelated bytes");

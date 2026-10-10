@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
 import { promisify } from "node:util";
 const execute = promisify(execFile);
 
-// Read only a boolean for this exact disposable target. Do not record user
+// Read only a boolean for this exact disposable selected item. Do not record user
 // locations, close arbitrary windows, or terminate the shared file manager.
 export async function observeFileManagerTarget(target, platform = process.platform, runCommand = execute) {
   try {
@@ -11,26 +11,31 @@ export async function observeFileManagerTarget(target, platform = process.platfo
     if (platform === "darwin") {
       output = await runCommand("osascript", ["-e", `on run argv
 set expectedTarget to POSIX file (item 1 of argv) as alias
+set expectedParent to POSIX file (item 2 of argv) as alias
 with timeout of 2 seconds
 tell application "Finder"
-set candidates to windows whose name is (item 2 of argv)
+set candidates to windows whose name is (item 3 of argv)
 repeat with candidate in candidates
 try
-if target of candidate as alias is expectedTarget then return "true"
+if target of candidate as alias is expectedParent then
+repeat with selectedItem in (get selection)
+if selectedItem as alias is expectedTarget then return "true"
+end repeat
+end if
 end try
 end repeat
 end tell
 end timeout
 return "false"
-end run`, target, basename(target)], { timeout: 5000 });
+end run`, target, dirname(target), basename(dirname(target))], { timeout: 5000 });
     } else if (platform === "win32") {
       // Path arrives as data in the environment, never as executable script text.
-      output = await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $matched = $false; $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $matched = $true } } catch {} }; if ($matched) { 'true' } else { 'false' }`], {
+      output = await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $parent = [IO.Path]::GetDirectoryName($expected); $matched = $false; $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $parent, [StringComparison]::OrdinalIgnoreCase)) { foreach ($item in $window.Document.SelectedItems()) { if ([string]::Equals([IO.Path]::GetFullPath($item.Path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $matched = $true } } } } catch {} }; if ($matched) { 'true' } else { 'false' }`], {
         timeout: 5000, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
       });
     } else return { status: "skipped", reason: "No supported file-manager observation on this host" };
     if (output.stdout.trim().toLowerCase() === "true") return { status: "passed", asserted: true, exactTargetObserved: true };
-    return { status: "pending", reason: "No exact disposable target window observed; API acknowledgment alone is insufficient" };
+    return { status: "pending", reason: "No exact disposable selected item observed; API acknowledgment alone is insufficient" };
   } catch (error) {
     // Avoid stderr which may contain unrelated system/user information.
     return { status: "pending", reason: `Exact-target observation unavailable (${error.killed ? "timeout" : error.code ?? "OS error"})` };
@@ -44,19 +49,27 @@ export async function closeDisposableFileManagerTarget(target, platform = proces
     if (platform === "darwin") {
       await runCommand("osascript", ["-e", `on run argv
 set expectedTarget to POSIX file (item 1 of argv) as alias
+set expectedParent to POSIX file (item 2 of argv) as alias
 with timeout of 2 seconds
 tell application "Finder"
-set candidates to windows whose name is (item 2 of argv)
+set candidates to windows whose name is (item 3 of argv)
 repeat with candidate in candidates
 try
-if target of candidate as alias is expectedTarget then close candidate
+if target of candidate as alias is expectedParent then
+repeat with selectedItem in (get selection)
+if selectedItem as alias is expectedTarget then
+close candidate
+exit repeat
+end if
+end repeat
+end if
 end try
 end repeat
 end tell
 end timeout
-end run`, target, basename(target)], { timeout: 5000 });
+end run`, target, dirname(target), basename(dirname(target))], { timeout: 5000 });
     } else if (platform === "win32") {
-      await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $window.Quit() } } catch {} }`], {
+      await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $parent = [IO.Path]::GetDirectoryName($expected); $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $parent, [StringComparison]::OrdinalIgnoreCase)) { foreach ($item in $window.Document.SelectedItems()) { if ([string]::Equals([IO.Path]::GetFullPath($item.Path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $window.Quit(); break } } } } catch {} }`], {
         timeout: 5000, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },
       });
     } else return { status: "skipped" };

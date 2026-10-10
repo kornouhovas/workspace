@@ -44,7 +44,7 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 
 - English/Russian project creation in an applied direct root or chosen existing active grouped category, with authored names, fresh logical IDs and shared-source updates.
 - Durable migration 0008 creation journal and visible interrupted operations, explicit reviewed recovery and same-operation receipt reconciliation without duplicate folders/IDs or inherited Text.
-- Per-project native Reveal through trusted backend/main validation with localized pending, missing/unavailable, retained and dispatch acknowledgment feedback.
+- Per-project file-manager-directed native Reveal, including directory packages, through trusted backend/main validation with localized pending, missing/unavailable, retained and dispatch acknowledgment feedback.
 - Real process-crash, production IPC, EN/RU retry and graphical/package regressions; documented filesystem/native race and process-interruption durability limits.
 
 ### Fixed

@@ -66,16 +66,22 @@ export function createProjectCreationService(db: Database, integration: {
   }
 
   function assertReservations(row: Operation, nativeIdentity?: NativeIdentity, completed = false) {
+    // Reused dev/ino with a different birthtime is ambiguous historical evidence,
+    // just as in discovery; it must not produce a completed but unresolved project.
+    const nativeCollision = (stored: string) => {
+      const identity: NativeIdentity = JSON.parse(stored);
+      return nativeIdentity && identity.dev === nativeIdentity.dev && identity.ino === nativeIdentity.ino;
+    };
     const projects = db.select().from(schema.projects).where(eq(schema.projects.sourceId, row.sourceId)).all();
     const categories = db.select().from(schema.categories).where(eq(schema.categories.sourceId, row.sourceId)).all();
     const operations = db.select().from(schema.projectCreationOperations).where(eq(schema.projectCreationOperations.sourceId, row.sourceId)).all();
     for (const record of [...projects.filter((p) => !completed || p.id !== row.projectId), ...categories]) {
       if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
-      if (nativeIdentity && sameIdentity(JSON.parse(record.nativeIdentity), nativeIdentity)) throw new CreationFailure("native_conflict");
+      if (nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
     for (const record of operations.filter((o) => o.operationId !== row.operationId && o.stage !== "failed" && o.stage !== "completed")) {
       if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
-      if (nativeIdentity && record.nativeIdentity && sameIdentity(JSON.parse(record.nativeIdentity), nativeIdentity)) throw new CreationFailure("native_conflict");
+      if (record.nativeIdentity && nativeCollision(record.nativeIdentity)) throw new CreationFailure("native_conflict");
     }
   }
 
