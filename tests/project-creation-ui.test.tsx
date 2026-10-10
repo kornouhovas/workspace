@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import React from "react";
+import fs from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { openSettingsService } from "../src/service/settings.js";
 import { Window } from "happy-dom";
 import { ProjectCreationPanel } from "../src/renderer/components/ProjectCreationPanel.js";
 import { ProjectRevealButton } from "../src/renderer/components/ProjectRevealButton.js";
@@ -21,6 +25,7 @@ test.afterEach(cleanup);
 const initial: ProjectList = { workspaceId: "workspace", sourceId: "source", revision: 1, configured: true, mode: "direct", state: "empty", projects: [], retainedProjects: [], retainedCount: 0, categories: [], categoryProperty: null, categoryPropertyRevision: 0 };
 const operation: ProjectCreationOperation = { operationId: "operation", sourceId: "source", initiatingWorkspaceId: "workspace", projectId: "project", name: "Authored folder", relativePath: "Authored folder", mode: "direct", categoryId: null, expectedRevision: 1, stage: "uncertain", evidenceRecorded: false, problem: "ownership_uncertain", completedRevision: null };
 function completed(op = operation): ProjectCreationResult { return { outcome: "completed", operation: { ...op, stage: "completed", completedRevision: 2 }, project: { operationId: op.operationId, sourceId: op.sourceId, projectId: op.projectId, name: op.name, relativePath: op.relativePath, categoryId: op.categoryId, revision: 2 } }; }
+function value<T>(result: ServiceResult<T>): T { assert.ok(result.ok, JSON.stringify(result)); return result.value; }
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }
 class Client extends WorkspaceServiceClient {
   statuses = new Set<(status: BackendStatus) => void>(); events = new Set<(event: WorkspaceChangeEvent) => void>();
@@ -209,5 +214,97 @@ for (const language of ["en", "ru"] as const) {
     await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox", { name: t("creationName") }), "Authored folder"); await userEvent.selectOptions(screen.getByRole("combobox"), "category");
     label.focus(); await act(async () => { client.list = { ...client.list, revision: 2 }; client.events.forEach((listener) => listener({ type: "workspace.projectsChanged", sourceId: "source", workspaceIds: ["workspace"], revision: 2 })); });
     assert.equal((label as HTMLInputElement).value, "Unsaved label"); assert.ok(document.activeElement === label); assert.equal((screen.getByRole("textbox", { name: t("creationName") }) as HTMLInputElement).value, "Authored folder");
+  });
+}
+
+for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) for (const delivery of ["undelivered", "completed_response_lost"] as const) {
+  test(`${language}: ${mode} explicit retry reconciles ${delivery} with original payload and one durable project`, async () => {
+    const directory = fs.realpathSync.native(fs.mkdtempSync(join(tmpdir(), "creation-ui-retry-"))), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+    fs.mkdirSync(root); if (mode === "grouped") fs.mkdirSync(join(root, "Category"));
+    let service = openSettingsService(database, "src/service/db/migrations");
+    try {
+      const workspace = value(service.workspaces.create({ type: "workspace.create", name: "Retry", rootPath: root }));
+      const { workspaceId, sourceId } = workspace;
+      const preview = value(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
+      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).ok, true);
+      const projects = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      const calls: Parameters<WorkspaceServiceClient["createProject"]>[0][] = [], statuses = new Set<(status: BackendStatus) => void>();
+      const gate = deferred<void>(); let receipt: ServiceResult<ProjectCreationResult> | undefined, completions = 0;
+      const client = {
+        onBackendStatus(listener: (status: BackendStatus) => void) { statuses.add(listener); return () => statuses.delete(listener); },
+        listProjectCreations: async () => service.handleCommand({ type: "workspace.listProjectCreations", workspaceId }),
+        getProjectCreation: async (_id: string, operationId: string) => service.handleCommand({ type: "workspace.getProjectCreation", workspaceId, operationId }),
+        createProject: async (input: Parameters<WorkspaceServiceClient["createProject"]>[0]) => {
+          calls.push(structuredClone(input));
+          if (calls.length === 1) {
+            if (delivery === "completed_response_lost") receipt = service.workspaces.createProject({ type: "workspace.createProject", ...input });
+            return { ok: false, error: { code: "service_unavailable", message: "Lost transport" } };
+          }
+          await gate.promise;
+          return service.handleCommand({ type: "workspace.createProject", ...input });
+        },
+      } as unknown as WorkspaceServiceClient;
+      const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+      const view = render(<ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} projects={projects} disabled={false} invalidation={0} minimumRevision={{ current: projects.revision }} observationVersion={{ current: 0 }} onCompleted={() => completions++} />);
+      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      await userEvent.type(screen.getByRole("textbox"), "  Retry Текст 📝  ");
+      if (mode === "grouped") await userEvent.selectOptions(screen.getByRole("combobox"), projects.categories[0].categoryId);
+      await userEvent.click(screen.getByRole("button", { name: t("creationSubmit") }));
+      const status = await screen.findByRole("button", { name: t("creationStatus") });
+      if (delivery === "undelivered") {
+        await userEvent.click(status);
+        assert.equal(service.handleCommand({ type: "workspace.getProjectCreation", workspaceId, operationId: calls[0].operationId }).ok, false);
+      }
+      await userEvent.click(screen.getByRole("button", { name: t("cancelRenameWorkspace") }));
+      await act(async () => { statuses.forEach((listener) => listener({ state: "unavailable" })); statuses.forEach((listener) => listener({ state: "ready" })); });
+      await userEvent.click(screen.getByRole("button", { name: t("createProject") }));
+      assert.equal(calls.length, 1); assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, calls[0].name);
+      const retry = screen.getByRole("button", { name: t("creationRetryRequest") });
+      fireEvent.click(retry); fireEvent.click(retry);
+      assert.equal(calls.length, 2); assert.deepEqual(calls[1], calls[0]); assert.equal((retry as HTMLButtonElement).disabled, true);
+      await act(async () => gate.resolve());
+      await screen.findByText(t("creationSaved")); assert.equal(completions, 1);
+      const list = value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      assert.equal(list.projects.length, 1);
+      assert.deepEqual(fs.readdirSync(join(root, list.projects[0].relativePath)), []);
+      const finalReceipt = service.handleCommand({ type: "workspace.createProject", ...calls[0] });
+      if (receipt) assert.deepEqual(finalReceipt, receipt);
+      view.unmount(); assert.equal(statuses.size, 0); service.close(); service = openSettingsService(database, "src/service/db/migrations");
+      assert.deepEqual(service.handleCommand({ type: "workspace.createProject", ...calls[0] }), finalReceipt);
+      assert.equal(value(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).projects[0].projectId, list.projects[0].projectId);
+    } finally { cleanup(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  });
+}
+
+for (const language of ["en", "ru"] as const) {
+  const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+  for (const change of ["selection", "removal", "backend"] as const) test(`${language}: explicit retry discards delayed ${change} response`, async () => {
+    const client = new Client(), response = deferred<ServiceResult<ProjectCreationResult>>();
+    client.handler = async () => client.creates.length === 1 ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } } : response.promise;
+    const props = { client, workspaceId: "workspace", sourceId: "source", projects: client.list, language, disabled: false, invalidation: 0, minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
+    const view = render(<ProjectCreationPanel {...props} />);
+    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
+    await userEvent.click(await screen.findByRole("button", { name: t("creationRetryRequest") }));
+    assert.deepEqual(client.creates[1], client.creates[0]);
+    if (change === "selection") view.rerender(<ProjectCreationPanel {...props} workspaceId="other" sourceId="other-source" projects={null} />);
+    else if (change === "removal") view.unmount();
+    else await act(async () => { client.statuses.forEach((listener) => listener({ state: "unavailable" })); client.statuses.forEach((listener) => listener({ state: "ready" })); });
+    await act(async () => response.resolve({ ok: true, value: completed({ ...operation, operationId: client.creates[0].operationId }) }));
+    assert.equal(screen.queryByText(t("creationSaved")), null); assert.equal(client.creates.length, 2);
+  });
+  test(`${language}: definite no-effect stale retry unlocks original draft for an explicit new submission`, async () => {
+    const client = new Client();
+    client.handler = async () => client.creates.length === 1 ? { ok: false, error: { code: "service_unavailable", message: "Undelivered" } } : { ok: true, value: { outcome: "rejected", problem: "stale_configuration", operation: null } };
+    const props = { client, workspaceId: "workspace", sourceId: "source", projects: client.list, language, disabled: false, invalidation: 0, minimumRevision: { current: 1 }, observationVersion: { current: 0 }, onCompleted() {} };
+    const view = render(<ProjectCreationPanel {...props} />);
+    await userEvent.click(screen.getByRole("button", { name: t("createProject") })); await userEvent.type(screen.getByRole("textbox"), "Original{Enter}");
+    await screen.findByRole("button", { name: t("creationRetryRequest") });
+    view.rerender(<ProjectCreationPanel {...props} projects={{ ...client.list, revision: 5 }} invalidation={1} />);
+    await userEvent.click(screen.getByRole("button", { name: t("creationRetryRequest") }));
+    assert.deepEqual(client.creates[1], client.creates[0]); assert.equal(client.creates[1].expectedRevision, 1);
+    await screen.findByText(t("creationUnavailable"));
+    assert.equal((screen.getByRole("textbox") as HTMLInputElement).disabled, false);
+    assert.equal((screen.getByRole("textbox") as HTMLInputElement).value, "Original");
+    assert.equal(screen.queryByRole("button", { name: t("creationRetryRequest") }), null);
   });
 }

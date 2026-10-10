@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { basename } from "node:path";
 import { promisify } from "node:util";
 const execute = promisify(execFile);
 
@@ -10,15 +11,18 @@ export async function observeFileManagerTarget(target, platform = process.platfo
     if (platform === "darwin") {
       output = await runCommand("osascript", ["-e", `on run argv
 set expectedTarget to POSIX file (item 1 of argv) as alias
+with timeout of 2 seconds
 tell application "Finder"
-repeat with candidate in windows
+set candidates to windows whose name is (item 2 of argv)
+repeat with candidate in candidates
 try
 if target of candidate as alias is expectedTarget then return "true"
 end try
 end repeat
 end tell
+end timeout
 return "false"
-end run`, target], { timeout: 5000 });
+end run`, target, basename(target)], { timeout: 5000 });
     } else if (platform === "win32") {
       // Path arrives as data in the environment, never as executable script text.
       output = await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $matched = $false; $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $matched = $true } } catch {} }; if ($matched) { 'true' } else { 'false' }`], {
@@ -40,14 +44,17 @@ export async function closeDisposableFileManagerTarget(target, platform = proces
     if (platform === "darwin") {
       await runCommand("osascript", ["-e", `on run argv
 set expectedTarget to POSIX file (item 1 of argv) as alias
+with timeout of 2 seconds
 tell application "Finder"
-repeat with candidate in windows
+set candidates to windows whose name is (item 2 of argv)
+repeat with candidate in candidates
 try
 if target of candidate as alias is expectedTarget then close candidate
 end try
 end repeat
 end tell
-end run`, target], { timeout: 5000 });
+end timeout
+end run`, target, basename(target)], { timeout: 5000 });
     } else if (platform === "win32") {
       await runCommand("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `$expected = [IO.Path]::GetFullPath($env:WORKSPACE_OBSERVE_TARGET).TrimEnd('\\'); $shell = New-Object -ComObject Shell.Application; foreach ($window in $shell.Windows()) { try { $path = $window.Document.Folder.Self.Path; if ([string]::Equals([IO.Path]::GetFullPath($path).TrimEnd('\\'), $expected, [StringComparison]::OrdinalIgnoreCase)) { $window.Quit() } } catch {} }`], {
         timeout: 5000, windowsHide: true, env: { ...process.env, WORKSPACE_OBSERVE_TARGET: target },

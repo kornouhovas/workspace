@@ -12,6 +12,8 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
     "dist/service/entry.cjs",
     "dist/renderer/index.html",
     "dist/version.json",
+    "dist/service/db/migrations/0000_settings.sql",
+    "dist/service/db/migrations/0001_workspaces.sql",
     "dist/service/db/migrations/0002_workspace_order.sql",
     "dist/service/db/migrations/0003_source_discovery.sql",
     "dist/service/db/migrations/0004_direct_projects.sql",
@@ -33,6 +35,15 @@ test("build emits desktop, renderer, backend, and matching version artifacts", a
 
   assert.equal(await readFile("dist/service/db/migrations/0008_project_creation.sql", "utf8"),
     await readFile("src/service/db/migrations/0008_project_creation.sql", "utf8"));
+
+  for (const entry of journal.entries) {
+    const relativePath = `service/db/migrations/${entry.tag}.sql`;
+    assert.equal(await readFile(`dist/${relativePath}`, "utf8"), await readFile(`src/${relativePath}`, "utf8"));
+  }
+  const main = await readFile("dist/desktop/main.cjs", "utf8");
+  assert.match(main, /shell\.openPath/);
+  assert.match(main, /project\.reveal\.native/);
+  assert.match(await readFile("dist/service/entry.cjs", "utf8"), /project\.reveal\.native/);
 
   const rendererHtml = await readFile("dist/renderer/index.html", "utf8");
   assert.match(rendererHtml, /(?:src|href)="\.\/assets\//);

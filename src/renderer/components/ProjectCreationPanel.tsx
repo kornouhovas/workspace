@@ -24,6 +24,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
   const [pending, setPending] = useState(false), [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<TranslationKey | null>(null);
   const [operations, setOperations] = useState<ProjectCreationOperation[]>([]);
+  const originalRequest = useRef<Parameters<WorkspaceServiceClient["createProject"]>[0] | null>(null);
   const [unknownId, setUnknownId] = useState<string | null>(null);
   const [preview, setPreview] = useState<ProjectCreationRecoveryPreview | null>(null);
   const reviewing = useRef(false);
@@ -101,7 +102,7 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       setOperations((current) => [...current.filter((operation) => operation.operationId !== operationId),
         ...(["completed", "failed"].includes(value.operation!.stage) ? [] : [value.operation!])]);
     }
-    setUnknownId(null); setPreview(null);
+    originalRequest.current = null; setUnknownId(null); setPreview(null);
     if (value.outcome === "completed") { setMessage("creationSaved"); setName(""); close(restoreFocus.current || !!root.current?.contains(document.activeElement)); onCompleted(); }
     else if (value.outcome === "recoverable") setMessage("creationRecoverable");
     else setMessage(value.problem === "invalid_name" ? "creationInvalid" :
@@ -155,7 +156,9 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       if (!name.length) { setMessage("creationInvalid"); input.current?.focus(); return; }
       const operationId = crypto.randomUUID();
       const common = { workspaceId, operationId, name, expectedRevision: projects.revision };
-      void run(operationId, () => client.createProject(projects.mode === "grouped" ? { ...common, mode: "grouped", categoryId } : { ...common, mode: "direct" }));
+      const authoredRequest: Parameters<WorkspaceServiceClient["createProject"]>[0] = projects.mode === "grouped" ? { ...common, mode: "grouped", categoryId } : { ...common, mode: "direct" };
+      originalRequest.current = authoredRequest;
+      void run(operationId, () => client.createProject(authoredRequest));
     }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}>
       <label htmlFor="project-creation-name">{t("creationName")}</label>
       <input ref={input} id="project-creation-name" className="workspace-input" value={name} disabled={disabled || pending || !!unknownId}
@@ -180,6 +183,13 @@ function CreationContent({ client, workspaceId, sourceId, language, projects, di
       <p>{t("creationUncertain")}</p><button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending}
         onClick={() => void run(unknownId, () => client.getProjectCreation(workspaceId, unknownId))}>{t("creationStatus")}</button>
     </div>}
+    {unknownId && originalRequest.current?.operationId === unknownId && <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || pending || !ready.current}
+      onClick={() => {
+        // Reconcile exactly the accepted payload, including its original revision.
+        // No reconnect/list/cancel path replays it or allocates a replacement ID.
+        const authoredRequest = originalRequest.current;
+        if (authoredRequest?.operationId === unknownId) void run(unknownId, () => client.createProject(authoredRequest));
+      }}>{t("creationRetryRequest")}</button>}
     <button type="button" className="workspace-button workspace-button--secondary" disabled={disabled || loading || pending} onClick={() => void load()}>{t("creationReload")}</button>
     {operations.length > 0 && <div><h4>{t("creationOutstanding")}</h4><p>{t("creationRecoverable")}</p>
       <ul>{operations.map((operation) => <li key={operation.operationId}>

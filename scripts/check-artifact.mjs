@@ -19,6 +19,7 @@ const requiredFiles = [
   "dist/service/db/migrations/0005_text_properties.sql",
   "dist/service/db/migrations/0006_grouped_discovery.sql",
   "dist/service/db/migrations/0007_discovery_mode_changes.sql",
+  "dist/service/db/migrations/0008_project_creation.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
@@ -35,9 +36,32 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     assert.ok(files.has(file), `Packaged app is missing ${file}`);
   }
 
+  const html = (await extractFile(asarPath, join("dist", "renderer", "index.html"))).toString();
+  const resources = [...html.matchAll(/(?:src|href)="(\.\/assets\/[^"?#]+)"/g)].map((match) => match[1].slice(2));
+  assert.ok(resources.some((file) => file.endsWith(".js")), "Packaged renderer has no local JavaScript entry");
+  for (const resource of resources) {
+    assert.ok(files.has(`dist/renderer/${resource}`), `Packaged app is missing renderer resource ${resource}`);
+  }
+
   const journal = JSON.parse((await extractFile(asarPath, join("dist", "service", "db", "migrations", "meta", "_journal.json"))).toString());
   assert.ok(journal.entries?.some((entry) => entry.idx === 7 && entry.tag === "0007_discovery_mode_changes"),
     "Packaged migration journal is missing 0007_discovery_mode_changes");
+
+  assert.ok(journal.entries?.some((entry) => entry.idx === 8 && entry.tag === "0008_project_creation"),
+    "Packaged migration journal is missing 0008_project_creation");
+  const sourceMigrations = fileURLToPath(new URL("../src/service/db/migrations/", import.meta.url));
+  assert.deepEqual(journal, JSON.parse(await readFile(join(sourceMigrations, "meta", "_journal.json"), "utf8")),
+    "Packaged migration journal differs from source");
+  for (const entry of journal.entries) {
+    const sql = (await extractFile(asarPath, join("dist", "service", "db", "migrations", `${entry.tag}.sql`))).toString();
+    assert.equal(sql, await readFile(join(sourceMigrations, `${entry.tag}.sql`), "utf8"),
+      `Packaged migration differs from source: ${entry.tag}`);
+  }
+  const main = (await extractFile(asarPath, join("dist", "desktop", "main.cjs"))).toString();
+  assert.match(main, /shell\.openPath/, "Packaged desktop is missing native openPath integration");
+  assert.match(main, /project\.reveal\.native/, "Packaged desktop is missing private Reveal routing");
+  assert.match((await extractFile(asarPath, join("dist", "service", "entry.cjs"))).toString(),
+    /project\.reveal\.native/, "Packaged backend is missing private Reveal routing");
 
   const packaged = JSON.parse((await extractFile(asarPath, "package.json")).toString());
   const buildVersion = JSON.parse((await extractFile(asarPath, join("dist", "version.json"))).toString()).version;

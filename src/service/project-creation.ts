@@ -73,7 +73,7 @@ export function createProjectCreationService(db: Database, integration: {
       if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (nativeIdentity && sameIdentity(JSON.parse(record.nativeIdentity), nativeIdentity)) throw new CreationFailure("native_conflict");
     }
-    for (const record of operations.filter((o) => o.operationId !== row.operationId && o.stage !== "failed")) {
+    for (const record of operations.filter((o) => o.operationId !== row.operationId && o.stage !== "failed" && o.stage !== "completed")) {
       if (creationAlias(record.relativePath) === creationAlias(row.relativePath)) throw new CreationFailure("reserved_destination");
       if (nativeIdentity && record.nativeIdentity && sameIdentity(JSON.parse(record.nativeIdentity), nativeIdentity)) throw new CreationFailure("native_conflict");
     }

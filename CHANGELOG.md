@@ -42,6 +42,11 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Retained mode-change project history with editable exact Text and explicit target-depth reassociation; previous-mode return preserves reservations without silently reactivating projects or transferring values between folder roles.
 - Preserved dormant category/property IDs, authored labels, hidden drafts, settings, archive designation and independent views through mode changes, restart and source reuse; populated migration 0007 and delivery-artifact regressions.
 
+- English/Russian project creation in an applied direct root or chosen existing active grouped category, with authored names, fresh logical IDs and shared-source updates.
+- Durable migration 0008 creation journal and visible interrupted operations, explicit reviewed recovery and same-operation receipt reconciliation without duplicate folders/IDs or inherited Text.
+- Per-project native Reveal through trusted backend/main validation with localized pending, missing/unavailable, retained and dispatch acknowledgment feedback.
+- Real process-crash, production IPC, EN/RU retry and graphical/package regressions; documented filesystem/native race and process-interruption durability limits.
+
 ### Fixed
 
 - Healthy source observations preserve pending folder-reassociation confirmations while refreshing newer placement; source disconnects still reject obsolete responses.
@@ -52,6 +57,9 @@ User-facing changes are maintained in English. The first target release is 0.1.0
 - Backend restart discards obsolete source availability observations while preserving newer current-generation events over delayed reloads.
 
 - Active category/child external renames remain reconcilable after a reviewed project-to-category role change while dormant direct-project identity and values stay retained.
+
+- Completed creation receipts no longer reserve vacated old paths after verified external moves or explicit reassociation; original receipt retries remain idempotent.
+- An undelivered creation request can be explicitly retried with its exact original payload and operation ID after transport loss, without automatic replay or permanently locked editing.
 
 ### Planned
 

@@ -21,10 +21,11 @@ const packagedFiles = [
   "dist/service/db/migrations/0005_text_properties.sql",
   "dist/service/db/migrations/0006_grouped_discovery.sql",
   "dist/service/db/migrations/0007_discovery_mode_changes.sql",
+  "dist/service/db/migrations/0008_project_creation.sql",
   "dist/service/db/migrations/meta/_journal.json",
 ];
 
-async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omitModeJournalEntry = false) {
+async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omitModeJournalEntry = false, corruptFile) {
   const appDirectory = join(root, "app");
   const resourcesDirectory = join(root, "bundle", "resources");
   await mkdir(appDirectory, { recursive: true });
@@ -33,14 +34,23 @@ async function makeArtifact(root, buildVersion = "0.1.0", omittedFiles = [], omi
     if (omittedFiles.includes(file)) continue;
     const path = join(appDirectory, file);
     await mkdir(dirname(path), { recursive: true });
-    let contents = "present";
+    let contents = file.endsWith(".sql") || file.endsWith(".cjs") || file === "dist/renderer/index.html"
+      ? await readFile(file, "utf8") : "present";
+    if (file === corruptFile) contents = file.endsWith(".cjs") ? "missing integration" : contents + "\n-- corrupted shipped file";
     if (file === "dist/version.json") contents = JSON.stringify({ version: buildVersion });
     if (file === "dist/service/db/migrations/meta/_journal.json") {
       const journal = JSON.parse(await readFile("src/service/db/migrations/meta/_journal.json", "utf8"));
-      if (omitModeJournalEntry) journal.entries = journal.entries.filter((entry) => entry.idx !== 7);
+      if (omitModeJournalEntry) journal.entries = journal.entries.filter((entry) => entry.idx !== (omitModeJournalEntry === true ? 7 : omitModeJournalEntry));
       contents = JSON.stringify(journal);
     }
     await writeFile(path, contents);
+  }
+  const html = await readFile("dist/renderer/index.html", "utf8");
+  for (const [, reference] of html.matchAll(/(?:src|href)="(\.\/assets\/[^"?#]+)"/g)) {
+    const file = `dist/renderer/${reference.slice(2)}`;
+    if (omittedFiles.includes(file) || omittedFiles.includes("renderer-assets")) continue;
+    await mkdir(dirname(join(appDirectory, file)), { recursive: true });
+    await writeFile(join(appDirectory, file), await readFile(file));
   }
   await writeFile(join(appDirectory, "package.json"), JSON.stringify({ version: "0.1.0" }));
   await writeFile(join(resourcesDirectory, "licenses/bb-MIT.txt"), "MIT License\nCopyright (c) 2026 Michael Yong");
@@ -206,5 +216,21 @@ test("artifact check rejects a package whose journal cannot apply the discovery-
     await makeArtifact(root, "0.1.0", [], true);
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }),
       /journal is missing 0007_discovery_mode_changes/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+for (const scenario of [
+  { name: "missing renderer assets", omitted: ["renderer-assets"], error: /missing renderer resource/ },
+  { name: "missing creation SQL", omitted: ["dist/service/db/migrations/0008_project_creation.sql"], error: /missing.*0008_project_creation/ },
+  { name: "missing creation journal entry", omitEntry: 8, error: /journal is missing 0008_project_creation/ },
+  { name: "modified creation SQL", corrupt: "dist/service/db/migrations/0008_project_creation.sql", error: /migration differs from source/ },
+  { name: "missing native integration", corrupt: "dist/desktop/main.cjs", error: /missing native openPath/ },
+  { name: "missing backend routing", corrupt: "dist/service/entry.cjs", error: /missing private Reveal routing/ },
+  { name: "modified prior SQL", corrupt: "dist/service/db/migrations/0000_settings.sql", error: /migration differs from source/ },
+]) test(`artifact check rejects ${scenario.name}`, async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-creation-"));
+  try {
+    await makeArtifact(root, "0.1.0", scenario.omitted, scenario.omitEntry, scenario.corrupt);
+    await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), scenario.error);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

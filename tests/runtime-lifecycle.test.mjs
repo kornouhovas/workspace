@@ -133,7 +133,10 @@ test("native observation records only exact-target booleans and keeps unavailabl
   assert.equal(call[2].env.WORKSPACE_OBSERVE_TARGET, target);
   assert.equal(call[1].join(" ").includes(target), false, "Target must remain data, never PowerShell code");
   assert.deepEqual(await observeFileManagerTarget("/tmp/disposable", "darwin", run), { status: "passed", asserted: true, exactTargetObserved: true });
-  assert.equal(call[1].at(-1), "/tmp/disposable");
+  assert.deepEqual(call[1].slice(-2), ["/tmp/disposable", "disposable"]);
+  assert.ok(call[1][1].includes('windows whose name is (item 2 of argv)'));
+  assert.ok(call[1][1].includes('target of candidate as alias is expectedTarget'));
+  assert.ok(call[1][1].includes('with timeout of 2 seconds'));
   for (const stdout of ["false", "", "some unrelated window"]) {
     const result = await observeFileManagerTarget("/tmp/disposable", "darwin", async () => ({ stdout }));
     assert.equal(result.status, "pending");
@@ -154,7 +157,7 @@ test("file-manager cleanup confines window closure to the supplied disposable pa
     const [program, args, options] = calls.at(-1);
     assert.ok(["osascript", "powershell.exe"].includes(program));
     assert.equal(args.join(" ").includes("kill"), false);
-    if (platform === "darwin") { assert.equal(args.at(-1), target); assert.ok(args[1].includes("is expectedTarget then close candidate")); }
+    if (platform === "darwin") { assert.deepEqual(args.slice(-2), [target, "owned-fixture"]); assert.ok(args[1].includes("is expectedTarget then close candidate")); }
     else { assert.equal(options.env.WORKSPACE_OBSERVE_TARGET, target); assert.ok(args.at(-1).includes("OrdinalIgnoreCase")); }
   }
   assert.equal((await closeDisposableFileManagerTarget("/tmp/owned", "linux", run)).status, "skipped");

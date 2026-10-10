@@ -858,3 +858,47 @@ for (const mode of ["direct", "grouped"]) {
     assert.deepEqual(inventory(pending.destination), []);
   }));
 }
+
+for (const mode of ["direct", "grouped"]) for (const relocation of ["refresh", "reassociate"]) {
+  test(`${mode} completed receipt releases vacated path after ${relocation} without replay or inherited values`, () => fixture(mode, (f) => {
+    let service = f.open();
+    const before = records(f.sql), request = command(f, "Original"), receipt = service.handleCommand(request);
+    assert.equal(receipt.value.outcome, "completed");
+    const original = receipt.value.project, oldPath = join(f.root, original.relativePath);
+    const relativePath = mode === "grouped" ? "Category/Renamed" : "Renamed", moved = join(f.root, relativePath);
+    const propertyId = before.property_definitions[0].id;
+    f.sql.prepare("INSERT INTO text_property_values VALUES (?, ?, ?, ?)").run(original.projectId, propertyId, f.sourceId, "  Exact\nТекст 📝  ");
+    fs.writeFileSync(join(oldPath, "sentinel"), "original bytes");
+    if (relocation === "reassociate") {
+      // Persist a retained association before moving, then explicitly choose the new folder.
+      fs.renameSync(oldPath, join(f.directory, "held"));
+      service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.workspaceId });
+      const missing = service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspaceId, projectId: original.projectId });
+      assert.equal(missing.ok, true);
+      fs.renameSync(join(f.directory, "held"), moved);
+      const preview = service.workspaces.previewProjectRecovery({ type: "workspace.previewProjectRecovery", workspaceId: f.workspaceId, projectId: original.projectId }).value;
+      assert.equal(service.workspaces.reassociateProject({ type: "workspace.reassociateProject", workspaceId: f.workspaceId, projectId: original.projectId, previewToken: preview.previewToken, relativePath }).ok, true);
+    } else {
+      fs.renameSync(oldPath, moved);
+      assert.equal(service.workspaces.refreshSource(creationQuery(f, "refreshSource")).ok, true);
+    }
+    assert.equal(f.sql.prepare("SELECT relative_path FROM projects WHERE id = ?").get(original.projectId).relative_path, relativePath);
+    const fresh = service.handleCommand(command(f, "Original"));
+    assert.equal(fresh.value.outcome, "completed", JSON.stringify(fresh));
+    assert.notEqual(fresh.value.project.projectId, original.projectId);
+    assert.deepEqual(inventory(oldPath), []);
+    const snapshot = records(f.sql), files = inventory(f.root);
+    assert.deepEqual(service.handleCommand(request), receipt);
+    assert.deepEqual(records(f.sql), snapshot); assert.deepEqual(inventory(f.root), files);
+    assert.equal(fs.readFileSync(join(moved, "sentinel"), "utf8"), "original bytes");
+    assert.equal(snapshot.text_property_values.find((v) => v.project_id === original.projectId).value, "  Exact\nТекст 📝  ");
+    assert.equal(snapshot.text_property_values.some((v) => v.project_id === fresh.value.project.projectId), false);
+    for (const table of ["settings", "workspaces", "views", "active_workspace", "categories", "category_properties", "property_definitions"]) assert.deepEqual(snapshot[table], before[table], table);
+    f.close(); service = f.open();
+    assert.deepEqual(service.handleCommand(request), receipt);
+    const projects = service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: f.siblingId }).value.projects;
+    assert.equal(projects.find((p) => p.projectId === original.projectId).relativePath, relativePath);
+    assert.equal(projects.find((p) => p.projectId === fresh.value.project.projectId).relativePath, original.relativePath);
+    assert.deepEqual(inventory(f.root), files);
+  }));
+}
