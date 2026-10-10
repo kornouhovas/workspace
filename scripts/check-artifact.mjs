@@ -35,12 +35,12 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     assert.ok(files.has(file), `Packaged app is missing ${file}`);
   }
 
-  const journal = JSON.parse((await extractFile(asarPath, "dist/service/db/migrations/meta/_journal.json")).toString());
+  const journal = JSON.parse((await extractFile(asarPath, join("dist", "service", "db", "migrations", "meta", "_journal.json"))).toString());
   assert.ok(journal.entries?.some((entry) => entry.idx === 7 && entry.tag === "0007_discovery_mode_changes"),
     "Packaged migration journal is missing 0007_discovery_mode_changes");
 
   const packaged = JSON.parse((await extractFile(asarPath, "package.json")).toString());
-  const buildVersion = JSON.parse((await extractFile(asarPath, "dist/version.json")).toString()).version;
+  const buildVersion = JSON.parse((await extractFile(asarPath, join("dist", "version.json"))).toString()).version;
   assert.equal(buildVersion, packaged.version, "Packaged build and package versions differ");
 
   const resourcesDirectory = dirname(asarPath);

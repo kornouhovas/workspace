@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
@@ -57,6 +58,51 @@ test("ASAR file listings normalize Windows separators before resource checks", (
     normalizeAsarEntry(win32.join("/", "dist/service/db/migrations/meta/_journal.json")),
     "dist/service/db/migrations/meta/_journal.json",
   );
+});
+
+test("artifact checks extract real ASAR entries with Windows path semantics", async (t) => {
+  // Only the child changes node:path. External fixture paths stay host-native;
+  // relative archive paths and ASAR traversal use Windows separators.
+  const code = `
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { syncBuiltinESMExports } from "node:module";
+    import { checkArtifact } from ${JSON.stringify(new URL("../scripts/check-artifact.mjs", import.meta.url).href)};
+    const native = { join: path.join, dirname: path.dirname, basename: path.basename, sep: path.sep };
+    // On Windows path.win32 is path itself, so capture before replacing methods.
+    const windows = { join: path.win32.join, dirname: path.win32.dirname, basename: path.win32.basename, sep: path.win32.sep };
+    const isAbsolute = path.isAbsolute;
+    try {
+      path.sep = windows.sep;
+      path.dirname = windows.dirname;
+      path.basename = windows.basename;
+      path.join = (...parts) => isAbsolute(parts[0]) ? native.join(...parts) : windows.join(...parts);
+      syncBuiltinESMExports();
+      const result = checkArtifact(process.argv[1], { platform: "darwin", arch: "arm64" });
+      if (process.argv[2]) await assert.rejects(result, new RegExp(process.argv[2]));
+      else assert.equal((await result).version, "0.1.0");
+    } finally {
+      Object.assign(path, native);
+      syncBuiltinESMExports();
+    }
+  `;
+  for (const scenario of [
+    { name: "valid package" },
+    { name: "missing migration", omitted: ["dist/service/db/migrations/0007_discovery_mode_changes.sql"], error: "missing dist/service/db/migrations/0007_discovery_mode_changes" },
+    { name: "missing journal", omitted: ["dist/service/db/migrations/meta/_journal.json"], error: "missing dist/service/db/migrations/meta/_journal" },
+    { name: "missing journal entry", omitEntry: true, error: "journal is missing 0007_discovery_mode_changes" },
+    { name: "version mismatch", version: "9.9.9", error: "versions differ" },
+  ]) {
+    await t.test(scenario.name, async () => {
+      const root = await mkdtemp(join(tmpdir(), "workspace-artifact-win-paths-"));
+      try {
+        await makeArtifact(root, scenario.version, scenario.omitted, scenario.omitEntry);
+        execFileSync(process.execPath, ["--input-type=module", "-e", code, join(root, "bundle"), scenario.error ?? ""], {
+          encoding: "utf8", timeout: 10000, stdio: "pipe",
+        });
+      } finally { await rm(root, { recursive: true, force: true }); }
+    });
+  }
 });
 
 test("artifact check verifies launch resources, migration, native SQLite, license, and version", async () => {
