@@ -12,7 +12,7 @@ import { packagedExecutablePath } from "./runtime-executable.mjs";
 import { cleanupOwnedFixture, closeRuntimeSession, ownedProcessesStopped, withDeadline } from "./runtime-lifecycle.mjs";
 import { assertRenameAcceptance, createRenameEvidence, recordRenameEvidence } from "./runtime-evidence.mjs";
 import { closeDisposableFileManagerTarget, waitForFileManagerTarget } from "./file-manager-evidence.mjs";
-import { waitForRuntimeInterface } from "./runtime-startup.mjs";
+import { createRenameRuntimeStartup } from "./rename-runtime-startup.mjs";
 import { nativeBridgeCleanupEvidence } from "./native-bridge-evidence.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -107,11 +107,11 @@ export async function runProjectRenameUi(mode = "dev") {
   await mkdir(evidenceDirectory, { recursive: true });
   const evidence = createRenameEvidence(), observations = [], shutdowns = [];
   const ownedProcesses = new Set(), backendPids = new Set(), nativeTargets = new Set();
-  let current, failure, active, launchUnverified = false, nativeStopped = true;
+  let failure, active, nativeStopped = true;
   // Identify exercised build inputs; screenshots/results of separate invocations
   // must never be attributed to a different development/packaged artifact.
   const digest = createHash("sha256");
-  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/runtime-evidence.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
+  for (const path of ["package-lock.json", "scripts/smoke-project-rename-ui.mjs", "scripts/runtime-evidence.mjs", "scripts/rename-runtime-startup.mjs", "scripts/runtime-startup.mjs", "scripts/runtime-lifecycle.mjs", "tests/fixtures/project-rename-crash-worker.mjs", "dist/desktop/main.cjs", "dist/desktop/preload.cjs", "dist/service/entry.cjs", "dist/service/settings.mjs", "dist/service/native/project-rename.node"]) digest.update(path).update(await readFile(join(root, path)));
   if (mode === "release") {
     const resources = process.platform === "darwin" ? resolve(dirname(executablePath), "../Resources") : join(dirname(executablePath), "resources");
     digest.update(await readFile(join(resources, "app.asar")));
@@ -140,19 +140,11 @@ export async function runProjectRenameUi(mode = "dev") {
     recordRenameEvidence(target, stage, { status: "passed", asserted: true, ...details });
     active = previous; await save();
   };
-  async function readBackendPids(electron) {
-    try {
-      const pids = await withDeadline(electron.evaluate(({ app }) => app.getAppMetrics().filter(metric => metric.type === "Utility" && metric.serviceName?.includes("Node")).map(metric => metric.pid)), 10000, "Rename backend metrics");
-      assert.ok(pids.length); for (const pid of pids) backendPids.add(pid); return pids;
-    } catch (error) { launchUnverified = true; throw error; }
-  }
+  const startup = createRenameRuntimeStartup({ launchElectron: options => _electron.launch(options), ownedProcesses, backendPids,
+    recordStartup: async outcome => { observations.push({ startup: outcome }); await save(); } });
   async function launch(data) {
-    launchUnverified = true;
-    const electron = await _electron.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root, env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
-    ownedProcesses.add(electron.process()); current = { electron };
-    await readBackendPids(electron); launchUnverified = false;
-    const page = await electron.firstWindow({ timeout: 30000 }); current.page = page; page.setDefaultTimeout(15000);
-    await waitForRuntimeInterface(page, async startup => { observations.push({ startup }); await save(); });
+    const page = await startup.launch({ executablePath, args: mode === "dev" ? [root] : [], cwd: root, env: { ...process.env, WORKSPACE_USER_DATA_DIR: data }, timeout: 30000 });
+    const { electron } = startup.current;
     await check(evidence, "isolation", async () => {
       assert.deepEqual(await electron.evaluate(({ BrowserWindow, app }) => {
         const p = BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
@@ -163,10 +155,10 @@ export async function runProjectRenameUi(mode = "dev") {
     return page;
   }
   async function shutdown() {
-    const closing = current; current = undefined;
+    const closing = startup.current; startup.clearCurrent();
     const shutdown = { passed: false }; shutdowns.push(shutdown);
     try {
-      await closeRuntimeSession(closing.electron, { shutdown, readBackendPids,
+      await closeRuntimeSession(closing.electron, { shutdown, readBackendPids: startup.readBackendPids,
       beforeClose: save,
       assertBackendsStopped: async pids => {
         for (const pid of pids) {
@@ -242,7 +234,7 @@ export async function runProjectRenameUi(mode = "dev") {
   }
   async function reveal(page, setup, name, t, targetEvidence) {
     const target = join(setup.parent, name); nativeTargets.add(target);
-    await current.electron.evaluate(({ shell }) => {
+    await startup.current.electron.evaluate(({ shell }) => {
       globalThis.renameNativeCalls = []; globalThis.renameNativeOpens = [];
       globalThis.renameNativeBridge = { started: 0, stopped: 0, active: 0, unknown: false };
       if (process.platform === "win32") {
@@ -265,7 +257,7 @@ export async function runProjectRenameUi(mode = "dev") {
       await page.waitForFunction(() => globalThis.document.querySelector(".project-reveal .bb-status") !== null);
       const calls = await withDeadline((async () => {
         for (let attempt = 0; attempt < (process.platform === "win32" ? 150 : 50); attempt++) {
-          const calls = await current.electron.evaluate(() => globalThis.renameNativeCalls);
+          const calls = await startup.current.electron.evaluate(() => globalThis.renameNativeCalls);
           if (calls.some(call => call.returned)) return calls;
           await new Promise(done => setTimeout(done, 100));
         }
@@ -273,15 +265,15 @@ export async function runProjectRenameUi(mode = "dev") {
       })(), process.platform === "win32" ? 17000 : 10000, "Native rename Reveal");
       assert.deepEqual(calls, [{ path: target, returned: true }]);
       if (process.platform === "win32") {
-        assert.deepEqual(await current.electron.evaluate(() => globalThis.renameNativeOpens), [target]);
-        const bridge = nativeBridgeCleanupEvidence(await current.electron.evaluate(() => globalThis.renameNativeBridge));
+        assert.deepEqual(await startup.current.electron.evaluate(() => globalThis.renameNativeOpens), [target]);
+        const bridge = nativeBridgeCleanupEvidence(await startup.current.electron.evaluate(() => globalThis.renameNativeBridge));
         observations.push({ bridge }); nativeStopped &&= bridge.status === "passed"; assert.equal(nativeStopped, true);
       }
       return { exactCommittedLocation: true, invocationCount: 1 };
     });
     await check(targetEvidence, "revealAcknowledgment", async () => {
       await page.getByText(t.dispatched, { exact: true }).waitFor();
-      assert.equal((await current.electron.evaluate(() => globalThis.renameNativeCalls)).length, 1);
+      assert.equal((await startup.current.electron.evaluate(() => globalThis.renameNativeCalls)).length, 1);
     });
     await check(targetEvidence, "fileManagerOutcome", async () => {
       const outcome = await waitForFileManagerTarget(target, process.platform, undefined, { windowsDiagnostics: true });
@@ -434,10 +426,10 @@ export async function runProjectRenameUi(mode = "dev") {
   } catch (error) {
     failure = error;
     if (active) recordRenameEvidence(active.target, active.stage, { status: "failed", reason: error.message });
-    if (current?.page) await current.page.screenshot({ path: join(evidenceDirectory, `${mode}-rename-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
+    if (startup.current?.page) await startup.current.page.screenshot({ path: join(evidenceDirectory, `${mode}-rename-failed.png`), fullPage: true, timeout: 3000 }).catch(() => {});
     await save().catch(() => {});
   } finally {
-    if (current) {
+    if (startup.current) {
       try { await shutdown(); } catch (error) { failure ??= error; recordRenameEvidence(evidence, "normalShutdown", { status: "failed", reason: error.message }); }
     }
     for (const target of nativeTargets) {
@@ -446,7 +438,7 @@ export async function runProjectRenameUi(mode = "dev") {
       if (cleanup.status !== "completed") failure ??= new Error("Rename file-manager cleanup unverified");
       else nativeTargets.delete(target);
     }
-    await cleanupOwnedFixture(fixture, { processesStopped: nativeStopped && nativeTargets.size === 0 && ownedProcessesStopped(ownedProcesses, backendPids, { launchUnverified }), primaryFailure: failure,
+    await cleanupOwnedFixture(fixture, { processesStopped: nativeStopped && nativeTargets.size === 0 && ownedProcessesStopped(ownedProcesses, backendPids, { launchUnverified: startup.launchUnverified }), primaryFailure: failure,
       record: async outcome => {
         recordRenameEvidence(evidence, "fixtureCleanup", outcome);
         try { if (!failure) assertRenameAcceptance(evidence); } catch (error) { failure = error; }
