@@ -28,13 +28,67 @@ export function explorerSelectionArgument(target) {
   return `/select,"${target}"`;
 }
 
-export async function resolveSystemExplorer(runResolver = execute) {
-  const output = await runResolver(resolverProgram, ["-NoProfile", "-NonInteractive", "-File", resolverScript], {
-    timeout: 10000, maxBuffer: 1024, windowsHide: true, shell: false,
-  });
-  if (typeof output?.stdout !== "string" || Buffer.byteLength(output.stdout) > 1024 ||
-    output.stderr !== "" || !/^C:\\Windows\r?\n$/i.test(output.stdout)) throw new Error("System directory unavailable");
-  return win32.join(output.stdout.replace(/\r?\n$/, ""), "explorer.exe");
+const resolverCodes = ["EACCES", "EPERM", "ENOENT", "EIO", "ENOMEM", "EAGAIN", "EINVAL", "ETIMEDOUT", "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"];
+const resolverSignals = ["SIGTERM", "SIGKILL", "SIGINT", "SIGABRT", "SIGSEGV", "SIGBREAK"];
+const outputShape = (value, expected) => {
+  const known = typeof value === "string";
+  const bytes = known ? Buffer.byteLength(value) : null;
+  return Object.freeze({ present: known ? bytes > 0 : null, bytes: known ? Math.min(bytes, 1024) : null,
+    overflow: known ? bytes > 1024 : null, expectedShape: known ? expected(value) : null });
+};
+
+// Observation never authorizes output or changes the resolver's return/throw
+// contract. Unknown process fields are deliberately distinct from success.
+export async function resolveSystemExplorer(runResolver = execute, observe) {
+  const started = performance.now();
+  let output, failure, outcome, child, closeEvidence, spawned = false, notStarted = false;
+  const onSpawn = () => { spawned = true; };
+  const onError = (error) => {
+    if (!spawned && child?.pid === undefined && ["ENOENT", "EACCES", "EPERM", "ENOMEM", "EAGAIN"].includes(error?.code)) notStarted = true;
+  };
+  const onClose = (code, signal) => {
+    closeEvidence ??= { exitCode: finiteExit(code), signal: signal === null ? null : resolverSignals.includes(signal) ? signal : "unknown" };
+  };
+  try {
+    const pending = runResolver(resolverProgram, ["-NoProfile", "-NonInteractive", "-File", resolverScript], {
+      timeout: 10000, maxBuffer: 1024, windowsHide: true, shell: false,
+    });
+    child = pending?.child;
+    child?.on?.("close", onClose);
+    child?.on?.("spawn", onSpawn);
+    child?.on?.("error", onError);
+    output = await pending;
+    if ((closeEvidence && (closeEvidence.exitCode !== 0 || closeEvidence.signal !== null)) ||
+      (finiteExit(output?.code) !== null && output.code !== 0)) outcome = "nonzero_exit";
+    else if ((typeof output?.stdout === "string" && Buffer.byteLength(output.stdout) > 1024) ||
+      (typeof output?.stderr === "string" && Buffer.byteLength(output.stderr) > 1024)) outcome = "output_limit";
+    else if (typeof output?.stderr === "string" && output.stderr !== "") outcome = "stderr_nonempty";
+    else if (typeof output?.stdout !== "string" || output.stderr !== "" ||
+      !/^C:\\Windows\r?\n$/i.test(output.stdout)) outcome = "output_invalid";
+    if (outcome) throw new Error("System directory unavailable");
+    outcome = "resolved";
+    return win32.join(output.stdout.replace(/\r?\n$/, ""), "explorer.exe");
+  } catch (error) {
+    failure = error;
+    outcome ??= "execution_rejected";
+    throw error;
+  } finally {
+    const value = output ?? failure;
+    const elapsed = performance.now() - started;
+    const observation = Object.freeze({ version: 1, outcome,
+      elapsedMs: Number.isFinite(elapsed) && elapsed >= 0 ? Math.min(Math.round(elapsed), 60000) : null,
+      exitCode: closeEvidence ? closeEvidence.exitCode : finiteExit(value?.code), errorCode: outcome === "resolved" ? null : resolverCodes.includes(failure?.code) ? failure.code : "unknown",
+      signal: closeEvidence ? closeEvidence.signal : resolverSignals.includes(value?.signal) ? value.signal : "unknown",
+      killed: typeof child?.killed === "boolean" ? child.killed : typeof value?.killed === "boolean" ? value.killed : null,
+      termination: notStarted ? "not_started" : closeEvidence ? "confirmed" : "unknown",
+      stdout: outputShape(value?.stdout, (text) => /^C:\\Windows\r?\n$/i.test(text)),
+      stderr: outputShape(value?.stderr, (text) => text === ""),
+    });
+    child?.removeListener?.("close", onClose);
+    child?.removeListener?.("spawn", onSpawn);
+    child?.removeListener?.("error", onError);
+    try { observe?.(observation); } catch { /* Diagnostic consumers cannot rescue or fail native intent. */ }
+  }
 }
 
 // Track only the direct child. Never kill Explorer: it may host shared windows.

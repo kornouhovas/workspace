@@ -166,7 +166,7 @@ function experimentFixture({ bridge = {}, selected = true, resolverError, fixtur
         exactParentCount: 1, errorCount: 0, errors: [] }) };
     }, timing: { now: () => now, sleep: async (ms) => { now += ms; } } };
   f.child.on("close", () => { f.child.closedForFixture = true; });
-  return { ...f, options, events, removed, run: async () => {
+  return { ...f, get calls() { return f.calls; }, options, events, removed, run: async () => {
     let result;
     try { result = await runReadySelectionExperiment(options); }
     catch (error) { assert.equal(error.message, "Windows ready selection experiment failed"); result = error.evidence; }
@@ -227,4 +227,30 @@ test("CLI accepts no arguments and prints fixed private messages", async () => {
   assert.equal(await runReadySelectionCli({ ...options, args: [] }), 1); assert.equal(calls, 1);
   assert.equal(await runReadySelectionCli({ ...options, args: [], experiment: async () => {} }), 0);
   assert.equal(out, "Windows ready selection experiment passed.\n"); assert.equal(err.includes(privateValue), false);
+});
+
+test("original resolver failure persists its diagnostic once before any fixture or native command", async () => {
+  const f = experimentFixture(); let calls = 0, fixtureCalls = 0;
+  f.options.runResolver = async () => { calls++; throw { code: "EPERM", killed: true, signal: "SIGTERM",
+    stdout: privateValue, stderr: privateValue, message: privateValue }; };
+  f.options.filesystem.mkdtemp = async () => { fixtureCalls++; throw new Error("unreachable"); };
+  const result = await f.run();
+  assert.deepEqual(result.failure, { stage: "resolver", code: "unavailable" });
+  assert.equal(result.resolver.status, "unavailable");
+  assert.equal(result.resolver.observation.outcome, "execution_rejected");
+  assert.equal(result.resolver.observation.errorCode, "EPERM");
+  assert.equal(result.resolver.observation.termination, "unknown");
+  assert.equal(calls, 1); assert.equal(fixtureCalls, 0); assert.equal(f.calls, 0);
+  assert.deepEqual(f.events, []); assert.deepEqual(f.removed, []);
+  assert.equal(result.persistence.status, "completed");
+});
+
+test("successful resolver diagnostic does not rescue later readiness or cleanup failures", async () => {
+  for (const options of [{ bridge: { value: absent } }, { cleanupError: true }, { selected: false }]) {
+    const f = experimentFixture(options); let calls = 0;
+    f.options.runResolver = async () => { calls++; return { stdout: "C:\\Windows\r\n", stderr: "" }; };
+    const result = await f.run();
+    assert.equal(result.resolver.observation.outcome, "resolved");
+    assert.equal(result.status, "failed"); assert.equal(calls, 1); assert.equal(f.calls, 1);
+  }
 });

@@ -271,6 +271,12 @@ jobs:
           node-version: 22.21.1
       - name: Open one owned parent and select once only after exact readiness
         run: node scripts/windows-ready-selection.mjs
+      - name: Sample the read-only system resolver independently
+        if: always()
+        run: node scripts/windows-resolver-diagnosis.mjs
+      - name: Verify bounded resolver observation and read-only series controls
+        if: always()
+        run: node --test tests/windows-explorer-selection.test.mjs tests/windows-resolver-diagnosis.test.mjs
       - name: Verify controlled command readiness lifetime and cleanup boundaries
         if: always()
         run: node --test tests/windows-ready-selection.test.mjs tests/windows-ready-selection-com.test.mjs tests/file-manager-evidence.test.mjs
@@ -280,4 +286,11 @@ jobs:
         with:
           name: issue-17-windows-ready-select-${{ matrix.os }}
           path: work/windows-ready-selection-evidence/result.json
+          if-no-files-found: error
+      - name: Preserve separate read-only resolver samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-18-windows-resolver-read-only-series-${{ matrix.os }}
+          path: work/issue-18/windows-resolver-diagnosis/read-only-series/
           if-no-files-found: error

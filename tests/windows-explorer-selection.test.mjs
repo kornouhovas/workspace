@@ -220,3 +220,142 @@ public static class ArgumentProbe {
   assert.equal(result.stdout.trim(), "true");
   assert.equal(result.stderr, "");
 });
+
+test("resolver observation preserves LF and CRLF authorization without retaining output", async () => {
+  for (const stdout of ["C:\\Windows\n", "c:\\WINDOWS\r\n"]) {
+    let observation;
+    const executable = await resolveSystemExplorer(async (program, args, options) => {
+      assert.equal(program, String.raw`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`);
+      assert.deepEqual(args.slice(0, 3), ["-NoProfile", "-NonInteractive", "-File"]);
+      assert.ok(args[3].endsWith("windows-explorer-directory.ps1"));
+      assert.deepEqual(options, { timeout: 10000, maxBuffer: 1024, windowsHide: true, shell: false });
+      return { stdout, stderr: "", secret: privateTarget };
+    }, (value) => { observation = value; });
+    assert.equal(executable.toLowerCase(), String.raw`c:\windows\explorer.exe`);
+    assert.equal(observation.outcome, "resolved");
+    assert.equal(observation.stdout.expectedShape, true);
+    assert.equal(observation.stderr.expectedShape, true);
+    assert.equal(observation.termination, "unknown");
+    assert.equal(observation.exitCode, null);
+    assert.equal(JSON.stringify(observation).includes("Windows"), false);
+    assert.equal(JSON.stringify(observation).includes(privateTarget), false);
+    assert.ok(observation.elapsedMs >= 0 && observation.elapsedMs <= 60000);
+  }
+});
+
+function resolverProcess({ output = { stdout: "C:\\Windows\n", stderr: "" }, error,
+  close = true, exitCode = 0, signal = null } = {}) {
+  const child = new EventEmitter();
+  child.killed = error?.killed ?? false;
+  const run = () => {
+    const promise = new Promise((resolve, reject) => queueMicrotask(() => {
+      if (close) child.emit("close", exitCode, signal);
+      if (error) reject(error); else resolve(output);
+    }));
+    promise.child = child;
+    return promise;
+  };
+  return { run, child };
+}
+
+test("resolver confirms only direct-child close and freezes its finite snapshot", async () => {
+  const f = resolverProcess(); let observation;
+  await resolveSystemExplorer(f.run, (value) => { observation = value; });
+  assert.equal(observation.termination, "confirmed");
+  assert.equal(observation.exitCode, 0); assert.equal(observation.signal, null);
+  assert.equal(observation.killed, false);
+  const persisted = JSON.stringify(observation);
+  f.child.emit("close", 7, "SIGKILL");
+  assert.equal(JSON.stringify(observation), persisted);
+  assert.throws(() => { observation.stdout.bytes = 999; }, TypeError);
+});
+
+test("resolver records classified rejection and invalid output without broadening authorization", async () => {
+  const cases = [
+    [{ error: { code: "EPERM", stdout: privateTarget, stderr: privateTarget, killed: true, signal: "SIGTERM", message: privateTarget }, exitCode: 1 }, "execution_rejected"],
+    [{ exitCode: 8 }, "nonzero_exit"],
+    [{ output: { stdout: "C:\\Windows\n", stderr: privateTarget } }, "stderr_nonempty"],
+    [{ output: { stdout: "x".repeat(1025), stderr: "" } }, "output_limit"],
+    [{ output: { stdout: "C:\\Windows\n", stderr: "x".repeat(1025) } }, "output_limit"],
+    [{ output: { stdout: "D:\\Windows\n", stderr: "" } }, "output_invalid"],
+    [{ output: { stderr: "" } }, "output_invalid"],
+    [{ output: null }, "output_invalid"],
+    [{ error: { code: privateTarget, signal: privateTarget, killed: privateTarget, stdout: 77,
+      stderr: {}, stack: privateTarget, pid: 45 }, close: false }, "execution_rejected"],
+  ];
+  for (const [options, outcome] of cases) {
+    let observation;
+    await assert.rejects(resolveSystemExplorer(resolverProcess(options).run, (value) => { observation = value; }));
+    assert.equal(observation.outcome, outcome);
+    assert.equal(JSON.stringify(observation).includes(privateTarget), false);
+    assert.deepEqual(Object.keys(observation).sort(), ["version", "outcome", "elapsedMs", "exitCode", "errorCode",
+      "signal", "killed", "termination", "stdout", "stderr"].sort());
+    if (outcome === "output_limit") {
+      const stream = observation.stdout.overflow ? observation.stdout : observation.stderr;
+      assert.equal(stream.bytes, 1024); assert.equal(stream.overflow, true);
+    }
+    if (options.error?.code === "EPERM") assert.equal(observation.errorCode, "EPERM");
+    if (options.close === false) {
+      assert.equal(observation.termination, "unknown"); assert.equal(observation.errorCode, "unknown");
+      assert.equal(observation.killed, null); assert.equal(observation.signal, "unknown");
+      assert.equal(observation.stdout.bytes, null);
+    }
+  }
+});
+
+test("rejection and killed flags without close cannot prove termination or timeout", async () => {
+  let observation;
+  const f = resolverProcess({ error: { code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER", killed: true, signal: "SIGTERM" }, close: false });
+  await assert.rejects(resolveSystemExplorer(f.run, (value) => { observation = value; }));
+  assert.equal(observation.termination, "unknown"); assert.equal(observation.outcome, "execution_rejected");
+  assert.equal(observation.errorCode, "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"); assert.equal(observation.killed, true);
+  f.child.emit("close", 0, null); assert.equal(observation.termination, "unknown");
+  await assert.rejects(resolveSystemExplorer(async () => { throw privateTarget; }, (value) => { observation = value; }));
+  assert.equal(observation.errorCode, "unknown"); assert.equal(observation.signal, "unknown");
+  assert.equal(observation.killed, null); assert.equal(observation.termination, "unknown");
+  // A diagnostic callback can neither rescue rejection nor invalidate success.
+  await assert.rejects(resolveSystemExplorer(f.run, () => { throw new Error("consumer"); }));
+  assert.equal(await resolveSystemExplorer(resolverProcess().run, () => { throw new Error("consumer"); }), String.raw`C:\Windows\explorer.exe`);
+});
+
+test("only an observed spawn failure establishes a child was not started", async () => {
+  const child = new EventEmitter(); child.pid = undefined; child.killed = false; child.on("error", () => {});
+  const error = { code: "ENOENT", stdout: "", stderr: "" }; let observation;
+  const run = () => {
+    const pending = new Promise((_resolve, reject) => queueMicrotask(() => {
+      child.emit("error", error); reject(error);
+    }));
+    pending.child = child; return pending;
+  };
+  await assert.rejects(resolveSystemExplorer(run, (value) => { observation = value; }));
+  assert.equal(observation.termination, "not_started");
+  assert.equal(observation.errorCode, "ENOENT");
+});
+
+test("real execFile lifecycle supplies close evidence through the existing promise-child seam", async () => {
+  for (const [program, expected] of [
+    ['process.stdout.write("C:\\\\Windows\\n")', "resolved"],
+    ['process.stdout.write("C:\\\\Windows\\n"); process.exitCode = 7', "execution_rejected"],
+    ['process.stdout.write("x".repeat(2048))', "execution_rejected"],
+  ]) {
+    let observation;
+    const invoke = (_fixedProgram, _fixedArgs, options) => promisify(execFile)(process.execPath, ["-e", program], options);
+    if (expected === "resolved") await resolveSystemExplorer(invoke, (value) => { observation = value; });
+    else await assert.rejects(resolveSystemExplorer(invoke, (value) => { observation = value; }));
+    assert.equal(observation.outcome, expected); assert.equal(observation.termination, "confirmed");
+    if (program.includes("repeat")) assert.equal(observation.errorCode, "ERR_CHILD_PROCESS_STDIO_MAXBUFFER");
+  }
+});
+
+test("unknown exit and signal fields are dropped and elapsed duration never proves timeout", async (t) => {
+  let observation;
+  const f = resolverProcess({ exitCode: 1e100, signal: privateTarget });
+  await assert.rejects(resolveSystemExplorer(f.run, (value) => { observation = value; }));
+  assert.equal(observation.exitCode, null); assert.equal(observation.signal, "unknown");
+  assert.equal(JSON.stringify(observation).includes(privateTarget), false);
+  let tick = 0;
+  t.mock.method(performance, "now", () => tick++ === 0 ? 0 : 90000);
+  await assert.rejects(resolveSystemExplorer(async () => { throw null; }, (value) => { observation = value; }));
+  assert.equal(observation.elapsedMs, 60000); assert.equal(observation.outcome, "execution_rejected");
+  assert.equal(observation.errorCode, "unknown"); assert.equal(observation.termination, "unknown");
+});

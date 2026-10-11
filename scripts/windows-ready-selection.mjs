@@ -128,7 +128,7 @@ export async function runReadySelectionExperiment({
   if (platform !== "win32") fail("host", "unsupported");
   if (!evidence.metadata.codeSha) fail("metadata", "revision_unavailable");
   if (!evidence.failure) {
-    try { executable = await resolveSystemExplorer(runResolver); evidence.resolver.status = "completed"; }
+    try { executable = await resolveSystemExplorer(runResolver, (observation) => { evidence.resolver.observation = observation; }); evidence.resolver.status = "completed"; }
     catch { evidence.resolver.status = "unavailable"; fail("resolver", "unavailable"); }
   }
   if (!evidence.failure) {
