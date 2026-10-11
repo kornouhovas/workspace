@@ -88,72 +88,99 @@ function verifyAdapter(renameNoReplace) {
   return observations;
 }
 
-function verifyLoadFailures(wrapperFilename, nativeFilename, runtime) {
+function verifyLoadFailures(wrapperFilename, nativeFilename, runtime, ownedRoot, trace = () => {}) {
   const results = [];
-  for (const kind of ["missing", "corrupt"]) {
-    const root = rootFor();
-    try {
-      const service = join(root, "service"); mkdirSync(service);
-      const copy = join(service, "project-rename-filesystem.cjs"); copyFileSync(wrapperFilename, copy);
-      const binaryDirectory = runtime === "electron" ? join(service, "native") : join(root, "service-test-native");
-      mkdirSync(binaryDirectory);
-      if (kind === "corrupt") writeFileSync(join(binaryDirectory, "project-rename.node"), "not a native module");
-      // Unrelated module loading must succeed; only attempted mutation rejects.
-      const adapter = require(copy);
+  // The supervisor owns these copies. require.cache eviction cannot unload a DLL.
+  for (const kind of ["missing", "corrupt", "fixed-location"]) {
+    const root = join(ownedRoot, kind); mkdirSync(root, { recursive: true });
+    const service = join(root, "service"); mkdirSync(service);
+    const copy = join(service, "project-rename-filesystem.cjs"); copyFileSync(wrapperFilename, copy);
+    const directory = runtime === "electron" ? join(service, "native") : join(root, "service-test-native");
+    mkdirSync(directory);
+    const binary = join(directory, "project-rename.node");
+    if (kind === "corrupt") writeFileSync(binary, "not a native module");
+    if (kind === "fixed-location") copyFileSync(nativeFilename, binary);
+    trace({ stage: kind === "fixed-location" ? "fixed_loading" : `${kind}_loading` });
+    const adapter = require(copy);
+    if (kind === "fixed-location") verifyAdapter(adapter.renameNoReplace);
+    else {
       const from = join(root, "from"), to = join(root, "to"); mkdirSync(from);
       writeFileSync(join(from, "sentinel"), "preserved"); const original = identity(from);
       assert.equal(adapter.renameNoReplace(from, to), "native_unavailable");
       assert.deepEqual(identity(from), original); assert.equal(existsSync(to), false);
       assert.equal(readFileSync(join(from, "sentinel"), "utf8"), "preserved");
-      results.push({ scenario: kind, outcome: "native_unavailable" });
-      delete require.cache[copy];
-    } finally { rmSync(root, { recursive: true, force: true }); }
+    }
+    results.push({ scenario: kind, outcome: kind === "fixed-location" ? "verified" : "native_unavailable" });
+    trace({ stage: kind === "fixed-location" ? "fixed_loaded" : `${kind}_verified` });
   }
-  // Verify a valid fixed emitted location works independently of the caller's cwd.
-  const root = rootFor();
-  try {
-    const service = join(root, "service"); mkdirSync(service);
-    const copy = join(service, "project-rename-filesystem.cjs"); copyFileSync(wrapperFilename, copy);
-    const directory = runtime === "electron" ? join(service, "native") : join(root, "service-test-native");
-    mkdirSync(directory); copyFileSync(nativeFilename, join(directory, "project-rename.node"));
-    verifyAdapter(require(copy).renameNoReplace); delete require.cache[copy];
-    results.push({ scenario: "fixed-location", outcome: "verified" });
-  } finally { rmSync(root, { recursive: true, force: true }); }
   return results;
 }
 
 module.exports = { verifyAdapter, verifyLoadFailures };
 
+const fault = process.env.WORKSPACE_RENAME_FIXTURE_FAULT;
+const ownedRoot = process.env.WORKSPACE_RENAME_FIXTURE_ROOT;
+const safeCode = error => ["EPERM", "EACCES", "ENOENT", "ERR_ASSERTION", "ERR_DLOPEN_FAILED"].includes(error?.code) ? error.code : "unknown";
+
+function runWorker(runtime, send, acknowledge) {
+  let exitCode = 1;
+  acknowledge(() => {
+    // Wait for the supervisor to observe acknowledgment before exiting. This
+    // also prevents process.exit from truncating the final pipe/port message.
+    acknowledge(() => process.exit(exitCode));
+    send({ stage: "ack_received" });
+  });
+  try {
+    send({ stage: "worker_started" });
+    const wrapper = join(__dirname, "../../dist/service/project-rename-filesystem.cjs");
+    const binary = join(__dirname, runtime === "electron" ? "../../dist/service/native/project-rename.node" : "../../dist/service-test-native/project-rename.node");
+    const adapter = require(wrapper);
+    const scenarios = verifyAdapter(adapter.renameNoReplace);
+    const raw = verifyAdapter(require(binary).renameNoReplace);
+    const loading = verifyLoadFailures(wrapper, binary, runtime, join(ownedRoot, "loading"), send);
+    if (fault === "abnormal-exit") process.exit(7);
+    if (fault === "failure") throw Object.assign(new Error(), { code: "ERR_ASSERTION" });
+    exitCode = 0;
+    send({ stage: "result", ok: true, runtime, platform: process.platform, arch: process.arch,
+      versions: { electron: process.versions.electron, node: process.versions.node, napi: process.versions.napi }, scenarios, raw, loading });
+  } catch (error) {
+    send({ stage: "result", ok: false, runtime, outcome: "fixture_failed", code: safeCode(error) });
+  }
+}
+
 if (process.versions.electron) {
   if (process.type === "utility") {
-    process.parentPort.once("message", () => process.exit(process.exitCode ?? 0));
-    try {
-      const wrapper = join(__dirname, "../../dist/service/project-rename-filesystem.cjs");
-      const binary = join(__dirname, "../../dist/service/native/project-rename.node");
-      const adapter = require(wrapper);
-      const scenarios = verifyAdapter(adapter.renameNoReplace);
-      const raw = verifyAdapter(require(binary).renameNoReplace);
-      const loading = verifyLoadFailures(wrapper, binary, "electron");
-      process.parentPort.postMessage({ ok: true, runtime: "electron", platform: process.platform, arch: process.arch,
-        versions: { electron: process.versions.electron, node: process.versions.node, napi: process.versions.napi }, scenarios, raw, loading });
-      process.exitCode = 0;
-    } catch {
-      process.parentPort.postMessage({ ok: false, runtime: "electron", outcome: "fixture_failed" });
-      process.exitCode = 1;
-    }
+    runWorker("electron", message => process.parentPort.postMessage(message), callback => process.parentPort.once("message", callback));
   } else {
     const { app, utilityProcess } = require("electron");
-    const userData = rootFor(); app.setPath("userData", userData);
-    let received = false, child;
-    const deadline = setTimeout(() => { if (child) child.kill(); app.exit(1); }, 20000);
+    // Chromium owns this directory until main exits. Only the outer supervisor removes it.
+    const userData = join(ownedRoot, "user-data"); mkdirSync(userData); app.setPath("userData", userData);
+    const send = (message, flushed) => process.stdout.write(JSON.stringify(message) + "\n", flushed);
+    let result, acknowledged = false, child, timedOut = false;
+    const deadline = setTimeout(() => {
+      timedOut = true; send({ stage: "utility_timeout" });
+      if (child) child.kill(); else app.exit(1);
+    }, 20000);
     app.whenReady().then(() => {
+      send({ stage: "main_ready" });
       child = utilityProcess.fork(__filename, [], { stdio: "pipe", serviceName: "Rename adapter fixture" });
-      child.on("message", (result) => { received = result.ok === true; process.stdout.write(JSON.stringify(result) + "\n"); child.postMessage({ received: true }); });
-      child.on("exit", (code) => {
-        clearTimeout(deadline);
-        rmSync(userData, { recursive: true, force: true });
-        app.exit(received && code === 0 ? 0 : 1);
+      child.on("spawn", () => send({ stage: "utility_started", pid: child.pid }));
+      child.on("message", message => {
+        send(message);
+        if (message.stage === "ack_received") {
+          acknowledged = true; send({ stage: "exit_sent" }); child.postMessage({ exit: true });
+        }
+        if (message.stage === "result") {
+          result = message;
+          if (fault !== "missing-ack") { send({ stage: "ack_sent" }); child.postMessage({ received: true }); }
+        }
       });
-    }).catch(() => { clearTimeout(deadline); app.exit(1); });
+      child.on("exit", code => {
+        clearTimeout(deadline);
+        send({ stage: "utility_exit", code }, () => app.exit(!timedOut && acknowledged && result?.ok === true && code === 0 ? 0 : 1));
+      });
+    }).catch(error => { clearTimeout(deadline); send({ stage: "startup_failed", code: safeCode(error) }); app.exit(1); });
   }
+} else if (require.main === module) {
+  runWorker("node", message => process.stdout.write(JSON.stringify(message) + "\n"), callback => process.once("message", callback));
 }

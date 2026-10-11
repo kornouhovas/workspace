@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, win32 } from "node:path";
@@ -290,5 +290,47 @@ test("artifact check rejects a substituted unpacked project rename adapter", asy
     // still rejects a substituted module.
     await writeFile(join(substitute, "project-rename.node"), "substitute binary");
     await assert.rejects(checkArtifact(join(root, "bundle"), { platform: "darwin", arch: "arm64" }), /differs from current runtime build/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+for (const corruption of ["valid", "same-length", "shorter", "longer"]) test(`artifact native byte comparison has bounded child diagnostics: ${corruption}`, async () => {
+  const root = await mkdtemp(join(tmpdir(), "workspace-artifact-bounded-"));
+  try {
+    await makeArtifact(root);
+    const binary = join(root, "bundle/resources/app.asar.unpacked/dist/service/native/project-rename.node");
+    const original = await readFile(binary);
+    assert.ok(original.length > 0);
+    if (corruption === "same-length") {
+      const changed = Buffer.from(original); changed[Math.floor(changed.length / 2)] ^= 0xff;
+      await writeFile(binary, changed);
+    }
+    if (corruption === "shorter") await writeFile(binary, original.subarray(0, original.length - 1));
+    if (corruption === "longer") await writeFile(binary, Buffer.concat([original, Buffer.from([0])]));
+    const code = `
+      import assert from "node:assert/strict";
+      import { checkArtifact } from ${JSON.stringify(new URL("../scripts/check-artifact.mjs", import.meta.url).href)};
+      console.info = () => {};
+      try {
+        await checkArtifact(process.argv[1], { platform: "darwin", arch: "arm64" });
+        assert.equal(process.argv[2], "valid");
+        console.log(JSON.stringify({ accepted: true }));
+      } catch (error) {
+        assert.notEqual(process.argv[2], "valid");
+        assert.equal(error.code, "ERR_ASSERTION");
+        assert.match(error.message, /Project rename adapter differs from current runtime build/);
+        assert.ok(error.message.length < 256);
+        console.log(JSON.stringify({ accepted: false, code: error.code, messageLength: error.message.length }));
+      }
+    `;
+    // A reduced heap, finite pipe and existing 10s child deadline expose binary
+    // diff expansion without risking the test runner's memory or dumping bytes.
+    const child = spawnSync(process.execPath, ["--max-old-space-size=64", "--input-type=module", "-e", code, join(root, "bundle"), corruption],
+      { encoding: "utf8", timeout: 10000, maxBuffer: 4096 });
+    assert.equal(child.status, 0, JSON.stringify({ status: child.status, signal: child.signal, code: child.error?.code,
+      stdoutBytes: child.stdout.length, stderrBytes: child.stderr.length }));
+    assert.equal(child.signal, null);
+    assert.ok(child.stdout.length < 256); assert.equal(child.stderr, "");
+    assert.equal(JSON.parse(child.stdout).accepted, corruption === "valid");
   } finally { await rm(root, { recursive: true, force: true }); }
 });

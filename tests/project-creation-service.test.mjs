@@ -214,6 +214,38 @@ for (const mode of ["direct", "grouped"]) {
   }));
 }
 
+// Assertion context deliberately excludes names, IDs, paths, native tuples and messages.
+function creationContext(result, mode, phase) {
+  const oneOf = (value, values) => values.includes(value) ? value : null;
+  const problem = value => oneOf(value, ["invalid_name", "unconfigured", "stale_configuration", "category_unavailable",
+    "excluded", "archive", "reserved_destination", "occupied", "case_alias", "source_unavailable", "permission_denied",
+    "filesystem_changed", "filesystem_error", "ownership_uncertain", "destination_missing", "destination_replaced",
+    "destination_link", "native_conflict", "storage_error"]);
+  const operation = result?.value?.operation;
+  return JSON.stringify({
+    mode: oneOf(mode, ["direct", "grouped"]),
+    phase: oneOf(phase, ["applyDiscovery", "empty-root", "competing-mkdir"]),
+    ok: typeof result?.ok === "boolean" ? result.ok : null,
+    errorCode: oneOf(result?.error?.code, ["invalid_input", "filesystem", "storage", "service_unavailable", "stale_preview"]),
+    outcome: oneOf(result?.value?.outcome, ["completed", "recoverable", "rejected"]),
+    problem: problem(result?.value?.problem),
+    operationStage: oneOf(operation?.stage, ["intent", "evidence_recorded", "uncertain", "completed", "failed"]),
+    operationProblem: problem(operation?.problem),
+    evidenceRecorded: typeof operation?.evidenceRecorded === "boolean" ? operation.evidenceRecorded : null,
+  });
+}
+
+test("creation assertion context retains failure stage while bounding and excluding arbitrary result data", () => {
+  const secret = "private-path-and-error-text".repeat(10000);
+  const result = { ok: true, error: { code: secret, message: secret }, value: { outcome: "recoverable", name: secret,
+    operation: { stage: "uncertain", problem: "ownership_uncertain", evidenceRecorded: false, relativePath: secret, projectId: secret } } };
+  const context = creationContext(result, "grouped", "empty-root");
+  assert.ok(context.length < 400); assert.equal(context.includes("private"), false);
+  assert.equal(JSON.parse(context).operationProblem, "ownership_uncertain");
+  assert.equal(JSON.parse(context).errorCode, null);
+  assert.equal(JSON.parse(creationContext({ ok: false, error: { code: "stale_preview", message: secret } }, "direct", "applyDiscovery")).errorCode, "stale_preview");
+});
+
 // Real filesystem/SQLite, with an inert watcher scheduler for deterministic
 // injected races. Production native watchers remain covered by the fixtures above.
 function emptyFixture(mode, run, adapter = nativeProjectFilesystem, { configure = true, category = true } = {}) {
@@ -228,7 +260,8 @@ function emptyFixture(mode, run, adapter = nativeProjectFilesystem, { configure 
     const workspace = service.workspaces.create({ type: "workspace.create", name: "Empty", rootPath: root }).value;
     if (configure) {
       const preview = service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId: workspace.workspaceId, mode }).value;
-      assert.equal(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: preview.previewToken }).ok, true);
+      const applied = service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId: workspace.workspaceId, previewToken: preview.previewToken });
+      assert.equal(applied.ok, true, creationContext(applied, mode, "applyDiscovery"));
     }
     sql = new Database(databasePath);
     const categoryId = sql.prepare("SELECT id FROM categories").get()?.id;
@@ -237,10 +270,11 @@ function emptyFixture(mode, run, adapter = nativeProjectFilesystem, { configure 
   } finally { sql?.close(); service.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
-function assertRejected(f, request, problem) {
+function assertRejected(f, request, problem, phase) {
   const result = f.service.workspaces.createProject(request);
-  assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(result.value.outcome, "rejected", JSON.stringify(result));
-  assert.equal(result.value.problem, problem); return result.value;
+  const context = creationContext(result, request.mode, phase);
+  assert.equal(result.ok, true, context); assert.equal(result.value.outcome, "rejected", context);
+  assert.equal(result.value.problem, problem, context); return result.value;
 }
 
 for (const mode of ["direct", "grouped"]) {
@@ -297,7 +331,9 @@ for (const mode of ["direct", "grouped"]) {
   test(`${mode} creation works in an applied empty root/category with no implicit category or Text`, () => emptyFixture(mode, (f) => {
     const before = records(f.sql);
     const result = f.service.workspaces.createProject(command(f, "First"));
-    assert.equal(result.value.outcome, "completed");
+    const context = creationContext(result, mode, "empty-root");
+    assert.equal(result.ok, true, context);
+    assert.equal(result.value.outcome, "completed", context);
     const after = records(f.sql);
     assert.equal(after.projects.length, 1); assert.deepEqual(after.categories, before.categories);
     assert.deepEqual(after.text_property_values, []);
@@ -321,8 +357,9 @@ for (const mode of ["direct", "grouped"]) {
     let path;
     emptyFixture(mode, (f) => {
       const request = command(f, "Collision");
-      const failed = assertRejected(f, request, "occupied");
-      assert.equal(failed.operation.stage, "failed"); assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0);
+      const failed = assertRejected(f, request, "occupied", "competing-mkdir");
+      assert.equal(failed.operation.stage, "failed", creationContext({ ok: true, value: failed }, mode, "competing-mkdir"));
+      assert.equal(f.sql.prepare("SELECT count(*) AS n FROM projects").get().n, 0);
       assert.deepEqual(inventory(path), [["sentinel", Buffer.from("third party").toString("hex")]]);
     }, { ...nativeProjectFilesystem, mkdir(target) { path = target; fs.mkdirSync(target); fs.writeFileSync(join(target, "sentinel"), "third party"); nativeProjectFilesystem.mkdir(target); } });
   });

@@ -77,14 +77,14 @@ export async function checkArtifact(root, { platform = process.platform, arch = 
     const source = await readFile(join(sourceNativeDirectory, file));
     const unpacked = join(resourcesDirectory, "native", file);
     assert.ok((await lstat(unpacked).catch(() => null))?.isFile(), `Packaged app is missing external native script: ${file}`);
-    assert.deepEqual(await readFile(unpacked), source, `External native script differs from source: ${file}`);
+    assert.equal((await readFile(unpacked)).equals(source), true, `External native script differs from source: ${file}`);
   }
   const renameRelative = join("dist", "service", "native", "project-rename.node");
   assert.equal(statFile(asarPath, renameRelative).unpacked, true, "Project rename adapter must be unpacked from ASAR");
   const renameBinary = join(`${asarPath}.unpacked`, "dist", "service", "native", "project-rename.node");
   assert.ok((await lstat(renameBinary).catch(() => null))?.isFile(), "Unpacked project rename adapter is missing or linked");
   const builtRename = fileURLToPath(new URL("../dist/service/native/project-rename.node", import.meta.url));
-  assert.deepEqual(await readFile(renameBinary), await readFile(builtRename), "Project rename adapter differs from current runtime build");
+  assert.equal((await readFile(renameBinary)).equals(await readFile(builtRename)), true, "Project rename adapter differs from current runtime build");
   const licensePath = join(resourcesDirectory, "licenses/bb-MIT.txt");
   const license = await readFile(licensePath, "utf8");
   assert.match(license, /Copyright \(c\) 2026 Michael Yong/);
