@@ -1,3 +1,4 @@
+import type { WorkspaceRenameProjectCommand, ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview, ProjectRenameRecoveryAction } from "../contracts/project-rename.js";
 import type { WorkspaceCreateProjectCommand, ProjectCreationResult, ProjectCreationList, ProjectCreationRecoveryPreview, ProjectCreationRecoveryAction } from "../contracts/project-creation.js";
 import type { ProjectRevealResult } from "../contracts/project-reveal.js";
 import type { ProjectRecoveryPreview } from "../contracts/project-recovery.js";
@@ -26,6 +27,22 @@ export class WorkspaceServiceClient {
       if (active && isWorkspaceChangeEvent(event)) listener(event);
     });
     return () => { active = false; unsubscribe(); };
+  }
+
+  renameProject(input: Omit<WorkspaceRenameProjectCommand, "type">): Promise<ServiceResult<ProjectRenameResult>> {
+    return this.api.workspace({ ...input, type: "workspace.renameProject" });
+  }
+  listProjectRenames(workspaceId: string): Promise<ServiceResult<ProjectRenameList>> {
+    return this.api.workspace({ type: "workspace.listProjectRenames", workspaceId });
+  }
+  getProjectRename(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectRenameResult>> {
+    return this.api.workspace({ type: "workspace.getProjectRename", workspaceId, operationId });
+  }
+  previewProjectRenameRecovery(workspaceId: string, operationId: string): Promise<ServiceResult<ProjectRenameRecoveryPreview>> {
+    return this.api.workspace({ type: "workspace.previewProjectRenameRecovery", workspaceId, operationId });
+  }
+  recoverProjectRename(workspaceId: string, operationId: string, previewToken: string, action: ProjectRenameRecoveryAction): Promise<ServiceResult<ProjectRenameResult>> {
+    return this.api.workspace({ type: "workspace.recoverProjectRename", workspaceId, operationId, previewToken, action });
   }
 
   createProject(input: Omit<Extract<WorkspaceCreateProjectCommand, { mode: "direct" }>, "type"> | Omit<Extract<WorkspaceCreateProjectCommand, { mode: "grouped" }>, "type">): Promise<ServiceResult<ProjectCreationResult>> {

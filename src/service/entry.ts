@@ -1,3 +1,4 @@
+import { isProjectRenameRequest } from "../contracts/project-rename.js";
 import { randomUUID } from "node:crypto";
 import { startupDiagnostic, type StartupDiagnostic } from "../contracts/startup-diagnostic.js";
 import { isProjectCreationRequest } from "../contracts/project-creation.js";
@@ -119,11 +120,12 @@ export function startServiceProcess(
 }
 
 function isLoadQuery(input: unknown): boolean {
-  return isRecord(input) && (input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
+  return isRecord(input) && (input.type === "workspace.listProjectRenames" || input.type === "workspace.getProjectRename" || input.type === "workspace.previewProjectRenameRecovery" || input.type === "settings.load" || input.type === "workspace.load" || input.type === "workspace.previewDiscovery" || input.type === "workspace.getSourceObservation" || input.type === "workspace.listProjects" || input.type === "workspace.listTextProperties" || input.type === "workspace.previewProjectRecovery" || input.type === "workspace.listProjectCreations" || input.type === "workspace.getProjectCreation" || input.type === "workspace.previewProjectCreationRecovery");
 }
 
 function isMalformedWorkspaceRequest(input: unknown): boolean {
   if (!isRecord(input) || typeof input.type !== "string" || !input.type.startsWith("workspace.")) return false;
+  if (["workspace.renameProject", "workspace.listProjectRenames", "workspace.getProjectRename", "workspace.previewProjectRenameRecovery", "workspace.recoverProjectRename"].includes(input.type)) return !isProjectRenameRequest(input);
   if (["workspace.createProject", "workspace.listProjectCreations", "workspace.getProjectCreation", "workspace.previewProjectCreationRecovery", "workspace.recoverProjectCreation"].includes(input.type)) return !isProjectCreationRequest(input);
   if (input.type === "workspace.revealProject") return !isProjectRevealRequest(input);
   if (input.type === "workspace.previewProjectRecovery" || input.type === "workspace.reassociateProject") {

@@ -138,3 +138,40 @@ test("settings routing delegates category labels without confusing Text or setti
     assert.equal(service.handleCommand(command).error.code, "storage");
   });
 });
+
+test("settings dispatcher exposes rename receipts and reviewed recovery without replay", () => {
+  withDatabase((databasePath, directory) => {
+    const root = join(directory, "rename-root"); mkdirSync(join(root, "Original"), { recursive: true });
+    let calls = 0;
+    const observers = { watch() { return { close() {} }; }, schedule() { return { cancel() {} }; } };
+    const service = openSettingsService(databasePath, undefined, undefined, observers, undefined, () => {
+      calls++; throw new Error("private native interruption");
+    });
+    try {
+      const workspaceId = service.handleCommand({ type: "workspace.create", name: "Rename", rootPath: root }).value.workspaceId;
+      const preview = service.handleQuery({ type: "workspace.previewDiscovery", workspaceId }).value;
+      const list = service.handleCommand({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }).value;
+      const input = { type: "workspace.renameProject", workspaceId, projectId: list.projects[0].projectId,
+        operationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "Renamed", expectedRevision: list.revision };
+      const result = service.handleCommand(input);
+      assert.equal(result.value.outcome, "recoverable"); assert.equal(calls, 1);
+      assert.deepEqual(service.handleQuery({ type: "workspace.getProjectRename", workspaceId, operationId: input.operationId }), result);
+      assert.deepEqual(service.handleQuery({ type: "workspace.listProjectRenames", workspaceId }).value.operations, [result.value.operation]);
+      assert.deepEqual(service.handleCommand(input), result); assert.equal(calls, 1);
+      const query = { type: "workspace.previewProjectRenameRecovery", workspaceId, operationId: input.operationId };
+      const review = service.handleQuery(query).value;
+      assert.deepEqual(review.actions, ["retry_original", "keep_original"]);
+      const recovery = { type: "workspace.recoverProjectRename", workspaceId, operationId: input.operationId,
+        previewToken: review.previewToken, action: "keep_original" };
+      for (const request of [input, query, recovery, { type: "workspace.listProjectRenames", workspaceId },
+        { type: "workspace.getProjectRename", workspaceId, operationId: input.operationId }]) {
+        const dispatch = ["workspace.renameProject", "workspace.recoverProjectRename"].includes(request.type) ? "handleCommand" : "handleQuery";
+        assert.equal(service[dispatch]({ ...request, path: "/outside" }).error.code, "invalid_input");
+      }
+      const kept = service.handleCommand(recovery);
+      assert.equal(kept.value.problem, "kept_original"); assert.equal(calls, 1);
+      assert.deepEqual(service.handleQuery({ type: "workspace.listProjectRenames", workspaceId }).value.operations, []);
+      assert.deepEqual(service.handleCommand(input), kept);
+    } finally { service.close(); }
+  });
+});

@@ -1695,3 +1695,32 @@ test("backend stop aborts and awaits its owned native bridge without granting la
   assert.equal((await pending).ok, false);
   assert.equal(f.port.sent.some((row) => row.type === "project.reveal.reply"), false);
 });
+
+test("compiled entry classifies all rename queries and commands and rejects malformed requests before dispatch", () => {
+  const parent = new EventEmitter(), port = new FakePort(), routed = [];
+  parent.postMessage = () => {};
+  startServiceProcess(parent, () => ({
+    workspaces: { subscribe: () => () => {} },
+    handleQuery(input) { routed.push(["query", input]); return { ok: true, value: {} }; },
+    handleCommand(input) { routed.push(["command", input]); return { ok: true, value: {} }; },
+    close() {},
+  }));
+  try {
+    parent.emit("message", { data: { type: "connect", databasePath: "/unused.sqlite" }, ports: [port] });
+    const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", operationId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    const requests = [
+      ["command", { type: "workspace.renameProject", workspaceId, operationId, projectId: operationId, name: "  Authored  ", expectedRevision: 0 }],
+      ["query", { type: "workspace.listProjectRenames", workspaceId }],
+      ["query", { type: "workspace.getProjectRename", workspaceId, operationId }],
+      ["query", { type: "workspace.previewProjectRenameRecovery", workspaceId, operationId }],
+      ["command", { type: "workspace.recoverProjectRename", workspaceId, operationId, previewToken: operationId, action: "finish_staged" }],
+    ];
+    let id = 0;
+    for (const [, input] of requests) {
+      port.receive({ id: ++id, input });
+      port.receive({ id: ++id, input: { ...input, path: "/outside" } });
+      assert.equal(port.sent.at(-1).result.error.code, "invalid_input");
+    }
+    assert.deepEqual(routed, requests);
+  } finally { parent.emit("message", { data: { type: "shutdown" }, ports: [] }); }
+});

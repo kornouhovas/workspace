@@ -32,8 +32,8 @@ export interface SettingsService {
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -91,6 +91,9 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listProjectRenames") return workspaces.listProjectRenames(input);
+      if (isRecord(input) && input.type === "workspace.getProjectRename") return workspaces.getProjectRename(input);
+      if (isRecord(input) && input.type === "workspace.previewProjectRenameRecovery") return workspaces.previewProjectRenameRecovery(input);
       if (isRecord(input) && input.type === "workspace.listProjectCreations") return workspaces.listProjectCreations(input);
       if (isRecord(input) && input.type === "workspace.getProjectCreation") return workspaces.getProjectCreation(input);
       if (isRecord(input) && input.type === "workspace.previewProjectCreationRecovery") return workspaces.previewProjectCreationRecovery(input);
@@ -114,6 +117,8 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.renameProject") return workspaces.renameProject(input);
+      if (isRecord(input) && input.type === "workspace.recoverProjectRename") return workspaces.recoverProjectRename(input);
       if (isRecord(input) && input.type === "workspace.recoverProjectCreation") return workspaces.recoverProjectCreation(input);
       if (isRecord(input) && input.type === "workspace.createProject") return workspaces.createProject(input);
       if (isRecord(input) && input.type === "workspace.reassociateProject") return workspaces.reassociateProject(input);
