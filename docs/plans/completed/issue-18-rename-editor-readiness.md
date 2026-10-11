@@ -158,3 +158,16 @@ Only fixture/test isolation changed; production and runtime-smoke inputs did
 not change. The previous full-suite result remains 1900 passed/20 platform
 skips; it was not rerun for this fixture-only follow-up. The failed local normal
 quit and all pending actual-platform acceptance gates remain unchanged.
+
+The follow-up review at `9f2f9e7d35a7caa10a58ad3bef1d9d59a6b5943a`
+confirmed profile isolation and found one further minor: an error from the new
+cleanup could replace an earlier failed control. The fixture now retains the
+exact primary error and separately logs any additional cleanup failure. A
+cleanup failure after a successful control still fails. The new behavioral
+control injects an error after actual owned-profile removal and checks both
+paths. Before the repair it received the cleanup error instead of the primary
+error (`review-cleanup-red-v2.log`); after the repair all 18 readiness controls
+passed without skips (`review-cleanup-green-v2.log`). Evidence remains under
+`work/issue-18/editor-readiness/`. This is a fixture-error regression, not
+attribution of the retained product shutdown failure. Runtime inputs and
+external acceptance gates remain unchanged.

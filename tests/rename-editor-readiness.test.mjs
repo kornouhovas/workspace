@@ -10,17 +10,24 @@ import { waitForRenameEditor } from "../scripts/rename-editor-readiness.mjs";
 
 const fixture = fileURLToPath(new URL("./fixtures/rename-editor-readiness-electron.cjs", import.meta.url));
 
-async function withPage(run) {
+async function withPage(run, removeProfile = rm) {
   const profile = await mkdtemp(join(tmpdir(), "workspace-editor-readiness-"));
   const app = await _electron.launch({ executablePath: createRequire(import.meta.url)("electron"), args: [fixture],
     env: { ...process.env, WORKSPACE_RENAME_EDITOR_PROFILE: profile }, timeout: 10000 });
   const child = app.process();
+  let failed = false;
+  let primary;
   try { await run(await app.firstWindow()); }
-  finally {
+  catch (error) { failed = true; primary = error; }
+  try {
     await app.close();
     assert.ok(child.exitCode !== null || child.signalCode !== null, "Fixture must exit before profile removal");
-    await rm(profile, { recursive: true, force: true });
+    await removeProfile(profile, { recursive: true, force: true });
+  } catch (error) {
+    if (!failed) throw error;
+    console.error("Additional readiness fixture cleanup failure:", error);
   }
+  if (failed) throw primary;
 }
 
 // The fixture app owns focus. The driver neither focuses nor mutates the input.
@@ -49,6 +56,21 @@ function observedPage(page) {
     },
   };
 }
+
+test("fixture cleanup errors retain a failed control's primary error and fail a successful control", async () => {
+  const primary = new Error("Controlled primary assertion failure");
+  const secondary = new Error("Controlled profile cleanup failure");
+  let cleanupCalls = 0;
+  const failCleanup = async (...args) => {
+    await rm(...args);
+    cleanupCalls++;
+    throw secondary;
+  };
+  await assert.rejects(withPage(async () => { throw primary; }, failCleanup), error => error === primary);
+  assert.equal(cleanupCalls, 1);
+  await assert.rejects(withPage(async page => { await mount(page, "ready"); }, failCleanup), error => error === secondary);
+  assert.equal(cleanupCalls, 2);
+});
 
 test("visible labelled Name waits for fixture-app delayed focus without driver focus", async () => {
   await withPage(async page => {
