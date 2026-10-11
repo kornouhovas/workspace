@@ -11,6 +11,43 @@ on:
         default: false
 
 jobs:
+  project-rename-service-early:
+    name: Early real-service project rename (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.21.1
+          cache: npm
+      - run: npm ci
+      - name: Build production service and native inputs
+        run: npm run build
+      - name: Check focused journal coordination recovery transport and fixture controls
+        run: npm run test:rename:early
+        env:
+          WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR: work/ci-rename-service-controls
+      - name: Observe production service in Electron before unrelated UI or Reveal work
+        if: ${{ !cancelled() }}
+        run: npm run smoke:rename:service
+        timeout-minutes: 2
+        env:
+          WORKSPACE_RENAME_SERVICE_EVIDENCE_DIR: work/ci-rename-service
+      - name: Preserve separate service checkpoint including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-18-rename-service-${{ matrix.os }}
+          path: |
+            work/ci-rename-service/
+            work/ci-rename-service-controls/
+          if-no-files-found: warn
+
   windows-product-selection-diagnostic:
     name: Isolated Windows product selection diagnostic
     runs-on: windows-latest

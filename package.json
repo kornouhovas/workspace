@@ -33,7 +33,9 @@
     "package:dev:mac": "npm run package:dir:mac && npm run check:artifact -- release",
     "package:dev:win": "npm run package:dir:win && npm run check:artifact -- release",
     "build:project-rename-native": "node scripts/build-project-rename-native.mjs",
-    "test:rename:native": "node --test tests/project-rename-native.test.mjs"
+    "test:rename:native": "node --test tests/project-rename-native.test.mjs",
+    "smoke:rename:service": "node scripts/smoke-project-rename.mjs",
+    "test:rename:early": "node --import tsx --test tests/project-rename-journal.test.mjs tests/project-rename-coordination.test.mjs tests/project-rename-service.test.mjs tests/project-rename-crash.test.mjs tests/project-rename-ipc.test.mjs tests/project-rename-fixture.test.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

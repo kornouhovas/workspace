@@ -660,3 +660,31 @@ for (const mode of ["direct", "grouped"]) test(`${mode}: sibling explicitly reco
   const changes = f.events.filter((e) => e.type === "workspace.projectsChanged");
   assert.equal(changes.length, 1); assert.deepEqual(changes[0].workspaceIds, [f.sibling.workspaceId]);
 }, { native: (f, from, to) => { renameNoReplace(from, to); throw new Error("After effect"); } }));
+
+for (const mode of ["direct", "grouped"]) {
+  test(`${mode}: default native completion interruption survives restart and explicit sibling recovery`, () => fixture(mode, (f) => {
+    const before = f.snapshot(), original = identity(join(f.root, f.relative("Original")));
+    f.sql.exec("CREATE TRIGGER fixture_interrupt BEFORE UPDATE ON project_rename_operations WHEN NEW.stage = 'completed' BEGIN SELECT RAISE(ABORT, 'Fixture interruption'); END");
+    const request = f.request("Recovered"), unfinished = f.rename(request);
+    assert.equal(unfinished.value.outcome, "recoverable");
+    assert.equal(unfinished.value.operation.lastVerifiedPlacement, "destination");
+    assert.equal(identity(join(f.root, f.relative("Recovered"))), original);
+    const row = () => f.sql.prepare("SELECT * FROM project_rename_operations WHERE operation_id = ?").get(request.operationId);
+    const saved = row(); f.restart(); f.sql.exec("DROP TRIGGER fixture_interrupt");
+    assert.deepEqual(f.rename(request), unfinished);
+    assert.deepEqual(f.query("workspace.getProjectRename", { workspaceId: f.sibling.workspaceId, operationId: request.operationId }), unfinished);
+    assert.equal(f.query("workspace.listProjectRenames", { workspaceId: f.sibling.workspaceId }).value.operations.length, 1);
+    assert.deepEqual(row(), saved);
+    assert.equal(f.events.filter(event => event.type === "workspace.projectsChanged").length, 0);
+    const preview = f.query("workspace.previewProjectRenameRecovery", { workspaceId: f.sibling.workspaceId, operationId: request.operationId }).value;
+    assert.deepEqual(preview.actions, ["complete_destination"]);
+    const completed = f.command("workspace.recoverProjectRename", { workspaceId: f.sibling.workspaceId,
+      operationId: request.operationId, previewToken: preview.previewToken, action: "complete_destination" });
+    assert.equal(completed.value.outcome, "completed");
+    assert.equal(completed.value.project.projectId, f.project.projectId);
+    assert.equal(completed.value.project.categoryId, f.project.categoryId);
+    assert.equal(completed.value.project.revision, f.initial.revision + 1);
+    assert.deepEqual(f.snapshot(), before); assert.deepEqual(f.rename(request), completed);
+    assert.equal(fs.readFileSync(join(f.root, f.relative("Recovered"), "sentinel"), "utf8"), "  Original 📝\n");
+  }, { defaultNative: true }));
+}
