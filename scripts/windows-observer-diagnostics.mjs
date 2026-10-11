@@ -212,11 +212,30 @@ async function main() {
   } else {
     const evidence = initialTests(provenance);
     writeEvidence(output, evidence);
-    const child = spawn(process.execPath, ['--test', 'tests/ralphex-observe.test.mjs', 'tests/ralphex-run.test.mjs', 'tests/windows-observer-diagnostics.test.mjs'], { stdio: 'inherit' });
-    let timedOut = false;
-    const timer = setTimeout(() => { timedOut = true; child.kill('SIGKILL'); }, 90000);
-    const code = await new Promise(resolve => { child.once('error', error => { evidence.errno = numericCode(error.errno); }); child.once('close', resolve); });
+    // POSIX descendants inherit this owned process group. On Windows, taskkill
+    // selects the tree by the still-owned supervisor PID instead.
+    const child = spawn(process.execPath, ['--test', 'tests/ralphex-observe.test.mjs', 'tests/ralphex-run.test.mjs', 'tests/windows-observer-diagnostics.test.mjs'], { stdio: 'inherit', detached: process.platform !== 'win32', windowsHide: true });
+    let timedOut = false, code, timer;
+    const closed = new Promise(resolve => {
+      child.once('error', error => { evidence.errno = numericCode(error.errno); });
+      child.once('close', value => { code = value; resolve(); });
+    });
+    const deadline = new Promise(resolve => {
+      timer = setTimeout(() => {
+        timedOut = true;
+        try {
+          if (process.platform === 'win32') execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { timeout: 3000, stdio: 'ignore', windowsHide: true });
+          else process.kill(-child.pid, 'SIGKILL');
+        } catch (error) {
+          evidence.errno = numericCode(error.errno);
+          try { child.kill('SIGKILL'); } catch { /* Preserve timeout even if cleanup fails. */ }
+        }
+        resolve();
+      }, 90000);
+    });
+    await Promise.race([closed, deadline]);
     clearTimeout(timer);
+    if (timedOut && !await settledWithin(closed, 1500)) child.unref();
     evidence.exitCode = numericCode(code);
     evidence.status = timedOut ? 'timed_out' : code === 0 ? 'passed' : 'failed';
     writeEvidence(output, evidence);

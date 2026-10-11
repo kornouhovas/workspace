@@ -195,3 +195,48 @@ test('CI test command preserves a real failed Node test exit in the finite statu
   assert.equal(evidence.exitCode, 1);
   assert.ok(!JSON.stringify(evidence).includes('private-failure'));
 });
+
+test('CI test timeout stops its owned test child and retains a finite failed status', async t => {
+  const dir = mkdtempSync(join(tmpdir(), 'diagnostic-test-timeout-'));
+  let pid;
+  t.after(() => {
+    if (pid) {
+      try {
+        if (process.platform === 'win32') execFileSync('taskkill', ['/pid', String(pid), '/T', '/F'], { timeout: 3000, stdio: 'ignore' });
+        else process.kill(pid, 'SIGKILL');
+      } catch { /* The owned child may already be gone. */ }
+    }
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const git = (...args) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
+  git('init', '-q');
+  mkdirSync(join(dir, 'tests'));
+  for (const name of ['ralphex-observe', 'ralphex-run', 'windows-observer-diagnostics']) {
+    writeFileSync(join(dir, 'tests', `${name}.test.mjs`), name === 'ralphex-observe'
+      ? "import {writeFileSync} from 'node:fs'; writeFileSync('owned-child.pid', String(process.pid)); setInterval(() => {}, 1000);"
+      : '');
+  }
+  git('add', 'tests');
+  git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--no-gpg-sign', '-qm', 'fixture');
+  // Shorten only the CLI's production deadline; run the real Node test tree.
+  const preload = join(dir, 'short-deadline.mjs');
+  writeFileSync(preload, 'const timer = globalThis.setTimeout; globalThis.setTimeout = (fn, ms, ...args) => timer(fn, ms === 90000 ? 1500 : ms, ...args);');
+  const env = { ...process.env };
+  for (const key of ['GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'OBSERVER_MATRIX', 'NODE_TEST_CONTEXT', 'NODE_OPTIONS']) delete env[key];
+  const script = fileURLToPath(new URL('../scripts/windows-observer-diagnostics.mjs', import.meta.url));
+  const output = join(dir, 'test-status.json');
+  const result = spawnSync(process.execPath, ['--import', preload, script, 'tests', '--output', output], { cwd: dir, env, encoding: 'utf8', timeout: 10000 });
+  pid = Number(readFileSync(join(dir, 'owned-child.pid'), 'utf8'));
+  assert.equal(result.error, undefined);
+  assert.equal(result.status, 1);
+  const evidence = JSON.parse(readFileSync(output, 'utf8'));
+  assert.equal(evidence.status, 'timed_out');
+  assert.notEqual(evidence.exitCode, 0);
+  const stopped = () => {
+    try { process.kill(pid, 0); return false; }
+    catch (error) { return error.code === 'ESRCH'; }
+  };
+  const deadline = Date.now() + 1000;
+  while (!stopped() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(stopped(), true, 'owned test child must stop before timeout handoff');
+});
