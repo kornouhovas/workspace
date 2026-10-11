@@ -1,3 +1,4 @@
+import type { ProjectCategoryMoveProblem, ProjectCategoryMoveStage, ProjectCategoryMovePlacement } from "../../contracts/project-category-move.js";
 import { sql } from "drizzle-orm";
 import type { ProjectRenameProblem, ProjectRenameStage, ProjectRenamePlacement } from "../../contracts/project-rename.js";
 import type { ProjectCreationProblem, ProjectCreationStage } from "../../contracts/project-creation.js";
@@ -149,4 +150,41 @@ export const projectRenameOperations = sqliteTable("project_rename_operations", 
     .where(sql`${table.stage} IN ('intent', 'staged', 'destination_recorded', 'uncertain')`),
   foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
   foreignKey({ columns: [table.categoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
+]);
+
+// Migration 0010 guards immutable two-parent bindings, evidence and retained history.
+export const projectCategoryMoveOperations = sqliteTable("project_category_move_operations", {
+  operationId: text("operation_id").primaryKey(),
+  sourceId: text("source_id").notNull().references(() => sources.id),
+  initiatingWorkspaceId: text("initiating_workspace_id").notNull(),
+  projectId: text("project_id").notNull(),
+  name: text("name").notNull(),
+  expectedRevision: integer("expected_revision").notNull(),
+  originalCategoryId: text("original_category_id").notNull(),
+  destinationCategoryId: text("destination_category_id").notNull(),
+  canonicalRoot: text("canonical_root").notNull(),
+  originalParentRelativePath: text("original_parent_relative_path").notNull(),
+  destinationParentRelativePath: text("destination_parent_relative_path").notNull(),
+  originalRelativePath: text("original_relative_path").notNull(),
+  requestedRelativePath: text("requested_relative_path").notNull(),
+  rootIdentity: text("root_identity").notNull(),
+  originalParentIdentity: text("original_parent_identity").notNull(),
+  destinationParentIdentity: text("destination_parent_identity").notNull(),
+  nativeIdentity: text("native_identity").notNull(),
+  excludedRelativePaths: text("excluded_relative_paths").notNull(),
+  archiveRelativePath: text("archive_relative_path"),
+  stage: text("stage").$type<ProjectCategoryMoveStage>().notNull(),
+  destinationIdentity: text("destination_identity"),
+  lastVerifiedPlacement: text("last_verified_placement").$type<ProjectCategoryMovePlacement>().notNull(),
+  lastVerifiedIdentity: text("last_verified_identity").notNull(),
+  problem: text("problem").$type<ProjectCategoryMoveProblem>(),
+  resultKind: text("result_kind", { enum: ["completed", "unchanged", "rejected"] }),
+  completedRevision: integer("completed_revision"),
+}, (table) => [
+  index("project_category_move_source").on(table.sourceId),
+  uniqueIndex("project_category_move_outstanding_project").on(table.projectId)
+    .where(sql`${table.stage} IN ('intent', 'destination_recorded', 'uncertain')`),
+  foreignKey({ columns: [table.projectId, table.sourceId], foreignColumns: [projects.id, projects.sourceId] }),
+  foreignKey({ columns: [table.originalCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
+  foreignKey({ columns: [table.destinationCategoryId, table.sourceId], foreignColumns: [categories.id, categories.sourceId] }),
 ]);

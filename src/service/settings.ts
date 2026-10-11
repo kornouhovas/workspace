@@ -1,3 +1,4 @@
+import type { ProjectCategoryMoveResult, ProjectCategoryMoveList } from "../contracts/project-category-move.js";
 import type { ProjectRenameResult, ProjectRenameList, ProjectRenameRecoveryPreview } from "../contracts/project-rename.js";
 import type { ProjectRenameNative } from "./project-rename.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
@@ -26,14 +27,17 @@ import { createWorkspaceService, type WorkspaceFilesystem, type WorkspaceService
 import type { CategoryPropertySnapshot, ProjectList, DiscoveryPreview, ActiveWorkspace, WorkspaceCreated, WorkspaceLoad, WorkspaceSourceObservationSnapshot, WorkspaceSourceState } from "../contracts/workspaces.js";
 
 export interface SettingsService {
+  moveProjectCategory(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
+  listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList>;
+  getProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
   renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
   listProjectRenames(input: unknown): ServiceResult<ProjectRenameList>;
   getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   previewProjectRenameRecovery(input: unknown): ServiceResult<ProjectRenameRecoveryPreview>;
   recoverProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
   revealProject(input: unknown, native?: NativeProjectReveal): Promise<ServiceResult<ProjectRevealResult>>;
-  handleQuery(input: unknown): ServiceResult<ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
-  handleCommand(input: unknown): ServiceResult<ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
+  handleQuery(input: unknown): ServiceResult<ProjectCategoryMoveResult | ProjectCategoryMoveList | ProjectRenameResult | ProjectRenameList | ProjectRenameRecoveryPreview | ProjectCreationResult | ProjectCreationList | ProjectCreationRecoveryPreview | WorkspaceSourceObservationSnapshot | ProjectRecoveryPreview | TextPropertySnapshot | Settings | WorkspaceLoad | DiscoveryPreview | ProjectList>;
+  handleCommand(input: unknown): ServiceResult<ProjectCategoryMoveResult | ProjectRenameResult | ProjectCreationResult | CategoryPropertySnapshot | TextPropertyMutation | Settings | WorkspaceCreated | ActiveWorkspace | WorkspaceLoad | WorkspaceSourceState | ProjectList>;
   workspaces: WorkspaceService;
   close(): void;
 }
@@ -84,6 +88,9 @@ export function openSettingsService(
   const workspaces = createWorkspaceService(db, workspaceFilesystem, observerDependencies, projectFilesystem, projectRenameNative);
   return {
     workspaces,
+    moveProjectCategory: workspaces.moveProjectCategory,
+    listProjectCategoryMoves: workspaces.listProjectCategoryMoves,
+    getProjectCategoryMove: workspaces.getProjectCategoryMove,
     renameProject: workspaces.renameProject,
     listProjectRenames: workspaces.listProjectRenames,
     getProjectRename: workspaces.getProjectRename,
@@ -91,6 +98,8 @@ export function openSettingsService(
     recoverProjectRename: workspaces.recoverProjectRename,
     revealProject: workspaces.revealProject,
     handleQuery(input) {
+      if (isRecord(input) && input.type === "workspace.listProjectCategoryMoves") return workspaces.listProjectCategoryMoves(input);
+      if (isRecord(input) && input.type === "workspace.getProjectCategoryMove") return workspaces.getProjectCategoryMove(input);
       if (isRecord(input) && input.type === "workspace.listProjectRenames") return workspaces.listProjectRenames(input);
       if (isRecord(input) && input.type === "workspace.getProjectRename") return workspaces.getProjectRename(input);
       if (isRecord(input) && input.type === "workspace.previewProjectRenameRecovery") return workspaces.previewProjectRenameRecovery(input);
@@ -117,6 +126,7 @@ export function openSettingsService(
     },
 
     handleCommand(input) {
+      if (isRecord(input) && input.type === "workspace.moveProjectCategory") return workspaces.moveProjectCategory(input);
       if (isRecord(input) && input.type === "workspace.renameProject") return workspaces.renameProject(input);
       if (isRecord(input) && input.type === "workspace.recoverProjectRename") return workspaces.recoverProjectRename(input);
       if (isRecord(input) && input.type === "workspace.recoverProjectCreation") return workspaces.recoverProjectCreation(input);

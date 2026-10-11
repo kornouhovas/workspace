@@ -71,6 +71,13 @@
       "when": 1791504009000,
       "tag": "0009_project_rename",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791504010000,
+      "tag": "0010_project_category_move",
+      "breakpoints": true
     }
   ]
 }

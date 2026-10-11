@@ -59,12 +59,22 @@ Files:
 - Modify: src/service/settings.ts
 - Modify: src/service/workspaces.ts
 - Modify: tests/settings-service.test.mjs
-- [ ] Start with failing public-service tests for exact request validation, grouped active-project authorization and a freshly validated current-category no-op; implement only enough contract, dispatch and service behavior to pass.
-- [ ] Add the dedicated journal with immutable request/evidence, same-source category/project ownership, legal transitions, terminal receipts, retained history and protection against DELETE/REPLACE.
-- [ ] Implement durable no-op receipts and read-only status/list queries. Identical original requests return their receipt; changed bindings fail. Unimplemented physical moves must fail closed.
-- [ ] Add populated upgrade/reopen tests preserving existing creation/rename receipts, outstanding rename recovery, IDs, values and independent revisions; verify migration failure rolls back.
-- [ ] Add integrity tests for invalid bindings, altered evidence, illegal transitions and terminal-history replacement, asserting semantic protection rather than exact SQL wording.
-- [ ] Build with npm run build; run the new service/journal tests and tests/settings-service.test.mjs using node --import tsx --test, then npm run typecheck. Commit after all affected checks pass.
+- Modify: tests/project-creation-service.test.mjs, tests/project-rename-journal.test.mjs, tests/discovery-mode-service.test.mjs, tests/grouped-discovery-service.test.mjs and tests/external-reconciliation-service.test.mjs (existing upgrade expectations for migration 0010)
+- [x] Start with failing public-service tests for exact request validation, grouped active-project authorization and a freshly validated current-category no-op; implement only enough contract, dispatch and service behavior to pass.
+- [x] Add the dedicated journal with immutable request/evidence, same-source category/project ownership, legal transitions, terminal receipts, retained history and protection against DELETE/REPLACE.
+- [x] Implement durable no-op receipts and read-only status/list queries. Identical original requests return their receipt; changed bindings fail. Unimplemented physical moves must fail closed.
+- [x] Add populated upgrade/reopen tests preserving existing creation/rename receipts, outstanding rename recovery, IDs, values and independent revisions; verify migration failure rolls back.
+- [x] Add integrity tests for invalid bindings, altered evidence, illegal transitions and terminal-history replacement, asserting semantic protection rather than exact SQL wording.
+- [x] Build with npm run build; run the new service/journal tests and tests/settings-service.test.mjs using node --import tsx --test, then npm run typecheck. Commit after all affected checks pass.
+
+Task 1 verification (Node 22.21.1, local macOS):
+
+- Initial public no-op regression failed before implementation; its green result and durable reopen behavior were verified. Evidence: `work/issue-19/task-1-red.log` and `task-1-noop-green.log`.
+- `npm run build` passed; compiled service outputs are used by the new service/journal tests. Evidence: `work/issue-19/task-1-build.log`.
+- `node --import tsx --test tests/discovery-mode-service.test.mjs tests/project-category-move-service.test.mjs tests/project-category-move-journal.test.mjs tests/settings-service.test.mjs` passed all 69 tests, including 25 move-service and eight move-contract/journal cases, without skips. Evidence: `work/issue-19/task-1-final-focus.log`.
+- Existing creation, rename service/journal, grouped discovery and external reconciliation checks passed against the same built inputs. Earlier combined runs exposed obsolete migration counts and the new empty table in an upgrade inventory; those assertions were updated and their affected suites rerun. Evidence: `work/issue-19/task-1-affected.log`, `task-1-final-affected.log` and `task-1-final-focus.log`; failed historical results are retained.
+- `npm run lint`, `npm run typecheck`, `npm run check:docs` and `git diff --check` passed. Evidence logs remain under ignored `work/issue-19/`.
+- Only the current-category no-op and read-only list/status are executable. Physical moves fail closed with `unsupported`; recovery execution, shared move reservations, IPC and actual Electron/platform acceptance remain later tasks/gates.
 
 ### Task 2: Coordinate move reservations with existing source operations
 

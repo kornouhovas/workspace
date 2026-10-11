@@ -1,3 +1,5 @@
+import { createProjectCategoryMoveService } from "./project-category-move.js";
+import type { ProjectCategoryMoveResult, ProjectCategoryMoveList } from "../contracts/project-category-move.js";
 import { hasUnfinishedProjectRename, readProjectReservations } from "./project-rename-reservations.js";
 import { createProjectRevealService } from "./project-reveal.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
@@ -47,6 +49,9 @@ const nativeFilesystem: WorkspaceFilesystem = {
 };
 
 export interface WorkspaceService {
+  moveProjectCategory(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
+  listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList>;
+  getProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
   renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
   listProjectRenames(input: unknown): ServiceResult<ProjectRenameList>;
   getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
@@ -145,8 +150,12 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.request(sourceId);
     },
   }, projectFilesystem, projectRenameNative);
+  const categoryMove = createProjectCategoryMoveService(db, projectFilesystem);
   const reveal = createProjectRevealService(db, projectFilesystem);
   const service: WorkspaceService = {
+    moveProjectCategory: categoryMove.moveProjectCategory,
+    listProjectCategoryMoves: categoryMove.listProjectCategoryMoves,
+    getProjectCategoryMove: categoryMove.getProjectCategoryMove,
     renameProject: rename.renameProject,
     listProjectRenames: rename.listProjectRenames,
     getProjectRename: rename.getProjectRename,

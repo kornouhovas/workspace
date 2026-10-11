@@ -125,7 +125,7 @@ for (const mode of ["direct", "grouped"]) {
       const after = records(f.sql);
       for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows, table);
       assert.deepEqual(after.__drizzle_migrations.slice(0, 9), before.__drizzle_migrations);
-      assert.equal(after.__drizzle_migrations.length, 10);
+      assert.equal(after.__drizzle_migrations.length, journal.entries.length);
       assert.deepEqual(after.project_rename_operations, []);
       assert.deepEqual(f.sql.pragma("foreign_key_check"), []);
       assert.deepEqual(fs.readFileSync(join(f.root, f.relative("Original"), "sentinel")), Buffer.from([0, 255, 42]));
@@ -300,5 +300,5 @@ test("late migration 0009 failure rolls back schema and all populated prior hist
   migrate(drizzle(f.sql), { migrationsFolder }); f.reopen();
   const after = records(f.sql);
   for (const [table, rows] of Object.entries(before)) if (table !== "__drizzle_migrations") assert.deepEqual(after[table], rows);
-  assert.equal(after.__drizzle_migrations.length, 10);
+  assert.equal(after.__drizzle_migrations.length, journal.entries.length);
 }, true));
