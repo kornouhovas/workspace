@@ -20,6 +20,8 @@ interface Props {
   projects: ProjectSummary[];
   retainedProjects?: ProjectAssociationSummary[];
   locateDisabled?: boolean;
+  renameDisabled?: boolean;
+  onRename?(project: ProjectSummary, trigger: HTMLButtonElement): void;
   onLocate?(project: ProjectAssociationSummary, trigger: HTMLButtonElement): void;
   categoryProperty?: CategoryProperty | null;
   categories?: CategorySummary[];
@@ -35,7 +37,7 @@ interface Props {
 export function TextPropertiesTable(props: Props) {
   return <TextPropertiesContent key={`${props.workspaceId}:${props.sourceId}`} {...props} />;
 }
-function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
+function TextPropertiesContent({ client, workspaceId, sourceId, projects, retainedProjects = [], onLocate, locateDisabled, onRename, renameDisabled, categoryProperty, categories = [], categoryPropertyRevision = 0, discoveryRevision = 0, minimumDiscoveryRevision, sourceLifetime, minimumCategoryPropertyRevision, onCategoryPropertyCommitted, language, disabled }: Props) {
   const categoryDrafts = useRef(new Map<string, CategoryLabelDraft>());
   const t = (key: TranslationKey) => translate(language, key);
   const [snapshot, setSnapshot] = useState<TextPropertySnapshot | null>(null);
@@ -168,7 +170,10 @@ function TextPropertiesContent({ client, workspaceId, sourceId, projects, retain
         const retained = retainedProjects.find((row) => row.projectId === project.projectId);
         const reason = retained?.associationState === "excluded" && retained.retentionReason !== "mode_change" ? "excluded" : retained?.resolution ?? retained?.associationState;
         const label = retained?.retentionReason === "mode_change" ? "projectModeRetained" : reason && reason !== "active" ? resolutionLabels[reason] : null;
-        return <tr key={project.projectId}><td key="project-name"><span>{project.name}</span>
+        return <tr key={project.projectId}><td key="project-name" aria-label={retained ? undefined : project.name}><span className="property-authored">{project.name}</span>
+          {!retained && onRename && <button type="button" className="workspace-button workspace-button--secondary property-rename"
+            aria-label={`${t("renameProject")}: ${project.name}`} disabled={disabled || renameDisabled || ("associationState" in project && (project.associationState !== "active" || ("resolution" in project && project.resolution !== "active")))}
+            onClick={(event) => onRename(project, event.currentTarget)}>{t("renameProject")}</button>}
           {label && <span className="project-resolution">{t(label)}</span>}
           {retained?.retentionReason === "mode_change" && reason === "excluded" && <span className="project-resolution">{t("projectExcluded")}</span>}
           {retained && <span className="project-previous-path">{retained.relativePath}</span>}

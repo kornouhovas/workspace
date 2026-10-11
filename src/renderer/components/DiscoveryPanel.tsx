@@ -1,3 +1,4 @@
+import { ProjectRenamePanel } from "./ProjectRenamePanel.js";
 import { ProjectCreationPanel } from "./ProjectCreationPanel.js";
 import { ProjectRecoveryController } from "./ProjectRecoveryPanel.js";
 import { TextPropertiesTable } from "./TextPropertiesTable.js";
@@ -240,6 +241,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
   const committedCategoryLabel = useRef<{ property: NonNullable<ProjectList["categoryProperty"]>; revision: number } | null>(null);
   const [recoveryProject, setRecoveryProject] = useState<ProjectAssociationSummary | null>(null);
   const [recoverySaved, setRecoverySaved] = useState(false);
+  const [renameProject, setRenameProject] = useState<Pick<ProjectAssociationSummary, "projectId" | "name" | "relativePath" | "categoryId"> | null>(null);
+  const [renameBlocked, setRenameBlocked] = useState(false);
+  const renameTrigger = useRef<HTMLButtonElement | null>(null);
+  const restoreRenameFocus = useRef(false);
   const recoveryTrigger = useRef<HTMLButtonElement | null>(null);
   const tableHeading = useRef<HTMLHeadingElement>(null);
   const restoreRecoveryFocus = useRef(false);
@@ -249,6 +254,13 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       restoreRecoveryFocus.current = false;
     }
   }, [recoveryProject]);
+  useEffect(() => {
+    if (!renameProject && restoreRenameFocus.current) {
+      const trigger = renameTrigger.current;
+      (trigger?.isConnected && !trigger.disabled ? trigger : tableHeading.current)?.focus();
+      restoreRenameFocus.current = false;
+    }
+  }, [renameProject, renameBlocked]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const version = useRef(0);
@@ -374,6 +386,10 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
     <ProjectCreationPanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language}
       projects={projects} disabled={disabled || loading || error || recoveryProject !== null} invalidation={invalidation}
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
+    <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
+      projects={projects} disabled={disabled || loading || error || recoveryProject !== null} minimumRevision={minimumRevision}
+      observationVersion={observationVersion} sourceLifetime={sourceLifetime} onBlockedChange={setRenameBlocked}
+      onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
       onPendingChange={onRecoveryPending}
@@ -413,6 +429,9 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       </div>}
       <TextPropertiesTable sourceLifetime={sourceLifetime} discoveryRevision={projects?.revision ?? 0} minimumDiscoveryRevision={minimumRevision} categoryPropertyRevision={projects?.categoryPropertyRevision ?? 0} minimumCategoryPropertyRevision={minimumCategoryPropertyRevision}
         onCategoryPropertyCommitted={commitLabel} categoryProperty={projects?.categoryProperty ?? null} categories={projects?.categories ?? []} client={client} workspaceId={workspaceId} sourceId={sourceId}
+        renameDisabled={loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
+          !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
+        onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
         locateDisabled={recoveryProject !== null}
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);

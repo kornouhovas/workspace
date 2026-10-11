@@ -1,6 +1,23 @@
 import type { Language } from "../contracts/settings.js";
 
 const english = {
+  renameProject: "Rename project folder",
+  renameSubmit: "Rename folder",
+  renameHint: "The folder stays in its current category. Project identity and Text values are preserved.",
+  renameCancelHint: "Cancel closes the editor. A rename already accepted by the service may still move the folder.",
+  renamePending: "Renaming or checking the folder…",
+  renameSaved: "Project folder renamed.",
+  renameUnchanged: "The folder already has this exact name.",
+  renameInvalid: "Enter a valid folder name. Your exact authored text is retained.",
+  renameCollision: "This folder name or identity is occupied or reserved. Choose another name.",
+  renameStale: "The source or project changed. Refresh and review its current name before submitting again.",
+  renameUnavailable: "This folder cannot currently be renamed. Check source access and the current project association.",
+  renameFailed: "Rename could not be completed. Check the current folder and retain this draft for review.",
+  renameUncertain: "The rename result is unknown. Check this operation’s status before another rename; the folder may already have moved.",
+  renameRecoverable: "Interrupted rename needs explicit recovery review. Check status; no folder move is retried automatically.",
+  renameStatus: "Check rename status",
+  renameNewer: "Rename confirmed. Reloading the latest project location after a newer source change.",
+
   creationReviewMissing: "The destination is currently missing. An explicit retry creates a folder only after fresh validation.",
   creationReviewRecorded: "Recorded folder identity still matches. Complete metadata explicitly without creating another folder.",
   creationReviewReplaced: "The destination was replaced. Recovery cannot adopt a replacement for recorded evidence.",
@@ -243,6 +260,23 @@ const english = {
 } as const;
 
 const russian: Record<keyof typeof english, string> = {
+  renameProject: "Переименовать папку проекта",
+  renameSubmit: "Переименовать папку",
+  renameHint: "Папка остаётся в текущей категории. Идентификатор проекта и значения Text сохраняются.",
+  renameCancelHint: "Отмена закрывает редактор. Уже принятое сервисом переименование всё ещё может переместить папку.",
+  renamePending: "Переименование или проверка папки…",
+  renameSaved: "Папка проекта переименована.",
+  renameUnchanged: "У папки уже есть это точное имя.",
+  renameInvalid: "Введите допустимое имя папки. Введённый текст сохраняется без изменений.",
+  renameCollision: "Это имя или идентификатор папки занят или зарезервирован. Выберите другое имя.",
+  renameStale: "Источник или проект изменился. Обновите и проверьте текущее имя перед новой отправкой.",
+  renameUnavailable: "Сейчас эту папку нельзя переименовать. Проверьте доступ к источнику и привязку проекта.",
+  renameFailed: "Переименование не завершено. Проверьте текущую папку; черновик сохранён для проверки.",
+  renameUncertain: "Результат переименования неизвестен. Проверьте статус операции перед новым переименованием; папка уже могла переместиться.",
+  renameRecoverable: "Прерванное переименование требует явной проверки восстановления. Проверьте статус; перемещение не повторяется автоматически.",
+  renameStatus: "Проверить статус переименования",
+  renameNewer: "Переименование подтверждено. Загружается актуальное расположение проекта после нового изменения источника.",
+
   creationReviewMissing: "Папка сейчас отсутствует. Явный повтор создаёт папку только после новой проверки.",
   creationReviewRecorded: "Записанный идентификатор папки совпадает. Явно завершите метаданные без создания новой папки.",
   creationReviewReplaced: "Папка заменена. Восстановление не может принять замену вместо записанной папки.",

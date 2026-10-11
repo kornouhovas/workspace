@@ -1149,7 +1149,7 @@ test("EN/RU keyboard Apply prevents duplicate submission and displays committed 
     assert.ok(screen.getByRole("heading", { name: translate(language, "discoveryApplying") }));
     assert.equal(calls.filter((input) => input.type === "workspace.applyDiscovery").length, 1);
     await act(async () => { finish?.(ok(projectList(active, ["  Authored project  "]))); });
-    assert.equal(screen.getByRole("cell", { name: "Authored project" }).textContent, "  Authored project  ");
+    assert.equal(screen.getByRole("cell", { name: "Authored project" }).querySelector("span")?.textContent, "  Authored project  ");
     assert.ok(screen.getByRole("heading", { name: translate(language, "tableViewTitle") }));
     assert.equal(screen.queryByRole("heading", { name: translate(language, "discoveryTitle") }), null);
     assert.equal(document.activeElement, trigger);
@@ -3414,6 +3414,61 @@ test("EN/RU production App immediately Reveals creation through an active observ
       rmSync(join(root, ...(mode === "grouped" ? ["Existing category", "Authored folder"] : ["Authored folder"])), { recursive: true });
       await userEvent.click(screen.getByRole("button", { name: `${t("revealProject")}: Authored folder` }));
       await screen.findByText(t("revealMissing")); assert.equal(screen.queryByText(t("revealDispatched")), null); assert.equal(dispatches, 1);
+    } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
+  }
+});
+
+test("EN/RU production Name editing preserves identity and exact Text and resolves a lost response after backend remount", async () => {
+  const { openSettingsService: openRenameService } = await import(new URL("../dist/service/settings.mjs", import.meta.url).href) as { openSettingsService: typeof openSettingsService };
+  const unwrap = <T,>(result: ServiceResult<T>) => { assert.ok(result.ok, JSON.stringify(result)); return result.value; };
+  for (const language of ["en", "ru"] as const) for (const mode of ["direct", "grouped"] as const) {
+    const directory = realpathSync.native(mkdtempSync(join(tmpdir(), "rename-app-ui-"))), root = join(directory, "root"), database = join(directory, "workspace.sqlite");
+    mkdirSync(root); const parent = mode === "grouped" ? join(root, "Existing category") : root;
+    if (mode === "grouped") mkdirSync(parent); mkdirSync(join(parent, "Original"));
+    let service = openRenameService(database), off: (() => void) | undefined;
+    const renames: WorkspaceRequest[] = [], statuses: WorkspaceRequest[] = [];
+    const t = (key: Parameters<typeof translate>[1]) => translate(language, key);
+    try {
+      const workspace = unwrap(service.workspaces.create({ type: "workspace.create", name: "Rename workspace", rootPath: root }));
+      const workspaceId = workspace.workspaceId;
+      const preview = unwrap(service.workspaces.previewDiscovery({ type: "workspace.previewDiscovery", workspaceId, mode }));
+      unwrap(service.workspaces.applyDiscovery({ type: "workspace.applyDiscovery", workspaceId, previewToken: preview.previewToken }));
+      const before = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })), project = before.projects[0];
+      const sibling = unwrap(service.workspaces.create({ type: "workspace.create", name: "Sibling", rootPath: root }));
+      unwrap(service.workspaces.activate({ type: "workspace.activate", workspaceId }));
+      const property = unwrap(service.workspaces.createProperty({ type: "workspace.createProperty", workspaceId, name: "Notes", propertyType: "text" }));
+      const exactText = "  Exact\nТекст 📝  ";
+      unwrap(service.workspaces.setTextValue({ type: "workspace.setTextValue", workspaceId, propertyId: property.propertyId, projectId: project.projectId, value: exactText }));
+      const query = async (input: WorkspaceRequest) => service.handleQuery(input) as ServiceResult<WorkspaceResponse>;
+      const api = mockApi({ language, onProjects: query, onProperties: query, onCreations: query, onObservation: query, onWorkspace: async (input) => {
+        if (input.type === "workspace.getProjectRename") { statuses.push(input); return query(input); }
+        if (input.type === "workspace.renameProject") {
+          renames.push(input); const result = service.workspaces.renameProject(input); assert.equal(unwrap(result).outcome, "completed");
+          return fail("service_unavailable"); // Native effect and commit succeeded; only the response is lost.
+        }
+        return (input.type === "workspace.load" ? service.handleQuery(input) : service.handleCommand(input)) as ServiceResult<WorkspaceResponse>;
+      } });
+      off = service.workspaces.subscribe(api.emitChange); render(<App />);
+      await userEvent.click(await screen.findByRole("button", { name: `${t("renameProject")}: Original` }));
+      const input = screen.getByRole("textbox", { name: t("projectName") });
+      await userEvent.clear(input); await userEvent.type(input, "  Renamed Текст 📝  {Enter}");
+      await screen.findByText(t("renameUncertain"));
+      await act(async () => { api.emitStatus("unavailable"); api.emitStatus("ready"); });
+      await userEvent.click(await screen.findByRole("button", { name: t("renameStatus") }));
+      await screen.findByText(t("renameSaved"));
+      const after = unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId }));
+      assert.equal(after.projects[0].projectId, project.projectId); assert.equal(after.projects[0].categoryId, project.categoryId);
+      assert.equal(after.projects[0].name, "  Renamed Текст 📝  "); assert.equal(after.revision, before.revision + 1);
+      assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
+      assert.equal(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId: sibling.workspaceId })).projects[0].projectId, project.projectId);
+      assert.deepEqual(readdirSync(parent), ["  Renamed Текст 📝  "]);
+      assert.equal(renames.length, 1); assert.equal(statuses.length, 1);
+      const command = renames[0]; assert.equal(command.type, "workspace.renameProject");
+      if (command.type !== "workspace.renameProject") throw new Error("Unexpected command");
+      assert.deepEqual(statuses[0], { type: "workspace.getProjectRename", workspaceId, operationId: command.operationId });
+      cleanup(); off(); off = undefined; service.close(); service = openRenameService(database);
+      assert.deepEqual(unwrap(service.workspaces.listProjects({ type: "workspace.listProjects", workspaceId })).projects, after.projects);
+      assert.equal(unwrap(service.workspaces.listTextProperties({ type: "workspace.listTextProperties", workspaceId })).values[0].value, exactText);
     } finally { cleanup(); off?.(); service.close(); rmSync(directory, { recursive: true, force: true }); }
   }
 });
