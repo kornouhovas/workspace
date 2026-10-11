@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { join } = require("node:path");
 const { randomUUID } = require("node:crypto");
+const { startControlReceiver } = require("./project-rename-service-control.cjs");
 const { pathToFileURL } = require("node:url");
 const checks = ["rename", "mounted_case", "collision", "retention", "events", "reveal", "restart", "recovery"];
 const SCENARIOS = ["direct", "grouped"].flatMap(mode => checks.map(check => `${mode}.${check}`));
@@ -16,7 +17,17 @@ if (process.versions.electron) {
   const mountedCase = {};
   const send = value => process.stdout.write(JSON.stringify(value) + "\n");
   const own = new Set();
-  let activeCheck, sql, controller, deadline, finishing = false;
+  let activeCheck, sql, controller, deadline, finishing = false, finalOK = false;
+  // Poll before main_ready; stdout remains the result/receiver-observation route.
+  const control = startControlReceiver(root, {
+    deadline: Date.now() + 45000,
+    onAck: () => send({ stage: "ack_received" }),
+    onExit: () => app.exit(finalOK ? 0 : 1),
+    onError: () => { clearTimeout(deadline); app.exit(1); },
+    onTimeout: () => { clearTimeout(deadline); app.exit(1); },
+  });
+  app.once("will-quit", () => control.dispose());
+  process.once("exit", () => control.dispose());
   const identity = path => {
     const stat = fs.lstatSync(path, { bigint: true });
     assert.equal(stat.isDirectory(), true); assert.equal(stat.isSymbolicLink(), false);
@@ -38,25 +49,14 @@ if (process.versions.electron) {
     if (finishing) return; finishing = true; clearTimeout(deadline);
     try { await stop(); } catch { ok = false; }
     sql?.close(); sql = undefined;
+    finalOK = ok;
+    control.resultPublished();
     send({ stage: "result", ok, scenarios, mountedCase,
       versions: { electron: process.versions.electron, node: process.versions.node } });
-    // The outer supervisor must observe the result and the acknowledgment before
-    // allowing main to exit. A missing acknowledgment is bounded externally.
-    let pending = "", acknowledged = false;
-    process.stdin.setEncoding("utf8");
-    process.stdin.on("data", data => {
-      pending += data;
-      if (pending.length > 64) { app.exit(1); return; }
-      let end;
-      while ((end = pending.indexOf("\n")) >= 0) {
-        const line = pending.slice(0, end); pending = pending.slice(end + 1);
-        if (line === "ack" && !acknowledged) { acknowledged = true; send({ stage: "ack_received" }); }
-        else if (line === "exit" && acknowledged) app.exit(ok ? 0 : 1);
-        else app.exit(1);
-      }
-    });
-    process.stdin.resume();
+    // Receiver remains live until the supervisor observes this result, publishes
+    // ack, observes ack_received and explicitly publishes exit.
   }
+
   const runCheck = async (mode, check, action) => {
     activeCheck = `${mode}.${check}`;
     try { await action(); scenarios[activeCheck] = { status: "passed" }; }
