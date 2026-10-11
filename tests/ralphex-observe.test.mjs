@@ -6,6 +6,8 @@ import { mkdtempSync, mkdirSync, openSync, closeSync, ftruncateSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import fsPromises from 'node:fs/promises';
+import { syncBuiltinESMExports } from 'node:module';
 import { observe } from '../scripts/ralphex-observe.mjs';
 
 function fixture(t) {
@@ -49,6 +51,41 @@ test('synchronously published runner identities retain ownership and byte contin
   assert.deepEqual(readFileSync(f.log), log);
 });
 
+test('heartbeat selects the synchronously published physical repository through a directory alias', async t => {
+  const f = fixture(t), alias = join(f.dir, 'heartbeat-alias');
+  symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  f.state.beads = 'fixture-task'; f.save();
+  writeFileSync(join(f.dir, 'events.jsonl'), 'retained runner events\n');
+  const files = ['current.json', 'executor.lock', 'events.jsonl', 'full.log'];
+  const before = files.map(file => readFileSync(join(f.dir, file)));
+  const original = fsPromises.realpath, calls = [];
+  // Model the retained Windows sync/async string inequality for this alias only.
+  fsPromises.realpath = async (...args) => args[0] === alias ? (await original(...args), alias) : original(...args);
+  syncBuiltinESMExports();
+  try {
+    assert.equal(await fsPromises.realpath(alias), alias);
+    assert.equal(realpathSync(alias), f.state.worktree);
+    assert.notEqual(await fsPromises.realpath(alias), realpathSync(alias));
+    const command = async (file, args) => {
+      assert.equal(file, 'bd');
+      assert.deepEqual(args.slice(0, 5), ['--actor', 'fixture-owner', '-C', f.state.worktree, '--sandbox']);
+      assert.deepEqual(args.slice(5), ['heartbeat', args.at(-1) === '--help' ? '--help' : 'fixture-task']);
+      calls.push(args);
+      return { status: 0, stdout: 'Usage: bd heartbeat <id> Only the current in_progress owner may refresh.' };
+    };
+    const result = await observe({ ...f.options,
+      source: { kind: 'runner', dir: alias, log: join(alias, 'full.log') }, command,
+      heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: alias, ttlMs: 400, intervalMs: 100 } });
+    assert.equal(result.reason, 'deadline'); assert.equal(result.ownership, 'identified');
+    assert.equal(result.source.worktree, f.state.worktree);
+    assert.equal(calls[0].at(-1), '--help');
+    assert.ok(calls.some(args => args.at(-1) === 'fixture-task'));
+  } finally {
+    fsPromises.realpath = original; syncBuiltinESMExports();
+    assert.deepEqual(files.map(file => readFileSync(join(f.dir, file))), before);
+  }
+});
+
 test('canonical selection never authorizes foreign or aliased recorded ownership metadata', async t => {
   for (const [target, key, value] of [
     ['state', 'runDirectory', 'foreign'], ['lock', 'runDirectory', 'foreign'],
@@ -59,10 +96,15 @@ test('canonical selection never authorizes foreign or aliased recorded ownership
   ]) {
     const f = fixture(t), alias = join(f.dir, 'metadata-alias');
     symlinkSync(f.dir, alias, process.platform === 'win32' ? 'junction' : 'dir');
+    f.state.beads = 'fixture-task';
     f[target][key] = value === 'alias' ? alias : value;
     f.save(); writeFileSync(join(f.dir, 'executor.lock'), JSON.stringify(f.lock));
     const files = ['current.json', 'executor.lock', 'full.log'], before = files.map(file => readFileSync(join(f.dir, file)));
-    const result = await observe(f.options);
+    let calls = 0;
+    const result = await observe({ ...f.options,
+      heartbeat: { task: 'fixture-task', actor: 'fixture-owner', repo: alias, ttlMs: 400, intervalMs: 100 },
+      command: async () => { calls++; throw new Error('Foreign ownership must never reach transport'); } });
+    assert.equal(calls, 0);
     assert.equal(result.reason, 'ownership_unknown', `${target}.${key}=${value}`);
     assert.equal(result.ownership, 'unknown');
     assert.deepEqual(files.map(file => readFileSync(join(f.dir, file))), before);
@@ -161,6 +203,30 @@ test('captured Ralphex timestamped and wrapped output delivers advisory review t
   assert.equal(repeat.log.from, captured.length);
 });
 
+test('physical CRLF wrapped progress delivers both advisory tasks with original byte offsets', async t => {
+  const f = fixture(t);
+  const captured = Buffer.from(readFileSync(new URL('./fixtures/ralphex-progress-formatted.txt', import.meta.url), 'utf8').replace(/\r?\n/g, '\r\n'));
+  writeFileSync(f.log, captured);
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'progress');
+  assert.deepEqual(result.progressTasks, [
+    'Follow-up review: reading coordinator snapshot and project rules',
+    'Follow-up review: collecting two independent perspectives'
+  ]);
+  assert.equal(result.progressTotal, 2); assert.equal(result.status, 'running');
+  assert.equal(result.acceptance, 'not_established');
+  const secondStart = captured.indexOf('[26-10-12 00:49:35]');
+  const records = readFileSync(result.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(records.map(({ from, to }) => ({ from, to })), [
+    { from: 0, to: secondStart }, { from: secondStart, to: captured.length }
+  ]);
+  assert.equal(result.log.from, 0); assert.equal(result.log.to, captured.length);
+  assert.deepEqual(readFileSync(f.log), captured);
+  const repeat = await observe(f.options);
+  assert.equal(repeat.reason, 'deadline'); assert.equal(repeat.progressTotal, 0);
+  assert.equal(repeat.log.from, captured.length); assert.equal(repeat.log.to, captured.length);
+});
+
 test('wrapped Ralphex progress survives observer restart in a partial continuation line', async t => {
   const f = fixture(t);
   const captured = readFileSync(new URL('./fixtures/ralphex-progress-formatted.txt', import.meta.url));
@@ -179,6 +245,104 @@ test('wrapped Ralphex progress survives observer restart in a partial continuati
   assert.equal(records[0].from, 0);
   assert.equal(records.at(-1).to, captured.length);
   assert.equal((await observe(f.options)).progressTotal, 0);
+});
+
+test('physical CRLF wrapped progress survives restart during a partial continuation', async t => {
+  const f = fixture(t);
+  const captured = Buffer.from(readFileSync(new URL('./fixtures/ralphex-progress-formatted.txt', import.meta.url), 'utf8').replace(/\r?\n/g, '\r\n'));
+  const split = captured.indexOf(10) + 12;
+  writeFileSync(f.log, captured.subarray(0, split));
+  const first = await observe(f.options);
+  assert.equal(first.reason, 'deadline'); assert.equal(first.progressTotal, 0);
+  assert.equal(first.log.to, split);
+  appendFileSync(f.log, captured.subarray(split));
+  const resumed = await observe(f.options);
+  assert.equal(resumed.reason, 'progress'); assert.equal(resumed.progressTotal, 2);
+  assert.deepEqual(resumed.progressTasks, [
+    'Follow-up review: reading coordinator snapshot and project rules',
+    'Follow-up review: collecting two independent perspectives'
+  ]);
+  assert.equal(resumed.status, 'running'); assert.equal(resumed.acceptance, 'not_established');
+  assert.equal(resumed.log.from, split); assert.equal(resumed.log.to, captured.length);
+  const records = readFileSync(resumed.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  const secondStart = captured.indexOf('[26-10-12 00:49:35]');
+  assert.deepEqual(records.map(({ from, to }) => ({ from, to })), [
+    { from: 0, to: secondStart }, { from: secondStart, to: captured.length }
+  ]);
+  assert.deepEqual(readFileSync(f.log), captured);
+  assert.equal((await observe(f.options)).progressTotal, 0);
+});
+
+for (const restart of [false, true]) test(`physical CRLF framing spans a read boundary with byte continuity (restart=${restart})`, async t => {
+  const f = fixture(t), prefix = '[26-10-12 00:49:20] ';
+  const firstLine = Buffer.from(prefix + 'RALPHEX_PROGRESS {"task":"Task boundary\r\n');
+  const padding = Buffer.from('n'.repeat(16384 - firstLine.length - 1) + '\r\n');
+  const bytes = Buffer.concat([padding, firstLine, Buffer.from(prefix + 'continued"}\r\n')]);
+  assert.equal(bytes[16383], 13); assert.equal(bytes[16384], 10);
+  if (restart) {
+    writeFileSync(f.log, bytes.subarray(0, 16384));
+    const first = await observe(f.options);
+    assert.equal(first.reason, 'deadline'); assert.equal(first.log.to, 16384);
+    const saved = JSON.parse(readFileSync(f.options.cursor, 'utf8'));
+    assert.deepEqual(Buffer.from(saved.pendingLog.line, 'base64'), firstLine.subarray(0, -1));
+    appendFileSync(f.log, bytes.subarray(16384));
+  } else writeFileSync(f.log, bytes);
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'progress'); assert.equal(result.task, 'Task boundary continued');
+  assert.equal(result.status, 'running'); assert.equal(result.acceptance, 'not_established');
+  assert.equal(result.log.from, restart ? 16384 : 0); assert.equal(result.log.to, bytes.length);
+  const records = readFileSync(result.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(records, [{ task: 'Task boundary continued', from: padding.length, to: bytes.length }]);
+  assert.deepEqual(readFileSync(f.log), bytes);
+  const repeat = await observe(f.options);
+  assert.equal(repeat.progressTotal, 0); assert.equal(repeat.log.from, bytes.length);
+});
+
+test('physical CRLF wrapped UTF-8 continuity survives restart inside a multibyte character', async t => {
+  const f = fixture(t), prefix = '[26-10-12 00:49:20] ';
+  const bytes = Buffer.from(prefix + 'RALPHEX_PROGRESS {"task":"Task\r\n' + prefix + '🧭 continued"}\r\n');
+  const split = bytes.indexOf(Buffer.from('🧭')) + 2;
+  writeFileSync(f.log, bytes.subarray(0, split));
+  const first = await observe(f.options);
+  assert.equal(first.reason, 'deadline'); assert.equal(first.progressTotal, 0); assert.equal(first.log.to, split);
+  appendFileSync(f.log, bytes.subarray(split));
+  const result = await observe(f.options);
+  assert.equal(result.reason, 'progress'); assert.equal(result.task, 'Task 🧭 continued');
+  assert.equal(result.log.from, split); assert.equal(result.log.to, bytes.length);
+  assert.deepEqual(JSON.parse(readFileSync(result.progressEvidence, 'utf8').trim()), { task: 'Task 🧭 continued', from: 0, to: bytes.length });
+  assert.deepEqual(readFileSync(f.log), bytes);
+});
+
+test('physical CRLF retains 4096-byte bounds and embedded CR rejection with marker recovery', async t => {
+  const f = fixture(t), prefix = '[26-10-12 00:49:20] ';
+  const raw = task => 'RALPHEX_PROGRESS {"task":"' + task + '"}';
+  const bounded = raw('Physical bound');
+  const atBound = bounded + ' '.repeat(4095 - Buffer.byteLength(bounded)) + '\r\n';
+  const overBound = raw('Rejected physical') + ' '.repeat(4096 - Buffer.byteLength(raw('Rejected physical'))) + '\r\n';
+  const wrapped = (task, size) => {
+    const first = '{"task":' + ' '.repeat(2000), last = '"' + task + '"}';
+    return prefix + 'RALPHEX_PROGRESS ' + first + '\r\n' + prefix + ' '.repeat(size - Buffer.byteLength(first + ' ' + last)) + last + '\r\n';
+  };
+  const pieces = [atBound, overBound, wrapped('Wrapped bound', 4096), wrapped('Rejected wrapped', 4097),
+    prefix + 'RALPHEX_PROGRESS {"task":"Embedded\rCR\r\n' + prefix + 'rejected"}\r\n',
+    raw('Recovery') + '\r\n'];
+  const bytes = Buffer.from(pieces.join('')); writeFileSync(f.log, bytes);
+  const records = []; let offset = 0;
+  for (let window = 0; window < 3; window++) {
+    const result = await observe(f.options);
+    assert.equal(result.reason, 'progress'); assert.equal(result.status, 'running'); assert.equal(result.acceptance, 'not_established');
+    assert.equal(result.log.from, offset); offset = result.log.to;
+    assert.ok(result.progressTasks.length <= 10); assert.ok(JSON.stringify(result).length < 6000);
+    records.push(...readFileSync(result.progressEvidence, 'utf8').trim().split('\n').map(line => JSON.parse(line)));
+    if (!result.log.unreadBytes) break;
+  }
+  assert.deepEqual(records.map(record => record.task), ['Physical bound', 'Wrapped bound', 'Recovery']);
+  const offsets = [0]; for (const piece of pieces) offsets.push(offsets.at(-1) + Buffer.byteLength(piece));
+  assert.deepEqual(records.map(({ from, to }) => ({ from, to })), [
+    { from: offsets[0], to: offsets[1] }, { from: offsets[2], to: offsets[3] }, { from: offsets[5], to: offsets[6] }
+  ]);
+  assert.equal(offset, bytes.length); assert.ok(readFileSync(f.options.cursor).length < 6500);
+  assert.deepEqual(readFileSync(f.log), bytes);
 });
 
 test('malformed formatted messages stay bounded and cannot swallow the next valid marker', async t => {
@@ -386,6 +550,15 @@ test('heartbeat remains opt-in and unsupported capability or wrong task blocks r
   const command=async()=>{calls++;return{status:0,stdout:'unsupported command'};};
   await observe({...f.options,command});assert.equal(calls,0);
   await assert.rejects(observe({...f.options,command,heartbeat:{...config,task:'other'}}),/match/);assert.equal(calls,0);
+  const other=fixture(t);
+  await assert.rejects(observe({...f.options,command,heartbeat:{...config,repo:other.dir}}),/match/);assert.equal(calls,0);
+  const alias=join(f.dir,'recorded-worktree-alias');symlinkSync(f.dir,alias,process.platform==='win32'?'junction':'dir');
+  rmSync(f.options.cursor);
+  f.state.worktree=alias;f.lock.worktree=alias;f.save();writeFileSync(join(f.dir,'executor.lock'),JSON.stringify(f.lock));
+  const before=['current.json','executor.lock','full.log'].map(file=>readFileSync(join(f.dir,file)));
+  await assert.rejects(observe({...f.options,command,heartbeat:{...config,repo:alias}}),/match/);assert.equal(calls,0);
+  assert.deepEqual(['current.json','executor.lock','full.log'].map(file=>readFileSync(join(f.dir,file))),before);
+  f.state.worktree=f.dir;f.lock.worktree=f.dir;f.save();writeFileSync(join(f.dir,'executor.lock'),JSON.stringify(f.lock));
   const result=await observe({...f.options,command,heartbeat:config});assert.equal(result.reason,'lease_lost');assert.equal(calls,1);
 });
 

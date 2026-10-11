@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { realpath } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 
 // Only fixed read-only gh commands and the explicitly configured bd heartbeat use
 // this transport. No shell, hooks, default repository, or tracker discovery.
@@ -85,7 +85,7 @@ export async function observeCi(source, { transport = command, deadline, signal 
 
 export async function heartbeatConfig(value) {
   if (!value || typeof value.task !== 'string' || !value.task.trim() || typeof value.actor !== 'string' || !value.actor.trim() || !Number.isFinite(value.ttlMs) || value.ttlMs <= 0 || !Number.isFinite(value.intervalMs) || value.intervalMs <= 0 || value.intervalMs >= value.ttlMs) throw new Error('Heartbeat requires explicit task, actor, repository, TTL and interval shorter than TTL');
-  return { ...value,repo:await realpath(value.repo) };
+  return { ...value,repo:realpathSync(value.repo) };
 }
 export async function heartbeat(value, { transport = command,deadline,signal,verify = false } = {}) {
   const prefix = ['--actor',value.actor,'-C',value.repo,'--sandbox'];

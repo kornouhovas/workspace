@@ -61,7 +61,9 @@ async function scanLog(file,{offset,size,deadline,signal,pending,task}) {
         else line = Buffer.concat([line,part]);
       }
       if (newline >= 0) {
-        const text = discard ? '' : line.toString('utf8');
+        // Remove only CRLF framing after a complete physical line is available;
+        // retained bytes and source offsets still include both EOL bytes.
+        const text = discard ? '' : (line.at(-1) === 13 ? line.subarray(0, -1) : line).toString('utf8');
         const prefix = timestampPrefix.exec(text)?.[0], content = prefix ? text.slice(prefix.length) : text;
         if (content.startsWith('RALPHEX_PROGRESS ')) marker = {text:content.slice(17),prefix,from:lineStart};
         else if (marker?.prefix && prefix === marker.prefix && !discard) marker.text += ` ${content}`;
