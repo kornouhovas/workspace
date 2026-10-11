@@ -498,3 +498,298 @@ test("a proven failed move releases reservations for a fresh move and retains it
   if (!f.deniedOnce) { f.deniedOnce = true; return "permission_denied"; }
   return renameNoReplace(from, to);
 } }));
+
+function pendingMove(f) {
+  f.pending = moveRequest(f);
+  const result = f.service.moveProjectCategory(f.pending);
+  assert.equal(result.value.outcome, "recoverable", JSON.stringify(result));
+  return result;
+}
+function reviewMove(f, workspaceId = f.workspace.workspaceId) {
+  const result = f.query("workspace.previewProjectCategoryMoveRecovery", { workspaceId, operationId: f.pending.operationId });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  return result.value;
+}
+function recoverMove(f, action, preview = reviewMove(f)) {
+  return f.command("workspace.recoverProjectCategoryMove", { workspaceId: preview.workspaceId,
+    operationId: f.pending.operationId, previewToken: preview.previewToken, action });
+}
+const interruptedOriginal = { native(f, from, to) {
+  if (!f.interrupted) { f.interrupted = true; throw new Error("Injected unknown outcome before effect"); }
+  return renameNoReplace(from, to);
+} };
+
+test("explicit retry_original requires a fresh review and preserves project identity and exact Text", () => fixture((f) => {
+  const identity = nativeProjectFilesystem.inspect(originalPath(f)).identity, values = f.query("workspace.listTextProperties");
+  pendingMove(f);
+  const preview = reviewMove(f);
+  assert.deepEqual(preview.actions, ["retry_original", "keep_original"]);
+  assert.equal(preview.originalState, "matching"); assert.equal(preview.destinationState, "missing");
+  const result = recoverMove(f, "retry_original", preview);
+  assert.equal(result.value.outcome, "completed", JSON.stringify(result));
+  assert.equal(result.value.project.categoryId, f.destination.categoryId);
+  assert.equal(result.value.project.revision, f.initial.revision + 1);
+  assert.deepEqual(nativeProjectFilesystem.inspect(destinationPath(f)).identity, identity);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  assert.equal(fs.readFileSync(join(destinationPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  assert.equal(recoverMove(f, "retry_original", preview).error.code, "stale_preview");
+  f.restart();
+  assert.deepEqual(f.service.moveProjectCategory(f.pending), result);
+}, interruptedOriginal));
+
+test("explicit keep_original resolves the journal without moving, revising or publishing", () => fixture((f) => {
+  const before = f.query("workspace.listProjects"), values = f.query("workspace.listTextProperties");
+  pendingMove(f); f.events.length = 0;
+  const preview = reviewMove(f), result = recoverMove(f, "keep_original", preview);
+  assert.equal(result.value.outcome, "rejected", JSON.stringify(result));
+  assert.equal(result.value.problem, "kept_original");
+  assert.equal(result.value.operation.stage, "failed");
+  assert.deepEqual(f.query("workspace.listProjects"), before);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  assert.equal(fs.existsSync(destinationPath(f)), false);
+  assert.equal(fs.readFileSync(join(originalPath(f), "sentinel"), "utf8"), "  Original bytes\n");
+  assert.equal(f.events.filter((e) => e.type === "workspace.projectsChanged").length, 0);
+  assert.deepEqual(f.query("workspace.listProjectCategoryMoves").value.operations, []);
+  assert.deepEqual(reviewMove(f).actions, []);
+  assert.equal(recoverMove(f, "keep_original", preview).error.code, "stale_preview");
+  f.restart(); assert.deepEqual(f.service.moveProjectCategory(f.pending), result);
+}, interruptedOriginal));
+
+const interruptedDestination = { native(f, from, to) {
+  assert.equal(renameNoReplace(from, to), "renamed");
+  throw new Error("Injected lost native result after effect");
+} };
+test("explicit complete_destination from a sibling completes an uncertain effect without another native move", () => fixture((f) => {
+  const identity = nativeProjectFilesystem.inspect(originalPath(f)).identity, values = f.query("workspace.listTextProperties");
+  pendingMove(f); f.restart(); f.events.length = 0;
+  f.service.workspaces.subscribe((event) => f.events.push(event));
+  const preview = reviewMove(f, f.sibling.workspaceId);
+  assert.deepEqual(preview.actions, ["complete_destination"]);
+  assert.equal(preview.originalState, "missing"); assert.equal(preview.destinationState, "matching");
+  const result = recoverMove(f, "complete_destination", preview);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.value.outcome, "completed");
+  assert.deepEqual(nativeProjectFilesystem.inspect(destinationPath(f)).identity, identity);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+  const events = f.events.filter((e) => e.type === "workspace.projectsChanged");
+  assert.equal(events.length, 1);
+  assert.deepEqual(new Set(events[0].workspaceIds), new Set([f.workspace.workspaceId, f.sibling.workspaceId]));
+  assert.deepEqual(f.service.moveProjectCategory(f.pending), result);
+  assert.equal(f.service.moveProjectCategory({ ...f.pending, workspaceId: f.sibling.workspaceId }).ok, false);
+  assert.deepEqual(reviewMove(f).actions, []);
+}, interruptedDestination));
+
+for (const location of ["original", "destination"]) {
+  for (const state of ["missing", "replaced", "link", "unavailable", "conflicting"]) {
+    test(`${location} ${state} recovery evidence offers no action and preserves bytes`, () => fixture((f) => {
+      pendingMove(f);
+      const path = location === "original" ? originalPath(f) : destinationPath(f);
+      const saved = join(f.directory, "saved-project");
+      if (state === "missing" || state === "replaced" || state === "link") fs.renameSync(path, saved);
+      if (state === "replaced") { fs.mkdirSync(path); fs.writeFileSync(join(path, "replacement"), "Keep"); }
+      if (state === "link") fs.symlinkSync(saved, path, "junction");
+      if (state === "unavailable") f.denied = path;
+      if (state === "conflicting") f.conflict = true;
+      const preview = reviewMove(f);
+      assert.deepEqual(preview.actions, []); assert.equal(preview.previewToken, null);
+      assert.ok(preview.problem);
+      if (state === "conflicting") assert.equal(preview.problem, "native_conflict");
+      f.denied = null; f.conflict = false;
+      assert.equal(fs.readFileSync(join(fs.existsSync(saved) ? saved : path, "sentinel"), "utf8"), "  Original bytes\n");
+      if (state === "replaced") assert.equal(fs.readFileSync(join(path, "replacement"), "utf8"), "Keep");
+      assert.equal(f.query("workspace.getProjectCategoryMove", { operationId: f.pending.operationId }).value.outcome, "recoverable");
+    }, { ...(location === "original" ? interruptedOriginal : interruptedDestination), filesystem: (f) => ({
+      ...nativeProjectFilesystem,
+      inspect(path) {
+        // Inject a second identity match; real duplicate placement is not claimed.
+        if (f.conflict && path === (location === "original" ? destinationPath(f) : originalPath(f))) {
+          return nativeProjectFilesystem.inspect(location === "original" ? originalPath(f) : destinationPath(f));
+        }
+        return nativeProjectFilesystem.inspect(path);
+      },
+      realpath(path) {
+        if (f.conflict && path === (location === "original" ? destinationPath(f) : originalPath(f))) return path;
+        return nativeProjectFilesystem.realpath(path);
+      },
+      names(path) {
+        const names = nativeProjectFilesystem.names(path);
+        if (f.conflict && path === join(f.root, location === "original" ? "Destination" : "Original category")) return [...names, f.project.name];
+        return names;
+      },
+      assertAccessible(path) {
+        if (f.conflict && path === (location === "original" ? destinationPath(f) : originalPath(f))) return;
+        if (f.denied === path) throw Object.assign(new Error("Injected accessibility loss"), { code: "EACCES" });
+        nativeProjectFilesystem.assertAccessible(path);
+      },
+    }) }));
+  }
+}
+
+for (const change of ["preview", "restart", "revision", "configuration", "operation", "root_names", "original_names", "destination_names", "placement", "workspace", "refresh", "reservation"]) {
+  test(`${change} invalidates a recovery review before any native effect`, () => fixture((f) => {
+    pendingMove(f); const preview = reviewMove(f), identity = nativeProjectFilesystem.inspect(originalPath(f)).identity;
+    if (change === "preview") reviewMove(f);
+    if (change === "restart") f.restart();
+    if (change === "revision") f.sql.exec("UPDATE sources SET discovery_revision = discovery_revision + 1");
+    if (change === "configuration") f.sql.exec("UPDATE sources SET excluded_relative_paths = '[\"Destination\"]'");
+    if (change === "operation") f.sql.exec("UPDATE project_category_move_operations SET problem = 'busy'");
+    if (change === "root_names") fs.mkdirSync(join(f.root, "New category"));
+    if (change === "original_names") fs.mkdirSync(join(f.root, "Original category", "Another"));
+    if (change === "destination_names") fs.mkdirSync(join(f.root, "Destination", "Another"));
+    if (change === "placement") fs.renameSync(originalPath(f), join(f.directory, "saved"));
+    if (change === "workspace") f.command("workspace.remove");
+    if (change === "refresh") {
+      fs.renameSync(originalPath(f), join(f.directory, "saved"));
+      f.command("workspace.refreshSource");
+      fs.renameSync(join(f.directory, "saved"), originalPath(f));
+    }
+    if (change === "reservation") f.sql.exec(`
+      INSERT INTO project_rename_operations (operation_id, source_id, initiating_workspace_id, project_id, original_name, name,
+        mode, expected_revision, category_id, canonical_root, parent_relative_path, original_relative_path, requested_relative_path,
+        root_identity, parent_identity, native_identity, excluded_relative_paths, archive_relative_path,
+        stage, last_verified_placement, last_verified_identity)
+      SELECT '${randomUUID()}', s.id, '${f.workspace.workspaceId}', p.id, '${f.project.name}', 'Other',
+        'grouped', s.discovery_revision, p.category_id, s.canonical_root, c.relative_path, p.relative_path, c.relative_path || '/Other',
+        s.applied_root_identity, c.native_identity, p.native_identity, s.excluded_relative_paths, s.archive_relative_path,
+        'intent', 'original', p.native_identity FROM projects p JOIN sources s ON p.source_id = s.id
+        JOIN categories c ON p.category_id = c.id WHERE p.id = '${f.project.projectId}';`);
+    const result = recoverMove(f, "retry_original", preview);
+    assert.equal(result.ok, false, JSON.stringify(result));
+    assert.ok(["stale_preview", "invalid_input"].includes(result.error.code));
+    assert.equal(fs.existsSync(destinationPath(f)), false);
+    assert.deepEqual(nativeProjectFilesystem.inspect(change === "placement" ? join(f.directory, "saved") : originalPath(f)).identity, identity);
+  }, interruptedOriginal));
+}
+
+for (const parent of ["root", "original", "destination"]) {
+  test(`${parent} parent substitution makes recovery unavailable without traversing replacement`, () => fixture((f) => {
+    pendingMove(f); const preview = reviewMove(f);
+    const path = parent === "root" ? f.root : join(f.root, parent === "original" ? "Original category" : "Destination");
+    const saved = join(f.directory, "saved-parent"); fs.renameSync(path, saved);
+    fs.mkdirSync(path); fs.writeFileSync(join(path, "replacement"), "Keep");
+    assert.equal(recoverMove(f, "retry_original", preview).error.code, "stale_preview");
+    const unavailable = reviewMove(f); assert.deepEqual(unavailable.actions, []); assert.equal(unavailable.previewToken, null);
+    assert.equal(fs.readFileSync(join(path, "replacement"), "utf8"), "Keep");
+    assert.equal(fs.readFileSync(join(parent === "root" ? join(saved, "Original category") : parent === "original" ? saved : join(f.root, "Original category"), f.project.name, "sentinel"), "utf8"), "  Original bytes\n");
+  }, interruptedOriginal));
+}
+
+test("exact recovery requests and service-owned previews reject foreign or unadvertised authority", () => fixture((f) => {
+  pendingMove(f); const preview = reviewMove(f);
+  const request = { type: "workspace.recoverProjectCategoryMove", workspaceId: f.workspace.workspaceId,
+    operationId: f.pending.operationId, previewToken: preview.previewToken, action: "retry_original" };
+  for (const input of [null, [], {}, { ...request, previewToken: "bad" }, { ...request, operationId: "bad" },
+    { ...request, action: "overwrite" }, { ...request, path: f.root }, { ...request, nativeIdentity: "caller" }]) {
+    assert.equal(f.service.recoverProjectCategoryMove(input).error.code, "invalid_input");
+  }
+  for (const changed of [{ workspaceId: f.sibling.workspaceId }, { operationId: randomUUID() }, { previewToken: randomUUID() }, { action: "complete_destination" }]) {
+    assert.equal(f.service.recoverProjectCategoryMove({ ...request, ...changed }).error.code, "stale_preview");
+  }
+  preview.actions.push("complete_destination"); preview.originalState = "missing"; preview.operation.stage = "completed";
+  assert.equal(f.service.recoverProjectCategoryMove({ ...request, action: "complete_destination" }).error.code, "stale_preview");
+  const otherRoot = join(f.directory, "foreign"); fs.mkdirSync(otherRoot);
+  const foreign = f.service.workspaces.create({ type: "workspace.create", name: "Foreign", rootPath: otherRoot }).value;
+  for (const method of ["getProjectCategoryMove", "previewProjectCategoryMoveRecovery"]) {
+    const query = { type: `workspace.${method}`, workspaceId: foreign.workspaceId, operationId: f.pending.operationId };
+    assert.equal(f.service[method](query).error.code, "invalid_input");
+    assert.equal(f.service[method]({ ...query, workspaceId: f.workspace.workspaceId, path: f.root }).error.code, "invalid_input");
+  }
+  assert.equal(f.service.recoverProjectCategoryMove(request).value.outcome, "completed");
+  assert.equal(f.service.recoverProjectCategoryMove(request).error.code, "stale_preview");
+}, interruptedOriginal));
+
+test("Text changes keep a fresh recovery review and independent source revisions", () => fixture((f) => {
+  pendingMove(f); const preview = reviewMove(f);
+  f.command("workspace.setTextValue", { projectId: f.project.projectId, propertyId: f.propertyId, value: "  Changed independently\n" });
+  const values = f.query("workspace.listTextProperties");
+  const result = recoverMove(f, "retry_original", preview); assert.equal(result.value.outcome, "completed");
+  assert.equal(result.value.project.revision, preview.revision + 1);
+  assert.deepEqual(f.query("workspace.listTextProperties"), values);
+}, interruptedOriginal));
+
+test("fresh recovery uses current revision while original operation bindings remain immutable", () => fixture((f) => {
+  pendingMove(f); const old = reviewMove(f);
+  f.sql.exec("UPDATE sources SET discovery_revision = discovery_revision + 1");
+  assert.equal(recoverMove(f, "retry_original", old).error.code, "stale_preview");
+  const preview = reviewMove(f); assert.equal(preview.revision, f.initial.revision + 1);
+  const result = recoverMove(f, "retry_original", preview);
+  assert.equal(result.value.outcome, "completed"); assert.equal(result.value.project.revision, f.initial.revision + 2);
+  assert.deepEqual(f.service.moveProjectCategory(f.pending), result);
+  assert.equal(f.service.moveProjectCategory({ ...f.pending, expectedRevision: preview.revision }).ok, false);
+}, interruptedOriginal));
+
+for (const location of ["original", "destination"]) {
+  test(`${location}: exhausted revision never advertises a completion requiring an unsafe successor`, () => fixture((f) => {
+    pendingMove(f); f.sql.exec(`UPDATE sources SET discovery_revision = ${Number.MAX_SAFE_INTEGER}`);
+    const preview = reviewMove(f);
+    assert.deepEqual(preview.actions, location === "original" ? ["keep_original"] : []);
+    assert.equal(preview.problem, "stale_configuration");
+    if (location === "original") assert.equal(recoverMove(f, "keep_original", preview).value.problem, "kept_original");
+    else assert.equal(preview.previewToken, null);
+  }, location === "original" ? interruptedOriginal : interruptedDestination));
+}
+
+for (const failure of ["before_native", "after_native", "evidence", "completion", "uncertainty_write", "keep_receipt"]) {
+  test(`injected recovery failure at ${failure} retains durable evidence and permits a fresh explicit review`, () => fixture((f) => {
+    pendingMove(f); const preview = reviewMove(f), values = f.query("workspace.listTextProperties");
+    if (["evidence", "uncertainty_write", "keep_receipt"].includes(failure)) f.sql.exec(`
+      CREATE TRIGGER fail_recovery BEFORE UPDATE ON project_category_move_operations
+      WHEN NEW.stage = '${failure === "keep_receipt" ? "failed" : "destination_recorded"}' BEGIN SELECT RAISE(ABORT, 'Injected evidence failure'); END;`);
+    if (failure === "completion") f.sql.exec("CREATE TRIGGER fail_recovery BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Injected completion failure'); END;");
+    if (failure === "uncertainty_write") f.sql.exec("CREATE TRIGGER fail_uncertainty BEFORE UPDATE ON project_category_move_operations WHEN NEW.stage = 'uncertain' BEGIN SELECT RAISE(ABORT, 'Injected uncertainty failure'); END;");
+    f.recoveryFailure = failure;
+    const result = recoverMove(f, failure === "keep_receipt" ? "keep_original" : "retry_original", preview);
+    assert.equal(result.value.outcome, "recoverable", JSON.stringify(result));
+    assert.equal(result.value.operation.lastVerifiedPlacement, failure === "completion" ? "destination" : "original");
+    assert.deepEqual(f.query("workspace.listTextProperties"), values);
+    assertNoMetadataEffect(f, values);
+    const path = ["before_native", "keep_receipt"].includes(failure) ? originalPath(f) : destinationPath(f);
+    assert.equal(fs.readFileSync(join(path, "sentinel"), "utf8"), "  Original bytes\n");
+    if (failure === "uncertainty_write") assert.equal(result.value.operation.problem, "filesystem_error", "failed uncertainty write retains the earlier problem");
+    assert.equal(recoverMove(f, "retry_original", preview).error.code, "stale_preview");
+    f.sql.exec("DROP TRIGGER IF EXISTS fail_recovery; DROP TRIGGER IF EXISTS fail_uncertainty;");
+    f.recoveryFailure = null; f.restart();
+    const fresh = reviewMove(f);
+    const action = path === originalPath(f) ? "retry_original" : "complete_destination";
+    assert.ok(fresh.actions.includes(action), JSON.stringify(fresh));
+    assert.equal(recoverMove(f, action, fresh).value.outcome, "completed");
+  }, { native(f, from, to) {
+    if (!f.interrupted) { f.interrupted = true; throw new Error("Injected unknown original outcome"); }
+    if (f.recoveryFailure === "before_native") throw new Error("Injected unknown recovery outcome");
+    const outcome = renameNoReplace(from, to);
+    if (f.recoveryFailure === "after_native") throw new Error("Injected lost recovery response");
+    return outcome;
+  } }));
+}
+
+for (const action of ["retry_original", "keep_original"]) {
+  test(`destination evidence survives a verified external return followed by ${action}`, () => fixture((f) => {
+    f.sql.exec("CREATE TRIGGER fail_completion BEFORE UPDATE ON projects BEGIN SELECT RAISE(ABORT, 'Injected completion failure'); END; CREATE TRIGGER fail_uncertainty BEFORE UPDATE ON project_category_move_operations WHEN NEW.stage = 'uncertain' BEGIN SELECT RAISE(ABORT, 'Injected uncertainty failure'); END;");
+    f.pending = moveRequest(f); const pending = f.service.moveProjectCategory(f.pending);
+    assert.equal(pending.value.operation.stage, "destination_recorded");
+    fs.renameSync(destinationPath(f), originalPath(f));
+    f.sql.exec("DROP TRIGGER fail_completion; DROP TRIGGER fail_uncertainty;");
+    const preview = reviewMove(f); assert.deepEqual(preview.actions, ["retry_original", "keep_original"]);
+    const result = recoverMove(f, action, preview);
+    assert.equal(result.value.outcome, action === "retry_original" ? "completed" : "rejected", JSON.stringify(result));
+    assert.equal(result.value.operation.lastVerifiedPlacement, action === "retry_original" ? "destination" : "original");
+    f.restart(); assert.deepEqual(f.service.moveProjectCategory(f.pending), result);
+    const row = f.sql.prepare("SELECT * FROM project_category_move_operations WHERE operation_id = ?").get(f.pending.operationId);
+    assert.equal(row.destination_identity, row.native_identity, "prior destination evidence is immutable even when kept at original");
+  }, { defaultNative: true }));
+}
+
+for (const stage of ["destination_recorded", "completed", "failed"]) {
+  test(`transaction-local revision change during recovery ${stage} rolls back metadata and receipt`, () => fixture((f) => {
+    pendingMove(f); const preview = reviewMove(f), values = f.query("workspace.listTextProperties");
+    f.sql.exec(`CREATE TRIGGER change_during_recovery AFTER UPDATE ON project_category_move_operations
+      WHEN NEW.stage = '${stage}' BEGIN UPDATE sources SET discovery_revision = discovery_revision + 1; END;`);
+    const result = recoverMove(f, stage === "failed" ? "keep_original" : "retry_original", preview);
+    assert.equal(result.value.outcome, "recoverable", JSON.stringify(result));
+    assertNoMetadataEffect(f, values);
+    assert.equal(f.query("workspace.listProjects").value.revision, f.initial.revision);
+    f.sql.exec("DROP TRIGGER change_during_recovery;");
+    const fresh = reviewMove(f);
+    assert.equal(recoverMove(f, stage === "failed" ? "keep_original" : "complete_destination", fresh).value.outcome, stage === "failed" ? "rejected" : "completed");
+  }, interruptedOriginal));
+}

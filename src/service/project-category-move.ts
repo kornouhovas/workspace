@@ -1,10 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { isProjectCategoryMoveRequest, type ProjectCategoryMoveOperation, type ProjectCategoryMoveProblem,
-  type ProjectCategoryMoveResult, type ProjectCategoryMoveList } from "../contracts/project-category-move.js";
+  type ProjectCategoryMoveResult, type ProjectCategoryMoveList, type ProjectCategoryMoveRecoveryPreview,
+  type ProjectCategoryMovePlacementState } from "../contracts/project-category-move.js";
 import type { ServiceResult } from "../contracts/settings.js";
-import { isChildName, validArchive, validExclusions, type NativeIdentity } from "./discovery.js";
+import { isChildName, reliableIdentity, sameIdentity, validArchive, validExclusions, type NativeIdentity } from "./discovery.js";
 import { CreationFailure, filesystemCode, filesystemProblem, nativeProjectFilesystem, validProjectBasename,
   assertCreationDestinationFree, verifyCreationDirectory, verifyCreationParents, type ProjectFilesystem } from "./project-filesystem.js";
 import { renameNoReplace, type ProjectRenameFilesystemResult } from "./project-rename-filesystem.js";
@@ -40,6 +42,20 @@ export function createProjectCategoryMoveService(db: Database, integration: {
   committed(sourceId: string, revision: number, workspaceIds: string[]): void;
 }, filesystem: ProjectFilesystem = nativeProjectFilesystem,
   native: (from: string, to: string) => ProjectRenameFilesystemResult = renameNoReplace) {
+  type Execution = { workspaceId: string; revision: number };
+  const executionFor = (row: Operation): Execution => ({ workspaceId: row.initiatingWorkspaceId, revision: row.expectedRevision });
+  const reviews = new Map<string, { row: Operation; execution: Execution; inspected: ReturnType<typeof inspectRecovery>; token: string }>();
+  const reviewKey = (workspaceId: string, operationId: string) => `${workspaceId}:${operationId}`;
+  function invalidateSource(sourceId: string) {
+    for (const [key, review] of reviews) if (review.row.sourceId === sourceId) reviews.delete(key);
+  }
+  const stale = () => ({ ok: false as const, error: { code: "stale_preview" as const,
+    message: "Refresh category move recovery and explicitly review current placements." } });
+  function problemFor(error: unknown, phase: "storage" | "filesystem"): ProjectCategoryMoveProblem {
+    const problem = error instanceof MoveFailure ? error.problem : error instanceof CreationFailure ? error.problem :
+      phase === "filesystem" || /^E[A-Z]+$/.test(String(filesystemCode(error))) ? filesystemProblem(error) : "storage_error";
+    return problem === "case_alias" ? "occupied" : problem;
+  }
   const invalid = () => ({ ok: false as const, error: { code: "invalid_input" as const,
     message: "Choose a saved workspace and its immutable project category move request." } });
   const storage = () => ({ ok: false as const, error: { code: "storage" as const, message: "Category move history could not be read." } });
@@ -74,10 +90,10 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       if (other.dev === evidence.dev && other.ino === evidence.ino) fail("native_conflict");
     }
   }
-  function context(row: Operation, completed = false) {
-    const source = sourceFor(row.initiatingWorkspaceId);
+  function context(row: Operation, completed = false, execution = executionFor(row)) {
+    const source = sourceFor(execution.workspaceId);
     if (!source || source.id !== row.sourceId || source.canonicalRoot !== row.canonicalRoot || source.discoveryMode !== "grouped" ||
-      source.discoveryRevision !== row.expectedRevision + (completed ? 1 : 0) || source.appliedRootIdentity !== row.rootIdentity ||
+      source.discoveryRevision !== execution.revision + (completed ? 1 : 0) || source.appliedRootIdentity !== row.rootIdentity ||
       source.excludedRelativePaths !== row.excludedRelativePaths || source.archiveRelativePath !== row.archiveRelativePath) fail("stale_configuration");
     const project = db.select().from(schema.projects).where(eq(schema.projects.id, row.projectId)).get();
     if (!project || project.sourceId !== row.sourceId || project.relativePath !== (completed ? row.requestedRelativePath : row.originalRelativePath) || project.nativeIdentity !== row.nativeIdentity ||
@@ -90,8 +106,8 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     }
     policy(row, row.originalRelativePath); policy(row, row.requestedRelativePath); reservations(row);
   }
-  function parents(row: Operation, completed = false) {
-    context(row, completed);
+  function parents(row: Operation, completed = false, execution = executionFor(row)) {
+    context(row, completed, execution);
     for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
       [row.destinationParentRelativePath, row.destinationParentIdentity]]) {
       const parent = verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
@@ -100,10 +116,10 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       if (!names.includes(parentRelativePath)) fail("filesystem_changed");
       if (names.some((name) => name !== parentRelativePath && filesystemAlias(name) === filesystemAlias(parentRelativePath))) fail("occupied");
     }
-    context(row, completed);
+    context(row, completed, execution);
   }
-  function placement(row: Operation, relativePath = row.originalRelativePath, completed = false) {
-    parents(row, completed);
+  function placement(row: Operation, relativePath = row.originalRelativePath, completed = false, execution = executionFor(row)) {
+    parents(row, completed, execution);
     const parent = join(row.canonicalRoot, relativePath === row.originalRelativePath ? row.originalParentRelativePath : row.destinationParentRelativePath);
     const path = join(row.canonicalRoot, relativePath);
     if (!filesystem.names(parent).includes(row.name)) fail("filesystem_changed");
@@ -113,44 +129,44 @@ export function createProjectCategoryMoveService(db: Database, integration: {
     // Recheck both ancestors after observing the project; no filesystem lock is implied.
     for (const [parentRelativePath, parentIdentity] of [[row.originalParentRelativePath, row.originalParentIdentity],
       [row.destinationParentRelativePath, row.destinationParentIdentity]]) verifyCreationParents(filesystem, { ...row, parentRelativePath, parentIdentity });
-    parents(row, completed);
+    parents(row, completed, execution);
   }
-  function destinationFree(row: Operation) {
-    placement(row);
+  function destinationFree(row: Operation, execution = executionFor(row)) {
+    placement(row, row.originalRelativePath, false, execution);
     assertCreationDestinationFree(filesystem, join(row.canonicalRoot, row.destinationParentRelativePath), row.name);
-    placement(row);
+    placement(row, row.originalRelativePath, false, execution);
   }
-  function uniqueDestination(row: Operation, completed = false) {
-    placement(row, row.requestedRelativePath, completed);
+  function uniqueDestination(row: Operation, completed = false, execution = executionFor(row)) {
+    placement(row, row.requestedRelativePath, completed, execution);
     assertCreationDestinationFree(filesystem, join(row.canonicalRoot, row.originalParentRelativePath), row.name);
-    placement(row, row.requestedRelativePath, completed);
+    placement(row, row.requestedRelativePath, completed, execution);
   }
   const unchangedOperation = (row: Operation) => {
     const current = operationFor(row.operationId);
     return !!current && (Object.keys(row) as (keyof Operation)[]).every((key) => current[key] === row[key]);
   };
-  function evidence(row: Operation) {
+  function evidence(row: Operation, execution = executionFor(row)) {
     return db.transaction((tx) => {
-      uniqueDestination(row);
+      uniqueDestination(row, false, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
       tx.update(schema.projectCategoryMoveOperations).set({ stage: "destination_recorded", destinationIdentity: row.nativeIdentity,
         lastVerifiedPlacement: "destination", problem: null }).where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
-      uniqueDestination(row);
+      uniqueDestination(row, false, execution);
       return operationFor(row.operationId)!;
     }, { behavior: "immediate" });
   }
-  function complete(row: Operation) {
-    const revision = row.expectedRevision + 1;
+  function complete(row: Operation, execution = executionFor(row)) {
+    const revision = execution.revision + 1;
     if (!Number.isSafeInteger(revision)) fail("stale_configuration");
     const receipt = db.transaction((tx) => {
-      uniqueDestination(row);
+      uniqueDestination(row, false, execution);
       if (!unchangedOperation(row)) fail("filesystem_changed");
       tx.update(schema.projects).set({ categoryId: row.destinationCategoryId, relativePath: row.requestedRelativePath })
         .where(eq(schema.projects.id, row.projectId)).run();
       tx.update(schema.sources).set({ discoveryRevision: revision }).where(eq(schema.sources.id, row.sourceId)).run();
       tx.update(schema.projectCategoryMoveOperations).set({ stage: "completed", resultKind: "completed", completedRevision: revision, problem: null })
         .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
-      uniqueDestination(row, true);
+      uniqueDestination(row, true, execution);
       return operationFor(row.operationId)!;
     }, { behavior: "immediate" });
     const workspaceIds = db.select().from(schema.workspaces).where(eq(schema.workspaces.sourceId, row.sourceId)).all().map((w) => w.id);
@@ -228,9 +244,7 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       intent = evidence(intent);
       return { ok: true, value: recordedResult(complete(intent)) };
     } catch (error) {
-      const problem = error instanceof MoveFailure ? error.problem : error instanceof CreationFailure ? error.problem :
-        phase === "filesystem" || /^E[A-Z]+$/.test(String(filesystemCode(error))) ? filesystemProblem(error) : "storage_error";
-      const finiteProblem = problem === "case_alias" ? "occupied" : problem;
+      const finiteProblem = problemFor(error, phase);
       if (!intent) return rejected(finiteProblem);
       try {
         let persisted = operationFor(intent.operationId)!;
@@ -246,6 +260,132 @@ export function createProjectCategoryMoveService(db: Database, integration: {
         try { intent = operationFor(intent.operationId) ?? intent; } catch { /* Retain last durable evidence. */ }
         return { ok: true, value: recordedResult(intent) };
       }
+    }
+  }
+  function inspectRecovery(row: Operation, execution: Execution) {
+    const preview: ProjectCategoryMoveRecoveryPreview = { workspaceId: execution.workspaceId, sourceId: row.sourceId,
+      operation: operationView(row), revision: execution.revision, originalState: "unavailable", destinationState: "unavailable",
+      problem: null, actions: [], previewToken: null };
+    const observations: { path: string; state: ProjectCategoryMovePlacementState; identity: NativeIdentity | null }[] = [];
+    const parentObservations: { path: string; identity: NativeIdentity; names: string[] }[] = [];
+    const reserved = readProjectReservations(db, row.sourceId);
+    if (["completed", "failed"].includes(row.stage)) return { preview, observations, parentObservations, reserved };
+    try {
+      parents(row, false, execution);
+      for (const parentPath of ["", row.originalParentRelativePath, row.destinationParentRelativePath]) {
+        const path = join(row.canonicalRoot, parentPath);
+        parentObservations.push({ path: parentPath, identity: filesystem.inspect(path).identity, names: filesystem.names(path).sort() });
+      }
+      for (const path of [row.originalRelativePath, row.requestedRelativePath]) {
+        let state: ProjectCategoryMovePlacementState = "missing", identity: NativeIdentity | null = null;
+        try {
+          const entry = filesystem.inspect(join(row.canonicalRoot, path));
+          identity = entry.identity;
+          if (entry.kind === "link") state = "link";
+          else if (entry.kind !== "directory" || !reliableIdentity(identity) || !sameIdentity(identity, JSON.parse(row.nativeIdentity))) state = "replaced";
+          else {
+            placement(row, path, false, execution);
+            state = "matching";
+          }
+        } catch (error) { if (filesystemCode(error) !== "ENOENT") throw error; }
+        observations.push({ path, state, identity });
+      }
+      preview.originalState = observations[0].state; preview.destinationState = observations[1].state;
+      const matches = observations.filter((entry) => entry.state === "matching");
+      if (observations.some((entry) => !["matching", "missing"].includes(entry.state))) {
+        preview.problem = observations.some((entry) => entry.state === "link") ? "destination_link" : "destination_replaced";
+      } else if (matches.length !== 1) {
+        preview.problem = matches.length ? "native_conflict" : "destination_missing";
+        if (matches.length) preview.originalState = preview.destinationState = "conflicting";
+      } else if (matches[0].path === row.originalRelativePath) {
+        destinationFree(row, execution);
+        preview.actions = ["retry_original", "keep_original"];
+      } else {
+        uniqueDestination(row, false, execution);
+        preview.actions = ["complete_destination"];
+      }
+      parents(row, false, execution);
+      if (preview.actions.length && !Number.isSafeInteger(execution.revision + 1)) {
+        preview.actions = preview.actions.filter((action) => action === "keep_original");
+        preview.problem = "stale_configuration";
+      }
+    } catch (error) {
+      preview.problem = problemFor(error, "filesystem"); preview.actions = [];
+      preview.originalState = preview.destinationState = ["occupied", "native_conflict", "reserved_destination"].includes(preview.problem) ? "conflicting" : "unavailable";
+    }
+    return { preview, observations, parentObservations, reserved };
+  }
+  function previewProjectCategoryMoveRecovery(input: unknown): ServiceResult<ProjectCategoryMoveRecoveryPreview> {
+    if (!isProjectCategoryMoveRequest(input) || input.type !== "workspace.previewProjectCategoryMoveRecovery") return invalid();
+    const key = reviewKey(input.workspaceId, input.operationId);
+    reviews.delete(key);
+    try {
+      const source = sourceFor(input.workspaceId), row = operationFor(input.operationId);
+      if (!source || !row || source.id !== row.sourceId) return invalid();
+      const execution = { workspaceId: input.workspaceId, revision: source.discoveryRevision };
+      const inspected = inspectRecovery(row, execution);
+      if (inspected.preview.actions.length) {
+        const token = randomUUID();
+        reviews.set(key, { row, execution, inspected: structuredClone(inspected), token });
+        inspected.preview.previewToken = token;
+      }
+      return { ok: true, value: inspected.preview };
+    } catch { return storage(); }
+  }
+  function recoverProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult> {
+    if (!isProjectCategoryMoveRequest(input) || input.type !== "workspace.recoverProjectCategoryMove") return invalid();
+    const request = { ...input }, key = reviewKey(request.workspaceId, request.operationId), review = reviews.get(key);
+    if (!review || review.token !== request.previewToken || !review.inspected.preview.actions.includes(request.action)) return stale();
+    reviews.delete(key);
+    let row: Operation | undefined, accepted = false;
+    let phase: "storage" | "filesystem" = "storage";
+    try {
+      const source = sourceFor(request.workspaceId);
+      row = operationFor(request.operationId);
+      if (!source || !row || source.id !== row.sourceId) return invalid();
+      if (!unchangedOperation(review.row) || source.discoveryRevision !== review.execution.revision ||
+        JSON.stringify(inspectRecovery(row, review.execution)) !== JSON.stringify(review.inspected)) return stale();
+      const execution = review.execution;
+      if (request.action !== "keep_original" && !Number.isSafeInteger(execution.revision + 1)) return stale();
+      integration.invalidateSourceReviews(row.sourceId);
+      accepted = true;
+      if (request.action === "keep_original") {
+        const bound = row;
+        row = db.transaction((tx) => {
+          destinationFree(bound, execution);
+          if (!unchangedOperation(bound)) fail("filesystem_changed");
+          // Preserve destination evidence even after a verified external return.
+          if (bound.stage === "destination_recorded") tx.update(schema.projectCategoryMoveOperations)
+            .set({ stage: "uncertain", problem: "kept_original" }).where(eq(schema.projectCategoryMoveOperations.operationId, bound.operationId)).run();
+          tx.update(schema.projectCategoryMoveOperations).set({ stage: "failed", resultKind: "rejected", problem: "kept_original", lastVerifiedPlacement: "original" })
+            .where(eq(schema.projectCategoryMoveOperations.operationId, bound.operationId)).run();
+          destinationFree(bound, execution);
+          return operationFor(bound.operationId)!;
+        }, { behavior: "immediate" });
+        return { ok: true, value: recordedResult(row) };
+      }
+      if (request.action === "retry_original") {
+        phase = "filesystem";
+        destinationFree(row, execution);
+        if (!unchangedOperation(row)) fail("filesystem_changed");
+        const outcome = native(join(row.canonicalRoot, row.originalRelativePath), join(row.canonicalRoot, row.requestedRelativePath));
+        if (outcome !== "renamed") fail(outcome === "invalid_argument" ? "invalid_name" : outcome);
+        uniqueDestination(row, false, execution);
+      }
+      phase = "storage";
+      row = evidence(row, execution);
+      row = complete(row, execution);
+      return { ok: true, value: recordedResult(row) };
+    } catch (error) {
+      if (!row || !accepted) return stale();
+      try {
+        const persisted = operationFor(row.operationId)!;
+        if (["completed", "failed"].includes(persisted.stage)) return { ok: true, value: recordedResult(persisted) };
+        db.update(schema.projectCategoryMoveOperations).set({ stage: "uncertain", problem: problemFor(error, phase) })
+          .where(eq(schema.projectCategoryMoveOperations.operationId, row.operationId)).run();
+        row = operationFor(row.operationId)!;
+      } catch { try { row = operationFor(row.operationId) ?? row; } catch { /* Retain last durable evidence. */ } }
+      return { ok: true, value: recordedResult(row) };
     }
   }
   function listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList> {
@@ -266,5 +406,11 @@ export function createProjectCategoryMoveService(db: Database, integration: {
       return { ok: true, value: recordedResult(row) };
     } catch { return storage(); }
   }
-  return { moveProjectCategory, listProjectCategoryMoves, getProjectCategoryMove };
+  return { moveProjectCategory, listProjectCategoryMoves, getProjectCategoryMove, previewProjectCategoryMoveRecovery, recoverProjectCategoryMove,
+    invalidateSource,
+    removeWorkspace(workspaceId: string) {
+      for (const [key, review] of reviews) if (review.execution.workspaceId === workspaceId) reviews.delete(key);
+    },
+    close() { reviews.clear(); },
+  };
 }

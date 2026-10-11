@@ -1,5 +1,5 @@
 import { createProjectCategoryMoveService } from "./project-category-move.js";
-import type { ProjectCategoryMoveResult, ProjectCategoryMoveList } from "../contracts/project-category-move.js";
+import type { ProjectCategoryMoveResult, ProjectCategoryMoveList, ProjectCategoryMoveRecoveryPreview } from "../contracts/project-category-move.js";
 import { hasUnfinishedProjectRelocation, readProjectReservations } from "./project-rename-reservations.js";
 import { createProjectRevealService } from "./project-reveal.js";
 import type { NativeProjectReveal } from "../contracts/service-protocol.js";
@@ -52,6 +52,8 @@ export interface WorkspaceService {
   moveProjectCategory(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
   listProjectCategoryMoves(input: unknown): ServiceResult<ProjectCategoryMoveList>;
   getProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
+  previewProjectCategoryMoveRecovery(input: unknown): ServiceResult<ProjectCategoryMoveRecoveryPreview>;
+  recoverProjectCategoryMove(input: unknown): ServiceResult<ProjectCategoryMoveResult>;
   renameProject(input: unknown): ServiceResult<ProjectRenameResult>;
   listProjectRenames(input: unknown): ServiceResult<ProjectRenameList>;
   getProjectRename(input: unknown): ServiceResult<ProjectRenameResult>;
@@ -132,6 +134,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     recovery.invalidateSource(sourceId);
     creation.invalidateSource(sourceId);
     rename.invalidateSource(sourceId);
+    categoryMove.invalidateSource(sourceId);
     for (const [id, saved] of previewTokens) if (saved.preview.sourceId === sourceId) previewTokens.delete(id);
   }
   const creation = createProjectCreationService(db, {
@@ -163,6 +166,8 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     moveProjectCategory: categoryMove.moveProjectCategory,
     listProjectCategoryMoves: categoryMove.listProjectCategoryMoves,
     getProjectCategoryMove: categoryMove.getProjectCategoryMove,
+    previewProjectCategoryMoveRecovery: categoryMove.previewProjectCategoryMoveRecovery,
+    recoverProjectCategoryMove: categoryMove.recoverProjectCategoryMove,
     renameProject: rename.renameProject,
     listProjectRenames: rename.listProjectRenames,
     getProjectRename: rename.getProjectRename,
@@ -216,7 +221,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
       observer.close();
       for (const timer of subscriptionTimers) timer.cancel();
       subscriptionTimers.clear(); observationEvents.clear(); observationCache.clear(); observationVersions.clear();
-      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); reveal.close();
+      listeners.clear(); observed.clear(); previewTokens.clear(); recovery.close(); creation.close(); rename.close(); categoryMove.close(); reveal.close();
     },
     previewDiscovery(input) {
       if (!isRecord(input) || input.type !== "workspace.previewDiscovery" || !isUuid(input.workspaceId) ||
@@ -800,7 +805,7 @@ export function createWorkspaceService(db: Database, filesystem = nativeFilesyst
     reorder: (input) => run(() => service.reorder(input), returnedSnapshot),
     remove: (input) => {
       const result = run(() => service.remove(input), returnedSnapshot);
-      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); }
+      if (result.ok && isRecord(input) && typeof input.workspaceId === "string") { previewTokens.delete(input.workspaceId); recovery.removeWorkspace(input.workspaceId); creation.removeWorkspace(input.workspaceId); rename.removeWorkspace(input.workspaceId); categoryMove.removeWorkspace(input.workspaceId); }
       return result;
     },
     activate: (input) => run(() => service.activate(input), activationSnapshot),
