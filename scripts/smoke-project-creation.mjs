@@ -61,7 +61,7 @@ const save = async () => {
 };
 const record = async (discoveryMode, stage, result) => { recordCreationEvidence(evidence, discoveryMode, stage, result); await save(); };
 const saveFailureEvidence = async () => {
-  try { await save(); } catch (error) { failure ??= error; }
+  try { await withDeadline(save(), 1000, "Failure evidence persistence"); } catch (error) { failure ??= error; }
 };
 async function retainReceipt(primaryFailure) {
   if (!current?.receiptTracking) return;

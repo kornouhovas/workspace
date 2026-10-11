@@ -128,6 +128,33 @@ test("bounded snapshot and persistence failures preserve primary failure and per
   }
 });
 
+test("a stalled evidence write is bounded, preserves primary failure and reaches cleanup", async () => {
+  for (const primaryFailure of [new Error("original acknowledgment failure"), undefined]) {
+    let cleanup = false, accepted = false, failure, watchdog;
+    const observations = [];
+    const attempt = (async () => {
+      try {
+        await retainNativeRevealReceipt({
+          electron: { evaluate: async () => ({ supported: true, state: "settled" }) },
+          retain: (value) => observations.push(value), persist: () => new Promise(() => {}), primaryFailure, timeoutMs: 5,
+        });
+        if (primaryFailure) throw primaryFailure;
+        accepted = true;
+      } catch (error) { failure = error; }
+      finally { cleanup = true; }
+    })();
+    try {
+      const result = await Promise.race([attempt.then(() => "finished"), new Promise((resolve) => { watchdog = setTimeout(() => resolve("stalled"), 200); })]);
+      assert.equal(result, "finished");
+      assert.equal(cleanup, true);
+      assert.equal(accepted, false);
+      assert.equal(observations.length, 1);
+      if (primaryFailure) assert.equal(failure, primaryFailure);
+      else assert.match(failure.message, /Native receipt persistence timed out/);
+    } finally { clearTimeout(watchdog); }
+  }
+});
+
 const problems = ["unconfigured", "mode_retained", "excluded", "missing", "replaced", "unresolved", "root_unavailable", "root_replaced", "category_unavailable", "unavailable", "native_unavailable", "native_error", "request_expired"];
 for (const problem of problems) test(`original rejected receipt retains ${problem} without private fields`, () => {
   const f = fixture();
@@ -189,6 +216,26 @@ test("malformed service envelopes keep correlation until an accepted original re
   f.port.emit("message", { data: response() });
   assert.equal(snapshot(f).receipt.classification, "valid");
   assert.equal(snapshot(f).pending, false);
+});
+
+test("accepted receipts never inherit classifications from ignored malformed responses", () => {
+  const rejected = { id: 17, result: { ok: false, error: { code: "filesystem", message: "PRIVATE_ERROR_SENTINEL" } } };
+  for (const [ignored, accepted, expected] of [
+    [{ ...response({ workspaceId, projectId, outcome: "rejected", problem: "native_error" }), extra: true }, rejected,
+      { classification: "valid", serviceOk: false, outcome: "unknown", problem: "unknown", errorCode: "filesystem", workspaceMatched: "unknown", projectMatched: "unknown" }],
+    [{ ...rejected, extra: true }, response(),
+      { classification: "valid", serviceOk: true, outcome: "dispatched", problem: "unknown", errorCode: "unknown", workspaceMatched: true, projectMatched: true }],
+  ]) {
+    const f = fixture(); f.port.postMessage(request);
+    f.port.emit("message", { data: ignored });
+    assert.equal(snapshot(f).pending, true);
+    f.port.emit("message", { data: accepted });
+    const captured = snapshot(f);
+    assert.deepEqual(captured.receipt, expected);
+    assert.equal(captured.pending, false);
+    assert.deepEqual(captured.records.at(-1), { boundary: "service_response", atMs: 0, ...expected });
+    assert.equal(JSON.stringify(captured).includes("PRIVATE_ERROR_SENTINEL"), false);
+  }
 });
 
 test("one pending request and 64 records; duplicates never rebind or create a second intent", () => {

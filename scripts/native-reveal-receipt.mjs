@@ -23,7 +23,8 @@ export function installNativeRevealReceipt({ MessageChannelMain, app }, options)
   let state = "unarmed", supported = false, armed = false, pending, expectedWorkspace;
   let start, lastAt = 0, timer, truncated = false, observerFailed = false;
   let nativeBoundaryLatencyMs = "unknown";
-  let receipt = { classification: "missing", serviceOk: "unknown", outcome: "unknown", problem: "unknown", errorCode: "unknown", workspaceMatched: "unknown", projectMatched: "unknown" };
+  const emptyReceipt = () => ({ classification: "missing", serviceOk: "unknown", outcome: "unknown", problem: "unknown", errorCode: "unknown", workspaceMatched: "unknown", projectMatched: "unknown" });
+  let receipt = emptyReceipt();
   const records = [], wrappers = [];
   const at = () => {
     const elapsed = performance.now() - start;
@@ -115,7 +116,7 @@ export function installNativeRevealReceipt({ MessageChannelMain, app }, options)
     if (direction !== "incoming" || !Object.hasOwn(message, "id")) return;
     if (!pending || message.id !== pending.id || port !== pending.port) { add("response_binding_mismatch"); return; }
     const result = message.result;
-    receipt = { ...receipt, classification: "malformed" };
+    receipt = { ...emptyReceipt(), classification: "malformed" };
     if (record(result)) {
       receipt.serviceOk = result.ok === true || result.ok === false ? result.ok : "unknown";
       if (result.ok === true) {
@@ -210,7 +211,7 @@ export async function retainNativeRevealReceipt({ electron, retain, persist, pri
     captureFailure = error;
     snapshot ??= { state: electron ? "collection_failed" : "app_unavailable", receipt: { classification: "missing" } };
   }
-  try { retain(snapshot); await persist(); }
+  try { retain(snapshot); await withDeadline(persist(), timeoutMs, "Native receipt persistence"); }
   catch (error) { captureFailure ??= error; }
   if (captureFailure && !primaryFailure) throw captureFailure;
   return snapshot;

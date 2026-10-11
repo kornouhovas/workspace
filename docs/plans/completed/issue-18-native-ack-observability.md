@@ -74,6 +74,14 @@
 - The original correlated receipt was `ok: true`, `dispatched`, with both bindings matched, no truncation or observer failure, and no retained private IDs/paths/identities. One request/native dispatch and the strict exactly-one real API assertions passed. Exact Finder selection, strict Russian UI acknowledgment, two normal shutdowns with stopped backends, restart persistence and owned cleanup passed separately. The observed native request-to-reply boundary latency was approximately 438.54 ms; it is not measured shell-call duration.
 - Historical symptom reproduction and cause remain unproven. Local execution completion leaves independent review and exact-SHA actual-platform CI receipt inspection to the coordinator.
 
+## Review Repair Evidence
+
+- Independent Standards and Spec review compared `705cf1c0f35406b26214a64a173cd896e5a3ede6` against `5943df71ec0d2cef0dac5aa41688bf2fbc4d57f0`. Two confirmed Major findings were repaired: stalled receipt persistence could block strict cleanup, and accepted receipts could inherit classifications from earlier ignored malformed envelopes.
+- Every correlated service response now starts with unknown classification fields. Receipt persistence and repeated failure-evidence saves have bounded waits while preserving the primary failure. Product deadlines, native forwarding and strict acceptance remain unchanged.
+- Both new behavior controls failed before their respective repairs and passed afterward. Node 22.21.1 ran `node --test tests/native-reveal-receipt.test.mjs tests/runtime-lifecycle.test.mjs`: 81 passed without skips. Lint and typecheck passed. Both independent reviewers inspected the repairs and reported no remaining findings.
+- One original focused actual macOS command with the repaired driver exited 0, using unchanged matching production/build inputs without rebuilding or mutating dependencies. Evidence is retained separately under `work/native-ack-review-repair/`; `inputs.json` records starting HEAD `705cf1c0` and the repaired working-tree driver hashes. Input digest: `3fcf33213807ef9782783c375383c29dc9de613a8a48296502dee2d9f9b44049`.
+- The sanitized receipt was valid, `ok: true`, dispatched, with matched bindings and no truncation or observer failure. One native intent, exact Finder selection, strict UI acknowledgment, two normal shutdowns with stopped backends, restart persistence and owned cleanup passed separately. Historical reproduction/cause remain unproven; exact-SHA actual-platform CI acceptance remains coordinator-owned and pending.
+
 ## Acceptance Criteria
 
 - The original correlated typed receipt is retained before the existing strict acknowledgment assertion can discard its diagnostic value.
