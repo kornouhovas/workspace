@@ -282,14 +282,22 @@ test('ready-parent command uses matched fresh jobs and preserves historical comp
   const runs = job.steps.filter((step) => step.run);
   assert.deepEqual(runs.map((step) => step.run), [
     'node scripts/windows-ready-selection.mjs',
+    'node scripts/windows-resolver-diagnosis.mjs',
+    'node --test tests/windows-explorer-selection.test.mjs tests/windows-resolver-diagnosis.test.mjs',
     'node --test tests/windows-ready-selection.test.mjs tests/windows-ready-selection-com.test.mjs tests/file-manager-evidence.test.mjs',
   ]);
-  assert.equal(runs[0].if, undefined); assert.equal(runs[1].if, 'always()');
-  const upload = job.steps.find((step) => step.uses === 'actions/upload-artifact@v4');
-  assert.equal(upload.if, 'always()');
-  assert.equal(upload.with.name, 'issue-17-windows-ready-select-${{ matrix.os }}');
-  assert.equal(upload.with.path, 'work/windows-ready-selection-evidence/result.json');
-  assert.equal(upload.with['if-no-files-found'], 'error');
+  assert.equal(runs[0].if, undefined);
+  for (const step of runs.slice(1)) assert.equal(step.if, 'always()');
+  const uploads = job.steps.filter((step) => step.uses === 'actions/upload-artifact@v4');
+  assert.equal(uploads.length, 2);
+  assert.equal(uploads[0].if, 'always()');
+  assert.equal(uploads[0].with.name, 'issue-17-windows-ready-select-${{ matrix.os }}');
+  assert.equal(uploads[0].with.path, 'work/windows-ready-selection-evidence/result.json');
+  assert.equal(uploads[0].with['if-no-files-found'], 'error');
+  assert.equal(uploads[1].if, 'always()');
+  assert.equal(uploads[1].with.name, 'issue-18-windows-resolver-read-only-series-${{ matrix.os }}');
+  assert.equal(uploads[1].with.path, 'work/issue-18/windows-resolver-diagnosis/read-only-series/');
+  assert.equal(uploads[1].with['if-no-files-found'], 'error');
   assert.ok(jobs['windows-native-selection']); assert.ok(jobs['windows-explorer-selection']);
   assert.ok(jobs.verify.strategy.matrix.include.some(({ os }) => os === 'windows-latest'));
 });

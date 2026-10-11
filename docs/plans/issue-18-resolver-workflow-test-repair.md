@@ -39,12 +39,12 @@ Plan destination: `docs/plans/issue-18-resolver-workflow-test-repair.md`.
 - Read only: `.github/workflows/desktop-ci.yml`.
 - Evidence only: ignored `work/issue-18/ci-38146187798/`.
 
-- [ ] Select Node 22.21.1, confirm its version, and rerun the original focused command before editing. Capture the expected exact-command mismatch under the ignored evidence directory.
-- [ ] Update the existing ordered command expectation to exactly the four commands listed below. Preserve the original command and existing controlled checks; reject arbitrary extra commands rather than filtering them out.
-- [ ] Assert the original command has no explicit condition and each of the three subsequent run steps uses `always()`. Preserve the matched `windows-latest`/`windows-2022` matrix, `fail-fast: false`, independent job, five-minute timeout, pinned Node version and absence of job/step `continue-on-error`.
-- [ ] Assert exactly two uploads, validating each separately against its literal name and path listed below. Require `always()` and `if-no-files-found: error` for both. Preserve historical manual opt-in gates and the existing full `verify` job and `npm test` assertions.
-- [ ] Run the focused regression, full affected test file, neighboring resolver controls, scoped ESLint, documentation links and diff checks using the commands below. Run `npm test` once against the final test code to catch integrated consumers. Capture exit statuses and actual pass/fail/skip counts; do not treat platform skips as Windows acceptance.
-- [ ] Review the scoped and staged diff, verify only the owned plan/test changes are staged, and commit verified changes explicitly with an English message identifying the stale workflow expectation. Report the commit and local results, leaving external acceptance to the coordinator.
+- [x] Select Node 22.21.1, confirm its version, and rerun the original focused command before editing. Capture the expected exact-command mismatch under the ignored evidence directory.
+- [x] Update the existing ordered command expectation to exactly the four commands listed below. Preserve the original command and existing controlled checks; reject arbitrary extra commands rather than filtering them out.
+- [x] Assert the original command has no explicit condition and each of the three subsequent run steps uses `always()`. Preserve the matched `windows-latest`/`windows-2022` matrix, `fail-fast: false`, independent job, five-minute timeout, pinned Node version and absence of job/step `continue-on-error`.
+- [x] Assert exactly two uploads, validating each separately against its literal name and path listed below. Require `always()` and `if-no-files-found: error` for both. Preserve historical manual opt-in gates and the existing full `verify` job and `npm test` assertions.
+- [x] Run the focused regression, full affected test file, neighboring resolver controls, scoped ESLint, documentation links and diff checks using the commands below. Run `npm test` once against the final test code to catch integrated consumers. Capture exit statuses and actual pass/fail/skip counts; do not treat platform skips as Windows acceptance.
+- [x] Review the scoped and staged diff, verify only the owned plan/test changes are staged, and commit verified changes explicitly with an English message identifying the stale workflow expectation. Report the commit and local results, leaving external acceptance to the coordinator.
 
 Exact ordered run commands:
 
@@ -85,6 +85,26 @@ Run these checks in order, retaining logs under the ignored evidence directory:
 - Before commit: `git diff --cached --check` and `git diff --cached`
 
 The initial focused reproduction must show the known failure. All post-repair required checks must pass before committing. Preserve and report any unexpected failure without expanding this task into an unrelated repair.
+
+### Execution evidence
+
+Executed locally on macOS arm64 with Node `v22.21.1`. Logs and individual exit-status files are retained under ignored `work/issue-18/ci-38146187798/executor-task1/`.
+
+| Check | Exit | Passed | Failed | Skipped | Evidence stem |
+| --- | --- | --- | --- | --- | --- |
+| Original focused regression, before editing | 1 (expected command mismatch) | 0 | 1 | 0 | `focused-before` |
+| Focused regression after repair | 0 | 1 | 0 | 0 | `focused-after` |
+| Full affected test file | 0 | 18 | 0 | 0 | `affected-file` |
+| Neighboring resolver and readiness controls | 0 | 50 | 0 | 3 | `neighboring-controls` |
+| Scoped ESLint | 0 | n/a | n/a | n/a | `scoped-eslint` |
+| Documentation links (86 files) | 0 | n/a | n/a | n/a | `docs` |
+| Integrated `npm test`, once on final test code | 0 | 1600 | 0 | 20 | `npm-test` |
+| Working diff whitespace check | 0 | n/a | n/a | n/a | `diff-check` |
+| Staged diff whitespace check and scoped review | 0 | n/a | n/a | n/a | `staged-diff-check`, `staged-diff` |
+
+The integrated command completed its clean build and discovered 1620 tests, with no cancellations or todo cases. All 20 skips are Windows-only controls; neither these skips nor local macOS results establish acceptance on either Windows image. The exact ordered command list and both literal upload contracts are now asserted without changing the workflow or production code. Separate coordinator review and actual-platform acceptance remain pending.
+
+The scoped and staged diffs were reviewed, and only this plan and `tests/windows-product-diagnostics.test.mjs` were staged. The verified repair is committed with the message `test: repair stale resolver workflow expectations`; this completed checklist is included in the same final commit. Documentation links were rechecked after the evidence update (`docs-final` log and exit status).
 
 ## Post-Completion: Coordinator-Owned Acceptance
 
