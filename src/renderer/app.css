@@ -349,3 +349,7 @@ body {
 .project-rename form { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--border-color, #d5d9df); border-radius: .5rem; min-width: 0; }
 .project-rename .workspace-form-actions { flex-wrap: wrap; }
 .project-rename button, .project-rename p { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.rename-operations, .rename-review { display: grid; gap: .75rem; min-width: 0; padding: 1rem; border: 1px solid var(--border-color, #d5d9df); border-radius: .5rem; }
+.project-rename dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .5rem 1rem; margin: 0; }
+.project-rename dt, .project-rename dd { margin: 0; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 600px) { .project-rename dl { grid-template-columns: minmax(0, 1fr); } }

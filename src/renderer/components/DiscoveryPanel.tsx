@@ -388,7 +388,8 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
       minimumRevision={minimumRevision} observationVersion={observationVersion} onCompleted={() => void load()} />
     <ProjectRenamePanel client={client} workspaceId={workspaceId} sourceId={sourceId} language={language} project={renameProject}
       projects={projects} disabled={disabled || loading || error || recoveryProject !== null} minimumRevision={minimumRevision}
-      observationVersion={observationVersion} sourceLifetime={sourceLifetime} onBlockedChange={setRenameBlocked}
+      observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} onBlockedChange={setRenameBlocked}
+      onRestoreFocus={() => tableHeading.current?.focus()}
       onClose={(focus = true) => { restoreRenameFocus.current = focus; setRenameProject(null); }} onCompleted={() => void load()} />
     {recoveryProject && <ProjectRecoveryController client={client} workspaceId={workspaceId} sourceId={sourceId}
       project={recoveryProject} minimumRevision={minimumRevision} observationVersion={observationVersion} sourceLifetime={sourceLifetime} invalidation={invalidation} observation={observation} language={language} disabled={disabled}
@@ -432,7 +433,7 @@ export function DiscoveryWorkspace({ client, workspaceId, sourceId, refreshVersi
         renameDisabled={loading || error || renameBlocked || renameProject !== null || recoveryProject !== null || !projects?.configured ||
           !["ready", "empty"].includes(projects?.state ?? "") || (projects?.revision ?? -1) < minimumRevision.current}
         onRename={(project, trigger) => { renameTrigger.current = trigger; setRenameProject(project); }}
-        locateDisabled={recoveryProject !== null}
+        locateDisabled={recoveryProject !== null || renameBlocked || renameProject !== null}
         onLocate={projects?.configured ? (project, trigger) => {
           recoveryTrigger.current = trigger; setRecoverySaved(false); setRecoveryProject(project);
         } : undefined}

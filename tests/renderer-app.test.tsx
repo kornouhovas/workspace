@@ -119,7 +119,9 @@ function mockApi(options: MockOptions = {}) {
       return () => { changeListeners.delete(listener); };
     },
     settings: onSettings,
-    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjectCreations"
+    workspace: ((input: WorkspaceRequest) => input.type === "workspace.listProjectRenames"
+      ? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
+      : input.type === "workspace.listProjectCreations"
       ? options.onCreations?.(input) ?? Promise.resolve(ok({ workspaceId: input.workspaceId, sourceId: (options.load?.ok ? options.load.value.activeWorkspace?.sourceId : null) ?? `source-${input.workspaceId}`, operations: [] }))
       : input.type === "workspace.getSourceObservation"
       ? options.onObservation?.(input) ?? Promise.resolve(ok({ observation: null }))
